@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+
+  docs:
+    # Documentation validation gate (CLAUDE.md §8). PRs fail if required docs
+    # are missing. Lightweight checks now; expand to markdownlint, link-check,
+    # OpenAPI validation, diagram generation, and ADR formatting as docs grow.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Required /docs structure exists
+        run: |
+          required=(architecture security agents integrations database api \
+            workflows deployment runbooks disaster-recovery operations \
+            user-guides admin-guides testing decision-records diagrams \
+            compliance data-governance)
+          missing=0
+          for d in "${required[@]}"; do
+            if [ ! -d "docs/$d" ]; then
+              echo "::error::Missing required docs directory: docs/$d"
+              missing=1
+            fi
+          done
+          exit $missing

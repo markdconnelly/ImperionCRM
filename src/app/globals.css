@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Self-hosted font families */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Design tokens — ported from CLAUDE.md §6 */
+  --bg: #0B0E14;
+  --panel: #111621;
+  --panel-2: #151B28;
+  --border: #1E2636;
+  --text: #E6EAF2;
+  --dim: #8A93A6;
+  --accent: #5B8DEF;
+  --accent-2: #7C6BF0;
+  --green: #3FBF8F;
+  --amber: #E0A33E;
+  --red: #E2615A;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+* { border-color: var(--border); }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
