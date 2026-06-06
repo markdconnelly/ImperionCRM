@@ -7,3 +7,11 @@ out
 .DS_Store
 next-env.d.ts
 .vercel
+
+# Certificates / private keys — never commit
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
