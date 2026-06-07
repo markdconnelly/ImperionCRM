@@ -22,8 +22,10 @@ endpoints the app calls.
 - An **OpenAPI spec** + an endpoint catalog for the external-function surface.
 - Per endpoint: purpose · inputs · outputs · validation · dependencies · security.
 
-> Status: external-function endpoints are stubbed (`src/lib/services`) and **fail closed**
-> until they exist; document each here as it lands.
+> Status: **server actions + the repository layer are built and live** (real CRUD and
+> reads against PostgreSQL). The **external-function** surface (OAuth ingestion, real
+> sends, enrichment, the agent runtime) is stubbed (`src/lib/services`) and **fails
+> closed** until it lands — document each external endpoint here as it does.
 
 Governing decisions:
 [ADR-0018 GUI-only frontend](../decision-records/ADR-0018-gui-only-frontend-external-functions.md) ·

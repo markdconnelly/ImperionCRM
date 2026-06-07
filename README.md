@@ -93,8 +93,9 @@ flowchart TD
 
 ## Where it is today
 
-This repository is the **web app** (the authoritative interface, ADR-0018): it
-renders the UI, reads/writes PostgreSQL through a typed data-access layer, and calls
+The app is **live on Azure App Service** (`imperioncrm.azurewebsites.net`, Entra SSO
+required). This repository is the **web app** (the authoritative interface, ADR-0018):
+it renders the UI, reads/writes PostgreSQL through a typed data-access layer, and calls
 external functions for heavy/integration work.
 
 | Area | Status |
@@ -102,15 +103,17 @@ external functions for heavy/integration work.
 | Entra ID SSO (certificate client auth), middleware gate, break-glass | ✅ Live |
 | PostgreSQL 18 + pgvector on Azure (managed-identity auth, no stored password) | ✅ Live |
 | Full schema — CRM core, engagements, **comms / contact-360 / connections / demand-gen / automation** | ✅ Applied (`db/migrations` 0001–0026) |
-| Dashboard, accounts, pipeline, proposals, onboarding, assessments, discovery, SBRs, reporting | ✅ Built |
-| **Contact-360 + unified comms, integrations/consent, campaigns/audiences, workflows, lead hooks** | ✅ Scaffolded (UI + data layer) |
-| Live OAuth pulls (Graph/YouTube/LinkedIn/Facebook), real sends, agent enrichment execution | 🟡 Stubbed — next phase |
-| Single orchestrator agent runtime + AI Board | 🟡 In progress |
+| Dashboard, accounts, pipeline (interactive), proposals, onboarding, assessments, discovery, SBRs, reporting | ✅ Built |
+| **Contact-360 + unified comms, integrations/consent, campaigns/audiences (+ builders), workflows (+ builder), lead hooks** | ✅ Built (UI + data layer) |
+| Knowledge search, Security posture, Settings, Feedback, global search | ✅ Built (UI + data layer) |
+| Live OAuth pulls (Graph/YouTube/LinkedIn/Facebook), real sends, agent enrichment execution, embeddings/vector search | 🟡 Stubbed — next phase |
+| Single orchestrator agent runtime + AI Board / AI Agents pages | 🟡 Deferred — next phase |
 
-> **Scaffolded** means the screens and schema are real and the data layer is wired,
-> but the *live* integrations (real OAuth, real sends, agent/LLM execution) are
-> deliberately deferred to a later phase. Until a source is wired, those views show
-> representative data rather than failing.
+> **Built (UI + data layer)** means the screens are real and the data layer reads and
+> writes PostgreSQL through typed repositories. The *live* integrations (real OAuth,
+> real provider sends, agent/LLM execution) are deliberately deferred to a later phase;
+> until a source is wired, those flows are stubbed (e.g. a "send" logs to the timeline)
+> and never fail the page.
 
 ## Architecture at a glance
 
@@ -144,6 +147,9 @@ npm run build
 On Windows, exclude the repo + npm cache from Defender if `npm install` fails with
 `EACCES` (real-time scanning locks `node_modules`). Copy `.env.example` to
 `.env.local` for local development. **Never commit secrets.**
+
+Runtime: Node 24, **Next.js 15.1.12** (patched for CVE-2025-66478; kept on the 15.1
+line to preserve the version-sensitive Entra `customFetch` hook, ADR-0009).
 
 ## Database & deploy
 
