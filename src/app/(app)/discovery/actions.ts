@@ -124,3 +124,60 @@ export async function spawnOpportunityFromDiscovery(formData: FormData) {
   });
   redirect("/pipeline");
 }
+
+// ── Pre-discovery automation: human approval + fit/nurture routing (ADR-0027) ──
+
+/** Stamp an agent/automation-drafted answer as confirmed (human approval). */
+export async function confirmAnswerAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const discoveryId = String(formData.get("discoveryId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.confirmAnswer(id, null); // app_user resolution lands with real auth
+  revalidatePath(`/discovery/${discoveryId}/edit`);
+}
+
+/** Reject an agent/automation-drafted answer. */
+export async function rejectAnswerAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const discoveryId = String(formData.get("discoveryId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.rejectAnswer(id, null);
+  revalidatePath(`/discovery/${discoveryId}/edit`);
+}
+
+/** Fit verdict → create an AI Security Readiness Assessment for the account. */
+export async function advanceToAssessmentAction(formData: FormData) {
+  const accountId = String(formData.get("accountId") ?? "");
+  if (!accountId) return;
+  const { crm } = getRepositories();
+  await crm.createAssessment({
+    accountId,
+    opportunityId: null,
+    name: "AI Security Readiness Assessment",
+    status: "proposed",
+    feeAmount: null,
+    creditToOnboarding: true,
+    ratings: {},
+    topPriorities: null,
+    recommendation: null,
+    reportUrl: null,
+    notes: "Created from a fit discovery verdict (ADR-0027).",
+    kickoffAt: null,
+  });
+  redirect("/assessments");
+}
+
+/** Not-fit verdict → enroll the contact in the default nurture workflow. */
+export async function dropToNurtureAction(formData: FormData) {
+  const contactId = String(formData.get("contactId") ?? "");
+  const accountId = String(formData.get("accountId") ?? "") || null;
+  if (!contactId) redirect("/discovery"); // no contact to enroll in the scaffold
+
+  const { workflows } = getRepositories();
+  const list = await workflows.listWorkflows();
+  const nurture =
+    list.find((w) => w.kind === "nurture" && w.status === "active") ??
+    list.find((w) => w.kind === "nurture");
+  if (nurture) await workflows.enroll(nurture.id, contactId, accountId);
+  redirect("/workflows");
+}

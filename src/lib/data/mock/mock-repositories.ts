@@ -199,6 +199,9 @@ export const mockRepositories: Repositories = {
     async saveAnswers() {
       throw new Error(NO_DB);
     },
+    async listAnswersForReview() {
+      return [];
+    },
     async confirmAnswer() {
       throw new Error(NO_DB);
     },
