@@ -11,7 +11,6 @@ import { mockRepositories } from "@/lib/data/mock/mock-repositories";
 import type { Repositories } from "@/lib/data/repositories";
 import type { Account, Health, Kpi, PipelineColumn, PipelineStage } from "@/types";
 
-const OPEN_STAGES = ["lead", "qualified", "proposal"] as const;
 const ONBOARDING_LIFECYCLE = ["onboarding", "implementation", "operational_readiness"];
 
 const usd = new Intl.NumberFormat("en-US", {
