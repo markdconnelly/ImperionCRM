@@ -108,4 +108,39 @@ export const mockRepositories: Repositories = {
       return agentMessages;
     },
   },
+  reports: {
+    async getSummary() {
+      return {
+        activeMrr: "$326K/mo",
+        openPipeline: "$1.84M",
+        winRate: "62%",
+        avgTimeToLive: "31d",
+      };
+    },
+    async pipelineByStage() {
+      return [
+        { stage: "lead", count: 18, mrr: 640000 },
+        { stage: "qualified", count: 11, mrr: 520000 },
+        { stage: "proposal", count: 6, mrr: 410000 },
+        { stage: "won", count: 42, mrr: 326000 },
+        { stage: "lost", count: 9, mrr: 0 },
+      ];
+    },
+    async proposalsByStatus() {
+      return [
+        { label: "draft", count: 4 },
+        { label: "sent", count: 7 },
+        { label: "accepted", count: 5 },
+        { label: "declined", count: 2 },
+      ];
+    },
+    async projectsByStatus() {
+      return [
+        { label: "not_started", count: 2 },
+        { label: "in_progress", count: 5 },
+        { label: "blocked", count: 1 },
+        { label: "complete", count: 9 },
+      ];
+    },
+  },
 };

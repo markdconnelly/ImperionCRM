@@ -27,3 +27,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0018](./ADR-0018-gui-only-frontend-external-functions.md) | GUI-only frontend; logic in DB or external functions | Accepted |
 | [0019](./ADR-0019-proposal-lifecycle-model.md) | Proposal lifecycle model | Accepted |
 | [0020](./ADR-0020-delivery-project-model.md) | Delivery project model (onboarding/implementation) | Accepted |
+| [0021](./ADR-0021-reporting-read-model-and-recharts.md) | Reporting read model and Recharts | Accepted |

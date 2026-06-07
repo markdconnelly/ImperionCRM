@@ -23,6 +23,7 @@ import type {
 import type {
   Account,
   ContactRow,
+  CountDatum,
   Health,
   Kpi,
   OpportunityRow,
@@ -30,6 +31,8 @@ import type {
   PipelineStage,
   ProjectRow,
   ProposalRow,
+  ReportSummary,
+  StageValueDatum,
   TaskRow,
 } from "@/types";
 
@@ -53,6 +56,19 @@ const usd = new Intl.NumberFormat("en-US", {
 function fmtUsd(n: number): string {
   return usd.format(Number.isFinite(n) ? n : 0);
 }
+
+const usdCompact = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+function fmtUsdCompact(n: number): string {
+  return usdCompact.format(Number.isFinite(n) ? n : 0);
+}
+
+/** Fixed display order for opportunity sales stages. */
+const SALES_STAGE_ORDER = ["lead", "qualified", "proposal", "won", "lost"];
 
 /** Map the account lifecycle stage to the dashboard's five-stage strip. */
 function toPipelineStage(lifecycle: string): PipelineStage {
@@ -735,6 +751,92 @@ export const postgresRepositories: Repositories = {
     // No agent runtime yet (ADR-0015 / ADR-0018 — hosted externally). Empty feed.
     async getConversation() {
       return [];
+    },
+  },
+
+  reports: {
+    async getSummary(): Promise<ReportSummary> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.getSummary();
+      try {
+        const { rows } = await pool.query<{
+          active_mrr: string;
+          open_pipeline: string;
+          won: string;
+          lost: string;
+          avg_ttl_days: string | null;
+        }>(
+          `SELECT
+             coalesce(sum(o.amount_mrr) FILTER (WHERE o.sales_stage = 'won'), 0)        AS active_mrr,
+             coalesce(sum(o.amount_mrr) FILTER (WHERE o.sales_stage IN
+               ('lead','qualified','proposal')), 0)                                     AS open_pipeline,
+             count(*) FILTER (WHERE o.sales_stage = 'won')                              AS won,
+             count(*) FILTER (WHERE o.sales_stage = 'lost')                             AS lost,
+             (SELECT avg(extract(epoch FROM (completed_at - started_at)) / 86400.0)
+                FROM project
+               WHERE status = 'complete' AND started_at IS NOT NULL
+                 AND completed_at IS NOT NULL)                                          AS avg_ttl_days
+           FROM opportunity o`,
+        );
+        const r = rows[0];
+        const won = Number(r.won);
+        const lost = Number(r.lost);
+        const decided = won + lost;
+        const ttl = r.avg_ttl_days != null ? Math.round(Number(r.avg_ttl_days)) : null;
+        return {
+          activeMrr: `${fmtUsdCompact(Number(r.active_mrr))}/mo`,
+          openPipeline: fmtUsdCompact(Number(r.open_pipeline)),
+          winRate: decided > 0 ? `${Math.round((won / decided) * 100)}%` : "—",
+          avgTimeToLive: ttl != null ? `${ttl}d` : "—",
+        };
+      } catch {
+        return mockRepositories.reports.getSummary();
+      }
+    },
+
+    async pipelineByStage(): Promise<StageValueDatum[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.pipelineByStage();
+      try {
+        const { rows } = await pool.query<{ sales_stage: string; c: string; mrr: string }>(
+          `SELECT sales_stage, count(*) AS c, coalesce(sum(amount_mrr), 0) AS mrr
+           FROM opportunity GROUP BY sales_stage`,
+        );
+        const byStage = new Map(rows.map((r) => [r.sales_stage, r]));
+        return SALES_STAGE_ORDER.map((stage) => ({
+          stage,
+          count: Number(byStage.get(stage)?.c ?? 0),
+          mrr: Number(byStage.get(stage)?.mrr ?? 0),
+        }));
+      } catch {
+        return mockRepositories.reports.pipelineByStage();
+      }
+    },
+
+    async proposalsByStatus(): Promise<CountDatum[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.proposalsByStatus();
+      try {
+        const { rows } = await pool.query<{ status: string; c: string }>(
+          `SELECT status, count(*) AS c FROM proposal GROUP BY status ORDER BY status`,
+        );
+        return rows.map((r) => ({ label: r.status, count: Number(r.c) }));
+      } catch {
+        return mockRepositories.reports.proposalsByStatus();
+      }
+    },
+
+    async projectsByStatus(): Promise<CountDatum[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.projectsByStatus();
+      try {
+        const { rows } = await pool.query<{ status: string; c: string }>(
+          `SELECT status, count(*) AS c FROM project GROUP BY status ORDER BY status`,
+        );
+        return rows.map((r) => ({ label: r.status, count: Number(r.c) }));
+      } catch {
+        return mockRepositories.reports.projectsByStatus();
+      }
     },
   },
 };
