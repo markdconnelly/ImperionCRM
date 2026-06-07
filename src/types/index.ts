@@ -72,6 +72,17 @@ export interface ProposalRow {
   sent: string | null; // formatted sent date
 }
 
+/** A row in the Onboarding (delivery projects) list. */
+export interface ProjectRow {
+  id: string;
+  name: string;
+  account: string; // account name
+  opportunity: string | null; // opportunity name
+  type: string; // project_type label
+  status: string; // project_status label
+  targetLive: string | null; // formatted target go-live date
+}
+
 /** A row in the Tasks list. */
 export interface TaskRow {
   id: string;

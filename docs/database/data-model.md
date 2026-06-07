@@ -89,8 +89,13 @@ erDiagram
       uuid id PK
       uuid account_id FK
       uuid opportunity_id FK
-      text type "onboarding|implementation"
-      text status
+      text name
+      text type "enum onboarding|implementation"
+      text status "enum not_started|in_progress|blocked|complete"
+      date target_live_date
+      text notes
+      timestamptz started_at
+      timestamptz completed_at
     }
     MILESTONE {
       uuid id PK
@@ -366,6 +371,8 @@ erDiagram
   operational_readiness | managed_active | dormant`
 - `opportunity.sales_stage`: `lead | qualified | proposal | won | lost`
 - `proposal.status`: `draft | sent | accepted | declined`
+- `project.type`: `onboarding | implementation`
+- `project.status`: `not_started | in_progress | blocked | complete`
 - `interaction.source`: `m365_email | m365_teams | plaud | sms | email |
   facebook | system`
 - `consent_event.channel`: `email | sms | call_recording`

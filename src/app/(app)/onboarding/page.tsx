@@ -1,23 +1,27 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { ModulePlaceholder } from "@/components/ui/module-placeholder";
+import { ProjectsTable } from "@/components/projects/projects-table";
+import { getRepositories } from "@/lib/data";
+import { deleteProjectAction } from "./actions";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const { crm } = getRepositories();
+  const projects = await crm.listProjects();
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Onboarding"
-        description="Onboarding and implementation projects for won accounts."
-      />
-      <ModulePlaceholder
-        icon="Rocket"
-        title="Delivery projects"
-        description="When a deal is won, an onboarding/implementation project tracks the path to a managed customer."
-        points={[
-          "Tasks and milestones per project",
-          "Operational-readiness checklist (validation before handoff)",
-          "Handoff record to ongoing managed services",
-        ]}
-      />
+        description={`${projects.length} onboarding & implementation projects`}
+      >
+        <Link
+          href="/onboarding/new"
+          className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+        >
+          + New project
+        </Link>
+      </PageHeader>
+      <ProjectsTable projects={projects} deleteAction={deleteProjectAction} />
     </div>
   );
 }

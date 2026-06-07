@@ -12,6 +12,8 @@ import type {
   AccountEditable,
   AccountInput,
   Option,
+  ProjectEditable,
+  ProjectInput,
   ProposalEditable,
   ProposalInput,
   Repositories,
@@ -26,6 +28,7 @@ import type {
   OpportunityRow,
   PipelineColumn,
   PipelineStage,
+  ProjectRow,
   ProposalRow,
   TaskRow,
 } from "@/types";
@@ -569,6 +572,133 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteProposal(id);
       await pool.query(`DELETE FROM proposal WHERE id = $1`, [id]);
+    },
+
+    async listProjects(): Promise<ProjectRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProjects();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          account: string;
+          opportunity: string | null;
+          type: string;
+          status: string;
+          target_live_date: Date | null;
+        }>(
+          `SELECT pr.id, pr.name, a.name AS account, o.name AS opportunity,
+                  pr.type, pr.status, pr.target_live_date
+           FROM project pr
+           JOIN account a ON a.id = pr.account_id
+           LEFT JOIN opportunity o ON o.id = pr.opportunity_id
+           ORDER BY pr.target_live_date NULLS LAST, a.name`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          account: row.account,
+          opportunity: row.opportunity,
+          type: row.type,
+          status: row.status,
+          targetLive: fmtDate(row.target_live_date),
+        }));
+      } catch {
+        return mockRepositories.crm.listProjects();
+      }
+    },
+
+    async getProject(id: string): Promise<ProjectEditable | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string;
+          opportunity_id: string | null;
+          name: string;
+          type: string;
+          status: string;
+          target_live_date: Date | null;
+          notes: string | null;
+        }>(
+          `SELECT id, account_id, opportunity_id, name, type, status,
+                  target_live_date, notes
+           FROM project WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          accountId: r.account_id,
+          opportunityId: r.opportunity_id,
+          name: r.name,
+          type: r.type,
+          status: r.status,
+          targetLiveDate: fmtDate(r.target_live_date),
+          notes: r.notes,
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createProject(input: ProjectInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createProject(input);
+      // Stamp lifecycle timestamps from the chosen status (ADR-0020).
+      await pool.query(
+        `INSERT INTO project
+           (account_id, opportunity_id, name, type, status, target_live_date, notes,
+            started_at, completed_at)
+         VALUES (
+           $1, $2, $3, $4::project_type, $5::project_status, $6::date, $7,
+           CASE WHEN $5 = 'not_started' THEN NULL ELSE now() END,
+           CASE WHEN $5 = 'complete' THEN now() ELSE NULL END
+         )`,
+        [
+          input.accountId,
+          nullIfEmpty(input.opportunityId),
+          input.name,
+          input.type,
+          input.status,
+          nullIfEmpty(input.targetLiveDate),
+          nullIfEmpty(input.notes),
+        ],
+      );
+    },
+
+    async updateProject(id: string, input: ProjectInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateProject(id, input);
+      // Preserve existing started/completed timestamps; stamp on first transition.
+      await pool.query(
+        `UPDATE project
+         SET account_id = $1, opportunity_id = $2, name = $3, type = $4::project_type,
+             status = $5::project_status, target_live_date = $6::date, notes = $7,
+             started_at = CASE WHEN $5 = 'not_started' THEN NULL
+                               ELSE coalesce(started_at, now()) END,
+             completed_at = CASE WHEN $5 = 'complete'
+                                 THEN coalesce(completed_at, now()) ELSE NULL END
+         WHERE id = $8`,
+        [
+          input.accountId,
+          nullIfEmpty(input.opportunityId),
+          input.name,
+          input.type,
+          input.status,
+          nullIfEmpty(input.targetLiveDate),
+          nullIfEmpty(input.notes),
+          id,
+        ],
+      );
+    },
+
+    async deleteProject(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteProject(id);
+      await pool.query(`DELETE FROM project WHERE id = $1`, [id]);
     },
 
     async accountOptions(): Promise<Option[]> {
