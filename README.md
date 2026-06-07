@@ -1,40 +1,138 @@
+<div align="center">
+
 # Imperion CRM
 
-Internal, AI-enabled operations platform for Imperion LLC (an MSP) — the single
-interface employees use to track customer health across the full lifecycle (lead →
-qualified → onboarding → implementation → managed, cycling back into new sales).
-It is an operational intelligence layer above Microsoft 365 and Kaseya.
+**The operational brain for a modern Managed Service Provider.**
 
-This repository is the **GUI** (ADR-0018): it renders the interface, reads/writes
-PostgreSQL through a data-access layer, and calls external functions/APIs for heavy
-or integration work. See `CLAUDE.md` for architecture/principles, `/docs` for the
-full documentation set, and `/docs/architecture/application-boundary.md` for what
-lives here vs. externally.
+One interface. One agent. Every customer's whole story — from the first ad they see
+to the quarterly business review years later — in one place.
 
-## Stack
-Next.js (App Router) · React · TypeScript (strict) · Tailwind CSS.
-PostgreSQL 18 + pgvector (Azure Flexible Server). Entra ID as sole IdP (certificate
-client auth). Provider-agnostic AI model-routing layer (external).
+[Documentation library](docs/README.md) ·
+[Architecture](docs/architecture/README.md) ·
+[Customer lifecycle](docs/architecture/customer-lifecycle.md) ·
+[Decision records](docs/decision-records/README.md)
 
-## What works today
-- **Auth:** Entra ID SSO via Auth.js with certificate client authentication; sign-in
-  gate enforced by middleware; break-glass emergency access (ADR-0005/0008/0009).
-- **Database:** PostgreSQL + pgvector is live; Phase 1 schema applied (CRM core,
-  engagement timeline, identity/RBAC — see `db/migrations`). The App Service connects
-  via its **managed identity** (no stored password). Initial accounts seeded.
-- **Dashboard:** three-column shell (nav → work area → agent panel) with a KPI row,
-  five-stage pipeline strip, and "Accounts Needing Attention" table — backed by the
-  repository abstraction, which serves **real data when the DB is configured** and
-  falls back to mock otherwise.
-- **Service clients:** typed placeholders (`src/lib/services`) for the external
-  agent/integration/enrichment/comms/campaign/board functions — fail closed until
-  their endpoints exist.
+</div>
 
-In progress: opportunities/delivery data, integrations, the agent runtime, and the
-AI Board (see the [build phases](docs/architecture/product-requirements.md) and the
-GitHub epics/milestones).
+---
+
+## The problem we're solving
+
+Running an MSP means knowing your customers cold — their people, their risk, their
+history, their next move. In practice that knowledge is **scattered and decaying**:
+
+- A prospect's story lives in **ten disconnected places** — email, Teams, a text
+  thread, a Plaud recording from a coffee chat, a LinkedIn comment, an Autotask
+  ticket, someone's memory — and **no one can see all of it at once**.
+- Salespeople walk into discovery calls **cold**, burning hours on manual research
+  and data entry that an agent could have done overnight.
+- Marketing runs ads in **a silo** — leads aren't attributed, and you can't aim a
+  campaign at the profiles you already know best.
+- Every text, call recording, and profile you build is a **compliance liability**
+  unless you can prove consent — and most CRMs can't.
+- The whole team juggles **Microsoft 365 + Kaseya + spreadsheets**, re-keying the
+  same facts, with no single source of truth and no AI that understands the business.
+
+The cost is real: slower sales, weaker positioning, missed expansion, and risk that
+only shows up when something goes wrong.
+
+## What Imperion CRM does
+
+Imperion CRM is an **AI-enabled operations platform** that sits as an *intelligence
+layer above Microsoft 365 and Kaseya* — augmenting them, never replacing them. It
+manages the entire lifecycle of a managed-services customer and gives every employee
+**one place to work** and **one agent to ask**.
+
+```mermaid
+flowchart LR
+    subgraph SOURCES["Sources (ingested or polled)"]
+      M365["M365 email / Teams"]
+      SOCIAL["LinkedIn · YouTube · Facebook"]
+      PLAUD["Plaud calls / in-person"]
+      KASEYA["Autotask · IT Glue"]
+    end
+    SOURCES --> PIPE["Bronze → Silver → Gold<br/>enrichment pipeline"]
+    PIPE --> CORE["PostgreSQL + pgvector<br/>system of record · embeddings · agent memory"]
+    CORE --> APP["Imperion CRM<br/>three-column web app"]
+    CORE --> AGENT["Single orchestrator agent<br/>(scoped to your Entra permissions)"]
+    APP <--> AGENT
+    APP --> USER(["MSP employee"])
+    AGENT --> USER
+```
+
+It turns each scattered problem into a capability:
+
+| The problem | How Imperion CRM solves it (when complete) |
+| --- | --- |
+| Customer knowledge is scattered | **One unified communications timeline** per contact — every email, message, call, meeting transcript, in-person note, and social touch, attributed first to the employee, then the company. |
+| Sales walk in cold | A **contact-360 "dossier"** assembled *before* the call (employer, role, interests, tech stack, social presence) plus **pre-discovery automation** that gathers the discovery answers for the rep to simply **confirm and stamp**. |
+| Demand-gen is a silo | **Campaigns + audiences built over your aggregated profiles**, with leads attributed back to spend and **lead-capture hooks** that pull a new person in and start a profile automatically. |
+| Outreach & profiling are a legal risk | An **append-only consent ledger** with lawful-basis tracking; outbound sends and ad targeting are **blocked unless consent is current** — defensible under TCPA / CAN-SPAM / GDPR. |
+| Tool sprawl, no single pane | **One web app** above M365 + Kaseya, and **one orchestrator agent** that routes to specialized sub-agents — the user never juggles tools. |
+| The assessment-led motion isn't operationalized | The **paid AI Security Readiness Assessment** is a first-class entity: six scored dimensions, remediation roadmap, conversion to managed services, and recurring **Strategic Business Reviews**. |
+
+## How a customer moves through it
+
+The defining motion is **assessment-led**: a *paid* AI Security Readiness Assessment
+is the wedge that earns the access and evidence to win a multi-year managed-services
+contract. (Full detail: [customer-lifecycle](docs/architecture/customer-lifecycle.md).)
+
+```mermaid
+flowchart TD
+    A["Audience<br/>(ads / organic video)"] --> L["Lead<br/>(hook captures, profile starts)"]
+    L --> NUR["Nurture<br/>(segmented, consent-gated)"]
+    NUR --> DISC["Discovery call<br/>(agents pre-fill · human confirms · verdict)"]
+    DISC -->|Fit| ASMT["AI Security Readiness Assessment<br/>(paid · fee credited to onboarding)"]
+    DISC -->|Not a fit| NUR
+    ASMT --> SCORE["Six-dimension scorecard<br/>+ remediation roadmap"]
+    SCORE --> MSO["Managed Services<br/>(2–5 yr contract · MRR)"]
+    MSO --> ONB["Onboard + remediate"]
+    ONB --> ACTIVE["Managed-active<br/>(quarterly SBRs)"]
+    ACTIVE -->|expansion| MSO
+```
+
+## Where it is today
+
+This repository is the **web app** (the authoritative interface, ADR-0018): it
+renders the UI, reads/writes PostgreSQL through a typed data-access layer, and calls
+external functions for heavy/integration work.
+
+| Area | Status |
+| --- | --- |
+| Entra ID SSO (certificate client auth), middleware gate, break-glass | ✅ Live |
+| PostgreSQL 18 + pgvector on Azure (managed-identity auth, no stored password) | ✅ Live |
+| Full schema — CRM core, engagements, **comms / contact-360 / connections / demand-gen / automation** | ✅ Applied (`db/migrations` 0001–0026) |
+| Dashboard, accounts, pipeline, proposals, onboarding, assessments, discovery, SBRs, reporting | ✅ Built |
+| **Contact-360 + unified comms, integrations/consent, campaigns/audiences, workflows, lead hooks** | ✅ Scaffolded (UI + data layer) |
+| Live OAuth pulls (Graph/YouTube/LinkedIn/Facebook), real sends, agent enrichment execution | 🟡 Stubbed — next phase |
+| Single orchestrator agent runtime + AI Board | 🟡 In progress |
+
+> **Scaffolded** means the screens and schema are real and the data layer is wired,
+> but the *live* integrations (real OAuth, real sends, agent/LLM execution) are
+> deliberately deferred to a later phase. Until a source is wired, those views show
+> representative data rather than failing.
+
+## Architecture at a glance
+
+- **Frontend:** Next.js (App Router) · React · TypeScript (strict) · Tailwind CSS.
+- **Data:** PostgreSQL 18 + `pgvector` (Azure Flexible Server) — a single unified
+  store for system-of-record, embeddings, and agent memory, fed by a
+  **bronze → silver → gold** enrichment pipeline.
+- **Identity:** Microsoft **Entra ID** is the sole identity provider (certificate
+  client auth). Personal-account *data* connections (M365/LinkedIn/YouTube/…) are
+  OAuth links whose tokens live only in **Azure Key Vault** — never in the database.
+- **AI:** a provider-agnostic model-routing layer (OpenAI / Azure OpenAI / Claude)
+  behind a **single orchestrator agent**; many specialized sub-agents exist
+  internally but the user only ever talks to one.
+- **Principles:** UX first · single agent experience · Microsoft for identity ·
+  open web over Power Platform · security as a product feature.
+
+See [`CLAUDE.md`](CLAUDE.md) for the full principles and
+[`docs/architecture/application-boundary.md`](docs/architecture/application-boundary.md)
+for what lives here vs. in external functions.
 
 ## Develop
+
 ```bash
 npm install
 npm run dev        # http://localhost:3000
@@ -42,17 +140,23 @@ npm run typecheck
 npm run lint
 npm run build
 ```
+
 On Windows, exclude the repo + npm cache from Defender if `npm install` fails with
-`EACCES` (real-time scanning locks `node_modules`).
+`EACCES` (real-time scanning locks `node_modules`). Copy `.env.example` to
+`.env.local` for local development. **Never commit secrets.**
 
-## Database
-Raw SQL migrations in `db/migrations` (ADR-0017) applied in order. See
-[`db/README.md`](db/README.md) for how to apply them with an Entra token (no stored
-password). Update the ERD in `docs/database/data-model.md` on every schema change.
+## Database & deploy
 
-## Deploy
-Azure App Service (Linux, Node 24) via GitHub Actions on merge to `main` — builds a
-Next.js standalone bundle (ADR-0006). App configuration (DB host/user, managed
-identity client id, auth) lives in App Service settings; secrets in Key Vault.
+- **Migrations:** raw SQL in [`db/migrations`](db/migrations) (ADR-0017), applied in
+  order with an Entra token — see [`db/README.md`](db/README.md). Update the ERD in
+  [`docs/database/data-model.md`](docs/database/data-model.md) on every schema change.
+- **Deploy:** Azure App Service (Linux, Node 24) via GitHub Actions on merge to
+  `main` — a Next.js standalone bundle (ADR-0006). Config lives in App Service
+  settings; secrets in Key Vault.
 
-Copy `.env.example` to `.env.local` for local development. Never commit secrets.
+## Documentation
+
+Everything — architecture, security, agents, integrations, data model, runbooks, and
+every decision we've made and why — lives in the **[documentation library](docs/README.md)**.
+Documentation is a required deliverable and a security control: code without docs is
+considered incomplete (CLAUDE.md §8).
