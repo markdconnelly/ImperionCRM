@@ -123,6 +123,19 @@ export interface StageValueDatum {
   mrr: number; // numeric (dollars/mo) for chart axes
 }
 
+/** One-time assessment revenue vs recurring managed-services MRR (kept separate). */
+export interface RevenueSplit {
+  oneTime: string; // formatted one-time assessment fees
+  recurring: string; // formatted recurring MRR "$X/mo"
+}
+
+/** Assessment → managed-services conversion. */
+export interface AssessmentConversion {
+  delivered: number;
+  converted: number;
+  rate: string; // formatted "NN%"
+}
+
 /** Headline figures for the Reporting page. */
 export interface ReportSummary {
   activeMrr: string; // formatted "$X/mo"

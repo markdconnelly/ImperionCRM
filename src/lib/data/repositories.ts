@@ -13,6 +13,7 @@ import type {
   Account,
   AgentMessage,
   ArtifactRow,
+  AssessmentConversion,
   AssessmentRow,
   ContactRow,
   CountDatum,
@@ -26,6 +27,7 @@ import type {
   QuestionRow,
   QuestionTemplateRow,
   ReportSummary,
+  RevenueSplit,
   SbrDetail,
   SbrRow,
   StageValueDatum,
@@ -326,6 +328,12 @@ export interface ReportsRepository {
   proposalsByStatus(): Promise<CountDatum[]>;
   /** Delivery projects grouped by status. */
   projectsByStatus(): Promise<CountDatum[]>;
+  /** One-time assessment fees vs recurring managed-services MRR. */
+  revenueSplit(): Promise<RevenueSplit>;
+  /** Assessment → managed-services conversion. */
+  assessmentConversion(): Promise<AssessmentConversion>;
+  /** Average SBR re-benchmark score (1–4) per dimension. */
+  sbrDimensionAverages(): Promise<CountDatum[]>;
 }
 
 /** The full set of repositories a request can resolve. */
