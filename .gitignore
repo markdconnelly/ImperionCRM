@@ -15,3 +15,6 @@ next-env.d.ts
 *.key
 *.cer
 *.crt
+
+# TypeScript incremental build info
+tsconfig.tsbuildinfo
