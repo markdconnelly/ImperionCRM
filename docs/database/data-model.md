@@ -69,6 +69,8 @@ erDiagram
       text name
       text sales_stage "enum"
       numeric amount_mrr
+      text source "manual|seed|autotask|quotemanager"
+      text external_ref "feed id"
       uuid owner_user_id FK
       jsonb attribution
     }
