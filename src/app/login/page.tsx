@@ -10,10 +10,10 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border border-border bg-panel p-8">
         <div className="mb-6 flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-accent to-accent-2 text-sm font-bold text-white">
-            M
+            I
           </div>
           <span className="font-display text-lg font-semibold tracking-tight">
-            Meridian
+            Imperion CRM
           </span>
         </div>
         <h1 className="font-display text-xl font-semibold tracking-tight">

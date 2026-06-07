@@ -9,7 +9,7 @@ conflicts with a quick instinct, this file wins unless the human says otherwise.
 
 ## 1. What this project is
 
-**Meridian** — an internal, AI-enabled operations platform for a Managed Service
+**Imperion CRM** — an internal, AI-enabled operations platform for a Managed Service
 Provider (MSP). It manages the full lifecycle of a managed-services customer:
 lead → qualification → proposal → onboarding → implementation → operational
 readiness → handoff → continuous customer success.
@@ -133,7 +133,7 @@ What exists conceptually and should be ported into the real Next.js project:
     MRR, Onboarding, Avg. Time to Live), a five-stage **pipeline** strip (Lead,
     Qualified, Proposal, Onboarding, Active), and an **"Accounts Needing
     Attention"** table with per-row health dots.
-  - Right **orchestrator agent panel** ("Meridian Agent"), collapsible entirely;
+  - Right **orchestrator agent panel** ("Imperion CRM Agent"), collapsible entirely;
     when collapsed a compact "Agent" button appears in the top bar to reopen it.
     The panel shows a conversation feed and an input, framed as "scoped to your
     Entra permissions."

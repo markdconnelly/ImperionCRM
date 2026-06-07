@@ -1,21 +1,20 @@
 /**
- * Repository provider — the single place that chooses the data source.
+ * Repository provider — the single place that chooses the data source (ADR-0007).
  *
  * Server-only. Callers (server components, route handlers, the future agent
  * orchestrator) get repositories from here and never construct a data source
- * themselves, so swapping mock → Postgres (ADR-0003) is a one-line change.
+ * themselves. When a database is configured (Azure managed identity or
+ * DATABASE_URL) the Postgres-backed repositories are used; otherwise mock data so
+ * the UI still renders. The Postgres repositories themselves fall back to mock per
+ * call on error, so this never hard-fails the page.
  */
 import "server-only";
 import type { Repositories } from "@/lib/data/repositories";
 import { mockRepositories } from "@/lib/data/mock/mock-repositories";
+import { postgresRepositories } from "@/lib/data/postgres/postgres-repositories";
+import { isDbConfigured } from "@/lib/db/client";
 
-/**
- * Resolve the repositories for the current runtime.
- *
- * TODO (ADR-0003): when `process.env.DATABASE_URL` is set and the Postgres
- * implementation exists, return the Postgres-backed repositories instead. Until
- * then we always return mock so the UI renders without a database.
- */
+/** Resolve the repositories for the current runtime. */
 export function getRepositories(): Repositories {
-  return mockRepositories;
+  return isDbConfigured() ? postgresRepositories : mockRepositories;
 }

@@ -68,11 +68,11 @@ export function Sidebar({
         )}
       >
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-accent-2 text-xs font-bold text-white">
-          M
+          I
         </div>
         {!collapsed && (
           <span className="font-display text-sm font-semibold tracking-tight">
-            Meridian
+            Imperion CRM
           </span>
         )}
       </div>
