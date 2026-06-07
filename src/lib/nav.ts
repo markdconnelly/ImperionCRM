@@ -30,6 +30,7 @@ export const navSecondary: NavItem[] = [
   { key: "agents", label: "AI Agents", icon: "Bot", href: "/agents" },
   { key: "board", label: "Board of Directors", icon: "Users", href: "/board" },
   { key: "feedback", label: "Feedback", icon: "Lightbulb", href: "/feedback" },
+  { key: "questions", label: "Questions", icon: "FileQuestion", href: "/questions" },
   { key: "security", label: "Security", icon: "ShieldCheck", href: "/security" },
   { key: "settings", label: "Settings", icon: "Settings", href: "/settings" },
 ];

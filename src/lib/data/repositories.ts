@@ -24,6 +24,7 @@ import type {
   ProjectRow,
   ProposalRow,
   QuestionRow,
+  QuestionTemplateRow,
   ReportSummary,
   SbrDetail,
   SbrRow,
@@ -174,6 +175,22 @@ export interface AgentRepository {
   getConversation(): Promise<AgentMessage[]>;
 }
 
+/** Editable question fields (catalog admin). */
+export interface QuestionInput {
+  key: string;
+  prompt: string;
+  helpText: string | null;
+  responseType: string;
+  options: string[] | null;
+  dimension: string | null;
+  ordinal: number;
+  required: boolean;
+  active: boolean;
+}
+export interface QuestionEditable extends QuestionInput {
+  id: string;
+}
+
 /** One answer to persist (typed columns; only the relevant one is set). */
 export interface AnswerInput {
   questionId: string;
@@ -225,8 +242,18 @@ export interface SbrInput {
  * tickets. Answers are stored once (engagement_answer) and never duplicated.
  */
 export interface EngagementsRepository {
-  /** Active question set for an engagement kind ('discovery' | 'assessment'). */
+  /** Active question set (active questions only) for an engagement kind. */
   getQuestions(kind: string): Promise<QuestionRow[]>;
+
+  // Question catalog admin (editable questionnaires)
+  /** The active template for a kind, or null if none exists yet. */
+  getActiveTemplate(kind: string): Promise<QuestionTemplateRow | null>;
+  /** All questions (active + inactive) of the active template, for editing. */
+  listQuestionsForEditor(kind: string): Promise<QuestionRow[]>;
+  getQuestion(id: string): Promise<QuestionEditable | null>;
+  /** Add a question to the active template for a kind (creating v1 if needed). */
+  createQuestion(kind: string, input: QuestionInput): Promise<void>;
+  updateQuestion(id: string, input: QuestionInput): Promise<void>;
 
   // Discovery calls
   listDiscoveryCalls(): Promise<DiscoveryCallRow[]>;

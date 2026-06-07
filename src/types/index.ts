@@ -146,6 +146,15 @@ export interface QuestionRow {
   dimension: string | null; // assessment scorecard dimension key
   ordinal: number;
   required: boolean;
+  active: boolean;
+}
+
+/** The active question template for a kind (discovery|assessment). */
+export interface QuestionTemplateRow {
+  id: string;
+  kind: string;
+  version: number;
+  title: string;
 }
 
 /** A stored answer joined to its question, for display. */
