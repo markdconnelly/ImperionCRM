@@ -40,6 +40,16 @@ export interface NavItem {
   key: string;
   label: string;
   icon: string; // lucide-react icon name
+  href: string;
+}
+
+/** A row in the Pipeline board (an opportunity). */
+export interface OpportunityRow {
+  id: string;
+  name: string;
+  account: string;
+  stage: string; // sales_stage label
+  mrr: string;
 }
 
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */

@@ -1,20 +1,22 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui/icon";
+import { titleForPath } from "@/lib/nav";
 
 export function TopBar({
-  title,
   sidebarCollapsed,
   onToggleSidebar,
   agentCollapsed,
   onOpenAgent,
 }: {
-  title: string;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   agentCollapsed: boolean;
   onOpenAgent: () => void;
 }) {
+  const title = titleForPath(usePathname());
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-panel px-4">
       <button
@@ -25,9 +27,7 @@ export function TopBar({
         <Icon name="PanelLeft" size={18} />
       </button>
 
-      <h1 className="font-display text-sm font-semibold tracking-tight">
-        {title}
-      </h1>
+      <h1 className="font-display text-sm font-semibold tracking-tight">{title}</h1>
 
       <div className="relative ml-4 hidden flex-1 items-center md:flex">
         <Icon

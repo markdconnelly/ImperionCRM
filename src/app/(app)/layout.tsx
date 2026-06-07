@@ -1,13 +1,18 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import type { SessionUser } from "@/types";
 
-// Server component: the middleware gate guarantees an authenticated session by
-// the time this renders, so we read the Entra user and hand it to the shell.
-// All view data flows through the repository abstraction (§7.4).
-export default async function Page() {
+/**
+ * Layout for all authenticated app routes. The middleware gate guarantees a
+ * session by the time this renders, so we read the Entra user and the agent feed
+ * once and wrap every page in the three-column shell.
+ */
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await auth();
   const user: SessionUser = {
     name: session?.user?.name ?? "Unknown user",
@@ -19,7 +24,7 @@ export default async function Page() {
 
   return (
     <AppShell user={user} agentMessages={agentMessages}>
-      <DashboardView />
+      {children}
     </AppShell>
   );
 }
