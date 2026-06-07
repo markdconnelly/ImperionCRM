@@ -1,6 +1,7 @@
 # ADR-0005: Web auth via Auth.js with Entra certificate client assertion
 
-- **Status:** Accepted (implementation pending verification)
+- **Status:** Accepted (verified; see ADR-0009 for the bundling fix required to
+  make `customFetch` fire in production)
 - **Date:** 2026-06-06
 
 ## Problem

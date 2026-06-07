@@ -9,9 +9,12 @@
  * requires — see lib/auth/client-assertion.ts). Used by the route handlers
  * (Node runtime); middleware uses the edge-safe base instead.
  *
- * ⚠️ VERIFICATION PENDING: the `customFetch` glue is the version-sensitive part
- * (token-request body shape + customFetch signature can shift across Auth.js
- * betas). Must pass typecheck/build + a real sign-in before merge to main.
+ * The `customFetch` glue is version-sensitive. In the Next.js production bundle
+ * the `customFetch` symbol is duplicated, so attaching the hook via the symbol
+ * alone silently no-ops and the certificate never reaches the token exchange.
+ * The provider is therefore wrapped in a Proxy that serves `entraFetch` for any
+ * `Symbol("custom-fetch")` regardless of identity — see ADR-0009 and the wrapper
+ * below. Verified against the live deployment with a real Entra sign-in.
  */
 import { createHash, timingSafeEqual } from "node:crypto";
 import NextAuth, { customFetch } from "next-auth";
@@ -75,18 +78,54 @@ function verifyBreakGlass(username: string, password: string): boolean {
   return got.length === want.length && timingSafeEqual(got, want);
 }
 
+/**
+ * Microsoft Entra ID provider configured for certificate client authentication.
+ * The certificate assertion is injected at the token exchange by `entraFetch`,
+ * attached via the `customFetch` hook — but see the Proxy wrapper below for why
+ * setting `[customFetch]` alone is not sufficient in the bundled build.
+ */
+const entraProvider = MicrosoftEntraID({
+  clientId: entraEnv.clientId,
+  issuer: entraEnv.issuer,
+  clientSecret: "unused-certificate-auth",
+  authorization: {
+    params: { scope: "openid profile email offline_access" },
+  },
+  [customFetch]: entraFetch,
+});
+
+/**
+ * Bundling-resilient certificate hook (ADR-0009).
+ *
+ * Auth.js resolves the per-provider custom fetch by reading `provider[S]`, where
+ * `S` is @auth/core's internal `Symbol("custom-fetch")`. In the Next.js
+ * production bundle that symbol module is duplicated (a second copy lands in the
+ * edge/middleware bundle), so `Symbol("custom-fetch")` is evaluated more than
+ * once and the symbol we set above — via the `customFetch` re-exported from
+ * "next-auth" — is NOT identical to the one @auth/core looks up at runtime. The
+ * lookup misses, Auth.js falls back to plain `fetch`, the client assertion is
+ * never attached, and the token exchange fails (Entra returns invalid_client →
+ * no id_token → jose "JWT must be a string" → the generic "There is a problem
+ * with the server configuration" error page). Symptom reproduced and the fix
+ * verified against the live deployment.
+ *
+ * Rather than depend on symbol identity surviving bundling, serve `entraFetch`
+ * for ANY symbol whose description is "custom-fetch". Every other property
+ * passes straight through, so the provider is otherwise unchanged.
+ */
+const entraProviderWithCertFetch = new Proxy(entraProvider, {
+  get(target, prop, receiver) {
+    if (typeof prop === "symbol" && prop.description === "custom-fetch") {
+      return entraFetch;
+    }
+    return Reflect.get(target, prop, receiver);
+  },
+});
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
-    MicrosoftEntraID({
-      clientId: entraEnv.clientId,
-      issuer: entraEnv.issuer,
-      clientSecret: "unused-certificate-auth",
-      authorization: {
-        params: { scope: "openid profile email offline_access" },
-      },
-      [customFetch]: entraFetch,
-    }),
+    entraProviderWithCertFetch,
     // Emergency SSO bypass — used only via the /break-glass page. Disabled
     // unless BREAKGLASS_* env is set. Every successful use is audit-logged.
     Credentials({
