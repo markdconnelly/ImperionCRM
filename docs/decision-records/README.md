@@ -1,5 +1,25 @@
-# DecisionRecords
+# Decision Records
 
-Architecture Decision Records. See ADR template and the seeded ADRs.
+Architecture Decision Records. See [`_template.md`](./_template.md) for the required
+fields, and `CLAUDE.md` section 8 / the project standards doc.
 
-See `CLAUDE.md` section 8 and the project standards doc for required fields.
+## Index
+
+| ADR | Title | Status |
+| --- | --- | --- |
+| [0001](./ADR-0001-open-web-stack-over-power-platform.md) | Open web stack over Power Platform | Accepted |
+| [0002](./ADR-0002-entra-id-as-sole-idp.md) | Entra ID as sole IdP | Accepted |
+| [0003](./ADR-0003-postgres-pgvector-unified-store.md) | PostgreSQL + pgvector as unified store | Accepted |
+| [0004](./ADR-0004-single-orchestrator-agent-model.md) | Single-orchestrator agent model | Accepted |
+| [0005](./ADR-0005-entra-auth-via-authjs-certificate.md) | Web auth via Auth.js + Entra certificate | Accepted |
+| [0006](./ADR-0006-azure-app-service-hosting.md) | Azure App Service hosting | Accepted |
+| [0007](./ADR-0007-repository-data-access-abstraction.md) | Repository data-access abstraction | Accepted |
+| [0008](./ADR-0008-break-glass-emergency-access.md) | Break-glass emergency access | Accepted |
+| [0009](./ADR-0009-bundling-resilient-customfetch-hook.md) | Bundling-resilient customFetch hook | Accepted |
+| [0010](./ADR-0010-customer-data-model-dual-axis-stages.md) | Company-centric data model, dual-axis stages | Accepted |
+| [0011](./ADR-0011-unified-interaction-timeline.md) | Unified interaction timeline, staged enrichment | Accepted |
+| [0012](./ADR-0012-integration-identity-map-ingest-poll.md) | Integration identity map, ingest-vs-poll, demand gen | Accepted |
+| [0013](./ADR-0013-feature-feedback-github.md) | Feature feedback coupled to GitHub | Accepted |
+| [0014](./ADR-0014-consent-ledger-communications.md) | Append-only consent ledger and communications | Accepted |
+| [0015](./ADR-0015-agent-platform-and-board.md) | Agent platform persistence and AI Board | Accepted |
+| [0016](./ADR-0016-rbac-and-identity-model.md) | RBAC and identity model | Accepted |
