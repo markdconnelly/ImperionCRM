@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import { kpis } from "@/lib/mock-data";
+import type { Kpi } from "@/types";
 
 const toneClass = {
   up: "text-green",
@@ -7,7 +7,7 @@ const toneClass = {
   neutral: "text-dim",
 } as const;
 
-export function KpiRow() {
+export function KpiRow({ kpis }: { kpis: Kpi[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {kpis.map((k) => (

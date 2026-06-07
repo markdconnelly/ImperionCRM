@@ -3,7 +3,15 @@
 import { cn } from "@/lib/cn";
 import { navPrimary, navSecondary } from "@/lib/mock-data";
 import { Icon } from "@/components/ui/icon";
-import type { NavItem } from "@/types";
+import type { NavItem, SessionUser } from "@/types";
+
+/** Up-to-two-letter initials from a display name, for the avatar. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 function NavRow({
   item,
@@ -39,10 +47,12 @@ export function Sidebar({
   collapsed,
   onExpand,
   active,
+  user,
 }: {
   collapsed: boolean;
   onExpand: () => void;
   active: string;
+  user: SessionUser;
 }) {
   return (
     <aside
@@ -104,13 +114,18 @@ export function Sidebar({
             collapsed && "justify-center px-0"
           )}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-panel-2 text-xs font-medium">
-            AR
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-panel-2 text-xs font-medium"
+            title={user.name}
+          >
+            {initialsOf(user.name)}
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <div className="truncate text-sm">A. Reyes</div>
-              <div className="truncate text-xs text-dim">Entra · SSO</div>
+              <div className="truncate text-sm">{user.name}</div>
+              <div className="truncate text-xs text-dim">
+                {user.email || "Entra · SSO"}
+              </div>
             </div>
           )}
         </div>

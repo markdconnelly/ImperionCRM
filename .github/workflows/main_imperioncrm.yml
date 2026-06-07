@@ -16,6 +16,10 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # Build-time only throwaway; the real AUTH_SECRET is an App Service setting.
+    # env.ts is fail-closed at runtime, not build time.
+    env:
+      AUTH_SECRET: ci-build-only-not-a-real-secret
     permissions:
       id-token: write # required for the azure/login OIDC token
       contents: read

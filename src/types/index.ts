@@ -41,3 +41,9 @@ export interface NavItem {
   label: string;
   icon: string; // lucide-react icon name
 }
+
+/** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
+export interface SessionUser {
+  name: string;
+  email: string;
+}

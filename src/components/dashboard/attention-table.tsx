@@ -1,7 +1,7 @@
-import { accounts } from "@/lib/mock-data";
+import type { Account } from "@/types";
 import { HealthDot } from "@/components/ui/health-dot";
 
-export function AttentionTable() {
+export function AttentionTable({ accounts }: { accounts: Account[] }) {
   return (
     <div className="rounded-lg border border-border bg-panel">
       <div className="border-b border-border px-4 py-3">
