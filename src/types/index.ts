@@ -264,3 +264,230 @@ export interface SessionUser {
   name: string;
   email: string;
 }
+
+// ── Communications timeline (ADR-0011) ───────────────────────────────────────
+// The unified, multi-channel lifetime history. Every row is one `interaction`.
+
+/** One item in a communications timeline (email, message, call, meeting, social…). */
+export interface InteractionRow {
+  id: string;
+  source: string; // interaction_source (m365_email, linkedin, plaud, …)
+  kind: string | null; // email|message|call|meeting|social_comment|…
+  channel: string | null;
+  direction: string | null; // inbound|outbound|internal
+  subject: string | null;
+  summary: string | null; // summary_gold (agent-ready)
+  owner: string | null; // employee whose connection produced it
+  contact: string | null; // contact full name
+  account: string | null; // account name
+  occurredAt: string | null; // formatted date-time
+}
+
+/** A meeting follow-up action item. */
+export interface ActionItemRow {
+  id: string;
+  description: string;
+  status: string; // open|done
+  due: string | null;
+  contact: string | null;
+  owner: string | null;
+  promotedToTask: boolean;
+}
+
+// ── Contact 360 / enrichment dossier (ADR-0025) ──────────────────────────────
+
+/** A linked social profile for a contact. */
+export interface SocialIdentityRow {
+  id: string;
+  platform: string;
+  handle: string | null;
+  profileUrl: string | null;
+  followerCount: number | null;
+  verified: boolean;
+}
+
+/** One enriched fact in the dossier, with provenance and lawful basis. */
+export interface EnrichmentFactRow {
+  id: string;
+  attributeKey: string;
+  value: string | null;
+  confidence: number | null; // 0..1
+  source: string | null;
+  lawfulBasis: string; // consent|legitimate_interest|contract|public_data
+  observedAt: string | null;
+}
+
+/** The full contact profile (header) for the detail page. */
+export interface ContactProfile {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  title: string | null;
+  headline: string | null;
+  location: string | null;
+  avatarUrl: string | null;
+  lifecycleStatus: string; // stranger|known|engaged|customer
+  account: string | null;
+  accountId: string | null;
+  lastEnrichedAt: string | null;
+}
+
+// ── Consent ledger (ADR-0014) ────────────────────────────────────────────────
+
+/** One immutable consent event from the ledger. */
+export interface ConsentEventRow {
+  id: string;
+  channel: string;
+  state: string; // opt_in|opt_out
+  lawfulBasis: string;
+  source: string | null;
+  occurredAt: string | null;
+}
+
+/** Derived current consent for one channel. */
+export interface CurrentConsentRow {
+  channel: string;
+  state: string; // opt_in|opt_out (no row ⇒ unknown)
+  lawfulBasis: string;
+}
+
+// ── Connections & identity map (ADR-0012/0024) ───────────────────────────────
+
+/** A connected external account (personal or company-wide). */
+export interface ConnectionRow {
+  id: string;
+  scope: string; // user|company
+  provider: string;
+  displayName: string | null;
+  status: string; // active|expired|revoked|error
+  scopes: string[];
+  owner: string | null; // employee, for user-scope
+  keyvaultSecretRef: string | null; // reference string only — never a secret
+  lastSync: string | null;
+  connectedAt: string | null;
+}
+
+/** A row in an account's external identity map. */
+export interface ExternalIdentityRow {
+  id: string;
+  provider: string;
+  externalId: string;
+  contact: string | null;
+}
+
+// ── Demand generation: campaigns, ads, audiences (ADR-0012/0026) ─────────────
+
+/** A row in the Campaigns list. */
+export interface CampaignRow {
+  id: string;
+  name: string;
+  platform: string;
+  status: string;
+  budget: string; // formatted or "—"
+  spend: string; // formatted polled spend or "—"
+  leads: number;
+}
+
+/** An ad belonging to a campaign. */
+export interface AdRow {
+  id: string;
+  name: string;
+  status: string;
+  spend: string;
+  impressions: number;
+  clicks: number;
+  leads: number;
+}
+
+/** A campaign with its ads and rolled-up metrics. */
+export interface CampaignDetail {
+  id: string;
+  name: string;
+  platform: string;
+  objective: string | null;
+  status: string;
+  budget: string;
+  startAt: string | null;
+  endAt: string | null;
+  ads: AdRow[];
+}
+
+/** A row in the Audiences list. */
+export interface AudienceRow {
+  id: string;
+  name: string;
+  description: string | null;
+  kind: string; // static|dynamic
+  memberCount: number;
+  adReadyCount: number; // members with ad_targeting consent
+}
+
+/** A previewed/realized audience member, with ad eligibility. */
+export interface AudienceMemberRow {
+  contactId: string;
+  fullName: string;
+  account: string | null;
+  adConsent: boolean; // ad_targeting consent current?
+}
+
+// ── Lead-capture hooks (ADR-0024) ────────────────────────────────────────────
+
+/** A configured lead-capture hook. */
+export interface LeadHookRow {
+  id: string;
+  name: string;
+  kind: string;
+  active: boolean;
+  captureCount: number;
+}
+
+/** A raw inbound lead capture awaiting resolution. */
+export interface LeadCaptureEventRow {
+  id: string;
+  hook: string | null;
+  status: string; // new|resolved|ignored
+  contact: string | null;
+  summary: string | null; // derived from payload
+  receivedAt: string | null;
+}
+
+// ── Automation workflows (ADR-0014/0027) ─────────────────────────────────────
+
+/** A row in the Workflows list. */
+export interface WorkflowRow {
+  id: string;
+  name: string;
+  kind: string; // nurture|pre_discovery|re_engagement
+  status: string;
+  stepCount: number;
+  activeEnrollments: number;
+}
+
+/** A step within a workflow. */
+export interface WorkflowStepRow {
+  id: string;
+  ordinal: number;
+  kind: string; // send_email|send_sms|chat_prompt|agent_enrich|wait|branch
+  summary: string | null; // derived from config
+}
+
+/** A workflow with its ordered steps. */
+export interface WorkflowDetail {
+  id: string;
+  name: string;
+  kind: string;
+  status: string;
+  trigger: string | null;
+  steps: WorkflowStepRow[];
+}
+
+/** A contact's enrollment in a workflow. */
+export interface EnrollmentRow {
+  id: string;
+  contact: string | null;
+  workflow: string;
+  status: string; // active|completed|exited
+  currentStep: number;
+  enrolledAt: string | null;
+}

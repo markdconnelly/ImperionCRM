@@ -172,6 +172,17 @@ erDiagram
 
 ## Diagram 2 — Integrations, demand generation, communications & consent
 
+> **As-built note:** Diagram 2 is the original *design* sketch. The tables actually
+> built in migrations `0018`–`0026` are shown in **Diagram 5** (ADR-0024–0027), which
+> refines this design — notably: `integration_connection` + `sync_state` became a
+> single scope-aware **`connection`** (per-user *and* company, ADR-0024); `enrichment`
+> became **`contact_enrichment`** with per-fact `lawful_basis` plus
+> `contact_social_identity` (ADR-0025); the consent ledger gained `data_enrichment` and
+> `ad_targeting` channels; and **`audience`/`audience_member`**, **`lead_hook`/
+> `lead_capture_event`**, **`meeting_action_item`**, and the `engagement_answer`
+> provenance columns were added. Diagram 5 is authoritative where they differ.
+
+
 ```mermaid
 erDiagram
     ACCOUNT ||--o{ EXTERNAL_IDENTITY : "mapped to systems"
@@ -510,6 +521,200 @@ erDiagram
 > record points back to the engagement that produced it — the engagement's data is never
 > copied forward.
 
+## Diagram 5 — As-built: communications, connections, enrichment, demand-gen audiences & automation (ADR-0024–0027)
+
+The multi-channel timeline (every comm is one `interaction`), per-user + company
+connections, the lawful-basis-gated enrichment dossier, demand-gen audiences over the
+aggregated profiles, lead-capture hooks, and nurture/pre-discovery automation. A comm
+is related **first to the employee** (`interaction.owner_user_id`, via the connection
+that produced it) and then to the contact/account.
+
+```mermaid
+erDiagram
+    APP_USER ||--o{ CONNECTION : "personal connections"
+    CONNECTION ||--o{ INTERACTION : "ingested via"
+    APP_USER ||--o{ INTERACTION : "owner (employee)"
+    ACCOUNT ||--o{ INTERACTION : "timeline"
+    CONTACT ||--o{ INTERACTION : "participates"
+    INTERACTION ||--o{ MEETING_ACTION_ITEM : "follow-ups"
+    MEETING_ACTION_ITEM ||--o| TASK : "promoted to"
+    ACCOUNT ||--o{ EXTERNAL_IDENTITY : "identity map"
+    CONTACT ||--o{ EXTERNAL_IDENTITY : "identity map"
+    CONTACT ||--o{ CONTACT_SOCIAL_IDENTITY : "linked profiles"
+    CONTACT ||--o{ CONTACT_ENRICHMENT : "dossier (gold)"
+    CONTACT ||--o| CONTACT_EMBEDDING : "profile vector"
+    CONTACT ||--o{ CONSENT_EVENT : "append-only ledger"
+    CONNECTION ||--o{ CONTACT_ENRICHMENT : "provenance"
+    CAMPAIGN ||--o{ AD : contains
+    CAMPAIGN ||--o{ CAMPAIGN_METRIC : "polled"
+    CAMPAIGN ||--o{ CONTACT : "attributed"
+    AUDIENCE ||--o{ AUDIENCE_MEMBER : "aggregated profiles"
+    CONTACT ||--o{ AUDIENCE_MEMBER : "member of"
+    LEAD_HOOK ||--o{ LEAD_CAPTURE_EVENT : captures
+    LEAD_CAPTURE_EVENT ||--o| CONTACT : "resolves to"
+    WORKFLOW ||--o{ WORKFLOW_STEP : has
+    WORKFLOW ||--o{ WORKFLOW_ENROLLMENT : enrolls
+    CONTACT ||--o{ WORKFLOW_ENROLLMENT : "nurtured by"
+
+    CONNECTION {
+      uuid id PK
+      text scope "user|company"
+      uuid owner_user_id FK "null for company"
+      text provider "m365|youtube|linkedin|facebook|autotask|itglue|…"
+      text status "active|expired|revoked|error"
+      text[] scopes
+      text keyvault_secret_ref "token ref only — never the token"
+      jsonb sync_cursor
+      timestamptz last_sync_at
+    }
+    INTERACTION {
+      uuid id PK
+      uuid account_id FK
+      uuid contact_id FK
+      uuid owner_user_id FK "employee"
+      uuid source_connection_id FK
+      text source "enum interaction_source"
+      text kind "email|message|call|meeting|social_comment|…"
+      text subject
+      text summary_gold
+      timestamptz occurred_at
+    }
+    MEETING_ACTION_ITEM {
+      uuid id PK
+      uuid interaction_id FK
+      uuid contact_id FK
+      uuid owner_user_id FK
+      text description
+      text status "open|done"
+      date due_at
+      uuid source_task_id FK
+    }
+    EXTERNAL_IDENTITY {
+      uuid id PK
+      uuid account_id FK
+      uuid contact_id FK
+      text provider
+      text external_id
+    }
+    CONTACT_SOCIAL_IDENTITY {
+      uuid id PK
+      uuid contact_id FK
+      text platform
+      text handle
+      text profile_url
+      int follower_count
+      boolean verified
+    }
+    CONTACT_ENRICHMENT {
+      uuid id PK
+      uuid contact_id FK
+      text attribute_key
+      text value_text
+      jsonb value_json
+      numeric confidence
+      text source
+      uuid source_connection_id FK
+      text lawful_basis "enum lawful_basis"
+      timestamptz observed_at
+      timestamptz expires_at
+    }
+    CONTACT_EMBEDDING {
+      uuid id PK
+      uuid contact_id FK
+      vector embedding
+      text model
+    }
+    CONSENT_EVENT {
+      uuid id PK
+      uuid contact_id FK
+      text channel "email|sms|call_recording|data_enrichment|ad_targeting"
+      text state "opt_in|opt_out"
+      text lawful_basis
+      text source
+      jsonb proof
+      timestamptz occurred_at
+    }
+    CAMPAIGN {
+      uuid id PK
+      text name
+      text platform "facebook|google|youtube|linkedin|email"
+      text status "draft|active|paused|completed"
+      numeric budget
+    }
+    AD {
+      uuid id PK
+      uuid campaign_id FK
+      text name
+      jsonb creative
+      text status
+    }
+    CAMPAIGN_METRIC {
+      uuid id PK
+      uuid campaign_id FK
+      uuid ad_id FK
+      date metric_date
+      numeric spend
+      int impressions
+      int clicks
+      int leads
+    }
+    AUDIENCE {
+      uuid id PK
+      text name
+      text kind "static|dynamic"
+      jsonb definition "criteria over enrichment"
+      text platform_sync_ref
+    }
+    AUDIENCE_MEMBER {
+      uuid audience_id FK
+      uuid contact_id FK
+      text source
+    }
+    LEAD_HOOK {
+      uuid id PK
+      text name
+      text kind "web_form|facebook_lead|youtube_comment|…"
+      jsonb config
+      boolean active
+    }
+    LEAD_CAPTURE_EVENT {
+      uuid id PK
+      uuid hook_id FK
+      jsonb payload_bronze
+      uuid contact_id FK
+      text status "new|resolved|ignored"
+      timestamptz received_at
+    }
+    WORKFLOW {
+      uuid id PK
+      text name
+      text kind "nurture|pre_discovery|re_engagement"
+      jsonb trigger
+      text status
+    }
+    WORKFLOW_STEP {
+      uuid id PK
+      uuid workflow_id FK
+      int ordinal
+      text kind "send_email|send_sms|chat_prompt|agent_enrich|wait|branch"
+      jsonb config
+    }
+    WORKFLOW_ENROLLMENT {
+      uuid id PK
+      uuid workflow_id FK
+      uuid contact_id FK
+      uuid account_id FK
+      text status "active|completed|exited"
+      int current_step_ordinal
+    }
+```
+
+> **Consent & lawful basis are the gate.** `current_consent` (a view = latest event
+> per contact × channel) is read at send time and at ad-launch time; `contact_enrichment`
+> rows each carry a `lawful_basis`. Outbound sends and ad targeting are blocked unless
+> the relevant channel is currently opt-in (ADR-0014/0025/0026). The ledger is
+> append-only — a change of mind is a new event, never an update.
+
 ## Enumerations
 
 - `account.relationship`: `prospect | customer | partner` (null = unknown)
@@ -529,8 +734,29 @@ erDiagram
   external_scan | phishing_sim | manual`
 - `assessment_artifact.kind`: `report | analytics | snapshot | finding | metric`
 - `interaction.source`: `m365_email | m365_teams | plaud | sms | email |
-  facebook | system`
-- `consent_event.channel`: `email | sms | call_recording`
+  facebook | system | youtube | linkedin | whatsapp | phone_call | in_person |
+  meeting | web_form` (extended in ADR-0024 for the multi-channel timeline)
+- `interaction.kind`: `email | message | call | meeting | transcript | summary |
+  social_post | social_comment | dm | ad_engagement | note`
+- `consent_event.channel`: `email | sms | call_recording | data_enrichment |
+  ad_targeting` (last two added by ADR-0025/0026 to gate enrichment & ad use)
+- `consent_event.state`: `opt_in | opt_out`
+- `lawful_basis`: `consent | legitimate_interest | contract | public_data` (ADR-0025)
+- `connection.scope`: `user | company` (ADR-0024)
+- `connection.provider`: `m365 | google | youtube | linkedin | facebook | plaud |
+  autotask | itglue`
+- `connection.status`: `active | expired | revoked | error`
+- `campaign.platform`: `facebook | google | youtube | linkedin | email`
+- `campaign.status` (and `ad.status`): `draft | active | paused | completed`
+- `audience.kind`: `static | dynamic`
+- `lead_hook.kind`: `web_form | facebook_lead | youtube_comment | linkedin_message |
+  inbound_email | qr | manual`
+- `workflow.kind`: `nurture | pre_discovery | re_engagement`
+- `workflow_step.kind`: `send_email | send_sms | chat_prompt | agent_enrich | wait |
+  branch`
+- `workflow_enrollment.status`: `active | completed | exited`
+- `engagement_answer.source`: `human | agent | automation` (ADR-0027)
+- `engagement_answer.status`: `draft | confirmed | rejected` (ADR-0027)
 
 The dashboard's five-stage strip (Lead, Qualified, Proposal, Onboarding, Active) is
 a **read view** mapping Opportunity `sales_stage` and Account `lifecycle_stage`, not

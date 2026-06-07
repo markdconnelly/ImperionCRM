@@ -15,7 +15,17 @@ import type {
   AnswerInput,
   AssessmentEditable,
   AssessmentInput,
+  AudienceInput,
+  CampaignInput,
+  ConnectionInput,
+  ConsentEventInput,
+  ContactEditable,
+  ContactInput,
   DiscoveryCallInput,
+  EnrichmentInput,
+  InteractionFilter,
+  InteractionInput,
+  LeadHookInput,
   Option,
   ProjectEditable,
   ProjectInput,
@@ -34,15 +44,30 @@ import type {
 } from "@/lib/data/repositories";
 import type {
   Account,
+  ActionItemRow,
   ArtifactRow,
   AssessmentConversion,
   AssessmentRow,
+  AudienceMemberRow,
+  AudienceRow,
+  CampaignDetail,
+  CampaignRow,
+  ConnectionRow,
+  ConsentEventRow,
+  ContactProfile,
   ContactRow,
   CountDatum,
+  CurrentConsentRow,
   DiscoveryCallDetail,
   DiscoveryCallRow,
+  EnrichmentFactRow,
+  EnrollmentRow,
+  ExternalIdentityRow,
   Health,
+  InteractionRow,
   Kpi,
+  LeadCaptureEventRow,
+  LeadHookRow,
   OpportunityRow,
   PipelineColumn,
   PipelineStage,
@@ -54,9 +79,12 @@ import type {
   RevenueSplit,
   SbrDetail,
   SbrRow,
+  SocialIdentityRow,
   StageValueDatum,
   TaskRow,
   TicketRow,
+  WorkflowDetail,
+  WorkflowRow,
 } from "@/types";
 
 /** Empty string → null, for optional form fields. */
@@ -67,6 +95,11 @@ function nullIfEmpty(v: string | null | undefined): string | null {
 
 function fmtDate(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 10) : null;
+}
+
+/** "yyyy-mm-dd hh:mm" for timeline entries. */
+function fmtDateTime(d: Date | null): string | null {
+  return d ? d.toISOString().slice(0, 16).replace("T", " ") : null;
 }
 
 const ONBOARDING_LIFECYCLE = ["onboarding", "implementation", "operational_readiness"];
@@ -1630,17 +1663,22 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.engagements.saveAnswers(engagementType, engagementId, answers);
       // One upsert per answer; the UNIQUE (type,id,question) constraint keeps one row.
+      // Provenance (ADR-0027): agent/automation answers carry source/confidence/status;
+      // omitted fields default to human/confirmed for backward compatibility.
       for (const a of answers) {
         await pool.query(
           `INSERT INTO engagement_answer
              (engagement_type, engagement_id, question_id, value_text, value_number,
-              value_bool, value_json, value_date, answered_by_contact_id)
-           VALUES ($1::engagement_kind, $2, $3, $4, $5::numeric, $6, $7::jsonb, $8::date, $9)
+              value_bool, value_json, value_date, answered_by_contact_id,
+              source, confidence, status)
+           VALUES ($1::engagement_kind, $2, $3, $4, $5::numeric, $6, $7::jsonb, $8::date, $9,
+                   COALESCE($10, 'human'), $11::numeric, COALESCE($12, 'confirmed'))
            ON CONFLICT (engagement_type, engagement_id, question_id) DO UPDATE SET
              value_text = excluded.value_text, value_number = excluded.value_number,
              value_bool = excluded.value_bool, value_json = excluded.value_json,
              value_date = excluded.value_date,
-             answered_by_contact_id = excluded.answered_by_contact_id, answered_at = now()`,
+             answered_by_contact_id = excluded.answered_by_contact_id, answered_at = now(),
+             source = excluded.source, confidence = excluded.confidence, status = excluded.status`,
           [
             engagementType,
             engagementId,
@@ -1651,9 +1689,34 @@ export const postgresRepositories: Repositories = {
             a.valueJson == null ? null : JSON.stringify(a.valueJson),
             nullIfEmpty(a.valueDate),
             nullIfEmpty(a.answeredByContactId),
+            a.source ?? null,
+            nullIfEmpty(a.confidence ?? null),
+            a.status ?? null,
           ],
         );
       }
+    },
+
+    async confirmAnswer(answerId: string, userId: string | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.confirmAnswer(answerId, userId);
+      await pool.query(
+        `UPDATE engagement_answer
+         SET status = 'confirmed', approved_by_user_id = $2, approved_at = now()
+         WHERE id = $1`,
+        [answerId, userId],
+      );
+    },
+
+    async rejectAnswer(answerId: string, userId: string | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.rejectAnswer(answerId, userId);
+      await pool.query(
+        `UPDATE engagement_answer
+         SET status = 'rejected', approved_by_user_id = $2, approved_at = now()
+         WHERE id = $1`,
+        [answerId, userId],
+      );
     },
 
     async saveSbrScores(sbrId: string, scores: SbrScoreInput[]): Promise<void> {
@@ -1799,4 +1862,983 @@ export const postgresRepositories: Repositories = {
       }
     },
   },
+
+  // ── Communications (ADR-0011) ─────────────────────────────────────────────
+  comms: {
+    async listInteractions(filter: InteractionFilter): Promise<InteractionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.comms.listInteractions(filter);
+      try {
+        const where: string[] = [];
+        const params: unknown[] = [];
+        if (filter.contactId) { params.push(filter.contactId); where.push(`i.contact_id = $${params.length}`); }
+        if (filter.accountId) { params.push(filter.accountId); where.push(`i.account_id = $${params.length}`); }
+        if (filter.source) { params.push(filter.source); where.push(`i.source = $${params.length}::interaction_source`); }
+        if (filter.kind) { params.push(filter.kind); where.push(`i.kind = $${params.length}`); }
+        const limit = Math.min(Math.max(filter.limit ?? 200, 1), 500);
+        const { rows } = await pool.query<InteractionDbRow>(
+          `SELECT i.id, i.source::text AS source, i.kind, i.channel, i.direction::text AS direction,
+                  i.subject, i.summary_gold, i.occurred_at,
+                  u.display_name AS owner, c.full_name AS contact, a.name AS account
+           FROM interaction i
+           LEFT JOIN app_user u ON u.id = i.owner_user_id
+           LEFT JOIN contact c ON c.id = i.contact_id
+           LEFT JOIN account a ON a.id = i.account_id
+           ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+           ORDER BY i.occurred_at DESC
+           LIMIT ${limit}`,
+          params,
+        );
+        return rows.map(mapInteraction);
+      } catch {
+        return mockRepositories.comms.listInteractions(filter);
+      }
+    },
+
+    async listInteractionsByContact(contactId: string): Promise<InteractionRow[]> {
+      return postgresRepositories.comms.listInteractions({ contactId });
+    },
+
+    async listInteractionsByAccount(accountId: string): Promise<InteractionRow[]> {
+      return postgresRepositories.comms.listInteractions({ accountId });
+    },
+
+    async createInteraction(input: InteractionInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.comms.createInteraction(input);
+      // Scaffold: logs the comm to the timeline. The real provider send is stubbed.
+      await pool.query(
+        `INSERT INTO interaction
+           (account_id, contact_id, source, kind, direction, subject, summary_gold)
+         VALUES ($1, $2, $3::interaction_source, $4, $5::interaction_direction, $6, $7)`,
+        [
+          nullIfEmpty(input.accountId),
+          nullIfEmpty(input.contactId),
+          input.source,
+          input.kind,
+          input.direction,
+          nullIfEmpty(input.subject),
+          nullIfEmpty(input.body),
+        ],
+      );
+    },
+
+    async listActionItems(contactId?: string): Promise<ActionItemRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.comms.listActionItems(contactId);
+      try {
+        const params: unknown[] = [];
+        let where = "";
+        if (contactId) { params.push(contactId); where = `WHERE m.contact_id = $1`; }
+        const { rows } = await pool.query<{
+          id: string;
+          description: string;
+          status: string;
+          due_at: Date | null;
+          contact: string | null;
+          owner: string | null;
+          source_task_id: string | null;
+        }>(
+          `SELECT m.id, m.description, m.status, m.due_at,
+                  c.full_name AS contact, u.display_name AS owner, m.source_task_id
+           FROM meeting_action_item m
+           LEFT JOIN contact c ON c.id = m.contact_id
+           LEFT JOIN app_user u ON u.id = m.owner_user_id
+           ${where}
+           ORDER BY m.due_at NULLS LAST, m.created_at DESC`,
+          params,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          description: r.description,
+          status: r.status,
+          due: fmtDate(r.due_at),
+          contact: r.contact,
+          owner: r.owner,
+          promotedToTask: r.source_task_id != null,
+        }));
+      } catch {
+        return mockRepositories.comms.listActionItems(contactId);
+      }
+    },
+
+    async completeActionItem(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.comms.completeActionItem(id);
+      await pool.query(`UPDATE meeting_action_item SET status = 'done' WHERE id = $1`, [id]);
+    },
+  },
+
+  // ── Contacts 360 & enrichment (ADR-0025) ──────────────────────────────────
+  contacts: {
+    async getProfile(id: string): Promise<ContactProfile | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.getProfile(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          full_name: string;
+          email: string | null;
+          phone: string | null;
+          title: string | null;
+          headline: string | null;
+          location: string | null;
+          avatar_url: string | null;
+          lifecycle_status: string;
+          account: string | null;
+          account_id: string | null;
+          last_enriched_at: Date | null;
+        }>(
+          `SELECT c.id, c.full_name, c.email, c.phone, c.title, c.headline, c.location,
+                  c.avatar_url, c.lifecycle_status, a.name AS account, c.account_id,
+                  c.last_enriched_at
+           FROM contact c LEFT JOIN account a ON a.id = c.account_id
+           WHERE c.id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          fullName: r.full_name,
+          email: r.email,
+          phone: r.phone,
+          title: r.title,
+          headline: r.headline,
+          location: r.location,
+          avatarUrl: r.avatar_url,
+          lifecycleStatus: r.lifecycle_status,
+          account: r.account,
+          accountId: r.account_id,
+          lastEnrichedAt: fmtDate(r.last_enriched_at),
+        };
+      } catch {
+        return mockRepositories.contacts.getProfile(id);
+      }
+    },
+
+    async getContact(id: string): Promise<ContactEditable | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.getContact(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string | null;
+          full_name: string;
+          email: string | null;
+          phone: string | null;
+          title: string | null;
+          headline: string | null;
+          location: string | null;
+          lifecycle_status: string;
+        }>(
+          `SELECT id, account_id, full_name, email, phone, title, headline, location, lifecycle_status
+           FROM contact WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          accountId: r.account_id,
+          fullName: r.full_name,
+          email: r.email,
+          phone: r.phone,
+          title: r.title,
+          headline: r.headline,
+          location: r.location,
+          lifecycleStatus: r.lifecycle_status,
+        };
+      } catch {
+        return mockRepositories.contacts.getContact(id);
+      }
+    },
+
+    async createContact(input: ContactInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.createContact(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO contact
+           (account_id, full_name, email, phone, title, headline, location, lifecycle_status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id`,
+        [
+          nullIfEmpty(input.accountId),
+          input.fullName,
+          nullIfEmpty(input.email),
+          nullIfEmpty(input.phone),
+          nullIfEmpty(input.title),
+          nullIfEmpty(input.headline),
+          nullIfEmpty(input.location),
+          input.lifecycleStatus,
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateContact(id: string, input: ContactInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.updateContact(id, input);
+      await pool.query(
+        `UPDATE contact
+         SET account_id = $1, full_name = $2, email = $3, phone = $4, title = $5,
+             headline = $6, location = $7, lifecycle_status = $8
+         WHERE id = $9`,
+        [
+          nullIfEmpty(input.accountId),
+          input.fullName,
+          nullIfEmpty(input.email),
+          nullIfEmpty(input.phone),
+          nullIfEmpty(input.title),
+          nullIfEmpty(input.headline),
+          nullIfEmpty(input.location),
+          input.lifecycleStatus,
+          id,
+        ],
+      );
+    },
+
+    async deleteContact(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.deleteContact(id);
+      await pool.query(`DELETE FROM contact WHERE id = $1`, [id]);
+    },
+
+    async listSocialIdentities(contactId: string): Promise<SocialIdentityRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.listSocialIdentities(contactId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          platform: string;
+          handle: string | null;
+          profile_url: string | null;
+          follower_count: number | null;
+          verified: boolean;
+        }>(
+          `SELECT id, platform, handle, profile_url, follower_count, verified
+           FROM contact_social_identity WHERE contact_id = $1 ORDER BY platform`,
+          [contactId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          platform: r.platform,
+          handle: r.handle,
+          profileUrl: r.profile_url,
+          followerCount: r.follower_count,
+          verified: r.verified,
+        }));
+      } catch {
+        return mockRepositories.contacts.listSocialIdentities(contactId);
+      }
+    },
+
+    async listEnrichment(contactId: string): Promise<EnrichmentFactRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.listEnrichment(contactId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          attribute_key: string;
+          value_text: string | null;
+          value_json: unknown | null;
+          confidence: string | null;
+          source: string | null;
+          lawful_basis: string;
+          observed_at: Date | null;
+        }>(
+          `SELECT id, attribute_key, value_text, value_json, confidence, source,
+                  lawful_basis::text AS lawful_basis, observed_at
+           FROM contact_enrichment WHERE contact_id = $1
+           ORDER BY attribute_key, observed_at DESC`,
+          [contactId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          attributeKey: r.attribute_key,
+          value: r.value_text ?? (r.value_json != null ? JSON.stringify(r.value_json) : null),
+          confidence: r.confidence != null ? Number(r.confidence) : null,
+          source: r.source,
+          lawfulBasis: r.lawful_basis,
+          observedAt: fmtDate(r.observed_at),
+        }));
+      } catch {
+        return mockRepositories.contacts.listEnrichment(contactId);
+      }
+    },
+
+    async addEnrichment(input: EnrichmentInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.addEnrichment(input);
+      await pool.query(
+        `INSERT INTO contact_enrichment
+           (contact_id, attribute_key, value_text, confidence, source, lawful_basis)
+         VALUES ($1, $2, $3, $4::numeric, $5, $6::lawful_basis)`,
+        [
+          input.contactId,
+          input.attributeKey,
+          nullIfEmpty(input.value),
+          nullIfEmpty(input.confidence),
+          nullIfEmpty(input.source),
+          input.lawfulBasis,
+        ],
+      );
+    },
+  },
+
+  // ── Consent ledger (ADR-0014) ─────────────────────────────────────────────
+  consent: {
+    async listConsent(contactId: string): Promise<ConsentEventRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.consent.listConsent(contactId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          channel: string;
+          state: string;
+          lawful_basis: string;
+          source: string | null;
+          occurred_at: Date | null;
+        }>(
+          `SELECT id, channel::text AS channel, state::text AS state,
+                  lawful_basis::text AS lawful_basis, source, occurred_at
+           FROM consent_event WHERE contact_id = $1 ORDER BY occurred_at DESC`,
+          [contactId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          channel: r.channel,
+          state: r.state,
+          lawfulBasis: r.lawful_basis,
+          source: r.source,
+          occurredAt: fmtDate(r.occurred_at),
+        }));
+      } catch {
+        return mockRepositories.consent.listConsent(contactId);
+      }
+    },
+
+    async currentConsent(contactId: string): Promise<CurrentConsentRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.consent.currentConsent(contactId);
+      try {
+        const { rows } = await pool.query<{ channel: string; state: string; lawful_basis: string }>(
+          `SELECT channel::text AS channel, state::text AS state, lawful_basis::text AS lawful_basis
+           FROM current_consent WHERE contact_id = $1 ORDER BY channel`,
+          [contactId],
+        );
+        return rows.map((r) => ({ channel: r.channel, state: r.state, lawfulBasis: r.lawful_basis }));
+      } catch {
+        return mockRepositories.consent.currentConsent(contactId);
+      }
+    },
+
+    async recordConsentEvent(input: ConsentEventInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.consent.recordConsentEvent(input);
+      await pool.query(
+        `INSERT INTO consent_event (contact_id, channel, state, lawful_basis, source)
+         VALUES ($1, $2::consent_channel, $3::consent_state, $4::lawful_basis, $5)`,
+        [input.contactId, input.channel, input.state, input.lawfulBasis, nullIfEmpty(input.source)],
+      );
+    },
+
+    async canSend(contactId: string, channel: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.consent.canSend(contactId, channel);
+      try {
+        const { rows } = await pool.query<{ state: string }>(
+          `SELECT state::text AS state FROM current_consent
+           WHERE contact_id = $1 AND channel = $2::consent_channel`,
+          [contactId, channel],
+        );
+        return rows[0]?.state === "opt_in";
+      } catch {
+        return mockRepositories.consent.canSend(contactId, channel);
+      }
+    },
+
+    async canUseForAds(contactId: string): Promise<boolean> {
+      return postgresRepositories.consent.canSend(contactId, "ad_targeting");
+    },
+  },
+
+  // ── Connections & identity map (ADR-0012/0024) ────────────────────────────
+  connections: {
+    async listUserConnections(userId: string): Promise<ConnectionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listUserConnections(userId);
+      try {
+        const { rows } = await pool.query<ConnectionDbRow>(
+          `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
+                  cn.status::text AS status, cn.scopes, u.display_name AS owner,
+                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at
+           FROM connection cn LEFT JOIN app_user u ON u.id = cn.owner_user_id
+           WHERE cn.scope = 'user' AND cn.owner_user_id = $1
+           ORDER BY cn.provider`,
+          [userId],
+        );
+        return rows.map(mapConnection);
+      } catch {
+        return mockRepositories.connections.listUserConnections(userId);
+      }
+    },
+
+    async listCompanyConnections(): Promise<ConnectionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listCompanyConnections();
+      try {
+        const { rows } = await pool.query<ConnectionDbRow>(
+          `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
+                  cn.status::text AS status, cn.scopes, NULL::text AS owner,
+                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at
+           FROM connection cn WHERE cn.scope = 'company' ORDER BY cn.provider`,
+        );
+        return rows.map(mapConnection);
+      } catch {
+        return mockRepositories.connections.listCompanyConnections();
+      }
+    },
+
+    async connect(input: ConnectionInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.connect(input);
+      // Scaffold: records the connection. Real OAuth + Key Vault token storage later.
+      await pool.query(
+        `INSERT INTO connection (scope, owner_user_id, provider, display_name, scopes, status)
+         VALUES ($1::connection_scope, $2, $3::connection_provider, $4, $5, 'active')`,
+        [
+          input.scope,
+          nullIfEmpty(input.ownerUserId),
+          input.provider,
+          nullIfEmpty(input.displayName),
+          input.scopes,
+        ],
+      );
+    },
+
+    async disconnect(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.disconnect(id);
+      await pool.query(`DELETE FROM connection WHERE id = $1`, [id]);
+    },
+
+    async listExternalIdentities(accountId: string): Promise<ExternalIdentityRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listExternalIdentities(accountId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          provider: string;
+          external_id: string;
+          contact: string | null;
+        }>(
+          `SELECT e.id, e.provider::text AS provider, e.external_id, c.full_name AS contact
+           FROM external_identity e LEFT JOIN contact c ON c.id = e.contact_id
+           WHERE e.account_id = $1 ORDER BY e.provider`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          provider: r.provider,
+          externalId: r.external_id,
+          contact: r.contact,
+        }));
+      } catch {
+        return mockRepositories.connections.listExternalIdentities(accountId);
+      }
+    },
+  },
+
+  // ── Demand generation (ADR-0012/0026) ─────────────────────────────────────
+  campaigns: {
+    async listCampaigns(): Promise<CampaignRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.listCampaigns();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          platform: string;
+          status: string;
+          budget: string | null;
+          spend: string | null;
+          leads: string | null;
+        }>(
+          `SELECT c.id, c.name, c.platform::text AS platform, c.status::text AS status, c.budget,
+                  SUM(m.spend) AS spend, COALESCE(SUM(m.leads), 0) AS leads
+           FROM campaign c LEFT JOIN campaign_metric m ON m.campaign_id = c.id
+           GROUP BY c.id ORDER BY c.created_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          platform: r.platform,
+          status: r.status,
+          budget: r.budget != null ? fmtUsd(Number(r.budget)) : "—",
+          spend: r.spend != null ? fmtUsd(Number(r.spend)) : "—",
+          leads: Number(r.leads ?? 0),
+        }));
+      } catch {
+        return mockRepositories.campaigns.listCampaigns();
+      }
+    },
+
+    async getCampaign(id: string): Promise<CampaignDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.getCampaign(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          platform: string;
+          objective: string | null;
+          status: string;
+          budget: string | null;
+          start_at: Date | null;
+          end_at: Date | null;
+        }>(
+          `SELECT id, name, platform::text AS platform, objective, status::text AS status,
+                  budget, start_at, end_at
+           FROM campaign WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const { rows: ads } = await pool.query<{
+          id: string;
+          name: string;
+          status: string;
+          spend: string | null;
+          impressions: string | null;
+          clicks: string | null;
+          leads: string | null;
+        }>(
+          `SELECT ad.id, ad.name, ad.status::text AS status,
+                  SUM(m.spend) AS spend, COALESCE(SUM(m.impressions),0) AS impressions,
+                  COALESCE(SUM(m.clicks),0) AS clicks, COALESCE(SUM(m.leads),0) AS leads
+           FROM ad LEFT JOIN campaign_metric m ON m.ad_id = ad.id
+           WHERE ad.campaign_id = $1 GROUP BY ad.id ORDER BY ad.created_at`,
+          [id],
+        );
+        return {
+          id: r.id,
+          name: r.name,
+          platform: r.platform,
+          objective: r.objective,
+          status: r.status,
+          budget: r.budget != null ? fmtUsd(Number(r.budget)) : "—",
+          startAt: fmtDate(r.start_at),
+          endAt: fmtDate(r.end_at),
+          ads: ads.map((ad) => ({
+            id: ad.id,
+            name: ad.name,
+            status: ad.status,
+            spend: ad.spend != null ? fmtUsd(Number(ad.spend)) : "—",
+            impressions: Number(ad.impressions ?? 0),
+            clicks: Number(ad.clicks ?? 0),
+            leads: Number(ad.leads ?? 0),
+          })),
+        };
+      } catch {
+        return mockRepositories.campaigns.getCampaign(id);
+      }
+    },
+
+    async createCampaign(input: CampaignInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.createCampaign(input);
+      await pool.query(
+        `INSERT INTO campaign (name, platform, objective, status, budget, start_at, end_at)
+         VALUES ($1, $2::campaign_platform, $3, $4::campaign_status, $5::numeric, $6::date, $7::date)`,
+        [
+          input.name,
+          input.platform,
+          nullIfEmpty(input.objective),
+          input.status,
+          nullIfEmpty(input.budget),
+          nullIfEmpty(input.startAt),
+          nullIfEmpty(input.endAt),
+        ],
+      );
+    },
+
+    async listAudiences(): Promise<AudienceRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.listAudiences();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          description: string | null;
+          kind: string;
+          member_count: string;
+          ad_ready: string;
+        }>(
+          `SELECT au.id, au.name, au.description, au.kind::text AS kind,
+                  COUNT(am.contact_id) AS member_count,
+                  COUNT(am.contact_id) FILTER (
+                    WHERE cc.state = 'opt_in'
+                  ) AS ad_ready
+           FROM audience au
+           LEFT JOIN audience_member am ON am.audience_id = au.id
+           LEFT JOIN current_consent cc
+             ON cc.contact_id = am.contact_id AND cc.channel = 'ad_targeting'
+           GROUP BY au.id ORDER BY au.created_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          kind: r.kind,
+          memberCount: Number(r.member_count),
+          adReadyCount: Number(r.ad_ready),
+        }));
+      } catch {
+        return mockRepositories.campaigns.listAudiences();
+      }
+    },
+
+    async getAudienceMembers(id: string): Promise<AudienceMemberRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.getAudienceMembers(id);
+      try {
+        const { rows } = await pool.query<{
+          contact_id: string;
+          full_name: string;
+          account: string | null;
+          ad_consent: boolean;
+        }>(
+          `SELECT c.id AS contact_id, c.full_name, a.name AS account,
+                  (cc.state = 'opt_in') AS ad_consent
+           FROM audience_member am
+           JOIN contact c ON c.id = am.contact_id
+           LEFT JOIN account a ON a.id = c.account_id
+           LEFT JOIN current_consent cc
+             ON cc.contact_id = c.id AND cc.channel = 'ad_targeting'
+           WHERE am.audience_id = $1 ORDER BY c.full_name`,
+          [id],
+        );
+        return rows.map((r) => ({
+          contactId: r.contact_id,
+          fullName: r.full_name,
+          account: r.account,
+          adConsent: r.ad_consent === true,
+        }));
+      } catch {
+        return mockRepositories.campaigns.getAudienceMembers(id);
+      }
+    },
+
+    async createAudience(input: AudienceInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.createAudience(input);
+      await pool.query(
+        `INSERT INTO audience (name, description, kind, definition)
+         VALUES ($1, $2, $3::audience_kind, $4::jsonb)`,
+        [
+          input.name,
+          nullIfEmpty(input.description),
+          input.kind,
+          input.definition == null ? null : JSON.stringify(input.definition),
+        ],
+      );
+    },
+
+    async previewAudienceMembers(): Promise<AudienceMemberRow[]> {
+      // Dynamic-criteria evaluation lands with the enrichment query engine (later
+      // phase). Scaffold returns nothing rather than guessing.
+      return [];
+    },
+
+    async launchAudience(id: string): Promise<number> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.launchAudience(id);
+      // Consent gate: only members with current ad_targeting opt-in are eligible.
+      const members = await postgresRepositories.campaigns.getAudienceMembers(id);
+      return members.filter((m) => m.adConsent).length;
+    },
+  },
+
+  // ── Lead-capture hooks (ADR-0024) ─────────────────────────────────────────
+  leads: {
+    async listHooks(): Promise<LeadHookRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.leads.listHooks();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          kind: string;
+          active: boolean;
+          capture_count: string;
+        }>(
+          `SELECT h.id, h.name, h.kind::text AS kind, h.active,
+                  COUNT(e.id) AS capture_count
+           FROM lead_hook h LEFT JOIN lead_capture_event e ON e.hook_id = h.id
+           GROUP BY h.id ORDER BY h.created_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          kind: r.kind,
+          active: r.active,
+          captureCount: Number(r.capture_count),
+        }));
+      } catch {
+        return mockRepositories.leads.listHooks();
+      }
+    },
+
+    async createHook(input: LeadHookInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.leads.createHook(input);
+      await pool.query(
+        `INSERT INTO lead_hook (name, kind, active, config)
+         VALUES ($1, $2::lead_hook_kind, $3, $4::jsonb)`,
+        [
+          input.name,
+          input.kind,
+          input.active,
+          input.config == null ? null : JSON.stringify(input.config),
+        ],
+      );
+    },
+
+    async listCaptureEvents(): Promise<LeadCaptureEventRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.leads.listCaptureEvents();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          hook: string | null;
+          status: string;
+          contact: string | null;
+          payload_bronze: unknown | null;
+          received_at: Date | null;
+        }>(
+          `SELECT e.id, h.name AS hook, e.status, c.full_name AS contact,
+                  e.payload_bronze, e.received_at
+           FROM lead_capture_event e
+           LEFT JOIN lead_hook h ON h.id = e.hook_id
+           LEFT JOIN contact c ON c.id = e.contact_id
+           ORDER BY e.received_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          hook: r.hook,
+          status: r.status,
+          contact: r.contact,
+          summary: r.payload_bronze != null ? JSON.stringify(r.payload_bronze).slice(0, 160) : null,
+          receivedAt: fmtDateTime(r.received_at),
+        }));
+      } catch {
+        return mockRepositories.leads.listCaptureEvents();
+      }
+    },
+
+    async resolveEvent(eventId: string): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.leads.resolveEvent(eventId);
+      // Scaffold: mark resolved and return the linked contact (full resolution —
+      // contact creation from the raw payload — lands with the ingestion service).
+      const { rows } = await pool.query<{ contact_id: string | null }>(
+        `UPDATE lead_capture_event SET status = 'resolved' WHERE id = $1
+         RETURNING contact_id`,
+        [eventId],
+      );
+      return rows[0]?.contact_id ?? "";
+    },
+  },
+
+  // ── Automation workflows (ADR-0014/0027) ──────────────────────────────────
+  workflows: {
+    async listWorkflows(): Promise<WorkflowRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.listWorkflows();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          kind: string;
+          status: string;
+          step_count: string;
+          active_enrollments: string;
+        }>(
+          `SELECT w.id, w.name, w.kind::text AS kind, w.status,
+                  COUNT(DISTINCT s.id) AS step_count,
+                  COUNT(DISTINCT e.id) FILTER (WHERE e.status = 'active') AS active_enrollments
+           FROM workflow w
+           LEFT JOIN workflow_step s ON s.workflow_id = w.id
+           LEFT JOIN workflow_enrollment e ON e.workflow_id = w.id
+           GROUP BY w.id ORDER BY w.created_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          kind: r.kind,
+          status: r.status,
+          stepCount: Number(r.step_count),
+          activeEnrollments: Number(r.active_enrollments),
+        }));
+      } catch {
+        return mockRepositories.workflows.listWorkflows();
+      }
+    },
+
+    async getWorkflow(id: string): Promise<WorkflowDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.getWorkflow(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          kind: string;
+          status: string;
+          trigger: unknown | null;
+        }>(
+          `SELECT id, name, kind::text AS kind, status, trigger FROM workflow WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const { rows: steps } = await pool.query<{
+          id: string;
+          ordinal: number;
+          kind: string;
+          config: unknown | null;
+        }>(
+          `SELECT id, ordinal, kind::text AS kind, config
+           FROM workflow_step WHERE workflow_id = $1 ORDER BY ordinal`,
+          [id],
+        );
+        return {
+          id: r.id,
+          name: r.name,
+          kind: r.kind,
+          status: r.status,
+          trigger: r.trigger != null ? JSON.stringify(r.trigger) : null,
+          steps: steps.map((s) => ({
+            id: s.id,
+            ordinal: s.ordinal,
+            kind: s.kind,
+            summary: s.config != null ? JSON.stringify(s.config) : null,
+          })),
+        };
+      } catch {
+        return mockRepositories.workflows.getWorkflow(id);
+      }
+    },
+
+    async listEnrollments(): Promise<EnrollmentRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.listEnrollments();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          contact: string | null;
+          workflow: string;
+          status: string;
+          current_step_ordinal: number;
+          enrolled_at: Date | null;
+        }>(
+          `SELECT e.id, c.full_name AS contact, w.name AS workflow, e.status,
+                  e.current_step_ordinal, e.enrolled_at
+           FROM workflow_enrollment e
+           JOIN workflow w ON w.id = e.workflow_id
+           LEFT JOIN contact c ON c.id = e.contact_id
+           ORDER BY e.enrolled_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          contact: r.contact,
+          workflow: r.workflow,
+          status: r.status,
+          currentStep: r.current_step_ordinal,
+          enrolledAt: fmtDate(r.enrolled_at),
+        }));
+      } catch {
+        return mockRepositories.workflows.listEnrollments();
+      }
+    },
+
+    async enroll(workflowId: string, contactId: string, accountId: string | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.enroll(workflowId, contactId, accountId);
+      await pool.query(
+        `INSERT INTO workflow_enrollment (workflow_id, contact_id, account_id)
+         VALUES ($1, $2, $3)`,
+        [workflowId, contactId, nullIfEmpty(accountId)],
+      );
+    },
+
+    async exitEnrollment(enrollmentId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.exitEnrollment(enrollmentId);
+      await pool.query(
+        `UPDATE workflow_enrollment SET status = 'exited', completed_at = now() WHERE id = $1`,
+        [enrollmentId],
+      );
+    },
+  },
 };
+
+// ── Row mappers shared across methods ────────────────────────────────────────
+
+interface InteractionDbRow {
+  id: string;
+  source: string;
+  kind: string | null;
+  channel: string | null;
+  direction: string | null;
+  subject: string | null;
+  summary_gold: string | null;
+  occurred_at: Date | null;
+  owner: string | null;
+  contact: string | null;
+  account: string | null;
+}
+
+function mapInteraction(r: InteractionDbRow): InteractionRow {
+  return {
+    id: r.id,
+    source: r.source,
+    kind: r.kind,
+    channel: r.channel,
+    direction: r.direction,
+    subject: r.subject,
+    summary: r.summary_gold,
+    owner: r.owner,
+    contact: r.contact,
+    account: r.account,
+    occurredAt: fmtDateTime(r.occurred_at),
+  };
+}
+
+interface ConnectionDbRow {
+  id: string;
+  scope: string;
+  provider: string;
+  display_name: string | null;
+  status: string;
+  scopes: string[];
+  owner: string | null;
+  keyvault_secret_ref: string | null;
+  last_sync_at: Date | null;
+  connected_at: Date | null;
+}
+
+function mapConnection(r: ConnectionDbRow): ConnectionRow {
+  return {
+    id: r.id,
+    scope: r.scope,
+    provider: r.provider,
+    displayName: r.display_name,
+    status: r.status,
+    scopes: r.scopes ?? [],
+    owner: r.owner,
+    keyvaultSecretRef: r.keyvault_secret_ref,
+    lastSync: fmtDateTime(r.last_sync_at),
+    connectedAt: fmtDate(r.connected_at),
+  };
+}
