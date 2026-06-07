@@ -35,6 +35,7 @@ import type {
 import type {
   Account,
   ArtifactRow,
+  AssessmentConversion,
   AssessmentRow,
   ContactRow,
   CountDatum,
@@ -50,6 +51,7 @@ import type {
   QuestionRow,
   QuestionTemplateRow,
   ReportSummary,
+  RevenueSplit,
   SbrDetail,
   SbrRow,
   StageValueDatum,
@@ -1034,6 +1036,73 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ label: r.status, count: Number(r.c) }));
       } catch {
         return mockRepositories.reports.projectsByStatus();
+      }
+    },
+
+    async revenueSplit(): Promise<RevenueSplit> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.revenueSplit();
+      try {
+        const { rows } = await pool.query<{ one_time: string; recurring: string }>(
+          `SELECT
+             (SELECT coalesce(sum(fee_amount), 0) FROM assessment
+               WHERE status IN ('delivered','closed'))         AS one_time,
+             (SELECT coalesce(sum(amount_mrr), 0) FROM opportunity
+               WHERE sales_stage = 'won')                       AS recurring`,
+        );
+        const r = rows[0];
+        return {
+          oneTime: fmtUsdCompact(Number(r.one_time)),
+          recurring: `${fmtUsdCompact(Number(r.recurring))}/mo`,
+        };
+      } catch {
+        return mockRepositories.reports.revenueSplit();
+      }
+    },
+
+    async assessmentConversion(): Promise<AssessmentConversion> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.assessmentConversion();
+      try {
+        const { rows } = await pool.query<{ delivered: string; converted: string }>(
+          `SELECT
+             count(*) FILTER (WHERE s.status IN ('delivered','closed'))            AS delivered,
+             count(*) FILTER (WHERE s.status IN ('delivered','closed')
+               AND a.lifecycle_stage = 'managed_active')                          AS converted
+           FROM assessment s JOIN account a ON a.id = s.account_id`,
+        );
+        const delivered = Number(rows[0].delivered);
+        const converted = Number(rows[0].converted);
+        return {
+          delivered,
+          converted,
+          rate: delivered > 0 ? `${Math.round((converted / delivered) * 100)}%` : "—",
+        };
+      } catch {
+        return mockRepositories.reports.assessmentConversion();
+      }
+    },
+
+    async sbrDimensionAverages(): Promise<CountDatum[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.sbrDimensionAverages();
+      try {
+        const { rows } = await pool.query<{ dimension: string; avg: string }>(
+          `SELECT dimension,
+                  avg(CASE rating
+                        WHEN 'at_risk' THEN 1 WHEN 'needs_work' THEN 2
+                        WHEN 'solid' THEN 3 WHEN 'strong' THEN 4 END) AS avg
+           FROM sbr_dimension_score WHERE rating IS NOT NULL
+           GROUP BY dimension`,
+        );
+        const byDim = new Map(rows.map((r) => [r.dimension, Number(r.avg)]));
+        // Return in canonical dimension order with friendly labels.
+        return ASSESSMENT_DIMENSIONS.filter((d) => byDim.has(d.key)).map((d) => ({
+          label: d.label,
+          count: Math.round((byDim.get(d.key) ?? 0) * 10) / 10,
+        }));
+      } catch {
+        return mockRepositories.reports.sbrDimensionAverages();
       }
     },
   },

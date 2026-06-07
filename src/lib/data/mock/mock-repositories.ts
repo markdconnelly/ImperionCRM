@@ -238,5 +238,21 @@ export const mockRepositories: Repositories = {
         { label: "complete", count: 9 },
       ];
     },
+    async revenueSplit() {
+      return { oneTime: "$48K", recurring: "$326K/mo" };
+    },
+    async assessmentConversion() {
+      return { delivered: 14, converted: 9, rate: "64%" };
+    },
+    async sbrDimensionAverages() {
+      return [
+        { label: "Identity Security", count: 2.4 },
+        { label: "Endpoint Security", count: 2.8 },
+        { label: "Network Segmentation", count: 2.1 },
+        { label: "Email & Collaboration", count: 3.0 },
+        { label: "Backup & Recovery", count: 3.3 },
+        { label: "Incident Readiness", count: 2.2 },
+      ];
+    },
   },
 };
