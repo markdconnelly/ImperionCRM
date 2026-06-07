@@ -6,6 +6,11 @@ import { TopBar } from "@/components/layout/top-bar";
 import { AgentPanel } from "@/components/agent/agent-panel";
 import type { AgentMessage, SessionUser } from "@/types";
 
+/**
+ * Three-column application shell. Wraps every authenticated route (the (app)
+ * route group layout). The active nav item and page title derive from the
+ * current route; only collapse state is local.
+ */
 export function AppShell({
   children,
   user,
@@ -25,13 +30,11 @@ export function AppShell({
       <Sidebar
         collapsed={sidebarCollapsed}
         onExpand={() => setSidebarCollapsed(false)}
-        active="dashboard"
         user={user}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
-          title="Dashboard"
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
           agentCollapsed={agentCollapsed}

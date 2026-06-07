@@ -2,28 +2,12 @@ import type {
   Account,
   AgentMessage,
   Kpi,
-  NavItem,
+  OpportunityRow,
   PipelineColumn,
 } from "@/types";
 
-// NOTE: Mock data only. Per CLAUDE.md §7.4 this is to be replaced by real
-// queries behind a repository abstraction once PostgreSQL + pgvector is wired.
-
-export const navPrimary: NavItem[] = [
-  { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard" },
-  { key: "accounts", label: "Accounts", icon: "Building2" },
-  { key: "pipeline", label: "Pipeline", icon: "GitBranch" },
-  { key: "proposals", label: "Proposals", icon: "FileText" },
-  { key: "onboarding", label: "Onboarding", icon: "Rocket" },
-  { key: "reporting", label: "Reporting", icon: "BarChart3" },
-];
-
-export const navSecondary: NavItem[] = [
-  { key: "integrations", label: "Integrations", icon: "Plug" },
-  { key: "knowledge", label: "Knowledge", icon: "BrainCircuit" },
-  { key: "security", label: "Security", icon: "ShieldCheck" },
-  { key: "settings", label: "Settings", icon: "Settings" },
-];
+// NOTE: Mock data only. Used as the fallback when no database is configured and
+// for modules not yet backed by Postgres (ADR-0007).
 
 export const kpis: Kpi[] = [
   { label: "Open Pipeline", value: "$1.84M", delta: "+12%", deltaTone: "up" },
@@ -86,6 +70,14 @@ export const accounts: Account[] = [
     health: "amber",
     note: "IT Glue documentation import incomplete",
   },
+];
+
+export const opportunities: OpportunityRow[] = [
+  { id: "opp_01", name: "Northwind — Managed Services", account: "Northwind Logistics", stage: "won", mrr: "$8.2K" },
+  { id: "opp_02", name: "Brightline — New MSP Agreement", account: "Brightline Manufacturing", stage: "proposal", mrr: "$4.1K" },
+  { id: "opp_03", name: "Harbor Point — Expansion", account: "Harbor Point Financial", stage: "qualified", mrr: "$3.0K" },
+  { id: "opp_04", name: "Sierra Vista — Managed Services", account: "Sierra Vista Schools", stage: "won", mrr: "$6.0K" },
+  { id: "opp_05", name: "Cascade — Renewal", account: "Cascade Health Partners", stage: "lead", mrr: "$14.6K" },
 ];
 
 export const agentMessages: AgentMessage[] = [

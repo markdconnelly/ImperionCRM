@@ -9,7 +9,14 @@ import "server-only";
 import { getPool } from "@/lib/db/client";
 import { mockRepositories } from "@/lib/data/mock/mock-repositories";
 import type { Repositories } from "@/lib/data/repositories";
-import type { Account, Health, Kpi, PipelineColumn, PipelineStage } from "@/types";
+import type {
+  Account,
+  Health,
+  Kpi,
+  OpportunityRow,
+  PipelineColumn,
+  PipelineStage,
+} from "@/types";
 
 const ONBOARDING_LIFECYCLE = ["onboarding", "implementation", "operational_readiness"];
 
@@ -162,6 +169,75 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.dashboard.getAccountsNeedingAttention();
+      }
+    },
+  },
+
+  crm: {
+    async listAccounts(): Promise<Account[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAccounts();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          lifecycle_stage: string;
+          relationship: string | null;
+          is_active: boolean;
+          health_score: number | null;
+          owner: string | null;
+          mrr: string;
+        }>(
+          `SELECT a.id, a.name, a.lifecycle_stage, a.relationship, a.is_active,
+                  a.health_score, u.display_name AS owner,
+                  coalesce((SELECT sum(o.amount_mrr) FROM opportunity o
+                            WHERE o.account_id = a.id AND o.sales_stage = 'won'), 0) AS mrr
+           FROM account a
+           LEFT JOIN app_user u ON u.id = a.owner_user_id
+           ORDER BY a.name`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          stage: toPipelineStage(row.lifecycle_stage),
+          owner: row.owner ?? "—",
+          mrr: Number(row.mrr) > 0 ? `${fmtUsd(Number(row.mrr))}/mo` : "—",
+          health: toHealth(row),
+          note: row.is_active
+            ? `${row.relationship ?? "unknown"} · ${row.lifecycle_stage.replace(/_/g, " ")}`
+            : "Inactive",
+        }));
+      } catch {
+        return mockRepositories.crm.listAccounts();
+      }
+    },
+
+    async listOpportunities(): Promise<OpportunityRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listOpportunities();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          account: string;
+          stage: string;
+          mrr: string;
+        }>(
+          `SELECT o.id, o.name, a.name AS account, o.sales_stage AS stage,
+                  coalesce(o.amount_mrr, 0) AS mrr
+           FROM opportunity o
+           JOIN account a ON a.id = o.account_id
+           ORDER BY a.name, o.name`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          account: row.account,
+          stage: row.stage,
+          mrr: Number(row.mrr) > 0 ? `${fmtUsd(Number(row.mrr))}/mo` : "—",
+        }));
+      } catch {
+        return mockRepositories.crm.listOpportunities();
       }
     },
   },

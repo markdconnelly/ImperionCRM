@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { navPrimary, navSecondary } from "@/lib/mock-data";
+import { navPrimary, navSecondary, isActivePath } from "@/lib/nav";
 import { Icon } from "@/components/ui/icon";
 import type { NavItem, SessionUser } from "@/types";
 
@@ -23,14 +25,15 @@ function NavRow({
   collapsed: boolean;
 }) {
   return (
-    <button
+    <Link
+      href={item.href}
       title={collapsed ? item.label : undefined}
       className={cn(
         "group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
         collapsed && "justify-center px-0",
         active
           ? "bg-panel-2 text-text"
-          : "text-dim hover:bg-panel-2 hover:text-text"
+          : "text-dim hover:bg-panel-2 hover:text-text",
       )}
     >
       <Icon
@@ -39,32 +42,32 @@ function NavRow({
         className={cn(active ? "text-accent" : "text-dim group-hover:text-text")}
       />
       {!collapsed && <span className="truncate">{item.label}</span>}
-    </button>
+    </Link>
   );
 }
 
 export function Sidebar({
   collapsed,
   onExpand,
-  active,
   user,
 }: {
   collapsed: boolean;
   onExpand: () => void;
-  active: string;
   user: SessionUser;
 }) {
+  const pathname = usePathname();
+
   return (
     <aside
       className={cn(
         "flex h-full flex-col border-r border-border bg-panel transition-[width] duration-200",
-        collapsed ? "w-16" : "w-60"
+        collapsed ? "w-16" : "w-60",
       )}
     >
       <div
         className={cn(
           "flex h-14 items-center gap-2 border-b border-border px-4",
-          collapsed && "justify-center px-0"
+          collapsed && "justify-center px-0",
         )}
       >
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-accent-2 text-xs font-bold text-white">
@@ -77,13 +80,13 @@ export function Sidebar({
         )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 p-2">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
         {navPrimary.map((item) => (
           <NavRow
             key={item.key}
             item={item}
             collapsed={collapsed}
-            active={active === item.key}
+            active={isActivePath(item.href, pathname)}
           />
         ))}
         <div className="my-2 border-t border-border" />
@@ -92,7 +95,7 @@ export function Sidebar({
             key={item.key}
             item={item}
             collapsed={collapsed}
-            active={active === item.key}
+            active={isActivePath(item.href, pathname)}
           />
         ))}
 
@@ -111,7 +114,7 @@ export function Sidebar({
         <div
           className={cn(
             "flex items-center gap-3 rounded-md px-2 py-2",
-            collapsed && "justify-center px-0"
+            collapsed && "justify-center px-0",
           )}
         >
           <div
