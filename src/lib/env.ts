@@ -31,6 +31,13 @@ export const entraEnv = {
   get certPfxPath() {
     return read("AZURE_AD_CERT_PFX_PATH");
   },
+  /**
+   * Base64-encoded PFX, for hosts without a stable file path (e.g. Azure App
+   * Service). Takes precedence over certPfxPath when set.
+   */
+  get certPfxBase64() {
+    return read("AZURE_AD_CERT_PFX_BASE64");
+  },
   get certPfxPassword() {
     return read("AZURE_AD_CERT_PFX_PASSWORD");
   },
@@ -44,19 +51,38 @@ export const entraEnv = {
   },
 };
 
-const REQUIRED_ENTRA_VARS = [
-  "AZURE_AD_TENANT_ID",
-  "AZURE_AD_CLIENT_ID",
-  "AZURE_AD_CERT_PFX_PATH",
-  "AZURE_AD_CERT_PFX_PASSWORD",
-] as const;
+/**
+ * Break-glass emergency access (ADR-0008). A single non-Entra account that can
+ * sign in via a dedicated bypass URL when SSO is unavailable. Disabled unless
+ * both vars are set. The password is stored as a SHA-256 hash, never plaintext.
+ * Every use is audit-logged in the credentials provider.
+ */
+export const breakGlass = {
+  get enabled() {
+    return Boolean(read("BREAKGLASS_USERNAME") && read("BREAKGLASS_PASSWORD_HASH"));
+  },
+  get username() {
+    return read("BREAKGLASS_USERNAME");
+  },
+  /** Lowercase hex SHA-256 of the break-glass password. */
+  get passwordHash() {
+    return read("BREAKGLASS_PASSWORD_HASH");
+  },
+};
 
 /**
- * Enforce that all Entra variables are present. Call at runtime entry points
- * (e.g. building the client assertion), NOT at module load — see file header.
+ * Enforce that the Entra variables needed to sign a client assertion are
+ * present. Call at runtime entry points (e.g. building the assertion), NOT at
+ * module load — see file header.
  */
 export function assertEntraEnv(): void {
-  const missing = REQUIRED_ENTRA_VARS.filter((name) => !read(name));
+  const missing: string[] = [];
+  if (!entraEnv.tenantId) missing.push("AZURE_AD_TENANT_ID");
+  if (!entraEnv.clientId) missing.push("AZURE_AD_CLIENT_ID");
+  if (!entraEnv.certPfxPassword) missing.push("AZURE_AD_CERT_PFX_PASSWORD");
+  if (!entraEnv.certPfxBase64 && !entraEnv.certPfxPath) {
+    missing.push("AZURE_AD_CERT_PFX_BASE64 or AZURE_AD_CERT_PFX_PATH");
+  }
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variable(s): ${missing.join(", ")}. ` +

@@ -13,10 +13,12 @@
  * (token-request body shape + customFetch signature can shift across Auth.js
  * betas). Must pass typecheck/build + a real sign-in before merge to main.
  */
+import { createHash, timingSafeEqual } from "node:crypto";
 import NextAuth, { customFetch } from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
+import Credentials from "next-auth/providers/credentials";
 import authConfig from "@/auth.config";
-import { entraEnv } from "@/lib/env";
+import { entraEnv, breakGlass } from "@/lib/env";
 import { buildClientAssertion } from "@/lib/auth/client-assertion";
 
 const ASSERTION_TYPE =
@@ -55,6 +57,24 @@ async function entraFetch(
   return fetch(input as RequestInfo, init);
 }
 
+/**
+ * Break-glass emergency access (ADR-0008). Constant-time comparison of the
+ * submitted password's SHA-256 against the configured hash. Returns false
+ * unless break-glass is configured. Never logs the password.
+ */
+function verifyBreakGlass(username: string, password: string): boolean {
+  if (!breakGlass.enabled) return false;
+  if (username !== breakGlass.username) return false;
+  const got = createHash("sha256").update(password).digest();
+  let want: Buffer;
+  try {
+    want = Buffer.from(breakGlass.passwordHash, "hex");
+  } catch {
+    return false;
+  }
+  return got.length === want.length && timingSafeEqual(got, want);
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -66,6 +86,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         params: { scope: "openid profile email offline_access" },
       },
       [customFetch]: entraFetch,
+    }),
+    // Emergency SSO bypass — used only via the /break-glass page. Disabled
+    // unless BREAKGLASS_* env is set. Every successful use is audit-logged.
+    Credentials({
+      id: "break-glass",
+      name: "Break-glass",
+      credentials: {
+        username: { label: "Username" },
+        password: { label: "Password", type: "password" },
+      },
+      authorize(creds) {
+        const username = String(creds?.username ?? "");
+        const password = String(creds?.password ?? "");
+        if (!verifyBreakGlass(username, password)) return null;
+        console.warn(
+          `[SECURITY] Break-glass sign-in used (user=${username}) — Entra SSO bypassed.`,
+        );
+        return { id: "break-glass", name: "Break-glass Admin", email: username };
+      },
     }),
   ],
 });

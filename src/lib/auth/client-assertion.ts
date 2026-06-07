@@ -35,7 +35,11 @@ let cached: Promise<CertMaterial> | null = null;
 function loadCertMaterial(): Promise<CertMaterial> {
   cached ??= (async () => {
     assertEntraEnv(); // fail closed at runtime if misconfigured
-    const pfxBytes = readFileSync(entraEnv.certPfxPath);
+    // Prefer a base64 PFX (App Service / Key Vault); fall back to a file path
+    // (local dev). One of the two is guaranteed present by assertEntraEnv().
+    const pfxBytes = entraEnv.certPfxBase64
+      ? Buffer.from(entraEnv.certPfxBase64, "base64")
+      : readFileSync(entraEnv.certPfxPath);
 
     // node-forge parses PKCS#12; Node's crypto cannot do so natively.
     const p12Asn1 = forge.asn1.fromDer(pfxBytes.toString("binary"));

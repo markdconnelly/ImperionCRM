@@ -17,6 +17,12 @@ import { entraEnv } from "@/lib/env";
 export const authConfig: NextAuthConfig = {
   // Required behind the App Service reverse proxy (ADR-0006).
   trustHost: true,
+  // Custom pages: /login offers Entra SSO (primary); /break-glass is the
+  // emergency bypass (ADR-0008). The break-glass credentials provider is
+  // declared only in the Node config (auth.ts) to keep node:crypto out of edge.
+  pages: {
+    signIn: "/login",
+  },
   providers: [
     MicrosoftEntraID({
       clientId: entraEnv.clientId,
