@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { AgentPanel } from "@/components/agent/agent-panel";
@@ -20,10 +20,36 @@ export function AppShell({
   user: SessionUser;
   agentMessages: AgentMessage[];
 }) {
-  // In-memory only for now. Per CLAUDE.md §7.2, ready to be persisted
-  // (user setting / localStorage) without changing this component's shape.
+  // Collapse state persists to localStorage and is restored on load (CLAUDE.md §6).
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [agentCollapsed, setAgentCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem("imperion.sidebarCollapsed");
+      const a = localStorage.getItem("imperion.agentCollapsed");
+      if (s != null) setSidebarCollapsed(s === "true");
+      if (a != null) setAgentCollapsed(a === "true");
+    } catch {
+      /* localStorage unavailable — fall back to in-memory defaults */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("imperion.sidebarCollapsed", String(sidebarCollapsed));
+    } catch {
+      /* no-op */
+    }
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("imperion.agentCollapsed", String(agentCollapsed));
+    } catch {
+      /* no-op */
+    }
+  }, [agentCollapsed]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg text-text">
