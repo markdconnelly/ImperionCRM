@@ -115,65 +115,64 @@ Key Vault) in deployed environments.
 
 ---
 
-## 6. Current state of the work (as of handoff)
+## 6. Current state of the work
 
-Work so far has been a **design-phase UI prototype**, authored in the Claude chat
-interface, not yet in this repo as a running app.
+The app is **built, deployed, and live** on Azure App Service
+(`imperioncrm.azurewebsites.net`, Entra SSO). It is no longer a chat-interface
+prototype — the Next.js project, the three-column shell, Entra auth, PostgreSQL +
+pgvector, the repository data layer, and all the UI modules below are real and
+serving data.
 
-What exists conceptually and should be ported into the real Next.js project:
+**Built and live:**
+- **Three-column shell** — collapsible left nav (64px icon rail), central work area
+  with a top bar (page title, **wired** global search → Knowledge, Graph-sync
+  indicator), and the collapsible right orchestrator agent panel. Collapse state
+  persists to localStorage. User chip shows "Entra · SSO".
+- **Modules (all real):** Dashboard, Leads (+ capture hooks & inbox), Discovery
+  (+ agent-answer approval → fit/nurture routing), Accounts, Contacts (+ 360 detail:
+  dossier, timeline, consent, composer), Pipeline (interactive — move deals between
+  stages), Assessments, Proposals, Onboarding, Business Reviews, Tickets, Tasks,
+  Campaigns (+ audiences/ads + builders), Communications (unified multi-channel
+  timeline), Reporting, Knowledge (search over the gold layer), Workflows (+ builder
+  & step editor), Consent (ledger), Integrations (per-user personal connections),
+  Security (posture dashboard), Settings, Feedback (GitHub-coupled). Editable
+  discovery/assessment question catalog.
+- **Data:** PostgreSQL + pgvector; migrations **0001–0026 applied** to prod. Typed
+  repositories with a mock fallback. Entra SSO (certificate client auth) + break-glass.
 
-- A **three-column application shell**:
-  - Left **navigation sidebar**, collapsible to a 64px icon rail (toggle in the
-    header; expand control on the rail when collapsed). Nav items: Dashboard,
-    Accounts, Pipeline, Proposals, Onboarding, Reporting, then a divider, then
-    Integrations, Knowledge, Security, Settings. User chip at the bottom shows
-    "Entra · SSO".
-  - Central **work area** with a top bar (page title, global search, Graph-sync
-    status indicator) and a **Dashboard** view: a KPI row (Open Pipeline, Active
-    MRR, Onboarding, Avg. Time to Live), a five-stage **pipeline** strip (Lead,
-    Qualified, Proposal, Onboarding, Active), and an **"Accounts Needing
-    Attention"** table with per-row health dots.
-  - Right **orchestrator agent panel** ("Imperion CRM Agent"), collapsible entirely;
-    when collapsed a compact "Agent" button appears in the top bar to reopen it.
-    The panel shows a conversation feed and an input, framed as "scoped to your
-    Entra permissions."
-- **Aesthetic direction:** dense, premium internal-tool feel (Linear/Vercel-grade,
-  not consumer SaaS). Dark theme. Reference design tokens used in the prototype
-  (port into Tailwind theme + CSS variables; refine as needed):
-  - bg `#0B0E14` · panel `#111621` · panel-2 `#151B28` · border `#1E2636` ·
-    text `#E6EAF2` · dim `#8A93A6` · accent `#5B8DEF` · accent-2 `#7C6BF0` ·
-    green `#3FBF8F` · amber `#E0A33E` · red `#E2615A`.
-  - The prototype used Inter for body; the design guidance prefers a more
-    distinctive display face — feel free to pair a display font with a refined
-    body font.
+**Aesthetic:** dense, premium internal-tool feel (Linear/Vercel-grade), dark theme.
+Design tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · panel-2
+`#151B28` · border `#1E2636` · text `#E6EAF2` · dim `#8A93A6` · accent `#5B8DEF` ·
+accent-2 `#7C6BF0` · green `#3FBF8F` · amber `#E0A33E` · red `#E2615A`. Display font
+Space Grotesk, body IBM Plex Sans.
 
-All data in the prototype is mock data. The agent input is stubbed (no backend).
-Panel collapse state is in-memory React only.
+**Deferred to the next phase (deliberately stubbed, not broken):** live OAuth flows
+and the actual ingestion engines (Microsoft Graph / YouTube / LinkedIn / Facebook),
+real email/SMS sends, agent/LLM enrichment execution, embeddings generation + vector
+search, and the **orchestrator agent runtime + AI Agents / Board** pages (still
+placeholders). Until a source is wired, those flows are stubbed (e.g. a "send" logs
+to the timeline) and never fail the page.
 
 ---
 
-## 7. Immediate build plan (suggested first tasks)
+## 7. Build plan — status & next phase
 
-Tackle roughly in this order. Confirm hosting choice with the human before wiring
-deploy (Azure Static Web Apps is the recommended default given the Microsoft-first
-posture; Vercel is the lower-friction Next.js alternative but sits outside the
-Azure perimeter).
+The original first-tasks plan is **complete**: ✅ project scaffolded (Next.js App
+Router + TypeScript + Tailwind, ESLint, strict TS, `/docs` tree); ✅ three-column
+shell + Dashboard; ✅ Entra ID auth gate (certificate client assertion, ADR-0005);
+✅ PostgreSQL + pgvector with the typed repository data layer; ✅ the orchestrator
+boundary stubbed behind interfaces; ✅ CI/CD on App Service (GitHub Actions: lint,
+typecheck, build, docs check). Hosting landed on **Azure App Service** (ADR-0006),
+not Static Web Apps.
 
-1. **Scaffold the project:** Next.js (App Router) + TypeScript + Tailwind +
-   shadcn/ui. ESLint + Prettier. Strict TypeScript. Set up the `/docs` tree
-   described in §8.
-2. **Port the shell:** implement the collapsible three-column layout, theme
-   tokens, and the Dashboard view from §6 as real components with typed mock data.
-   Keep panel-collapse state ready to be persisted (user setting / localStorage).
-3. **Wire Entra ID auth** (OAuth/OIDC) as the sign-in gate before any data view.
-   No third-party IdP.
-4. **Stand up PostgreSQL + pgvector** and a typed data-access layer; replace mock
-   data on the Dashboard with real queries behind a repository abstraction.
-5. **Define the orchestrator boundary:** a single server-side entry point for the
-   agent that will later route to sub-agents via the provider-agnostic model
-   layer. Stub sub-agents behind interfaces.
-6. **CI/CD:** GitHub Actions for lint, typecheck, build, plus the documentation
-   validation in §8.
+**Next phase — wire the live integrations** (the deliberately-deferred work):
+1. Live OAuth flows + Key Vault token storage for per-user connections, then the
+   ingestion engines (Graph email/Teams, YouTube, LinkedIn, Facebook, Plaud) writing
+   into the `interaction` timeline and `contact_enrichment` dossier.
+2. Real email/SMS sends behind the consent gate; agent/LLM enrichment execution.
+3. Embeddings generation + vector (semantic) search over the gold layer.
+4. The orchestrator agent runtime + the AI Agents / Board pages.
+5. Pre-go-live security: rotate the deferred secrets (see the project memory).
 
 Before starting each task, restate the plan briefly and flag anything that
 conflicts with the principles in §2–§5.

@@ -32,8 +32,10 @@ Every agent gets a dedicated doc: **identity · responsibilities · inputs · ou
 tool access · security boundaries · failure handling · a workflow diagram**. Start each
 from this template and link it back here.
 
-> Status: the agent runtime is in progress; this area defines the contract it will
-> implement. The app calls the agent through a single server-side entry point (ADR-0018).
+> Status: the agent runtime is **deferred to the next phase** — the panel and the
+> single server-side entry point exist, but execution is stubbed. This area defines the
+> contract the runtime will implement (ADR-0018). The AI Agents and Board pages are
+> still placeholders pending it.
 
 Governing decisions:
 [ADR-0004 single orchestrator](../decision-records/ADR-0004-single-orchestrator-agent-model.md) ·

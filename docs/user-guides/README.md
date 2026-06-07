@@ -18,10 +18,13 @@ right (scoped to your Entra permissions).
 
 ## Walkthroughs to write
 
+The features below are **built and live**; the step-by-step guides for them are the
+to-do here.
+
 - **Know a contact:** open a contact → read the dossier, timeline, and consent before you call.
 - **Run a discovery call:** review the agent-gathered answers, confirm/stamp, set the verdict, route to assessment or nurture.
-- **Launch a campaign:** create a campaign, build an audience, see who's ad-eligible.
-- **Connect your accounts:** link your M365/LinkedIn/YouTube so your comms flow in.
+- **Launch a campaign:** create a campaign, build an audience over the dossier, see who's ad-eligible, launch.
+- **Connect your accounts:** link your M365/LinkedIn/YouTube so your comms flow in. *(UI built; the live OAuth pull is the next phase.)*
 
 The motion behind these is the [customer-lifecycle](../architecture/customer-lifecycle.md);
 admin-side configuration is in [admin-guides](../admin-guides/README.md).
