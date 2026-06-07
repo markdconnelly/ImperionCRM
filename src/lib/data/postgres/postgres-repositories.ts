@@ -23,6 +23,7 @@ import type {
   ProposalInput,
   Repositories,
   SbrInput,
+  SbrScoreInput,
   TaskEditable,
   TaskInput,
 } from "@/lib/data/repositories";
@@ -920,6 +921,22 @@ export const postgresRepositories: Repositories = {
         return mockRepositories.crm.contactOptions();
       }
     },
+
+    async assessmentOptions(): Promise<Option[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.assessmentOptions();
+      try {
+        const { rows } = await pool.query<{ id: string; name: string }>(
+          `SELECT s.id, a.name || ' — ' || s.name AS name
+           FROM assessment s
+           JOIN account a ON a.id = s.account_id
+           ORDER BY a.name, s.created_at DESC`,
+        );
+        return rows.map((r) => ({ id: r.id, name: r.name }));
+      } catch {
+        return mockRepositories.crm.assessmentOptions();
+      }
+    },
   },
 
   agent: {
@@ -1393,6 +1410,34 @@ export const postgresRepositories: Repositories = {
             nullIfEmpty(a.valueDate),
             nullIfEmpty(a.answeredByContactId),
           ],
+        );
+      }
+    },
+
+    async saveSbrScores(sbrId: string, scores: SbrScoreInput[]): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.saveSbrScores(sbrId, scores);
+      for (const s of scores) {
+        await pool.query(
+          `INSERT INTO sbr_dimension_score (sbr_id, dimension, rating, note)
+           VALUES ($1, $2, $3::assessment_rating, $4)
+           ON CONFLICT (sbr_id, dimension) DO UPDATE SET
+             rating = excluded.rating, note = excluded.note`,
+          [sbrId, s.dimension, nullIfEmpty(s.rating), nullIfEmpty(s.note)],
+        );
+      }
+    },
+
+    async setSbrTickets(sbrId: string, ticketIds: string[]): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.setSbrTickets(sbrId, ticketIds);
+      // Replace the link set: clear, then insert the chosen tickets.
+      await pool.query(`DELETE FROM sbr_ticket WHERE sbr_id = $1`, [sbrId]);
+      for (const ticketId of ticketIds) {
+        await pool.query(
+          `INSERT INTO sbr_ticket (sbr_id, ticket_id) VALUES ($1, $2)
+           ON CONFLICT (sbr_id, ticket_id) DO NOTHING`,
+          [sbrId, ticketId],
         );
       }
     },

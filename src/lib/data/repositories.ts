@@ -164,6 +164,9 @@ export interface CrmRepository {
 
   /** Contact options ("Full name (Account)") for select dropdowns. */
   contactOptions(): Promise<Option[]>;
+
+  /** Assessment options ("Account — Assessment") for select dropdowns. */
+  assessmentOptions(): Promise<Option[]>;
 }
 
 export interface AgentRepository {
@@ -194,6 +197,13 @@ export interface DiscoveryCallInput {
   verdictReason: string | null;
   nextStep: string | null;
   sbrCadence: string | null;
+}
+
+/** One re-benchmarked dimension score at an SBR. */
+export interface SbrScoreInput {
+  dimension: string;
+  rating: string | null;
+  note: string | null;
 }
 
 /** Editable Strategic Business Review fields. */
@@ -234,6 +244,12 @@ export interface EngagementsRepository {
 
   /** Upsert answers for an engagement ('discovery' | 'assessment'). */
   saveAnswers(engagementType: string, engagementId: string, answers: AnswerInput[]): Promise<void>;
+
+  /** Upsert the six re-benchmarked dimension scores for an SBR. */
+  saveSbrScores(sbrId: string, scores: SbrScoreInput[]): Promise<void>;
+
+  /** Replace the set of tickets referenced by an SBR. */
+  setSbrTickets(sbrId: string, ticketIds: string[]): Promise<void>;
 
   // Read-only feeds
   listAssessmentArtifacts(assessmentId: string): Promise<ArtifactRow[]>;

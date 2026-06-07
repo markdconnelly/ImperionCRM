@@ -120,6 +120,9 @@ export const mockRepositories: Repositories = {
     async contactOptions() {
       return [];
     },
+    async assessmentOptions() {
+      return [];
+    },
   },
   agent: {
     async getConversation() {
@@ -162,6 +165,12 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async saveAnswers() {
+      throw new Error(NO_DB);
+    },
+    async saveSbrScores() {
+      throw new Error(NO_DB);
+    },
+    async setSbrTickets() {
       throw new Error(NO_DB);
     },
     async listAssessmentArtifacts() {
