@@ -386,6 +386,130 @@ erDiagram
     }
 ```
 
+## Diagram 4 — Engagement capture & long-term relationship (ADR-0023)
+
+Discovery, assessment evidence, and SBRs are **account-scoped** (the contact is only
+the employee who performed an instance). Questionnaires are editable data; answers are
+stored once; downstream records point back via provenance FKs.
+
+```mermaid
+erDiagram
+    QUESTION_TEMPLATE ||--o{ QUESTION : contains
+    QUESTION ||--o{ ENGAGEMENT_ANSWER : "answered as"
+    ACCOUNT ||--o{ DISCOVERY_CALL : "company owns"
+    ACCOUNT ||--o{ STRATEGIC_BUSINESS_REVIEW : "company owns"
+    ACCOUNT ||--o{ TICKET : "company owns"
+    CONTACT ||--o{ DISCOVERY_CALL : "employee instance"
+    CONTACT ||--o{ STRATEGIC_BUSINESS_REVIEW : "employee instance"
+    DISCOVERY_CALL ||--o{ ENGAGEMENT_ANSWER : "captures (8)"
+    ASSESSMENT ||--o{ ENGAGEMENT_ANSWER : "captures (evidence)"
+    ASSESSMENT ||--o{ ASSESSMENT_ARTIFACT : "Televy/M365/Google/scan"
+    STRATEGIC_BUSINESS_REVIEW ||--o{ SBR_DIMENSION_SCORE : "re-benchmark"
+    STRATEGIC_BUSINESS_REVIEW ||--o{ SBR_TICKET : "ticket history"
+    TICKET ||--o{ SBR_TICKET : "referenced by"
+    ASSESSMENT ||--o| STRATEGIC_BUSINESS_REVIEW : "benchmarked against"
+    DISCOVERY_CALL ||--o{ OPPORTUNITY : "provenance"
+    ASSESSMENT ||--o{ OPPORTUNITY : "provenance"
+    ASSESSMENT ||--o{ PROJECT : "provenance (remediation)"
+    STRATEGIC_BUSINESS_REVIEW ||--o{ OPPORTUNITY : "provenance (expansion)"
+
+    QUESTION_TEMPLATE {
+      uuid id PK
+      text kind "enum discovery|assessment"
+      int version
+      text status "active|draft|retired"
+    }
+    QUESTION {
+      uuid id PK
+      uuid template_id FK
+      text key "stable machine key"
+      text prompt
+      text response_type "enum"
+      jsonb options
+      text dimension "assessment dim, nullable"
+      int ordinal
+      boolean required
+    }
+    ENGAGEMENT_ANSWER {
+      uuid id PK
+      text engagement_type "discovery|assessment"
+      uuid engagement_id "discovery_call|assessment"
+      uuid question_id FK
+      text value_text
+      numeric value_number
+      boolean value_bool
+      jsonb value_json
+      date value_date
+      uuid answered_by_contact_id FK
+    }
+    DISCOVERY_CALL {
+      uuid id PK
+      uuid account_id FK
+      uuid opportunity_id FK
+      uuid contact_id FK
+      uuid template_id FK
+      text status
+      timestamptz held_at
+      text verdict "enum fit|not_fit|nurture"
+      text next_step
+      text sbr_cadence
+    }
+    ASSESSMENT_ARTIFACT {
+      uuid id PK
+      uuid assessment_id FK
+      text source "enum televy|m365_graph|google_workspace|external_scan|phishing_sim|manual"
+      text kind "enum report|analytics|snapshot|finding|metric"
+      text dimension
+      jsonb payload_bronze
+      jsonb normalized_silver
+      text summary_gold
+      text blob_ref
+      text external_ref
+    }
+    TICKET {
+      uuid id PK
+      uuid account_id FK
+      uuid contact_id FK
+      text source "autotask"
+      text external_ref
+      text number
+      text title
+      text status
+      text priority
+      timestamptz opened_at
+      jsonb payload_bronze
+      uuid source_assessment_id FK
+      uuid source_sbr_id FK
+    }
+    STRATEGIC_BUSINESS_REVIEW {
+      uuid id PK
+      uuid account_id FK
+      uuid contact_id FK
+      uuid benchmark_assessment_id FK
+      date review_date
+      text period_label
+      text status
+      text concerns
+      text next_actions
+    }
+    SBR_DIMENSION_SCORE {
+      uuid id PK
+      uuid sbr_id FK
+      text dimension
+      text rating "enum assessment_rating"
+    }
+    SBR_TICKET {
+      uuid id PK
+      uuid sbr_id FK
+      uuid ticket_id FK
+    }
+```
+
+> **Provenance, not duplication:** `opportunity`, `project`, and `ticket` carry nullable
+> `source_discovery_id` / `source_assessment_id` / `source_sbr_id` FKs so a downstream
+> record points back to the engagement that produced it — the engagement's data is never
+> copied forward.
+
 ## Enumerations
 
 - `account.relationship`: `prospect | customer | partner` (null = unknown)
@@ -397,6 +521,13 @@ erDiagram
 - `project.status`: `not_started | in_progress | blocked | complete`
 - `assessment.status`: `proposed | scheduled | in_progress | delivered | closed`
 - `assessment_rating` (per dimension): `at_risk | needs_work | solid | strong`
+- `engagement_kind`: `discovery | assessment`
+- `question_response_type`: `text | longtext | number | currency | boolean |
+  single_select | multi_select | rating | date`
+- `discovery_call.verdict`: `fit | not_fit | nurture`
+- `assessment_artifact.source`: `televy | m365_graph | google_workspace |
+  external_scan | phishing_sim | manual`
+- `assessment_artifact.kind`: `report | analytics | snapshot | finding | metric`
 - `interaction.source`: `m365_email | m365_teams | plaud | sms | email |
   facebook | system`
 - `consent_event.channel`: `email | sms | call_recording`

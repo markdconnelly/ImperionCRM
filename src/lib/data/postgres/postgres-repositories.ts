@@ -12,22 +12,28 @@ import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import type {
   AccountEditable,
   AccountInput,
+  AnswerInput,
   AssessmentEditable,
   AssessmentInput,
+  DiscoveryCallInput,
   Option,
   ProjectEditable,
   ProjectInput,
   ProposalEditable,
   ProposalInput,
   Repositories,
+  SbrInput,
   TaskEditable,
   TaskInput,
 } from "@/lib/data/repositories";
 import type {
   Account,
+  ArtifactRow,
   AssessmentRow,
   ContactRow,
   CountDatum,
+  DiscoveryCallDetail,
+  DiscoveryCallRow,
   Health,
   Kpi,
   OpportunityRow,
@@ -35,9 +41,13 @@ import type {
   PipelineStage,
   ProjectRow,
   ProposalRow,
+  QuestionRow,
   ReportSummary,
+  SbrDetail,
+  SbrRow,
   StageValueDatum,
   TaskRow,
+  TicketRow,
 } from "@/types";
 
 /** Empty string → null, for optional form fields. */
@@ -985,6 +995,451 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ label: r.status, count: Number(r.c) }));
       } catch {
         return mockRepositories.reports.projectsByStatus();
+      }
+    },
+  },
+
+  engagements: {
+    async getQuestions(kind: string): Promise<QuestionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.getQuestions(kind);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          prompt: string;
+          help_text: string | null;
+          response_type: string;
+          options: string[] | null;
+          dimension: string | null;
+          ordinal: number;
+          required: boolean;
+        }>(
+          `SELECT q.id, q.key, q.prompt, q.help_text, q.response_type, q.options,
+                  q.dimension, q.ordinal, q.required
+           FROM question q
+           JOIN question_template t ON t.id = q.template_id
+           WHERE t.kind = $1::engagement_kind AND t.status = 'active' AND q.active = true
+             AND t.version = (SELECT max(version) FROM question_template
+                              WHERE kind = $1::engagement_kind AND status = 'active')
+           ORDER BY q.ordinal`,
+          [kind],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          key: r.key,
+          prompt: r.prompt,
+          helpText: r.help_text,
+          responseType: r.response_type,
+          options: r.options,
+          dimension: r.dimension,
+          ordinal: r.ordinal,
+          required: r.required,
+        }));
+      } catch {
+        return mockRepositories.engagements.getQuestions(kind);
+      }
+    },
+
+    async listDiscoveryCalls(): Promise<DiscoveryCallRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listDiscoveryCalls();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account: string;
+          status: string;
+          verdict: string | null;
+          held_at: Date | null;
+          next_step: string | null;
+        }>(
+          `SELECT d.id, a.name AS account, d.status, d.verdict, d.held_at, d.next_step
+           FROM discovery_call d JOIN account a ON a.id = d.account_id
+           ORDER BY d.held_at DESC NULLS LAST, d.created_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          account: r.account,
+          status: r.status,
+          verdict: r.verdict,
+          held: fmtDate(r.held_at),
+          nextStep: r.next_step,
+        }));
+      } catch {
+        return mockRepositories.engagements.listDiscoveryCalls();
+      }
+    },
+
+    async getDiscoveryCall(id: string): Promise<DiscoveryCallDetail | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string;
+          opportunity_id: string | null;
+          contact_id: string | null;
+          template_id: string | null;
+          status: string;
+          held_at: Date | null;
+          verdict: string | null;
+          verdict_reason: string | null;
+          next_step: string | null;
+          sbr_cadence: string | null;
+        }>(
+          `SELECT id, account_id, opportunity_id, contact_id, template_id, status,
+                  held_at, verdict, verdict_reason, next_step, sbr_cadence
+           FROM discovery_call WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const { rows: answers } = await pool.query<{
+          question_id: string;
+          key: string;
+          prompt: string;
+          response_type: string;
+          value: string | null;
+        }>(
+          `SELECT ea.question_id, q.key, q.prompt, q.response_type,
+                  COALESCE(ea.value_text, ea.value_number::text, ea.value_bool::text,
+                           ea.value_date::text, ea.value_json::text) AS value
+           FROM engagement_answer ea JOIN question q ON q.id = ea.question_id
+           WHERE ea.engagement_type = 'discovery' AND ea.engagement_id = $1
+           ORDER BY q.ordinal`,
+          [id],
+        );
+        return {
+          id: r.id,
+          accountId: r.account_id,
+          opportunityId: r.opportunity_id,
+          contactId: r.contact_id,
+          templateId: r.template_id,
+          status: r.status,
+          heldAt: fmtDate(r.held_at),
+          verdict: r.verdict,
+          verdictReason: r.verdict_reason,
+          nextStep: r.next_step,
+          sbrCadence: r.sbr_cadence,
+          answers: answers.map((a) => ({
+            questionId: a.question_id,
+            key: a.key,
+            prompt: a.prompt,
+            responseType: a.response_type,
+            value: a.value,
+          })),
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createDiscoveryCall(input: DiscoveryCallInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.createDiscoveryCall(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO discovery_call
+           (account_id, opportunity_id, contact_id, template_id, status, held_at,
+            verdict, verdict_reason, next_step, sbr_cadence)
+         VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::discovery_verdict, $8, $9, $10)
+         RETURNING id`,
+        [
+          input.accountId,
+          nullIfEmpty(input.opportunityId),
+          nullIfEmpty(input.contactId),
+          nullIfEmpty(input.templateId),
+          input.status,
+          nullIfEmpty(input.heldAt),
+          nullIfEmpty(input.verdict),
+          nullIfEmpty(input.verdictReason),
+          nullIfEmpty(input.nextStep),
+          nullIfEmpty(input.sbrCadence),
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateDiscoveryCall(id: string, input: DiscoveryCallInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.updateDiscoveryCall(id, input);
+      await pool.query(
+        `UPDATE discovery_call
+         SET account_id = $1, opportunity_id = $2, contact_id = $3, template_id = $4,
+             status = $5, held_at = $6::timestamptz, verdict = $7::discovery_verdict,
+             verdict_reason = $8, next_step = $9, sbr_cadence = $10
+         WHERE id = $11`,
+        [
+          input.accountId,
+          nullIfEmpty(input.opportunityId),
+          nullIfEmpty(input.contactId),
+          nullIfEmpty(input.templateId),
+          input.status,
+          nullIfEmpty(input.heldAt),
+          nullIfEmpty(input.verdict),
+          nullIfEmpty(input.verdictReason),
+          nullIfEmpty(input.nextStep),
+          nullIfEmpty(input.sbrCadence),
+          id,
+        ],
+      );
+    },
+
+    async deleteDiscoveryCall(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.deleteDiscoveryCall(id);
+      await pool.query(`DELETE FROM discovery_call WHERE id = $1`, [id]);
+    },
+
+    async listSbrs(): Promise<SbrRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listSbrs();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account: string;
+          review_date: Date;
+          period_label: string | null;
+          status: string;
+        }>(
+          `SELECT s.id, a.name AS account, s.review_date, s.period_label, s.status
+           FROM strategic_business_review s JOIN account a ON a.id = s.account_id
+           ORDER BY s.review_date DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          account: r.account,
+          reviewDate: fmtDate(r.review_date) ?? "",
+          periodLabel: r.period_label,
+          status: r.status,
+        }));
+      } catch {
+        return mockRepositories.engagements.listSbrs();
+      }
+    },
+
+    async getSbr(id: string): Promise<SbrDetail | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string;
+          contact_id: string | null;
+          benchmark_assessment_id: string | null;
+          review_date: Date;
+          period_label: string | null;
+          status: string;
+          concerns: string | null;
+          summary: string | null;
+          next_actions: string | null;
+        }>(
+          `SELECT id, account_id, contact_id, benchmark_assessment_id, review_date,
+                  period_label, status, concerns, summary, next_actions
+           FROM strategic_business_review WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const [{ rows: scores }, { rows: tickets }] = await Promise.all([
+          pool.query<{ dimension: string; rating: string | null; note: string | null }>(
+            `SELECT dimension, rating, note FROM sbr_dimension_score
+             WHERE sbr_id = $1 ORDER BY dimension`,
+            [id],
+          ),
+          pool.query<{
+            id: string;
+            account: string;
+            number: string | null;
+            title: string;
+            status: string | null;
+            priority: string | null;
+            opened_at: Date | null;
+          }>(
+            `SELECT t.id, a.name AS account, t.number, t.title, t.status, t.priority, t.opened_at
+             FROM sbr_ticket st JOIN ticket t ON t.id = st.ticket_id
+             JOIN account a ON a.id = t.account_id
+             WHERE st.sbr_id = $1 ORDER BY t.opened_at DESC NULLS LAST`,
+            [id],
+          ),
+        ]);
+        return {
+          id: r.id,
+          accountId: r.account_id,
+          contactId: r.contact_id,
+          benchmarkAssessmentId: r.benchmark_assessment_id,
+          reviewDate: fmtDate(r.review_date) ?? "",
+          periodLabel: r.period_label,
+          status: r.status,
+          concerns: r.concerns,
+          summary: r.summary,
+          nextActions: r.next_actions,
+          dimensionScores: scores.map((s) => ({
+            dimension: s.dimension,
+            rating: s.rating,
+            note: s.note,
+          })),
+          tickets: tickets.map((t) => ({
+            id: t.id,
+            account: t.account,
+            number: t.number,
+            title: t.title,
+            status: t.status,
+            priority: t.priority,
+            opened: fmtDate(t.opened_at),
+          })),
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createSbr(input: SbrInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.createSbr(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO strategic_business_review
+           (account_id, contact_id, benchmark_assessment_id, review_date, period_label,
+            status, concerns, summary, next_actions)
+         VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, $9)
+         RETURNING id`,
+        [
+          input.accountId,
+          nullIfEmpty(input.contactId),
+          nullIfEmpty(input.benchmarkAssessmentId),
+          input.reviewDate,
+          nullIfEmpty(input.periodLabel),
+          input.status,
+          nullIfEmpty(input.concerns),
+          nullIfEmpty(input.summary),
+          nullIfEmpty(input.nextActions),
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateSbr(id: string, input: SbrInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.updateSbr(id, input);
+      await pool.query(
+        `UPDATE strategic_business_review
+         SET account_id = $1, contact_id = $2, benchmark_assessment_id = $3,
+             review_date = $4::date, period_label = $5, status = $6, concerns = $7,
+             summary = $8, next_actions = $9
+         WHERE id = $10`,
+        [
+          input.accountId,
+          nullIfEmpty(input.contactId),
+          nullIfEmpty(input.benchmarkAssessmentId),
+          input.reviewDate,
+          nullIfEmpty(input.periodLabel),
+          input.status,
+          nullIfEmpty(input.concerns),
+          nullIfEmpty(input.summary),
+          nullIfEmpty(input.nextActions),
+          id,
+        ],
+      );
+    },
+
+    async deleteSbr(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.deleteSbr(id);
+      await pool.query(`DELETE FROM strategic_business_review WHERE id = $1`, [id]);
+    },
+
+    async saveAnswers(
+      engagementType: string,
+      engagementId: string,
+      answers: AnswerInput[],
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.saveAnswers(engagementType, engagementId, answers);
+      // One upsert per answer; the UNIQUE (type,id,question) constraint keeps one row.
+      for (const a of answers) {
+        await pool.query(
+          `INSERT INTO engagement_answer
+             (engagement_type, engagement_id, question_id, value_text, value_number,
+              value_bool, value_json, value_date, answered_by_contact_id)
+           VALUES ($1::engagement_kind, $2, $3, $4, $5::numeric, $6, $7::jsonb, $8::date, $9)
+           ON CONFLICT (engagement_type, engagement_id, question_id) DO UPDATE SET
+             value_text = excluded.value_text, value_number = excluded.value_number,
+             value_bool = excluded.value_bool, value_json = excluded.value_json,
+             value_date = excluded.value_date,
+             answered_by_contact_id = excluded.answered_by_contact_id, answered_at = now()`,
+          [
+            engagementType,
+            engagementId,
+            a.questionId,
+            nullIfEmpty(a.valueText),
+            nullIfEmpty(a.valueNumber),
+            a.valueBool,
+            a.valueJson == null ? null : JSON.stringify(a.valueJson),
+            nullIfEmpty(a.valueDate),
+            nullIfEmpty(a.answeredByContactId),
+          ],
+        );
+      }
+    },
+
+    async listAssessmentArtifacts(assessmentId: string): Promise<ArtifactRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listAssessmentArtifacts(assessmentId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          source: string;
+          kind: string;
+          title: string | null;
+          dimension: string | null;
+          collected_at: Date | null;
+          summary_gold: string | null;
+        }>(
+          `SELECT id, source, kind, title, dimension, collected_at, summary_gold
+           FROM assessment_artifact WHERE assessment_id = $1 ORDER BY collected_at DESC`,
+          [assessmentId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          source: r.source,
+          kind: r.kind,
+          title: r.title,
+          dimension: r.dimension,
+          collectedAt: fmtDate(r.collected_at),
+          summary: r.summary_gold,
+        }));
+      } catch {
+        return mockRepositories.engagements.listAssessmentArtifacts(assessmentId);
+      }
+    },
+
+    async listTickets(): Promise<TicketRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listTickets();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account: string;
+          number: string | null;
+          title: string;
+          status: string | null;
+          priority: string | null;
+          opened_at: Date | null;
+        }>(
+          `SELECT t.id, a.name AS account, t.number, t.title, t.status, t.priority, t.opened_at
+           FROM ticket t JOIN account a ON a.id = t.account_id
+           ORDER BY t.opened_at DESC NULLS LAST`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          account: r.account,
+          number: r.number,
+          title: r.title,
+          status: r.status,
+          priority: r.priority,
+          opened: fmtDate(r.opened_at),
+        }));
+      } catch {
+        return mockRepositories.engagements.listTickets();
       }
     },
   },
