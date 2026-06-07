@@ -117,6 +117,9 @@ export const mockRepositories: Repositories = {
     async opportunityOptions() {
       return opportunities.map((o) => ({ id: o.id, name: `${o.account} — ${o.name}` }));
     },
+    async contactOptions() {
+      return [];
+    },
   },
   agent: {
     async getConversation() {

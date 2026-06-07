@@ -904,6 +904,22 @@ export const postgresRepositories: Repositories = {
         return mockRepositories.crm.opportunityOptions();
       }
     },
+
+    async contactOptions(): Promise<Option[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.contactOptions();
+      try {
+        const { rows } = await pool.query<{ id: string; name: string }>(
+          `SELECT c.id, c.full_name || ' (' || coalesce(a.name, '—') || ')' AS name
+           FROM contact c
+           LEFT JOIN account a ON a.id = c.account_id
+           ORDER BY c.full_name`,
+        );
+        return rows.map((r) => ({ id: r.id, name: r.name }));
+      } catch {
+        return mockRepositories.crm.contactOptions();
+      }
+    },
   },
 
   agent: {

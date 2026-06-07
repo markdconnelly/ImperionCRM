@@ -8,6 +8,7 @@ import type { NavItem } from "@/types";
 export const navPrimary: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/" },
   { key: "leads", label: "Leads", icon: "UserPlus", href: "/leads" },
+  { key: "discovery", label: "Discovery", icon: "ClipboardList", href: "/discovery" },
   { key: "accounts", label: "Accounts", icon: "Building2", href: "/accounts" },
   { key: "contacts", label: "Contacts", icon: "Contact", href: "/contacts" },
   { key: "pipeline", label: "Pipeline", icon: "GitBranch", href: "/pipeline" },
