@@ -106,3 +106,21 @@ export async function deleteDiscoveryAction(formData: FormData) {
   await engagements.deleteDiscoveryCall(id);
   revalidatePath("/discovery");
 }
+
+// ── Provenance: spawn an opportunity from a qualified discovery call ─────────
+
+export async function spawnOpportunityFromDiscovery(formData: FormData) {
+  const discoveryId = String(formData.get("discoveryId") ?? "");
+  const accountId = String(formData.get("accountId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.spawnOpportunity({
+    accountId,
+    name: "New opportunity",
+    salesStage: "qualified",
+    amountMrr: null,
+    sourceDiscoveryId: discoveryId,
+    sourceAssessmentId: null,
+    sourceSbrId: null,
+  });
+  redirect("/pipeline");
+}

@@ -64,3 +64,34 @@ export async function deleteSbrAction(formData: FormData) {
   await engagements.deleteSbr(id);
   revalidatePath("/sbr");
 }
+
+// ── Provenance: spawn downstream work from an SBR (ADR-0023) ─────────────────
+
+export async function spawnOpportunityFromSbr(formData: FormData) {
+  const sbrId = String(formData.get("sbrId") ?? "");
+  const accountId = String(formData.get("accountId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.spawnOpportunity({
+    accountId,
+    name: "Expansion opportunity",
+    salesStage: "qualified",
+    amountMrr: null,
+    sourceDiscoveryId: null,
+    sourceAssessmentId: null,
+    sourceSbrId: sbrId,
+  });
+  redirect("/pipeline");
+}
+
+export async function spawnTicketFromSbr(formData: FormData) {
+  const sbrId = String(formData.get("sbrId") ?? "");
+  const accountId = String(formData.get("accountId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.spawnTicket({
+    accountId,
+    title: "SBR follow-up item",
+    sourceAssessmentId: null,
+    sourceSbrId: sbrId,
+  });
+  redirect("/tickets");
+}
