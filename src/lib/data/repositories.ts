@@ -16,6 +16,7 @@ import type {
   Kpi,
   OpportunityRow,
   PipelineColumn,
+  ProjectRow,
   ProposalRow,
   TaskRow,
 } from "@/types";
@@ -53,6 +54,20 @@ export interface ProposalInput {
   notes: string | null;
 }
 export interface ProposalEditable extends ProposalInput {
+  id: string;
+}
+
+/** Editable delivery-project fields. A project always belongs to one account. */
+export interface ProjectInput {
+  accountId: string;
+  opportunityId: string | null;
+  name: string;
+  type: string; // onboarding|implementation
+  status: string; // not_started|in_progress|blocked|complete
+  targetLiveDate: string | null; // yyyy-mm-dd or null
+  notes: string | null;
+}
+export interface ProjectEditable extends ProjectInput {
   id: string;
 }
 
@@ -95,6 +110,13 @@ export interface CrmRepository {
   createProposal(input: ProposalInput): Promise<void>;
   updateProposal(id: string, input: ProposalInput): Promise<void>;
   deleteProposal(id: string): Promise<void>;
+
+  // Delivery projects (full CRUD) — onboarding/implementation (ADR-0020)
+  listProjects(): Promise<ProjectRow[]>;
+  getProject(id: string): Promise<ProjectEditable | null>;
+  createProject(input: ProjectInput): Promise<void>;
+  updateProject(id: string, input: ProjectInput): Promise<void>;
+  deleteProject(id: string): Promise<void>;
 
   /** Account options for select dropdowns. */
   accountOptions(): Promise<Option[]>;
