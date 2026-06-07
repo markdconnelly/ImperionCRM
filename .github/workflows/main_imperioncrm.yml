@@ -1,6 +1,10 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
+# Deploy to Azure Web App - imperioncrm (Linux, NODE|24-lts).
+#
+# Ships SOURCE and lets Azure Oryx build on the server (npm install + npm run
+# build + npm start). The previous pipeline built on the runner and shipped the
+# result via actions/upload-artifact, which dropped the node_modules/.bin/next
+# symlink -> `next start` exited 127 -> container failed to start -> 503.
+# Server-side build (App setting SCM_DO_BUILD_DURING_DEPLOYMENT=true) avoids that.
 name: Build and deploy Node.js app to Azure Web App - imperioncrm
 
 on:
@@ -10,44 +14,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
-
+      id-token: write # required for the azure/login OIDC token
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
-        with:
-          node-version: '24.x'
-
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: .
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: node-app
-      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -55,11 +29,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A8892DC7DD8147B0A5A77AD9D291ADD1 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1BAC47B85DE240948E6DED7D3C2A0490 }}
 
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
+      - name: Deploy source to Azure Web App (Oryx builds on server)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'imperioncrm'
-          slot-name: 'Production'
+          app-name: imperioncrm
+          slot-name: Production
           package: .
-          
