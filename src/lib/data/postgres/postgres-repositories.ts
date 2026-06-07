@@ -11,6 +11,17 @@ import { mockRepositories } from "@/lib/data/mock/mock-repositories";
 import type { Repositories } from "@/lib/data/repositories";
 import type { Account, Health, Kpi, PipelineColumn, PipelineStage } from "@/types";
 
+const ONBOARDING_LIFECYCLE = ["onboarding", "implementation", "operational_readiness"];
+
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+function fmtUsd(n: number): string {
+  return usd.format(Number.isFinite(n) ? n : 0);
+}
+
 /** Map the account lifecycle stage to the dashboard's five-stage strip. */
 function toPipelineStage(lifecycle: string): PipelineStage {
   switch (lifecycle) {
@@ -54,23 +65,24 @@ export const postgresRepositories: Repositories = {
       if (!pool) return mockRepositories.dashboard.getKpis();
       try {
         const { rows } = await pool.query<{
-          total: string;
+          open_pipeline: string;
+          active_mrr: string;
+          open_deals: string;
           managed: string;
-          prospects: string;
-          inactive: string;
         }>(
-          `SELECT count(*) AS total,
-                  count(*) FILTER (WHERE lifecycle_stage='managed_active') AS managed,
-                  count(*) FILTER (WHERE relationship='prospect')          AS prospects,
-                  count(*) FILTER (WHERE NOT is_active)                    AS inactive
-           FROM account`,
+          `SELECT
+             coalesce(sum(o.amount_mrr) FILTER (WHERE o.sales_stage IN ('lead','qualified','proposal')), 0) AS open_pipeline,
+             coalesce(sum(o.amount_mrr) FILTER (WHERE o.sales_stage = 'won'), 0)                            AS active_mrr,
+             count(*) FILTER (WHERE o.sales_stage IN ('lead','qualified','proposal'))                       AS open_deals,
+             (SELECT count(*) FROM account WHERE lifecycle_stage = 'managed_active')                        AS managed
+           FROM opportunity o`,
         );
         const r = rows[0];
         return [
-          { label: "Accounts", value: r.total },
+          { label: "Open Pipeline", value: fmtUsd(Number(r.open_pipeline)) },
+          { label: "Active MRR", value: `${fmtUsd(Number(r.active_mrr))}/mo` },
           { label: "Managed", value: r.managed },
-          { label: "Prospects", value: r.prospects },
-          { label: "Inactive", value: r.inactive },
+          { label: "Open Deals", value: r.open_deals },
         ];
       } catch {
         return mockRepositories.dashboard.getKpis();
@@ -81,19 +93,33 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.dashboard.getPipeline();
       try {
-        const { rows } = await pool.query<{ lifecycle_stage: string; count: string }>(
-          `SELECT lifecycle_stage, count(*) AS count FROM account GROUP BY lifecycle_stage`,
+        const [opps, accts] = await Promise.all([
+          pool.query<{ sales_stage: string; c: string; mrr: string }>(
+            `SELECT sales_stage, count(*) AS c, coalesce(sum(amount_mrr),0) AS mrr
+             FROM opportunity GROUP BY sales_stage`,
+          ),
+          pool.query<{ lifecycle_stage: string; c: string }>(
+            `SELECT lifecycle_stage, count(*) AS c FROM account GROUP BY lifecycle_stage`,
+          ),
+        ]);
+        const opp = new Map(opps.rows.map((r) => [r.sales_stage, r]));
+        const stageCount = (s: string) => Number(opp.get(s)?.c ?? 0);
+        const stageMrr = (s: string) => Number(opp.get(s)?.mrr ?? 0);
+        const onboardingCount = accts.rows
+          .filter((r) => ONBOARDING_LIFECYCLE.includes(r.lifecycle_stage))
+          .reduce((sum, r) => sum + Number(r.c), 0);
+        const managedCount = Number(
+          accts.rows.find((r) => r.lifecycle_stage === "managed_active")?.c ?? 0,
         );
-        const counts = new Map<PipelineStage, number>(PIPELINE_ORDER.map((s) => [s, 0]));
-        for (const row of rows) {
-          const stage = toPipelineStage(row.lifecycle_stage);
-          counts.set(stage, (counts.get(stage) ?? 0) + Number(row.count));
-        }
-        return PIPELINE_ORDER.map((stage) => ({
-          stage,
-          count: counts.get(stage) ?? 0,
-          value: "—",
-        }));
+
+        const byStage: Record<PipelineStage, { count: number; value: string }> = {
+          Lead: { count: stageCount("lead"), value: fmtUsd(stageMrr("lead")) },
+          Qualified: { count: stageCount("qualified"), value: fmtUsd(stageMrr("qualified")) },
+          Proposal: { count: stageCount("proposal"), value: fmtUsd(stageMrr("proposal")) },
+          Onboarding: { count: onboardingCount, value: "—" },
+          Active: { count: managedCount, value: `${fmtUsd(stageMrr("won"))}/mo` },
+        };
+        return PIPELINE_ORDER.map((stage) => ({ stage, ...byStage[stage] }));
       } catch {
         return mockRepositories.dashboard.getPipeline();
       }
@@ -111,9 +137,12 @@ export const postgresRepositories: Repositories = {
           is_active: boolean;
           health_score: number | null;
           owner: string | null;
+          mrr: string;
         }>(
           `SELECT a.id, a.name, a.lifecycle_stage, a.relationship, a.is_active,
-                  a.health_score, u.display_name AS owner
+                  a.health_score, u.display_name AS owner,
+                  coalesce((SELECT sum(o.amount_mrr) FROM opportunity o
+                            WHERE o.account_id = a.id AND o.sales_stage = 'won'), 0) AS mrr
            FROM account a
            LEFT JOIN app_user u ON u.id = a.owner_user_id
            WHERE NOT a.is_active OR a.lifecycle_stage IN ('prospect','dormant')
@@ -125,7 +154,7 @@ export const postgresRepositories: Repositories = {
           name: row.name,
           stage: toPipelineStage(row.lifecycle_stage),
           owner: row.owner ?? "—",
-          mrr: "—",
+          mrr: Number(row.mrr) > 0 ? `${fmtUsd(Number(row.mrr))}/mo` : "—",
           health: toHealth(row),
           note: row.is_active
             ? `${row.relationship ?? "unknown"} · ${row.lifecycle_stage.replace(/_/g, " ")}`
