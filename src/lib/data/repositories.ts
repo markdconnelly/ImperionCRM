@@ -496,12 +496,25 @@ export interface CampaignInput {
   endAt: string | null;
 }
 
-/** Editable audience fields. `definition` is opaque criteria JSON (dynamic). */
+/** One enrichment-attribute criterion for an audience (contains-match on value). */
+export interface AudienceCriterion {
+  key: string; // contact_enrichment.attribute_key
+  value: string; // matched with ILIKE %value%
+}
+
+/** Editable audience fields. `criteria` builds the definition and the member set. */
 export interface AudienceInput {
   name: string;
   description: string | null;
   kind: string; // static|dynamic
-  definition: unknown | null;
+  criteria: AudienceCriterion[];
+}
+
+/** Editable ad fields (an ad belongs to a campaign). */
+export interface AdInput {
+  name: string;
+  status: string; // draft|active|paused|completed
+  creative: string | null; // free-text headline/body for the scaffold
 }
 
 /** Demand-gen repository: campaigns/ads/metrics and audiences over profiles. */
@@ -509,11 +522,13 @@ export interface CampaignsRepository {
   listCampaigns(): Promise<CampaignRow[]>;
   getCampaign(id: string): Promise<CampaignDetail | null>;
   createCampaign(input: CampaignInput): Promise<void>;
+  createAd(campaignId: string, input: AdInput): Promise<void>;
   listAudiences(): Promise<AudienceRow[]>;
   getAudienceMembers(id: string): Promise<AudienceMemberRow[]>;
+  /** Create an audience and materialize its members from the criteria. */
   createAudience(input: AudienceInput): Promise<void>;
-  /** Preview who an audience definition would include (ad eligibility flagged). */
-  previewAudienceMembers(definition: unknown): Promise<AudienceMemberRow[]>;
+  /** Preview who a set of criteria would include (ad eligibility flagged). */
+  previewAudienceMembers(criteria: AudienceCriterion[]): Promise<AudienceMemberRow[]>;
   /** Launch ads against an audience — consent-gated stub; returns # eligible. */
   launchAudience(id: string): Promise<number>;
 }
@@ -539,10 +554,28 @@ export interface LeadsRepository {
 
 // ── Automation workflows (ADR-0014/0027) ─────────────────────────────────────
 
+/** Editable workflow fields. */
+export interface WorkflowInput {
+  name: string;
+  kind: string; // nurture|pre_discovery|re_engagement
+  status: string; // active|paused|archived
+  trigger: string | null; // free-text description for the scaffold
+}
+
+/** One step to append to a workflow. */
+export interface WorkflowStepInput {
+  kind: string; // send_email|send_sms|chat_prompt|agent_enrich|wait|branch
+  config: string | null; // free-text config for the scaffold
+}
+
 /** Workflows repository: nurture + pre-discovery sequences and enrollments. */
 export interface WorkflowsRepository {
   listWorkflows(): Promise<WorkflowRow[]>;
   getWorkflow(id: string): Promise<WorkflowDetail | null>;
+  createWorkflow(input: WorkflowInput): Promise<string>;
+  /** Append a step at the next ordinal. */
+  addStep(workflowId: string, input: WorkflowStepInput): Promise<void>;
+  deleteStep(stepId: string): Promise<void>;
   listEnrollments(): Promise<EnrollmentRow[]>;
   /** Enroll a contact in a workflow (e.g. a not-fit discovery → nurture). */
   enroll(workflowId: string, contactId: string, accountId: string | null): Promise<void>;

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field, TextInput, Select } from "@/components/ui/form";
 import { getRepositories } from "@/lib/data";
+import { createAdAction } from "../actions";
 
 export default async function CampaignDetailPage({
   params,
@@ -67,6 +69,38 @@ export default async function CampaignDetailPage({
           </table>
         </div>
       </div>
+
+      <form
+        action={createAdAction}
+        className="flex max-w-lg flex-col gap-3 rounded-xl border border-border bg-panel p-4"
+      >
+        <input type="hidden" name="campaignId" value={campaign.id} />
+        <p className="text-xs font-medium text-dim">Add an ad</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Name">
+            <TextInput name="name" required placeholder="e.g. Carousel — what attackers see" />
+          </Field>
+          <Field label="Status">
+            <Select name="status" defaultValue="draft">
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="completed">Completed</option>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Creative (copy)">
+          <TextInput name="creative" placeholder="Headline / body" />
+        </Field>
+        <div>
+          <button
+            type="submit"
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+          >
+            Add ad
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

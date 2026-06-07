@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { WorkflowsTable } from "@/components/workflows/workflows-table";
 import { EnrollmentsTable } from "@/components/workflows/enrollments-table";
@@ -17,7 +18,14 @@ export default async function WorkflowsPage() {
         <PageHeader
           title="Workflows"
           description="Nurture and pre-discovery automation. Steps run in-app; Power Automate only fires the send/notify."
-        />
+        >
+          <Link
+            href="/workflows/new"
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+          >
+            + New workflow
+          </Link>
+        </PageHeader>
         <WorkflowsTable workflows={list} />
       </section>
 

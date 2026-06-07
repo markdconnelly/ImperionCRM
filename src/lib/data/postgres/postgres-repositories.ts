@@ -13,8 +13,10 @@ import type {
   AccountEditable,
   AccountInput,
   AnswerInput,
+  AdInput,
   AssessmentEditable,
   AssessmentInput,
+  AudienceCriterion,
   AudienceInput,
   CampaignInput,
   ConnectionInput,
@@ -41,6 +43,8 @@ import type {
   SpawnTicketInput,
   TaskEditable,
   TaskInput,
+  WorkflowInput,
+  WorkflowStepInput,
 } from "@/lib/data/repositories";
 import type {
   Account,
@@ -2503,6 +2507,21 @@ export const postgresRepositories: Repositories = {
       );
     },
 
+    async createAd(campaignId: string, input: AdInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.createAd(campaignId, input);
+      await pool.query(
+        `INSERT INTO ad (campaign_id, name, status, creative)
+         VALUES ($1, $2, $3::campaign_status, $4::jsonb)`,
+        [
+          campaignId,
+          input.name,
+          input.status,
+          input.creative == null ? null : JSON.stringify({ copy: input.creative }),
+        ],
+      );
+    },
+
     async listAudiences(): Promise<AudienceRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.campaigns.listAudiences();
@@ -2573,22 +2592,33 @@ export const postgresRepositories: Repositories = {
     async createAudience(input: AudienceInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.campaigns.createAudience(input);
-      await pool.query(
+      const valid = input.criteria.filter((c) => c.key && c.value);
+      const { rows } = await pool.query<{ id: string }>(
         `INSERT INTO audience (name, description, kind, definition)
-         VALUES ($1, $2, $3::audience_kind, $4::jsonb)`,
-        [
-          input.name,
-          nullIfEmpty(input.description),
-          input.kind,
-          input.definition == null ? null : JSON.stringify(input.definition),
-        ],
+         VALUES ($1, $2, $3::audience_kind, $4::jsonb)
+         RETURNING id`,
+        [input.name, nullIfEmpty(input.description), input.kind, JSON.stringify({ criteria: valid })],
       );
+      const audienceId = rows[0].id;
+      // Materialize the member set from the criteria (over the enrichment dossier).
+      const members = await queryAudienceMatches(pool, valid);
+      for (const m of members) {
+        await pool.query(
+          `INSERT INTO audience_member (audience_id, contact_id, source)
+           VALUES ($1, $2, 'criteria') ON CONFLICT DO NOTHING`,
+          [audienceId, m.contactId],
+        );
+      }
     },
 
-    async previewAudienceMembers(): Promise<AudienceMemberRow[]> {
-      // Dynamic-criteria evaluation lands with the enrichment query engine (later
-      // phase). Scaffold returns nothing rather than guessing.
-      return [];
+    async previewAudienceMembers(criteria: AudienceCriterion[]): Promise<AudienceMemberRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.previewAudienceMembers(criteria);
+      try {
+        return await queryAudienceMatches(pool, criteria);
+      } catch {
+        return mockRepositories.campaigns.previewAudienceMembers(criteria);
+      }
     },
 
     async launchAudience(id: string): Promise<number> {
@@ -2770,6 +2800,36 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async createWorkflow(input: WorkflowInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.createWorkflow(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO workflow (name, kind, status, trigger)
+         VALUES ($1, $2::workflow_kind, $3, $4::jsonb)
+         RETURNING id`,
+        [input.name, input.kind, input.status, input.trigger ? JSON.stringify({ note: input.trigger }) : null],
+      );
+      return rows[0].id;
+    },
+
+    async addStep(workflowId: string, input: WorkflowStepInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.addStep(workflowId, input);
+      await pool.query(
+        `INSERT INTO workflow_step (workflow_id, ordinal, kind, config)
+         VALUES ($1,
+                 COALESCE((SELECT MAX(ordinal) + 1 FROM workflow_step WHERE workflow_id = $1), 1),
+                 $2::workflow_step_kind, $3::jsonb)`,
+        [workflowId, input.kind, input.config ? JSON.stringify({ note: input.config }) : null],
+      );
+    },
+
+    async deleteStep(stepId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.deleteStep(stepId);
+      await pool.query(`DELETE FROM workflow_step WHERE id = $1`, [stepId]);
+    },
+
     async listEnrollments(): Promise<EnrollmentRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.workflows.listEnrollments();
@@ -2881,4 +2941,48 @@ function mapConnection(r: ConnectionDbRow): ConnectionRow {
     lastSync: fmtDateTime(r.last_sync_at),
     connectedAt: fmtDate(r.connected_at),
   };
+}
+
+/**
+ * Match contacts against a set of enrichment criteria (ADR-0026). A contact matches
+ * when, for every criterion, it has an enrichment fact whose attribute_key equals the
+ * key and whose value contains the given value (ILIKE). Ad eligibility (current
+ * ad_targeting consent) is flagged on each match. Empty criteria → no matches.
+ */
+async function queryAudienceMatches(
+  pool: NonNullable<ReturnType<typeof getPool>>,
+  criteria: AudienceCriterion[],
+): Promise<AudienceMemberRow[]> {
+  const valid = criteria.filter((c) => c.key && c.value);
+  if (valid.length === 0) return [];
+  const params: unknown[] = [];
+  const clauses = valid.map((c) => {
+    params.push(c.key);
+    const ki = params.length;
+    params.push(`%${c.value}%`);
+    const vi = params.length;
+    return `EXISTS (SELECT 1 FROM contact_enrichment e
+              WHERE e.contact_id = c.id AND e.attribute_key = $${ki} AND e.value_text ILIKE $${vi})`;
+  });
+  const { rows } = await pool.query<{
+    contact_id: string;
+    full_name: string;
+    account: string | null;
+    ad_consent: boolean;
+  }>(
+    `SELECT c.id AS contact_id, c.full_name, a.name AS account,
+            (cc.state = 'opt_in') AS ad_consent
+     FROM contact c
+     LEFT JOIN account a ON a.id = c.account_id
+     LEFT JOIN current_consent cc ON cc.contact_id = c.id AND cc.channel = 'ad_targeting'
+     WHERE ${clauses.join(" AND ")}
+     ORDER BY c.full_name`,
+    params,
+  );
+  return rows.map((r) => ({
+    contactId: r.contact_id,
+    fullName: r.full_name,
+    account: r.account,
+    adConsent: r.ad_consent === true,
+  }));
 }

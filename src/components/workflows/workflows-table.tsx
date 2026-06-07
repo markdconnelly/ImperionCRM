@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { WorkflowRow } from "@/types";
 
 const KIND_LABEL: Record<string, string> = {
@@ -23,7 +24,11 @@ export function WorkflowsTable({ workflows }: { workflows: WorkflowRow[] }) {
           <tbody>
             {workflows.map((w) => (
               <tr key={w.id} className="border-t border-border hover:bg-panel-2">
-                <td className="px-4 py-3 font-medium">{w.name}</td>
+                <td className="px-4 py-3 font-medium">
+                  <Link href={`/workflows/${w.id}`} className="hover:text-accent">
+                    {w.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-3 text-dim">{KIND_LABEL[w.kind] ?? w.kind}</td>
                 <td className={`px-4 py-3 ${w.status === "active" ? "text-green" : "text-dim"}`}>
                   {w.status}
