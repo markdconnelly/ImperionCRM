@@ -70,9 +70,11 @@ import type {
   ExternalIdentityRow,
   Health,
   InteractionRow,
+  KnowledgeHit,
   Kpi,
   LeadCaptureEventRow,
   LeadHookRow,
+  SecurityPosture,
   OpportunityRow,
   PipelineColumn,
   PipelineStage,
@@ -2898,6 +2900,105 @@ export const postgresRepositories: Repositories = {
         `UPDATE workflow_enrollment SET status = 'exited', completed_at = now() WHERE id = $1`,
         [enrollmentId],
       );
+    },
+  },
+
+  // ── Knowledge search over the gold layer ──────────────────────────────────
+  knowledge: {
+    async search(query: string): Promise<KnowledgeHit[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.knowledge.search(query);
+      const q = query.trim();
+      if (q === "") return [];
+      try {
+        const like = `%${q}%`;
+        const [contacts, interactions] = await Promise.all([
+          pool.query<{ id: string; title: string; snippet: string | null }>(
+            `SELECT c.id, c.full_name AS title,
+                    COALESCE(c.headline, c.title, a.name) AS snippet
+             FROM contact c LEFT JOIN account a ON a.id = c.account_id
+             WHERE c.full_name ILIKE $1
+                OR EXISTS (SELECT 1 FROM contact_enrichment e
+                           WHERE e.contact_id = c.id AND e.value_text ILIKE $1)
+             ORDER BY c.full_name LIMIT 15`,
+            [like],
+          ),
+          pool.query<{
+            id: string;
+            title: string | null;
+            snippet: string | null;
+            occurred_at: Date | null;
+          }>(
+            `SELECT i.id, COALESCE(i.subject, i.source::text) AS title,
+                    i.summary_gold AS snippet, i.occurred_at
+             FROM interaction i
+             WHERE i.summary_gold ILIKE $1 OR i.subject ILIKE $1
+             ORDER BY i.occurred_at DESC LIMIT 15`,
+            [like],
+          ),
+        ]);
+        return [
+          ...contacts.rows.map((r) => ({
+            id: r.id,
+            kind: "contact",
+            title: r.title,
+            snippet: r.snippet,
+            href: `/contacts/${r.id}`,
+            when: null,
+          })),
+          ...interactions.rows.map((r) => ({
+            id: r.id,
+            kind: "interaction",
+            title: r.title ?? "Interaction",
+            snippet: r.snippet,
+            href: "/communications",
+            when: fmtDateTime(r.occurred_at),
+          })),
+        ];
+      } catch {
+        return mockRepositories.knowledge.search(query);
+      }
+    },
+  },
+
+  // ── Security / compliance posture ─────────────────────────────────────────
+  security: {
+    async getPosture(): Promise<SecurityPosture> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.getPosture();
+      try {
+        const { rows } = await pool.query<{
+          total_contacts: string;
+          with_consent: string;
+          ad_eligible: string;
+          conn_active: string;
+          conn_total: string;
+        }>(
+          `SELECT
+             (SELECT count(*) FROM contact) AS total_contacts,
+             (SELECT count(DISTINCT contact_id) FROM current_consent WHERE state = 'opt_in') AS with_consent,
+             (SELECT count(DISTINCT contact_id) FROM current_consent
+                WHERE channel = 'ad_targeting' AND state = 'opt_in') AS ad_eligible,
+             (SELECT count(*) FROM connection WHERE status = 'active') AS conn_active,
+             (SELECT count(*) FROM connection) AS conn_total`,
+        );
+        const { rows: channels } = await pool.query<{ label: string; count: string }>(
+          `SELECT channel::text AS label, count(*) AS count
+           FROM current_consent WHERE state = 'opt_in'
+           GROUP BY channel ORDER BY channel`,
+        );
+        const r = rows[0];
+        return {
+          totalContacts: Number(r.total_contacts),
+          contactsWithConsent: Number(r.with_consent),
+          adEligible: Number(r.ad_eligible),
+          connectionsActive: Number(r.conn_active),
+          connectionsTotal: Number(r.conn_total),
+          consentByChannel: channels.map((c) => ({ label: c.label, count: Number(c.count) })),
+        };
+      } catch {
+        return mockRepositories.security.getPosture();
+      }
     },
   },
 };
