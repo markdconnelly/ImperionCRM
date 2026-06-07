@@ -4,8 +4,15 @@ import { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { AgentPanel } from "@/components/agent/agent-panel";
+import type { SessionUser } from "@/types";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: SessionUser;
+}) {
   // In-memory only for now. Per CLAUDE.md §7.2, ready to be persisted
   // (user setting / localStorage) without changing this component's shape.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -17,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         collapsed={sidebarCollapsed}
         onExpand={() => setSidebarCollapsed(false)}
         active="dashboard"
+        user={user}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
