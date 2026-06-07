@@ -61,6 +61,17 @@ export interface ContactRow {
   account: string | null; // account name
 }
 
+/** A row in the Proposals list. */
+export interface ProposalRow {
+  id: string;
+  title: string;
+  opportunity: string; // opportunity name
+  account: string; // account name
+  status: string; // proposal_status label
+  amount: string; // formatted MRR or "—"
+  sent: string | null; // formatted sent date
+}
+
 /** A row in the Tasks list. */
 export interface TaskRow {
   id: string;

@@ -12,6 +12,8 @@ import type {
   AccountEditable,
   AccountInput,
   Option,
+  ProposalEditable,
+  ProposalInput,
   Repositories,
   TaskEditable,
   TaskInput,
@@ -24,6 +26,7 @@ import type {
   OpportunityRow,
   PipelineColumn,
   PipelineStage,
+  ProposalRow,
   TaskRow,
 } from "@/types";
 
@@ -445,6 +448,129 @@ export const postgresRepositories: Repositories = {
       await pool.query(`DELETE FROM task WHERE id = $1`, [id]);
     },
 
+    async listProposals(): Promise<ProposalRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProposals();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          title: string;
+          opportunity: string;
+          account: string;
+          status: string;
+          amount_mrr: string | null;
+          sent_at: Date | null;
+        }>(
+          `SELECT p.id, p.title, o.name AS opportunity, a.name AS account,
+                  p.status, p.amount_mrr, p.sent_at
+           FROM proposal p
+           JOIN opportunity o ON o.id = p.opportunity_id
+           JOIN account a ON a.id = o.account_id
+           ORDER BY p.created_at DESC`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          opportunity: row.opportunity,
+          account: row.account,
+          status: row.status,
+          amount:
+            row.amount_mrr != null && Number(row.amount_mrr) > 0
+              ? `${fmtUsd(Number(row.amount_mrr))}/mo`
+              : "—",
+          sent: fmtDate(row.sent_at),
+        }));
+      } catch {
+        return mockRepositories.crm.listProposals();
+      }
+    },
+
+    async getProposal(id: string): Promise<ProposalEditable | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          opportunity_id: string;
+          title: string;
+          status: string;
+          amount_mrr: string | null;
+          document_url: string | null;
+          notes: string | null;
+        }>(
+          `SELECT id, opportunity_id, title, status, amount_mrr, document_url, notes
+           FROM proposal WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          opportunityId: r.opportunity_id,
+          title: r.title,
+          status: r.status,
+          amountMrr: r.amount_mrr,
+          documentUrl: r.document_url,
+          notes: r.notes,
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createProposal(input: ProposalInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createProposal(input);
+      // Stamp lifecycle timestamps from the chosen status (ADR-0019).
+      await pool.query(
+        `INSERT INTO proposal
+           (opportunity_id, title, status, amount_mrr, document_url, notes, sent_at, decided_at)
+         VALUES (
+           $1, $2, $3::proposal_status, $4::numeric, $5, $6,
+           CASE WHEN $3 = 'draft' THEN NULL ELSE now() END,
+           CASE WHEN $3 IN ('accepted','declined') THEN now() ELSE NULL END
+         )`,
+        [
+          input.opportunityId,
+          input.title,
+          input.status,
+          nullIfEmpty(input.amountMrr),
+          nullIfEmpty(input.documentUrl),
+          nullIfEmpty(input.notes),
+        ],
+      );
+    },
+
+    async updateProposal(id: string, input: ProposalInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateProposal(id, input);
+      // Preserve an existing sent/decided timestamp; stamp on first transition.
+      await pool.query(
+        `UPDATE proposal
+         SET opportunity_id = $1, title = $2, status = $3::proposal_status,
+             amount_mrr = $4::numeric, document_url = $5, notes = $6,
+             sent_at = CASE WHEN $3 = 'draft' THEN NULL ELSE coalesce(sent_at, now()) END,
+             decided_at = CASE WHEN $3 IN ('accepted','declined')
+                               THEN coalesce(decided_at, now()) ELSE NULL END
+         WHERE id = $7`,
+        [
+          input.opportunityId,
+          input.title,
+          input.status,
+          nullIfEmpty(input.amountMrr),
+          nullIfEmpty(input.documentUrl),
+          nullIfEmpty(input.notes),
+          id,
+        ],
+      );
+    },
+
+    async deleteProposal(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteProposal(id);
+      await pool.query(`DELETE FROM proposal WHERE id = $1`, [id]);
+    },
+
     async accountOptions(): Promise<Option[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.accountOptions();
@@ -455,6 +581,22 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ id: r.id, name: r.name }));
       } catch {
         return mockRepositories.crm.accountOptions();
+      }
+    },
+
+    async opportunityOptions(): Promise<Option[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.opportunityOptions();
+      try {
+        const { rows } = await pool.query<{ id: string; name: string }>(
+          `SELECT o.id, a.name || ' — ' || o.name AS name
+           FROM opportunity o
+           JOIN account a ON a.id = o.account_id
+           ORDER BY a.name, o.name`,
+        );
+        return rows.map((r) => ({ id: r.id, name: r.name }));
+      } catch {
+        return mockRepositories.crm.opportunityOptions();
       }
     },
   },

@@ -1,23 +1,27 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { ModulePlaceholder } from "@/components/ui/module-placeholder";
+import { ProposalsTable } from "@/components/proposals/proposals-table";
+import { getRepositories } from "@/lib/data";
+import { deleteProposalAction } from "./actions";
 
-export default function ProposalsPage() {
+export default async function ProposalsPage() {
+  const { crm } = getRepositories();
+  const proposals = await crm.listProposals();
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Proposals"
-        description="Draft, send, and track proposals tied to opportunities."
-      />
-      <ModulePlaceholder
-        icon="FileText"
-        title="Proposal lifecycle"
-        description="Proposals attach to an opportunity and move through draft → sent → accepted, with the document stored in object storage."
-        points={[
-          "One proposal per opportunity, with status and timestamps",
-          "Generated from Kaseya Quote Manager quotes (future feed)",
-          "Acceptance advances the opportunity toward onboarding",
-        ]}
-      />
+        description={`${proposals.length} proposals tied to opportunities`}
+      >
+        <Link
+          href="/proposals/new"
+          className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+        >
+          + New proposal
+        </Link>
+      </PageHeader>
+      <ProposalsTable proposals={proposals} deleteAction={deleteProposalAction} />
     </div>
   );
 }
