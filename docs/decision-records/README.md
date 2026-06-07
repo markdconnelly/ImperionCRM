@@ -34,3 +34,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0025](./ADR-0025-contact-360-enrichment-and-lawful-basis.md) | Contact-360 enrichment dossier & lawful-basis gating | Accepted |
 | [0026](./ADR-0026-demand-gen-audiences-and-ad-consent.md) | Demand-gen audiences & ad-targeting consent | Accepted |
 | [0027](./ADR-0027-pre-discovery-automation-and-agent-answer-approval.md) | Pre-discovery automation & agent-answer human approval | Accepted |
+| [0028](./ADR-0028-backend-topology-and-network-isolation.md) | Backend topology — separate repo, Functions on shared plan, network-isolated | Accepted |

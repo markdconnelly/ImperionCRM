@@ -165,7 +165,14 @@ boundary stubbed behind interfaces; ✅ CI/CD on App Service (GitHub Actions: li
 typecheck, build, docs check). Hosting landed on **Azure App Service** (ADR-0006),
 not Static Web Apps.
 
-**Next phase — wire the live integrations** (the deliberately-deferred work):
+**Next phase — wire the live integrations** (the deliberately-deferred work). This
+phase lives in a **separate backend repo** (`ImperionCRM-Backend`): Azure Functions on
+the **same App Service Plan**, **network-isolated** so only this front-end App Service
+can call it (private VNet + managed-identity auth), reached server-side via
+`src/lib/services/external-client.ts`. The boundary is **ADR-0028**; the backend's brief
+is `CLAUDE_BACKEND.md` (mirrors what's built here + the full task list). **This repo
+remains the single source of truth for the database schema/migrations** — the backend
+is a consumer; propose schema changes here.
 1. Live OAuth flows + Key Vault token storage for per-user connections, then the
    ingestion engines (Graph email/Teams, YouTube, LinkedIn, Facebook, Plaud) writing
    into the `interaction` timeline and `contact_enrichment` dossier.
