@@ -23,3 +23,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0014](./ADR-0014-consent-ledger-communications.md) | Append-only consent ledger and communications | Accepted |
 | [0015](./ADR-0015-agent-platform-and-board.md) | Agent platform persistence and AI Board | Accepted |
 | [0016](./ADR-0016-rbac-and-identity-model.md) | RBAC and identity model | Accepted |
+| [0017](./ADR-0017-raw-sql-migrations.md) | Raw SQL migrations as schema source of truth | Accepted |
