@@ -13,11 +13,14 @@ import type {
   Account,
   AgentMessage,
   ContactRow,
+  CountDatum,
   Kpi,
   OpportunityRow,
   PipelineColumn,
   ProjectRow,
   ProposalRow,
+  ReportSummary,
+  StageValueDatum,
   TaskRow,
 } from "@/types";
 
@@ -130,9 +133,22 @@ export interface AgentRepository {
   getConversation(): Promise<AgentMessage[]>;
 }
 
+/** Read-only analytics for the Reporting page (aggregates over the spine). */
+export interface ReportsRepository {
+  /** Headline figures (active MRR, open pipeline, win rate, avg time-to-live). */
+  getSummary(): Promise<ReportSummary>;
+  /** Open opportunities by sales stage, with count and total MRR. */
+  pipelineByStage(): Promise<StageValueDatum[]>;
+  /** Proposals grouped by status. */
+  proposalsByStatus(): Promise<CountDatum[]>;
+  /** Delivery projects grouped by status. */
+  projectsByStatus(): Promise<CountDatum[]>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
   crm: CrmRepository;
   agent: AgentRepository;
+  reports: ReportsRepository;
 }

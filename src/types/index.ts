@@ -92,6 +92,27 @@ export interface TaskRow {
   account: string | null; // account name
 }
 
+/** A categorical count datum for charts (e.g. proposals by status). */
+export interface CountDatum {
+  label: string;
+  count: number;
+}
+
+/** Open-pipeline by sales stage: deal count and total MRR per stage. */
+export interface StageValueDatum {
+  stage: string;
+  count: number;
+  mrr: number; // numeric (dollars/mo) for chart axes
+}
+
+/** Headline figures for the Reporting page. */
+export interface ReportSummary {
+  activeMrr: string; // formatted "$X/mo"
+  openPipeline: string; // formatted
+  winRate: string; // formatted "NN%"
+  avgTimeToLive: string; // formatted "NNd" or "—"
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;
