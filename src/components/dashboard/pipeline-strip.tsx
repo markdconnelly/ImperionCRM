@@ -1,6 +1,6 @@
-import { pipeline } from "@/lib/mock-data";
+import type { PipelineColumn } from "@/types";
 
-export function PipelineStrip() {
+export function PipelineStrip({ pipeline }: { pipeline: PipelineColumn[] }) {
   return (
     <div className="rounded-lg border border-border bg-panel p-4">
       <h2 className="mb-3 font-display text-sm font-semibold tracking-tight">

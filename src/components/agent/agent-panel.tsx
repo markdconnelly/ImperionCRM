@@ -1,10 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { agentMessages } from "@/lib/mock-data";
 import { Icon } from "@/components/ui/icon";
+import type { AgentMessage } from "@/types";
 
-export function AgentPanel({ onCollapse }: { onCollapse: () => void }) {
+export function AgentPanel({
+  onCollapse,
+  agentMessages,
+}: {
+  onCollapse: () => void;
+  agentMessages: AgentMessage[];
+}) {
   return (
     <aside className="flex h-full w-80 shrink-0 flex-col border-l border-border bg-panel">
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">

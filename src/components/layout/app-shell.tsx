@@ -4,14 +4,16 @@ import { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { AgentPanel } from "@/components/agent/agent-panel";
-import type { SessionUser } from "@/types";
+import type { AgentMessage, SessionUser } from "@/types";
 
 export function AppShell({
   children,
   user,
+  agentMessages,
 }: {
   children: React.ReactNode;
   user: SessionUser;
+  agentMessages: AgentMessage[];
 }) {
   // In-memory only for now. Per CLAUDE.md §7.2, ready to be persisted
   // (user setting / localStorage) without changing this component's shape.
@@ -39,7 +41,10 @@ export function AppShell({
       </div>
 
       {!agentCollapsed && (
-        <AgentPanel onCollapse={() => setAgentCollapsed(true)} />
+        <AgentPanel
+          onCollapse={() => setAgentCollapsed(true)}
+          agentMessages={agentMessages}
+        />
       )}
     </div>
   );
