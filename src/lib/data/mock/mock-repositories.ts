@@ -134,6 +134,21 @@ export const mockRepositories: Repositories = {
     async getQuestions() {
       return [];
     },
+    async getActiveTemplate() {
+      return null;
+    },
+    async listQuestionsForEditor() {
+      return [];
+    },
+    async getQuestion() {
+      return null;
+    },
+    async createQuestion() {
+      throw new Error(NO_DB);
+    },
+    async updateQuestion() {
+      throw new Error(NO_DB);
+    },
     async listDiscoveryCalls() {
       return [];
     },

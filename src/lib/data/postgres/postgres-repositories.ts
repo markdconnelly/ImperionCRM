@@ -21,6 +21,8 @@ import type {
   ProjectInput,
   ProposalEditable,
   ProposalInput,
+  QuestionEditable,
+  QuestionInput,
   Repositories,
   SbrInput,
   SbrScoreInput,
@@ -43,6 +45,7 @@ import type {
   ProjectRow,
   ProposalRow,
   QuestionRow,
+  QuestionTemplateRow,
   ReportSummary,
   SbrDetail,
   SbrRow,
@@ -1068,10 +1071,177 @@ export const postgresRepositories: Repositories = {
           dimension: r.dimension,
           ordinal: r.ordinal,
           required: r.required,
+          active: true,
         }));
       } catch {
         return mockRepositories.engagements.getQuestions(kind);
       }
+    },
+
+    async getActiveTemplate(kind: string): Promise<QuestionTemplateRow | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          kind: string;
+          version: number;
+          title: string;
+        }>(
+          `SELECT id, kind, version, title FROM question_template
+           WHERE kind = $1::engagement_kind AND status = 'active'
+           ORDER BY version DESC LIMIT 1`,
+          [kind],
+        );
+        return rows[0] ?? null;
+      } catch {
+        return null;
+      }
+    },
+
+    async listQuestionsForEditor(kind: string): Promise<QuestionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listQuestionsForEditor(kind);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          prompt: string;
+          help_text: string | null;
+          response_type: string;
+          options: string[] | null;
+          dimension: string | null;
+          ordinal: number;
+          required: boolean;
+          active: boolean;
+        }>(
+          `SELECT q.id, q.key, q.prompt, q.help_text, q.response_type, q.options,
+                  q.dimension, q.ordinal, q.required, q.active
+           FROM question q
+           JOIN question_template t ON t.id = q.template_id
+           WHERE t.kind = $1::engagement_kind AND t.status = 'active'
+             AND t.version = (SELECT max(version) FROM question_template
+                              WHERE kind = $1::engagement_kind AND status = 'active')
+           ORDER BY q.ordinal, q.created_at`,
+          [kind],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          key: r.key,
+          prompt: r.prompt,
+          helpText: r.help_text,
+          responseType: r.response_type,
+          options: r.options,
+          dimension: r.dimension,
+          ordinal: r.ordinal,
+          required: r.required,
+          active: r.active,
+        }));
+      } catch {
+        return mockRepositories.engagements.listQuestionsForEditor(kind);
+      }
+    },
+
+    async getQuestion(id: string): Promise<QuestionEditable | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          prompt: string;
+          help_text: string | null;
+          response_type: string;
+          options: string[] | null;
+          dimension: string | null;
+          ordinal: number;
+          required: boolean;
+          active: boolean;
+        }>(
+          `SELECT id, key, prompt, help_text, response_type, options, dimension,
+                  ordinal, required, active
+           FROM question WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          key: r.key,
+          prompt: r.prompt,
+          helpText: r.help_text,
+          responseType: r.response_type,
+          options: r.options,
+          dimension: r.dimension,
+          ordinal: r.ordinal,
+          required: r.required,
+          active: r.active,
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createQuestion(kind: string, input: QuestionInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.createQuestion(kind, input);
+      // Resolve (or create) the active template for this kind, then add the question.
+      const { rows: t } = await pool.query<{ id: string }>(
+        `SELECT id FROM question_template
+         WHERE kind = $1::engagement_kind AND status = 'active'
+         ORDER BY version DESC LIMIT 1`,
+        [kind],
+      );
+      let templateId = t[0]?.id;
+      if (!templateId) {
+        const { rows: created } = await pool.query<{ id: string }>(
+          `INSERT INTO question_template (kind, version, title)
+           VALUES ($1::engagement_kind, 1, $2) RETURNING id`,
+          [kind, `${kind} questions (v1)`],
+        );
+        templateId = created[0].id;
+      }
+      await pool.query(
+        `INSERT INTO question
+           (template_id, key, prompt, help_text, response_type, options, dimension,
+            ordinal, required, active)
+         VALUES ($1, $2, $3, $4, $5::question_response_type, $6::jsonb, $7, $8, $9, $10)`,
+        [
+          templateId,
+          input.key,
+          input.prompt,
+          nullIfEmpty(input.helpText),
+          input.responseType,
+          input.options == null ? null : JSON.stringify(input.options),
+          nullIfEmpty(input.dimension),
+          input.ordinal,
+          input.required,
+          input.active,
+        ],
+      );
+    },
+
+    async updateQuestion(id: string, input: QuestionInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.updateQuestion(id, input);
+      await pool.query(
+        `UPDATE question
+         SET key = $1, prompt = $2, help_text = $3, response_type = $4::question_response_type,
+             options = $5::jsonb, dimension = $6, ordinal = $7, required = $8, active = $9
+         WHERE id = $10`,
+        [
+          input.key,
+          input.prompt,
+          nullIfEmpty(input.helpText),
+          input.responseType,
+          input.options == null ? null : JSON.stringify(input.options),
+          nullIfEmpty(input.dimension),
+          input.ordinal,
+          input.required,
+          input.active,
+          id,
+        ],
+      );
     },
 
     async listDiscoveryCalls(): Promise<DiscoveryCallRow[]> {
