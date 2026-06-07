@@ -17,7 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Match the App Service runtime and the deploy workflow (Node 24 LTS).
+          node-version: 24
       # INTERIM: using `npm install` (not `npm ci`) and no npm cache because the
       # repo has no committed package-lock.json yet — the dev host that would
       # generate it had Node network-blocked by an Intune firewall policy. Once
