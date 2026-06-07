@@ -77,10 +77,13 @@ erDiagram
     PROPOSAL {
       uuid id PK
       uuid opportunity_id FK
-      text status
-      text document_blob_ref
+      text title
+      text status "enum draft|sent|accepted|declined"
+      numeric amount_mrr
+      text document_url "object-storage pointer"
+      text notes
       timestamptz sent_at
-      timestamptz accepted_at
+      timestamptz decided_at
     }
     PROJECT {
       uuid id PK
@@ -362,6 +365,7 @@ erDiagram
 - `account.lifecycle_stage`: `prospect | onboarding | implementation |
   operational_readiness | managed_active | dormant`
 - `opportunity.sales_stage`: `lead | qualified | proposal | won | lost`
+- `proposal.status`: `draft | sent | accepted | declined`
 - `interaction.source`: `m365_email | m365_teams | plaud | sms | email |
   facebook | system`
 - `consent_event.channel`: `email | sms | call_recording`

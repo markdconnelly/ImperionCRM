@@ -16,6 +16,7 @@ import type {
   Kpi,
   OpportunityRow,
   PipelineColumn,
+  ProposalRow,
   TaskRow,
 } from "@/types";
 
@@ -39,6 +40,19 @@ export interface TaskInput {
   dueAt: string | null; // yyyy-mm-dd or null
 }
 export interface TaskEditable extends TaskInput {
+  id: string;
+}
+
+/** Editable proposal fields. A proposal always belongs to one opportunity. */
+export interface ProposalInput {
+  opportunityId: string;
+  title: string;
+  status: string; // draft|sent|accepted|declined
+  amountMrr: string | null; // numeric as string from the form, or null
+  documentUrl: string | null;
+  notes: string | null;
+}
+export interface ProposalEditable extends ProposalInput {
   id: string;
 }
 
@@ -75,8 +89,18 @@ export interface CrmRepository {
   updateTask(id: string, input: TaskInput): Promise<void>;
   deleteTask(id: string): Promise<void>;
 
+  // Proposals (full CRUD) — attach to an opportunity (ADR-0019)
+  listProposals(): Promise<ProposalRow[]>;
+  getProposal(id: string): Promise<ProposalEditable | null>;
+  createProposal(input: ProposalInput): Promise<void>;
+  updateProposal(id: string, input: ProposalInput): Promise<void>;
+  deleteProposal(id: string): Promise<void>;
+
   /** Account options for select dropdowns. */
   accountOptions(): Promise<Option[]>;
+
+  /** Opportunity options ("Account — Opportunity") for select dropdowns. */
+  opportunityOptions(): Promise<Option[]>;
 }
 
 export interface AgentRepository {
