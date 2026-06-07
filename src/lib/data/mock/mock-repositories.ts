@@ -123,6 +123,51 @@ export const mockRepositories: Repositories = {
       return agentMessages;
     },
   },
+  engagements: {
+    // No DB configured: questionnaires/engagements are empty and edits are disabled.
+    async getQuestions() {
+      return [];
+    },
+    async listDiscoveryCalls() {
+      return [];
+    },
+    async getDiscoveryCall() {
+      return null;
+    },
+    async createDiscoveryCall() {
+      throw new Error(NO_DB);
+    },
+    async updateDiscoveryCall() {
+      throw new Error(NO_DB);
+    },
+    async deleteDiscoveryCall() {
+      throw new Error(NO_DB);
+    },
+    async listSbrs() {
+      return [];
+    },
+    async getSbr() {
+      return null;
+    },
+    async createSbr() {
+      throw new Error(NO_DB);
+    },
+    async updateSbr() {
+      throw new Error(NO_DB);
+    },
+    async deleteSbr() {
+      throw new Error(NO_DB);
+    },
+    async saveAnswers() {
+      throw new Error(NO_DB);
+    },
+    async listAssessmentArtifacts() {
+      return [];
+    },
+    async listTickets() {
+      return [];
+    },
+  },
   reports: {
     async getSummary() {
       return {

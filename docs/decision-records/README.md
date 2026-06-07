@@ -29,3 +29,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0020](./ADR-0020-delivery-project-model.md) | Delivery project model (onboarding/implementation) | Accepted |
 | [0021](./ADR-0021-reporting-read-model-and-recharts.md) | Reporting read model and Recharts | Accepted |
 | [0022](./ADR-0022-assessment-led-gtm-and-engagement-model.md) | Assessment-led GTM & AI Security Readiness Assessment model | Accepted |
+| [0023](./ADR-0023-engagement-capture-and-relationship-data-model.md) | Engagement capture & long-term-relationship data model | Accepted |

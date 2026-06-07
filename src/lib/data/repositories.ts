@@ -12,17 +12,24 @@
 import type {
   Account,
   AgentMessage,
+  ArtifactRow,
   AssessmentRow,
   ContactRow,
   CountDatum,
+  DiscoveryCallDetail,
+  DiscoveryCallRow,
   Kpi,
   OpportunityRow,
   PipelineColumn,
   ProjectRow,
   ProposalRow,
+  QuestionRow,
   ReportSummary,
+  SbrDetail,
+  SbrRow,
   StageValueDatum,
   TaskRow,
+  TicketRow,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -161,6 +168,75 @@ export interface AgentRepository {
   getConversation(): Promise<AgentMessage[]>;
 }
 
+/** One answer to persist (typed columns; only the relevant one is set). */
+export interface AnswerInput {
+  questionId: string;
+  valueText: string | null;
+  valueNumber: string | null; // numeric as string from the form, or null
+  valueBool: boolean | null;
+  valueJson: unknown | null;
+  valueDate: string | null;
+  answeredByContactId: string | null;
+}
+
+/** Editable discovery-call fields (answers saved separately via saveAnswers). */
+export interface DiscoveryCallInput {
+  accountId: string;
+  opportunityId: string | null;
+  contactId: string | null;
+  templateId: string | null;
+  status: string; // scheduled|completed|cancelled
+  heldAt: string | null;
+  verdict: string | null; // fit|not_fit|nurture
+  verdictReason: string | null;
+  nextStep: string | null;
+  sbrCadence: string | null;
+}
+
+/** Editable Strategic Business Review fields. */
+export interface SbrInput {
+  accountId: string;
+  contactId: string | null;
+  benchmarkAssessmentId: string | null;
+  reviewDate: string; // yyyy-mm-dd
+  periodLabel: string | null;
+  status: string; // scheduled|completed
+  concerns: string | null;
+  summary: string | null;
+  nextActions: string | null;
+}
+
+/**
+ * Engagement layer (ADR-0023): editable questionnaires, account-scoped discovery
+ * calls and Strategic Business Reviews, and read access to assessment artifacts and
+ * tickets. Answers are stored once (engagement_answer) and never duplicated.
+ */
+export interface EngagementsRepository {
+  /** Active question set for an engagement kind ('discovery' | 'assessment'). */
+  getQuestions(kind: string): Promise<QuestionRow[]>;
+
+  // Discovery calls
+  listDiscoveryCalls(): Promise<DiscoveryCallRow[]>;
+  getDiscoveryCall(id: string): Promise<DiscoveryCallDetail | null>;
+  createDiscoveryCall(input: DiscoveryCallInput): Promise<string>;
+  updateDiscoveryCall(id: string, input: DiscoveryCallInput): Promise<void>;
+  deleteDiscoveryCall(id: string): Promise<void>;
+
+  // Strategic Business Reviews
+  listSbrs(): Promise<SbrRow[]>;
+  getSbr(id: string): Promise<SbrDetail | null>;
+  createSbr(input: SbrInput): Promise<string>;
+  updateSbr(id: string, input: SbrInput): Promise<void>;
+  deleteSbr(id: string): Promise<void>;
+
+  /** Upsert answers for an engagement ('discovery' | 'assessment'). */
+  saveAnswers(engagementType: string, engagementId: string, answers: AnswerInput[]): Promise<void>;
+
+  // Read-only feeds
+  listAssessmentArtifacts(assessmentId: string): Promise<ArtifactRow[]>;
+  listTickets(): Promise<TicketRow[]>;
+}
+
 /** Read-only analytics for the Reporting page (aggregates over the spine). */
 export interface ReportsRepository {
   /** Headline figures (active MRR, open pipeline, win rate, avg time-to-live). */
@@ -179,4 +255,5 @@ export interface Repositories {
   crm: CrmRepository;
   agent: AgentRepository;
   reports: ReportsRepository;
+  engagements: EngagementsRepository;
 }
