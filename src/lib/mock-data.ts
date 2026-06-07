@@ -156,7 +156,25 @@ const socialByContact: Record<string, SocialIdentityRow[]> = {
 };
 
 export function mockContactProfile(id: string): ContactProfile | null {
-  return contactProfiles[id] ?? null;
+  if (contactProfiles[id]) return contactProfiles[id];
+  // Synthesize a minimal profile from the contacts list so every mock contact has a
+  // detail page (the real DB path always has full rows).
+  const c = contacts.find((x) => x.id === id);
+  if (!c) return null;
+  return {
+    id: c.id,
+    fullName: c.fullName,
+    email: c.email,
+    phone: c.phone,
+    title: null,
+    headline: null,
+    location: null,
+    avatarUrl: null,
+    lifecycleStatus: "known",
+    account: c.account,
+    accountId: null,
+    lastEnrichedAt: null,
+  };
 }
 export function mockEnrichment(id: string): EnrichmentFactRow[] {
   return enrichmentByContact[id] ?? [];
