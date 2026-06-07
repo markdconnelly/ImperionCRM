@@ -161,6 +161,9 @@ export interface CrmRepository {
 
   /** Opportunity options ("Account — Opportunity") for select dropdowns. */
   opportunityOptions(): Promise<Option[]>;
+
+  /** Contact options ("Full name (Account)") for select dropdowns. */
+  contactOptions(): Promise<Option[]>;
 }
 
 export interface AgentRepository {
