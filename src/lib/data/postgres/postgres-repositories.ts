@@ -8,15 +8,34 @@
 import "server-only";
 import { getPool } from "@/lib/db/client";
 import { mockRepositories } from "@/lib/data/mock/mock-repositories";
-import type { Repositories } from "@/lib/data/repositories";
+import type {
+  AccountEditable,
+  AccountInput,
+  Option,
+  Repositories,
+  TaskEditable,
+  TaskInput,
+} from "@/lib/data/repositories";
 import type {
   Account,
+  ContactRow,
   Health,
   Kpi,
   OpportunityRow,
   PipelineColumn,
   PipelineStage,
+  TaskRow,
 } from "@/types";
+
+/** Empty string → null, for optional form fields. */
+function nullIfEmpty(v: string | null | undefined): string | null {
+  const s = (v ?? "").trim();
+  return s === "" ? null : s;
+}
+
+function fmtDate(d: Date | null): string | null {
+  return d ? d.toISOString().slice(0, 10) : null;
+}
 
 const ONBOARDING_LIFECYCLE = ["onboarding", "implementation", "operational_readiness"];
 
@@ -212,6 +231,91 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async getAccount(id: string): Promise<AccountEditable | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          relationship: string | null;
+          lifecycle_stage: string;
+          is_active: boolean;
+        }>(
+          `SELECT id, name, relationship, lifecycle_stage, is_active
+           FROM account WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          name: r.name,
+          relationship: r.relationship,
+          lifecycleStage: r.lifecycle_stage,
+          isActive: r.is_active,
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createAccount(input: AccountInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createAccount(input);
+      await pool.query(
+        `INSERT INTO account (name, relationship, lifecycle_stage, is_active)
+         VALUES ($1, $2::account_relationship, $3::account_lifecycle_stage, $4)`,
+        [input.name, input.relationship, input.lifecycleStage, input.isActive],
+      );
+    },
+
+    async updateAccount(id: string, input: AccountInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateAccount(id, input);
+      await pool.query(
+        `UPDATE account
+         SET name = $1, relationship = $2::account_relationship,
+             lifecycle_stage = $3::account_lifecycle_stage, is_active = $4
+         WHERE id = $5`,
+        [input.name, input.relationship, input.lifecycleStage, input.isActive, id],
+      );
+    },
+
+    async deleteAccount(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteAccount(id);
+      await pool.query(`DELETE FROM account WHERE id = $1`, [id]);
+    },
+
+    async listContacts(): Promise<ContactRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listContacts();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          full_name: string;
+          email: string | null;
+          phone: string | null;
+          account: string | null;
+        }>(
+          `SELECT c.id, c.full_name, c.email, c.phone, a.name AS account
+           FROM contact c
+           LEFT JOIN account a ON a.id = c.account_id
+           ORDER BY c.full_name`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          fullName: row.full_name,
+          email: row.email,
+          phone: row.phone,
+          account: row.account,
+        }));
+      } catch {
+        return mockRepositories.crm.listContacts();
+      }
+    },
+
     async listOpportunities(): Promise<OpportunityRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.listOpportunities();
@@ -238,6 +342,119 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listOpportunities();
+      }
+    },
+
+    async listTasks(): Promise<TaskRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listTasks();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          title: string;
+          status: string;
+          due_at: Date | null;
+          account: string | null;
+        }>(
+          `SELECT t.id, t.title, t.status, t.due_at, a.name AS account
+           FROM task t
+           LEFT JOIN account a ON a.id = t.account_id
+           ORDER BY t.due_at NULLS LAST, t.title`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          status: row.status,
+          due: fmtDate(row.due_at),
+          account: row.account,
+        }));
+      } catch {
+        return mockRepositories.crm.listTasks();
+      }
+    },
+
+    async getTask(id: string): Promise<TaskEditable | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string | null;
+          title: string;
+          detail: string | null;
+          status: string;
+          due_at: Date | null;
+        }>(
+          `SELECT id, account_id, title, detail, status, due_at
+           FROM task WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          accountId: r.account_id,
+          title: r.title,
+          detail: r.detail,
+          status: r.status,
+          dueAt: fmtDate(r.due_at),
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createTask(input: TaskInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createTask(input);
+      await pool.query(
+        `INSERT INTO task (account_id, title, detail, status, due_at)
+         VALUES ($1, $2, $3, $4, $5::timestamptz)`,
+        [
+          nullIfEmpty(input.accountId),
+          input.title,
+          nullIfEmpty(input.detail),
+          input.status,
+          nullIfEmpty(input.dueAt),
+        ],
+      );
+    },
+
+    async updateTask(id: string, input: TaskInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateTask(id, input);
+      await pool.query(
+        `UPDATE task
+         SET account_id = $1, title = $2, detail = $3, status = $4,
+             due_at = $5::timestamptz
+         WHERE id = $6`,
+        [
+          nullIfEmpty(input.accountId),
+          input.title,
+          nullIfEmpty(input.detail),
+          input.status,
+          nullIfEmpty(input.dueAt),
+          id,
+        ],
+      );
+    },
+
+    async deleteTask(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteTask(id);
+      await pool.query(`DELETE FROM task WHERE id = $1`, [id]);
+    },
+
+    async accountOptions(): Promise<Option[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.accountOptions();
+      try {
+        const { rows } = await pool.query<{ id: string; name: string }>(
+          `SELECT id, name FROM account ORDER BY name`,
+        );
+        return rows.map((r) => ({ id: r.id, name: r.name }));
+      } catch {
+        return mockRepositories.crm.accountOptions();
       }
     },
   },

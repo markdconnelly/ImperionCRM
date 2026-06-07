@@ -52,6 +52,24 @@ export interface OpportunityRow {
   mrr: string;
 }
 
+/** A row in the Contacts list. */
+export interface ContactRow {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  account: string | null; // account name
+}
+
+/** A row in the Tasks list. */
+export interface TaskRow {
+  id: string;
+  title: string;
+  status: string;
+  due: string | null; // formatted due date
+  account: string | null; // account name
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;

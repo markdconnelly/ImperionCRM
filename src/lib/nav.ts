@@ -7,10 +7,13 @@ import type { NavItem } from "@/types";
  */
 export const navPrimary: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/" },
+  { key: "leads", label: "Leads", icon: "UserPlus", href: "/leads" },
   { key: "accounts", label: "Accounts", icon: "Building2", href: "/accounts" },
+  { key: "contacts", label: "Contacts", icon: "Contact", href: "/contacts" },
   { key: "pipeline", label: "Pipeline", icon: "GitBranch", href: "/pipeline" },
   { key: "proposals", label: "Proposals", icon: "FileText", href: "/proposals" },
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
+  { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   { key: "campaigns", label: "Campaigns", icon: "Megaphone", href: "/campaigns" },
   { key: "communications", label: "Communications", icon: "MessagesSquare", href: "/communications" },
   { key: "reporting", label: "Reporting", icon: "BarChart3", href: "/reporting" },
@@ -18,7 +21,10 @@ export const navPrimary: NavItem[] = [
 
 export const navSecondary: NavItem[] = [
   { key: "knowledge", label: "Knowledge", icon: "BrainCircuit", href: "/knowledge" },
+  { key: "workflows", label: "Workflows", icon: "Workflow", href: "/workflows" },
+  { key: "consent", label: "Consent", icon: "FileCheck", href: "/consent" },
   { key: "integrations", label: "Integrations", icon: "Plug", href: "/integrations" },
+  { key: "agents", label: "AI Agents", icon: "Bot", href: "/agents" },
   { key: "board", label: "Board of Directors", icon: "Users", href: "/board" },
   { key: "feedback", label: "Feedback", icon: "Lightbulb", href: "/feedback" },
   { key: "security", label: "Security", icon: "ShieldCheck", href: "/security" },

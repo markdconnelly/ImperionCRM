@@ -12,10 +12,41 @@
 import type {
   Account,
   AgentMessage,
+  ContactRow,
   Kpi,
   OpportunityRow,
   PipelineColumn,
+  TaskRow,
 } from "@/types";
+
+/** Editable account fields (create/update forms). */
+export interface AccountInput {
+  name: string;
+  relationship: string | null;
+  lifecycleStage: string;
+  isActive: boolean;
+}
+export interface AccountEditable extends AccountInput {
+  id: string;
+}
+
+/** Editable task fields. */
+export interface TaskInput {
+  accountId: string | null;
+  title: string;
+  detail: string | null;
+  status: string;
+  dueAt: string | null; // yyyy-mm-dd or null
+}
+export interface TaskEditable extends TaskInput {
+  id: string;
+}
+
+/** A {id,name} option for select dropdowns (e.g. picking an account). */
+export interface Option {
+  id: string;
+  name: string;
+}
 
 export interface DashboardRepository {
   getKpis(): Promise<Kpi[]>;
@@ -24,10 +55,28 @@ export interface DashboardRepository {
 }
 
 export interface CrmRepository {
-  /** All accounts, for the Accounts list. */
+  // Accounts (full CRUD)
   listAccounts(): Promise<Account[]>;
-  /** All opportunities, for the Pipeline board. */
+  getAccount(id: string): Promise<AccountEditable | null>;
+  createAccount(input: AccountInput): Promise<void>;
+  updateAccount(id: string, input: AccountInput): Promise<void>;
+  deleteAccount(id: string): Promise<void>;
+
+  // Contacts (list; CRUD to follow the same pattern)
+  listContacts(): Promise<ContactRow[]>;
+
+  // Opportunities (Pipeline board)
   listOpportunities(): Promise<OpportunityRow[]>;
+
+  // Tasks (full CRUD)
+  listTasks(): Promise<TaskRow[]>;
+  getTask(id: string): Promise<TaskEditable | null>;
+  createTask(input: TaskInput): Promise<void>;
+  updateTask(id: string, input: TaskInput): Promise<void>;
+  deleteTask(id: string): Promise<void>;
+
+  /** Account options for select dropdowns. */
+  accountOptions(): Promise<Option[]>;
 }
 
 export interface AgentRepository {
