@@ -1,5 +1,27 @@
-# UserGuides
+# 📖 User Guides
 
-Getting-started and role-specific guides; workflow walkthroughs; FAQ.
+How employees actually use Imperion CRM, module by module. Written for the person
+doing the work, not the person who built it.
 
-See `CLAUDE.md` section 8 and the project standards doc for required fields.
+[← Documentation library](../README.md)
+
+## The shape of the app
+
+```mermaid
+flowchart LR
+    NAV["Left nav<br/>(Dashboard · Accounts · Pipeline · …)"] --> WORK["Work area<br/>(the module you're in)"]
+    WORK --> AGENT["Right panel<br/>(ask the agent)"]
+```
+
+Three columns: navigate on the left, work in the middle, **ask the agent** on the
+right (scoped to your Entra permissions).
+
+## Walkthroughs to write
+
+- **Know a contact:** open a contact → read the dossier, timeline, and consent before you call.
+- **Run a discovery call:** review the agent-gathered answers, confirm/stamp, set the verdict, route to assessment or nurture.
+- **Launch a campaign:** create a campaign, build an audience, see who's ad-eligible.
+- **Connect your accounts:** link your M365/LinkedIn/YouTube so your comms flow in.
+
+The motion behind these is the [customer-lifecycle](../architecture/customer-lifecycle.md);
+admin-side configuration is in [admin-guides](../admin-guides/README.md).
