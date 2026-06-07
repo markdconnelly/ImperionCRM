@@ -61,7 +61,9 @@ export async function sendMessageAction(formData: FormData) {
 
   const { comms, consent } = getRepositories();
   const allowed = await consent.canSend(contactId, channel);
-  if (!allowed) return; // blocked: no current consent
+  if (!allowed) {
+    redirect(`/contacts/${contactId}?blocked=${channel}`); // no current consent
+  }
 
   const source = channel === "sms" ? "sms" : "email";
   await comms.createInteraction({
@@ -75,6 +77,7 @@ export async function sendMessageAction(formData: FormData) {
   });
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/communications");
+  redirect(`/contacts/${contactId}?sent=${channel}`);
 }
 
 export async function completeActionItemAction(formData: FormData) {

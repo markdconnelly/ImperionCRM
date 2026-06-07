@@ -151,6 +151,8 @@ export interface CrmRepository {
 
   // Opportunities (Pipeline board)
   listOpportunities(): Promise<OpportunityRow[]>;
+  /** Move an opportunity to a different sales stage (pipeline board). */
+  setOpportunityStage(id: string, stage: string): Promise<void>;
 
   // Tasks (full CRUD)
   listTasks(): Promise<TaskRow[]>;

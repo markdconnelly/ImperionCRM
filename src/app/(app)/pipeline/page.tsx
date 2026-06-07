@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
 import { getRepositories } from "@/lib/data";
+import { moveOpportunityAction } from "./actions";
 
 export default async function PipelinePage() {
   const { crm } = getRepositories();
@@ -10,9 +11,9 @@ export default async function PipelinePage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Pipeline"
-        description={`${opportunities.length} opportunities by sales stage`}
+        description={`${opportunities.length} opportunities by sales stage · use ◀ ▶ to move a deal`}
       />
-      <PipelineBoard opportunities={opportunities} />
+      <PipelineBoard opportunities={opportunities} moveAction={moveOpportunityAction} />
     </div>
   );
 }

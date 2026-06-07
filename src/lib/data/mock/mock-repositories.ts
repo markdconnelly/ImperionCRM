@@ -68,6 +68,9 @@ export const mockRepositories: Repositories = {
     async listOpportunities() {
       return opportunities;
     },
+    async setOpportunityStage() {
+      throw new Error(NO_DB);
+    },
     async listTasks() {
       return [];
     },
