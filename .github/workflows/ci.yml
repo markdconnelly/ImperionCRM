@@ -8,13 +8,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Build-time only. Auth env vars are intentionally absent here (real values
+    # live in App Service); env.ts is fail-closed at runtime, not build time.
+    # AUTH_SECRET is a throwaway so Auth.js initialises during `next build`.
+    env:
+      AUTH_SECRET: ci-build-only-not-a-real-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+      # INTERIM: using `npm install` (not `npm ci`) and no npm cache because the
+      # repo has no committed package-lock.json yet — the dev host that would
+      # generate it had Node network-blocked by an Intune firewall policy. Once
+      # the lockfile is committed, restore `cache: npm` + `npm ci`.
+      - run: npm install --no-audit --no-fund
       - name: Lint
         run: npm run lint
       - name: Typecheck

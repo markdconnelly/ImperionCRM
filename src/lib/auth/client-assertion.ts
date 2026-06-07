@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import forge from "node-forge";
 import { SignJWT, importPKCS8, type KeyLike } from "jose";
-import { entraEnv } from "@/lib/env";
+import { entraEnv, assertEntraEnv } from "@/lib/env";
 
 interface CertMaterial {
   /** PKCS#8 private key, imported for RS256 signing. */
@@ -34,6 +34,7 @@ let cached: Promise<CertMaterial> | null = null;
  */
 function loadCertMaterial(): Promise<CertMaterial> {
   cached ??= (async () => {
+    assertEntraEnv(); // fail closed at runtime if misconfigured
     const pfxBytes = readFileSync(entraEnv.certPfxPath);
 
     // node-forge parses PKCS#12; Node's crypto cannot do so natively.
