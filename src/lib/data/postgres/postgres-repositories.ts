@@ -430,6 +430,15 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async setOpportunityStage(id: string, stage: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setOpportunityStage(id, stage);
+      await pool.query(
+        `UPDATE opportunity SET sales_stage = $2::opportunity_sales_stage WHERE id = $1`,
+        [id, stage],
+      );
+    },
+
     async listTasks(): Promise<TaskRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.listTasks();

@@ -28,10 +28,13 @@ const LIFECYCLE_LABEL: Record<string, string> = {
 
 export default async function ContactDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ sent?: string; blocked?: string }>;
 }) {
   const { id } = await params;
+  const { sent, blocked } = await searchParams;
   const { contacts, comms, consent } = getRepositories();
 
   const profile = await contacts.getProfile(id);
@@ -79,6 +82,17 @@ export default async function ContactDetailPage({
           </Link>
         </div>
       </div>
+
+      {sent && (
+        <div className="rounded-md border border-green/40 bg-green/10 px-4 py-2 text-sm text-green">
+          Sent via {sent} — logged to the timeline.
+        </div>
+      )}
+      {blocked && (
+        <div className="rounded-md border border-amber/40 bg-amber/10 px-4 py-2 text-sm text-amber">
+          Blocked — this contact has no current {blocked} consent. Record consent first.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Main column: communications */}
