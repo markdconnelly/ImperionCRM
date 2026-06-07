@@ -45,6 +45,7 @@ import type {
 import type {
   Account,
   ActionItemRow,
+  AnswerReviewRow,
   ArtifactRow,
   AssessmentConversion,
   AssessmentRow,
@@ -1694,6 +1695,45 @@ export const postgresRepositories: Repositories = {
             a.status ?? null,
           ],
         );
+      }
+    },
+
+    async listAnswersForReview(
+      engagementType: string,
+      engagementId: string,
+    ): Promise<AnswerReviewRow[]> {
+      const pool = getPool();
+      if (!pool) {
+        return mockRepositories.engagements.listAnswersForReview(engagementType, engagementId);
+      }
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          prompt: string;
+          value: string | null;
+          source: string;
+          confidence: string | null;
+          status: string;
+        }>(
+          `SELECT ea.id, q.prompt,
+                  COALESCE(ea.value_text, ea.value_number::text, ea.value_bool::text,
+                           ea.value_date::text, ea.value_json::text) AS value,
+                  ea.source, ea.confidence, ea.status
+           FROM engagement_answer ea JOIN question q ON q.id = ea.question_id
+           WHERE ea.engagement_type = $1::engagement_kind AND ea.engagement_id = $2
+           ORDER BY q.ordinal`,
+          [engagementType, engagementId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          prompt: r.prompt,
+          value: r.value,
+          source: r.source,
+          confidence: r.confidence != null ? Number(r.confidence) : null,
+          status: r.status,
+        }));
+      } catch {
+        return mockRepositories.engagements.listAnswersForReview(engagementType, engagementId);
       }
     },
 

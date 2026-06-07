@@ -1,23 +1,30 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { ModulePlaceholder } from "@/components/ui/module-placeholder";
+import { WorkflowsTable } from "@/components/workflows/workflows-table";
+import { EnrollmentsTable } from "@/components/workflows/enrollments-table";
+import { getRepositories } from "@/lib/data";
+import { exitEnrollmentAction } from "./actions";
 
-export default function WorkflowsPage() {
+export default async function WorkflowsPage() {
+  const { workflows } = getRepositories();
+  const [list, enrollments] = await Promise.all([
+    workflows.listWorkflows(),
+    workflows.listEnrollments(),
+  ]);
+
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Workflows"
-        description="Automated sequences triggered across the lifecycle."
-      />
-      <ModulePlaceholder
-        icon="Workflow"
-        title="Workflow automation"
-        description="In-app nurture and operational sequences (e.g. when a lead enters, request consent then follow up). Steps run in the app; Power Automate only fires the actual send/notify."
-        points={[
-          "Workflow + steps + enrollment model (ADR-0014)",
-          "Consent-gated sends (see Consent)",
-          "Triggers on lifecycle and pipeline events",
-        ]}
-      />
+    <div className="flex flex-col gap-6">
+      <section className="flex flex-col gap-3">
+        <PageHeader
+          title="Workflows"
+          description="Nurture and pre-discovery automation. Steps run in-app; Power Automate only fires the send/notify."
+        />
+        <WorkflowsTable workflows={list} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="font-display text-base font-semibold tracking-tight">Enrollments</h3>
+        <EnrollmentsTable enrollments={enrollments} exitAction={exitEnrollmentAction} />
+      </section>
     </div>
   );
 }

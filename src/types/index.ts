@@ -179,6 +179,19 @@ export interface AnswerRow {
   value: string | null; // display value (coalesced across typed columns)
 }
 
+/**
+ * An answer with its provenance, for the pre-discovery review (ADR-0027). Agent- and
+ * automation-sourced answers start as draft and need a human stamp before the verdict.
+ */
+export interface AnswerReviewRow {
+  id: string; // engagement_answer id
+  prompt: string;
+  value: string | null;
+  source: string; // human|agent|automation
+  confidence: number | null; // 0..1
+  status: string; // draft|confirmed|rejected
+}
+
 /** A row in the Discovery-call list. */
 export interface DiscoveryCallRow {
   id: string;

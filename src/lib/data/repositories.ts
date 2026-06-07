@@ -13,6 +13,7 @@ import type {
   Account,
   ActionItemRow,
   AgentMessage,
+  AnswerReviewRow,
   ArtifactRow,
   AssessmentConversion,
   AssessmentRow,
@@ -324,6 +325,8 @@ export interface EngagementsRepository {
   /** Upsert answers for an engagement ('discovery' | 'assessment'). */
   saveAnswers(engagementType: string, engagementId: string, answers: AnswerInput[]): Promise<void>;
 
+  /** Answers with provenance for the pre-discovery review (agent drafts, ADR-0027). */
+  listAnswersForReview(engagementType: string, engagementId: string): Promise<AnswerReviewRow[]>;
   /** Confirm an agent/automation-drafted answer (human stamp of approval, ADR-0027). */
   confirmAnswer(answerId: string, userId: string | null): Promise<void>;
   /** Reject an agent/automation-drafted answer. */
