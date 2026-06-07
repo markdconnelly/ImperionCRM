@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 
 export async function exitEnrollmentAction(formData: FormData) {
@@ -8,4 +9,37 @@ export async function exitEnrollmentAction(formData: FormData) {
   const { workflows } = getRepositories();
   await workflows.exitEnrollment(id);
   revalidatePath("/workflows");
+}
+
+export async function createWorkflowAction(formData: FormData) {
+  const trigger = String(formData.get("trigger") ?? "").trim();
+  const { workflows } = getRepositories();
+  const id = await workflows.createWorkflow({
+    name: String(formData.get("name") ?? "").trim(),
+    kind: String(formData.get("kind") ?? "nurture"),
+    status: String(formData.get("status") ?? "active"),
+    trigger: trigger === "" ? null : trigger,
+  });
+  revalidatePath("/workflows");
+  redirect(`/workflows/${id}`);
+}
+
+export async function addStepAction(formData: FormData) {
+  const workflowId = String(formData.get("workflowId") ?? "");
+  const config = String(formData.get("config") ?? "").trim();
+  if (!workflowId) return;
+  const { workflows } = getRepositories();
+  await workflows.addStep(workflowId, {
+    kind: String(formData.get("kind") ?? "send_email"),
+    config: config === "" ? null : config,
+  });
+  revalidatePath(`/workflows/${workflowId}`);
+}
+
+export async function deleteStepAction(formData: FormData) {
+  const stepId = String(formData.get("stepId") ?? "");
+  const workflowId = String(formData.get("workflowId") ?? "");
+  const { workflows } = getRepositories();
+  await workflows.deleteStep(stepId);
+  revalidatePath(`/workflows/${workflowId}`);
 }

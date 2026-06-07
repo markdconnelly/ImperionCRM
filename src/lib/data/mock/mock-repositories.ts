@@ -326,6 +326,9 @@ export const mockRepositories: Repositories = {
     async createCampaign() {
       throw new Error(NO_DB);
     },
+    async createAd() {
+      throw new Error(NO_DB);
+    },
     async listAudiences() {
       return audiences;
     },
@@ -362,6 +365,15 @@ export const mockRepositories: Repositories = {
     },
     async getWorkflow() {
       return null;
+    },
+    async createWorkflow() {
+      throw new Error(NO_DB);
+    },
+    async addStep() {
+      throw new Error(NO_DB);
+    },
+    async deleteStep() {
+      throw new Error(NO_DB);
     },
     async listEnrollments() {
       return enrollments;

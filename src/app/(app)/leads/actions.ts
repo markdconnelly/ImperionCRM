@@ -1,7 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+
+export async function createHookAction(formData: FormData) {
+  const path = String(formData.get("config") ?? "").trim();
+  const { leads } = getRepositories();
+  await leads.createHook({
+    name: String(formData.get("name") ?? "").trim(),
+    kind: String(formData.get("kind") ?? "web_form"),
+    active: String(formData.get("active") ?? "true") === "true",
+    config: path === "" ? null : { note: path },
+  });
+  revalidatePath("/leads");
+  redirect("/leads");
+}
 
 /**
  * Resolve an inbound capture into a contact (ADR-0024) — starts a profile and, in a

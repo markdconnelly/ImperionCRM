@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
-import type { CampaignInput, AudienceInput } from "@/lib/data/repositories";
+import type { CampaignInput, AudienceInput, AdInput, AudienceCriterion } from "@/lib/data/repositories";
 
 function orNull(v: FormDataEntryValue | null): string | null {
   const s = String(v ?? "").trim();
@@ -29,21 +29,24 @@ export async function createCampaignAction(formData: FormData) {
   redirect("/campaigns");
 }
 
-function parseAudience(formData: FormData): AudienceInput {
-  const raw = String(formData.get("definition") ?? "").trim();
-  let definition: unknown = null;
-  if (raw !== "") {
-    try {
-      definition = JSON.parse(raw);
-    } catch {
-      definition = { note: raw }; // tolerate free text in the scaffold
-    }
+/** Collect the criteria rows (criteriaKey0/criteriaValue0 … up to AUDIENCE_ROWS). */
+const AUDIENCE_ROWS = 5;
+function parseCriteria(formData: FormData): AudienceCriterion[] {
+  const out: AudienceCriterion[] = [];
+  for (let i = 0; i < AUDIENCE_ROWS; i++) {
+    const key = String(formData.get(`criteriaKey${i}`) ?? "").trim();
+    const value = String(formData.get(`criteriaValue${i}`) ?? "").trim();
+    if (key && value) out.push({ key, value });
   }
+  return out;
+}
+
+function parseAudience(formData: FormData): AudienceInput {
   return {
     name: String(formData.get("name") ?? "").trim(),
     description: orNull(formData.get("description")),
     kind: String(formData.get("kind") ?? "static"),
-    definition,
+    criteria: parseCriteria(formData),
   };
 }
 
@@ -52,6 +55,38 @@ export async function createAudienceAction(formData: FormData) {
   await campaigns.createAudience(parseAudience(formData));
   revalidatePath("/campaigns");
   redirect("/campaigns");
+}
+
+/** Preview matching members before committing (carried back via query params). */
+export async function previewAudienceAction(formData: FormData) {
+  const params = new URLSearchParams();
+  params.set("name", String(formData.get("name") ?? ""));
+  params.set("description", String(formData.get("description") ?? ""));
+  params.set("kind", String(formData.get("kind") ?? "static"));
+  for (let i = 0; i < AUDIENCE_ROWS; i++) {
+    const key = String(formData.get(`criteriaKey${i}`) ?? "").trim();
+    const value = String(formData.get(`criteriaValue${i}`) ?? "").trim();
+    if (key && value) {
+      params.append("k", key);
+      params.append("v", value);
+    }
+  }
+  params.set("preview", "1");
+  redirect(`/campaigns/audiences/new?${params.toString()}`);
+}
+
+export async function createAdAction(formData: FormData) {
+  const campaignId = String(formData.get("campaignId") ?? "");
+  if (!campaignId) return;
+  const input: AdInput = {
+    name: String(formData.get("name") ?? "").trim(),
+    status: String(formData.get("status") ?? "draft"),
+    creative: orNull(formData.get("creative")),
+  };
+  const { campaigns } = getRepositories();
+  await campaigns.createAd(campaignId, input);
+  revalidatePath(`/campaigns/${campaignId}`);
+  redirect(`/campaigns/${campaignId}`);
 }
 
 /**

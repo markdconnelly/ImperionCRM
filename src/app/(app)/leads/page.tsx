@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { HealthDot } from "@/components/ui/health-dot";
 import { HooksTable } from "@/components/leads/hooks-table";
@@ -68,7 +69,15 @@ export default async function LeadsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h3 className="font-display text-base font-semibold tracking-tight">Capture hooks</h3>
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="font-display text-base font-semibold tracking-tight">Capture hooks</h3>
+          <Link
+            href="/leads/hooks/new"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+          >
+            + New hook
+          </Link>
+        </div>
         <HooksTable hooks={hooks} />
       </section>
     </div>
