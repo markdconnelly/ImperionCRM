@@ -27,7 +27,7 @@ export function EnrichmentDossier({ facts }: { facts: EnrichmentFactRow[] }) {
             </span>
           </div>
           <p className="mt-0.5 text-sm text-text">{f.value ?? "—"}</p>
-          <div className="mt-1.5 flex items-center gap-2 text-[11px] text-dim">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-dim">
             {f.confidence != null && (
               <span className="inline-flex items-center gap-1">
                 <span className="inline-block h-1 w-10 overflow-hidden rounded-full bg-border">
@@ -39,7 +39,11 @@ export function EnrichmentDossier({ facts }: { facts: EnrichmentFactRow[] }) {
                 {Math.round(f.confidence * 100)}%
               </span>
             )}
-            {f.source && <span>· {f.source}</span>}
+            {f.sourceConnection ? (
+              <span className="text-accent">· via {f.sourceConnection}</span>
+            ) : (
+              f.source && <span>· {f.source}</span>
+            )}
             {f.observedAt && <span>· {f.observedAt}</span>}
           </div>
         </li>

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 
 const DEFAULT_SCOPES: Record<string, string[]> = {
@@ -22,12 +23,13 @@ export async function connectAction(formData: FormData) {
   const displayName = String(formData.get("displayName") ?? "").trim() || null;
   if (!provider) return;
 
+  const session = await auth();
   const { connections } = getRepositories();
   await connections.connect({
     scope,
-    ownerUserId: null, // per-user resolution lands with real OAuth (scaffold)
+    ownerEmail: session?.user?.email ?? null, // resolved to the signed-in app_user
     provider,
-    displayName,
+    displayName: displayName ?? session?.user?.email ?? null,
     scopes: DEFAULT_SCOPES[provider] ?? [],
   });
   revalidatePath("/integrations");

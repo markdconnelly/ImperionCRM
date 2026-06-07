@@ -326,6 +326,8 @@ export interface EnrichmentFactRow {
   value: string | null;
   confidence: number | null; // 0..1
   source: string | null;
+  /** The connection that produced it (e.g. "LinkedIn · A. Reyes"), if any. */
+  sourceConnection: string | null;
   lawfulBasis: string; // consent|legitimate_interest|contract|public_data
   observedAt: string | null;
 }

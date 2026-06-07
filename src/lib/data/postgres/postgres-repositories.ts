@@ -2188,13 +2188,21 @@ export const postgresRepositories: Repositories = {
           value_json: unknown | null;
           confidence: string | null;
           source: string | null;
+          source_connection: string | null;
           lawful_basis: string;
           observed_at: Date | null;
         }>(
-          `SELECT id, attribute_key, value_text, value_json, confidence, source,
-                  lawful_basis::text AS lawful_basis, observed_at
-           FROM contact_enrichment WHERE contact_id = $1
-           ORDER BY attribute_key, observed_at DESC`,
+          `SELECT e.id, e.attribute_key, e.value_text, e.value_json, e.confidence, e.source,
+                  CASE WHEN cn.id IS NOT NULL THEN
+                    initcap(cn.provider::text) ||
+                    COALESCE(' · ' || COALESCE(u.display_name, u.email), '')
+                  END AS source_connection,
+                  e.lawful_basis::text AS lawful_basis, e.observed_at
+           FROM contact_enrichment e
+           LEFT JOIN connection cn ON cn.id = e.source_connection_id
+           LEFT JOIN app_user u ON u.id = cn.owner_user_id
+           WHERE e.contact_id = $1
+           ORDER BY e.attribute_key, e.observed_at DESC`,
           [contactId],
         );
         return rows.map((r) => ({
@@ -2203,6 +2211,7 @@ export const postgresRepositories: Repositories = {
           value: r.value_text ?? (r.value_json != null ? JSON.stringify(r.value_json) : null),
           confidence: r.confidence != null ? Number(r.confidence) : null,
           source: r.source,
+          sourceConnection: r.source_connection,
           lawfulBasis: r.lawful_basis,
           observedAt: fmtDate(r.observed_at),
         }));
@@ -2309,22 +2318,27 @@ export const postgresRepositories: Repositories = {
 
   // ── Connections & identity map (ADR-0012/0024) ────────────────────────────
   connections: {
-    async listUserConnections(userId: string): Promise<ConnectionRow[]> {
+    async listUserConnections(userEmail: string): Promise<ConnectionRow[]> {
       const pool = getPool();
-      if (!pool) return mockRepositories.connections.listUserConnections(userId);
+      if (!pool) return mockRepositories.connections.listUserConnections(userEmail);
       try {
+        // Resolve the signed-in employee's app_user by email (the session carries
+        // email, not the app_user id) — ADR-0024 per-user connections.
         const { rows } = await pool.query<ConnectionDbRow>(
           `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
                   cn.status::text AS status, cn.scopes, u.display_name AS owner,
                   cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at
            FROM connection cn LEFT JOIN app_user u ON u.id = cn.owner_user_id
-           WHERE cn.scope = 'user' AND cn.owner_user_id = $1
+           WHERE cn.scope = 'user'
+             AND cn.owner_user_id = (
+               SELECT id FROM app_user WHERE lower(email) = lower($1) ORDER BY created_at LIMIT 1
+             )
            ORDER BY cn.provider`,
-          [userId],
+          [userEmail],
         );
         return rows.map(mapConnection);
       } catch {
-        return mockRepositories.connections.listUserConnections(userId);
+        return mockRepositories.connections.listUserConnections(userEmail);
       }
     },
 
@@ -2348,12 +2362,17 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.connections.connect(input);
       // Scaffold: records the connection. Real OAuth + Key Vault token storage later.
+      // A user-scope connection is attached to the signed-in employee (by email).
       await pool.query(
         `INSERT INTO connection (scope, owner_user_id, provider, display_name, scopes, status)
-         VALUES ($1::connection_scope, $2, $3::connection_provider, $4, $5, 'active')`,
+         VALUES ($1::connection_scope,
+                 CASE WHEN $1 = 'user' AND $2 <> '' THEN
+                   (SELECT id FROM app_user WHERE lower(email) = lower($2) ORDER BY created_at LIMIT 1)
+                 ELSE NULL END,
+                 $3::connection_provider, $4, $5, 'active')`,
         [
           input.scope,
-          nullIfEmpty(input.ownerUserId),
+          (input.ownerEmail ?? "").trim(),
           input.provider,
           nullIfEmpty(input.displayName),
           input.scopes,

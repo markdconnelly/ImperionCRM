@@ -141,10 +141,10 @@ const contactProfiles: Record<string, ContactProfile> = {
 
 const enrichmentByContact: Record<string, EnrichmentFactRow[]> = {
   ct_01: [
-    { id: "en_1", attributeKey: "employer", value: "Northwind Logistics", confidence: 0.95, source: "linkedin", lawfulBasis: "public_data", observedAt: "2026-05-28" },
-    { id: "en_2", attributeKey: "role", value: "IT Director", confidence: 0.9, source: "linkedin", lawfulBasis: "public_data", observedAt: "2026-05-28" },
-    { id: "en_3", attributeKey: "interest", value: "Zero-trust networking", confidence: 0.6, source: "youtube", lawfulBasis: "public_data", observedAt: "2026-05-30" },
-    { id: "en_4", attributeKey: "tenure_years", value: "4", confidence: 0.7, source: "linkedin", lawfulBasis: "public_data", observedAt: "2026-05-28" },
+    { id: "en_1", attributeKey: "employer", value: "Northwind Logistics", confidence: 0.95, source: "linkedin", sourceConnection: "LinkedIn · A. Reyes", lawfulBasis: "public_data", observedAt: "2026-05-28" },
+    { id: "en_2", attributeKey: "role", value: "IT Director", confidence: 0.9, source: "linkedin", sourceConnection: "LinkedIn · A. Reyes", lawfulBasis: "public_data", observedAt: "2026-05-28" },
+    { id: "en_3", attributeKey: "interest", value: "Zero-trust networking", confidence: 0.6, source: "youtube", sourceConnection: "YouTube · A. Reyes", lawfulBasis: "public_data", observedAt: "2026-05-30" },
+    { id: "en_4", attributeKey: "tenure_years", value: "4", confidence: 0.7, source: "linkedin", sourceConnection: "LinkedIn · A. Reyes", lawfulBasis: "public_data", observedAt: "2026-05-28" },
   ],
 };
 

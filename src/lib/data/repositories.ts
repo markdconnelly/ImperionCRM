@@ -468,7 +468,7 @@ export interface ConsentRepository {
 /** Connect an external account. OAuth is stubbed in this phase (creates a row). */
 export interface ConnectionInput {
   scope: string; // user|company
-  ownerUserId: string | null;
+  ownerEmail: string | null; // signed-in employee's email (resolved to app_user)
   provider: string;
   displayName: string | null;
   scopes: string[];
@@ -476,7 +476,8 @@ export interface ConnectionInput {
 
 /** Connections repository: per-user personal + company-wide, and the identity map. */
 export interface ConnectionsRepository {
-  listUserConnections(userId: string): Promise<ConnectionRow[]>;
+  /** Personal connections for the signed-in employee, resolved by email (ADR-0024). */
+  listUserConnections(userEmail: string): Promise<ConnectionRow[]>;
   listCompanyConnections(): Promise<ConnectionRow[]>;
   connect(input: ConnectionInput): Promise<void>;
   disconnect(id: string): Promise<void>;
