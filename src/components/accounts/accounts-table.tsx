@@ -1,8 +1,15 @@
+import Link from "next/link";
 import type { Account } from "@/types";
 import { HealthDot } from "@/components/ui/health-dot";
 
-/** Full accounts list (Accounts page). */
-export function AccountsTable({ accounts }: { accounts: Account[] }) {
+/** Full accounts list with row actions (Accounts page). */
+export function AccountsTable({
+  accounts,
+  deleteAction,
+}: {
+  accounts: Account[];
+  deleteAction: (formData: FormData) => void | Promise<void>;
+}) {
   return (
     <div className="rounded-lg border border-border bg-panel">
       <div className="overflow-x-auto">
@@ -14,6 +21,7 @@ export function AccountsTable({ accounts }: { accounts: Account[] }) {
               <th className="px-4 py-2 font-medium">Owner</th>
               <th className="px-4 py-2 font-medium">MRR</th>
               <th className="px-4 py-2 font-medium">Detail</th>
+              <th className="px-4 py-2 font-medium" />
             </tr>
           </thead>
           <tbody>
@@ -29,11 +37,30 @@ export function AccountsTable({ accounts }: { accounts: Account[] }) {
                 <td className="px-4 py-3 text-dim">{a.owner}</td>
                 <td className="px-4 py-3 text-dim">{a.mrr}</td>
                 <td className="px-4 py-3 text-dim">{a.note}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-3">
+                    <Link
+                      href={`/accounts/${a.id}/edit`}
+                      className="text-dim hover:text-text"
+                    >
+                      Edit
+                    </Link>
+                    <form action={deleteAction}>
+                      <input type="hidden" name="id" value={a.id} />
+                      <button
+                        type="submit"
+                        className="text-dim hover:text-red"
+                      >
+                        Delete
+                      </button>
+                    </form>
+                  </div>
+                </td>
               </tr>
             ))}
             {accounts.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-dim">
+                <td colSpan={6} className="px-4 py-8 text-center text-dim">
                   No accounts yet.
                 </td>
               </tr>

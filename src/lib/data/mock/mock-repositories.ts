@@ -14,6 +14,9 @@ import {
 } from "@/lib/mock-data";
 import type { Repositories } from "@/lib/data/repositories";
 
+const NO_DB =
+  "Editing requires a configured database. Set the database connection to enable manual changes.";
+
 export const mockRepositories: Repositories = {
   dashboard: {
     async getKpis() {
@@ -30,8 +33,41 @@ export const mockRepositories: Repositories = {
     async listAccounts() {
       return accounts;
     },
+    async getAccount() {
+      return null;
+    },
+    async createAccount() {
+      throw new Error(NO_DB);
+    },
+    async updateAccount() {
+      throw new Error(NO_DB);
+    },
+    async deleteAccount() {
+      throw new Error(NO_DB);
+    },
+    async listContacts() {
+      return [];
+    },
     async listOpportunities() {
       return opportunities;
+    },
+    async listTasks() {
+      return [];
+    },
+    async getTask() {
+      return null;
+    },
+    async createTask() {
+      throw new Error(NO_DB);
+    },
+    async updateTask() {
+      throw new Error(NO_DB);
+    },
+    async deleteTask() {
+      throw new Error(NO_DB);
+    },
+    async accountOptions() {
+      return accounts.map((a) => ({ id: a.id, name: a.name }));
     },
   },
   agent: {
