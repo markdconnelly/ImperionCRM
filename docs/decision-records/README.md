@@ -28,3 +28,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0019](./ADR-0019-proposal-lifecycle-model.md) | Proposal lifecycle model | Accepted |
 | [0020](./ADR-0020-delivery-project-model.md) | Delivery project model (onboarding/implementation) | Accepted |
 | [0021](./ADR-0021-reporting-read-model-and-recharts.md) | Reporting read model and Recharts | Accepted |
+| [0022](./ADR-0022-assessment-led-gtm-and-engagement-model.md) | Assessment-led GTM & AI Security Readiness Assessment model | Accepted |

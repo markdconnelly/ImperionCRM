@@ -31,10 +31,12 @@
 erDiagram
     ACCOUNT ||--o{ CONTACT : has
     ACCOUNT ||--o{ OPPORTUNITY : "runs over time"
+    ACCOUNT ||--o{ ASSESSMENT : "readiness assessments"
     ACCOUNT ||--o{ PROJECT : "delivery"
     ACCOUNT ||--o{ INTERACTION : "timeline"
     CONTACT ||--o{ INTERACTION : "participates"
     OPPORTUNITY ||--o{ PROPOSAL : has
+    OPPORTUNITY ||--o{ ASSESSMENT : "sold via"
     OPPORTUNITY ||--o| PROJECT : "won -> onboarding"
     OPPORTUNITY ||--o{ INTERACTION : "context"
     PROJECT ||--o{ MILESTONE : has
@@ -84,6 +86,26 @@ erDiagram
       text notes
       timestamptz sent_at
       timestamptz decided_at
+    }
+    ASSESSMENT {
+      uuid id PK
+      uuid account_id FK
+      uuid opportunity_id FK
+      text name
+      text status "enum proposed|scheduled|in_progress|delivered|closed"
+      numeric fee_amount "one-time"
+      boolean credit_to_onboarding
+      text identity_rating "enum rating"
+      text endpoint_rating "enum rating"
+      text network_rating "enum rating"
+      text email_rating "enum rating"
+      text backup_rating "enum rating"
+      text incident_rating "enum rating"
+      text top_priorities
+      text recommendation
+      text report_url
+      date kickoff_at
+      timestamptz delivered_at
     }
     PROJECT {
       uuid id PK
@@ -373,6 +395,8 @@ erDiagram
 - `proposal.status`: `draft | sent | accepted | declined`
 - `project.type`: `onboarding | implementation`
 - `project.status`: `not_started | in_progress | blocked | complete`
+- `assessment.status`: `proposed | scheduled | in_progress | delivered | closed`
+- `assessment_rating` (per dimension): `at_risk | needs_work | solid | strong`
 - `interaction.source`: `m365_email | m365_teams | plaud | sms | email |
   facebook | system`
 - `consent_event.channel`: `email | sms | call_recording`

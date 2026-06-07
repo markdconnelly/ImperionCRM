@@ -96,6 +96,21 @@ export const mockRepositories: Repositories = {
     async deleteProject() {
       throw new Error(NO_DB);
     },
+    async listAssessments() {
+      return [];
+    },
+    async getAssessment() {
+      return null;
+    },
+    async createAssessment() {
+      throw new Error(NO_DB);
+    },
+    async updateAssessment() {
+      throw new Error(NO_DB);
+    },
+    async deleteAssessment() {
+      throw new Error(NO_DB);
+    },
     async accountOptions() {
       return accounts.map((a) => ({ id: a.id, name: a.name }));
     },

@@ -8,9 +8,12 @@
 import "server-only";
 import { getPool } from "@/lib/db/client";
 import { mockRepositories } from "@/lib/data/mock/mock-repositories";
+import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import type {
   AccountEditable,
   AccountInput,
+  AssessmentEditable,
+  AssessmentInput,
   Option,
   ProjectEditable,
   ProjectInput,
@@ -22,6 +25,7 @@ import type {
 } from "@/lib/data/repositories";
 import type {
   Account,
+  AssessmentRow,
   ContactRow,
   CountDatum,
   Health,
@@ -715,6 +719,151 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteProject(id);
       await pool.query(`DELETE FROM project WHERE id = $1`, [id]);
+    },
+
+    async listAssessments(): Promise<AssessmentRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAssessments();
+      try {
+        const { rows } = await pool.query<Record<string, unknown>>(
+          `SELECT a.id, a.name, acc.name AS account, a.status, a.fee_amount, a.kickoff_at,
+                  a.identity_rating, a.endpoint_rating, a.network_rating,
+                  a.email_rating, a.backup_rating, a.incident_rating
+           FROM assessment a
+           JOIN account acc ON acc.id = a.account_id
+           ORDER BY a.created_at DESC`,
+        );
+        return rows.map((row) => ({
+          id: row.id as string,
+          name: row.name as string,
+          account: row.account as string,
+          status: row.status as string,
+          fee:
+            row.fee_amount != null && Number(row.fee_amount) > 0
+              ? fmtUsd(Number(row.fee_amount))
+              : "—",
+          kickoff: fmtDate((row.kickoff_at as Date | null) ?? null),
+          scores: ASSESSMENT_DIMENSIONS.map((d) => ({
+            key: d.key,
+            label: d.label,
+            rating: (row[`${d.key}_rating`] as string | null) ?? null,
+          })),
+        }));
+      } catch {
+        return mockRepositories.crm.listAssessments();
+      }
+    },
+
+    async getAssessment(id: string): Promise<AssessmentEditable | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<Record<string, unknown>>(
+          `SELECT id, account_id, opportunity_id, name, status, fee_amount,
+                  credit_to_onboarding, identity_rating, endpoint_rating, network_rating,
+                  email_rating, backup_rating, incident_rating, top_priorities,
+                  recommendation, report_url, notes, kickoff_at
+           FROM assessment WHERE id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const ratings: Record<string, string | null> = {};
+        for (const d of ASSESSMENT_DIMENSIONS) {
+          ratings[d.key] = (r[`${d.key}_rating`] as string | null) ?? null;
+        }
+        return {
+          id: r.id as string,
+          accountId: r.account_id as string,
+          opportunityId: (r.opportunity_id as string | null) ?? null,
+          name: r.name as string,
+          status: r.status as string,
+          feeAmount: r.fee_amount != null ? String(r.fee_amount) : null,
+          creditToOnboarding: Boolean(r.credit_to_onboarding),
+          ratings,
+          topPriorities: (r.top_priorities as string | null) ?? null,
+          recommendation: (r.recommendation as string | null) ?? null,
+          reportUrl: (r.report_url as string | null) ?? null,
+          notes: (r.notes as string | null) ?? null,
+          kickoffAt: fmtDate((r.kickoff_at as Date | null) ?? null),
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    async createAssessment(input: AssessmentInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createAssessment(input);
+      const ratings = ASSESSMENT_DIMENSIONS.map((d) => nullIfEmpty(input.ratings[d.key]));
+      await pool.query(
+        `INSERT INTO assessment
+           (account_id, opportunity_id, name, status, fee_amount, credit_to_onboarding,
+            identity_rating, endpoint_rating, network_rating, email_rating,
+            backup_rating, incident_rating, top_priorities, recommendation, report_url,
+            notes, kickoff_at, delivered_at)
+         VALUES (
+           $1, $2, $3, $4::assessment_status, $5::numeric, $6,
+           $7::assessment_rating, $8::assessment_rating, $9::assessment_rating,
+           $10::assessment_rating, $11::assessment_rating, $12::assessment_rating,
+           $13, $14, $15, $16, $17::date,
+           CASE WHEN $4 IN ('delivered','closed') THEN now() ELSE NULL END
+         )`,
+        [
+          input.accountId,
+          nullIfEmpty(input.opportunityId),
+          input.name,
+          input.status,
+          nullIfEmpty(input.feeAmount),
+          input.creditToOnboarding,
+          ...ratings,
+          nullIfEmpty(input.topPriorities),
+          nullIfEmpty(input.recommendation),
+          nullIfEmpty(input.reportUrl),
+          nullIfEmpty(input.notes),
+          nullIfEmpty(input.kickoffAt),
+        ],
+      );
+    },
+
+    async updateAssessment(id: string, input: AssessmentInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateAssessment(id, input);
+      const ratings = ASSESSMENT_DIMENSIONS.map((d) => nullIfEmpty(input.ratings[d.key]));
+      await pool.query(
+        `UPDATE assessment
+         SET account_id = $1, opportunity_id = $2, name = $3, status = $4::assessment_status,
+             fee_amount = $5::numeric, credit_to_onboarding = $6,
+             identity_rating = $7::assessment_rating, endpoint_rating = $8::assessment_rating,
+             network_rating = $9::assessment_rating, email_rating = $10::assessment_rating,
+             backup_rating = $11::assessment_rating, incident_rating = $12::assessment_rating,
+             top_priorities = $13, recommendation = $14, report_url = $15, notes = $16,
+             kickoff_at = $17::date,
+             delivered_at = CASE WHEN $4 IN ('delivered','closed')
+                                 THEN coalesce(delivered_at, now()) ELSE NULL END
+         WHERE id = $18`,
+        [
+          input.accountId,
+          nullIfEmpty(input.opportunityId),
+          input.name,
+          input.status,
+          nullIfEmpty(input.feeAmount),
+          input.creditToOnboarding,
+          ...ratings,
+          nullIfEmpty(input.topPriorities),
+          nullIfEmpty(input.recommendation),
+          nullIfEmpty(input.reportUrl),
+          nullIfEmpty(input.notes),
+          nullIfEmpty(input.kickoffAt),
+          id,
+        ],
+      );
+    },
+
+    async deleteAssessment(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteAssessment(id);
+      await pool.query(`DELETE FROM assessment WHERE id = $1`, [id]);
     },
 
     async accountOptions(): Promise<Option[]> {

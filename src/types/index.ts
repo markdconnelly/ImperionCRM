@@ -72,6 +72,24 @@ export interface ProposalRow {
   sent: string | null; // formatted sent date
 }
 
+/** One scored dimension of an assessment, for the scorecard view. */
+export interface AssessmentScore {
+  key: string;
+  label: string;
+  rating: string | null; // assessment_rating or null (not yet scored)
+}
+
+/** A row in the Assessments list (AI Security Readiness Assessment). */
+export interface AssessmentRow {
+  id: string;
+  name: string;
+  account: string; // account name
+  status: string; // assessment_status label
+  fee: string; // formatted one-time fee or "—"
+  kickoff: string | null; // formatted kickoff date
+  scores: AssessmentScore[]; // the six dimensions
+}
+
 /** A row in the Onboarding (delivery projects) list. */
 export interface ProjectRow {
   id: string;
