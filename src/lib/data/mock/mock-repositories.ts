@@ -7,10 +7,27 @@
  */
 import {
   accounts,
+  actionItems,
   agentMessages,
+  audiences,
+  campaigns,
+  captureEvents,
+  companyConnections,
+  contacts,
+  enrollments,
+  interactions,
   kpis,
+  leadHooks,
+  mockAudienceMembers,
+  mockConsentEvents,
+  mockContactProfile,
+  mockCurrentConsent,
+  mockEnrichment,
+  mockSocialIdentities,
   opportunities,
   pipeline,
+  userConnections,
+  workflows,
 } from "@/lib/mock-data";
 import type { Repositories } from "@/lib/data/repositories";
 
@@ -46,7 +63,7 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async listContacts() {
-      return [];
+      return contacts;
     },
     async listOpportunities() {
       return opportunities;
@@ -118,7 +135,7 @@ export const mockRepositories: Repositories = {
       return opportunities.map((o) => ({ id: o.id, name: `${o.account} — ${o.name}` }));
     },
     async contactOptions() {
-      return [];
+      return contacts.map((c) => ({ id: c.id, name: `${c.fullName}${c.account ? ` (${c.account})` : ""}` }));
     },
     async assessmentOptions() {
       return [];
@@ -182,6 +199,12 @@ export const mockRepositories: Repositories = {
     async saveAnswers() {
       throw new Error(NO_DB);
     },
+    async confirmAnswer() {
+      throw new Error(NO_DB);
+    },
+    async rejectAnswer() {
+      throw new Error(NO_DB);
+    },
     async saveSbrScores() {
       throw new Error(NO_DB);
     },
@@ -201,6 +224,149 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async spawnTicket() {
+      throw new Error(NO_DB);
+    },
+  },
+  comms: {
+    async listInteractions(filter) {
+      let rows = interactions;
+      if (filter.source) rows = rows.filter((i) => i.source === filter.source);
+      if (filter.kind) rows = rows.filter((i) => i.kind === filter.kind);
+      return filter.limit ? rows.slice(0, filter.limit) : rows;
+    },
+    async listInteractionsByContact(contactId) {
+      // Mock fixtures key the timeline to the first contact for illustration.
+      return contactId === "ct_01"
+        ? interactions.filter((i) => i.contact === "Dana Whitfield")
+        : [];
+    },
+    async listInteractionsByAccount() {
+      return interactions;
+    },
+    async createInteraction() {
+      throw new Error(NO_DB);
+    },
+    async listActionItems() {
+      return actionItems;
+    },
+    async completeActionItem() {
+      throw new Error(NO_DB);
+    },
+  },
+  contacts: {
+    async getProfile(id) {
+      return mockContactProfile(id);
+    },
+    async getContact() {
+      return null;
+    },
+    async createContact() {
+      throw new Error(NO_DB);
+    },
+    async updateContact() {
+      throw new Error(NO_DB);
+    },
+    async deleteContact() {
+      throw new Error(NO_DB);
+    },
+    async listSocialIdentities(id) {
+      return mockSocialIdentities(id);
+    },
+    async listEnrichment(id) {
+      return mockEnrichment(id);
+    },
+    async addEnrichment() {
+      throw new Error(NO_DB);
+    },
+  },
+  consent: {
+    async listConsent(id) {
+      return mockConsentEvents(id);
+    },
+    async currentConsent(id) {
+      return mockCurrentConsent(id);
+    },
+    async recordConsentEvent() {
+      throw new Error(NO_DB);
+    },
+    async canSend(id, channel) {
+      return mockCurrentConsent(id).some((c) => c.channel === channel && c.state === "opt_in");
+    },
+    async canUseForAds(id) {
+      return mockCurrentConsent(id).some((c) => c.channel === "ad_targeting" && c.state === "opt_in");
+    },
+  },
+  connections: {
+    async listUserConnections() {
+      return userConnections;
+    },
+    async listCompanyConnections() {
+      return companyConnections;
+    },
+    async connect() {
+      throw new Error(NO_DB);
+    },
+    async disconnect() {
+      throw new Error(NO_DB);
+    },
+    async listExternalIdentities() {
+      return [];
+    },
+  },
+  campaigns: {
+    async listCampaigns() {
+      return campaigns;
+    },
+    async getCampaign() {
+      return null;
+    },
+    async createCampaign() {
+      throw new Error(NO_DB);
+    },
+    async listAudiences() {
+      return audiences;
+    },
+    async getAudienceMembers(id) {
+      return mockAudienceMembers(id);
+    },
+    async createAudience() {
+      throw new Error(NO_DB);
+    },
+    async previewAudienceMembers() {
+      return mockAudienceMembers("aud_01");
+    },
+    async launchAudience(id) {
+      return mockAudienceMembers(id).filter((m) => m.adConsent).length;
+    },
+  },
+  leads: {
+    async listHooks() {
+      return leadHooks;
+    },
+    async createHook() {
+      throw new Error(NO_DB);
+    },
+    async listCaptureEvents() {
+      return captureEvents;
+    },
+    async resolveEvent() {
+      throw new Error(NO_DB);
+    },
+  },
+  workflows: {
+    async listWorkflows() {
+      return workflows;
+    },
+    async getWorkflow() {
+      return null;
+    },
+    async listEnrollments() {
+      return enrollments;
+    },
+    async enroll() {
+      throw new Error(NO_DB);
+    },
+    async exitEnrollment() {
       throw new Error(NO_DB);
     },
   },

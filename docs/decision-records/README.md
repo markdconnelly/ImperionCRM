@@ -30,3 +30,7 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0021](./ADR-0021-reporting-read-model-and-recharts.md) | Reporting read model and Recharts | Accepted |
 | [0022](./ADR-0022-assessment-led-gtm-and-engagement-model.md) | Assessment-led GTM & AI Security Readiness Assessment model | Accepted |
 | [0023](./ADR-0023-engagement-capture-and-relationship-data-model.md) | Engagement capture & long-term-relationship data model | Accepted |
+| [0024](./ADR-0024-per-user-personal-connections-and-lead-hooks.md) | Per-user personal connections & lead-capture hooks | Accepted |
+| [0025](./ADR-0025-contact-360-enrichment-and-lawful-basis.md) | Contact-360 enrichment dossier & lawful-basis gating | Accepted |
+| [0026](./ADR-0026-demand-gen-audiences-and-ad-consent.md) | Demand-gen audiences & ad-targeting consent | Accepted |
+| [0027](./ADR-0027-pre-discovery-automation-and-agent-answer-approval.md) | Pre-discovery automation & agent-answer human approval | Accepted |
