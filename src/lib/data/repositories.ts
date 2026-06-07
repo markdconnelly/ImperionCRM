@@ -12,6 +12,7 @@
 import type {
   Account,
   AgentMessage,
+  AssessmentRow,
   ContactRow,
   CountDatum,
   Kpi,
@@ -57,6 +58,26 @@ export interface ProposalInput {
   notes: string | null;
 }
 export interface ProposalEditable extends ProposalInput {
+  id: string;
+}
+
+/** Editable AI Security Readiness Assessment fields (ADR-0022). */
+export interface AssessmentInput {
+  accountId: string;
+  opportunityId: string | null;
+  name: string;
+  status: string; // proposed|scheduled|in_progress|delivered|closed
+  feeAmount: string | null; // one-time fee, numeric as string or null
+  creditToOnboarding: boolean;
+  /** Dimension key (identity, endpoint, …) → rating or null (not yet scored). */
+  ratings: Record<string, string | null>;
+  topPriorities: string | null;
+  recommendation: string | null;
+  reportUrl: string | null;
+  notes: string | null;
+  kickoffAt: string | null; // yyyy-mm-dd or null
+}
+export interface AssessmentEditable extends AssessmentInput {
   id: string;
 }
 
@@ -120,6 +141,13 @@ export interface CrmRepository {
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;
   deleteProject(id: string): Promise<void>;
+
+  // AI Security Readiness Assessments (full CRUD) — gates managed services (ADR-0022)
+  listAssessments(): Promise<AssessmentRow[]>;
+  getAssessment(id: string): Promise<AssessmentEditable | null>;
+  createAssessment(input: AssessmentInput): Promise<void>;
+  updateAssessment(id: string, input: AssessmentInput): Promise<void>;
+  deleteAssessment(id: string): Promise<void>;
 
   /** Account options for select dropdowns. */
   accountOptions(): Promise<Option[]>;

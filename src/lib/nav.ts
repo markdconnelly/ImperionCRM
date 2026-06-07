@@ -11,6 +11,7 @@ export const navPrimary: NavItem[] = [
   { key: "accounts", label: "Accounts", icon: "Building2", href: "/accounts" },
   { key: "contacts", label: "Contacts", icon: "Contact", href: "/contacts" },
   { key: "pipeline", label: "Pipeline", icon: "GitBranch", href: "/pipeline" },
+  { key: "assessments", label: "Assessments", icon: "ShieldAlert", href: "/assessments" },
   { key: "proposals", label: "Proposals", icon: "FileText", href: "/proposals" },
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
