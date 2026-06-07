@@ -1,23 +1,32 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { ModulePlaceholder } from "@/components/ui/module-placeholder";
+import { FeedbackForm } from "@/components/feedback/feedback-form";
+
+const REPO = "markdconnelly/ImperionCRM";
 
 export default function FeedbackPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Feedback"
-        description="Request and prioritize features for Imperion CRM."
-      />
-      <ModulePlaceholder
-        icon="Lightbulb"
-        title="Feature feedback"
-        description="Employees submit and upvote feature requests; admins triage and prioritize. Accepted items are pushed to GitHub and tracked through release."
-        points={[
-          "Submit + upvote, admin triage and priority (ADR-0013)",
-          "On acceptance, opens a GitHub issue on the project board",
-          "Status and release reflected back to submitters",
-        ]}
-      />
+        description="Request features and report issues — tracked on GitHub (ADR-0013)."
+      >
+        <a
+          href={`https://github.com/${REPO}/issues`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+        >
+          View all on GitHub →
+        </a>
+      </PageHeader>
+
+      <p className="max-w-lg text-sm text-dim">
+        Feature feedback is coupled to GitHub so requests, triage, and release tracking
+        live in one place. Submitting opens a prefilled issue you can review before
+        posting.
+      </p>
+
+      <FeedbackForm />
     </div>
   );
 }

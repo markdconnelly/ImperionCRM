@@ -436,4 +436,52 @@ export const mockRepositories: Repositories = {
       ];
     },
   },
+  knowledge: {
+    async search(query) {
+      const q = query.trim().toLowerCase();
+      if (q === "") return [];
+      const hits = interactions
+        .filter(
+          (i) =>
+            (i.summary ?? "").toLowerCase().includes(q) ||
+            (i.subject ?? "").toLowerCase().includes(q),
+        )
+        .map((i) => ({
+          id: i.id,
+          kind: "interaction",
+          title: i.subject ?? i.source,
+          snippet: i.summary,
+          href: "/communications",
+          when: i.occurredAt,
+        }));
+      const contactHits = contacts
+        .filter((c) => c.fullName.toLowerCase().includes(q))
+        .map((c) => ({
+          id: c.id,
+          kind: "contact",
+          title: c.fullName,
+          snippet: c.account,
+          href: `/contacts/${c.id}`,
+          when: null,
+        }));
+      return [...contactHits, ...hits];
+    },
+  },
+  security: {
+    async getPosture() {
+      return {
+        totalContacts: contacts.length,
+        contactsWithConsent: 1,
+        adEligible: 1,
+        connectionsActive: userConnections.filter((c) => c.status === "active").length,
+        connectionsTotal: userConnections.length + companyConnections.length,
+        consentByChannel: [
+          { label: "email", count: 1 },
+          { label: "sms", count: 1 },
+          { label: "ad_targeting", count: 1 },
+          { label: "data_enrichment", count: 1 },
+        ],
+      };
+    },
+  },
 };

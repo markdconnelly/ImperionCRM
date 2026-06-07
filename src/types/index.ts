@@ -278,6 +278,26 @@ export interface SessionUser {
   email: string;
 }
 
+/** A single result from the Knowledge search over the gold layer. */
+export interface KnowledgeHit {
+  id: string;
+  kind: string; // contact | interaction
+  title: string;
+  snippet: string | null;
+  href: string | null;
+  when: string | null;
+}
+
+/** Headline security/compliance posture (read model over the spine). */
+export interface SecurityPosture {
+  totalContacts: number;
+  contactsWithConsent: number; // any current opt-in
+  adEligible: number; // current ad_targeting opt-in
+  connectionsActive: number;
+  connectionsTotal: number;
+  consentByChannel: CountDatum[]; // current opt-in count per channel
+}
+
 // ── Communications timeline (ADR-0011) ───────────────────────────────────────
 // The unified, multi-channel lifetime history. Every row is one `interaction`.
 

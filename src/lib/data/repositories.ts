@@ -33,9 +33,11 @@ import type {
   EnrollmentRow,
   ExternalIdentityRow,
   InteractionRow,
+  KnowledgeHit,
   Kpi,
   LeadCaptureEventRow,
   LeadHookRow,
+  SecurityPosture,
   OpportunityRow,
   PipelineColumn,
   ProjectRow,
@@ -583,6 +585,18 @@ export interface WorkflowsRepository {
   exitEnrollment(enrollmentId: string): Promise<void>;
 }
 
+// ── Knowledge search & security posture ──────────────────────────────────────
+
+/** Knowledge repository: search over the gold layer (summaries, dossier, contacts). */
+export interface KnowledgeRepository {
+  search(query: string): Promise<KnowledgeHit[]>;
+}
+
+/** Security repository: the read-only compliance/posture dashboard. */
+export interface SecurityRepository {
+  getPosture(): Promise<SecurityPosture>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -597,4 +611,6 @@ export interface Repositories {
   campaigns: CampaignsRepository;
   leads: LeadsRepository;
   workflows: WorkflowsRepository;
+  knowledge: KnowledgeRepository;
+  security: SecurityRepository;
 }
