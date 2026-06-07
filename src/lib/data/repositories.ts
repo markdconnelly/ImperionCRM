@@ -236,6 +236,34 @@ export interface SbrInput {
   nextActions: string | null;
 }
 
+/** Spawn a downstream opportunity from an engagement (provenance set). */
+export interface SpawnOpportunityInput {
+  accountId: string;
+  name: string;
+  salesStage: string;
+  amountMrr: string | null;
+  sourceDiscoveryId: string | null;
+  sourceAssessmentId: string | null;
+  sourceSbrId: string | null;
+}
+
+/** Spawn a downstream delivery project from an engagement (provenance set). */
+export interface SpawnProjectInput {
+  accountId: string;
+  name: string;
+  type: string;
+  sourceAssessmentId: string | null;
+  sourceSbrId: string | null;
+}
+
+/** Spawn a downstream ticket from an engagement (provenance set). */
+export interface SpawnTicketInput {
+  accountId: string;
+  title: string;
+  sourceAssessmentId: string | null;
+  sourceSbrId: string | null;
+}
+
 /**
  * Engagement layer (ADR-0023): editable questionnaires, account-scoped discovery
  * calls and Strategic Business Reviews, and read access to assessment artifacts and
@@ -281,6 +309,11 @@ export interface EngagementsRepository {
   // Read-only feeds
   listAssessmentArtifacts(assessmentId: string): Promise<ArtifactRow[]>;
   listTickets(): Promise<TicketRow[]>;
+
+  // Provenance: spawn downstream records that point back to the engagement
+  spawnOpportunity(input: SpawnOpportunityInput): Promise<void>;
+  spawnProject(input: SpawnProjectInput): Promise<void>;
+  spawnTicket(input: SpawnTicketInput): Promise<void>;
 }
 
 /** Read-only analytics for the Reporting page (aggregates over the spine). */

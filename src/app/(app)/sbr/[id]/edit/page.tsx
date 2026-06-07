@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { SbrForm } from "@/components/sbr/sbr-form";
-import { updateSbrAction } from "../../actions";
+import { ProvenancePanel, SpawnButton } from "@/components/engagements/provenance-panel";
+import { updateSbrAction, spawnOpportunityFromSbr, spawnTicketFromSbr } from "../../actions";
 import { getRepositories } from "@/lib/data";
 
 export default async function EditSbrPage({
@@ -38,6 +39,18 @@ export default async function EditSbrPage({
         scoreValues={scoreValues}
         checkedTicketIds={checkedTicketIds}
       />
+      <ProvenancePanel>
+        <SpawnButton
+          action={spawnOpportunityFromSbr}
+          hidden={{ sbrId: sbr.id, accountId: sbr.accountId }}
+          label="Create expansion opportunity"
+        />
+        <SpawnButton
+          action={spawnTicketFromSbr}
+          hidden={{ sbrId: sbr.id, accountId: sbr.accountId }}
+          label="Create ticket"
+        />
+      </ProvenancePanel>
     </div>
   );
 }

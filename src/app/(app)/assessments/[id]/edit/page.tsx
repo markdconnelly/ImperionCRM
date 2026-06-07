@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { AssessmentForm } from "@/components/assessments/assessment-form";
-import { updateAssessmentAction } from "../../actions";
+import { ProvenancePanel, SpawnButton } from "@/components/engagements/provenance-panel";
+import {
+  updateAssessmentAction,
+  spawnProjectFromAssessment,
+  spawnOpportunityFromAssessment,
+  spawnTicketFromAssessment,
+} from "../../actions";
 import { getRepositories } from "@/lib/data";
 
 export default async function EditAssessmentPage({
@@ -27,6 +33,23 @@ export default async function EditAssessmentPage({
         accounts={accounts}
         opportunities={opportunities}
       />
+      <ProvenancePanel>
+        <SpawnButton
+          action={spawnProjectFromAssessment}
+          hidden={{ assessmentId: assessment.id, accountId: assessment.accountId }}
+          label="Create remediation project"
+        />
+        <SpawnButton
+          action={spawnOpportunityFromAssessment}
+          hidden={{ assessmentId: assessment.id, accountId: assessment.accountId }}
+          label="Create managed-services opportunity"
+        />
+        <SpawnButton
+          action={spawnTicketFromAssessment}
+          hidden={{ assessmentId: assessment.id, accountId: assessment.accountId }}
+          label="Create ticket"
+        />
+      </ProvenancePanel>
     </div>
   );
 }

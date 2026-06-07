@@ -55,3 +55,48 @@ export async function deleteAssessmentAction(formData: FormData) {
   await crm.deleteAssessment(id);
   revalidatePath("/assessments");
 }
+
+// ── Provenance: spawn downstream work from an assessment (ADR-0023) ──────────
+
+export async function spawnProjectFromAssessment(formData: FormData) {
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const accountId = String(formData.get("accountId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.spawnProject({
+    accountId,
+    name: "Remediation roadmap",
+    type: "implementation",
+    sourceAssessmentId: assessmentId,
+    sourceSbrId: null,
+  });
+  redirect("/onboarding");
+}
+
+export async function spawnOpportunityFromAssessment(formData: FormData) {
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const accountId = String(formData.get("accountId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.spawnOpportunity({
+    accountId,
+    name: "Managed services agreement",
+    salesStage: "proposal",
+    amountMrr: null,
+    sourceDiscoveryId: null,
+    sourceAssessmentId: assessmentId,
+    sourceSbrId: null,
+  });
+  redirect("/pipeline");
+}
+
+export async function spawnTicketFromAssessment(formData: FormData) {
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const accountId = String(formData.get("accountId") ?? "");
+  const { engagements } = getRepositories();
+  await engagements.spawnTicket({
+    accountId,
+    title: "Assessment remediation item",
+    sourceAssessmentId: assessmentId,
+    sourceSbrId: null,
+  });
+  redirect("/tickets");
+}

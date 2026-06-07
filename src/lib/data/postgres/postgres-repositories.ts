@@ -26,6 +26,9 @@ import type {
   Repositories,
   SbrInput,
   SbrScoreInput,
+  SpawnOpportunityInput,
+  SpawnProjectInput,
+  SpawnTicketInput,
   TaskEditable,
   TaskInput,
 } from "@/lib/data/repositories";
@@ -1641,6 +1644,59 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.engagements.listAssessmentArtifacts(assessmentId);
       }
+    },
+
+    async spawnOpportunity(input: SpawnOpportunityInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.spawnOpportunity(input);
+      await pool.query(
+        `INSERT INTO opportunity
+           (account_id, name, sales_stage, amount_mrr, source,
+            source_discovery_id, source_assessment_id, source_sbr_id)
+         VALUES ($1, $2, $3::opportunity_sales_stage, $4::numeric, 'manual', $5, $6, $7)`,
+        [
+          input.accountId,
+          input.name,
+          input.salesStage,
+          nullIfEmpty(input.amountMrr),
+          nullIfEmpty(input.sourceDiscoveryId),
+          nullIfEmpty(input.sourceAssessmentId),
+          nullIfEmpty(input.sourceSbrId),
+        ],
+      );
+    },
+
+    async spawnProject(input: SpawnProjectInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.spawnProject(input);
+      await pool.query(
+        `INSERT INTO project
+           (account_id, name, type, status, source_assessment_id, source_sbr_id)
+         VALUES ($1, $2, $3::project_type, 'not_started', $4, $5)`,
+        [
+          input.accountId,
+          input.name,
+          input.type,
+          nullIfEmpty(input.sourceAssessmentId),
+          nullIfEmpty(input.sourceSbrId),
+        ],
+      );
+    },
+
+    async spawnTicket(input: SpawnTicketInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.spawnTicket(input);
+      await pool.query(
+        `INSERT INTO ticket
+           (account_id, title, source, status, source_assessment_id, source_sbr_id)
+         VALUES ($1, $2, 'manual', 'new', $3, $4)`,
+        [
+          input.accountId,
+          input.title,
+          nullIfEmpty(input.sourceAssessmentId),
+          nullIfEmpty(input.sourceSbrId),
+        ],
+      );
     },
 
     async listTickets(): Promise<TicketRow[]> {

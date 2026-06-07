@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { DiscoveryForm } from "@/components/discovery/discovery-form";
-import { updateDiscoveryAction } from "../../actions";
+import { ProvenancePanel, SpawnButton } from "@/components/engagements/provenance-panel";
+import { updateDiscoveryAction, spawnOpportunityFromDiscovery } from "../../actions";
 import { getRepositories } from "@/lib/data";
 
 export default async function EditDiscoveryPage({
@@ -36,6 +37,13 @@ export default async function EditDiscoveryPage({
         questions={questions}
         answerValues={answerValues}
       />
+      <ProvenancePanel>
+        <SpawnButton
+          action={spawnOpportunityFromDiscovery}
+          hidden={{ discoveryId: discovery.id, accountId: discovery.accountId }}
+          label="Create opportunity"
+        />
+      </ProvenancePanel>
     </div>
   );
 }

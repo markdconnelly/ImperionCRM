@@ -194,6 +194,15 @@ export const mockRepositories: Repositories = {
     async listTickets() {
       return [];
     },
+    async spawnOpportunity() {
+      throw new Error(NO_DB);
+    },
+    async spawnProject() {
+      throw new Error(NO_DB);
+    },
+    async spawnTicket() {
+      throw new Error(NO_DB);
+    },
   },
   reports: {
     async getSummary() {
