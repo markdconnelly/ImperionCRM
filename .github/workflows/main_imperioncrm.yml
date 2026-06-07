@@ -1,10 +1,10 @@
 # Deploy to Azure Web App - imperioncrm (Linux, NODE|24-lts).
 #
-# Ships SOURCE and lets Azure Oryx build on the server (npm install + npm run
-# build + npm start). The previous pipeline built on the runner and shipped the
-# result via actions/upload-artifact, which dropped the node_modules/.bin/next
-# symlink -> `next start` exited 127 -> container failed to start -> 503.
-# Server-side build (App setting SCM_DO_BUILD_DURING_DEPLOYMENT=true) avoids that.
+# Builds a Next.js STANDALONE bundle on the runner and ships only that. The
+# standalone server.js bundles its own traced node_modules, so the container
+# starts with `node server.js` — no `npm start`, no node_modules/.bin/next
+# symlink (which the old artifact pipeline dropped -> exit 127 -> 503), and no
+# Oryx server build. Startup command + Oryx-off are set on the Web App via az.
 name: Build and deploy Node.js app to Azure Web App - imperioncrm
 
 on:
@@ -14,13 +14,28 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # required for the azure/login OIDC token
       contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+
+      - name: Assemble standalone deploy bundle
+        run: |
+          mkdir deploy
+          cp -r .next/standalone/. deploy/
+          mkdir -p deploy/.next
+          cp -r .next/static deploy/.next/static
+          if [ -d public ]; then cp -r public deploy/public; fi
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -29,9 +44,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A8892DC7DD8147B0A5A77AD9D291ADD1 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1BAC47B85DE240948E6DED7D3C2A0490 }}
 
-      - name: Deploy source to Azure Web App (Oryx builds on server)
+      - name: Deploy standalone bundle
         uses: azure/webapps-deploy@v3
         with:
           app-name: imperioncrm
           slot-name: Production
-          package: .
+          package: deploy
