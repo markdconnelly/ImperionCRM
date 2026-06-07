@@ -1,10 +1,10 @@
-# Meridian — Product Requirements
+# Imperion CRM — Product Requirements
 
 - **Status:** Draft (decisions D1–D11 locked 2026-06-07)
 - **Owner:** Mark Connelly (Imperion LLC)
 - **Related:** [data-model](../database/data-model.md), ADR-0010 … ADR-0016
 
-Meridian is the internal operations platform for Imperion LLC (an MSP). It is the
+Imperion CRM is the internal operations platform for Imperion LLC (an MSP). It is the
 **single interface employees use to track the health of a customer across the
 entire lifecycle** — from an inbound lead, through the sales cycle, onboarding,
 implementation, operational readiness, handoff, and continuous managed-service

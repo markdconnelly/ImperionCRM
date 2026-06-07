@@ -4,7 +4,7 @@
 - **Date:** 2026-06-06
 
 ## Problem
-Choose the primary application framework for Meridian.
+Choose the primary application framework for Imperion CRM.
 
 ## Context
 The platform is an operational intelligence layer above M365 and Kaseya. It needs

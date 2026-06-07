@@ -16,7 +16,7 @@ export function AgentPanel({
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">
         <Icon name="Sparkles" size={16} className="text-accent" />
         <span className="font-display text-sm font-semibold tracking-tight">
-          Meridian Agent
+          Imperion Agent
         </span>
         <button
           onClick={onCollapse}

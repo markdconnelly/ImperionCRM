@@ -4,7 +4,7 @@
 - **Date:** 2026-06-07
 
 ## Problem
-Decide how Meridian connects to external clouds to assemble a client's history and
+Decide how Imperion CRM connects to external clouds to assemble a client's history and
 demand-gen data, given the rule "augment, don't duplicate" (CLAUDE.md §1) — notably
 that Autotask ticket history must be referenced, not copied.
 
@@ -39,7 +39,7 @@ Adopt the **identity map + ingest/poll policy.**
 ## Security impact
 All external credentials live in Azure Key Vault and are referenced by
 `integration_connection.keyvault_secret_ref`. Polled data inherits the source
-system's authorization; Meridian requests it with least-privilege app credentials.
+system's authorization; Imperion CRM requests it with least-privilege app credentials.
 
 ## Cost impact
 API call volume for polling (cache to bound it); Facebook Marketing API usage.

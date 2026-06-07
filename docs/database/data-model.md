@@ -1,4 +1,4 @@
-# Meridian — Data Model
+# Imperion CRM — Data Model
 
 - **Status:** Draft (decisions D1–D11 locked 2026-06-07)
 - **Related:** [product-requirements](../architecture/product-requirements.md),
@@ -46,7 +46,9 @@ erDiagram
 
     ACCOUNT {
       uuid id PK
-      text name
+      text name "unique"
+      text relationship "prospect|customer|partner"
+      boolean is_active
       text lifecycle_stage "enum"
       numeric health_score "computed"
       uuid owner_user_id FK
@@ -354,6 +356,7 @@ erDiagram
 
 ## Enumerations
 
+- `account.relationship`: `prospect | customer | partner` (null = unknown)
 - `account.lifecycle_stage`: `prospect | onboarding | implementation |
   operational_readiness | managed_active | dormant`
 - `opportunity.sales_stage`: `lead | qualified | proposal | won | lost`

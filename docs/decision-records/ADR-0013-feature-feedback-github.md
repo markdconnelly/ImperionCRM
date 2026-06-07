@@ -10,7 +10,7 @@ releases — without building a second issue tracker that drifts from GitHub.
 
 ## Context
 Engineering already lives in GitHub (Issues/Projects, releases). Feature demand
-comes from internal users of Meridian. We want one source of truth for *delivery*
+comes from internal users of Imperion CRM. We want one source of truth for *delivery*
 (GitHub) and a friendly *intake/voting* surface in-app.
 
 ## Options considered

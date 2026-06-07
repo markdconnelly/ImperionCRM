@@ -11,8 +11,8 @@ import "@fontsource/ibm-plex-sans/600.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Meridian",
-  description: "AI-enabled MSP operations platform",
+  title: "Imperion CRM",
+  description: "Imperion CRM — AI-enabled MSP operations platform",
 };
 
 export default function RootLayout({

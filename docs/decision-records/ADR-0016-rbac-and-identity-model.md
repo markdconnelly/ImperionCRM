@@ -8,7 +8,7 @@ Decide how users, roles, and access control work for an internal, Entra-authenti
 app whose data is full of PII and whose agents act on users' behalf.
 
 ## Context
-Meridian is single-tenant (Imperion employees only). Entra ID is the sole IdP
+Imperion CRM is single-tenant (Imperion employees only). Entra ID is the sole IdP
 (ADR-0002) and CLAUDE.md §3 makes Entra the source of truth for identity and RBAC.
 Roles include Admin, Sales, Delivery/Ops, Leadership (Board access), and Read-only.
 

@@ -1,6 +1,6 @@
 # Database migrations
 
-Raw SQL migrations for the Meridian PostgreSQL + pgvector store (ADR-0003,
+Raw SQL migrations for the Imperion CRM PostgreSQL + pgvector store (ADR-0003,
 ADR-0017). Schema design lives in [docs/database/data-model.md](../docs/database/data-model.md).
 
 ## Layout

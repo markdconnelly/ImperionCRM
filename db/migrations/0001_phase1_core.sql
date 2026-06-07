@@ -1,4 +1,4 @@
--- Meridian — Phase 1 schema: CRM core spine + engagement timeline + identity/RBAC
+-- Imperion CRM — Phase 1 schema: CRM core spine + engagement timeline + identity/RBAC
 -- Target: PostgreSQL 18 (Azure Database for PostgreSQL Flexible Server), db "imperioncrm".
 -- Design: docs/database/data-model.md (Diagram 1) and ADR-0010/0011/0016.
 -- Scope (Phase 1 only): app_user, account, contact, opportunity, interaction,

@@ -1,6 +1,6 @@
 # Identity & Authentication
 
-How Meridian authenticates users. Implements ADR-0002 (Entra ID as sole IdP) and
+How Imperion CRM authenticates users. Implements ADR-0002 (Entra ID as sole IdP) and
 ADR-0005 (Auth.js + certificate client assertion).
 
 > **Status:** implementation on branch `feat/entra-auth`, pending build/sign-in

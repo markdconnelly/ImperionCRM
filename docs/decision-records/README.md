@@ -24,3 +24,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0015](./ADR-0015-agent-platform-and-board.md) | Agent platform persistence and AI Board | Accepted |
 | [0016](./ADR-0016-rbac-and-identity-model.md) | RBAC and identity model | Accepted |
 | [0017](./ADR-0017-raw-sql-migrations.md) | Raw SQL migrations as schema source of truth | Accepted |
+| [0018](./ADR-0018-gui-only-frontend-external-functions.md) | GUI-only frontend; logic in DB or external functions | Accepted |
