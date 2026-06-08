@@ -34,9 +34,11 @@ flowchart LR
 ## Migrations
 
 Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in order with an
-Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0027**
-(0027 extends `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`,
-adds a `pending` status, and a per-company-provider unique index — ADR-0030).
+Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0026**
+applied in prod; **0027** committed but **not yet applied** — see the
+[credential-config database to-do](credential-config-todo.md). 0027 extends
+`connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
+status, and a per-company-provider unique index (ADR-0030).
 
 Governing decisions:
 [ADR-0003 pgvector store](../decision-records/ADR-0003-postgres-pgvector-unified-store.md) ·
