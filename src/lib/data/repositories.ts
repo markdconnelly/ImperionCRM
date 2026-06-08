@@ -502,7 +502,7 @@ export interface ConnectionInput {
 }
 
 /**
- * Upsert a company-wide credential (ADR-0030). The secret itself is written to
+ * Upsert a company-wide credential (ADR-0036). The secret itself is written to
  * Key Vault by the backend — this records only the reference + metadata. Keyed by
  * provider for company scope, so re-saving rotates rather than duplicates.
  */
@@ -520,7 +520,7 @@ export interface ConnectionsRepository {
   listUserConnections(userEmail: string): Promise<ConnectionRow[]>;
   listCompanyConnections(): Promise<ConnectionRow[]>;
   connect(input: ConnectionInput): Promise<void>;
-  /** Upsert a company-wide credential by provider (ADR-0030). */
+  /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;
   disconnect(id: string): Promise<void>;
   listExternalIdentities(accountId: string): Promise<ExternalIdentityRow[]>;

@@ -388,7 +388,7 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async saveCompanyCredential(input) {
-      // In-memory upsert by provider so the UI reflects saves without a DB (ADR-0030).
+      // In-memory upsert by provider so the UI reflects saves without a DB (ADR-0036).
       const existing = companyConnections.find((c) => c.provider === input.provider);
       if (existing) {
         existing.displayName = input.displayName;

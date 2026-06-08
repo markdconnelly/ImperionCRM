@@ -147,7 +147,7 @@ export default async function SettingsPage({
     </section>
   );
 
-  // ── Company credentials tab (ADR-0030) ───────────────────────────────────────
+  // ── Company credentials tab (ADR-0036) ───────────────────────────────────────
   const credentials = (
     <section className="flex flex-col gap-3">
       <div>

@@ -820,8 +820,10 @@ erDiagram
 - `lawful_basis`: `consent | legitimate_interest | contract | public_data` (ADR-0025)
 - `connection.scope`: `user | company` (ADR-0024)
 - `connection.provider`: `m365 | google | youtube | linkedin | facebook | plaud |
-  autotask | itglue | apollo` (apollo added by ADR-0035)
-- `connection.status`: `active | expired | revoked | error`
+  autotask | itglue | apollo | myitprocess | televy | quotemanager | gdap` (apollo by
+  ADR-0035; myitprocess/televy/quotemanager/gdap by ADR-0036)
+- `connection.status`: `active | expired | revoked | error | pending` (pending added by
+  ADR-0036 for credentials recorded before the backend writes the secret)
 - `contact.crm_stage`: `audience | lead | prospect | client` (ADR-0031; Leads =
   not-client, Contacts = client — opposite filters of one object)
 - `meeting.platform`: `teams | plaud | other` (ADR-0011/0033 structured meeting)

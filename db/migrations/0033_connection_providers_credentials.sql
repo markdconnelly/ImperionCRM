@@ -1,4 +1,4 @@
--- Company credential configuration (ADR-0030). Extends the connection provider
+-- Company credential configuration (ADR-0036). Extends the connection provider
 -- enum with the company-wide systems an admin configures in Settings → Company
 -- credentials: My IT Process, Televy (assessment reporting), Kaseya Quote Manager
 -- (quoting), and GDAP (Microsoft delegated admin for Imperion). Adds a 'pending'

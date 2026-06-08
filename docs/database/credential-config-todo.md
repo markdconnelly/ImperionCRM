@@ -1,45 +1,28 @@
 # Company credential configuration — database to-do
 
-Corresponds to **ADR-0030** (Settings → Company credentials). This repo is the **single
+Corresponds to **ADR-0036** (Settings → Company credentials). This repo is the **single
 source of truth for the schema** (CLAUDE.md §6); the backend and pipeline are consumers.
-Migration **0027** is committed here but **not yet applied to prod**.
+Migration **0033** is committed **and applied to prod** (verified 2026-06-08).
 
 ## Status
 
-- **Committed:** `db/migrations/0027_connection_providers_credentials.sql`
+- **Committed:** `db/migrations/0033_connection_providers_credentials.sql`
   - adds `connection_provider` values: `myitprocess`, `televy`, `quotemanager`, `gdap`
   - adds `connection_status` value: `pending`
   - adds partial unique index `uq_connection_company_provider` on `(provider) WHERE
     scope = 'company'` so company credentials upsert (re-save = rotate, not duplicate)
-- **Applied range in prod:** 0001–0026.
+- **Applied range in prod:** 0001–0033 (this migration applied & verified 2026-06-08,
+  alongside the contact-lifecycle/comms/onboarding/Apollo set 0027–0032).
 
-## To do
+## Done
 
-### 1. Apply migration 0027 to prod  ⚠️ requires `az` + `psql` (not available in the build env)
-This was **not** run automatically — it needs an Azure login, a Postgres client, and a
-firewall rule for the client IP, and it touches the prod database. Run it yourself
-(per `db/README.md`):
+### 1. ✅ Migration 0033 applied to prod (2026-06-08)
+Applied via the `db/README.md` Entra-token method. The `connection_provider` enum now
+includes `myitprocess`, `televy`, `quotemanager`, `gdap` (alongside `apollo`); the
+`connection_status` enum includes `pending`; and the partial unique index
+`uq_connection_company_provider` is present. Verified directly against prod.
 
-```bash
-PGUSER="Mark@ImperionLLC.com"   # an Entra admin / granted principal on the server
-PGPASSWORD="$(az account get-access-token \
-  --resource https://ossrdbms-aad.database.windows.net \
-  --query accessToken -o tsv)"
-export PGUSER PGPASSWORD
-psql "host=imperioncrm-pg-prd.postgres.database.azure.com port=5432 dbname=imperioncrm sslmode=require" \
-  -v ON_ERROR_STOP=1 -f db/migrations/0027_connection_providers_credentials.sql
-```
-
-Notes:
-- **Safe to apply:** no migration seeds the `connection` table, so the new unique index
-  cannot collide with existing rows. All statements are idempotent
-  (`ADD VALUE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`).
-- **Not wrapped in a transaction:** Postgres requires `ALTER TYPE ... ADD VALUE` to run
-  outside `BEGIN/COMMIT` — that's intentional in 0027.
-- **Ordering:** apply **before** the backend `/credentials` endpoint goes live, since the
-  web app writes `status='pending'` and the new provider values on save.
-
-### 2. Verify after applying
+### 2. Re-verify query (reference)
 ```sql
 SELECT unnest(enum_range(NULL::connection_provider));   -- includes myitprocess/televy/quotemanager/gdap
 SELECT unnest(enum_range(NULL::connection_status));     -- includes pending
@@ -49,8 +32,8 @@ SELECT indexname FROM pg_indexes WHERE indexname = 'uq_connection_company_provid
 ### 3. Follow-ups (when the sync engines land)
 - [ ] The pipeline writes `connection.sync_cursor` + `last_sync_at` + `status` per company
       provider so the Settings cards can show live health (today they show `pending`/`active`).
-- [ ] Update the ERD in [`data-model.md`](data-model.md) to reflect the extended
-      `connection_provider` / `connection_status` enums (CLAUDE.md §8).
+- [x] Update the ERD in [`data-model.md`](data-model.md) to reflect the extended
+      `connection_provider` / `connection_status` enums (CLAUDE.md §8). *(done 2026-06-08)*
 - [ ] If credential validation is added backend-side (see backend to-do), no schema change
       is needed — status already covers `error`.
 
