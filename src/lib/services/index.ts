@@ -22,6 +22,7 @@ const services = {
   comms: { name: "Communications", baseUrlEnv: "COMMS_SERVICE_URL" },
   campaign: { name: "Ad campaigns", baseUrlEnv: "CAMPAIGN_SERVICE_URL" },
   board: { name: "AI Board of Directors", baseUrlEnv: "BOARD_SERVICE_URL" },
+  credentials: { name: "Credential store", baseUrlEnv: "INTEGRATION_SERVICE_URL" },
 } satisfies Record<string, ServiceDescriptor>;
 
 /** Orchestrator + sub-agents (ADR-0015). Hosted externally (container app). */
@@ -63,4 +64,26 @@ export const campaignService = {
 export const boardService = {
   openSession: (input: { topic: string; memberIds: string[] }) =>
     callService(services.board, "/session", { method: "POST", body: JSON.stringify(input) }),
+};
+
+/**
+ * Company credential / secret store (ADR-0030). The backend is the only thing that
+ * writes secrets to Key Vault (CLAUDE.md §5 / ADR-0028 isolation); this repo just
+ * hands it the entered fields and gets back a Key Vault reference — the secret never
+ * lands in this DB or this App Service. Until the backend endpoint + INTEGRATION_SERVICE_URL
+ * are set these throw ServiceNotConfiguredError and callers degrade gracefully.
+ */
+export const credentialsService = {
+  /** Write a company credential to Key Vault; returns the reference to persist. */
+  store: (input: { provider: string; fields: Record<string, string> }) =>
+    callService<{ keyvaultSecretRef: string }>(services.credentials, "/credentials", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  /** Begin the Microsoft GDAP admin-consent flow; returns the consent URL to visit. */
+  beginGdapConsent: () =>
+    callService<{ consentUrl: string }>(services.credentials, "/gdap/consent", {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
 };

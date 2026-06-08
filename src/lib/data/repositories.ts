@@ -501,12 +501,27 @@ export interface ConnectionInput {
   scopes: string[];
 }
 
+/**
+ * Upsert a company-wide credential (ADR-0030). The secret itself is written to
+ * Key Vault by the backend — this records only the reference + metadata. Keyed by
+ * provider for company scope, so re-saving rotates rather than duplicates.
+ */
+export interface CompanyCredentialInput {
+  provider: string;
+  displayName: string | null;
+  scopes: string[];
+  keyvaultSecretRef: string | null; // reference only — never the secret
+  status: string; // active|pending|error|expired|revoked
+}
+
 /** Connections repository: per-user personal + company-wide, and the identity map. */
 export interface ConnectionsRepository {
   /** Personal connections for the signed-in employee, resolved by email (ADR-0024). */
   listUserConnections(userEmail: string): Promise<ConnectionRow[]>;
   listCompanyConnections(): Promise<ConnectionRow[]>;
   connect(input: ConnectionInput): Promise<void>;
+  /** Upsert a company-wide credential by provider (ADR-0030). */
+  saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;
   disconnect(id: string): Promise<void>;
   listExternalIdentities(accountId: string): Promise<ExternalIdentityRow[]>;
 }

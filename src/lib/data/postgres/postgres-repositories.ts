@@ -19,6 +19,7 @@ import type {
   AudienceCriterion,
   AudienceInput,
   CampaignInput,
+  CompanyCredentialInput,
   ConnectionInput,
   ConsentEventInput,
   ContactEditable,
@@ -2602,6 +2603,32 @@ export const postgresRepositories: Repositories = {
           input.provider,
           nullIfEmpty(input.displayName),
           input.scopes,
+        ],
+      );
+    },
+
+    async saveCompanyCredential(input: CompanyCredentialInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.saveCompanyCredential(input);
+      // Upsert by provider for company scope (uq_connection_company_provider, 0027).
+      // The secret lives in Key Vault; we persist only its reference + status.
+      await pool.query(
+        `INSERT INTO connection
+           (scope, provider, display_name, scopes, keyvault_secret_ref, status)
+         VALUES ('company', $1::connection_provider, $2, $3, $4, $5::connection_status)
+         ON CONFLICT (provider) WHERE scope = 'company'
+         DO UPDATE SET display_name        = EXCLUDED.display_name,
+                       scopes              = EXCLUDED.scopes,
+                       keyvault_secret_ref = EXCLUDED.keyvault_secret_ref,
+                       status              = EXCLUDED.status,
+                       connected_at        = now(),
+                       updated_at          = now()`,
+        [
+          input.provider,
+          nullIfEmpty(input.displayName),
+          input.scopes,
+          nullIfEmpty(input.keyvaultSecretRef),
+          input.status,
         ],
       );
     },

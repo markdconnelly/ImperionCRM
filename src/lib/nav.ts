@@ -35,7 +35,6 @@ export const navSecondary: NavItem[] = [
   { key: "knowledge", label: "Knowledge", icon: "BrainCircuit", href: "/knowledge" },
   { key: "workflows", label: "Workflows", icon: "Workflow", href: "/workflows" },
   { key: "consent", label: "Consent", icon: "FileCheck", href: "/consent" },
-  { key: "integrations", label: "Integrations", icon: "Plug", href: "/integrations" },
   { key: "agents", label: "AI Agents", icon: "Bot", href: "/agents" },
   { key: "board", label: "Board of Directors", icon: "Users", href: "/board" },
   { key: "feedback", label: "Feedback", icon: "Lightbulb", href: "/feedback" },

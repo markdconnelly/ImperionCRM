@@ -4,6 +4,18 @@ import { auth } from "@/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { canSeeSettings, type AppRole } from "@/lib/auth/roles";
+import { SettingsTabs } from "@/components/settings/settings-tabs";
+import { CompanyCredentialCard } from "@/components/settings/company-credential-card";
+import { ConnectAccount } from "@/components/integrations/connect-account";
+import { ConnectionCard } from "@/components/integrations/connection-card";
+import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
+import { getRepositories } from "@/lib/data";
+import {
+  connectAction,
+  disconnectAction,
+  grantGdapAction,
+  saveCredentialAction,
+} from "./actions";
 
 /** Human labels for the application roles. */
 const ROLE_LABEL: Record<AppRole, string> = {
@@ -33,7 +45,12 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
   const session = await auth();
   const roles = session?.user?.roles ?? ["support"];
   // Settings is admin-only (ADR-0030). Middleware already redirects, but guard
@@ -44,13 +61,16 @@ export default async function SettingsPage() {
   const email = session?.user?.email ?? "—";
   const rolesLabel = roles.map((r) => ROLE_LABEL[r] ?? r).join(", ");
 
-  return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Settings"
-        description="Your profile, appearance, and where the platform is configured."
-      />
+  const { connections } = getRepositories();
+  const [personal, company] = await Promise.all([
+    connections.listUserConnections(email),
+    connections.listCompanyConnections(),
+  ]);
+  const companyByProvider = new Map(company.map((c) => [c.provider, c]));
 
+  // ── Profile tab ────────────────────────────────────────────────────────────
+  const profile = (
+    <div className="flex flex-col gap-4">
       <Card title="Profile">
         <div className="flex flex-col gap-1.5">
           <Row label="Name" value={name} />
@@ -66,28 +86,6 @@ export default async function SettingsPage() {
 
       <Card title="Appearance">
         <AppearanceSettings />
-      </Card>
-
-      <Card title="Connections & data">
-        <p className="text-sm text-dim">
-          Connect your own Microsoft 365, LinkedIn, and YouTube accounts so your
-          communications and the data they grant flow into the timeline and enrich your
-          contacts.
-        </p>
-        <div className="mt-3 flex gap-2">
-          <Link
-            href="/integrations"
-            className="rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
-          >
-            Manage connections
-          </Link>
-          <Link
-            href="/consent"
-            className="rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
-          >
-            Consent ledger
-          </Link>
-        </div>
       </Card>
 
       <Card title="Security">
@@ -118,6 +116,74 @@ export default async function SettingsPage() {
           Documentation library →
         </a>
       </Card>
+    </div>
+  );
+
+  // ── Your connections tab (personal, ADR-0024) ────────────────────────────────
+  const connectionsPanel = (
+    <section className="flex flex-col gap-3">
+      <div>
+        <h3 className="font-display text-sm font-semibold tracking-tight">
+          Your connected accounts
+        </h3>
+        <p className="mt-0.5 text-sm text-dim">
+          Connect your own 365 / social accounts so your communications flow into the
+          timeline — attributed first to you, then to the company. Tokens live in Key Vault.
+        </p>
+      </div>
+      <ConnectAccount connectAction={connectAction} />
+      {personal.length > 0 ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {personal.map((c) => (
+            <ConnectionCard key={c.id} connection={c} disconnectAction={disconnectAction} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-dim">No personal accounts connected yet.</p>
+      )}
+      <Link href="/consent" className="text-sm text-accent hover:underline">
+        Consent ledger →
+      </Link>
+    </section>
+  );
+
+  // ── Company credentials tab (ADR-0030) ───────────────────────────────────────
+  const credentials = (
+    <section className="flex flex-col gap-3">
+      <div>
+        <h3 className="font-display text-sm font-semibold tracking-tight">Company systems</h3>
+        <p className="mt-0.5 text-sm text-dim">
+          Org-wide credentials for the integration engines. Secrets are written to Key
+          Vault by the backend — only a reference is stored here, never the secret itself.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {COMPANY_PROVIDERS.map((p) => (
+          <CompanyCredentialCard
+            key={p.key}
+            provider={p}
+            connection={companyByProvider.get(p.key) ?? null}
+            saveAction={saveCredentialAction}
+            gdapAction={grantGdapAction}
+            disconnectAction={disconnectAction}
+          />
+        ))}
+      </div>
+    </section>
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Settings"
+        description="Your profile, connections, and the company integration credentials."
+      />
+      <SettingsTabs
+        initialTab={tab}
+        profile={profile}
+        connections={connectionsPanel}
+        credentials={credentials}
+      />
     </div>
   );
 }
