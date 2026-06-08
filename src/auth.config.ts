@@ -13,6 +13,8 @@
 import type { NextAuthConfig } from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { entraEnv } from "@/lib/env";
+import { rolesFromClaims, type RoleClaims } from "@/lib/auth/claims";
+import { type AppRole, DEFAULT_ROLE, canSeeSettings } from "@/lib/auth/roles";
 
 export const authConfig: NextAuthConfig = {
   // Required behind the App Service reverse proxy (ADR-0006).
@@ -37,11 +39,47 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     /**
-     * Sign-in gate (CLAUDE.md §7.3): only authenticated users reach app routes.
-     * Returning false redirects to the Entra sign-in.
+     * Derive application roles from the Entra token on first sign-in and carry
+     * them in the JWT (ADR-0030). The JWT is what the edge middleware decodes,
+     * so roles must live here — both `claims.ts` and `roles.ts` are edge-pure.
+     * Break-glass (Credentials, no `profile`) is elevated to admin in auth.ts.
      */
-    authorized({ auth }) {
-      return Boolean(auth?.user);
+    jwt({ token, profile, account }) {
+      if (profile) {
+        token.roles = rolesFromClaims(profile as RoleClaims);
+        const p = profile as { oid?: string; sub?: string };
+        token.oid = p.oid ?? p.sub ?? token.sub;
+      }
+      // Credentials (break-glass) sign-in: auth.ts sets the user role; default
+      // anything still unset to the most-restricted role.
+      if (!token.roles) {
+        token.roles =
+          account?.provider === "break-glass" ? ["admin"] : [DEFAULT_ROLE];
+      }
+      return token;
+    },
+    /** Surface the JWT roles on the session for server + client consumers. */
+    session({ session, token }) {
+      session.user.roles = (token.roles as AppRole[] | undefined) ?? [DEFAULT_ROLE];
+      return session;
+    },
+    /**
+     * Sign-in gate (CLAUDE.md §7.3): only authenticated users reach app routes.
+     * Additionally enforces the admin-only areas (Settings + Security) at the
+     * edge so a non-admin cannot reach them even by typing the URL.
+     */
+    authorized({ auth, request }) {
+      if (!auth?.user) return false;
+      const path = request.nextUrl.pathname;
+      const roles =
+        (auth.user as { roles?: AppRole[] }).roles ?? [DEFAULT_ROLE];
+      if (
+        (path.startsWith("/settings") || path.startsWith("/security")) &&
+        !canSeeSettings(roles)
+      ) {
+        return Response.redirect(new URL("/", request.nextUrl));
+      }
+      return true;
     },
   },
 };

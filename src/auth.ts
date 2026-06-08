@@ -23,6 +23,8 @@ import Credentials from "next-auth/providers/credentials";
 import authConfig from "@/auth.config";
 import { entraEnv, breakGlass } from "@/lib/env";
 import { buildClientAssertion } from "@/lib/auth/client-assertion";
+import { rolesFromClaims, type RoleClaims } from "@/lib/auth/claims";
+import { upsertAppUser } from "@/lib/data/app-user";
 
 const ASSERTION_TYPE =
   "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
@@ -124,6 +126,28 @@ const entraProviderWithCertFetch = new Proxy(entraProvider, {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  events: {
+    /**
+     * Mirror the Entra identity + derived roles into `app_user` on sign-in
+     * (ADR-0016/0030). Runs only in the Node route handler, keeping `pg` out of
+     * the edge bundle. Break-glass has no profile and is skipped.
+     */
+    async signIn({ profile, user }) {
+      if (!profile) return;
+      const p = profile as RoleClaims & {
+        oid?: string;
+        sub?: string;
+        email?: string;
+        name?: string;
+      };
+      await upsertAppUser({
+        entraObjectId: p.oid ?? p.sub ?? "",
+        email: p.email ?? user?.email ?? "",
+        displayName: p.name ?? user?.name ?? null,
+        roles: rolesFromClaims(p),
+      });
+    },
+  },
   providers: [
     entraProviderWithCertFetch,
     // Emergency SSO bypass — used only via the /break-glass page. Disabled

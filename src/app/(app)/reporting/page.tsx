@@ -1,5 +1,7 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
 import { StagePipelineChart, StatusBarChart } from "@/components/reporting/report-charts";
 
 function ChartCard({
@@ -24,8 +26,9 @@ function ChartCard({
 
 export default async function ReportingPage() {
   const { reports } = getRepositories();
-  const [summary, pipeline, proposals, projects, revenue, conversion, sbrAverages] =
+  const [roles, summary, pipeline, proposals, projects, revenue, conversion, sbrAverages] =
     await Promise.all([
+      getSessionRoles(),
       reports.getSummary(),
       reports.pipelineByStage(),
       reports.proposalsByStatus(),
@@ -35,16 +38,22 @@ export default async function ReportingPage() {
       reports.sbrDimensionAverages(),
     ]);
 
+  // Support cannot see revenue (ADR-0030): blank money figures and zero the
+  // per-stage MRR so the pipeline chart still shows deal counts.
+  const showRevenue = canSeeRevenue(roles);
+  const money = (v: string) => (showRevenue ? v : REDACTED_MONEY);
+  const pipelineData = showRevenue ? pipeline : pipeline.map((s) => ({ ...s, mrr: 0 }));
+
   const cards = [
-    { label: "Active MRR", value: summary.activeMrr },
-    { label: "Open Pipeline", value: summary.openPipeline },
+    { label: "Active MRR", value: money(summary.activeMrr) },
+    { label: "Open Pipeline", value: money(summary.openPipeline) },
     { label: "Win Rate", value: summary.winRate },
     { label: "Avg. Time to Live", value: summary.avgTimeToLive },
   ];
 
   const revenueCards = [
-    { label: "Recurring MRR", value: revenue.recurring, hint: "managed services" },
-    { label: "One-time Assessment Fees", value: revenue.oneTime, hint: "delivered assessments" },
+    { label: "Recurring MRR", value: money(revenue.recurring), hint: "managed services" },
+    { label: "One-time Assessment Fees", value: money(revenue.oneTime), hint: "delivered assessments" },
     {
       label: "Assessment → Managed",
       value: conversion.rate,
@@ -84,7 +93,7 @@ export default async function ReportingPage() {
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <ChartCard title="Open pipeline by stage" subtitle="Deals per sales stage">
-          <StagePipelineChart data={pipeline} />
+          <StagePipelineChart data={pipelineData} />
         </ChartCard>
         <ChartCard title="SBR posture by dimension" subtitle="Avg re-benchmark score (1 At Risk → 4 Strong)">
           <StatusBarChart data={sbrAverages} color="#3FBF8F" />

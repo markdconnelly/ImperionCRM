@@ -1,3 +1,5 @@
+import type { AppRole } from "@/lib/auth/roles";
+
 export type Health = "green" | "amber" | "red";
 
 export type PipelineStage =
@@ -276,6 +278,8 @@ export interface TicketRow {
 export interface SessionUser {
   name: string;
   email: string;
+  /** Normalized application roles derived from Entra group/app-role claims. */
+  roles: AppRole[];
 }
 
 /** A single result from the Knowledge search over the gold layer. */

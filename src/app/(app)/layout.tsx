@@ -17,6 +17,7 @@ export default async function AppLayout({
   const user: SessionUser = {
     name: session?.user?.name ?? "Unknown user",
     email: session?.user?.email ?? "",
+    roles: session?.user?.roles ?? ["support"],
   };
 
   const { agent } = getRepositories();
