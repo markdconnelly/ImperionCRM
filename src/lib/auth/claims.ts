@@ -35,10 +35,12 @@ export function rolesFromClaims(claims: RoleClaims | null | undefined): AppRole[
     if (mapped) candidates.push(mapped);
   }
 
-  // 2. Group GUIDs → role, via operator-configured env map.
+  // 2. Groups claim → role. Match each value against the operator-configured env map (group
+  //    object-id GUIDs) AND the stable App-Role name table — so it resolves whether the
+  //    groups claim is configured to emit GUIDs or names like "Application.ImperionCRM.Admins".
   const groupMap = roleEnv.groupMap;
-  for (const guid of claims?.groups ?? []) {
-    const mapped = groupMap[guid];
+  for (const value of claims?.groups ?? []) {
+    const mapped = groupMap[value] ?? APP_ROLE_CLAIM_MAP[value];
     if (mapped) candidates.push(mapped);
   }
 
