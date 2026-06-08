@@ -729,6 +729,8 @@ erDiagram
     ACCOUNT ||--o{ ACCOUNT_SOURCE : "merges from"
     INTERACTION ||--o| MEETING : "1:1 (kind=meeting)"
     PROJECT ||--o{ PROJECT_MILESTONE : "has"
+    PROJECT ||--o{ ONBOARDING_STEP : "playbook checklist"
+    PROJECT_MILESTONE ||--o{ ONBOARDING_STEP : "phase steps"
 
     CONTACT {
       uuid id PK
@@ -781,10 +783,28 @@ erDiagram
       text name
       int ordinal "UNIQUE(project_id, ordinal)"
       milestone_status status "not_started|in_progress|blocked|complete"
-      milestone_health health "green|amber|red"
+      milestone_health health "green|amber|red (derived from steps when present)"
+      date start_at "phase window start (ADR-0037)"
+      date due_at "phase window end"
       text auto_check_key "future automation"
     }
+    ONBOARDING_STEP {
+      uuid id PK
+      uuid project_id FK
+      uuid milestone_id FK
+      text code "playbook code e.g. 1.1; UNIQUE(project_id, code)"
+      text title
+      boolean is_comm "a Send- client communication step"
+      text status "open|done"
+      date due_at
+    }
 ```
+
+> **Onboarding playbook (ADR-0037).** The standard 9-phase, ~90-step MSP onboarding
+> playbook lives in `lib/onboarding-template.ts`. `applyOnboardingTemplate` instantiates
+> it: each phase → a `PROJECT_MILESTONE`, each step → an `ONBOARDING_STEP`. Checking off
+> steps re-derives the phase R/Y/G. Ad-hoc PM work still uses `TASK` (category
+> project/onboarding); the playbook checklist does not.
 
 > **Apollo** (ADR-0035) is a company-scope `connection` provider and an enrichment
 > source for both `contact_source` and `account_source`. The normalization/merge job

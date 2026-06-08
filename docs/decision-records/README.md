@@ -43,3 +43,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0034](./ADR-0034-onboarding-pm-and-task-categories.md) | Onboarding PM dashboard, R/Y/G milestones & task categories | Accepted |
 | [0035](./ADR-0035-apollo-enrichment-integration.md) | Apollo as the global contact & company enrichment provider | Accepted |
 | [0036](./ADR-0036-company-credential-configuration.md) | Company credential configuration in Settings | Accepted |
+| [0037](./ADR-0037-onboarding-playbook-template.md) | Standard onboarding playbook template & checklist | Accepted |
