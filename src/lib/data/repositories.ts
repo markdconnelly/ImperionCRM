@@ -191,10 +191,14 @@ export interface CrmRepository {
   updateProject(id: string, input: ProjectInput): Promise<void>;
   deleteProject(id: string): Promise<void>;
 
-  // Onboarding dashboard — projects with their R/Y/G milestones (ADR-0034)
+  // Onboarding dashboard — projects with their R/Y/G milestones + checklist (ADR-0034/0037)
   listOnboarding(): Promise<OnboardingProject[]>;
-  /** Set a milestone's R/Y/G health from the dashboard (manual until automated). */
+  /** Set a milestone's R/Y/G health from the dashboard (manual; auto-derived when it has steps). */
   setMilestoneHealth(id: string, health: string): Promise<void>;
+  /** Instantiate the standard onboarding playbook for a project (phases + checklist). */
+  applyOnboardingTemplate(projectId: string, startAt: string): Promise<void>;
+  /** Check/uncheck a playbook checklist step. */
+  setOnboardingStepStatus(id: string, done: boolean): Promise<void>;
 
   // AI Security Readiness Assessments (full CRUD) — gates managed services (ADR-0022)
   listAssessments(): Promise<AssessmentRow[]>;

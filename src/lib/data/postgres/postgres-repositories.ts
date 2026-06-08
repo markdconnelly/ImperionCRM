@@ -9,6 +9,7 @@ import "server-only";
 import { getPool } from "@/lib/db/client";
 import { mockRepositories } from "@/lib/data/mock/mock-repositories";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
+import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import type {
   AccountEditable,
   AccountInput,
@@ -80,6 +81,7 @@ import type {
   LeadHookRow,
   OnboardingProject,
   OnboardingMilestone,
+  OnboardingStep,
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
@@ -100,6 +102,31 @@ import type {
   WorkflowDetail,
   WorkflowRow,
 } from "@/types";
+
+/** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Derive a phase's R/Y/G from its checklist: green when every step is done; red
+ * when past due with steps still open; amber otherwise. Falls back to the stored
+ * (manual) health when the phase has no steps.
+ */
+function deriveHealth(
+  stored: Health,
+  total: number,
+  done: number,
+  due: string | null,
+  today: string,
+): Health {
+  if (total === 0) return stored;
+  if (done >= total) return "green";
+  if (due && due < today) return "red";
+  return "amber";
+}
 
 /** Empty string → null, for optional form fields. */
 function nullIfEmpty(v: string | null | undefined): string | null {
@@ -849,6 +876,7 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.listOnboarding();
       try {
+        const today = new Date().toISOString().slice(0, 10);
         const { rows } = await pool.query<{
           id: string;
           name: string;
@@ -869,15 +897,64 @@ export const postgresRepositories: Repositories = {
           name: string;
           status: string;
           health: Health;
+          start_at: Date | null;
+          due_at: Date | null;
         }>(
-          `SELECT id, project_id, name, status::text AS status, health::text AS health
+          `SELECT id, project_id, name, status::text AS status, health::text AS health,
+                  start_at, due_at
            FROM project_milestone
            ORDER BY ordinal, name`,
         );
+        const { rows: steps } = await pool.query<{
+          id: string;
+          project_id: string;
+          milestone_id: string | null;
+          code: string;
+          title: string;
+          is_comm: boolean;
+          status: string;
+          due_at: Date | null;
+        }>(
+          `SELECT id, project_id, milestone_id, code, title, is_comm, status, due_at
+           FROM onboarding_step
+           ORDER BY ordinal, code`,
+        );
+
+        const stepsByMilestone = new Map<string, OnboardingStep[]>();
+        const projectsWithSteps = new Set<string>();
+        for (const s of steps) {
+          projectsWithSteps.add(s.project_id);
+          if (!s.milestone_id) continue;
+          const list = stepsByMilestone.get(s.milestone_id) ?? [];
+          list.push({
+            id: s.id,
+            code: s.code,
+            title: s.title,
+            isComm: s.is_comm,
+            status: s.status,
+            due: fmtDate(s.due_at),
+          });
+          stepsByMilestone.set(s.milestone_id, list);
+        }
+
         const byProject = new Map<string, OnboardingMilestone[]>();
         for (const m of ms) {
+          const mSteps = stepsByMilestone.get(m.id) ?? [];
+          const total = mSteps.length;
+          const done = mSteps.filter((s) => s.status === "done").length;
+          const due = fmtDate(m.due_at);
           const list = byProject.get(m.project_id) ?? [];
-          list.push({ id: m.id, name: m.name, status: m.status, health: m.health });
+          list.push({
+            id: m.id,
+            name: m.name,
+            status: m.status,
+            health: deriveHealth(m.health, total, done, due, today),
+            start: fmtDate(m.start_at),
+            due,
+            stepsTotal: total,
+            stepsDone: done,
+            steps: mSteps,
+          });
           byProject.set(m.project_id, list);
         }
         return rows.map((p) => ({
@@ -887,6 +964,7 @@ export const postgresRepositories: Repositories = {
           type: p.type,
           status: p.status,
           targetLive: fmtDate(p.target_live_date),
+          hasTemplate: projectsWithSteps.has(p.id),
           milestones: byProject.get(p.id) ?? [],
         }));
       } catch {
@@ -900,6 +978,64 @@ export const postgresRepositories: Repositories = {
       await pool.query(
         `UPDATE project_milestone SET health = $2::milestone_health WHERE id = $1`,
         [id, health],
+      );
+    },
+
+    async applyOnboardingTemplate(projectId: string, startAt: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.applyOnboardingTemplate(projectId, startAt);
+      const start = /^\d{4}-\d{2}-\d{2}$/.test(startAt)
+        ? startAt
+        : new Date().toISOString().slice(0, 10);
+      const client = await pool.connect();
+      try {
+        // Idempotent: skip if the playbook is already instantiated for this project.
+        const { rows: existing } = await client.query<{ n: string }>(
+          `SELECT count(*)::int AS n FROM onboarding_step WHERE project_id = $1`,
+          [projectId],
+        );
+        if (Number(existing[0]?.n ?? 0) > 0) return;
+
+        await client.query("BEGIN");
+        for (const phase of ONBOARDING_TEMPLATE.phases) {
+          const phaseStart = addDays(start, phase.offsetDays);
+          const phaseEnd = addDays(phaseStart, phase.durationDays);
+          const { rows: mRows } = await client.query<{ id: string }>(
+            `INSERT INTO project_milestone
+               (project_id, name, ordinal, status, health, start_at, due_at)
+             VALUES ($1, $2, $3, 'not_started', 'amber', $4::date, $5::date)
+             RETURNING id`,
+            [projectId, phase.name, phase.ordinal, phaseStart, phaseEnd],
+          );
+          const milestoneId = mRows[0].id;
+          let ord = 0;
+          for (const step of phase.steps) {
+            await client.query(
+              `INSERT INTO onboarding_step
+                 (project_id, milestone_id, code, title, is_comm, ordinal, status, due_at)
+               VALUES ($1, $2, $3, $4, $5, $6, 'open', $7::date)
+               ON CONFLICT (project_id, code) DO NOTHING`,
+              [projectId, milestoneId, step.code, step.title, Boolean(step.send), ord++, phaseEnd],
+            );
+          }
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async setOnboardingStepStatus(id: string, done: boolean): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setOnboardingStepStatus(id, done);
+      await pool.query(
+        `UPDATE onboarding_step
+         SET status = $2, completed_at = ${done ? "now()" : "NULL"}
+         WHERE id = $1`,
+        [id, done ? "done" : "open"],
       );
     },
 

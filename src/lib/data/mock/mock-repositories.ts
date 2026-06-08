@@ -30,7 +30,8 @@ import {
   workflows,
 } from "@/lib/mock-data";
 import type { Repositories } from "@/lib/data/repositories";
-import type { Health, OnboardingMilestone } from "@/types";
+import type { Health, OnboardingMilestone, OnboardingStep } from "@/types";
+import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 
 const NO_DB =
   "Editing requires a configured database. Set the database connection to enable manual changes.";
@@ -142,22 +143,59 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async listOnboarding() {
-      // Demo onboarding board so the R/Y/G dashboard renders without a DB.
-      const NAMES = ["Kickoff", "Tenant baseline", "Identity hardening", "Endpoint enrollment", "Backup validation", "Go-live readiness"];
-      const steps = (id: string, healths: Health[]): OnboardingMilestone[] =>
+      // Acme is instantiated from the standard playbook (ADR-0037): earlier
+      // phases mostly checked off so the derived R/Y/G + checklist render.
+      const acme: OnboardingMilestone[] = ONBOARDING_TEMPLATE.phases.map((ph, pi) => {
+        const steps: OnboardingStep[] = ph.steps.map((st, si) => {
+          const done = pi < 2 || (pi === 2 && si < Math.ceil(ph.steps.length / 2));
+          return {
+            id: `acme-${ph.ordinal}-${si}`,
+            code: st.code,
+            title: st.title,
+            isComm: Boolean(st.send),
+            status: done ? "done" : "open",
+            due: null,
+          };
+        });
+        const total = steps.length;
+        const doneN = steps.filter((s) => s.status === "done").length;
+        return {
+          id: `acme-m${ph.ordinal}`,
+          name: ph.name,
+          status: doneN === total ? "complete" : doneN > 0 ? "in_progress" : "not_started",
+          health: (doneN === total ? "green" : "amber") as Health,
+          start: null,
+          due: null,
+          stepsTotal: total,
+          stepsDone: doneN,
+          steps,
+        };
+      });
+      // A simple R/Y/G project with no playbook applied yet (shows the Apply button).
+      const simple = (id: string, names: string[], healths: Health[]): OnboardingMilestone[] =>
         healths.map((health, i) => ({
           id: `${id}-m${i}`,
-          name: NAMES[i] ?? `Step ${i + 1}`,
+          name: names[i] ?? `Phase ${i + 1}`,
           status: health === "green" ? "complete" : health === "red" ? "blocked" : "in_progress",
           health,
+          start: null,
+          due: null,
+          stepsTotal: 0,
+          stepsDone: 0,
+          steps: [],
         }));
       return [
-        { id: "pj_01", name: "Acme Onboarding", account: "Acme Co", type: "onboarding", status: "in_progress", targetLive: "2026-07-15", milestones: steps("pj_01", ["green", "green", "green", "amber", "amber", "red"]) },
-        { id: "pj_02", name: "Northwind Onboarding", account: "Northwind", type: "onboarding", status: "in_progress", targetLive: "2026-08-01", milestones: steps("pj_02", ["green", "green", "amber", "amber", "amber"]) },
-        { id: "pj_03", name: "Globex Implementation", account: "Globex", type: "implementation", status: "not_started", targetLive: null, milestones: steps("pj_03", ["amber", "amber", "amber", "amber", "red", "red"]) },
+        { id: "pj_01", name: "Acme Onboarding", account: "Acme Co", type: "onboarding", status: "in_progress", targetLive: "2026-07-15", hasTemplate: true, milestones: acme },
+        { id: "pj_02", name: "Northwind Onboarding", account: "Northwind", type: "onboarding", status: "not_started", targetLive: "2026-08-01", hasTemplate: false, milestones: simple("pj_02", ["Discovery", "Provisioning"], ["amber", "amber"]) },
       ];
     },
     async setMilestoneHealth() {
+      throw new Error(NO_DB);
+    },
+    async applyOnboardingTemplate() {
+      throw new Error(NO_DB);
+    },
+    async setOnboardingStepStatus() {
       throw new Error(NO_DB);
     },
     async listAssessments() {

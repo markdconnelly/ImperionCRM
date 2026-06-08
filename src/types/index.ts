@@ -132,14 +132,29 @@ export interface TaskRow {
   account: string | null; // account name
 }
 
-// ── Onboarding project management (ADR-0034) ─────────────────────────────────
+// ── Onboarding project management (ADR-0034 / template ADR-0037) ─────────────
 
-/** A red/yellow/green onboarding milestone (major step) under a project. */
+/** A single checklist step under a phase (instantiated from the playbook). */
+export interface OnboardingStep {
+  id: string;
+  code: string; // "1.1"
+  title: string;
+  isComm: boolean; // a "Send - …" client communication step
+  status: string; // open|done
+  due: string | null;
+}
+
+/** A red/yellow/green onboarding milestone (major step / phase) under a project. */
 export interface OnboardingMilestone {
   id: string;
   name: string;
   status: string; // not_started|in_progress|blocked|complete
-  health: Health; // green|amber|red
+  health: Health; // green|amber|red — derived from step completion when steps exist
+  start: string | null;
+  due: string | null;
+  stepsTotal: number;
+  stepsDone: number;
+  steps: OnboardingStep[];
 }
 
 /** A project with its milestone R/Y/G rollup, for the onboarding dashboard. */
@@ -150,6 +165,8 @@ export interface OnboardingProject {
   type: string;
   status: string;
   targetLive: string | null;
+  /** True once the standard onboarding playbook has been instantiated. */
+  hasTemplate: boolean;
   milestones: OnboardingMilestone[];
 }
 
