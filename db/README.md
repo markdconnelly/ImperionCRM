@@ -42,6 +42,23 @@ Prerequisites: a firewall rule allowing your client IP, and your Entra principal
 configured as a Postgres Entra admin (or granted the needed role). Password auth
 with the server admin account also works if you prefer.
 
+## Applying a migration (Node runner — no psql required)
+
+When `psql` isn't installed, `scripts/migrate.mjs` applies **named, committed** migration
+files using the same Entra-token model (no stored secret; TLS verified). It mints the
+token from your logged-in `az` and uses your `az` identity as the DB user.
+
+```powershell
+node scripts/migrate.mjs 0035        # apply db/migrations/0035_*.sql
+node scripts/migrate.mjs 0035 0036   # several, in the given order
+node scripts/migrate.mjs --list      # list available migration files
+```
+
+It applies **only the file(s) you name** (never a blind "run everything", which would
+re-fire the seed migrations); each migration is idempotent, so a named re-run is safe.
+Connection defaults to prod and is overridable via `PGHOST` / `PGPORT` / `PGDATABASE` /
+`PGUSER`; pass `PGTOKEN` to supply a token instead of shelling out to `az`.
+
 ## Phasing
 
 `0001_phase1_core.sql` covers Phase 1 (CRM core spine, engagement timeline,
