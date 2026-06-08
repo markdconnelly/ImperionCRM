@@ -33,7 +33,9 @@ export function AssessmentsTable({
         <div key={a.id} className="rounded-lg border border-border bg-panel p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="font-medium">{a.name}</div>
+              <Link href={`/assessments/${a.id}`} className="font-medium hover:text-accent">
+                {a.name}
+              </Link>
               <div className="mt-0.5 text-xs text-dim">
                 {a.account}
                 <span className={cn("ml-2", statusTone[a.status] ?? "text-dim")}>
