@@ -45,5 +45,14 @@ export function rolesFromClaims(claims: RoleClaims | null | undefined): AppRole[
   // 3. Local dev override.
   if (roleEnv.devRole) candidates.push(roleEnv.devRole);
 
+  // TEMPORARY fail-open (v1, pre-go-live — ADR-0030 §1). Entra does not yet emit an
+  // App-Role `roles` claim or a mapped `groups` claim, so no signed-in user resolves to a
+  // recognized role and the admin UI (Settings → Company credentials, Security) is
+  // unreachable. Until the App Roles are defined + assigned in Entra, default an
+  // *unrecognized* user to `admin` so the app is fully usable. Users who DO carry a
+  // recognized claim still get exactly their real role — only the no-claim case opens up.
+  // REVERT (delete this block) to restore fail-closed (→ `support`) before go-live.
+  if (candidates.length === 0) candidates.push("admin");
+
   return normalizeRoles(candidates);
 }
