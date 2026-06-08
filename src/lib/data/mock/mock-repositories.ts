@@ -312,6 +312,29 @@ export const mockRepositories: Repositories = {
     async connect() {
       throw new Error(NO_DB);
     },
+    async saveCompanyCredential(input) {
+      // In-memory upsert by provider so the UI reflects saves without a DB (ADR-0030).
+      const existing = companyConnections.find((c) => c.provider === input.provider);
+      if (existing) {
+        existing.displayName = input.displayName;
+        existing.scopes = input.scopes;
+        existing.keyvaultSecretRef = input.keyvaultSecretRef;
+        existing.status = input.status;
+      } else {
+        companyConnections.push({
+          id: `cn_${input.provider}`,
+          scope: "company",
+          provider: input.provider,
+          displayName: input.displayName,
+          status: input.status,
+          scopes: input.scopes,
+          owner: null,
+          keyvaultSecretRef: input.keyvaultSecretRef,
+          lastSync: null,
+          connectedAt: null,
+        });
+      }
+    },
     async disconnect() {
       throw new Error(NO_DB);
     },
