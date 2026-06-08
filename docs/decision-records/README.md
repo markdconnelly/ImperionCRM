@@ -52,3 +52,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0035](./ADR-0035-apollo-enrichment-integration.md) | Apollo as the global contact & company enrichment provider | Accepted |
 | [0036](./ADR-0036-company-credential-configuration.md) | Company credential configuration in Settings | Accepted |
 | [0037](./ADR-0037-onboarding-playbook-template.md) | Standard onboarding playbook template & checklist | Accepted |
+| [0038](./ADR-0038-per-connection-poll-cadence.md) | Per-connection poll cadence | Accepted |

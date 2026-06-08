@@ -52,6 +52,20 @@ export async function disconnectAction(formData: FormData) {
 }
 
 /**
+ * Set how often the ingestion pipeline polls a connection (ADR-0038). Stored as
+ * minutes on the connection row; 0 = manual/paused. The pipeline repo consumes the
+ * value — this only persists the operator's choice.
+ */
+export async function setPollIntervalAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const minutes = Number(formData.get("pollIntervalMinutes"));
+  if (!id || !Number.isFinite(minutes) || minutes < 0) return;
+  const { connections } = getRepositories();
+  await connections.setPollInterval(id, Math.floor(minutes));
+  revalidatePath("/settings");
+}
+
+/**
  * Save (or rotate) a company credential (ADR-0036). The entered fields are handed
  * to the backend, which writes the secret to Key Vault and returns a reference —
  * the secret never touches this DB (CLAUDE.md §5). Until that backend endpoint is

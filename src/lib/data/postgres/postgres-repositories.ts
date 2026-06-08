@@ -2760,7 +2760,7 @@ export const postgresRepositories: Repositories = {
         const { rows } = await pool.query<ConnectionDbRow>(
           `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
                   cn.status::text AS status, cn.scopes, u.display_name AS owner,
-                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at
+                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at, cn.poll_interval_minutes
            FROM connection cn LEFT JOIN app_user u ON u.id = cn.owner_user_id
            WHERE cn.scope = 'user'
              AND cn.owner_user_id = (
@@ -2782,7 +2782,7 @@ export const postgresRepositories: Repositories = {
         const { rows } = await pool.query<ConnectionDbRow>(
           `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
                   cn.status::text AS status, cn.scopes, NULL::text AS owner,
-                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at
+                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at, cn.poll_interval_minutes
            FROM connection cn WHERE cn.scope = 'company' ORDER BY cn.provider`,
         );
         return rows.map(mapConnection);
@@ -2836,6 +2836,17 @@ export const postgresRepositories: Repositories = {
           nullIfEmpty(input.keyvaultSecretRef),
           input.status,
         ],
+      );
+    },
+
+    async setPollInterval(id: string, minutes: number): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.setPollInterval(id, minutes);
+      // Clamp non-negative; 0 = manual/paused (ADR-0038). The pipeline reads this.
+      const safe = Math.max(0, Math.floor(minutes));
+      await pool.query(
+        `UPDATE connection SET poll_interval_minutes = $2 WHERE id = $1`,
+        [id, safe],
       );
     },
 
@@ -3503,6 +3514,7 @@ interface ConnectionDbRow {
   keyvault_secret_ref: string | null;
   last_sync_at: Date | null;
   connected_at: Date | null;
+  poll_interval_minutes: number | null;
 }
 
 function mapConnection(r: ConnectionDbRow): ConnectionRow {
@@ -3517,6 +3529,7 @@ function mapConnection(r: ConnectionDbRow): ConnectionRow {
     keyvaultSecretRef: r.keyvault_secret_ref,
     lastSync: fmtDateTime(r.last_sync_at),
     connectedAt: fmtDate(r.connected_at),
+    pollIntervalMinutes: r.poll_interval_minutes ?? 60,
   };
 }
 
