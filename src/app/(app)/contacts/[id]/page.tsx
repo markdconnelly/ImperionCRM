@@ -4,6 +4,7 @@ import { getRepositories } from "@/lib/data";
 import { Timeline } from "@/components/comms/timeline";
 import { EnrichmentDossier } from "@/components/comms/enrichment-dossier";
 import { SocialIdentities } from "@/components/comms/social-identities";
+import { SourceRecords } from "@/components/comms/source-records";
 import { ConsentPanel } from "@/components/comms/consent-panel";
 import { ActionItems } from "@/components/comms/action-items";
 import { Compose } from "@/components/comms/compose";
@@ -40,10 +41,11 @@ export default async function ContactDetailPage({
   const profile = await contacts.getProfile(id);
   if (!profile) notFound();
 
-  const [enrichment, social, currentConsent, timeline, actions, canEmail, canSms] =
+  const [enrichment, social, sources, currentConsent, timeline, actions, canEmail, canSms] =
     await Promise.all([
       contacts.listEnrichment(id),
       contacts.listSocialIdentities(id),
+      contacts.listContactSources(id),
       consent.currentConsent(id),
       comms.listInteractionsByContact(id),
       comms.listActionItems(id),
@@ -133,6 +135,10 @@ export default async function ContactDetailPage({
 
           <Section title="Social profiles">
             <SocialIdentities identities={social} />
+          </Section>
+
+          <Section title="Data sources">
+            <SourceRecords sources={sources} />
           </Section>
 
           <Section title="Consent">

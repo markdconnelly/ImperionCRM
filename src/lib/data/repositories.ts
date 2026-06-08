@@ -27,6 +27,8 @@ import type {
   ContactCrmStage,
   ContactPipelineRow,
   ContactProfile,
+  ContactSourceRow,
+  AccountSourceRow,
   ContactRow,
   CountDatum,
   CurrentConsentRow,
@@ -218,6 +220,9 @@ export interface CrmRepository {
 
   /** Assessment options ("Account — Assessment") for select dropdowns. */
   assessmentOptions(): Promise<Option[]>;
+
+  /** Per-source bronze rows that fed this company's unified record (ADR-0032). */
+  listAccountSources(accountId: string): Promise<AccountSourceRow[]>;
 }
 
 export interface AgentRepository {
@@ -470,6 +475,8 @@ export interface ContactsRepository {
   listSocialIdentities(contactId: string): Promise<SocialIdentityRow[]>;
   listEnrichment(contactId: string): Promise<EnrichmentFactRow[]>;
   addEnrichment(input: EnrichmentInput): Promise<void>;
+  /** Per-source bronze rows that fed this contact's unified record (ADR-0032). */
+  listContactSources(contactId: string): Promise<ContactSourceRow[]>;
 }
 
 // ── Consent (ADR-0014) ───────────────────────────────────────────────────────

@@ -95,6 +95,8 @@ import type {
   SbrDetail,
   SbrRow,
   SocialIdentityRow,
+  ContactSourceRow,
+  AccountSourceRow,
   StageValueDatum,
   TaskCategory,
   TaskRow,
@@ -347,6 +349,40 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listAccounts();
+      }
+    },
+
+    async listAccountSources(accountId: string): Promise<AccountSourceRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAccountSources(accountId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          source: string;
+          external_ref: string | null;
+          payload_bronze: unknown | null;
+          normalized_silver: unknown | null;
+          match_confidence: number | null;
+          matched_at: Date | null;
+          last_seen_at: Date | null;
+        }>(
+          `SELECT id, source, external_ref, payload_bronze, normalized_silver,
+                  match_confidence, matched_at, last_seen_at
+           FROM account_source WHERE account_id = $1 ORDER BY last_seen_at DESC`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          source: r.source,
+          externalRef: r.external_ref,
+          payloadBronze: r.payload_bronze,
+          normalizedSilver: r.normalized_silver,
+          matchConfidence: r.match_confidence,
+          matchedAt: fmtDateTime(r.matched_at),
+          lastSeenAt: fmtDateTime(r.last_seen_at),
+        }));
+      } catch {
+        return mockRepositories.crm.listAccountSources(accountId);
       }
     },
 
@@ -2537,6 +2573,40 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.contacts.listSocialIdentities(contactId);
+      }
+    },
+
+    async listContactSources(contactId: string): Promise<ContactSourceRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.listContactSources(contactId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          source: string;
+          external_ref: string | null;
+          payload_bronze: unknown | null;
+          normalized_silver: unknown | null;
+          match_confidence: number | null;
+          matched_at: Date | null;
+          last_seen_at: Date | null;
+        }>(
+          `SELECT id, source, external_ref, payload_bronze, normalized_silver,
+                  match_confidence, matched_at, last_seen_at
+           FROM contact_source WHERE contact_id = $1 ORDER BY last_seen_at DESC`,
+          [contactId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          source: r.source,
+          externalRef: r.external_ref,
+          payloadBronze: r.payload_bronze,
+          normalizedSilver: r.normalized_silver,
+          matchConfidence: r.match_confidence,
+          matchedAt: fmtDateTime(r.matched_at),
+          lastSeenAt: fmtDateTime(r.last_seen_at),
+        }));
+      } catch {
+        return mockRepositories.contacts.listContactSources(contactId);
       }
     },
 

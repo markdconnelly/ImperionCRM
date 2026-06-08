@@ -459,6 +459,31 @@ export interface ContactProfile {
   lastEnrichedAt: string | null;
 }
 
+// ── Per-source bronze rows (ADR-0032) ────────────────────────────────────────
+
+/**
+ * One per-source bronze row backing a unified silver record. The pipeline lands raw
+ * source payloads here; the merge job (pipeline ADR-0006) links each to its silver
+ * `contact`/`account`. Surfaced read-only so a user can see every source that fed a
+ * record and inspect the raw payload.
+ */
+export interface SourceRecordRow {
+  id: string;
+  source: string; // imperion_crm_entered | apollo | m365_synced | autotask | itglue
+  externalRef: string | null;
+  payloadBronze: unknown | null; // raw source JSON (the "view raw" popup)
+  normalizedSilver: unknown | null; // per-source normalized shape
+  matchConfidence: number | null; // 0..1, set by the merge job
+  matchedAt: string | null;
+  lastSeenAt: string | null;
+}
+
+/** A per-source bronze row for a contact (`contact_source`). */
+export type ContactSourceRow = SourceRecordRow;
+
+/** A per-source bronze row for a company (`account_source`). */
+export type AccountSourceRow = SourceRecordRow;
+
 // ── Consent ledger (ADR-0014) ────────────────────────────────────────────────
 
 /** One immutable consent event from the ledger. */
