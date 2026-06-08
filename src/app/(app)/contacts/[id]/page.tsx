@@ -7,7 +7,7 @@ import { SocialIdentities } from "@/components/comms/social-identities";
 import { ConsentPanel } from "@/components/comms/consent-panel";
 import { ActionItems } from "@/components/comms/action-items";
 import { Compose } from "@/components/comms/compose";
-import { sendMessageAction, completeActionItemAction } from "../actions";
+import { sendMessageAction, completeActionItemAction, setConsentAction } from "../actions";
 
 /** A headed panel used across the detail page. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -136,7 +136,7 @@ export default async function ContactDetailPage({
           </Section>
 
           <Section title="Consent">
-            <ConsentPanel current={currentConsent} />
+            <ConsentPanel current={currentConsent} contactId={id} action={setConsentAction} />
           </Section>
         </div>
       </div>
