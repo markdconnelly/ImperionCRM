@@ -6,7 +6,7 @@ import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
 import { moveOpportunityAction, moveContactStageAction } from "./actions";
 
-// Pipeline is primarily the CONTACT lifecycle (ADR-0030): a management view of
+// Pipeline is primarily the CONTACT lifecycle (ADR-0031): a management view of
 // the book of business from Audience → Lead → Prospect → Managed Services
 // Client. The opportunity/deal board is kept below as a secondary view.
 export default async function PipelinePage() {

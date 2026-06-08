@@ -1,4 +1,4 @@
--- Structured meeting object (ADR-0011/0030). A first-class drill-down for the
+-- Structured meeting object (ADR-0011). A first-class drill-down for the
 -- meeting kinds in the communications timeline: a Teams meeting (Copilot recap +
 -- transcript) and a Plaud in-person recap/summary. 1:1 with an `interaction` of
 -- kind 'meeting', so it relates back to the contact AND the company (account)

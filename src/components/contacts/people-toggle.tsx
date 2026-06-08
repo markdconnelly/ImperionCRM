@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 
 /**
- * Leads ⟷ Contacts toggle (ADR-0030). Both are filtered views of the ONE
+ * Leads ⟷ Contacts toggle (ADR-0031). Both are filtered views of the ONE
  * normalized contact object: Leads = not-yet-signed (audience|lead|prospect),
  * Contacts = signed clients. The toggle flips between the two routes.
  */

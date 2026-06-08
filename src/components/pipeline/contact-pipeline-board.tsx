@@ -1,6 +1,6 @@
 import type { ContactPipelineRow, ContactCrmStage } from "@/types";
 
-// The customer-journey axis (ADR-0030). "Managed Services Client" is the
+// The customer-journey axis (ADR-0031). "Managed Services Client" is the
 // crm_stage 'client'.
 const COLUMNS: { key: ContactCrmStage; label: string }[] = [
   { key: "audience", label: "Audience" },

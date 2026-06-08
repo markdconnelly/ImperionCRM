@@ -156,7 +156,7 @@ export interface CrmRepository {
   listContacts(opts?: { client?: boolean }): Promise<ContactRow[]>;
 
   /**
-   * Contacts as lifecycle rows (ADR-0030). `client:false` backs the Leads view
+   * Contacts as lifecycle rows (ADR-0031). `client:false` backs the Leads view
    * (audience|lead|prospect — not yet signed); `client:true` backs the Contacts
    * view (signed clients); omitting the filter returns all stages for the
    * Pipeline board. One table, opposite filters.

@@ -1,4 +1,4 @@
--- Contact CRM lifecycle (ADR-0030). Introduces the customer-journey axis the
+-- Contact CRM lifecycle (ADR-0031). Introduces the customer-journey axis the
 -- Pipeline visualizes — Audience → Lead → Prospect → Managed Services Client —
 -- on the ONE normalized `contact` object. Leads and Contacts become two opposite
 -- filters of this table: a person is a Lead until they sign a contract, at which

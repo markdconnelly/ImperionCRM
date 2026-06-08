@@ -35,7 +35,7 @@ import type { Health, OnboardingMilestone } from "@/types";
 const NO_DB =
   "Editing requires a configured database. Set the database connection to enable manual changes.";
 
-/** Lifecycle stages mock contacts are spread across (ADR-0030). */
+/** Lifecycle stages mock contacts are spread across (ADR-0031). */
 const MOCK_STAGES = ["audience", "lead", "prospect", "client"] as const;
 
 export const mockRepositories: Repositories = {

@@ -64,7 +64,7 @@ export interface ContactRow {
 }
 
 /**
- * The CRM lifecycle axis a contact moves along (ADR-0030). One normalized
+ * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
  * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
  * client. Distinct from the enrichment lifecycle_status.
  */

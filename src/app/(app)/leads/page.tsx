@@ -8,7 +8,7 @@ import { getRepositories } from "@/lib/data";
 import { deleteContactAction } from "../contacts/actions";
 import { resolveEventAction } from "./actions";
 
-// Leads = not-yet-signed people (ADR-0030): the non-client filter of the one
+// Leads = not-yet-signed people (ADR-0031): the non-client filter of the one
 // normalized contact object. Contacts (/contacts) is the opposite filter; the
 // toggle flips between them. Lead-generation tooling (capture inbox + hooks)
 // lives here.

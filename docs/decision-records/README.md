@@ -35,3 +35,10 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0026](./ADR-0026-demand-gen-audiences-and-ad-consent.md) | Demand-gen audiences & ad-targeting consent | Accepted |
 | [0027](./ADR-0027-pre-discovery-automation-and-agent-answer-approval.md) | Pre-discovery automation & agent-answer human approval | Accepted |
 | [0028](./ADR-0028-backend-topology-and-network-isolation.md) | Backend topology — separate repo, Functions on shared plan, network-isolated | Accepted |
+| [0029](../../ADR-0029-agent-layer-runtime.md) | Agent layer runtime | Accepted |
+| [0030](./ADR-0030-rbac-gui-restrictions.md) | Role-based access control & GUI restrictions from Entra groups | Accepted |
+| [0031](./ADR-0031-normalized-contact-lifecycle.md) | Normalized contact object & lifecycle pipeline | Accepted |
+| [0032](./ADR-0032-per-source-bronze-tiering.md) | Per-source bronze tables for contacts and companies | Accepted |
+| [0033](./ADR-0033-assessment-televy-and-365-permission.md) | Assessment evidence (Televy), client-ready report & the 1:1 365 grant | Accepted |
+| [0034](./ADR-0034-onboarding-pm-and-task-categories.md) | Onboarding PM dashboard, R/Y/G milestones & task categories | Accepted |
+| [0035](./ADR-0035-apollo-enrichment-integration.md) | Apollo as the global contact & company enrichment provider | Accepted |

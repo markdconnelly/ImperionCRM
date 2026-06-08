@@ -5,7 +5,7 @@ import { ContactsTable } from "@/components/contacts/contacts-table";
 import { getRepositories } from "@/lib/data";
 import { deleteContactAction } from "./actions";
 
-// Contacts = signed clients (ADR-0030): the client-side filter of the one
+// Contacts = signed clients (ADR-0031): the client-side filter of the one
 // normalized contact object. Leads (/leads) is the opposite filter; the toggle
 // at the top flips between them.
 export default async function ContactsPage() {
