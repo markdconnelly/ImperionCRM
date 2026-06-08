@@ -273,6 +273,37 @@ export const mockRepositories: Repositories = {
     async listInteractionsByAccount() {
       return interactions;
     },
+    async getInteraction(id) {
+      const it = interactions.find((i) => i.id === id);
+      if (!it) return null;
+      const isMeeting = it.kind === "meeting" || it.source === "plaud" || it.source === "m365_teams";
+      return {
+        id: it.id,
+        source: it.source,
+        kind: it.kind,
+        channel: it.channel,
+        direction: it.direction,
+        subject: it.subject,
+        summary: it.summary,
+        body: it.summary,
+        owner: it.owner,
+        contact: it.contact,
+        contactId: null,
+        account: it.account,
+        accountId: null,
+        occurredAt: it.occurredAt,
+        meeting: isMeeting
+          ? {
+              platform: it.source === "plaud" ? "plaud" : it.source === "m365_teams" ? "teams" : "other",
+              title: it.subject,
+              copilotRecap: it.source === "m365_teams" ? it.summary : null,
+              plaudSummary: it.source === "plaud" ? it.summary : null,
+              transcriptRef: null,
+            }
+          : null,
+        actionItems: actionItems,
+      };
+    },
     async createInteraction() {
       throw new Error(NO_DB);
     },

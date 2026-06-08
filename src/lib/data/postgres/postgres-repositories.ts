@@ -57,6 +57,7 @@ import type {
   AudienceRow,
   CampaignDetail,
   CampaignRow,
+  CommunicationDetail,
   ConnectionRow,
   ConsentEventRow,
   ContactCrmStage,
@@ -2001,6 +2002,108 @@ export const postgresRepositories: Repositories = {
 
     async listInteractionsByAccount(accountId: string): Promise<InteractionRow[]> {
       return postgresRepositories.comms.listInteractions({ accountId });
+    },
+
+    async getInteraction(id: string): Promise<CommunicationDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.comms.getInteraction(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          source: string;
+          kind: string | null;
+          channel: string | null;
+          direction: string | null;
+          subject: string | null;
+          summary_gold: string | null;
+          body: string | null;
+          occurred_at: Date | null;
+          owner: string | null;
+          contact: string | null;
+          contact_id: string | null;
+          account: string | null;
+          account_id: string | null;
+          m_platform: string | null;
+          m_title: string | null;
+          m_copilot_recap: string | null;
+          m_plaud_summary: string | null;
+          m_transcript_ref: string | null;
+        }>(
+          `SELECT i.id, i.source::text AS source, i.kind, i.channel,
+                  i.direction::text AS direction, i.subject, i.summary_gold,
+                  coalesce(i.normalized_silver->>'body', i.payload_bronze->>'body') AS body,
+                  i.occurred_at,
+                  u.display_name AS owner,
+                  c.full_name AS contact, c.id AS contact_id,
+                  a.name AS account, a.id AS account_id,
+                  mt.platform::text AS m_platform, mt.title AS m_title,
+                  mt.copilot_recap AS m_copilot_recap, mt.plaud_summary AS m_plaud_summary,
+                  mt.transcript_ref AS m_transcript_ref
+           FROM interaction i
+           LEFT JOIN app_user u ON u.id = i.owner_user_id
+           LEFT JOIN contact c ON c.id = i.contact_id
+           LEFT JOIN account a ON a.id = i.account_id
+           LEFT JOIN meeting mt ON mt.interaction_id = i.id
+           WHERE i.id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const { rows: aiRows } = await pool.query<{
+          id: string;
+          description: string;
+          status: string;
+          due_at: Date | null;
+          contact: string | null;
+          owner: string | null;
+          source_task_id: string | null;
+        }>(
+          `SELECT m.id, m.description, m.status, m.due_at,
+                  c.full_name AS contact, u.display_name AS owner, m.source_task_id
+           FROM meeting_action_item m
+           LEFT JOIN contact c ON c.id = m.contact_id
+           LEFT JOIN app_user u ON u.id = m.owner_user_id
+           WHERE m.interaction_id = $1
+           ORDER BY m.due_at NULLS LAST, m.created_at DESC`,
+          [id],
+        );
+        return {
+          id: r.id,
+          source: r.source,
+          kind: r.kind,
+          channel: r.channel,
+          direction: r.direction,
+          subject: r.subject,
+          summary: r.summary_gold,
+          body: r.body,
+          owner: r.owner,
+          contact: r.contact,
+          contactId: r.contact_id,
+          account: r.account,
+          accountId: r.account_id,
+          occurredAt: fmtDateTime(r.occurred_at),
+          meeting: r.m_platform || r.m_copilot_recap || r.m_plaud_summary || r.m_transcript_ref
+            ? {
+                platform: r.m_platform,
+                title: r.m_title,
+                copilotRecap: r.m_copilot_recap,
+                plaudSummary: r.m_plaud_summary,
+                transcriptRef: r.m_transcript_ref,
+              }
+            : null,
+          actionItems: aiRows.map((a) => ({
+            id: a.id,
+            description: a.description,
+            status: a.status,
+            due: fmtDate(a.due_at),
+            contact: a.contact,
+            owner: a.owner,
+            promotedToTask: a.source_task_id != null,
+          })),
+        };
+      } catch {
+        return mockRepositories.comms.getInteraction(id);
+      }
     },
 
     async createInteraction(input: InteractionInput): Promise<void> {

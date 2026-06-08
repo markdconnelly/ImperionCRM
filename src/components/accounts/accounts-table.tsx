@@ -30,7 +30,9 @@ export function AccountsTable({
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
                     <HealthDot health={a.health} />
-                    <span className="font-medium">{a.name}</span>
+                    <Link href={`/accounts/${a.id}`} className="font-medium hover:text-accent">
+                      {a.name}
+                    </Link>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-dim">{a.stage}</td>

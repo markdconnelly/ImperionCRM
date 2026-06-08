@@ -21,6 +21,7 @@ import type {
   AudienceRow,
   CampaignDetail,
   CampaignRow,
+  CommunicationDetail,
   ConnectionRow,
   ConsentEventRow,
   ContactCrmStage,
@@ -414,6 +415,8 @@ export interface CommsRepository {
   listInteractions(filter: InteractionFilter): Promise<InteractionRow[]>;
   listInteractionsByContact(contactId: string): Promise<InteractionRow[]>;
   listInteractionsByAccount(accountId: string): Promise<InteractionRow[]>;
+  /** One communication with its meeting detail + action items (drill-down). */
+  getInteraction(id: string): Promise<CommunicationDetail | null>;
   createInteraction(input: InteractionInput): Promise<void>;
   listActionItems(contactId?: string): Promise<ActionItemRow[]>;
   completeActionItem(id: string): Promise<void>;
