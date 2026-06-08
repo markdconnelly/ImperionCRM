@@ -6,6 +6,7 @@
  * Server-only. Selected by lib/data/index.ts when a database is configured.
  */
 import "server-only";
+import type { Pool } from "pg";
 import { getPool } from "@/lib/db/client";
 import { mockRepositories } from "@/lib/data/mock/mock-repositories";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
@@ -368,7 +369,7 @@ export const postgresRepositories: Repositories = {
         }>(
           `SELECT id, source, external_ref, payload_bronze, normalized_silver,
                   match_confidence, matched_at, last_seen_at
-           FROM account_source WHERE account_id = $1 ORDER BY last_seen_at DESC`,
+           FROM account_bronze_all WHERE account_id = $1 ORDER BY last_seen_at DESC`,
           [accountId],
         );
         return rows.map((r) => ({
@@ -418,11 +419,13 @@ export const postgresRepositories: Repositories = {
     async createAccount(input: AccountInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.createAccount(input);
-      await pool.query(
+      const { rows } = await pool.query<{ id: string }>(
         `INSERT INTO account (name, relationship, lifecycle_stage, is_active)
-         VALUES ($1, $2::account_relationship, $3::account_lifecycle_stage, $4)`,
+         VALUES ($1, $2::account_relationship, $3::account_lifecycle_stage, $4)
+         RETURNING id`,
         [input.name, input.relationship, input.lifecycleStage, input.isActive],
       );
+      await upsertWebsiteCompanyRow(pool, rows[0].id, input);
     },
 
     async updateAccount(id: string, input: AccountInput): Promise<void> {
@@ -435,11 +438,14 @@ export const postgresRepositories: Repositories = {
          WHERE id = $5`,
         [input.name, input.relationship, input.lifecycleStage, input.isActive, id],
       );
+      await upsertWebsiteCompanyRow(pool, id, input);
     },
 
     async deleteAccount(id: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteAccount(id);
+      // Remove manual provenance first (avoid merge resurrection — ADR-0039).
+      await pool.query(`DELETE FROM website_companies WHERE account_id = $1`, [id]);
       await pool.query(`DELETE FROM account WHERE id = $1`, [id]);
     },
 
@@ -2516,7 +2522,9 @@ export const postgresRepositories: Repositories = {
           input.lifecycleStatus,
         ],
       );
-      return rows[0].id;
+      const id = rows[0].id;
+      await upsertWebsiteContactRow(pool, id, input);
+      return id;
     },
 
     async updateContact(id: string, input: ContactInput): Promise<void> {
@@ -2539,11 +2547,15 @@ export const postgresRepositories: Repositories = {
           id,
         ],
       );
+      await upsertWebsiteContactRow(pool, id, input);
     },
 
     async deleteContact(id: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.contacts.deleteContact(id);
+      // Remove the manual provenance row first so the merge can't resurrect the silver
+      // contact from a now-orphaned website_contacts row (ADR-0039).
+      await pool.query(`DELETE FROM website_contacts WHERE contact_id = $1`, [id]);
       await pool.query(`DELETE FROM contact WHERE id = $1`, [id]);
     },
 
@@ -2592,7 +2604,7 @@ export const postgresRepositories: Repositories = {
         }>(
           `SELECT id, source, external_ref, payload_bronze, normalized_silver,
                   match_confidence, matched_at, last_seen_at
-           FROM contact_source WHERE contact_id = $1 ORDER BY last_seen_at DESC`,
+           FROM contact_bronze_all WHERE contact_id = $1 ORDER BY last_seen_at DESC`,
           [contactId],
         );
         return rows.map((r) => ({
@@ -3515,6 +3527,62 @@ interface ConnectionDbRow {
   last_sync_at: Date | null;
   connected_at: Date | null;
   poll_interval_minutes: number | null;
+}
+
+/**
+ * Record manual ("website") provenance for a contact (ADR-0039). Manual entries flow through
+ * the `website_contacts` bronze table so every silver field is source-attributed. The row is
+ * pre-linked to the silver contact and marked for re-merge (`matched_at = NULL`) so the
+ * pipeline recomputes silver by precedence (website wins). The silver `contact` row is written
+ * by the caller, so this is **best-effort** — a failure here never blocks the user's action.
+ */
+async function upsertWebsiteContactRow(
+  pool: Pool,
+  contactId: string,
+  input: ContactInput,
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO website_contacts (contact_id, external_ref, payload_bronze, match_confidence, last_seen_at)
+       VALUES ($1, $1::text, $2::jsonb, 1, now())
+       ON CONFLICT (external_ref) DO UPDATE
+         SET payload_bronze = EXCLUDED.payload_bronze, contact_id = EXCLUDED.contact_id,
+             matched_at = NULL, last_seen_at = now()`,
+      [
+        contactId,
+        JSON.stringify({
+          full_name: input.fullName,
+          email: nullIfEmpty(input.email),
+          phone: nullIfEmpty(input.phone),
+          title: nullIfEmpty(input.title),
+          headline: nullIfEmpty(input.headline),
+          location: nullIfEmpty(input.location),
+        }),
+      ],
+    );
+  } catch {
+    /* provenance is best-effort — never block the create/update */
+  }
+}
+
+/** Record manual ("website") provenance for a company (ADR-0039). See upsertWebsiteContactRow. */
+async function upsertWebsiteCompanyRow(
+  pool: Pool,
+  accountId: string,
+  input: AccountInput,
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO website_companies (account_id, external_ref, payload_bronze, match_confidence, last_seen_at)
+       VALUES ($1, $1::text, $2::jsonb, 1, now())
+       ON CONFLICT (external_ref) DO UPDATE
+         SET payload_bronze = EXCLUDED.payload_bronze, account_id = EXCLUDED.account_id,
+             matched_at = NULL, last_seen_at = now()`,
+      [accountId, JSON.stringify({ name: input.name })],
+    );
+  } catch {
+    /* best-effort */
+  }
 }
 
 function mapConnection(r: ConnectionDbRow): ConnectionRow {

@@ -4,9 +4,10 @@ import { useState } from "react";
 import type { SourceRecordRow } from "@/types";
 import { Icon } from "@/components/ui/icon";
 
-/** Human labels for the per-source bronze origins (ADR-0032). */
+/** Human labels for the per-source bronze origins (ADR-0039). */
 const SOURCE_LABEL: Record<string, string> = {
-  imperion_crm_entered: "Imperion (manual)",
+  website: "Website (manual)",
+  imperion_crm_entered: "Imperion (manual)", // legacy key, pre-ADR-0039
   apollo: "Apollo",
   m365_synced: "Microsoft 365",
   autotask: "Autotask",
