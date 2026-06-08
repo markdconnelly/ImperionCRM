@@ -40,6 +40,7 @@ import type {
   Kpi,
   LeadCaptureEventRow,
   LeadHookRow,
+  OnboardingProject,
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
@@ -76,6 +77,7 @@ export interface TaskInput {
   title: string;
   detail: string | null;
   status: string;
+  category: string; // sales|project|onboarding|general (ADR-0034)
   dueAt: string | null; // yyyy-mm-dd or null
 }
 export interface TaskEditable extends TaskInput {
@@ -188,6 +190,11 @@ export interface CrmRepository {
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;
   deleteProject(id: string): Promise<void>;
+
+  // Onboarding dashboard — projects with their R/Y/G milestones (ADR-0034)
+  listOnboarding(): Promise<OnboardingProject[]>;
+  /** Set a milestone's R/Y/G health from the dashboard (manual until automated). */
+  setMilestoneHealth(id: string, health: string): Promise<void>;
 
   // AI Security Readiness Assessments (full CRUD) — gates managed services (ADR-0022)
   listAssessments(): Promise<AssessmentRow[]>;

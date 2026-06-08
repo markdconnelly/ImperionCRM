@@ -40,6 +40,15 @@ export function TaskForm({
         </Select>
       </Field>
 
+      <Field label="Category">
+        <Select name="category" defaultValue={task?.category ?? "general"}>
+          <option value="general">General</option>
+          <option value="sales">Sales</option>
+          <option value="project">Project</option>
+          <option value="onboarding">Onboarding</option>
+        </Select>
+      </Field>
+
       <Field label="Due date">
         <TextInput type="date" name="dueAt" defaultValue={task?.dueAt ?? ""} />
       </Field>

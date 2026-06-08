@@ -119,13 +119,38 @@ export interface ProjectRow {
   targetLive: string | null; // formatted target go-live date
 }
 
+/** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
+export type TaskCategory = "sales" | "project" | "onboarding" | "general";
+
 /** A row in the Tasks list. */
 export interface TaskRow {
   id: string;
   title: string;
   status: string;
+  category: TaskCategory;
   due: string | null; // formatted due date
   account: string | null; // account name
+}
+
+// ── Onboarding project management (ADR-0034) ─────────────────────────────────
+
+/** A red/yellow/green onboarding milestone (major step) under a project. */
+export interface OnboardingMilestone {
+  id: string;
+  name: string;
+  status: string; // not_started|in_progress|blocked|complete
+  health: Health; // green|amber|red
+}
+
+/** A project with its milestone R/Y/G rollup, for the onboarding dashboard. */
+export interface OnboardingProject {
+  id: string;
+  name: string;
+  account: string | null;
+  type: string;
+  status: string;
+  targetLive: string | null;
+  milestones: OnboardingMilestone[];
 }
 
 /** A categorical count datum for charts (e.g. proposals by status). */

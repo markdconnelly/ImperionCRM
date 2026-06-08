@@ -41,3 +41,21 @@ export async function deleteProjectAction(formData: FormData) {
   await crm.deleteProject(id);
   revalidatePath("/onboarding");
 }
+
+/**
+ * Cycle a milestone's R/Y/G health from the onboarding dashboard
+ * (green → amber → red → green). Manual until the auto-completion check is
+ * wired (ADR-0034). Tolerant of mock mode so the demo board doesn't error.
+ */
+export async function setMilestoneHealthAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const health = String(formData.get("health") ?? "");
+  if (!id || !["green", "amber", "red"].includes(health)) return;
+  const { crm } = getRepositories();
+  try {
+    await crm.setMilestoneHealth(id, health);
+  } catch {
+    // No database configured (mock mode) — no-op so the dashboard stays usable.
+  }
+  revalidatePath("/onboarding");
+}

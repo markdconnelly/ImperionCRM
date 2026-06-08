@@ -14,6 +14,7 @@ function parse(formData: FormData): TaskInput {
     title: String(formData.get("title") ?? "").trim(),
     detail: detail === "" ? null : detail,
     status: String(formData.get("status") ?? "open"),
+    category: String(formData.get("category") ?? "general"),
     dueAt: dueAt === "" ? null : dueAt,
   };
 }
