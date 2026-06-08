@@ -1,10 +1,13 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
+import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
 import { credentialsService } from "@/lib/services";
 import { ServiceNotConfiguredError } from "@/lib/services/external-client";
 
@@ -94,6 +97,12 @@ export async function saveCredentialAction(formData: FormData) {
  * Begin Microsoft GDAP admin consent for Imperion (ADR-0036). The backend returns
  * the admin-consent URL to visit; we record a pending row and redirect there. Until
  * the backend is wired we record the pending intent without redirecting.
+ *
+ * Before redirecting we set a short-lived, httpOnly, SameSite=Lax cookie holding a
+ * nonce. Microsoft redirects back to `/api/gdap/callback` as a top-level GET, which
+ * Lax cookies accompany; the callback requires this cookie (plus an authenticated
+ * session) before it will flip the row to `active`. Once the backend finalizes the
+ * `state` it embeds in the consent URL, the callback should additionally match it.
  */
 export async function grantGdapAction(formData: FormData) {
   const providerKey = String(formData.get("provider") ?? "");
@@ -118,6 +127,17 @@ export async function grantGdapAction(formData: FormData) {
     status,
   });
   revalidatePath("/settings");
+
+  // Only arm the callback when we actually have somewhere to send the admin.
+  if (consentUrl) {
+    (await cookies()).set(GDAP_CONSENT_COOKIE, randomUUID(), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 15, // 15 minutes to complete consent
+    });
+  }
 
   // redirect() throws — keep it last, outside the try/catch.
   if (consentUrl) redirect(consentUrl);

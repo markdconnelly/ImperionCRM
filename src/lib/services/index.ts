@@ -15,14 +15,26 @@
 import "server-only";
 import { callService, type ServiceDescriptor } from "@/lib/services/external-client";
 
+// Services hosted on the network-isolated backend (ADR-0028) sit behind Easy Auth and
+// declare `audienceEnv` so callService attaches a managed-identity bearer token. The
+// backend (imperioncrmbackend) shares one audience, so integration + credentials point
+// at the same INTEGRATION_SERVICE_AUDIENCE.
 const services = {
   agent: { name: "Agent orchestrator", baseUrlEnv: "AGENT_SERVICE_URL" },
-  integration: { name: "Integration sync", baseUrlEnv: "INTEGRATION_SERVICE_URL" },
+  integration: {
+    name: "Integration sync",
+    baseUrlEnv: "INTEGRATION_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
+  },
   enrichment: { name: "Lead enrichment", baseUrlEnv: "ENRICHMENT_SERVICE_URL" },
   comms: { name: "Communications", baseUrlEnv: "COMMS_SERVICE_URL" },
   campaign: { name: "Ad campaigns", baseUrlEnv: "CAMPAIGN_SERVICE_URL" },
   board: { name: "AI Board of Directors", baseUrlEnv: "BOARD_SERVICE_URL" },
-  credentials: { name: "Credential store", baseUrlEnv: "INTEGRATION_SERVICE_URL" },
+  credentials: {
+    name: "Credential store",
+    baseUrlEnv: "INTEGRATION_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
+  },
 } satisfies Record<string, ServiceDescriptor>;
 
 /** Orchestrator + sub-agents (ADR-0015). Hosted externally (container app). */

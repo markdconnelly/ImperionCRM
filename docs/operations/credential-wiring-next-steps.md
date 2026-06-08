@@ -61,15 +61,19 @@ preferred in the meantime, unset `INTEGRATION_SERVICE_URL` on the web app._
   (`5efd13c7…`, already set) — the web app MI is the token requester, so its client id is
   what appears. ✔
 
-### 2. Front-end: attach an MI bearer token (repo `ImperionCRM`)
-- In `src/lib/services/external-client.ts`, acquire a token via `@azure/identity`
-  `DefaultAzureCredential({ managedIdentityClientId: '5efd13c7…' })` for the backend
-  audience (e.g. scope `api://46f1077b-c93f-42da-abd4-192da13781ac/.default` or the app's
-  exposed resource), and add `Authorization: Bearer <token>` to `callService` requests.
-  Cache the token (≈55 min). Add the audience as an env var (e.g.
-  `INTEGRATION_SERVICE_AUDIENCE`).
-- Grant the web app MI permission/consent to request that token if required.
-- Deploy the web app.
+### 2. Front-end: attach an MI bearer token (repo `ImperionCRM`) — ✅ CODE DONE
+- ✅ `src/lib/services/external-client.ts` now acquires a managed-identity token via
+  `@azure/identity` `ManagedIdentityCredential` (reusing `AZURE_MANAGED_IDENTITY_CLIENT_ID`,
+  the same MI used for Postgres) and adds `Authorization: Bearer <token>` to `callService`
+  requests **when the service declares `audienceEnv`**. Token is cached per-scope and
+  refreshed 60s before expiry. `services/index.ts` sets `audienceEnv: "INTEGRATION_SERVICE_AUDIENCE"`
+  on the `integration` + `credentials` descriptors.
+- **REMAINING (config/ops, not code):**
+  - Set **`INTEGRATION_SERVICE_AUDIENCE`** on the web app to the backend's exposed
+    resource (e.g. `api://46f1077b-c93f-42da-abd4-192da13781ac`). Until it's set, the call
+    goes out **unauthenticated** (no behavior change vs. today → still 401 → `status='error'`).
+  - Grant the web app MI permission/consent to request that token if required.
+  - Deploy the web app (after task 1 Easy Auth is enabled, so the token is actually honored).
 
 ### 3. Verify end-to-end
 - Save a credential (e.g. Televy) in Settings → Company credentials. Expect:
@@ -93,4 +97,5 @@ preferred in the meantime, unset `INTEGRATION_SERVICE_URL` on the web app._
 ### 6. Hygiene
 - Backend CD has hit intermittent **`409 Conflict` on ZipDeploy** when runs overlap; if a
   deploy hangs, a Function App restart clears the lock. Consider serializing deploys.
-- Update the ERD in `docs/database/data-model.md` for the extended enums (ADR-0036).
+- ✅ Updated the ERD in `docs/database/data-model.md` for the extended enums + the
+  `uq_connection_company_provider` index (ADR-0036).

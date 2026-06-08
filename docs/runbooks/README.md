@@ -10,6 +10,7 @@ copy-paste-able sequence with a clear trigger and a clear "done" check.
 | Runbook | When to use it |
 | --- | --- |
 | [dev-node-blocked-by-intune-firewall](dev-node-blocked-by-intune-firewall.md) | Local `npm`/Node is blocked by Intune/Defender on a dev machine. |
+| [activate-company-credential-wiring](activate-company-credential-wiring.md) | Enable backend Easy Auth + the web-app MI token so company credentials save to Key Vault and go `active` (ADR-0036). |
 
 ## What belongs here (to add as needed)
 

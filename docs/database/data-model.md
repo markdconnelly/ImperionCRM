@@ -560,8 +560,8 @@ erDiagram
       uuid id PK
       text scope "user|company"
       uuid owner_user_id FK "null for company"
-      text provider "m365|youtube|linkedin|facebook|autotask|itglue|…"
-      text status "active|expired|revoked|error"
+      text provider "m365|youtube|linkedin|facebook|autotask|itglue|myitprocess|televy|quotemanager|gdap|…"
+      text status "active|pending|expired|revoked|error"
       text[] scopes
       text keyvault_secret_ref "token ref only — never the token"
       jsonb sync_cursor
@@ -844,6 +844,9 @@ erDiagram
   ADR-0035; myitprocess/televy/quotemanager/gdap by ADR-0036)
 - `connection.status`: `active | expired | revoked | error | pending` (pending added by
   ADR-0036 for credentials recorded before the backend writes the secret)
+- **Uniqueness:** `uq_connection_company_provider` — partial unique index on
+  `(provider) WHERE scope = 'company'`, so each company system has exactly one row;
+  re-saving a credential rotates it in place rather than duplicating (ADR-0036, migration 0033).
 - `contact.crm_stage`: `audience | lead | prospect | client` (ADR-0031; Leads =
   not-client, Contacts = client — opposite filters of one object)
 - `meeting.platform`: `teams | plaud | other` (ADR-0011/0033 structured meeting)

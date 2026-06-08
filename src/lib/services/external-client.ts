@@ -9,6 +9,7 @@
  * Server-only — never import into a client component.
  */
 import "server-only";
+import { ManagedIdentityCredential } from "@azure/identity";
 
 /** Thrown when a service's base URL env var is not set (endpoint not built yet). */
 export class ServiceNotConfiguredError extends Error {
@@ -38,6 +39,43 @@ export interface ServiceDescriptor {
   name: string;
   /** Env var holding the service's base URL (e.g. AGENT_SERVICE_URL). */
   baseUrlEnv: string;
+  /**
+   * Optional env var holding the OAuth audience for this service (ADR-0028). When set
+   * and populated, `callService` acquires a managed-identity token for
+   * `<audience>/.default` and attaches it as `Authorization: Bearer <token>` so the
+   * backend's caller-auth (Easy Auth) accepts the request. Omit for services that are
+   * unauthenticated or not yet behind Easy Auth.
+   */
+  audienceEnv?: string;
+}
+
+/**
+ * Acquire a managed-identity bearer token for a backend audience (ADR-0028).
+ *
+ * The web App Service authenticates with its user-assigned managed identity
+ * (AZURE_MANAGED_IDENTITY_CLIENT_ID — the same identity used for Postgres, see
+ * `src/lib/db/client.ts`). The token's `appid`/`azp` is that MI's client id, which the
+ * backend matches against ALLOWED_CALLER_CLIENT_ID. `ManagedIdentityCredential` caches
+ * tokens internally; we add a thin per-scope cache so we don't await it on every call
+ * and refresh a minute before expiry.
+ */
+const credential = new ManagedIdentityCredential(
+  process.env.AZURE_MANAGED_IDENTITY_CLIENT_ID?.trim()
+    ? { clientId: process.env.AZURE_MANAGED_IDENTITY_CLIENT_ID.trim() }
+    : {},
+);
+const tokenCache = new Map<string, { token: string; expiresAt: number }>();
+
+async function getBearerToken(audience: string): Promise<string> {
+  const scope = audience.endsWith("/.default") ? audience : `${audience}/.default`;
+  const cached = tokenCache.get(scope);
+  // Refresh 60s before the real expiry to avoid races at the boundary.
+  if (cached && cached.expiresAt - 60_000 > Date.now()) return cached.token;
+
+  const result = await credential.getToken(scope);
+  if (!result) throw new Error(`Failed to acquire managed-identity token for ${scope}.`);
+  tokenCache.set(scope, { token: result.token, expiresAt: result.expiresOnTimestamp });
+  return result.token;
 }
 
 /**
@@ -52,13 +90,20 @@ export async function callService<T = unknown>(
   const baseUrl = process.env[service.baseUrlEnv]?.trim();
   if (!baseUrl) throw new ServiceNotConfiguredError(service.name, service.baseUrlEnv);
 
+  // Attach a managed-identity bearer token when the service sits behind Easy Auth
+  // (ADR-0028). If audienceEnv is unset/empty the call goes out unauthenticated, which
+  // is the current behavior for services not yet gated.
+  const authHeaders: Record<string, string> = {};
+  const audience = service.audienceEnv ? process.env[service.audienceEnv]?.trim() : undefined;
+  if (audience) authHeaders.Authorization = `Bearer ${await getBearerToken(audience)}`;
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), init?.timeoutMs ?? 30_000);
   try {
     const res = await fetch(`${baseUrl}${path}`, {
       ...init,
       signal: controller.signal,
-      headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+      headers: { "content-type": "application/json", ...authHeaders, ...(init?.headers ?? {}) },
     });
     if (!res.ok) throw new ServiceCallError(service.name, res.status, await res.text());
     return (await res.json()) as T;
