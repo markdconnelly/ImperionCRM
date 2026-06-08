@@ -34,9 +34,10 @@ flowchart LR
 ## Migrations
 
 Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in order with an
-Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0026**
-applied in prod; **0027** committed but **not yet applied** — see the
-[credential-config database to-do](credential-config-todo.md). 0027 extends
+Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0033**
+applied in prod (verified 2026-06-08); **0034** (onboarding playbook, ADR-0037) is the
+latest committed migration. The company-credentials migration is **0033** — see the
+[credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
 status, and a per-company-provider unique index (ADR-0036).
 

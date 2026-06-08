@@ -27,7 +27,7 @@ violate the platform's fixed principles.
 
 - The web app is **live on Azure App Service**; PostgreSQL 18 + pgvector is the unified
   system-of-record, embedding store, **and agent memory layer** (already provisioned,
-  migrations 0001–0026 applied).
+  migrations 0001–0033 applied).
 - CLAUDE.md §2 mandates a **single orchestrator** the user talks to, with internal
   sub-agents that never face the user, and a **provider-agnostic AI layer**
   (OpenAI / Azure OpenAI / Claude) behind a model-routing layer.

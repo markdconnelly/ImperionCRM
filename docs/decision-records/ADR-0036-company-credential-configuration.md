@@ -71,7 +71,7 @@ Vault. No new dependency added to the front-end.
 Until the backend `/credentials` and `/gdap/consent` endpoints exist, saves degrade
 gracefully: the row is recorded `pending` with the intended reference and the card
 reflects that, so nothing crashes. Migration 0033 must be applied to prod as a deploy
-step (0001–0026 already applied).
+step (0001–0032 already applied). *(0033 applied & verified 2026-06-08.)*
 
 ## Future considerations
 

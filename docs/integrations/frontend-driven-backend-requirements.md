@@ -2,7 +2,7 @@
 
 This repo is the **source of truth for the schema** (ADR-0017/0028). The front-end work
 in ADR-0030–0035 created GUI and tables that *expect* back-end engines which are
-deliberately deferred. This document tracks what the **`ImperionCRM-Backend`** repo
+deliberately deferred. This document tracks what the **`ImperionCRM_Backend`** repo
 (Azure Functions on the shared App Service Plan, network-isolated — ADR-0028) must
 build, and the data-tiering pipelines those engines feed.
 

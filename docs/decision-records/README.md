@@ -3,6 +3,14 @@
 Architecture Decision Records. See [`_template.md`](./_template.md) for the required
 fields, and `CLAUDE.md` section 8 / the project standards doc.
 
+> **ADR numbers are per-repo, not global.** The sibling repos `ImperionCRM_Backend` and
+> `ImperionCRM_Pipeline` keep their own `decision-records/`, and numbers from 0029 onward
+> **overlap** with this index — e.g. *this* repo's ADR-0032 = per-source bronze tables,
+> while backend ADR-0032 = agent-layer architecture. Within this repo a bare "ADR-00XX"
+> refers to this index; cross-repo references are always qualified ("backend ADR-0032",
+> "pipeline ADR-0002"). Note ADR-0029 (Agent layer runtime) lives at the repo root, not in
+> this folder, because it governs the backend.
+
 ## Index
 
 | ADR | Title | Status |

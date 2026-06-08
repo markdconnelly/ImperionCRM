@@ -137,7 +137,7 @@ serving data.
   & step editor), Consent (ledger), Integrations (per-user personal connections),
   Security (posture dashboard), Settings, Feedback (GitHub-coupled). Editable
   discovery/assessment question catalog.
-- **Data:** PostgreSQL + pgvector; migrations **0001–0026 applied** to prod. Typed
+- **Data:** PostgreSQL + pgvector; migrations **0001–0033 applied** to prod (0034 latest committed). Typed
   repositories with a mock fallback. Entra SSO (certificate client auth) + break-glass.
 
 **Aesthetic:** dense, premium internal-tool feel (Linear/Vercel-grade), dark theme.
@@ -166,11 +166,12 @@ typecheck, build, docs check). Hosting landed on **Azure App Service** (ADR-0006
 not Static Web Apps.
 
 **Next phase — wire the live integrations** (the deliberately-deferred work). This
-phase lives in a **separate backend repo** (`ImperionCRM-Backend`): Azure Functions on
+phase lives in a **separate backend repo** (`ImperionCRM_Backend`): Azure Functions on
 the **same App Service Plan**, **network-isolated** so only this front-end App Service
 can call it (private VNet + managed-identity auth), reached server-side via
 `src/lib/services/external-client.ts`. The boundary is **ADR-0028**; the backend's brief
-is `CLAUDE_BACKEND.md` (mirrors what's built here + the full task list). **This repo
+is its own `CLAUDE.md` (mirrors what's built here + the full task list). A third repo,
+`ImperionCRM_Pipeline`, owns ingestion/enrichment (bronze→silver→gold + GDAP). **This repo
 remains the single source of truth for the database schema/migrations** — the backend
 is a consumer; propose schema changes here.
 1. Live OAuth flows + Key Vault token storage for per-user connections, then the

@@ -29,7 +29,7 @@ Kaseya (ADR-0012) and treats security as a product feature (CLAUDE.md §5).
   a small amount of network config but removes the public surface entirely.
 
 ## Decision
-- **Separate repository** (`ImperionCRM-Backend`) for the backend, chosen for
+- **Separate repository** (`ImperionCRM_Backend`) for the backend, chosen for
   independent lifecycle/ownership. The repo split breaks Claude's per-project memory, so
   knowledge is carried explicitly: the backend repo's `CLAUDE.md` (mirrors what the front
   end built + the full task list) and this ADR are the source of truth; contract changes

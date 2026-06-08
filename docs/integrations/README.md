@@ -8,7 +8,7 @@ See `CLAUDE.md` section 8 and the project standards doc for required fields.
 > [`frontend-driven-backend-requirements.md`](./frontend-driven-backend-requirements.md)
 > tracks the deferred engines (RBAC claim, OAuth + Key Vault, ingestion → bronze,
 > normalization → silver, enrichment, Televy + 365→GDAP, onboarding auto-checks) for
-> the `ImperionCRM-Backend` repo (ADR-0028).
+> the `ImperionCRM_Backend` repo (ADR-0028).
 
 ## Connection model (ADR-0012/0024)
 
