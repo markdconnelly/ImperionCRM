@@ -63,6 +63,22 @@ export interface ContactRow {
   account: string | null; // account name
 }
 
+/**
+ * The CRM lifecycle axis a contact moves along (ADR-0030). One normalized
+ * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
+ * client. Distinct from the enrichment lifecycle_status.
+ */
+export type ContactCrmStage = "audience" | "lead" | "prospect" | "client";
+
+/** A contact as shown on the lifecycle Pipeline board and Leads/Contacts lists. */
+export interface ContactPipelineRow {
+  id: string;
+  fullName: string;
+  email: string | null;
+  account: string | null; // account name
+  crmStage: ContactCrmStage;
+}
+
 /** A row in the Proposals list. */
 export interface ProposalRow {
   id: string;

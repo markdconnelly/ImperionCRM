@@ -23,6 +23,8 @@ import type {
   CampaignRow,
   ConnectionRow,
   ConsentEventRow,
+  ContactCrmStage,
+  ContactPipelineRow,
   ContactProfile,
   ContactRow,
   CountDatum,
@@ -146,8 +148,19 @@ export interface CrmRepository {
   updateAccount(id: string, input: AccountInput): Promise<void>;
   deleteAccount(id: string): Promise<void>;
 
-  // Contacts (list; CRUD to follow the same pattern)
-  listContacts(): Promise<ContactRow[]>;
+  // Contacts (CRUD list). Optional client filter backs the Contacts view
+  // (client:true) vs all people.
+  listContacts(opts?: { client?: boolean }): Promise<ContactRow[]>;
+
+  /**
+   * Contacts as lifecycle rows (ADR-0030). `client:false` backs the Leads view
+   * (audience|lead|prospect — not yet signed); `client:true` backs the Contacts
+   * view (signed clients); omitting the filter returns all stages for the
+   * Pipeline board. One table, opposite filters.
+   */
+  listContactsByStage(opts?: { client?: boolean }): Promise<ContactPipelineRow[]>;
+  /** Move a contact along the lifecycle (Pipeline board). */
+  setContactStage(id: string, stage: ContactCrmStage): Promise<void>;
 
   // Opportunities (Pipeline board)
   listOpportunities(): Promise<OpportunityRow[]>;

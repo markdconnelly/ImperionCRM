@@ -34,6 +34,9 @@ import type { Repositories } from "@/lib/data/repositories";
 const NO_DB =
   "Editing requires a configured database. Set the database connection to enable manual changes.";
 
+/** Lifecycle stages mock contacts are spread across (ADR-0030). */
+const MOCK_STAGES = ["audience", "lead", "prospect", "client"] as const;
+
 export const mockRepositories: Repositories = {
   dashboard: {
     async getKpis() {
@@ -62,8 +65,29 @@ export const mockRepositories: Repositories = {
     async deleteAccount() {
       throw new Error(NO_DB);
     },
-    async listContacts() {
-      return contacts;
+    async listContacts(opts?: { client?: boolean }) {
+      if (opts?.client === undefined) return contacts;
+      // Mock contacts carry no stage; the same deterministic spread used by
+      // listContactsByStage decides who is a client (every 4th, index % 4 === 3).
+      return contacts.filter((_, i) => (i % MOCK_STAGES.length === 3) === opts.client);
+    },
+    async listContactsByStage(opts?: { client?: boolean }) {
+      // Spread mock contacts across the lifecycle so Leads/Contacts/Pipeline
+      // render meaningfully without a DB.
+      return contacts
+        .map((c, i) => ({
+          id: c.id,
+          fullName: c.fullName,
+          email: c.email,
+          account: c.account,
+          crmStage: MOCK_STAGES[i % MOCK_STAGES.length],
+        }))
+        .filter(
+          (c) => opts?.client === undefined || (c.crmStage === "client") === opts.client,
+        );
+    },
+    async setContactStage() {
+      throw new Error(NO_DB);
     },
     async listOpportunities() {
       return opportunities;

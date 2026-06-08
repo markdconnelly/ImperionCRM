@@ -59,6 +59,8 @@ import type {
   CampaignRow,
   ConnectionRow,
   ConsentEventRow,
+  ContactCrmStage,
+  ContactPipelineRow,
   ContactProfile,
   ContactRow,
   CountDatum,
@@ -373,10 +375,11 @@ export const postgresRepositories: Repositories = {
       await pool.query(`DELETE FROM account WHERE id = $1`, [id]);
     },
 
-    async listContacts(): Promise<ContactRow[]> {
+    async listContacts(opts?: { client?: boolean }): Promise<ContactRow[]> {
       const pool = getPool();
-      if (!pool) return mockRepositories.crm.listContacts();
+      if (!pool) return mockRepositories.crm.listContacts(opts);
       try {
+        const filterClient = opts?.client !== undefined;
         const { rows } = await pool.query<{
           id: string;
           full_name: string;
@@ -387,7 +390,9 @@ export const postgresRepositories: Repositories = {
           `SELECT c.id, c.full_name, c.email, c.phone, a.name AS account
            FROM contact c
            LEFT JOIN account a ON a.id = c.account_id
+           ${filterClient ? "WHERE c.is_client = $1" : ""}
            ORDER BY c.full_name`,
+          filterClient ? [opts!.client] : [],
         );
         return rows.map((row) => ({
           id: row.id,
@@ -397,8 +402,48 @@ export const postgresRepositories: Repositories = {
           account: row.account,
         }));
       } catch {
-        return mockRepositories.crm.listContacts();
+        return mockRepositories.crm.listContacts(opts);
       }
+    },
+
+    async listContactsByStage(opts?: { client?: boolean }): Promise<ContactPipelineRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listContactsByStage(opts);
+      try {
+        const filterClient = opts?.client !== undefined;
+        const { rows } = await pool.query<{
+          id: string;
+          full_name: string;
+          email: string | null;
+          account: string | null;
+          crm_stage: ContactCrmStage;
+        }>(
+          `SELECT c.id, c.full_name, c.email, c.crm_stage, a.name AS account
+           FROM contact c
+           LEFT JOIN account a ON a.id = c.account_id
+           ${filterClient ? "WHERE c.is_client = $1" : ""}
+           ORDER BY c.full_name`,
+          filterClient ? [opts!.client] : [],
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          fullName: row.full_name,
+          email: row.email,
+          account: row.account,
+          crmStage: row.crm_stage,
+        }));
+      } catch {
+        return mockRepositories.crm.listContactsByStage(opts);
+      }
+    },
+
+    async setContactStage(id: string, stage: ContactCrmStage): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setContactStage(id, stage);
+      await pool.query(
+        `UPDATE contact SET crm_stage = $2::contact_crm_stage WHERE id = $1`,
+        [id, stage],
+      );
     },
 
     async listOpportunities(): Promise<OpportunityRow[]> {
