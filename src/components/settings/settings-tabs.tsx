@@ -12,7 +12,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 /**
- * Client tab bar for the Settings page (ADR-0030). Panels are rendered on the
+ * Client tab bar for the Settings page (ADR-0036). Panels are rendered on the
  * server and passed in as props, so data fetching/auth stay server-side; this
  * component only owns which panel is visible.
  */

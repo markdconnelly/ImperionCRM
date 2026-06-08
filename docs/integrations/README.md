@@ -38,7 +38,7 @@ points at the Azure Key Vault secret that holds them (CLAUDE.md §5). Live OAuth
 token storage, and background sync run in external functions (ADR-0018); the current
 scaffold records connections and the identity map only.
 
-## Company credentials (ADR-0030)
+## Company credentials (ADR-0036)
 
 Configured under **Settings → Company credentials**. One card per provider; secret
 fields are write-only and never echoed back. The entered fields are POSTed to the

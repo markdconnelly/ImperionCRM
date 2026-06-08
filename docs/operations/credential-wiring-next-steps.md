@@ -1,7 +1,7 @@
 # Company credential configuration — wiring status & next steps
 
 Tracks the cross-repo rollout of the Settings → Company credentials feature
-(ADR-0030). Written 2026-06-08. **The UI is live; the secret-write path is secured
+(ADR-0036). Written 2026-06-08. **The UI is live; the secret-write path is secured
 but not yet functional end-to-end** — the remaining work is the front-end→backend
 authentication.
 
@@ -23,7 +23,7 @@ authentication.
 
 ## Done this session
 
-- **Migration 0027 applied to prod & verified** — `connection_provider` += `myitprocess,
+- **Migration 0033 applied to prod & verified** — `connection_provider` += `myitprocess,
   televy, quotemanager, gdap`; `connection_status` += `pending`; index
   `uq_connection_company_provider`.
 - **Merged & deployed:** front-end #41 (Settings tabs + credential UI), backend #2
@@ -93,4 +93,4 @@ preferred in the meantime, unset `INTEGRATION_SERVICE_URL` on the web app._
 ### 6. Hygiene
 - Backend CD has hit intermittent **`409 Conflict` on ZipDeploy** when runs overlap; if a
   deploy hangs, a Function App restart clears the lock. Consider serializing deploys.
-- Update the ERD in `docs/database/data-model.md` for the extended enums (ADR-0030).
+- Update the ERD in `docs/database/data-model.md` for the extended enums (ADR-0036).

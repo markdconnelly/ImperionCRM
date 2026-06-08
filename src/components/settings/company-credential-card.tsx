@@ -14,7 +14,7 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 /**
- * One company system's credential card (ADR-0030). Renders either a write-only
+ * One company system's credential card (ADR-0036). Renders either a write-only
  * credential form or the GDAP admin-consent button. Stored secrets are NEVER shown
  * — only the Key Vault reference and status. Re-submitting rotates the credential.
  */

@@ -42,3 +42,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0033](./ADR-0033-assessment-televy-and-365-permission.md) | Assessment evidence (Televy), client-ready report & the 1:1 365 grant | Accepted |
 | [0034](./ADR-0034-onboarding-pm-and-task-categories.md) | Onboarding PM dashboard, R/Y/G milestones & task categories | Accepted |
 | [0035](./ADR-0035-apollo-enrichment-integration.md) | Apollo as the global contact & company enrichment provider | Accepted |
+| [0036](./ADR-0036-company-credential-configuration.md) | Company credential configuration in Settings | Accepted |

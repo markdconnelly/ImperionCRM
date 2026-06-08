@@ -49,7 +49,7 @@ export async function disconnectAction(formData: FormData) {
 }
 
 /**
- * Save (or rotate) a company credential (ADR-0030). The entered fields are handed
+ * Save (or rotate) a company credential (ADR-0036). The entered fields are handed
  * to the backend, which writes the secret to Key Vault and returns a reference —
  * the secret never touches this DB (CLAUDE.md §5). Until that backend endpoint is
  * configured the call throws ServiceNotConfiguredError; we then record the row as
@@ -91,7 +91,7 @@ export async function saveCredentialAction(formData: FormData) {
 }
 
 /**
- * Begin Microsoft GDAP admin consent for Imperion (ADR-0030). The backend returns
+ * Begin Microsoft GDAP admin consent for Imperion (ADR-0036). The backend returns
  * the admin-consent URL to visit; we record a pending row and redirect there. Until
  * the backend is wired we record the pending intent without redirecting.
  */

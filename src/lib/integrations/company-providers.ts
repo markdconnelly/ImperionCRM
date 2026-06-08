@@ -1,6 +1,6 @@
 /**
  * Company-wide integration providers configured under Settings → Company
- * credentials (ADR-0030). Each entry describes how its credential is collected:
+ * credentials (ADR-0036). Each entry describes how its credential is collected:
  * either a set of `fields` (the secret ones are write-only password inputs, never
  * echoed back) or an admin-consent `kind: "consent"` flow (GDAP).
  *

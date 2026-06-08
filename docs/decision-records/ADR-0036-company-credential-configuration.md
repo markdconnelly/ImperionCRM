@@ -1,4 +1,4 @@
-# ADR-0030: Company credential configuration in Settings
+# ADR-0036: Company credential configuration in Settings
 
 - **Status:** Accepted
 - **Date:** 2026-06-07
@@ -51,7 +51,7 @@ not yet configured.
   here via `connections.saveCompanyCredential` (upsert by provider for company scope).
 - **GDAP is an admin-consent flow**, not a pasteable key: a "Grant admin consent"
   button that begins the Microsoft consent flow (stubbed this phase, like other OAuth).
-- Migration `0027` extends `connection_provider` (`myitprocess`, `televy`,
+- Migration `0033` extends `connection_provider` (`myitprocess`, `televy`,
   `quotemanager`, `gdap`), adds a `pending` `connection_status`, and a partial unique
   index `uq_connection_company_provider` so re-saving rotates rather than duplicates.
 
@@ -70,7 +70,7 @@ Vault. No new dependency added to the front-end.
 
 Until the backend `/credentials` and `/gdap/consent` endpoints exist, saves degrade
 gracefully: the row is recorded `pending` with the intended reference and the card
-reflects that, so nothing crashes. Migration 0027 must be applied to prod as a deploy
+reflects that, so nothing crashes. Migration 0033 must be applied to prod as a deploy
 step (0001–0026 already applied).
 
 ## Future considerations

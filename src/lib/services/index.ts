@@ -67,7 +67,7 @@ export const boardService = {
 };
 
 /**
- * Company credential / secret store (ADR-0030). The backend is the only thing that
+ * Company credential / secret store (ADR-0036). The backend is the only thing that
  * writes secrets to Key Vault (CLAUDE.md §5 / ADR-0028 isolation); this repo just
  * hands it the entered fields and gets back a Key Vault reference — the secret never
  * lands in this DB or this App Service. Until the backend endpoint + INTEGRATION_SERVICE_URL
