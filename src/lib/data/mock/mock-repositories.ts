@@ -52,6 +52,9 @@ export const mockRepositories: Repositories = {
     },
   },
   crm: {
+    async listAccountSources() {
+      return [];
+    },
     async listAccounts() {
       return accounts;
     },
@@ -396,6 +399,9 @@ export const mockRepositories: Repositories = {
     },
     async addEnrichment() {
       throw new Error(NO_DB);
+    },
+    async listContactSources() {
+      return [];
     },
   },
   consent: {

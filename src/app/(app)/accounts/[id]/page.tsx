@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Timeline } from "@/components/comms/timeline";
+import { SourceRecords } from "@/components/comms/source-records";
 import { getRepositories } from "@/lib/data";
 
 const STAGE_LABEL: Record<string, string> = {
@@ -29,9 +30,10 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   const { crm, comms } = getRepositories();
-  const [account, timeline] = await Promise.all([
+  const [account, timeline, sources] = await Promise.all([
     crm.getAccount(id),
     comms.listInteractionsByAccount(id),
+    crm.listAccountSources(id),
   ]);
   if (!account) notFound();
 
@@ -66,6 +68,11 @@ export default async function AccountDetailPage({
             <Row label="Relationship" value={account.relationship ?? "—"} />
             <Row label="Active" value={account.isActive ? "Yes" : "No"} />
           </div>
+        </section>
+
+        <section className="rounded-xl border border-border bg-panel p-4 lg:col-span-3">
+          <h3 className="mb-3 font-display text-sm font-semibold tracking-tight">Data sources</h3>
+          <SourceRecords sources={sources} />
         </section>
       </div>
     </div>

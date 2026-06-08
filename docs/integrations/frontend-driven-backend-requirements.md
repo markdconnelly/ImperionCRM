@@ -9,6 +9,14 @@ build, and the data-tiering pipelines those engines feed.
 The front end drives these requirements: every item below exists because a screen or a
 schema object in this repo already references it.
 
+> **Status (v1 data loop — 2026-06-08).** The credential save path (§2) and the
+> contact/company **ingestion → bronze → unified-silver merge** (§3) are **implemented**
+> for Autotask, IT Glue, Apollo (people), and M365-via-GDAP — pipeline PR #4 (ADR-0006
+> merge, ADR-0007 GDAP), backend PR #7 (GDAP consent state), frontend PR #47 (the unified
+> record's **Data sources** popup). Apollo **company** enrichment, comms ingestion (§4),
+> assessment evidence (§6), onboarding auto-rules (§7), and the agent runtime (§8) remain
+> deferred. RBAC (§1) is an Entra-config task.
+
 ## 1. Identity / RBAC claim (ADR-0030)
 
 - **Entra app-registration change (infra, not code):** emit the role signal so
@@ -26,9 +34,11 @@ schema object in this repo already references it.
   Vault**; `connection.keyvault_secret_ref` only in the DB.
 - Background refresh + `connection.status` reconciliation.
 
-## 3. Ingestion engines → bronze (ADR-0032)
+## 3. Ingestion engines → bronze (ADR-0032) — ✅ implemented (pipeline)
 
-Write raw source rows into the per-source bronze tables, then run the merge job.
+Write raw source rows into the per-source bronze tables, then run the merge job. **Done in
+`ImperionCRM_Pipeline`:** per-source poll/sync lands bronze; the `merge-sources` sweep builds
+the unified silver record (pipeline ADR-0006).
 
 | Source | Lands in | Notes |
 | --- | --- | --- |
@@ -38,10 +48,11 @@ Write raw source rows into the per-source bronze tables, then run the merge job.
 | IT Glue (contacts, companies) | `contact_source`, `account_source` | poll, never duplicate |
 | Imperion CRM entry | `*_source` (`imperion_crm_entered`) | the in-app form is the source of record |
 
-- **Normalization / merge job (silver):** project `normalized_silver`, deterministically
-  match each `*_source` row to a silver `contact`/`account`, upsert, and stamp
-  `matched_at` / `match_confidence`. Survivorship rules for conflicting fields.
-- **Gold:** summaries + embeddings over merged records for agent/knowledge use.
+- **Normalization / merge job (silver):** ✅ `merge-sources` projects `normalized_silver`,
+  matches each `*_source` row to a silver `contact`/`account` (domain/email), upserts, and
+  stamps `matched_at` / `match_confidence`. Survivorship = field precedence
+  `imperion > autotask > itglue > m365 > apollo` (pipeline ADR-0006).
+- **Gold:** summaries + embeddings over merged records — still deferred (next phase).
 
 ## 4. Communications ingestion (ADR-0011)
 
@@ -87,6 +98,6 @@ sources ──► *_source / interaction / meeting / assessment_artifact   (bron
            summary_gold + embeddings                                  (gold: agent-ready)
 ```
 
-All of §3–§8 are **deferred engines**; the schema and GUI in this repo are ready for
-them. Propose any schema change **here** (this repo owns migrations); the back-end is a
-consumer (ADR-0028).
+§3 (ingestion + merge) is **implemented** in the pipeline; §4, §6, §7, and §8 remain
+**deferred engines** with the schema and GUI in this repo ready for them. Propose any schema
+change **here** (this repo owns migrations); the back-end is a consumer (ADR-0028).
