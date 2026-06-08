@@ -517,6 +517,7 @@ export interface ConnectionRow {
   keyvaultSecretRef: string | null; // reference string only — never a secret
   lastSync: string | null;
   connectedAt: string | null;
+  pollIntervalMinutes: number; // how often the pipeline polls; 0 = manual/paused (ADR-0038)
 }
 
 /** A row in an account's external identity map. */

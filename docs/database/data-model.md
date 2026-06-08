@@ -566,6 +566,7 @@ erDiagram
       text keyvault_secret_ref "token ref only — never the token"
       jsonb sync_cursor
       timestamptz last_sync_at
+      int poll_interval_minutes "pipeline poll cadence; 0 = manual/paused (ADR-0038)"
     }
     INTERACTION {
       uuid id PK

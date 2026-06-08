@@ -451,8 +451,17 @@ export const mockRepositories: Repositories = {
           keyvaultSecretRef: input.keyvaultSecretRef,
           lastSync: null,
           connectedAt: null,
+          pollIntervalMinutes: 60,
         });
       }
+    },
+    async setPollInterval(id, minutes) {
+      // In-memory update so the cadence selector reflects without a DB (ADR-0038).
+      const safe = Math.max(0, Math.floor(minutes));
+      const row =
+        userConnections.find((c) => c.id === id) ??
+        companyConnections.find((c) => c.id === id);
+      if (row) row.pollIntervalMinutes = safe;
     },
     async disconnect() {
       throw new Error(NO_DB);

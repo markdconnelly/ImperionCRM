@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
+import { PollFrequency } from "@/components/integrations/poll-frequency";
 import type { CompanyProvider } from "@/lib/integrations/company-providers";
 import type { ConnectionRow } from "@/types";
 
@@ -24,12 +25,14 @@ export function CompanyCredentialCard({
   saveAction,
   gdapAction,
   disconnectAction,
+  pollAction,
 }: {
   provider: CompanyProvider;
   connection: ConnectionRow | null;
   saveAction: (formData: FormData) => void | Promise<void>;
   gdapAction: (formData: FormData) => void | Promise<void>;
   disconnectAction: (formData: FormData) => void | Promise<void>;
+  pollAction: (formData: FormData) => void | Promise<void>;
 }) {
   const configured = connection != null;
   const [open, setOpen] = useState(!configured);
@@ -66,6 +69,14 @@ export function CompanyCredentialCard({
             <dd>{connection.connectedAt ?? "—"}</dd>
           </div>
         </dl>
+      )}
+
+      {configured && (
+        <PollFrequency
+          connectionId={connection.id}
+          value={connection.pollIntervalMinutes}
+          action={pollAction}
+        />
       )}
 
       {/* GDAP — admin-consent flow, no secret fields */}

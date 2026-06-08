@@ -15,6 +15,7 @@ import {
   disconnectAction,
   grantGdapAction,
   saveCredentialAction,
+  setPollIntervalAction,
 } from "./actions";
 
 /** Human labels for the application roles. */
@@ -135,7 +136,12 @@ export default async function SettingsPage({
       {personal.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {personal.map((c) => (
-            <ConnectionCard key={c.id} connection={c} disconnectAction={disconnectAction} />
+            <ConnectionCard
+              key={c.id}
+              connection={c}
+              disconnectAction={disconnectAction}
+              pollAction={setPollIntervalAction}
+            />
           ))}
         </div>
       ) : (
@@ -166,6 +172,7 @@ export default async function SettingsPage({
             saveAction={saveCredentialAction}
             gdapAction={grantGdapAction}
             disconnectAction={disconnectAction}
+            pollAction={setPollIntervalAction}
           />
         ))}
       </div>

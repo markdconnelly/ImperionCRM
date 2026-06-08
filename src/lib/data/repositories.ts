@@ -533,6 +533,8 @@ export interface ConnectionsRepository {
   connect(input: ConnectionInput): Promise<void>;
   /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;
+  /** Set how often (minutes) the pipeline polls a connection; 0 = manual/paused (ADR-0038). */
+  setPollInterval(id: string, minutes: number): Promise<void>;
   disconnect(id: string): Promise<void>;
   listExternalIdentities(accountId: string): Promise<ExternalIdentityRow[]>;
 }

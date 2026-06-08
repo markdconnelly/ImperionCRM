@@ -220,15 +220,15 @@ export function mockCurrentConsent(id: string): CurrentConsentRow[] {
 // ── Connections (ADR-0012/0024) ──────────────────────────────────────────────
 
 export const userConnections: ConnectionRow[] = [
-  { id: "cn_01", scope: "user", provider: "m365", displayName: "a.reyes@imperion.example", status: "active", scopes: ["Mail.Read", "Calendars.Read", "Chat.Read"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_01", lastSync: "2026-06-06 07:00", connectedAt: "2026-04-12" },
-  { id: "cn_02", scope: "user", provider: "linkedin", displayName: "Alex Reyes", status: "active", scopes: ["r_liteprofile", "r_organization_social"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_02", lastSync: "2026-06-05 22:00", connectedAt: "2026-04-12" },
-  { id: "cn_03", scope: "user", provider: "youtube", displayName: "Reyes MSP", status: "expired", scopes: ["youtube.readonly"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_03", lastSync: "2026-05-19 09:00", connectedAt: "2026-04-20" },
+  { id: "cn_01", scope: "user", provider: "m365", displayName: "a.reyes@imperion.example", status: "active", scopes: ["Mail.Read", "Calendars.Read", "Chat.Read"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_01", lastSync: "2026-06-06 07:00", connectedAt: "2026-04-12", pollIntervalMinutes: 15 },
+  { id: "cn_02", scope: "user", provider: "linkedin", displayName: "Alex Reyes", status: "active", scopes: ["r_liteprofile", "r_organization_social"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_02", lastSync: "2026-06-05 22:00", connectedAt: "2026-04-12", pollIntervalMinutes: 360 },
+  { id: "cn_03", scope: "user", provider: "youtube", displayName: "Reyes MSP", status: "expired", scopes: ["youtube.readonly"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_03", lastSync: "2026-05-19 09:00", connectedAt: "2026-04-20", pollIntervalMinutes: 0 },
 ];
 
 export const companyConnections: ConnectionRow[] = [
-  { id: "cn_10", scope: "company", provider: "autotask", displayName: "Imperion Autotask", status: "active", scopes: ["tickets:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/autotask", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05" },
-  { id: "cn_11", scope: "company", provider: "itglue", displayName: "Imperion IT Glue", status: "active", scopes: ["assets:read", "docs:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/itglue", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05" },
-  { id: "cn_12", scope: "company", provider: "apollo", displayName: "Apollo — enrichment", status: "active", scopes: ["contacts:enrich", "companies:enrich"], owner: null, keyvaultSecretRef: "kv://imperion/conn/apollo", lastSync: null, connectedAt: "2026-06-08" },
+  { id: "cn_10", scope: "company", provider: "autotask", displayName: "Imperion Autotask", status: "active", scopes: ["tickets:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/autotask", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 30 },
+  { id: "cn_11", scope: "company", provider: "itglue", displayName: "Imperion IT Glue", status: "active", scopes: ["assets:read", "docs:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/itglue", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 720 },
+  { id: "cn_12", scope: "company", provider: "apollo", displayName: "Apollo — enrichment", status: "active", scopes: ["contacts:enrich", "companies:enrich"], owner: null, keyvaultSecretRef: "kv://imperion/conn/apollo", lastSync: null, connectedAt: "2026-06-08", pollIntervalMinutes: 1440 },
 ];
 
 // ── Demand generation (ADR-0012/0026) ────────────────────────────────────────

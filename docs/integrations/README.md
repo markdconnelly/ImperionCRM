@@ -31,6 +31,14 @@ across systems (augment, don't duplicate — ADR-0012).
 - **Poll, never duplicated:** Autotask tickets, IT Glue assets/docs — fetched live and
   referenced, never the system of record.
 
+### Poll cadence (ADR-0038)
+
+Each connection carries `poll_interval_minutes` — how often the pipeline should poll it
+for new data. Operators set it per connection from a preset dropdown on the connection /
+company-credential cards (Manual / 15 min / 30 min / hourly / 6 h / 12 h / daily), which
+auto-saves. **`0` = manual / paused** (no automatic polling). This repo owns the column;
+the `ImperionCRM_Pipeline` repo reads it and must honour `0` as paused.
+
 ### Secrets
 
 OAuth tokens are **never** stored in the database — `connection.keyvault_secret_ref`

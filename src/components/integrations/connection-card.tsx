@@ -1,4 +1,5 @@
 import { Icon } from "@/components/ui/icon";
+import { PollFrequency } from "@/components/integrations/poll-frequency";
 import type { ConnectionRow } from "@/types";
 
 const PROVIDER_META: Record<string, { label: string; icon: string }> = {
@@ -23,9 +24,11 @@ const STATUS_TONE: Record<string, string> = {
 export function ConnectionCard({
   connection,
   disconnectAction,
+  pollAction,
 }: {
   connection: ConnectionRow;
   disconnectAction: (formData: FormData) => void | Promise<void>;
+  pollAction: (formData: FormData) => void | Promise<void>;
 }) {
   const meta = PROVIDER_META[connection.provider] ?? { label: connection.provider, icon: "Plug" };
   return (
@@ -73,6 +76,12 @@ export function ConnectionCard({
           <dd>{connection.lastSync ?? "never"}</dd>
         </div>
       </dl>
+
+      <PollFrequency
+        connectionId={connection.id}
+        value={connection.pollIntervalMinutes}
+        action={pollAction}
+      />
 
       <form action={disconnectAction} className="mt-1">
         <input type="hidden" name="id" value={connection.id} />
