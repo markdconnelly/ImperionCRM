@@ -110,10 +110,12 @@ export async function grantGdapAction(formData: FormData) {
   if (!provider || provider.kind !== "consent") return;
 
   let consentUrl: string | null = null;
+  let consentState: string | null = null;
   let status = "pending";
   try {
     const res = await credentialsService.beginGdapConsent();
     consentUrl = res.consentUrl;
+    consentState = res.state;
   } catch (err) {
     if (!(err instanceof ServiceNotConfiguredError)) status = "error";
   }
@@ -128,9 +130,10 @@ export async function grantGdapAction(formData: FormData) {
   });
   revalidatePath("/settings");
 
-  // Only arm the callback when we actually have somewhere to send the admin.
+  // Only arm the callback when we actually have somewhere to send the admin. Store the
+  // backend's `state` nonce as the cookie value so the callback can match it (CSRF guard).
   if (consentUrl) {
-    (await cookies()).set(GDAP_CONSENT_COOKIE, randomUUID(), {
+    (await cookies()).set(GDAP_CONSENT_COOKIE, consentState ?? randomUUID(), {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

@@ -11,12 +11,11 @@
  *  - Requires the `gdap_consent_pending` cookie set by `grantGdapAction`, proving the
  *    flow started from this app in this browser (CSRF guard); the cookie is cleared
  *    on use.
+ *  - Matches the `state` Microsoft echoes back against the cookie value (the backend's
+ *    unguessable nonce from `POST /api/gdap/consent`), rejecting any mismatch.
  *  - Optionally pins the returning `tenant` to `GDAP_EXPECTED_TENANT` when set.
  *  - No secret is handled here — the GDAP relationship lives in Microsoft; this only
  *    records that consent was granted. The token/secret path stays in the backend.
- *
- * TODO(backend): once the backend finalizes the `state` it embeds in the consent URL,
- * match it here instead of relying on the cookie alone.
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
@@ -40,11 +39,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
 
-  // 2. Must have initiated the flow from this app (CSRF guard).
+  // 2. Must have initiated the flow from this app, and the state Microsoft echoes back
+  //    must match the backend nonce we stored (CSRF guard).
   const started = (await cookies()).get(GDAP_CONSENT_COOKIE)?.value;
-  if (!started) return settingsRedirect(req, "invalid");
-
   const params = req.nextUrl.searchParams;
+  const returnedState = params.get("state");
+  if (!started || !returnedState || returnedState !== started) {
+    return settingsRedirect(req, "invalid");
+  }
+
   const error = params.get("error");
   const adminConsent = params.get("admin_consent");
   const tenant = params.get("tenant");
