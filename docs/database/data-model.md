@@ -808,9 +808,67 @@ erDiagram
 > project/onboarding); the playbook checklist does not.
 
 > **Apollo** (ADR-0035) is a company-scope `connection` provider and an enrichment
-> source for both `contact_source` and `account_source`. The normalization/merge job
-> (bronze → silver) and all ingestion are deferred to the back-end
-> ([requirements](../integrations/frontend-driven-backend-requirements.md)).
+> source for both contacts and companies. The normalization/merge job
+> (bronze → silver) runs in the pipeline repo (pipeline ADR-0006/0009).
+
+> **SUPERSEDED by ADR-0039.** The single `CONTACT_SOURCE` / `ACCOUNT_SOURCE` tables above
+> were replaced by **one physical bronze table per (source, entity)** plus a new `device`
+> entity — see Diagram 6b. `contact`/`account` remain the silver aggregate; a `device` silver
+> table is added.
+
+## Diagram 6b — As-built: per-source bronze tables + device (ADR-0039)
+
+Each source lands in its own bronze table (uniform shape; `source` implicit in the table name,
+`UNIQUE(external_ref)`). Read-only union views `contact_bronze_all` / `account_bronze_all` /
+`device_bronze_all` re-add a `source` key for the app's "Data sources" popup and the merge scan;
+all writes target the physical tables. The merge folds every source into silver `contact` /
+`account` / `device` by precedence (manual `website` highest).
+
+```mermaid
+erDiagram
+    CONTACT ||--o{ AUTOTASK_CONTACTS : "merges from"
+    CONTACT ||--o{ APOLLO_CONTACTS : ""
+    CONTACT ||--o{ M365_CONTACTS : ""
+    CONTACT ||--o{ ITGLUE_CONTACTS : ""
+    CONTACT ||--o{ WEBSITE_CONTACTS : "manual"
+    ACCOUNT ||--o{ AUTOTASK_COMPANIES : "merges from"
+    ACCOUNT ||--o{ APOLLO_COMPANIES : ""
+    ACCOUNT ||--o{ ITGLUE_COMPANIES : ""
+    ACCOUNT ||--o{ WEBSITE_COMPANIES : "manual"
+    DEVICE ||--o{ ITGLUE_DEVICES : "merges from"
+    DEVICE ||--o{ M365_DEVICES : ""
+    DEVICE ||--o{ WEBSITE_DEVICES : "manual"
+    ACCOUNT ||--o{ DEVICE : "owns"
+
+    DEVICE {
+      uuid id PK
+      uuid account_id FK "owning company (best-effort)"
+      text name "hostname / asset name"
+      text device_type
+      text manufacturer
+      text model
+      text serial_number
+      text os
+      text status
+      timestamptz last_seen_at
+    }
+    AUTOTASK_CONTACTS {
+      uuid id PK
+      uuid contact_id FK "silver (null until merged)"
+      text external_ref "UNIQUE"
+      jsonb payload_bronze
+      jsonb normalized_silver
+      text summary_gold
+      numeric match_confidence
+      timestamptz matched_at
+      timestamptz last_seen_at
+    }
+```
+
+> All `*_contacts` tables share the `AUTOTASK_CONTACTS` shape (with `contact_id`); all
+> `*_companies` share it with `account_id`; all `*_devices` with `device_id`. Bronze tables:
+> contacts `{autotask,apollo,m365,itglue,website}_contacts`, companies
+> `{autotask,apollo,itglue,website}_companies`, devices `{itglue,m365,website}_devices`.
 
 ## Enumerations
 
@@ -851,9 +909,9 @@ erDiagram
 - `contact.crm_stage`: `audience | lead | prospect | client` (ADR-0031; Leads =
   not-client, Contacts = client — opposite filters of one object)
 - `meeting.platform`: `teams | plaud | other` (ADR-0011/0033 structured meeting)
-- `contact_bronze_source`: `imperion_crm_entered | apollo | m365_synced | autotask |
-  itglue` (ADR-0032)
-- `company_bronze_source`: `imperion_crm_entered | apollo | autotask | itglue` (ADR-0032)
+- ~~`contact_bronze_source` / `company_bronze_source`~~ — **removed in ADR-0039** (migration
+  0037). Source is now the bronze table identity, not an enum; manual entries use the `website`
+  source (per-source tables in Diagram 6b).
 - `task.category`: `sales | project | onboarding | general` (ADR-0034)
 - `milestone_status`: `not_started | in_progress | blocked | complete` (ADR-0034)
 - `milestone_health`: `green | amber | red` (ADR-0034; R/Y/G onboarding indicator)
