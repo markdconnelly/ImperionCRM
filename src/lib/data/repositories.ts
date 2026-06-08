@@ -21,8 +21,11 @@ import type {
   AudienceRow,
   CampaignDetail,
   CampaignRow,
+  CommunicationDetail,
   ConnectionRow,
   ConsentEventRow,
+  ContactCrmStage,
+  ContactPipelineRow,
   ContactProfile,
   ContactRow,
   CountDatum,
@@ -37,6 +40,7 @@ import type {
   Kpi,
   LeadCaptureEventRow,
   LeadHookRow,
+  OnboardingProject,
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
@@ -73,6 +77,7 @@ export interface TaskInput {
   title: string;
   detail: string | null;
   status: string;
+  category: string; // sales|project|onboarding|general (ADR-0034)
   dueAt: string | null; // yyyy-mm-dd or null
 }
 export interface TaskEditable extends TaskInput {
@@ -146,8 +151,19 @@ export interface CrmRepository {
   updateAccount(id: string, input: AccountInput): Promise<void>;
   deleteAccount(id: string): Promise<void>;
 
-  // Contacts (list; CRUD to follow the same pattern)
-  listContacts(): Promise<ContactRow[]>;
+  // Contacts (CRUD list). Optional client filter backs the Contacts view
+  // (client:true) vs all people.
+  listContacts(opts?: { client?: boolean }): Promise<ContactRow[]>;
+
+  /**
+   * Contacts as lifecycle rows (ADR-0031). `client:false` backs the Leads view
+   * (audience|lead|prospect — not yet signed); `client:true` backs the Contacts
+   * view (signed clients); omitting the filter returns all stages for the
+   * Pipeline board. One table, opposite filters.
+   */
+  listContactsByStage(opts?: { client?: boolean }): Promise<ContactPipelineRow[]>;
+  /** Move a contact along the lifecycle (Pipeline board). */
+  setContactStage(id: string, stage: ContactCrmStage): Promise<void>;
 
   // Opportunities (Pipeline board)
   listOpportunities(): Promise<OpportunityRow[]>;
@@ -174,6 +190,11 @@ export interface CrmRepository {
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;
   deleteProject(id: string): Promise<void>;
+
+  // Onboarding dashboard — projects with their R/Y/G milestones (ADR-0034)
+  listOnboarding(): Promise<OnboardingProject[]>;
+  /** Set a milestone's R/Y/G health from the dashboard (manual until automated). */
+  setMilestoneHealth(id: string, health: string): Promise<void>;
 
   // AI Security Readiness Assessments (full CRUD) — gates managed services (ADR-0022)
   listAssessments(): Promise<AssessmentRow[]>;
@@ -401,6 +422,8 @@ export interface CommsRepository {
   listInteractions(filter: InteractionFilter): Promise<InteractionRow[]>;
   listInteractionsByContact(contactId: string): Promise<InteractionRow[]>;
   listInteractionsByAccount(accountId: string): Promise<InteractionRow[]>;
+  /** One communication with its meeting detail + action items (drill-down). */
+  getInteraction(id: string): Promise<CommunicationDetail | null>;
   createInteraction(input: InteractionInput): Promise<void>;
   listActionItems(contactId?: string): Promise<ActionItemRow[]>;
   completeActionItem(id: string): Promise<void>;

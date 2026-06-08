@@ -2,11 +2,17 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProposalsTable } from "@/components/proposals/proposals-table";
 import { getRepositories } from "@/lib/data";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
 import { deleteProposalAction } from "./actions";
 
 export default async function ProposalsPage() {
   const { crm } = getRepositories();
-  const proposals = await crm.listProposals();
+  const [roles, raw] = await Promise.all([getSessionRoles(), crm.listProposals()]);
+  // Support cannot see revenue (ADR-0030): blank proposal amounts server-side.
+  const proposals = canSeeRevenue(roles)
+    ? raw
+    : raw.map((p) => ({ ...p, amount: REDACTED_MONEY }));
 
   return (
     <div className="flex flex-col gap-4">

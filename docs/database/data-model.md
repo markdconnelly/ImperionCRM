@@ -715,6 +715,82 @@ erDiagram
 > the relevant channel is currently opt-in (ADR-0014/0025/0026). The ledger is
 > append-only — a change of mind is a new event, never an update.
 
+## Diagram 6 — As-built: contact lifecycle, meetings, per-source bronze & onboarding PM (ADR-0030–0035)
+
+Front-end-driven additions. The normalized `contact` gains a CRM-lifecycle axis (Leads
+vs Contacts are opposite filters); structured `meeting` objects hang off the timeline;
+per-source **bronze** rows merge into the silver `contact`/`account`; tasks are
+categorized and onboarding gets R/Y/G milestones. RBAC roles live on `app_user.roles`
+(ADR-0016/0030).
+
+```mermaid
+erDiagram
+    CONTACT ||--o{ CONTACT_SOURCE : "merges from"
+    ACCOUNT ||--o{ ACCOUNT_SOURCE : "merges from"
+    INTERACTION ||--o| MEETING : "1:1 (kind=meeting)"
+    PROJECT ||--o{ PROJECT_MILESTONE : "has"
+
+    CONTACT {
+      uuid id PK
+      text full_name
+      contact_crm_stage crm_stage "audience|lead|prospect|client"
+      boolean is_client "derived from crm_stage (trigger)"
+      timestamptz signed_at
+      text lifecycle_status "enrichment axis (separate)"
+    }
+    CONTACT_SOURCE {
+      uuid id PK
+      uuid contact_id FK "silver (null until matched)"
+      contact_bronze_source source "imperion_crm_entered|apollo|m365_synced|autotask|itglue"
+      text external_ref "UNIQUE(source, external_ref)"
+      jsonb payload_bronze
+      jsonb normalized_silver
+      text summary_gold
+      numeric match_confidence
+    }
+    ACCOUNT_SOURCE {
+      uuid id PK
+      uuid account_id FK "silver (null until matched)"
+      company_bronze_source source "imperion_crm_entered|apollo|autotask|itglue"
+      text external_ref "UNIQUE(source, external_ref)"
+      jsonb payload_bronze
+      jsonb normalized_silver
+      text summary_gold
+      numeric match_confidence
+    }
+    MEETING {
+      uuid id PK
+      uuid interaction_id FK "UNIQUE 1:1"
+      meeting_platform platform "teams|plaud|other"
+      text copilot_recap
+      text plaud_summary
+      text transcript_ref
+      jsonb payload_bronze
+      jsonb normalized_silver
+      text summary_gold
+    }
+    TASK {
+      uuid id PK
+      text title
+      text status
+      task_category category "sales|project|onboarding|general"
+    }
+    PROJECT_MILESTONE {
+      uuid id PK
+      uuid project_id FK
+      text name
+      int ordinal "UNIQUE(project_id, ordinal)"
+      milestone_status status "not_started|in_progress|blocked|complete"
+      milestone_health health "green|amber|red"
+      text auto_check_key "future automation"
+    }
+```
+
+> **Apollo** (ADR-0035) is a company-scope `connection` provider and an enrichment
+> source for both `contact_source` and `account_source`. The normalization/merge job
+> (bronze → silver) and all ingestion are deferred to the back-end
+> ([requirements](../integrations/frontend-driven-backend-requirements.md)).
+
 ## Enumerations
 
 - `account.relationship`: `prospect | customer | partner` (null = unknown)
@@ -744,8 +820,17 @@ erDiagram
 - `lawful_basis`: `consent | legitimate_interest | contract | public_data` (ADR-0025)
 - `connection.scope`: `user | company` (ADR-0024)
 - `connection.provider`: `m365 | google | youtube | linkedin | facebook | plaud |
-  autotask | itglue`
+  autotask | itglue | apollo` (apollo added by ADR-0035)
 - `connection.status`: `active | expired | revoked | error`
+- `contact.crm_stage`: `audience | lead | prospect | client` (ADR-0031; Leads =
+  not-client, Contacts = client — opposite filters of one object)
+- `meeting.platform`: `teams | plaud | other` (ADR-0011/0033 structured meeting)
+- `contact_bronze_source`: `imperion_crm_entered | apollo | m365_synced | autotask |
+  itglue` (ADR-0032)
+- `company_bronze_source`: `imperion_crm_entered | apollo | autotask | itglue` (ADR-0032)
+- `task.category`: `sales | project | onboarding | general` (ADR-0034)
+- `milestone_status`: `not_started | in_progress | blocked | complete` (ADR-0034)
+- `milestone_health`: `green | amber | red` (ADR-0034; R/Y/G onboarding indicator)
 - `campaign.platform`: `facebook | google | youtube | linkedin | email`
 - `campaign.status` (and `ad.status`): `draft | active | paused | completed`
 - `audience.kind`: `static | dynamic`

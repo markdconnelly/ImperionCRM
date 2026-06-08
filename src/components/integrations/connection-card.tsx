@@ -10,6 +10,7 @@ const PROVIDER_META: Record<string, { label: string; icon: string }> = {
   plaud: { label: "Plaud", icon: "Mic" },
   autotask: { label: "Autotask", icon: "Ticket" },
   itglue: { label: "IT Glue", icon: "BookText" },
+  apollo: { label: "Apollo", icon: "Sparkles" },
 };
 
 const STATUS_TONE: Record<string, string> = {

@@ -2,11 +2,17 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { AccountsTable } from "@/components/accounts/accounts-table";
 import { getRepositories } from "@/lib/data";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
 import { deleteAccountAction } from "./actions";
 
 export default async function AccountsPage() {
   const { crm } = getRepositories();
-  const accounts = await crm.listAccounts();
+  const [roles, raw] = await Promise.all([getSessionRoles(), crm.listAccounts()]);
+  // Support cannot see revenue (ADR-0030): blank MRR server-side.
+  const accounts = canSeeRevenue(roles)
+    ? raw
+    : raw.map((a) => ({ ...a, mrr: REDACTED_MONEY }));
 
   return (
     <div className="flex flex-col gap-4">

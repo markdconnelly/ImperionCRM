@@ -4,6 +4,12 @@ Per-integration docs (M365/Graph, Autotask, IT Glue, My IT Process): owners, aut
 
 See `CLAUDE.md` section 8 and the project standards doc for required fields.
 
+> **Back-end & pipeline work the front end now expects:**
+> [`frontend-driven-backend-requirements.md`](./frontend-driven-backend-requirements.md)
+> tracks the deferred engines (RBAC claim, OAuth + Key Vault, ingestion → bronze,
+> normalization → silver, enrichment, Televy + 365→GDAP, onboarding auto-checks) for
+> the `ImperionCRM-Backend` repo (ADR-0028).
+
 ## Connection model (ADR-0012/0024)
 
 A single `connection` table models two scopes:

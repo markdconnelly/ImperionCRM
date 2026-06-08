@@ -1,3 +1,5 @@
+import type { AppRole } from "@/lib/auth/roles";
+
 export type Health = "green" | "amber" | "red";
 
 export type PipelineStage =
@@ -61,6 +63,22 @@ export interface ContactRow {
   account: string | null; // account name
 }
 
+/**
+ * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
+ * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
+ * client. Distinct from the enrichment lifecycle_status.
+ */
+export type ContactCrmStage = "audience" | "lead" | "prospect" | "client";
+
+/** A contact as shown on the lifecycle Pipeline board and Leads/Contacts lists. */
+export interface ContactPipelineRow {
+  id: string;
+  fullName: string;
+  email: string | null;
+  account: string | null; // account name
+  crmStage: ContactCrmStage;
+}
+
 /** A row in the Proposals list. */
 export interface ProposalRow {
   id: string;
@@ -101,13 +119,38 @@ export interface ProjectRow {
   targetLive: string | null; // formatted target go-live date
 }
 
+/** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
+export type TaskCategory = "sales" | "project" | "onboarding" | "general";
+
 /** A row in the Tasks list. */
 export interface TaskRow {
   id: string;
   title: string;
   status: string;
+  category: TaskCategory;
   due: string | null; // formatted due date
   account: string | null; // account name
+}
+
+// ── Onboarding project management (ADR-0034) ─────────────────────────────────
+
+/** A red/yellow/green onboarding milestone (major step) under a project. */
+export interface OnboardingMilestone {
+  id: string;
+  name: string;
+  status: string; // not_started|in_progress|blocked|complete
+  health: Health; // green|amber|red
+}
+
+/** A project with its milestone R/Y/G rollup, for the onboarding dashboard. */
+export interface OnboardingProject {
+  id: string;
+  name: string;
+  account: string | null;
+  type: string;
+  status: string;
+  targetLive: string | null;
+  milestones: OnboardingMilestone[];
 }
 
 /** A categorical count datum for charts (e.g. proposals by status). */
@@ -276,6 +319,8 @@ export interface TicketRow {
 export interface SessionUser {
   name: string;
   email: string;
+  /** Normalized application roles derived from Entra group/app-role claims. */
+  roles: AppRole[];
 }
 
 /** A single result from the Knowledge search over the gold layer. */
@@ -314,6 +359,35 @@ export interface InteractionRow {
   contact: string | null; // contact full name
   account: string | null; // account name
   occurredAt: string | null; // formatted date-time
+}
+
+/** Structured Teams/Plaud meeting detail attached to an interaction (ADR-0011). */
+export interface MeetingDetail {
+  platform: string | null; // teams|plaud|other
+  title: string | null;
+  copilotRecap: string | null; // Teams Copilot recap
+  plaudSummary: string | null; // Plaud meeting summary
+  transcriptRef: string | null; // pointer to the full transcript
+}
+
+/** A single communication, for the drill-down view. */
+export interface CommunicationDetail {
+  id: string;
+  source: string;
+  kind: string | null;
+  channel: string | null;
+  direction: string | null;
+  subject: string | null;
+  summary: string | null; // summary_gold
+  body: string | null; // normalized narrative / payload text
+  owner: string | null;
+  contact: string | null;
+  contactId: string | null;
+  account: string | null;
+  accountId: string | null;
+  occurredAt: string | null;
+  meeting: MeetingDetail | null;
+  actionItems: ActionItemRow[];
 }
 
 /** A meeting follow-up action item. */

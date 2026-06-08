@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { sourceMeta, directionMeta } from "@/lib/comms";
 import type { InteractionRow } from "@/types";
@@ -30,28 +31,30 @@ export function Timeline({
         const meta = sourceMeta(it.source);
         const dir = directionMeta(it.direction);
         return (
-          <li
-            key={it.id}
-            className="flex gap-3 border-b border-border py-3 last:border-b-0"
-          >
-            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-panel-2 text-dim">
-              <Icon name={meta.icon} size={14} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-dim">
-                <span className="font-medium text-text">{meta.label}</span>
-                <span className={dir.tone}>· {dir.label}</span>
-                {showContact && it.contact && (
-                  <span>· {it.contact}{it.account ? ` (${it.account})` : ""}</span>
-                )}
-                {it.owner && <span>· {it.owner}</span>}
-                <span className="ml-auto tabular-nums">{it.occurredAt ?? ""}</span>
+          <li key={it.id} className="border-b border-border last:border-b-0">
+            <Link
+              href={`/communications/${it.id}`}
+              className="-mx-2 flex gap-3 rounded-md px-2 py-3 transition-colors hover:bg-panel-2"
+            >
+              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-panel-2 text-dim">
+                <Icon name={meta.icon} size={14} />
               </div>
-              {it.subject && (
-                <p className="mt-1 text-sm font-medium text-text">{it.subject}</p>
-              )}
-              {it.summary && <p className="mt-0.5 text-sm text-dim">{it.summary}</p>}
-            </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-dim">
+                  <span className="font-medium text-text">{meta.label}</span>
+                  <span className={dir.tone}>· {dir.label}</span>
+                  {showContact && it.contact && (
+                    <span>· {it.contact}{it.account ? ` (${it.account})` : ""}</span>
+                  )}
+                  {it.owner && <span>· {it.owner}</span>}
+                  <span className="ml-auto tabular-nums">{it.occurredAt ?? ""}</span>
+                </div>
+                {it.subject && (
+                  <p className="mt-1 text-sm font-medium text-text">{it.subject}</p>
+                )}
+                {it.summary && <p className="mt-0.5 text-sm text-dim">{it.summary}</p>}
+              </div>
+            </Link>
           </li>
         );
       })}

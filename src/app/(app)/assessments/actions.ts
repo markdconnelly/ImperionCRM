@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
-import type { AssessmentInput } from "@/lib/data/repositories";
+import type { AnswerInput, AssessmentInput } from "@/lib/data/repositories";
+import type { QuestionRow } from "@/types";
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -54,6 +55,67 @@ export async function deleteAssessmentAction(formData: FormData) {
   const { crm } = getRepositories();
   await crm.deleteAssessment(id);
   revalidatePath("/assessments");
+}
+
+// ── Non-Televy data entry: save the assessment questionnaire answers ─────────
+// The user fills in what Televy doesn't cover; agent/automation drafts already
+// land via the engagement_answer provenance flow (ADR-0027).
+
+/** Map a question's posted `q_<id>` field to a typed answer. */
+function answerFor(q: QuestionRow, formData: FormData): AnswerInput {
+  const name = `q_${q.id}`;
+  const a: AnswerInput = {
+    questionId: q.id,
+    valueText: null,
+    valueNumber: null,
+    valueBool: null,
+    valueJson: null,
+    valueDate: null,
+    answeredByContactId: null,
+  };
+  switch (q.responseType) {
+    case "number":
+    case "currency":
+      a.valueNumber = orNull(str(formData, name));
+      break;
+    case "boolean": {
+      const s = str(formData, name);
+      a.valueBool = s === "" ? null : s === "true";
+      break;
+    }
+    case "date":
+      a.valueDate = orNull(str(formData, name));
+      break;
+    case "multi_select": {
+      const all = formData.getAll(name).map(String).filter((s) => s !== "");
+      a.valueJson = all.length > 0 ? all : null;
+      break;
+    }
+    default:
+      a.valueText = orNull(str(formData, name));
+  }
+  return a;
+}
+
+function hasValue(a: AnswerInput): boolean {
+  return (
+    a.valueText != null ||
+    a.valueNumber != null ||
+    a.valueBool != null ||
+    a.valueJson != null ||
+    a.valueDate != null
+  );
+}
+
+export async function saveAssessmentAnswersAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const { engagements } = getRepositories();
+  const questions = await engagements.getQuestions("assessment");
+  const answers = questions.map((q) => answerFor(q, formData)).filter(hasValue);
+  if (answers.length > 0) await engagements.saveAnswers("assessment", id, answers);
+  revalidatePath(`/assessments/${id}`);
+  redirect(`/assessments/${id}?saved=1`);
 }
 
 // ── Provenance: spawn downstream work from an assessment (ADR-0023) ──────────

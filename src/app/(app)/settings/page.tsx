@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
+import { canSeeSettings, type AppRole } from "@/lib/auth/roles";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 import { CompanyCredentialCard } from "@/components/settings/company-credential-card";
 import { ConnectAccount } from "@/components/integrations/connect-account";
@@ -14,6 +16,15 @@ import {
   grantGdapAction,
   saveCredentialAction,
 } from "./actions";
+
+/** Human labels for the application roles. */
+const ROLE_LABEL: Record<AppRole, string> = {
+  admin: "Admin",
+  finance: "Finance",
+  project_manager: "Project Manager",
+  sales: "Sales",
+  support: "Support",
+};
 
 /** A headed settings card. */
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -41,8 +52,14 @@ export default async function SettingsPage({
 }) {
   const { tab } = await searchParams;
   const session = await auth();
+  const roles = session?.user?.roles ?? ["support"];
+  // Settings is admin-only (ADR-0030). Middleware already redirects, but guard
+  // here too so the page can never render for a non-admin.
+  if (!canSeeSettings(roles)) redirect("/");
+
   const name = session?.user?.name ?? "Unknown user";
   const email = session?.user?.email ?? "—";
+  const rolesLabel = roles.map((r) => ROLE_LABEL[r] ?? r).join(", ");
 
   const { connections } = getRepositories();
   const [personal, company] = await Promise.all([
@@ -58,6 +75,7 @@ export default async function SettingsPage({
         <div className="flex flex-col gap-1.5">
           <Row label="Name" value={name} />
           <Row label="Email" value={email} />
+          <Row label="Roles" value={rolesLabel} />
           <Row label="Identity provider" value="Microsoft Entra ID (SSO)" />
         </div>
         <p className="mt-3 text-[11px] text-dim">
@@ -68,6 +86,19 @@ export default async function SettingsPage({
 
       <Card title="Appearance">
         <AppearanceSettings />
+      </Card>
+
+      <Card title="Security">
+        <p className="text-sm text-dim">
+          Posture at a glance — consent coverage, connection health, and the controls
+          behind them. Security is admin-only.
+        </p>
+        <Link
+          href="/security"
+          className="mt-3 inline-block rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+        >
+          Open security posture
+        </Link>
       </Card>
 
       <Card title="Platform">

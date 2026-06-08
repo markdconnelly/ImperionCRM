@@ -228,6 +228,7 @@ export const userConnections: ConnectionRow[] = [
 export const companyConnections: ConnectionRow[] = [
   { id: "cn_10", scope: "company", provider: "autotask", displayName: "Imperion Autotask", status: "active", scopes: ["tickets:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/autotask", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05" },
   { id: "cn_11", scope: "company", provider: "itglue", displayName: "Imperion IT Glue", status: "active", scopes: ["assets:read", "docs:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/itglue", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05" },
+  { id: "cn_12", scope: "company", provider: "apollo", displayName: "Apollo — enrichment", status: "active", scopes: ["contacts:enrich", "companies:enrich"], owner: null, keyvaultSecretRef: "kv://imperion/conn/apollo", lastSync: null, connectedAt: "2026-06-08" },
 ];
 
 // ── Demand generation (ADR-0012/0026) ────────────────────────────────────────

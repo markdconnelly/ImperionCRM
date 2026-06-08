@@ -30,9 +30,13 @@ import {
   workflows,
 } from "@/lib/mock-data";
 import type { Repositories } from "@/lib/data/repositories";
+import type { Health, OnboardingMilestone } from "@/types";
 
 const NO_DB =
   "Editing requires a configured database. Set the database connection to enable manual changes.";
+
+/** Lifecycle stages mock contacts are spread across (ADR-0031). */
+const MOCK_STAGES = ["audience", "lead", "prospect", "client"] as const;
 
 export const mockRepositories: Repositories = {
   dashboard: {
@@ -62,8 +66,29 @@ export const mockRepositories: Repositories = {
     async deleteAccount() {
       throw new Error(NO_DB);
     },
-    async listContacts() {
-      return contacts;
+    async listContacts(opts?: { client?: boolean }) {
+      if (opts?.client === undefined) return contacts;
+      // Mock contacts carry no stage; the same deterministic spread used by
+      // listContactsByStage decides who is a client (every 4th, index % 4 === 3).
+      return contacts.filter((_, i) => (i % MOCK_STAGES.length === 3) === opts.client);
+    },
+    async listContactsByStage(opts?: { client?: boolean }) {
+      // Spread mock contacts across the lifecycle so Leads/Contacts/Pipeline
+      // render meaningfully without a DB.
+      return contacts
+        .map((c, i) => ({
+          id: c.id,
+          fullName: c.fullName,
+          email: c.email,
+          account: c.account,
+          crmStage: MOCK_STAGES[i % MOCK_STAGES.length],
+        }))
+        .filter(
+          (c) => opts?.client === undefined || (c.crmStage === "client") === opts.client,
+        );
+    },
+    async setContactStage() {
+      throw new Error(NO_DB);
     },
     async listOpportunities() {
       return opportunities;
@@ -114,6 +139,25 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async deleteProject() {
+      throw new Error(NO_DB);
+    },
+    async listOnboarding() {
+      // Demo onboarding board so the R/Y/G dashboard renders without a DB.
+      const NAMES = ["Kickoff", "Tenant baseline", "Identity hardening", "Endpoint enrollment", "Backup validation", "Go-live readiness"];
+      const steps = (id: string, healths: Health[]): OnboardingMilestone[] =>
+        healths.map((health, i) => ({
+          id: `${id}-m${i}`,
+          name: NAMES[i] ?? `Step ${i + 1}`,
+          status: health === "green" ? "complete" : health === "red" ? "blocked" : "in_progress",
+          health,
+        }));
+      return [
+        { id: "pj_01", name: "Acme Onboarding", account: "Acme Co", type: "onboarding", status: "in_progress", targetLive: "2026-07-15", milestones: steps("pj_01", ["green", "green", "green", "amber", "amber", "red"]) },
+        { id: "pj_02", name: "Northwind Onboarding", account: "Northwind", type: "onboarding", status: "in_progress", targetLive: "2026-08-01", milestones: steps("pj_02", ["green", "green", "amber", "amber", "amber"]) },
+        { id: "pj_03", name: "Globex Implementation", account: "Globex", type: "implementation", status: "not_started", targetLive: null, milestones: steps("pj_03", ["amber", "amber", "amber", "amber", "red", "red"]) },
+      ];
+    },
+    async setMilestoneHealth() {
       throw new Error(NO_DB);
     },
     async listAssessments() {
@@ -248,6 +292,37 @@ export const mockRepositories: Repositories = {
     },
     async listInteractionsByAccount() {
       return interactions;
+    },
+    async getInteraction(id) {
+      const it = interactions.find((i) => i.id === id);
+      if (!it) return null;
+      const isMeeting = it.kind === "meeting" || it.source === "plaud" || it.source === "m365_teams";
+      return {
+        id: it.id,
+        source: it.source,
+        kind: it.kind,
+        channel: it.channel,
+        direction: it.direction,
+        subject: it.subject,
+        summary: it.summary,
+        body: it.summary,
+        owner: it.owner,
+        contact: it.contact,
+        contactId: null,
+        account: it.account,
+        accountId: null,
+        occurredAt: it.occurredAt,
+        meeting: isMeeting
+          ? {
+              platform: it.source === "plaud" ? "plaud" : it.source === "m365_teams" ? "teams" : "other",
+              title: it.subject,
+              copilotRecap: it.source === "m365_teams" ? it.summary : null,
+              plaudSummary: it.source === "plaud" ? it.summary : null,
+              transcriptRef: null,
+            }
+          : null,
+        actionItems: actionItems,
+      };
     },
     async createInteraction() {
       throw new Error(NO_DB);

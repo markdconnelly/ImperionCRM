@@ -58,8 +58,11 @@ import type {
   AudienceRow,
   CampaignDetail,
   CampaignRow,
+  CommunicationDetail,
   ConnectionRow,
   ConsentEventRow,
+  ContactCrmStage,
+  ContactPipelineRow,
   ContactProfile,
   ContactRow,
   CountDatum,
@@ -75,6 +78,8 @@ import type {
   Kpi,
   LeadCaptureEventRow,
   LeadHookRow,
+  OnboardingProject,
+  OnboardingMilestone,
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
@@ -89,6 +94,7 @@ import type {
   SbrRow,
   SocialIdentityRow,
   StageValueDatum,
+  TaskCategory,
   TaskRow,
   TicketRow,
   WorkflowDetail,
@@ -374,10 +380,11 @@ export const postgresRepositories: Repositories = {
       await pool.query(`DELETE FROM account WHERE id = $1`, [id]);
     },
 
-    async listContacts(): Promise<ContactRow[]> {
+    async listContacts(opts?: { client?: boolean }): Promise<ContactRow[]> {
       const pool = getPool();
-      if (!pool) return mockRepositories.crm.listContacts();
+      if (!pool) return mockRepositories.crm.listContacts(opts);
       try {
+        const filterClient = opts?.client !== undefined;
         const { rows } = await pool.query<{
           id: string;
           full_name: string;
@@ -388,7 +395,9 @@ export const postgresRepositories: Repositories = {
           `SELECT c.id, c.full_name, c.email, c.phone, a.name AS account
            FROM contact c
            LEFT JOIN account a ON a.id = c.account_id
+           ${filterClient ? "WHERE c.is_client = $1" : ""}
            ORDER BY c.full_name`,
+          filterClient ? [opts!.client] : [],
         );
         return rows.map((row) => ({
           id: row.id,
@@ -398,8 +407,48 @@ export const postgresRepositories: Repositories = {
           account: row.account,
         }));
       } catch {
-        return mockRepositories.crm.listContacts();
+        return mockRepositories.crm.listContacts(opts);
       }
+    },
+
+    async listContactsByStage(opts?: { client?: boolean }): Promise<ContactPipelineRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listContactsByStage(opts);
+      try {
+        const filterClient = opts?.client !== undefined;
+        const { rows } = await pool.query<{
+          id: string;
+          full_name: string;
+          email: string | null;
+          account: string | null;
+          crm_stage: ContactCrmStage;
+        }>(
+          `SELECT c.id, c.full_name, c.email, c.crm_stage, a.name AS account
+           FROM contact c
+           LEFT JOIN account a ON a.id = c.account_id
+           ${filterClient ? "WHERE c.is_client = $1" : ""}
+           ORDER BY c.full_name`,
+          filterClient ? [opts!.client] : [],
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          fullName: row.full_name,
+          email: row.email,
+          account: row.account,
+          crmStage: row.crm_stage,
+        }));
+      } catch {
+        return mockRepositories.crm.listContactsByStage(opts);
+      }
+    },
+
+    async setContactStage(id: string, stage: ContactCrmStage): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setContactStage(id, stage);
+      await pool.query(
+        `UPDATE contact SET crm_stage = $2::contact_crm_stage WHERE id = $1`,
+        [id, stage],
+      );
     },
 
     async listOpportunities(): Promise<OpportunityRow[]> {
@@ -448,10 +497,11 @@ export const postgresRepositories: Repositories = {
           id: string;
           title: string;
           status: string;
+          category: TaskCategory;
           due_at: Date | null;
           account: string | null;
         }>(
-          `SELECT t.id, t.title, t.status, t.due_at, a.name AS account
+          `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
            ORDER BY t.due_at NULLS LAST, t.title`,
@@ -460,6 +510,7 @@ export const postgresRepositories: Repositories = {
           id: row.id,
           title: row.title,
           status: row.status,
+          category: row.category,
           due: fmtDate(row.due_at),
           account: row.account,
         }));
@@ -478,9 +529,10 @@ export const postgresRepositories: Repositories = {
           title: string;
           detail: string | null;
           status: string;
+          category: string;
           due_at: Date | null;
         }>(
-          `SELECT id, account_id, title, detail, status, due_at
+          `SELECT id, account_id, title, detail, status, category, due_at
            FROM task WHERE id = $1`,
           [id],
         );
@@ -492,6 +544,7 @@ export const postgresRepositories: Repositories = {
           title: r.title,
           detail: r.detail,
           status: r.status,
+          category: r.category,
           dueAt: fmtDate(r.due_at),
         };
       } catch {
@@ -503,13 +556,14 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.createTask(input);
       await pool.query(
-        `INSERT INTO task (account_id, title, detail, status, due_at)
-         VALUES ($1, $2, $3, $4, $5::timestamptz)`,
+        `INSERT INTO task (account_id, title, detail, status, category, due_at)
+         VALUES ($1, $2, $3, $4, $5::task_category, $6::timestamptz)`,
         [
           nullIfEmpty(input.accountId),
           input.title,
           nullIfEmpty(input.detail),
           input.status,
+          input.category,
           nullIfEmpty(input.dueAt),
         ],
       );
@@ -521,13 +575,14 @@ export const postgresRepositories: Repositories = {
       await pool.query(
         `UPDATE task
          SET account_id = $1, title = $2, detail = $3, status = $4,
-             due_at = $5::timestamptz
-         WHERE id = $6`,
+             category = $5::task_category, due_at = $6::timestamptz
+         WHERE id = $7`,
         [
           nullIfEmpty(input.accountId),
           input.title,
           nullIfEmpty(input.detail),
           input.status,
+          input.category,
           nullIfEmpty(input.dueAt),
           id,
         ],
@@ -788,6 +843,64 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteProject(id);
       await pool.query(`DELETE FROM project WHERE id = $1`, [id]);
+    },
+
+    async listOnboarding(): Promise<OnboardingProject[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listOnboarding();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          account: string | null;
+          type: string;
+          status: string;
+          target_live_date: Date | null;
+        }>(
+          `SELECT p.id, p.name, a.name AS account, p.type::text AS type,
+                  p.status::text AS status, p.target_live_date
+           FROM project p
+           LEFT JOIN account a ON a.id = p.account_id
+           ORDER BY p.target_live_date NULLS LAST, p.name`,
+        );
+        const { rows: ms } = await pool.query<{
+          id: string;
+          project_id: string;
+          name: string;
+          status: string;
+          health: Health;
+        }>(
+          `SELECT id, project_id, name, status::text AS status, health::text AS health
+           FROM project_milestone
+           ORDER BY ordinal, name`,
+        );
+        const byProject = new Map<string, OnboardingMilestone[]>();
+        for (const m of ms) {
+          const list = byProject.get(m.project_id) ?? [];
+          list.push({ id: m.id, name: m.name, status: m.status, health: m.health });
+          byProject.set(m.project_id, list);
+        }
+        return rows.map((p) => ({
+          id: p.id,
+          name: p.name,
+          account: p.account,
+          type: p.type,
+          status: p.status,
+          targetLive: fmtDate(p.target_live_date),
+          milestones: byProject.get(p.id) ?? [],
+        }));
+      } catch {
+        return mockRepositories.crm.listOnboarding();
+      }
+    },
+
+    async setMilestoneHealth(id: string, health: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setMilestoneHealth(id, health);
+      await pool.query(
+        `UPDATE project_milestone SET health = $2::milestone_health WHERE id = $1`,
+        [id, health],
+      );
     },
 
     async listAssessments(): Promise<AssessmentRow[]> {
@@ -1957,6 +2070,108 @@ export const postgresRepositories: Repositories = {
 
     async listInteractionsByAccount(accountId: string): Promise<InteractionRow[]> {
       return postgresRepositories.comms.listInteractions({ accountId });
+    },
+
+    async getInteraction(id: string): Promise<CommunicationDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.comms.getInteraction(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          source: string;
+          kind: string | null;
+          channel: string | null;
+          direction: string | null;
+          subject: string | null;
+          summary_gold: string | null;
+          body: string | null;
+          occurred_at: Date | null;
+          owner: string | null;
+          contact: string | null;
+          contact_id: string | null;
+          account: string | null;
+          account_id: string | null;
+          m_platform: string | null;
+          m_title: string | null;
+          m_copilot_recap: string | null;
+          m_plaud_summary: string | null;
+          m_transcript_ref: string | null;
+        }>(
+          `SELECT i.id, i.source::text AS source, i.kind, i.channel,
+                  i.direction::text AS direction, i.subject, i.summary_gold,
+                  coalesce(i.normalized_silver->>'body', i.payload_bronze->>'body') AS body,
+                  i.occurred_at,
+                  u.display_name AS owner,
+                  c.full_name AS contact, c.id AS contact_id,
+                  a.name AS account, a.id AS account_id,
+                  mt.platform::text AS m_platform, mt.title AS m_title,
+                  mt.copilot_recap AS m_copilot_recap, mt.plaud_summary AS m_plaud_summary,
+                  mt.transcript_ref AS m_transcript_ref
+           FROM interaction i
+           LEFT JOIN app_user u ON u.id = i.owner_user_id
+           LEFT JOIN contact c ON c.id = i.contact_id
+           LEFT JOIN account a ON a.id = i.account_id
+           LEFT JOIN meeting mt ON mt.interaction_id = i.id
+           WHERE i.id = $1`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const { rows: aiRows } = await pool.query<{
+          id: string;
+          description: string;
+          status: string;
+          due_at: Date | null;
+          contact: string | null;
+          owner: string | null;
+          source_task_id: string | null;
+        }>(
+          `SELECT m.id, m.description, m.status, m.due_at,
+                  c.full_name AS contact, u.display_name AS owner, m.source_task_id
+           FROM meeting_action_item m
+           LEFT JOIN contact c ON c.id = m.contact_id
+           LEFT JOIN app_user u ON u.id = m.owner_user_id
+           WHERE m.interaction_id = $1
+           ORDER BY m.due_at NULLS LAST, m.created_at DESC`,
+          [id],
+        );
+        return {
+          id: r.id,
+          source: r.source,
+          kind: r.kind,
+          channel: r.channel,
+          direction: r.direction,
+          subject: r.subject,
+          summary: r.summary_gold,
+          body: r.body,
+          owner: r.owner,
+          contact: r.contact,
+          contactId: r.contact_id,
+          account: r.account,
+          accountId: r.account_id,
+          occurredAt: fmtDateTime(r.occurred_at),
+          meeting: r.m_platform || r.m_copilot_recap || r.m_plaud_summary || r.m_transcript_ref
+            ? {
+                platform: r.m_platform,
+                title: r.m_title,
+                copilotRecap: r.m_copilot_recap,
+                plaudSummary: r.m_plaud_summary,
+                transcriptRef: r.m_transcript_ref,
+              }
+            : null,
+          actionItems: aiRows.map((a) => ({
+            id: a.id,
+            description: a.description,
+            status: a.status,
+            due: fmtDate(a.due_at),
+            contact: a.contact,
+            owner: a.owner,
+            promotedToTask: a.source_task_id != null,
+          })),
+        };
+      } catch {
+        return mockRepositories.comms.getInteraction(id);
+      }
     },
 
     async createInteraction(input: InteractionInput): Promise<void> {

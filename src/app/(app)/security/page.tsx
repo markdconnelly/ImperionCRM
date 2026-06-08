@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canSeeSettings } from "@/lib/auth/roles";
 
 const CHANNEL_LABEL: Record<string, string> = {
   email: "Email",
@@ -20,6 +23,10 @@ function Metric({ label, value, hint }: { label: string; value: string; hint?: s
 }
 
 export default async function SecurityPage() {
+  // Security lives under Settings — admin-only (ADR-0030). Middleware redirects
+  // too; this is defense-in-depth.
+  if (!canSeeSettings(await getSessionRoles())) redirect("/");
+
   const { security } = getRepositories();
   const p = await security.getPosture();
   const consentPct =

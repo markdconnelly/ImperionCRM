@@ -13,6 +13,8 @@
  * values are actually used.
  */
 
+import type { AppRole } from "@/lib/auth/roles";
+
 function read(name: string): string {
   return process.env[name]?.trim() ?? "";
 }
@@ -67,6 +69,41 @@ export const breakGlass = {
   /** Lowercase hex SHA-256 of the break-glass password. */
   get passwordHash() {
     return read("BREAKGLASS_PASSWORD_HASH");
+  },
+};
+
+/**
+ * Role mapping configuration (ADR-0030). Maps Entra security-group object-id
+ * GUIDs to application roles, plus an optional local dev override.
+ *
+ * The `groups`/`roles` claim itself is emitted by the Entra app-registration
+ * manifest (groupMembershipClaims, or assigned App Roles) — NOT by an OAuth
+ * scope. These env vars only tell the app which GUID means which role. Leaving
+ * them unset is safe: users fall back to the default `support` role.
+ */
+export const roleEnv = {
+  /** Group object-id GUID → AppRole, built from the per-role env vars. */
+  get groupMap(): Record<string, AppRole> {
+    const pairs: Array<[string, AppRole]> = [
+      [read("ENTRA_GROUP_ADMINS"), "admin"],
+      [read("ENTRA_GROUP_FINANCE"), "finance"],
+      [read("ENTRA_GROUP_PROJECTMANAGER"), "project_manager"],
+      [read("ENTRA_GROUP_SALES"), "sales"],
+      [read("ENTRA_GROUP_SUPPORT"), "support"],
+    ];
+    const map: Record<string, AppRole> = {};
+    for (const [guid, role] of pairs) {
+      if (guid) map[guid] = role;
+    }
+    return map;
+  },
+  /**
+   * Local-only role override (e.g. DEV_ROLE=admin) to preview restricted GUIs
+   * before the Entra claim is live. Ignored in deployed environments where the
+   * var is unset.
+   */
+  get devRole(): string {
+    return read("DEV_ROLE");
   },
 };
 

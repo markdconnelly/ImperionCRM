@@ -80,6 +80,28 @@ export async function sendMessageAction(formData: FormData) {
   redirect(`/contacts/${contactId}?sent=${channel}`);
 }
 
+/**
+ * Per-contact consent toggle (ADR-0014). Appends an opt_in/opt_out event to the
+ * append-only ledger — never mutates history. Drives the send/ad gates and the
+ * derived current_consent view.
+ */
+export async function setConsentAction(formData: FormData) {
+  const contactId = String(formData.get("contactId") ?? "");
+  const channel = String(formData.get("channel") ?? "");
+  const state = String(formData.get("state") ?? "");
+  if (!contactId || !channel || (state !== "opt_in" && state !== "opt_out")) return;
+
+  const { consent } = getRepositories();
+  await consent.recordConsentEvent({
+    contactId,
+    channel,
+    state,
+    lawfulBasis: "consent",
+    source: "crm_manual_toggle",
+  });
+  revalidatePath(`/contacts/${contactId}`);
+}
+
 export async function completeActionItemAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const back = String(formData.get("back") ?? "/communications");

@@ -8,6 +8,13 @@ const statusTone: Record<string, string> = {
   done: "text-green",
 };
 
+const CATEGORY_LABEL: Record<string, string> = {
+  sales: "Sales",
+  project: "Project",
+  onboarding: "Onboarding",
+  general: "General",
+};
+
 export function TasksTable({
   tasks,
   deleteAction,
@@ -22,6 +29,7 @@ export function TasksTable({
           <thead>
             <tr className="text-left text-xs text-dim">
               <th className="px-4 py-2 font-medium">Task</th>
+              <th className="px-4 py-2 font-medium">Category</th>
               <th className="px-4 py-2 font-medium">Account</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Due</th>
@@ -32,6 +40,11 @@ export function TasksTable({
             {tasks.map((t) => (
               <tr key={t.id} className="border-t border-border hover:bg-panel-2">
                 <td className="px-4 py-3 font-medium">{t.title}</td>
+                <td className="px-4 py-3">
+                  <span className="rounded-full bg-panel-2 px-2 py-0.5 text-[11px] text-dim">
+                    {CATEGORY_LABEL[t.category] ?? t.category}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-dim">{t.account ?? "—"}</td>
                 <td className={cn("px-4 py-3", statusTone[t.status] ?? "text-dim")}>
                   {t.status.replace(/_/g, " ")}
@@ -57,7 +70,7 @@ export function TasksTable({
             ))}
             {tasks.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-dim">
+                <td colSpan={6} className="px-4 py-8 text-center text-dim">
                   No tasks yet. Create one to get started.
                 </td>
               </tr>
