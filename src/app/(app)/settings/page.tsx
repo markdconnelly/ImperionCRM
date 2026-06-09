@@ -179,17 +179,43 @@ export default async function SettingsPage({
     </section>
   );
 
+  const toolsPanel = (
+    <Card title="Tools & configuration">
+      <p className="mb-3 text-sm text-dim">
+        Configuration surfaces moved out of the main navigation.
+      </p>
+      <ul className="flex flex-col gap-2">
+        {[
+          { href: "/workflows", label: "Workflows", hint: "Automation builder & step editor" },
+          { href: "/knowledge", label: "Knowledge", hint: "Search the gold layer (comms, summaries, dossiers)" },
+          { href: "/questions", label: "Discovery & assessment questions", hint: "Edit the question catalog" },
+        ].map((t) => (
+          <li key={t.href}>
+            <Link
+              href={t.href}
+              className="flex items-center justify-between gap-3 rounded-md border border-border bg-panel-2 px-3 py-2 text-sm transition-colors hover:border-accent"
+            >
+              <span className="text-text">{t.label}</span>
+              <span className="hidden text-xs text-dim sm:block">{t.hint}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Settings"
-        description="Your profile, connections, and the company integration credentials."
+        description="Your profile, connections, the company integration credentials, and configuration tools."
       />
       <SettingsTabs
         initialTab={tab}
         profile={profile}
         connections={connectionsPanel}
         credentials={credentials}
+        tools={toolsPanel}
       />
     </div>
   );
