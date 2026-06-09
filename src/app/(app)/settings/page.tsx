@@ -14,9 +14,11 @@ import {
   connectAction,
   disconnectAction,
   grantGdapAction,
+  refreshNowAction,
   saveCredentialAction,
   setPollIntervalAction,
 } from "./actions";
+import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
 
 /** Human labels for the application roles. */
 const ROLE_LABEL: Record<AppRole, string> = {
@@ -173,6 +175,8 @@ export default async function SettingsPage({
             gdapAction={grantGdapAction}
             disconnectAction={disconnectAction}
             pollAction={setPollIntervalAction}
+            refreshAction={refreshNowAction}
+            refreshable={p.key in REFRESH_SOURCES}
           />
         ))}
       </div>

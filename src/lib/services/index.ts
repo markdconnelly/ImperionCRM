@@ -35,6 +35,11 @@ const services = {
     baseUrlEnv: "INTEGRATION_SERVICE_URL",
     audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
   },
+  pipeline: {
+    name: "Data pipeline",
+    baseUrlEnv: "PIPELINE_SERVICE_URL",
+    audienceEnv: "PIPELINE_SERVICE_AUDIENCE",
+  },
 } satisfies Record<string, ServiceDescriptor>;
 
 /** Orchestrator + sub-agents (ADR-0015). Hosted externally (container app). */
@@ -76,6 +81,22 @@ export const campaignService = {
 export const boardService = {
   openSession: (input: { topic: string; memberIds: string[] }) =>
     callService(services.board, "/session", { method: "POST", body: JSON.stringify(input) }),
+};
+
+/**
+ * Cloud data pipeline (pipeline ADR-0011) — the live-data plane. Scheduled bulk
+ * ingestion runs on-prem; this client triggers a TARGETED on-demand sync of one source
+ * ("Refresh now" on the Settings cards). The endpoint bypasses the operator's poll
+ * cadence (an explicit click IS the cadence) and lands on the same idempotent ingestion
+ * path, so a refresh can never duplicate a scheduled load.
+ */
+export const pipelineService = {
+  refresh: (input: { source: "autotask" | "itglue" | "apollo" | "darkwebid" | "televy" | "m365" }) =>
+    callService<{ source: string; ran: boolean; reason?: string; counts?: Record<string, number> }>(
+      services.pipeline,
+      "/refresh",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 120_000 },
+    ),
 };
 
 /**
