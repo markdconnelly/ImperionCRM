@@ -2653,6 +2653,37 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async listContactRelatedBronze(contactId: string): Promise<ContactSourceRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.listContactRelatedBronze(contactId);
+      try {
+        const { rows } = await pool.query<{
+          kind: string;
+          external_ref: string | null;
+          label: string | null;
+          payload_bronze: unknown | null;
+          last_seen_at: Date | null;
+        }>(
+          `SELECT kind, external_ref, label, payload_bronze, last_seen_at
+             FROM contact_related_bronze WHERE contact_id = $1 ORDER BY last_seen_at DESC NULLS LAST`,
+          [contactId],
+        );
+        return rows.map((r, i) => ({
+          id: `${r.kind}:${r.external_ref ?? i}`,
+          source: r.kind,
+          externalRef: r.external_ref,
+          payloadBronze: r.payload_bronze,
+          normalizedSilver: null,
+          matchConfidence: null,
+          matchedAt: null,
+          lastSeenAt: fmtDateTime(r.last_seen_at),
+          title: r.label,
+        }));
+      } catch {
+        return mockRepositories.contacts.listContactRelatedBronze(contactId);
+      }
+    },
+
     async listEnrichment(contactId: string): Promise<EnrichmentFactRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.contacts.listEnrichment(contactId);
