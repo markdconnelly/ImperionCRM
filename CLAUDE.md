@@ -137,8 +137,22 @@ serving data.
   & step editor), Consent (ledger), Integrations (per-user personal connections),
   Security (posture dashboard), Settings, Feedback (GitHub-coupled). Editable
   discovery/assessment question catalog.
-- **Data:** PostgreSQL + pgvector; migrations **0001–0033 applied** to prod (0034 latest committed). Typed
+- **Data:** PostgreSQL + pgvector; migrations **0001–0043 applied** to prod. Typed
   repositories with a mock fallback. Entra SSO (certificate client auth) + break-glass.
+- **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
+- **Per-connection poll cadence (ADR-0038, migration 0035):** `connection.poll_interval_minutes`
+  (0 = manual/paused) with an auto-saving cadence selector on the Settings cards; the pipeline
+  honours it via `pollDue()` (pipeline ADR-0008).
+- **Per-source bronze (ADR-0039, migrations 0036/0037):** one physical bronze table per
+  (source, entity) — `{autotask,apollo,m365,itglue,website}_contacts`, the `_companies` set, and
+  `{itglue,m365,website}_devices` — read through union views (`contact_bronze_all` etc.); a new
+  silver **`device`** table; `contact`/`account` remain the silver aggregate. Manual entries use
+  the `website` source. The on-prem local-pipeline adds its own security-posture bronze (Secure
+  Score, Sentinel, Entra/Intune policies, Autotask contracts/tickets, IT Glue export) + related-
+  source citation views (migrations 0038–0041).
+- **Security/assessment ingestion (ADR-0040, migrations 0042/0043):** **Dark Web ID** compromised
+  credentials → silver `credential_exposure`; **Televy** reports → `assessment_artifact`. Wired
+  but gated (no-op until the API key is configured).
 
 **Aesthetic:** dense, premium internal-tool feel (Linear/Vercel-grade), dark theme.
 Design tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · panel-2

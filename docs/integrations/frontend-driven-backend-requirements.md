@@ -40,13 +40,18 @@ Write raw source rows into the per-source bronze tables, then run the merge job.
 `ImperionCRM_Pipeline`:** per-source poll/sync lands bronze; the `merge-sources` sweep builds
 the unified silver record (pipeline ADR-0006).
 
+Per ADR-0039 each source lands in its **own physical bronze table** (`<source>_<entity>`),
+read back through the union views `contact_bronze_all` / `account_bronze_all` / `device_bronze_all`.
+
 | Source | Lands in | Notes |
 | --- | --- | --- |
-| Apollo (contacts + companies) | `contact_source`, `account_source` | global enrichment; match by email / company domain |
-| M365 / Graph (contacts) | `contact_source` (`m365_synced`) | from per-user + org Graph |
-| Autotask (contacts, companies) | `contact_source`, `account_source` | also tickets (existing) |
-| IT Glue (contacts, companies) | `contact_source`, `account_source` | poll, never duplicate |
-| Imperion CRM entry | `*_source` (`imperion_crm_entered`) | the in-app form is the source of record |
+| Apollo (contacts + companies) | `apollo_contacts`, `apollo_companies` | global enrichment; match by email / company domain |
+| M365 / Graph (contacts) | `m365_contacts` | from per-user + org Graph (`m365_synced` key) |
+| Autotask (contacts, companies) | `autotask_contacts`, `autotask_companies` | also tickets (local-pipeline) |
+| IT Glue (contacts, companies, devices) | `itglue_contacts`, `itglue_companies`, `itglue_devices` | poll, never duplicate |
+| Manual (in-app) | `website_contacts`, `website_companies` | the in-app form is the source of record (`website`, replaces `imperion_crm_entered`) |
+| Dark Web ID (exposures) | `darkwebid_exposures` → silver `credential_exposure` | compromised credentials (ADR-0040); match by email/domain |
+| Televy (assessment reports) | `televy_reports` → `assessment_artifact` | assessment scorecards (ADR-0040) |
 
 - **Normalization / merge job (silver):** ✅ `merge-sources` projects `normalized_silver`,
   matches each `*_source` row to a silver `contact`/`account` (domain/email), upserts, and

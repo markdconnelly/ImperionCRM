@@ -3,6 +3,9 @@
 - **Status:** Accepted
 - **Date:** 2026-06-08
 
+> **Note:** references to `contact_source`/`account_source` below are pre-ADR-0039; Apollo now
+> lands in the per-source tables `apollo_contacts`/`apollo_companies` (ADR-0039).
+
 ## Problem
 Leads need automatic enrichment, and capturing a lead should also create and enrich a
 **company** object. The business chose Apollo as the global enrichment service for both

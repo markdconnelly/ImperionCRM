@@ -54,3 +54,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0037](./ADR-0037-onboarding-playbook-template.md) | Standard onboarding playbook template & checklist | Accepted |
 | [0038](./ADR-0038-per-connection-poll-cadence.md) | Per-connection poll cadence | Accepted |
 | [0039](./ADR-0039-per-source-bronze-tables.md) | Per-source physical bronze tables + device entity | Accepted |
+| [0040](./ADR-0040-darkwebid-televy-ingestion.md) | Dark Web ID + Televy ingestion (credential_exposure) | Accepted |

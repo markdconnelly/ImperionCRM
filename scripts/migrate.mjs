@@ -26,10 +26,8 @@ import pg from "pg";
 const AAD_RESOURCE = "https://ossrdbms-aad.database.windows.net";
 const MIGRATIONS_DIR = fileURLToPath(new URL("../db/migrations/", import.meta.url));
 // Where the Azure CLI may live on Windows when it isn't on PATH for this process.
-const AZ_FALLBACKS = [
-  "az",
-  "C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd",
-];
+const WIN_AZ_DIR = "C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin";
+const AZ_FALLBACKS = ["az", `${WIN_AZ_DIR}\\az.cmd`];
 
 function fail(msg) {
   console.error(msg);
@@ -37,23 +35,31 @@ function fail(msg) {
 }
 
 /**
- * Run `az` with the given args, trying PATH then known install locations. Uses a
- * quoted shell command (execSync) so the Azure CLI's `az.cmd` launches on Windows —
- * Node's execFile* rejects `.cmd` with EINVAL, and the install path has spaces.
+ * Run `az` with the given args, trying PATH then the known install location. We augment PATH
+ * with the Windows CLI dir so the bare `az` resolves directly (avoids cmd.exe mangling a
+ * space-containing quoted path), and fall back to the full `az.cmd` path. Uses execSync so
+ * the `.cmd` launches on Windows — Node's execFile* rejects `.cmd` with EINVAL.
  */
 function az(args) {
   let lastErr;
-  const quoted = args.map((a) => `"${a}"`).join(" ");
+  // az args never contain spaces; leave them UNQUOTED — cmd.exe `/s` mangles a fully
+  // quoted line ("az" "account" …), which is what broke the quoted form.
+  const argline = args.join(" ");
+  const env = { ...process.env, PATH: `${process.env.PATH ?? ""};${WIN_AZ_DIR}` };
   for (const bin of AZ_FALLBACKS) {
+    // Bare `az` resolves on the augmented PATH unquoted; the full fallback path needs quoting.
+    const cmd = bin === "az" ? `az ${argline}` : `"${bin}" ${argline}`;
     try {
-      return execSync(`"${bin}" ${quoted}`, {
+      return execSync(cmd, {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
+        env,
       }).trim();
     } catch (err) {
       lastErr = err;
       // "not recognized" / "cannot find" → this bin isn't here; try the next.
-      if (!/not recognized|cannot find|ENOENT/i.test(`${err?.message} ${err?.stderr}`)) {
+      const blob = `${err?.message} ${err?.stderr} ${err?.stdout}`;
+      if (!/not recognized|cannot find|no such file|ENOENT/i.test(blob)) {
         throw err; // a real az error (e.g. not logged in) — surface it
       }
     }

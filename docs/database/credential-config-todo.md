@@ -11,8 +11,8 @@ Migration **0033** is committed **and applied to prod** (verified 2026-06-08).
   - adds `connection_status` value: `pending`
   - adds partial unique index `uq_connection_company_provider` on `(provider) WHERE
     scope = 'company'` so company credentials upsert (re-save = rotate, not duplicate)
-- **Applied range in prod:** 0001–0033 (this migration applied & verified 2026-06-08,
-  alongside the contact-lifecycle/comms/onboarding/Apollo set 0027–0032).
+- **Applied range in prod:** 0001–0043 (the company-credentials migration 0033 applied &
+  verified 2026-06-08; later sets 0034–0043 since).
 
 ## Done
 

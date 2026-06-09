@@ -744,7 +744,7 @@ erDiagram
     CONTACT_SOURCE {
       uuid id PK
       uuid contact_id FK "silver (null until matched)"
-      contact_bronze_source source "imperion_crm_entered|apollo|m365_synced|autotask|itglue"
+      contact_bronze_source source "SUPERSEDED by ADR-0039 — source is now the table name; see Diagram 6b"
       text external_ref "UNIQUE(source, external_ref)"
       jsonb payload_bronze
       jsonb normalized_silver
@@ -754,7 +754,7 @@ erDiagram
     ACCOUNT_SOURCE {
       uuid id PK
       uuid account_id FK "silver (null until matched)"
-      company_bronze_source source "imperion_crm_entered|apollo|autotask|itglue"
+      company_bronze_source source "SUPERSEDED by ADR-0039 — source is now the table name; see Diagram 6b"
       text external_ref "UNIQUE(source, external_ref)"
       jsonb payload_bronze
       jsonb normalized_silver
@@ -869,6 +869,51 @@ erDiagram
 > `*_companies` share it with `account_id`; all `*_devices` with `device_id`. Bronze tables:
 > contacts `{autotask,apollo,m365,itglue,website}_contacts`, companies
 > `{autotask,apollo,itglue,website}_companies`, devices `{itglue,m365,website}_devices`.
+
+## Diagram 6c — Security & assessment ingestion (ADR-0040)
+
+Dark Web ID compromised credentials and Televy assessment reports, ingested by the Azure
+pipeline (per-source bronze, ADR-0039 shape). Dark Web ID merges into a new silver
+`credential_exposure`; Televy stages in `televy_reports` then merges into the existing
+`assessment_artifact` (`source='televy'`).
+
+```mermaid
+erDiagram
+    CONTACT ||--o{ CREDENTIAL_EXPOSURE : "exposed (by email)"
+    ACCOUNT ||--o{ CREDENTIAL_EXPOSURE : "owns (by domain)"
+    CREDENTIAL_EXPOSURE ||--o{ DARKWEBID_EXPOSURES : "merges from"
+    ASSESSMENT_ARTIFACT ||--o{ TELEVY_REPORTS : "merges from"
+
+    CREDENTIAL_EXPOSURE {
+      uuid id PK
+      uuid contact_id FK "by email"
+      uuid account_id FK "by domain"
+      text email
+      text breach_source
+      date breach_date
+      text_array exposed_data
+      text password_status
+      text status "new|acknowledged|resolved"
+      timestamptz last_seen_at
+    }
+    DARKWEBID_EXPOSURES {
+      uuid id PK
+      uuid exposure_id FK "silver (null until merged)"
+      text external_ref "UNIQUE"
+      jsonb payload_bronze
+      jsonb normalized_silver
+    }
+    TELEVY_REPORTS {
+      uuid id PK
+      uuid artifact_id FK "→ assessment_artifact (null until merged)"
+      text external_ref "UNIQUE"
+      jsonb payload_bronze
+      jsonb normalized_silver
+    }
+```
+
+> Bronze read via the `exposure_bronze_all` view (single-source today). Wired but gated —
+> nothing ingests until the Dark Web ID / Televy API key is configured in Settings (ADR-0040).
 
 ## Enumerations
 

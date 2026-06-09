@@ -102,7 +102,7 @@ external functions for heavy/integration work.
 | --- | --- |
 | Entra ID SSO (certificate client auth), middleware gate, break-glass | ✅ Live |
 | PostgreSQL 18 + pgvector on Azure (managed-identity auth, no stored password) | ✅ Live |
-| Full schema — CRM core, engagements, **comms / contact-360 / connections / demand-gen / automation** | ✅ Applied (`db/migrations` 0001–0033; 0034 latest committed) |
+| Full schema — CRM core, engagements, **comms / contact-360 / connections / demand-gen / automation / per-source bronze + devices / security ingestion** | ✅ Applied (`db/migrations` 0001–0043) |
 | Dashboard, accounts, pipeline (interactive), proposals, onboarding, assessments, discovery, SBRs, reporting | ✅ Built |
 | **Contact-360 + unified comms, integrations/consent, campaigns/audiences (+ builders), workflows (+ builder), lead hooks** | ✅ Built (UI + data layer) |
 | Knowledge search, Security posture, Settings, Feedback, global search | ✅ Built (UI + data layer) |
