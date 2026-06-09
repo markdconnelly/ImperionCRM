@@ -30,10 +30,11 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   const { crm, comms } = getRepositories();
-  const [account, timeline, sources] = await Promise.all([
+  const [account, timeline, sources, relatedBronze] = await Promise.all([
     crm.getAccount(id),
     comms.listInteractionsByAccount(id),
     crm.listAccountSources(id),
+    crm.listAccountRelatedBronze(id),
   ]);
   if (!account) notFound();
 
@@ -74,6 +75,19 @@ export default async function AccountDetailPage({
           <h3 className="mb-3 font-display text-sm font-semibold tracking-tight">Data sources</h3>
           <SourceRecords sources={sources} />
         </section>
+
+        {relatedBronze.length > 0 && (
+          <section className="rounded-xl border border-border bg-panel p-4 lg:col-span-3">
+            <h3 className="mb-1 font-display text-sm font-semibold tracking-tight">
+              Related source data
+            </h3>
+            <p className="mb-3 text-xs text-dim">
+              Local-pipeline bronze that feeds this account — Autotask contracts &amp; tickets,
+              IT Glue documentation. Drill in to the raw record to troubleshoot.
+            </p>
+            <SourceRecords sources={relatedBronze} />
+          </section>
+        )}
       </div>
     </div>
   );

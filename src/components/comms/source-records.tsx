@@ -12,6 +12,10 @@ const SOURCE_LABEL: Record<string, string> = {
   m365_synced: "Microsoft 365",
   autotask: "Autotask",
   itglue: "IT Glue",
+  // Related local-pipeline bronze citations (migration 0038)
+  autotask_contract: "Autotask contract",
+  autotask_ticket: "Autotask ticket",
+  itglue_doc: "IT Glue documentation",
 };
 
 function label(source: string): string {
@@ -44,7 +48,12 @@ export function SourceRecords({ sources }: { sources: SourceRecordRow[] }) {
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-sm text-text">
-                <span className="font-medium">{label(s.source)}</span>
+                <span className="font-medium">{s.title ?? label(s.source)}</span>
+                {s.title && (
+                  <span className="rounded bg-panel px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-dim">
+                    {label(s.source)}
+                  </span>
+                )}
                 {s.matchConfidence != null && (
                   <span className="text-xs text-dim">
                     {Math.round(s.matchConfidence * 100)}% match

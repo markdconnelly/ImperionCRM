@@ -469,14 +469,22 @@ export interface ContactProfile {
  */
 export interface SourceRecordRow {
   id: string;
-  source: string; // imperion_crm_entered | apollo | m365_synced | autotask | itglue
+  source: string; // imperion_crm_entered | apollo | m365_synced | autotask | itglue | autotask_contract | autotask_ticket | itglue_doc
   externalRef: string | null;
   payloadBronze: unknown | null; // raw source JSON (the "view raw" popup)
   normalizedSilver: unknown | null; // per-source normalized shape
   matchConfidence: number | null; // 0..1, set by the merge job
   matchedAt: string | null;
   lastSeenAt: string | null;
+  title?: string | null; // optional human label (contract name / ticket title) for related-bronze citations
 }
+
+/**
+ * A related bronze record from the local pipeline that fed a merged object's wider picture
+ * (Autotask contracts/tickets, IT Glue documentation) — surfaced as drill-down citations
+ * (local-pipeline ADR-0008 / front-end migration 0038). Same shape as a source record.
+ */
+export type RelatedBronzeRow = SourceRecordRow;
 
 /** A per-source bronze row for a contact (`contact_source`). */
 export type ContactSourceRow = SourceRecordRow;

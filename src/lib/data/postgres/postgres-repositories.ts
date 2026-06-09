@@ -387,6 +387,37 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async listAccountRelatedBronze(accountId: string): Promise<AccountSourceRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAccountRelatedBronze(accountId);
+      try {
+        const { rows } = await pool.query<{
+          kind: string;
+          external_ref: string | null;
+          label: string | null;
+          payload_bronze: unknown | null;
+          last_seen_at: Date | null;
+        }>(
+          `SELECT kind, external_ref, label, payload_bronze, last_seen_at
+             FROM account_related_bronze WHERE account_id = $1 ORDER BY last_seen_at DESC NULLS LAST`,
+          [accountId],
+        );
+        return rows.map((r, i) => ({
+          id: `${r.kind}:${r.external_ref ?? i}`,
+          source: r.kind,
+          externalRef: r.external_ref,
+          payloadBronze: r.payload_bronze,
+          normalizedSilver: null,
+          matchConfidence: null,
+          matchedAt: null,
+          lastSeenAt: fmtDateTime(r.last_seen_at),
+          title: r.label,
+        }));
+      } catch {
+        return mockRepositories.crm.listAccountRelatedBronze(accountId);
+      }
+    },
+
     async getAccount(id: string): Promise<AccountEditable | null> {
       const pool = getPool();
       if (!pool) return null;

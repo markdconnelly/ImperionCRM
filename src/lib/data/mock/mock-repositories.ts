@@ -55,6 +55,9 @@ export const mockRepositories: Repositories = {
     async listAccountSources() {
       return [];
     },
+    async listAccountRelatedBronze() {
+      return [];
+    },
     async listAccounts() {
       return accounts;
     },
