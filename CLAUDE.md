@@ -63,11 +63,13 @@ appropriate
 **Database:** PostgreSQL with the `pgvector` extension. Serves as system of
 record, metadata store, embedding store, and agent memory layer.
 
-**AI must be provider-agnostic.** Support OpenAI, Azure OpenAI, and Claude behind
-a model-routing layer that selects on cost, capability, context window, and task
-requirements. No hard dependency on a single provider. (Note: this is the runtime
-AI layer the *application* calls — the Claude API — and is distinct from Claude
-Code, which is the dev tool building the app.)
+**The AI stack is SETTLED (ADR-0043 / backend ADR-0034, supersedes
+"provider-agnostic"):** **Claude** for generation (Haiku cheap tier / Sonnet premium
+tier) + **Voyage `voyage-3-large` @ 1024 dims** for embeddings (ADR-0041's pinned
+vector contract). One pair, one vector space; re-adding a provider is a new ADR. The
+front end holds **no AI key** — the backend and on-prem pipeline call the providers.
+(Note: this is the runtime AI the *application* calls — distinct from Claude Code,
+the dev tool building the app.)
 
 ### Microsoft integration
 Entra ID · Microsoft Graph · Azure Functions · Azure API Management · Power
@@ -179,15 +181,19 @@ boundary stubbed behind interfaces; ✅ CI/CD on App Service (GitHub Actions: li
 typecheck, build, docs check). Hosting landed on **Azure App Service** (ADR-0006),
 not Static Web Apps.
 
-**Next phase — wire the live integrations** (the deliberately-deferred work). This
-phase lives in a **separate backend repo** (`ImperionCRM_Backend`): Azure Functions on
-the **same App Service Plan**, **network-isolated** so only this front-end App Service
-can call it (private VNet + managed-identity auth), reached server-side via
-`src/lib/services/external-client.ts`. The boundary is **ADR-0028**; the backend's brief
-is its own `CLAUDE.md` (mirrors what's built here + the full task list). A third repo,
-`ImperionCRM_Pipeline`, owns ingestion/enrichment (bronze→silver→gold + GDAP). **This repo
-remains the single source of truth for the database schema/migrations** — the backend
-is a consumer; propose schema changes here.
+**Next phase — wire the live integrations** (the deliberately-deferred work). This is a
+**four-repo system** with a settled division of labor (2026-06-09, ADR-0042): **this
+front end = strictly GUI** (direct DB *reads* for rendering are fine; every *process*
+calls the backend) · **`ImperionCRM_Backend` = all processes** (Azure Functions on the
+same App Service Plan, **identity-gated** — Easy Auth + caller allowlist, backend
+ADR-0035; private networking deferred for cost — reached server-side via
+`src/lib/services/external-client.ts`; boundary = ADR-0028) · **`ImperionCRM_Pipeline` =
+live data** (webhooks, bronze→silver merge, on-demand refresh — pipeline ADR-0011) ·
+**`ImperionCRM_LocalPipelineEnrichment` = heavy lifting** (on-prem PowerShell: scheduled
+bulk ingestion, IT Glue hub, ALL vectorization). The shared security baseline is
+[docs/security/unified-security-standard.md](docs/security/unified-security-standard.md).
+**This repo remains the single source of truth for the database schema/migrations** —
+the siblings are consumers; propose schema changes here.
 1. Live OAuth flows + Key Vault token storage for per-user connections, then the
    ingestion engines (Graph email/Teams, YouTube, LinkedIn, Facebook, Plaud) writing
    into the `interaction` timeline and `contact_enrichment` dossier.

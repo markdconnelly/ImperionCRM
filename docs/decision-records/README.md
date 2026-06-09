@@ -55,3 +55,6 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0038](./ADR-0038-per-connection-poll-cadence.md) | Per-connection poll cadence | Accepted |
 | [0039](./ADR-0039-per-source-bronze-tables.md) | Per-source physical bronze tables + device entity | Accepted |
 | [0040](./ADR-0040-darkwebid-televy-ingestion.md) | Dark Web ID + Televy ingestion (credential_exposure) | Accepted |
+| [0041](./ADR-0041-gold-knowledge-vector-store.md) | Gold knowledge layer + pinned Voyage/1024 vector store | Accepted |
+| [0042](./ADR-0042-division-of-labor-reads-direct-processes-backend.md) | Division of labor: direct reads OK, every process in the backend | Accepted |
+| [0043](./ADR-0043-settled-ai-stack-drop-legacy-vectors.md) | Settled AI stack (Claude + Voyage); drop legacy 1536-dim vector tables | Accepted |
