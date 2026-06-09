@@ -223,6 +223,12 @@ export interface CrmRepository {
 
   /** Per-source bronze rows that fed this company's unified record (ADR-0032). */
   listAccountSources(accountId: string): Promise<AccountSourceRow[]>;
+
+  /**
+   * Related local-pipeline bronze for this account (Autotask contracts/tickets, IT Glue
+   * documentation) — citations for drill-down troubleshooting (migration 0038).
+   */
+  listAccountRelatedBronze(accountId: string): Promise<AccountSourceRow[]>;
 }
 
 export interface AgentRepository {
