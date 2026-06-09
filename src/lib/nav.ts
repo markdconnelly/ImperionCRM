@@ -5,10 +5,11 @@ import type { NavItem } from "@/types";
  * sidebar renders these as links and the top bar derives the page title from the
  * active route. Icons are lucide-react names resolved by <Icon />.
  */
-// Top group: the two cross-cutting overviews — the dashboard and the pipeline.
+// Top group: the cross-cutting overviews — dashboard, pipeline, and reporting.
 export const navPrimary: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/" },
   { key: "pipeline", label: "Pipeline", icon: "GitBranch", href: "/pipeline" },
+  { key: "reporting", label: "Reporting", icon: "BarChart3", href: "/reporting" },
 ];
 
 // Main work group (below the divider): the customer journey — Accounts, the
@@ -27,8 +28,8 @@ export const navSecondary: NavItem[] = [
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
+  { key: "contracts", label: "Contracts", icon: "FileSignature", href: "/contracts" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
-  { key: "reporting", label: "Reporting", icon: "BarChart3", href: "/reporting" },
 ];
 
 // System group (bottom): the AI surfaces and Settings.
