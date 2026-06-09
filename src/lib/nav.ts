@@ -25,10 +25,10 @@ export const navSecondary: NavItem[] = [
   { key: "discovery", label: "Discovery", icon: "ClipboardList", href: "/discovery" },
   { key: "assessments", label: "Assessments", icon: "ShieldAlert", href: "/assessments" },
   { key: "proposals", label: "Proposals", icon: "FileText", href: "/proposals" },
+  { key: "contracts", label: "Contracts", icon: "FileSignature", href: "/contracts" },
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
-  { key: "contracts", label: "Contracts", icon: "FileSignature", href: "/contracts" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
 ];
 
