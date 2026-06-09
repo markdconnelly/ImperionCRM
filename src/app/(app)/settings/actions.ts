@@ -8,8 +8,9 @@ import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
-import { credentialsService } from "@/lib/services";
+import { credentialsService, pipelineService } from "@/lib/services";
 import { ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
 
 // Default OAuth scopes for personal connects (mirrors the former /integrations).
 const DEFAULT_SCOPES: Record<string, string[]> = {
@@ -62,6 +63,30 @@ export async function setPollIntervalAction(formData: FormData) {
   if (!id || !Number.isFinite(minutes) || minutes < 0) return;
   const { connections } = getRepositories();
   await connections.setPollInterval(id, Math.floor(minutes));
+  revalidatePath("/settings");
+}
+
+/**
+ * Trigger a targeted live sync of one source via the cloud pipeline's on-demand
+ * endpoint (pipeline ADR-0011). The explicit click bypasses the poll cadence; the
+ * write path is idempotent, so this can never duplicate a scheduled on-prem load.
+ * Degrades silently when PIPELINE_SERVICE_URL is unset (button does nothing useful
+ * yet) and records an error status on any other failure so the card surfaces it.
+ */
+export async function refreshNowAction(formData: FormData) {
+  const providerKey = String(formData.get("provider") ?? "");
+  const source = REFRESH_SOURCES[providerKey];
+  if (!source) return;
+
+  try {
+    await pipelineService.refresh({ source });
+  } catch (err) {
+    // Unconfigured pipeline URL → quiet no-op; the pipeline records run health on the
+    // connection row itself (sync_cursor/status), so other failures surface there.
+    if (!(err instanceof ServiceNotConfiguredError)) {
+      console.error(`refreshNowAction(${source}) failed:`, err);
+    }
+  }
   revalidatePath("/settings");
 }
 

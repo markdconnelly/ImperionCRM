@@ -26,6 +26,8 @@ export function CompanyCredentialCard({
   gdapAction,
   disconnectAction,
   pollAction,
+  refreshAction,
+  refreshable = false,
 }: {
   provider: CompanyProvider;
   connection: ConnectionRow | null;
@@ -33,6 +35,9 @@ export function CompanyCredentialCard({
   gdapAction: (formData: FormData) => void | Promise<void>;
   disconnectAction: (formData: FormData) => void | Promise<void>;
   pollAction: (formData: FormData) => void | Promise<void>;
+  /** On-demand pipeline sync (pipeline ADR-0011); only rendered when `refreshable`. */
+  refreshAction?: (formData: FormData) => void | Promise<void>;
+  refreshable?: boolean;
 }) {
   const configured = connection != null;
   const [open, setOpen] = useState(!configured);
@@ -77,6 +82,20 @@ export function CompanyCredentialCard({
           value={connection.pollIntervalMinutes}
           action={pollAction}
         />
+      )}
+
+      {configured && refreshable && refreshAction && (
+        <form action={refreshAction}>
+          <input type="hidden" name="provider" value={provider.key} />
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:border-accent hover:text-text"
+            title="Pull fresh data from this source now (bypasses the poll cadence)"
+          >
+            <Icon name="RefreshCw" size={14} />
+            Refresh now
+          </button>
+        </form>
       )}
 
       {/* GDAP — admin-consent flow, no secret fields */}
