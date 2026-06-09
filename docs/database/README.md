@@ -34,9 +34,11 @@ flowchart LR
 ## Migrations
 
 Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in order with an
-Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0033**
-applied in prod (verified 2026-06-08); **0034** (onboarding playbook, ADR-0037) is the
-latest committed migration. The company-credentials migration is **0033** — see the
+Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0043**
+applied in prod. Recent: 0035 poll cadence (ADR-0038); 0036/0037 per-source bronze +
+`device` (ADR-0039); 0038–0041 on-prem local-pipeline bronze + related-source citation
+views + question/template m2m + IT Glue cleanup; 0042/0043 Dark Web ID + Televy ingestion
+(ADR-0040). The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
 status, and a per-company-provider unique index (ADR-0036).

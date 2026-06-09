@@ -146,4 +146,17 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
       { name: "apiKey", label: "API key", secret: true, type: "password", required: true },
     ],
   },
+  {
+    key: "darkwebid",
+    label: "Dark Web ID",
+    icon: "ShieldAlert",
+    kind: "credential",
+    description:
+      "Kaseya / ID Agent Dark Web ID — dark-web monitoring for compromised credentials tied to " +
+      "your clients' domains. Exposures land as credential-exposure records (ADR-0040).",
+    scopes: ["compromises:read"],
+    fields: [
+      { name: "apiKey", label: "API key", secret: true, type: "password", required: true },
+    ],
+  },
 ];

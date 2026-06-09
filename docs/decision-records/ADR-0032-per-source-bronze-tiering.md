@@ -1,7 +1,11 @@
 # ADR-0032: Per-source bronze tables for contacts and companies
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0039](./ADR-0039-per-source-bronze-tables.md)
 - **Date:** 2026-06-08
+
+> **Superseded:** the single enum-discriminated `contact_source`/`account_source` described here
+> were replaced by one physical bronze table per (source, entity) + a `device` entity in ADR-0039
+> (migrations 0036/0037).
 
 ## Problem
 A contact or company is assembled from several source systems (Imperion CRM-entered
