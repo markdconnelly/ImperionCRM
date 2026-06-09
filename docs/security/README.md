@@ -10,6 +10,7 @@ insider threat ("Mythos Proof").
 
 | Doc | What it covers |
 | --- | --- |
+| [unified-security-standard](unified-security-standard.md) | **The system-wide standard (mirrored in all four repos):** identity is the perimeter — per-app managed identities, Entra-only Postgres, RBAC-only Key Vault, no private networking (deferred), consent + audit invariants. |
 | [identity-and-authentication](identity-and-authentication.md) | Entra ID as the sole IdP, certificate client auth, the middleware sign-in gate, and break-glass access. |
 
 ## Defense in depth

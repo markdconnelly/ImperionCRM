@@ -124,9 +124,9 @@ external functions for heavy/integration work.
 - **Identity:** Microsoft **Entra ID** is the sole identity provider (certificate
   client auth). Personal-account *data* connections (M365/LinkedIn/YouTube/…) are
   OAuth links whose tokens live only in **Azure Key Vault** — never in the database.
-- **AI:** a provider-agnostic model-routing layer (OpenAI / Azure OpenAI / Claude)
-  behind a **single orchestrator agent**; many specialized sub-agents exist
-  internally but the user only ever talks to one.
+- **AI:** the settled stack — **Claude** for generation, **Voyage** for embeddings
+  (ADR-0043 / backend ADR-0034) — behind a **single orchestrator agent**; many
+  specialized sub-agents exist internally but the user only ever talks to one.
 - **Principles:** UX first · single agent experience · Microsoft for identity ·
   open web over Power Platform · security as a product feature.
 

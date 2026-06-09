@@ -978,11 +978,17 @@ a stored field.
 
 ## Vector data (pgvector)
 
-Embeddings live in `interaction_embedding`, `enrichment`, and `agent_memory`. Each
-row records the embedding `model` so retrieval can filter by model and the corpus
-can be re-embedded on model change. Retrieval is gold-only — agents query summaries
-+ embeddings, never raw bronze. Chunking/retention policy: see open items in the
-[requirements](../architecture/product-requirements.md).
+**One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
+`knowledge_object` (the agent-consumable text per entity) + `knowledge_embedding`
+(`vector(1024)`, Voyage `voyage-3-large`, chunking `v1`), migration 0045. Every row
+records `embedding_model` + `dimension` + `chunking_version` + `content_hash`, so a
+model/chunking change is a *versioned re-embed* and unchanged text is never re-billed.
+The **on-prem local pipeline is the sole producer**; the backend embeds only queries
+and reads by cosine distance, filtered to the pinned contract. Retrieval is gold-only —
+agents query summaries + embeddings, never raw bronze.
+
+The legacy 1536-dim `interaction_embedding` / `contact_embedding` tables (migrations
+0001/0021) were never populated and are **dropped by migration 0046** (ADR-0043).
 
 ## Build phases
 

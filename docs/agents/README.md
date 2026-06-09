@@ -23,8 +23,9 @@ flowchart TD
 ```
 
 The orchestrator routes requests, selects tools, invokes sub-agents, manages context
-and memory, **enforces permissions**, and returns one response. The AI layer is
-**provider-agnostic** (OpenAI / Azure OpenAI / Claude behind a model-routing layer).
+and memory, **enforces permissions**, and returns one response. The AI stack is
+**settled** (ADR-0043 / backend ADR-0034): **Claude** for generation (Haiku cheap tier,
+Sonnet premium tier) + **Voyage `voyage-3-large` @ 1024** for embeddings.
 
 ## What belongs here
 

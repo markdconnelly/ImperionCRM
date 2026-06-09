@@ -104,9 +104,9 @@ export default async function SettingsPage({
 
       <Card title="Platform">
         <p className="text-sm text-dim">
-          AI features run on a provider-agnostic model-routing layer (OpenAI / Azure
-          OpenAI / Claude). Endpoint and routing configuration is managed in App Service
-          settings, not here.
+          AI features run on Claude (generation) and Voyage (embeddings) via the
+          backend&apos;s model router. Keys live in Key Vault; configuration is managed
+          in App Service settings, not here.
         </p>
         <a
           href="https://github.com/markdconnelly/ImperionCRM/tree/main/docs"
