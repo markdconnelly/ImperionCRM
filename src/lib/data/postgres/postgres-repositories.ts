@@ -102,6 +102,7 @@ import type {
   TaskCategory,
   TaskRow,
   TicketRow,
+  ContractRow,
   WorkflowDetail,
   WorkflowRow,
 } from "@/types";
@@ -1645,11 +1646,12 @@ export const postgresRepositories: Repositories = {
         );
         templateId = created[0].id;
       }
-      await pool.query(
+      const { rows: ins } = await pool.query<{ id: string }>(
         `INSERT INTO question
            (template_id, key, prompt, help_text, response_type, options, dimension,
             ordinal, required, active)
-         VALUES ($1, $2, $3, $4, $5::question_response_type, $6::jsonb, $7, $8, $9, $10)`,
+         VALUES ($1, $2, $3, $4, $5::question_response_type, $6::jsonb, $7, $8, $9, $10)
+         RETURNING id`,
         [
           templateId,
           input.key,
@@ -1662,6 +1664,12 @@ export const postgresRepositories: Repositories = {
           input.required,
           input.active,
         ],
+      );
+      // Mirror the home-template membership into the many-to-many (0040).
+      await pool.query(
+        `INSERT INTO question_template_question (template_id, question_id, ordinal, required)
+         VALUES ($1, $2, $3, $4) ON CONFLICT (template_id, question_id) DO NOTHING`,
+        [templateId, ins[0].id, input.ordinal, input.required],
       );
     },
 
@@ -2237,6 +2245,93 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.engagements.listTickets();
+      }
+    },
+
+    async listContracts(): Promise<ContractRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listContracts();
+      try {
+        const { rows } = await pool.query<{
+          id: string; account: string | null; name: string | null; number: string | null;
+          status: string | null; contract_type: string | null; start_date: string | null; end_date: string | null;
+        }>(
+          `SELECT c.external_id AS id, a.name AS account, c.contract_name AS name, c.contract_number AS number,
+                  c.status, c.contract_type, c.start_date, c.end_date
+             FROM autotask_contracts c
+             LEFT JOIN autotask_companies ac ON ac.external_ref = c.company_id
+             LEFT JOIN account a ON a.id = ac.account_id
+            ORDER BY c.contract_name NULLS LAST`,
+        );
+        return rows.map((r) => ({
+          id: r.id, account: r.account, name: r.name, number: r.number,
+          status: r.status, contractType: r.contract_type, startDate: r.start_date, endDate: r.end_date,
+        }));
+      } catch {
+        return mockRepositories.engagements.listContracts();
+      }
+    },
+
+    async listTemplates(): Promise<QuestionTemplateRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listTemplates();
+      try {
+        const { rows } = await pool.query<{ id: string; kind: string; version: number; title: string }>(
+          `SELECT id, kind, version, title FROM question_template ORDER BY kind, version DESC`,
+        );
+        return rows.map((r) => ({ id: r.id, kind: r.kind, version: r.version, title: r.title }));
+      } catch {
+        return mockRepositories.engagements.listTemplates();
+      }
+    },
+
+    async createTemplate(kind: string, title: string): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.createTemplate(kind, title);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO question_template (kind, version, title)
+         VALUES ($1::engagement_kind, COALESCE((SELECT max(version) FROM question_template WHERE kind = $1::engagement_kind), 0) + 1, $2)
+         RETURNING id`,
+        [kind, title],
+      );
+      return rows[0].id;
+    },
+
+    async getQuestionTemplateIds(questionId: string): Promise<string[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.getQuestionTemplateIds(questionId);
+      try {
+        const { rows } = await pool.query<{ template_id: string }>(
+          `SELECT template_id FROM question_template_question WHERE question_id = $1`,
+          [questionId],
+        );
+        return rows.map((r) => r.template_id);
+      } catch {
+        return mockRepositories.engagements.getQuestionTemplateIds(questionId);
+      }
+    },
+
+    async setQuestionTemplates(questionId: string, templateIds: string[]): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.setQuestionTemplates(questionId, templateIds);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(`DELETE FROM question_template_question WHERE question_id = $1`, [questionId]);
+        for (const tid of templateIds) {
+          await client.query(
+            `INSERT INTO question_template_question (template_id, question_id, ordinal, required)
+             SELECT $1, $2, q.ordinal, q.required FROM question q WHERE q.id = $2
+             ON CONFLICT (template_id, question_id) DO NOTHING`,
+            [tid, questionId],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
       }
     },
   },

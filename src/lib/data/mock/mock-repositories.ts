@@ -311,6 +311,21 @@ export const mockRepositories: Repositories = {
     async listTickets() {
       return [];
     },
+    async listContracts() {
+      return [];
+    },
+    async listTemplates() {
+      return [];
+    },
+    async createTemplate() {
+      throw new Error(NO_DB);
+    },
+    async getQuestionTemplateIds() {
+      return [];
+    },
+    async setQuestionTemplates() {
+      throw new Error(NO_DB);
+    },
     async spawnOpportunity() {
       throw new Error(NO_DB);
     },

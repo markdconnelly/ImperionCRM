@@ -332,6 +332,18 @@ export interface TicketRow {
   opened: string | null;
 }
 
+/** A contract row from Autotask bronze, joined to its account (migration 0038 / 0040). */
+export interface ContractRow {
+  id: string;
+  account: string | null;
+  name: string | null;
+  number: string | null;
+  status: string | null;
+  contractType: string | null;
+  startDate: string | null;
+  endDate: string | null;
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;

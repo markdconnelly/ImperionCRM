@@ -11,14 +11,25 @@ export default async function EditQuestionPage({
 }) {
   const { id } = await params;
   const { engagements } = getRepositories();
-  const question = await engagements.getQuestion(id);
+  const [question, templates, selectedTemplateIds] = await Promise.all([
+    engagements.getQuestion(id),
+    engagements.listTemplates(),
+    engagements.getQuestionTemplateIds(id),
+  ]);
   if (!question) notFound();
 
-  // Editing an existing question doesn't change its template kind.
+  // Editing an existing question doesn't change its home template kind, but it can be
+  // attached to multiple assessment templates (many-to-many, migration 0040).
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="Edit question" description={question.prompt} />
-      <QuestionAdminForm action={updateQuestionAction} kind="" question={question} />
+      <QuestionAdminForm
+        action={updateQuestionAction}
+        kind=""
+        question={question}
+        templates={templates}
+        selectedTemplateIds={selectedTemplateIds}
+      />
     </div>
   );
 }

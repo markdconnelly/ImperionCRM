@@ -58,6 +58,7 @@ import type {
   StageValueDatum,
   TaskRow,
   TicketRow,
+  ContractRow,
   WorkflowDetail,
   WorkflowRow,
 } from "@/types";
@@ -348,6 +349,16 @@ export interface EngagementsRepository {
   createQuestion(kind: string, input: QuestionInput): Promise<void>;
   updateQuestion(id: string, input: QuestionInput): Promise<void>;
 
+  // Assessment templates (migration 0040 — a question can belong to many templates)
+  /** All question/assessment templates. */
+  listTemplates(): Promise<QuestionTemplateRow[]>;
+  /** Create a new assessment template for a kind (next version); returns its id. */
+  createTemplate(kind: string, title: string): Promise<string>;
+  /** Template ids a question currently belongs to (the many-to-many). */
+  getQuestionTemplateIds(questionId: string): Promise<string[]>;
+  /** Replace the set of templates a question belongs to. */
+  setQuestionTemplates(questionId: string, templateIds: string[]): Promise<void>;
+
   // Discovery calls
   listDiscoveryCalls(): Promise<DiscoveryCallRow[]>;
   getDiscoveryCall(id: string): Promise<DiscoveryCallDetail | null>;
@@ -381,6 +392,9 @@ export interface EngagementsRepository {
   // Read-only feeds
   listAssessmentArtifacts(assessmentId: string): Promise<ArtifactRow[]>;
   listTickets(): Promise<TicketRow[]>;
+
+  /** Contracts from Autotask bronze, joined to their account (migrations 0038/0040). */
+  listContracts(): Promise<ContractRow[]>;
 
   // Provenance: spawn downstream records that point back to the engagement
   spawnOpportunity(input: SpawnOpportunityInput): Promise<void>;

@@ -42,6 +42,22 @@ export async function updateQuestionAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const { engagements } = getRepositories();
   await engagements.updateQuestion(id, parse(formData));
+  // Update the many-to-many template membership (migration 0040). Only the edit form posts
+  // a `templates` marker, so we never clear memberships from forms that don't manage them.
+  if (formData.get("templates") === "1") {
+    const templateIds = formData.getAll("templateIds").map((v) => String(v));
+    await engagements.setQuestionTemplates(id, templateIds);
+  }
+  revalidatePath("/questions");
+  redirect("/questions");
+}
+
+export async function createTemplateAction(formData: FormData) {
+  const kind = str(formData, "kind") || "assessment";
+  const title = str(formData, "title");
+  if (title === "") redirect("/questions");
+  const { engagements } = getRepositories();
+  await engagements.createTemplate(kind, title);
   revalidatePath("/questions");
   redirect("/questions");
 }

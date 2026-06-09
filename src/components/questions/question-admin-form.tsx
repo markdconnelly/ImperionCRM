@@ -1,5 +1,6 @@
 import { Field, TextInput, TextArea, Select, FormActions } from "@/components/ui/form";
 import type { QuestionEditable } from "@/lib/data/repositories";
+import type { QuestionTemplateRow } from "@/types";
 
 const RESPONSE_TYPES = [
   "text",
@@ -17,11 +18,17 @@ export function QuestionAdminForm({
   action,
   kind,
   question,
+  templates,
+  selectedTemplateIds,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   kind: string;
   question?: QuestionEditable | null;
+  /** When provided (edit), shows the assessment-template membership selector (many-to-many, migration 0040). */
+  templates?: QuestionTemplateRow[];
+  selectedTemplateIds?: string[];
 }) {
+  const selected = new Set(selectedTemplateIds ?? []);
   return (
     <form
       action={action}
@@ -100,6 +107,28 @@ export function QuestionAdminForm({
           <span>Active</span>
         </label>
       </div>
+
+      {templates && templates.length > 0 && (
+        <Field label="Assessments this question appears on">
+          <input type="hidden" name="templates" value="1" />
+          <div className="flex flex-col gap-1.5 rounded-md border border-border bg-panel-2 p-3">
+            {templates.map((t) => (
+              <label key={t.id} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="templateIds"
+                  value={t.id}
+                  defaultChecked={selected.has(t.id)}
+                  className="h-4 w-4 rounded border-border bg-panel accent-accent"
+                />
+                <span>
+                  {t.title} <span className="text-xs text-dim">({t.kind} v{t.version})</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </Field>
+      )}
 
       <FormActions cancelHref="/questions" />
     </form>
