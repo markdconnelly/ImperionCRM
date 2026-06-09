@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { navPrimary, navSecondary, isActivePath } from "@/lib/nav";
+import { navPrimary, navSecondary, navTertiary, isActivePath } from "@/lib/nav";
 import { canSeeFeature } from "@/lib/auth/roles";
 import { signOutAction } from "@/lib/auth/actions";
 import { Icon } from "@/components/ui/icon";
@@ -62,6 +62,7 @@ export function Sidebar({
   // Role-gated nav: non-admins lose Settings + Security (canSeeFeature).
   const primary = navPrimary.filter((item) => canSeeFeature(item.key, user.roles));
   const secondary = navSecondary.filter((item) => canSeeFeature(item.key, user.roles));
+  const tertiary = navTertiary.filter((item) => canSeeFeature(item.key, user.roles));
 
   return (
     <aside
@@ -97,6 +98,15 @@ export function Sidebar({
         ))}
         <div className="my-2 border-t border-border" />
         {secondary.map((item) => (
+          <NavRow
+            key={item.key}
+            item={item}
+            collapsed={collapsed}
+            active={isActivePath(item.href, pathname)}
+          />
+        ))}
+        {tertiary.length > 0 && <div className="my-2 border-t border-border" />}
+        {tertiary.map((item) => (
           <NavRow
             key={item.key}
             item={item}
