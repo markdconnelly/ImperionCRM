@@ -12,10 +12,12 @@ const SOURCE_LABEL: Record<string, string> = {
   m365_synced: "Microsoft 365",
   autotask: "Autotask",
   itglue: "IT Glue",
-  // Related local-pipeline bronze citations (migration 0038)
+  // Related local-pipeline bronze citations (migrations 0038/0039)
   autotask_contract: "Autotask contract",
   autotask_ticket: "Autotask ticket",
   itglue_doc: "IT Glue documentation",
+  itglue_contact: "IT Glue contact",
+  itglue_config: "IT Glue configuration",
 };
 
 function label(source: string): string {

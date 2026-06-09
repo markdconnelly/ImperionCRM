@@ -41,17 +41,27 @@ export default async function ContactDetailPage({
   const profile = await contacts.getProfile(id);
   if (!profile) notFound();
 
-  const [enrichment, social, sources, currentConsent, timeline, actions, canEmail, canSms] =
-    await Promise.all([
-      contacts.listEnrichment(id),
-      contacts.listSocialIdentities(id),
-      contacts.listContactSources(id),
-      consent.currentConsent(id),
-      comms.listInteractionsByContact(id),
-      comms.listActionItems(id),
-      consent.canSend(id, "email"),
-      consent.canSend(id, "sms"),
-    ]);
+  const [
+    enrichment,
+    social,
+    sources,
+    currentConsent,
+    timeline,
+    actions,
+    canEmail,
+    canSms,
+    relatedBronze,
+  ] = await Promise.all([
+    contacts.listEnrichment(id),
+    contacts.listSocialIdentities(id),
+    contacts.listContactSources(id),
+    consent.currentConsent(id),
+    comms.listInteractionsByContact(id),
+    comms.listActionItems(id),
+    consent.canSend(id, "email"),
+    consent.canSend(id, "sms"),
+    contacts.listContactRelatedBronze(id),
+  ]);
 
   const back = `/contacts/${id}`;
 
@@ -140,6 +150,12 @@ export default async function ContactDetailPage({
           <Section title="Data sources">
             <SourceRecords sources={sources} />
           </Section>
+
+          {relatedBronze.length > 0 && (
+            <Section title="Related source data">
+              <SourceRecords sources={relatedBronze} />
+            </Section>
+          )}
 
           <Section title="Consent">
             <ConsentPanel current={currentConsent} contactId={id} action={setConsentAction} />

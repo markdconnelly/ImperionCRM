@@ -483,6 +483,12 @@ export interface ContactsRepository {
   addEnrichment(input: EnrichmentInput): Promise<void>;
   /** Per-source bronze rows that fed this contact's unified record (ADR-0032). */
   listContactSources(contactId: string): Promise<ContactSourceRow[]>;
+
+  /**
+   * Related local-pipeline bronze for this contact (Autotask tickets, IT Glue contact doc) —
+   * citations for drill-down troubleshooting (migration 0039).
+   */
+  listContactRelatedBronze(contactId: string): Promise<ContactSourceRow[]>;
 }
 
 // ── Consent (ADR-0014) ───────────────────────────────────────────────────────
