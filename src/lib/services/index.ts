@@ -14,6 +14,7 @@
  */
 import "server-only";
 import { callService, type ServiceDescriptor } from "@/lib/services/external-client";
+import type { RefreshSource } from "@/lib/integrations/pipeline-refresh";
 
 // Services hosted on the network-isolated backend (ADR-0028) sit behind Easy Auth and
 // declare `audienceEnv` so callService attaches a managed-identity bearer token. The
@@ -217,7 +218,7 @@ export const boardService = {
  * path, so a refresh can never duplicate a scheduled load.
  */
 export const pipelineService = {
-  refresh: (input: { source: "autotask" | "itglue" | "apollo" | "darkwebid" | "televy" | "m365" }) =>
+  refresh: (input: { source: RefreshSource }) =>
     callService<{ source: string; ran: boolean; reason?: string; counts?: Record<string, number> }>(
       services.pipeline,
       "/refresh",

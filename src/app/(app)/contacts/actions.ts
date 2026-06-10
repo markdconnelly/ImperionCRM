@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
+import { requestMergeRefresh } from "@/lib/integrations/merge-refresh";
 import type { ContactInput } from "@/lib/data/repositories";
 
 function orNull(v: FormDataEntryValue | null): string | null {
@@ -28,6 +29,7 @@ export async function createContactAction(formData: FormData) {
   await requireCapability("crm:write");
   const { contacts } = getRepositories();
   const id = await contacts.createContact(parse(formData));
+  await requestMergeRefresh(); // never throws — surface the merged record now, not on the 5-min sweep (#89)
   revalidatePath("/contacts");
   redirect(`/contacts/${id}`);
 }
@@ -37,6 +39,7 @@ export async function updateContactAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const { contacts } = getRepositories();
   await contacts.updateContact(id, parse(formData));
+  await requestMergeRefresh(); // never throws (#89)
   revalidatePath("/contacts");
   revalidatePath(`/contacts/${id}`);
   redirect(`/contacts/${id}`);
