@@ -38,7 +38,8 @@ from this template and link it back here.
 > every turn audited to `audit_log` as `agent.turn` with cost metering). Registered
 > today: **Reporting** (read-only snapshot Q&A) and **Sales/Outreach** (approval-gated,
 > consent-checked drafts), plus the `search_knowledge` tool over the gold store.
-> The Board page is still a placeholder.
+> The **Board runtime is live too** (backend ADR-0039) and the `/board` page is real
+> (below).
 
 ## The AI Agents page (ADR-0048)
 
@@ -56,7 +57,35 @@ from this template and link it back here.
 - **Recent agent activity** — the last 20 `agent.turn` audit rows (time, actor,
   routed-to, routing reason, model turns, cost).
 
+## The Board of Directors page (ADR-0049, backend ADR-0039)
+
+`/board` is the AI Board of Directors — persona agents (`agent` rows with
+`module='board'`; seeded CEO/CFO/COO/CMO/CISO, migration 0056) that deliberate a
+convened topic in two rounds, after which a synthesis voice composes ONE board
+recommendation. Personas read granted business context only and are **walled off
+from CRM operational writes** (ADR-0049).
+
+- **Convene card** — topic (≤2000 chars), optional context (≤8000), persona
+  checkbox chips (default: the full board, max 5). Submitting calls the backend
+  `POST /board/sessions` (the deliberation is synchronous, ~30–90s; the UI shows a
+  "deliberating" pending state). Guarded by `sales:write` (ADR-0045 — convening is
+  a business-development action that spends premium model budget; admins always
+  may). Budget reached → a "board is paused" notice (backend ADR-0037's shared
+  monthly ceiling); model unavailable → a persisted failed session, never a crash.
+- **Sessions list + `/board/[id]` detail** — direct DB reads of the `board_*`
+  tables (web identity has SELECT, migration 0056 / ADR-0042): members, the
+  transcript grouped into rounds (the NULL-agent message is the synthesis voice),
+  and the recommendation card (stances / agreements / disagreements parsed
+  defensively from the rationale jsonb).
+- **Degradation** — backend unset: convening disabled with a notice, lists still
+  render from the DB; DB unset: personas fall back to `GET /board/agents`, lists
+  to sample data. The page never throws.
+
+The full agent record (workflow diagram, failure table, cost bounds) lives in the
+backend repo: `ImperionCRM_Backend/docs/agents/board.md`.
+
 Governing decisions:
 [ADR-0004 single orchestrator](../decision-records/ADR-0004-single-orchestrator-agent-model.md) ·
 [ADR-0015 agent platform & board](../decision-records/ADR-0015-agent-platform-and-board.md) ·
-[ADR-0048 AI Agents operations page](../decision-records/ADR-0048-ai-agents-operations-page.md)
+[ADR-0048 AI Agents operations page](../decision-records/ADR-0048-ai-agents-operations-page.md) ·
+[ADR-0049 board runtime persistence](../decision-records/ADR-0049-board-runtime-persistence.md)

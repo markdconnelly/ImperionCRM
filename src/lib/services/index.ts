@@ -33,7 +33,13 @@ const services = {
   enrichment: { name: "Lead enrichment", baseUrlEnv: "ENRICHMENT_SERVICE_URL" },
   comms: { name: "Communications", baseUrlEnv: "COMMS_SERVICE_URL" },
   campaign: { name: "Ad campaigns", baseUrlEnv: "CAMPAIGN_SERVICE_URL" },
-  board: { name: "AI Board of Directors", baseUrlEnv: "BOARD_SERVICE_URL" },
+  board: {
+    name: "AI Board of Directors",
+    // The board runtime lives on the same backend Function App as the orchestrator
+    // (backend ADR-0039), so it shares the agent base URL + Easy Auth audience.
+    baseUrlEnv: "AGENT_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
+  },
   credentials: {
     name: "Credential store",
     baseUrlEnv: "INTEGRATION_SERVICE_URL",
@@ -128,10 +134,79 @@ export const campaignService = {
     callService(services.campaign, "/metrics", { method: "POST", body: JSON.stringify(input) }),
 };
 
-/** AI Board of Directors sessions (ADR-0015). */
+/** Model-call usage rollup the board endpoints return (backend ADR-0032 metering). */
+export interface BoardUsage {
+  modelCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
+/**
+ * POST /board/sessions outcome (backend ADR-0039). ALWAYS 200 past validation:
+ * 'paused' = the monthly budget ceiling is reached and NO session was started
+ * (sessionId null); 'failed' sessions are persisted with an explanatory message.
+ */
+export interface BoardConveneWire {
+  sessionId: string | null;
+  status: "concluded" | "failed" | "paused";
+  message: string;
+  recommendation: string | null;
+  usage: BoardUsage;
+}
+
+/** GET /board/sessions/{id} wire shape (backend ADR-0039). */
+export interface BoardSessionWire {
+  session: {
+    id: string;
+    topic: string;
+    status: string;
+    openedBy: string;
+    createdAt: string;
+    concludedAt: string | null;
+  };
+  members: Array<{ agentId: string; name: string; personaRole: string | null }>;
+  /** `agentId === null` is the orchestrator/synthesis voice (0056 transcript contract). */
+  messages: Array<{
+    id: string;
+    agentId: string | null;
+    name: string | null;
+    personaRole: string | null;
+    content: string;
+    createdAt: string;
+  }>;
+  recommendation: { recommendation: string; rationale: unknown; createdAt: string } | null;
+}
+
+/**
+ * AI Board of Directors (ADR-0015/0049, backend ADR-0039). Convene runs the FULL
+ * two-round deliberation + synthesis synchronously (≤11 premium model calls), so
+ * it can take 30–90s — the timeout matches the orchestrator's 120s allowance.
+ */
 export const boardService = {
-  openSession: (input: { topic: string; memberIds: string[] }) =>
-    callService(services.board, "/session", { method: "POST", body: JSON.stringify(input) }),
+  /** Convene + run one deliberation for the acting employee (`app_user.id`). */
+  convene: (input: {
+    topic: string;
+    actingUserId: string;
+    personaAgentIds?: string[];
+    context?: string;
+  }) =>
+    callService<BoardConveneWire>(services.board, "/board/sessions", {
+      method: "POST",
+      body: JSON.stringify(input),
+      timeoutMs: 120_000, // a full deliberation is many sequential model calls
+    }),
+
+  /** One session with members + transcript + recommendation. */
+  getSession: (id: string) =>
+    callService<BoardSessionWire>(services.board, `/board/sessions/${encodeURIComponent(id)}`),
+
+  /** Active board personas for the convene picker. */
+  listAgents: () =>
+    callService<{ agents: Array<{ id: string; name: string; personaRole: string | null }> }>(
+      services.board,
+      "/board/agents",
+    ),
 };
 
 /**
