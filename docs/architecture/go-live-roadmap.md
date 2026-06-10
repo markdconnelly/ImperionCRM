@@ -55,9 +55,9 @@ bronze post writers, 9 gold composers, idempotent vectorization (ADR-0009).
   ScriptAnalyzer + Pester gate only). Scheduled Phase 4.
 - **No front-end observability:** no Application Insights wiring; errors stop at
   `console.error`. Scheduled Phase 4.
-- **Doc correction:** the readiness plan's "279 hermetic tests" for the local module —
-  the repo has **77 Pester test files**; re-count test *cases* and correct whichever
-  number is wrong on the next plan refresh.
+- **Test-count verified:** the readiness plan's "279 hermetic tests" for the local
+  module checks out — 279 test cases across 77 Pester files, re-run green (0 lint
+  findings, 0 failures) on 2026-06-10 as part of this review.
 
 ## The phases
 
