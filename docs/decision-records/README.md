@@ -60,3 +60,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0043](./ADR-0043-settled-ai-stack-drop-legacy-vectors.md) | Settled AI stack (Claude + Voyage); drop legacy 1536-dim vector tables | Accepted |
 | [0044](./ADR-0044-silver-contracts-tickets.md) | Silver contracts + tickets from Autotask bronze | Accepted |
 | [0045](./ADR-0045-server-action-authorization.md) | Server-action authorization (write capabilities) & fail-closed bootstrap | Accepted |
+| [0046](./ADR-0046-saved-list-views.md) | Ticket board filters & saved/shareable list views | Accepted |

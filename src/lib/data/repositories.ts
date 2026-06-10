@@ -404,7 +404,16 @@ export interface EngagementsRepository {
 
   // Read-only feeds
   listAssessmentArtifacts(assessmentId: string): Promise<ArtifactRow[]>;
-  listTickets(): Promise<TicketRow[]>;
+  listTickets(filter?: TicketFilter): Promise<TicketRow[]>;
+  /** Distinct status/priority values present in the data, for the filter selects. */
+  ticketFilterOptions(): Promise<TicketFilterOptions>;
+
+  // Saved list views (ADR-0046) — personal + company-shared filter sets.
+  listSavedViews(entityType: string, viewerEmail: string | null): Promise<SavedViewRow[]>;
+  /** Upserts by (owner, entity, name); making it default clears the previous default. */
+  createSavedView(input: SavedViewInput, ownerEmail: string): Promise<void>;
+  /** Owners delete their own views; admins may delete any (shared cleanup). */
+  deleteSavedView(id: string, ownerEmail: string | null, asAdmin: boolean): Promise<void>;
 
   /** Contracts from Autotask bronze, joined to their account (migrations 0038/0040). */
   listContracts(): Promise<ContractRow[]>;
@@ -413,6 +422,43 @@ export interface EngagementsRepository {
   spawnOpportunity(input: SpawnOpportunityInput): Promise<void>;
   spawnProject(input: SpawnProjectInput): Promise<void>;
   spawnTicket(input: SpawnTicketInput): Promise<void>;
+}
+
+// ── Ticket board filters + saved views (ADR-0046) ───────────────────────────
+
+/** Filters for the Tickets board. All optional; combined with AND. */
+export interface TicketFilter {
+  status?: string;
+  priority?: string;
+  accountId?: string;
+  /** Only tickets opened within the last N days. */
+  openedWithinDays?: number;
+}
+
+/** Distinct values present in the data, to populate the filter selects. */
+export interface TicketFilterOptions {
+  statuses: string[];
+  priorities: string[];
+}
+
+/** A saved list view: a named filter set, personal or company-shared. */
+export interface SavedViewRow {
+  id: string;
+  entityType: string; // 'ticket' first; tasks/devices later
+  name: string;
+  owner: string | null; // creator display name
+  isMine: boolean;
+  isShared: boolean;
+  isDefault: boolean;
+  filters: Record<string, string>;
+}
+
+export interface SavedViewInput {
+  entityType: string;
+  name: string;
+  isShared: boolean;
+  isDefault: boolean;
+  filters: Record<string, string>;
 }
 
 /** Read-only analytics for the Reporting page (aggregates over the spine). */

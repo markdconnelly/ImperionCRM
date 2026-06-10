@@ -39,6 +39,8 @@ import type {
   QuestionEditable,
   QuestionInput,
   Repositories,
+  SavedViewInput,
+  SavedViewRow,
   SbrInput,
   SbrScoreInput,
   SpawnOpportunityInput,
@@ -46,6 +48,8 @@ import type {
   SpawnTicketInput,
   TaskEditable,
   TaskInput,
+  TicketFilter,
+  TicketFilterOptions,
   WorkflowInput,
   WorkflowStepInput,
 } from "@/lib/data/repositories";
@@ -2230,10 +2234,30 @@ export const postgresRepositories: Repositories = {
       );
     },
 
-    async listTickets(): Promise<TicketRow[]> {
+    async listTickets(filter?: TicketFilter): Promise<TicketRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.engagements.listTickets();
       try {
+        // Compose the WHERE from the optional filters (ADR-0046). Parameterized
+        // throughout — filter values never reach the SQL text.
+        const where: string[] = [];
+        const params: unknown[] = [];
+        if (filter?.status) {
+          params.push(filter.status);
+          where.push(`t.status = $${params.length}`);
+        }
+        if (filter?.priority) {
+          params.push(filter.priority);
+          where.push(`t.priority = $${params.length}`);
+        }
+        if (filter?.accountId) {
+          params.push(filter.accountId);
+          where.push(`t.account_id = $${params.length}`);
+        }
+        if (filter?.openedWithinDays && Number.isFinite(filter.openedWithinDays)) {
+          params.push(Math.floor(filter.openedWithinDays));
+          where.push(`t.opened_at >= now() - make_interval(days => $${params.length}::int)`);
+        }
         const { rows } = await pool.query<{
           id: string;
           account: string;
@@ -2245,7 +2269,9 @@ export const postgresRepositories: Repositories = {
         }>(
           `SELECT t.id, a.name AS account, t.number, t.title, t.status, t.priority, t.opened_at
            FROM ticket t JOIN account a ON a.id = t.account_id
+           ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
            ORDER BY t.opened_at DESC NULLS LAST`,
+          params,
         );
         return rows.map((r) => ({
           id: r.id,
@@ -2259,6 +2285,114 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.engagements.listTickets();
       }
+    },
+
+    async ticketFilterOptions(): Promise<TicketFilterOptions> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.ticketFilterOptions();
+      try {
+        const [statuses, priorities] = await Promise.all([
+          pool.query<{ v: string }>(
+            `SELECT DISTINCT status AS v FROM ticket WHERE status IS NOT NULL ORDER BY 1`,
+          ),
+          pool.query<{ v: string }>(
+            `SELECT DISTINCT priority AS v FROM ticket WHERE priority IS NOT NULL ORDER BY 1`,
+          ),
+        ]);
+        return {
+          statuses: statuses.rows.map((r) => r.v),
+          priorities: priorities.rows.map((r) => r.v),
+        };
+      } catch {
+        return mockRepositories.engagements.ticketFilterOptions();
+      }
+    },
+
+    async listSavedViews(entityType: string, viewerEmail: string | null): Promise<SavedViewRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listSavedViews(entityType, viewerEmail);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          entity_type: string;
+          name: string;
+          owner: string | null;
+          is_mine: boolean;
+          is_shared: boolean;
+          is_default: boolean;
+          filters: Record<string, string> | null;
+        }>(
+          `SELECT v.id, v.entity_type, v.name, u.display_name AS owner,
+                  COALESCE(u.email = $2, false) AS is_mine,
+                  v.is_shared, v.is_default, v.filters
+           FROM saved_view v JOIN app_user u ON u.id = v.owner_user_id
+           WHERE v.entity_type = $1 AND (v.is_shared OR u.email = $2)
+           ORDER BY COALESCE(u.email = $2, false) DESC, v.name`,
+          [entityType, viewerEmail],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          entityType: r.entity_type,
+          name: r.name,
+          owner: r.owner,
+          isMine: r.is_mine,
+          isShared: r.is_shared,
+          isDefault: r.is_default,
+          filters: r.filters ?? {},
+        }));
+      } catch {
+        return mockRepositories.engagements.listSavedViews(entityType, viewerEmail);
+      }
+    },
+
+    async createSavedView(input: SavedViewInput, ownerEmail: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.createSavedView(input, ownerEmail);
+      const { rows } = await pool.query<{ id: string }>(
+        `SELECT id FROM app_user WHERE email = $1 ORDER BY updated_at DESC LIMIT 1`,
+        [ownerEmail],
+      );
+      const ownerId = rows[0]?.id;
+      if (!ownerId) {
+        throw new Error(`No app_user for ${ownerEmail} — sign in once so the identity is mirrored.`);
+      }
+      if (input.isDefault) {
+        // One default per (owner, entity): clear the previous one first.
+        await pool.query(
+          `UPDATE saved_view SET is_default = false, updated_at = now()
+           WHERE owner_user_id = $1 AND entity_type = $2 AND is_default`,
+          [ownerId, input.entityType],
+        );
+      }
+      await pool.query(
+        `INSERT INTO saved_view (entity_type, name, owner_user_id, is_shared, is_default, filters)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+         ON CONFLICT (owner_user_id, entity_type, name) DO UPDATE
+           SET is_shared = EXCLUDED.is_shared,
+               is_default = EXCLUDED.is_default,
+               filters = EXCLUDED.filters,
+               updated_at = now()`,
+        [
+          input.entityType,
+          input.name,
+          ownerId,
+          input.isShared,
+          input.isDefault,
+          JSON.stringify(input.filters),
+        ],
+      );
+    },
+
+    async deleteSavedView(id: string, ownerEmail: string | null, asAdmin: boolean): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.deleteSavedView(id, ownerEmail, asAdmin);
+      await pool.query(
+        `DELETE FROM saved_view
+         WHERE id = $1
+           AND ($3 OR owner_user_id =
+                (SELECT id FROM app_user WHERE email = $2 ORDER BY updated_at DESC LIMIT 1))`,
+        [id, ownerEmail, asAdmin],
+      );
     },
 
     async listContracts(): Promise<ContractRow[]> {

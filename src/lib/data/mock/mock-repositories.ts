@@ -311,6 +311,18 @@ export const mockRepositories: Repositories = {
     async listTickets() {
       return [];
     },
+    async ticketFilterOptions() {
+      return { statuses: [], priorities: [] };
+    },
+    async listSavedViews() {
+      return [];
+    },
+    async createSavedView() {
+      throw new Error(NO_DB);
+    },
+    async deleteSavedView() {
+      throw new Error(NO_DB);
+    },
     async listContracts() {
       return [];
     },
