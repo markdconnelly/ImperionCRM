@@ -141,9 +141,9 @@ serving data.
   (ADR-0048: orchestrator preset + budget via the backend's GET/PUT `/agent/settings`,
   registered sub-agents, `agent.turn` audit activity). Editable
   discovery/assessment question catalog.
-- **Data:** PostgreSQL + pgvector; migrations **0001–0054 applied** to prod (per
-  ADR-0048; 0055 pipeline-MI Autotask ticket writes is in the repo, pending). Typed
-  repositories with a mock fallback. Entra SSO (certificate client auth) + break-glass.
+- **Data:** PostgreSQL + pgvector; migrations **0001–0055 applied** to prod (verified
+  2026-06-09). Typed repositories with a mock fallback. Entra SSO (certificate client
+  auth) + break-glass.
 - **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
 - **Per-connection poll cadence (ADR-0038, migration 0035):** `connection.poll_interval_minutes`
   (0 = manual/paused) with an auto-saving cadence selector on the Settings cards; the pipeline

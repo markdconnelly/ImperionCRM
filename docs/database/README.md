@@ -34,10 +34,11 @@ flowchart LR
 ## Migrations
 
 Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in order with an
-Entra token — see [`db/README.md`](../../db/README.md). The repo contains **0001–0055**;
-**0001–0054** are applied in prod (per ADR-0048) and **0055** (pipeline-MI Autotask
-ticket writes) is pending. Recent: 0044/0047/0048/0049/0051 identity grants (local
-pipeline, backend functions, pipeline managed identity); 0045/0046 gold
+Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0055**
+applied in prod (verified 2026-06-09). Recent: 0044/0047/0048/0049/0051/0055 identity
+grants (local pipeline, backend functions, pipeline managed identity — 0055 adds the
+cloud MI's INSERT/UPDATE on `autotask_tickets` for the live webhook plus the local
+pipeline's per-source bronze writes); 0045/0046 gold
 `knowledge_object` vector store + drop of the never-populated legacy vector tables
 (ADR-0041/ADR-0043); 0050 silver `contract` + `ticket` from Autotask bronze (ADR-0044);
 0052 saved list views (ADR-0046); 0053 `device_inventory_all` view (ADR-0047); 0054
