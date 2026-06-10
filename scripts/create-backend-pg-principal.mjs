@@ -9,7 +9,7 @@ const ROLE = 'mgid-imperioncrmbackendfunction';
 const OBJECT_ID = '4f9bab1a-ed60-446b-94da-aee4b6ea2b98'; // UAMI principalId
 
 const client = new pg.Client({
-  host: 'imperioncrm-pg-prd.postgres.database.azure.com',
+  host: 'imperioncrm-pg-prd-cus.postgres.database.azure.com',
   port: 5432,
   database: 'postgres',
   user: process.env.PGUSER,
