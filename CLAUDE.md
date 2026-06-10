@@ -137,7 +137,9 @@ serving data.
   Campaigns (+ audiences/ads + builders), Communications (unified multi-channel
   timeline), Reporting, Knowledge (search over the gold layer), Workflows (+ builder
   & step editor), Consent (ledger), Integrations (per-user personal connections),
-  Security (posture dashboard), Settings, Feedback (GitHub-coupled). Editable
+  Security (posture dashboard), Settings, Feedback (GitHub-coupled), **AI Agents**
+  (ADR-0048: orchestrator preset + budget via the backend's GET/PUT `/agent/settings`,
+  registered sub-agents, `agent.turn` audit activity). Editable
   discovery/assessment question catalog.
 - **Data:** PostgreSQL + pgvector; migrations **0001–0043 applied** to prod. Typed
   repositories with a mock fallback. Entra SSO (certificate client auth) + break-glass.
@@ -165,8 +167,9 @@ Space Grotesk, body IBM Plex Sans.
 **Deferred to the next phase (deliberately stubbed, not broken):** live OAuth flows
 and the actual ingestion engines (Microsoft Graph / YouTube / LinkedIn / Facebook),
 real email/SMS sends, agent/LLM enrichment execution, embeddings generation + vector
-search, and the **orchestrator agent runtime + AI Agents / Board** pages (still
-placeholders). Until a source is wired, those flows are stubbed (e.g. a "send" logs
+search, and the **Board** page (still a placeholder — the orchestrator runtime is
+live in the backend, backend ADR-0036, and the AI Agents page is real, ADR-0048).
+Until a source is wired, those flows are stubbed (e.g. a "send" logs
 to the timeline) and never fail the page.
 
 ---
@@ -199,7 +202,8 @@ the siblings are consumers; propose schema changes here.
    into the `interaction` timeline and `contact_enrichment` dossier.
 2. Real email/SMS sends behind the consent gate; agent/LLM enrichment execution.
 3. Embeddings generation + vector (semantic) search over the gold layer.
-4. The orchestrator agent runtime + the AI Agents / Board pages.
+4. ~~The orchestrator agent runtime + the AI Agents page~~ (done — backend ADR-0036,
+   front-end ADR-0048); the Board page remains.
 5. Pre-go-live security: rotate the deferred secrets (see the project memory).
 
 Before starting each task, restate the plan briefly and flag anything that
