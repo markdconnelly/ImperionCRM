@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import type { QuestionInput } from "@/lib/data/repositories";
 
 function str(formData: FormData, key: string): string {
@@ -31,6 +32,7 @@ function parse(formData: FormData): QuestionInput {
 }
 
 export async function createQuestionAction(formData: FormData) {
+  await requireCapability("catalog:write");
   const kind = str(formData, "kind") || "discovery";
   const { engagements } = getRepositories();
   await engagements.createQuestion(kind, parse(formData));
@@ -39,6 +41,7 @@ export async function createQuestionAction(formData: FormData) {
 }
 
 export async function updateQuestionAction(formData: FormData) {
+  await requireCapability("catalog:write");
   const id = String(formData.get("id") ?? "");
   const { engagements } = getRepositories();
   await engagements.updateQuestion(id, parse(formData));
@@ -53,6 +56,7 @@ export async function updateQuestionAction(formData: FormData) {
 }
 
 export async function createTemplateAction(formData: FormData) {
+  await requireCapability("catalog:write");
   const kind = str(formData, "kind") || "assessment";
   const title = str(formData, "title");
   if (title === "") redirect("/questions");

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import type { AnswerInput, DiscoveryCallInput } from "@/lib/data/repositories";
 import type { QuestionRow } from "@/types";
 
@@ -82,6 +83,7 @@ async function buildAnswers(formData: FormData): Promise<AnswerInput[]> {
 }
 
 export async function createDiscoveryAction(formData: FormData) {
+  await requireCapability("sales:write");
   const { engagements } = getRepositories();
   const id = await engagements.createDiscoveryCall(parseDiscovery(formData));
   const answers = await buildAnswers(formData);
@@ -91,6 +93,7 @@ export async function createDiscoveryAction(formData: FormData) {
 }
 
 export async function updateDiscoveryAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const { engagements } = getRepositories();
   await engagements.updateDiscoveryCall(id, parseDiscovery(formData));
@@ -101,6 +104,7 @@ export async function updateDiscoveryAction(formData: FormData) {
 }
 
 export async function deleteDiscoveryAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const { engagements } = getRepositories();
   await engagements.deleteDiscoveryCall(id);
@@ -110,6 +114,7 @@ export async function deleteDiscoveryAction(formData: FormData) {
 // ── Provenance: spawn an opportunity from a qualified discovery call ─────────
 
 export async function spawnOpportunityFromDiscovery(formData: FormData) {
+  await requireCapability("sales:write");
   const discoveryId = String(formData.get("discoveryId") ?? "");
   const accountId = String(formData.get("accountId") ?? "");
   const { engagements } = getRepositories();
@@ -129,6 +134,7 @@ export async function spawnOpportunityFromDiscovery(formData: FormData) {
 
 /** Stamp an agent/automation-drafted answer as confirmed (human approval). */
 export async function confirmAnswerAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const discoveryId = String(formData.get("discoveryId") ?? "");
   const { engagements } = getRepositories();
@@ -138,6 +144,7 @@ export async function confirmAnswerAction(formData: FormData) {
 
 /** Reject an agent/automation-drafted answer. */
 export async function rejectAnswerAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const discoveryId = String(formData.get("discoveryId") ?? "");
   const { engagements } = getRepositories();
@@ -147,6 +154,7 @@ export async function rejectAnswerAction(formData: FormData) {
 
 /** Fit verdict → create an AI Security Readiness Assessment for the account. */
 export async function advanceToAssessmentAction(formData: FormData) {
+  await requireCapability("sales:write");
   const accountId = String(formData.get("accountId") ?? "");
   if (!accountId) return;
   const { crm } = getRepositories();
@@ -169,6 +177,7 @@ export async function advanceToAssessmentAction(formData: FormData) {
 
 /** Not-fit verdict → enroll the contact in the default nurture workflow. */
 export async function dropToNurtureAction(formData: FormData) {
+  await requireCapability("sales:write");
   const contactId = String(formData.get("contactId") ?? "");
   const accountId = String(formData.get("accountId") ?? "") || null;
   if (!contactId) redirect("/discovery"); // no contact to enroll in the scaffold

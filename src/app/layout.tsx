@@ -11,8 +11,8 @@ import "@fontsource/ibm-plex-sans/600.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Imperion CRM",
-  description: "Imperion CRM — AI-enabled MSP operations platform",
+  title: "Imperion Business Manager",
+  description: "Imperion Business Manager — AI-enabled MSP operations platform",
 };
 
 export default function RootLayout({

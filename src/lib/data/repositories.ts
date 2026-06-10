@@ -74,6 +74,19 @@ export interface AccountEditable extends AccountInput {
   id: string;
 }
 
+/**
+ * The full silver account record for the Company 360 (read-only superset of the
+ * editable fields). The extra attributes are pipeline-/system-owned: health is
+ * scored, owner mirrors Entra, timestamps come from the merge.
+ */
+export interface AccountDetail extends AccountEditable {
+  healthScore: string | null; // numeric → string via pg; null until scored
+  owner: string | null; // app_user display name
+  createdAt: string | null;
+  updatedAt: string | null;
+  archivedAt: string | null;
+}
+
 /** Editable task fields. */
 export interface TaskInput {
   accountId: string | null;
@@ -149,7 +162,7 @@ export interface DashboardRepository {
 export interface CrmRepository {
   // Accounts (full CRUD)
   listAccounts(): Promise<Account[]>;
-  getAccount(id: string): Promise<AccountEditable | null>;
+  getAccount(id: string): Promise<AccountDetail | null>;
   createAccount(input: AccountInput): Promise<void>;
   updateAccount(id: string, input: AccountInput): Promise<void>;
   deleteAccount(id: string): Promise<void>;

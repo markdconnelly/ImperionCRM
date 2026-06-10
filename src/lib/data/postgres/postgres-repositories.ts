@@ -12,7 +12,7 @@ import { mockRepositories } from "@/lib/data/mock/mock-repositories";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import type {
-  AccountEditable,
+  AccountDetail,
   AccountInput,
   AnswerInput,
   AdInput,
@@ -419,7 +419,7 @@ export const postgresRepositories: Repositories = {
       }
     },
 
-    async getAccount(id: string): Promise<AccountEditable | null> {
+    async getAccount(id: string): Promise<AccountDetail | null> {
       const pool = getPool();
       if (!pool) return null;
       try {
@@ -429,9 +429,17 @@ export const postgresRepositories: Repositories = {
           relationship: string | null;
           lifecycle_stage: string;
           is_active: boolean;
+          health_score: string | null;
+          owner: string | null;
+          created_at: Date | null;
+          updated_at: Date | null;
+          archived_at: Date | null;
         }>(
-          `SELECT id, name, relationship, lifecycle_stage, is_active
-           FROM account WHERE id = $1`,
+          `SELECT a.id, a.name, a.relationship, a.lifecycle_stage, a.is_active,
+                  a.health_score, u.display_name AS owner,
+                  a.created_at, a.updated_at, a.archived_at
+           FROM account a LEFT JOIN app_user u ON u.id = a.owner_user_id
+           WHERE a.id = $1`,
           [id],
         );
         const r = rows[0];
@@ -442,6 +450,11 @@ export const postgresRepositories: Repositories = {
           relationship: r.relationship,
           lifecycleStage: r.lifecycle_stage,
           isActive: r.is_active,
+          healthScore: r.health_score,
+          owner: r.owner,
+          createdAt: fmtDate(r.created_at),
+          updatedAt: fmtDateTime(r.updated_at),
+          archivedAt: fmtDate(r.archived_at),
         };
       } catch {
         return null;
@@ -2561,12 +2574,13 @@ export const postgresRepositories: Repositories = {
           location: string | null;
           avatar_url: string | null;
           lifecycle_status: string;
+          crm_stage: string | null;
           account: string | null;
           account_id: string | null;
           last_enriched_at: Date | null;
         }>(
           `SELECT c.id, c.full_name, c.email, c.phone, c.title, c.headline, c.location,
-                  c.avatar_url, c.lifecycle_status, a.name AS account, c.account_id,
+                  c.avatar_url, c.lifecycle_status, c.crm_stage, a.name AS account, c.account_id,
                   c.last_enriched_at
            FROM contact c LEFT JOIN account a ON a.id = c.account_id
            WHERE c.id = $1`,
@@ -2584,6 +2598,7 @@ export const postgresRepositories: Repositories = {
           location: r.location,
           avatarUrl: r.avatar_url,
           lifecycleStatus: r.lifecycle_status,
+          crmStage: r.crm_stage,
           account: r.account,
           accountId: r.account_id,
           lastEnrichedAt: fmtDate(r.last_enriched_at),

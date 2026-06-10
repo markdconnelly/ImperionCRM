@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import type { CampaignInput, AudienceInput, AdInput, AudienceCriterion } from "@/lib/data/repositories";
 
 function orNull(v: FormDataEntryValue | null): string | null {
@@ -23,6 +24,7 @@ function parseCampaign(formData: FormData): CampaignInput {
 }
 
 export async function createCampaignAction(formData: FormData) {
+  await requireCapability("sales:write");
   const { campaigns } = getRepositories();
   await campaigns.createCampaign(parseCampaign(formData));
   revalidatePath("/campaigns");
@@ -51,6 +53,7 @@ function parseAudience(formData: FormData): AudienceInput {
 }
 
 export async function createAudienceAction(formData: FormData) {
+  await requireCapability("sales:write");
   const { campaigns } = getRepositories();
   await campaigns.createAudience(parseAudience(formData));
   revalidatePath("/campaigns");
@@ -59,6 +62,7 @@ export async function createAudienceAction(formData: FormData) {
 
 /** Preview matching members before committing (carried back via query params). */
 export async function previewAudienceAction(formData: FormData) {
+  await requireCapability("sales:write");
   const params = new URLSearchParams();
   params.set("name", String(formData.get("name") ?? ""));
   params.set("description", String(formData.get("description") ?? ""));
@@ -76,6 +80,7 @@ export async function previewAudienceAction(formData: FormData) {
 }
 
 export async function createAdAction(formData: FormData) {
+  await requireCapability("sales:write");
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) return;
   const input: AdInput = {
@@ -94,6 +99,7 @@ export async function createAdAction(formData: FormData) {
  * ad_targeting opt-in are eligible. The platform push is stubbed; we report the count.
  */
 export async function launchAudienceAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const { campaigns } = getRepositories();
   const eligible = await campaigns.launchAudience(id);

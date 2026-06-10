@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 
 export async function createHookAction(formData: FormData) {
+  await requireCapability("sales:write");
   const path = String(formData.get("config") ?? "").trim();
   const { leads } = getRepositories();
   await leads.createHook({
@@ -22,6 +24,7 @@ export async function createHookAction(formData: FormData) {
  * later phase, kicks enrichment + nurture. Scaffold: marks the event resolved.
  */
 export async function resolveEventAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const { leads } = getRepositories();
   await leads.resolveEvent(id);

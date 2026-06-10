@@ -105,6 +105,16 @@ export const roleEnv = {
   get devRole(): string {
     return read("DEV_ROLE");
   },
+  /**
+   * Bootstrap escape hatch (ADR-0045): when `true`, a user whose token carries NO
+   * recognized role claim is treated as `admin` instead of falling back to
+   * `support`. Default OFF → the app fails CLOSED (ADR-0030's documented intent).
+   * Enable ONLY as a temporary measure while Entra App Roles are being assigned;
+   * break-glass (forced admin) is the preferred way to reach admin in the interim.
+   */
+  get failOpenAdmin(): boolean {
+    return read("RBAC_FAIL_OPEN_ADMIN").toLowerCase() === "true";
+  },
 };
 
 /**

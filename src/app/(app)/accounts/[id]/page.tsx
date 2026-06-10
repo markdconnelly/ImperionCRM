@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
+import { Icon } from "@/components/ui/icon";
 import { Timeline } from "@/components/comms/timeline";
 import { SourceRecords } from "@/components/comms/source-records";
+import { IntegrationHealth } from "@/components/comms/integration-health";
 import { getRepositories } from "@/lib/data";
 
 const STAGE_LABEL: Record<string, string> = {
   prospect: "Prospect",
   onboarding: "Onboarding",
+  implementation: "Implementation",
   operational_readiness: "Operational readiness",
   managed_active: "Managed active",
   dormant: "Dormant",
@@ -17,12 +20,38 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="text-dim">{label}</span>
-      <span className="text-text">{value}</span>
+      <span className="text-right text-text">{value}</span>
     </div>
   );
 }
 
-/** Company (Account) 360 — facts + the unified communications timeline. */
+/** A headed panel with an icon — the page's visual building block. */
+function Section({
+  title,
+  icon,
+  hint,
+  className,
+  children,
+}: {
+  title: string;
+  icon: string;
+  hint?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={`rounded-xl border border-border bg-panel p-4 ${className ?? ""}`}>
+      <h3 className="mb-1 flex items-center gap-2 font-display text-sm font-semibold tracking-tight">
+        <Icon name={icon} size={15} />
+        {title}
+      </h3>
+      {hint ? <p className="mb-3 text-xs text-dim">{hint}</p> : <div className="mb-3" />}
+      {children}
+    </section>
+  );
+}
+
+/** Company (Account) 360 — facts, integration health, sources, and the timeline. */
 export default async function AccountDetailPage({
   params,
 }: {
@@ -51,43 +80,67 @@ export default async function AccountDetailPage({
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <section className="rounded-xl border border-border bg-panel p-4 lg:col-span-2">
-          <h3 className="mb-3 font-display text-sm font-semibold tracking-tight">
-            Communications timeline
-          </h3>
+        <Section title="Company" icon="Building2">
+          <div className="flex flex-col gap-1.5">
+            <Row
+              label="Lifecycle stage"
+              value={STAGE_LABEL[account.lifecycleStage] ?? account.lifecycleStage}
+            />
+            <Row label="Relationship" value={account.relationship ?? "—"} />
+            <Row label="Active" value={account.isActive ? "Yes" : "No"} />
+            <Row label="Owner" value={account.owner ?? "Unassigned"} />
+            <Row
+              label="Health score"
+              value={account.healthScore ?? "Not scored yet"}
+            />
+            <Row label="Created" value={account.createdAt ?? "—"} />
+            <Row label="Last updated" value={account.updatedAt ?? "—"} />
+            {account.archivedAt && <Row label="Archived" value={account.archivedAt} />}
+          </div>
+        </Section>
+
+        <Section
+          title="Integrations"
+          icon="PlugZap"
+          hint="Every source feeding this record, with sync freshness."
+          className="lg:col-span-2"
+        >
+          <IntegrationHealth sources={sources} />
+        </Section>
+
+        <Section
+          title="Data sources"
+          icon="Database"
+          hint="The per-source bronze records merged into this company — drill into the raw payloads."
+          className="lg:col-span-3"
+        >
+          <SourceRecords sources={sources} />
+        </Section>
+
+        {relatedBronze.length > 0 && (
+          <Section
+            title="Related source data"
+            icon="FolderGit2"
+            hint="Local-pipeline bronze that feeds this account — Autotask contracts & tickets, IT Glue documentation."
+            className="lg:col-span-3"
+          >
+            <SourceRecords sources={relatedBronze} />
+          </Section>
+        )}
+
+        <Section
+          title="Communications timeline"
+          icon="History"
+          hint="Newest first. Click an entry to open the communication in a new window."
+          className="lg:col-span-3"
+        >
           <Timeline
             items={timeline}
             showContact
+            newWindow
             emptyHint="No communications recorded for this company yet."
           />
-        </section>
-
-        <section className="rounded-xl border border-border bg-panel p-4">
-          <h3 className="mb-3 font-display text-sm font-semibold tracking-tight">Company</h3>
-          <div className="flex flex-col gap-1.5">
-            <Row label="Lifecycle stage" value={STAGE_LABEL[account.lifecycleStage] ?? account.lifecycleStage} />
-            <Row label="Relationship" value={account.relationship ?? "—"} />
-            <Row label="Active" value={account.isActive ? "Yes" : "No"} />
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-border bg-panel p-4 lg:col-span-3">
-          <h3 className="mb-3 font-display text-sm font-semibold tracking-tight">Data sources</h3>
-          <SourceRecords sources={sources} />
-        </section>
-
-        {relatedBronze.length > 0 && (
-          <section className="rounded-xl border border-border bg-panel p-4 lg:col-span-3">
-            <h3 className="mb-1 font-display text-sm font-semibold tracking-tight">
-              Related source data
-            </h3>
-            <p className="mb-3 text-xs text-dim">
-              Local-pipeline bronze that feeds this account — Autotask contracts &amp; tickets,
-              IT Glue documentation. Drill in to the raw record to troubleshoot.
-            </p>
-            <SourceRecords sources={relatedBronze} />
-          </section>
-        )}
+        </Section>
       </div>
     </div>
   );

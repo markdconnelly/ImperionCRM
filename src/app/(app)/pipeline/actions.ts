@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import type { ContactCrmStage } from "@/types";
 
 const CONTACT_STAGES: ContactCrmStage[] = ["audience", "lead", "prospect", "client"];
@@ -10,6 +11,7 @@ const CONTACT_STAGES: ContactCrmStage[] = ["audience", "lead", "prospect", "clie
 export async function moveContactStageAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const stage = String(formData.get("stage") ?? "");
+  await requireCapability("sales:write");
   if (!id || !CONTACT_STAGES.includes(stage as ContactCrmStage)) return;
   const { crm } = getRepositories();
   await crm.setContactStage(id, stage as ContactCrmStage);
@@ -22,6 +24,7 @@ export async function moveContactStageAction(formData: FormData) {
 export async function moveOpportunityAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const stage = String(formData.get("stage") ?? "");
+  await requireCapability("sales:write");
   if (!id || !stage) return;
   const { crm } = getRepositories();
   await crm.setOpportunityStage(id, stage);

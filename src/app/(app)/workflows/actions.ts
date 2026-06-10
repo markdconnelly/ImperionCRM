@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 
 export async function exitEnrollmentAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const { workflows } = getRepositories();
   await workflows.exitEnrollment(id);
@@ -12,6 +14,7 @@ export async function exitEnrollmentAction(formData: FormData) {
 }
 
 export async function createWorkflowAction(formData: FormData) {
+  await requireCapability("sales:write");
   const trigger = String(formData.get("trigger") ?? "").trim();
   const { workflows } = getRepositories();
   const id = await workflows.createWorkflow({
@@ -25,6 +28,7 @@ export async function createWorkflowAction(formData: FormData) {
 }
 
 export async function addStepAction(formData: FormData) {
+  await requireCapability("sales:write");
   const workflowId = String(formData.get("workflowId") ?? "");
   const config = String(formData.get("config") ?? "").trim();
   if (!workflowId) return;
@@ -37,6 +41,7 @@ export async function addStepAction(formData: FormData) {
 }
 
 export async function deleteStepAction(formData: FormData) {
+  await requireCapability("sales:write");
   const stepId = String(formData.get("stepId") ?? "");
   const workflowId = String(formData.get("workflowId") ?? "");
   const { workflows } = getRepositories();

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import type { AnswerInput, AssessmentInput } from "@/lib/data/repositories";
 import type { QuestionRow } from "@/types";
@@ -36,6 +37,7 @@ function parse(formData: FormData): AssessmentInput {
 }
 
 export async function createAssessmentAction(formData: FormData) {
+  await requireCapability("sales:write");
   const { crm } = getRepositories();
   await crm.createAssessment(parse(formData));
   revalidatePath("/assessments");
@@ -43,6 +45,7 @@ export async function createAssessmentAction(formData: FormData) {
 }
 
 export async function updateAssessmentAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const { crm } = getRepositories();
   await crm.updateAssessment(id, parse(formData));
@@ -51,6 +54,7 @@ export async function updateAssessmentAction(formData: FormData) {
 }
 
 export async function deleteAssessmentAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   const { crm } = getRepositories();
   await crm.deleteAssessment(id);
@@ -108,6 +112,7 @@ function hasValue(a: AnswerInput): boolean {
 }
 
 export async function saveAssessmentAnswersAction(formData: FormData) {
+  await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const { engagements } = getRepositories();
@@ -121,6 +126,7 @@ export async function saveAssessmentAnswersAction(formData: FormData) {
 // ── Provenance: spawn downstream work from an assessment (ADR-0023) ──────────
 
 export async function spawnProjectFromAssessment(formData: FormData) {
+  await requireCapability("sales:write");
   const assessmentId = String(formData.get("assessmentId") ?? "");
   const accountId = String(formData.get("accountId") ?? "");
   const { engagements } = getRepositories();
@@ -135,6 +141,7 @@ export async function spawnProjectFromAssessment(formData: FormData) {
 }
 
 export async function spawnOpportunityFromAssessment(formData: FormData) {
+  await requireCapability("sales:write");
   const assessmentId = String(formData.get("assessmentId") ?? "");
   const accountId = String(formData.get("accountId") ?? "");
   const { engagements } = getRepositories();
@@ -151,6 +158,7 @@ export async function spawnOpportunityFromAssessment(formData: FormData) {
 }
 
 export async function spawnTicketFromAssessment(formData: FormData) {
+  await requireCapability("sales:write");
   const assessmentId = String(formData.get("assessmentId") ?? "");
   const accountId = String(formData.get("accountId") ?? "");
   const { engagements } = getRepositories();

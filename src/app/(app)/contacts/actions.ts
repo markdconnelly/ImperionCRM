@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import type { ContactInput } from "@/lib/data/repositories";
 
 function orNull(v: FormDataEntryValue | null): string | null {
@@ -24,6 +25,7 @@ function parse(formData: FormData): ContactInput {
 }
 
 export async function createContactAction(formData: FormData) {
+  await requireCapability("crm:write");
   const { contacts } = getRepositories();
   const id = await contacts.createContact(parse(formData));
   revalidatePath("/contacts");
@@ -31,6 +33,7 @@ export async function createContactAction(formData: FormData) {
 }
 
 export async function updateContactAction(formData: FormData) {
+  await requireCapability("crm:write");
   const id = String(formData.get("id") ?? "");
   const { contacts } = getRepositories();
   await contacts.updateContact(id, parse(formData));
@@ -40,6 +43,7 @@ export async function updateContactAction(formData: FormData) {
 }
 
 export async function deleteContactAction(formData: FormData) {
+  await requireCapability("crm:write");
   const id = String(formData.get("id") ?? "");
   const { contacts } = getRepositories();
   await contacts.deleteContact(id);
@@ -57,6 +61,7 @@ export async function sendMessageAction(formData: FormData) {
   const channel = String(formData.get("channel") ?? "email"); // email|sms
   const subject = String(formData.get("subject") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
+  await requireCapability("comms:write");
   if (!contactId || body === "") return;
 
   const { comms, consent } = getRepositories();
@@ -89,6 +94,7 @@ export async function setConsentAction(formData: FormData) {
   const contactId = String(formData.get("contactId") ?? "");
   const channel = String(formData.get("channel") ?? "");
   const state = String(formData.get("state") ?? "");
+  await requireCapability("comms:write");
   if (!contactId || !channel || (state !== "opt_in" && state !== "opt_out")) return;
 
   const { consent } = getRepositories();
@@ -103,6 +109,7 @@ export async function setConsentAction(formData: FormData) {
 }
 
 export async function completeActionItemAction(formData: FormData) {
+  await requireCapability("tickets:write");
   const id = String(formData.get("id") ?? "");
   const back = String(formData.get("back") ?? "/communications");
   const { comms } = getRepositories();

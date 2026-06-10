@@ -47,14 +47,14 @@ export function rolesFromClaims(claims: RoleClaims | null | undefined): AppRole[
   // 3. Local dev override.
   if (roleEnv.devRole) candidates.push(roleEnv.devRole);
 
-  // TEMPORARY fail-open (v1, pre-go-live — ADR-0030 §1). Entra does not yet emit an
-  // App-Role `roles` claim or a mapped `groups` claim, so no signed-in user resolves to a
-  // recognized role and the admin UI (Settings → Company credentials, Security) is
-  // unreachable. Until the App Roles are defined + assigned in Entra, default an
-  // *unrecognized* user to `admin` so the app is fully usable. Users who DO carry a
-  // recognized claim still get exactly their real role — only the no-claim case opens up.
-  // REVERT (delete this block) to restore fail-closed (→ `support`) before go-live.
-  if (candidates.length === 0) candidates.push("admin");
+  // 4. Bootstrap escape hatch (ADR-0045, supersedes ADR-0030's unconditional fail-open).
+  // By DEFAULT this fails CLOSED: a user with no recognized claim gets no candidate here
+  // and `normalizeRoles` falls them back to `support` (least privilege). Only when the
+  // operator explicitly sets `RBAC_FAIL_OPEN_ADMIN=true` — a temporary measure while Entra
+  // App Roles are being assigned — does a no-claim user open up to `admin`. Users who DO
+  // carry a recognized claim always get exactly their real role, flag or not. Prefer
+  // break-glass (forced admin) over this flag for interim admin access.
+  if (candidates.length === 0 && roleEnv.failOpenAdmin) candidates.push("admin");
 
   return normalizeRoles(candidates);
 }

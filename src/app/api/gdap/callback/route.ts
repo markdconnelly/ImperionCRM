@@ -21,6 +21,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
+import { can } from "@/lib/auth/policy";
+import { DEFAULT_ROLE } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
 
@@ -33,10 +35,14 @@ function settingsRedirect(req: NextRequest, result: string): NextResponse {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  // 1. Must be a signed-in operator.
+  // 1. Must be a signed-in operator with settings-write authority (ADR-0045) — GDAP
+  //    is a company-wide credential, so only an admin may finalize the relationship.
   const session = await auth();
   if (!session?.user) {
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
+  }
+  if (!can(session.user.roles ?? [DEFAULT_ROLE], "settings:write")) {
+    return settingsRedirect(req, "forbidden");
   }
 
   // 2. Must have initiated the flow from this app, and the state Microsoft echoes back
