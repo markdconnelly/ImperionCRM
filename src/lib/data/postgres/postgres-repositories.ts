@@ -684,6 +684,41 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async listProjectTasks(projectId: string): Promise<TaskRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProjectTasks(projectId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          title: string;
+          status: string;
+          category: TaskCategory;
+          due_at: Date | null;
+          account: string | null;
+          project_id: string | null;
+        }>(
+          `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account,
+                  t.project_id
+           FROM task t
+           LEFT JOIN account a ON a.id = t.account_id
+           WHERE t.project_id = $1
+           ORDER BY t.due_at NULLS LAST, t.title`,
+          [projectId],
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          status: row.status,
+          category: row.category,
+          due: fmtDate(row.due_at),
+          account: row.account,
+          projectId: row.project_id,
+        }));
+      } catch {
+        return mockRepositories.crm.listProjectTasks(projectId);
+      }
+    },
+
     async getTask(id: string): Promise<TaskEditable | null> {
       const pool = getPool();
       if (!pool) return null;

@@ -202,6 +202,8 @@ export interface CrmRepository {
 
   // Tasks (full CRUD)
   listTasks(): Promise<TaskRow[]>;
+  /** A project's slice of the one task model, by task.project_id (ADR-0052 §2). */
+  listProjectTasks(projectId: string): Promise<TaskRow[]>;
   getTask(id: string): Promise<TaskEditable | null>;
   createTask(input: TaskInput): Promise<void>;
   updateTask(id: string, input: TaskInput): Promise<void>;

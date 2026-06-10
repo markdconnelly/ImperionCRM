@@ -29,15 +29,14 @@ export default async function ProjectDetailPage({
 }) {
   const { id } = await params;
   const { crm } = getRepositories();
-  const [roles, project, rows, tasks] = await Promise.all([
+  const [roles, project, rows, projectTasks] = await Promise.all([
     getSessionRoles(),
     crm.getProject(id),
     crm.listProjects(),
-    crm.listTasks(),
+    crm.listProjectTasks(id),
   ]);
   if (!project) notFound();
   const row = rows.find((r) => r.id === id);
-  const projectTasks = tasks.filter((t) => t.projectId === id);
   const openTasks = projectTasks.filter((t) => t.status !== "done").length;
   const canWrite = canManageProjects(roles);
 

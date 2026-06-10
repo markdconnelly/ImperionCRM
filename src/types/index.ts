@@ -121,7 +121,7 @@ export interface ProjectRow {
   targetLive: string | null; // formatted target go-live date
 }
 
-/** A project category — a row in the project_type table, not an enum (ADR-0052). */
+/** A project type — a row in the project_type table, not an enum (ADR-0052). */
 export interface ProjectTypeRow {
   id: string;
   key: string; // stable machine key, e.g. 'onboarding'

@@ -4,6 +4,8 @@ import { ProjectsTable } from "@/components/projects/projects-table";
 import { OnboardingBoard } from "@/components/onboarding/onboarding-board";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { getRepositories } from "@/lib/data";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canManageProjects } from "@/lib/auth/roles";
 import {
   setMilestoneHealthAction,
   applyTemplateAction,
@@ -18,11 +20,13 @@ import { deleteTaskAction } from "../tasks/actions";
 // Autotask PM.
 export default async function OnboardingPage() {
   const { crm } = getRepositories();
-  const [onboarding, projects, tasks] = await Promise.all([
+  const [roles, onboarding, projects, tasks] = await Promise.all([
+    getSessionRoles(),
     crm.listOnboarding(),
     crm.listProjects(),
     crm.listTasks(),
   ]);
+  const canWrite = canManageProjects(roles);
   const pmTasks = tasks.filter((t) => t.category === "project" || t.category === "onboarding");
   const today = new Date().toISOString().slice(0, 10);
 
@@ -82,6 +86,7 @@ export default async function OnboardingPage() {
           projects={projects.filter((p) => p.typeKey === "onboarding")}
           deleteAction={deleteProjectAction}
           showType={false}
+          canWrite={canWrite}
         />
       </section>
     </div>

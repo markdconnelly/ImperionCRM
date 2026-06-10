@@ -86,6 +86,7 @@ export default async function ProjectsPage() {
               deleteAction={deleteProjectAction}
               base="/projects"
               showType={false}
+              canWrite={canWrite}
             />
           </section>
         );

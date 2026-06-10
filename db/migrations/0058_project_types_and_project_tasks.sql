@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS project_type (
   updated_at   timestamptz NOT NULL DEFAULT now()
 );
 COMMENT ON TABLE project_type IS
-  'User-creatable project categories (ADR-0052). Onboarding is seeded protected; new types are a row insert from the project board, never a migration.';
+  'User-creatable project types (ADR-0052). Onboarding is seeded protected; new types are a row insert from the project board, never a migration.';
 
 DROP TRIGGER IF EXISTS trg_project_type_updated ON project_type;
 CREATE TRIGGER trg_project_type_updated BEFORE UPDATE ON project_type

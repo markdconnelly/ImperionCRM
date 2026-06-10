@@ -109,6 +109,9 @@ export const mockRepositories: Repositories = {
     async listTasks() {
       return [];
     },
+    async listProjectTasks() {
+      return [];
+    },
     async getTask() {
       return null;
     },

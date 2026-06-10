@@ -14,6 +14,7 @@ export function ProjectsTable({
   deleteAction,
   base = "/onboarding",
   showType = true,
+  canWrite = true,
 }: {
   projects: ProjectRow[];
   deleteAction: (formData: FormData) => void | Promise<void>;
@@ -21,6 +22,8 @@ export function ProjectsTable({
   base?: "/projects" | "/onboarding";
   /** Hide the Type column inside the board's per-type sections. */
   showType?: boolean;
+  /** Hide Edit/Delete for roles without canManageProjects (ADR-0030 GUI gating). */
+  canWrite?: boolean;
 }) {
   const cols = showType ? 7 : 6;
   return (
@@ -58,20 +61,22 @@ export function ProjectsTable({
                 </td>
                 <td className="px-4 py-3 text-dim">{p.targetLive ?? "—"}</td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-3">
-                    <Link
-                      href={`${base}/${p.id}/edit`}
-                      className="text-dim hover:text-text"
-                    >
-                      Edit
-                    </Link>
-                    <form action={deleteAction}>
-                      <input type="hidden" name="id" value={p.id} />
-                      <button type="submit" className="text-dim hover:text-red">
-                        Delete
-                      </button>
-                    </form>
-                  </div>
+                  {canWrite && (
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        href={`${base}/${p.id}/edit`}
+                        className="text-dim hover:text-text"
+                      >
+                        Edit
+                      </Link>
+                      <form action={deleteAction}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <button type="submit" className="text-dim hover:text-red">
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
