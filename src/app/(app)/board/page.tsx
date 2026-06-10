@@ -22,7 +22,7 @@ export default async function BoardPage() {
   const roles = await getSessionRoles();
   // Admin-only (#90): guard at the page too, not just nav visibility.
   if (!canSeeAgentPages(roles)) redirect("/");
-  const canConvene = can(roles, "sales:write"); // business-development surface (see actions.ts)
+  const canConvene = can(roles, "agents:operate"); // matches the action gate (ADR-0050)
 
   const [{ personas }, sessions] = await Promise.all([
     listBoardPersonas(),

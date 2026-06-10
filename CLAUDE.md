@@ -142,7 +142,8 @@ serving data.
   registered sub-agents, `agent.turn` audit activity), **Board of Directors**
   (ADR-0049 + backend ADR-0039: convene → POST `/board/sessions` runs the synchronous
   two-round deliberation + synthesis; sessions list + `/board/[id]` transcript &
-  recommendation read the 0056 tables directly; convening is guarded by `sales:write`).
+  recommendation read the 0056 tables directly; convening is guarded by `agents:operate`,
+  admin-only per ADR-0050).
   Editable discovery/assessment question catalog. The AI Agents and Board pages are
   **admin-only** (#90, `canSeeAgentPages` — same gate as Settings/ADR-0030), and
   Settings has an **AI tab** surfacing the orchestrator preset / budget cap /

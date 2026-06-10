@@ -64,3 +64,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0047](./ADR-0047-device-inventory.md) | Read-only device & cloud-asset inventory | Accepted |
 | [0048](./ADR-0048-ai-agents-operations-page.md) | AI Agents operations page (orchestrator settings + activity) | Accepted |
 | [0049](./ADR-0049-board-runtime-persistence.md) | Materialize the agent core + AI Board persistence (migration 0056) | Accepted |
+| [0050](./ADR-0050-admin-only-ai-pages-settings-ai-tab.md) | AI pages are admin-only; Settings gains an AI tab | Accepted |

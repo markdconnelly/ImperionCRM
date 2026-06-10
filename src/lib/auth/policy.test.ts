@@ -55,10 +55,14 @@ describe("RBAC capability matrix", () => {
     expect(can(["sales", "finance"], "catalog:write")).toBe(false);
   });
 
-  test("settings + catalog are admin-only", () => {
+  test("settings + catalog + agent operations are admin-only", () => {
     for (const role of ["finance", "sales", "project_manager", "support"] as AppRole[]) {
       expect(can([role], "settings:write")).toBe(false);
       expect(can([role], "catalog:write")).toBe(false);
+      // ADR-0050: convening the board / operating the agent layer spends real
+      // model budget and its pages are admin-only — the capability matches.
+      expect(can([role], "agents:operate")).toBe(false);
     }
+    expect(can(["admin"], "agents:operate")).toBe(true);
   });
 });

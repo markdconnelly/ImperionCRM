@@ -14,7 +14,12 @@ import type { NextAuthConfig } from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { entraEnv } from "@/lib/env";
 import { rolesFromClaims, type RoleClaims } from "@/lib/auth/claims";
-import { type AppRole, DEFAULT_ROLE, canSeeSettings } from "@/lib/auth/roles";
+import {
+  type AppRole,
+  DEFAULT_ROLE,
+  canSeeAgentPages,
+  canSeeSettings,
+} from "@/lib/auth/roles";
 
 export const authConfig: NextAuthConfig = {
   // Required behind the App Service reverse proxy (ADR-0006).
@@ -65,18 +70,21 @@ export const authConfig: NextAuthConfig = {
     },
     /**
      * Sign-in gate (CLAUDE.md §7.3): only authenticated users reach app routes.
-     * Additionally enforces the admin-only areas (Settings + Security) at the
-     * edge so a non-admin cannot reach them even by typing the URL.
+     * Additionally enforces the admin-only areas (Settings + Security, and the
+     * AI pages per #90/ADR-0050) at the edge so a non-admin cannot reach them
+     * even by typing the URL.
      */
     authorized({ auth, request }) {
       if (!auth?.user) return false;
       const path = request.nextUrl.pathname;
       const roles =
         (auth.user as { roles?: AppRole[] }).roles ?? [DEFAULT_ROLE];
-      if (
-        (path.startsWith("/settings") || path.startsWith("/security")) &&
-        !canSeeSettings(roles)
-      ) {
+      const blocked =
+        ((path.startsWith("/settings") || path.startsWith("/security")) &&
+          !canSeeSettings(roles)) ||
+        ((path.startsWith("/agents") || path.startsWith("/board")) &&
+          !canSeeAgentPages(roles));
+      if (blocked) {
         return Response.redirect(new URL("/", request.nextUrl));
       }
       return true;

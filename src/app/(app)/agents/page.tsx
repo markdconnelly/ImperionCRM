@@ -58,8 +58,9 @@ function timeAgo(iso: string): string {
 
 export default async function AgentsPage() {
   const roles = await getSessionRoles();
-  // Admin-only (#90): the nav already hides this page, but guard here too so it
-  // can never render for a non-admin (same defense-in-depth as Settings).
+  // Admin-only (#90): nav hiding and the edge middleware use the same predicate,
+  // but guard here too so the page can never render for a non-admin (same
+  // defense-in-depth as Settings, ADR-0030).
   if (!canSeeAgentPages(roles)) redirect("/");
   const canEdit = can(roles, "settings:write"); // admin-only (ADR-0045)
 
