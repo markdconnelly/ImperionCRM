@@ -139,11 +139,15 @@ serving data.
   & step editor), Consent (ledger), Integrations (per-user personal connections),
   Security (posture dashboard), Settings, Feedback (GitHub-coupled), **AI Agents**
   (ADR-0048: orchestrator preset + budget via the backend's GET/PUT `/agent/settings`,
-  registered sub-agents, `agent.turn` audit activity). Editable
-  discovery/assessment question catalog.
-- **Data:** PostgreSQL + pgvector; migrations **0001–0055 applied** to prod (verified
-  2026-06-09). Typed repositories with a mock fallback. Entra SSO (certificate client
-  auth) + break-glass.
+  registered sub-agents, `agent.turn` audit activity), **Board of Directors**
+  (ADR-0049 + backend ADR-0039: convene → POST `/board/sessions` runs the synchronous
+  two-round deliberation + synthesis; sessions list + `/board/[id]` transcript &
+  recommendation read the 0056 tables directly; convening is guarded by `sales:write`).
+  Editable discovery/assessment question catalog.
+- **Data:** PostgreSQL + pgvector; migrations **0001–0056 applied** to prod (0056 =
+  agent core + board persistence with 5 seeded personas, ADR-0049; verified 2026-06-10).
+  Typed repositories with a mock fallback. Entra SSO (certificate client auth) +
+  break-glass.
 - **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
 - **Per-connection poll cadence (ADR-0038, migration 0035):** `connection.poll_interval_minutes`
   (0 = manual/paused) with an auto-saving cadence selector on the Settings cards; the pipeline
@@ -175,10 +179,11 @@ Space Grotesk, body IBM Plex Sans.
 **Deferred to the next phase (deliberately stubbed, not broken):** the actual
 ingestion engines (Microsoft Graph / YouTube / LinkedIn / Facebook — the per-user
 OAuth flow itself is now live-wired, see above), real email/SMS sends, agent/LLM
-enrichment execution, embeddings generation + vector search, and the **Board** page
-(still a placeholder — the orchestrator runtime is live in the backend, backend
-ADR-0036, and the AI Agents page is real, ADR-0048). Until a source is wired, those
-flows are stubbed (e.g. a "send" logs to the timeline) and never fail the page.
+enrichment execution, and embeddings generation + vector search. The agent layer is
+no longer deferred: the orchestrator runtime is live in the backend (backend
+ADR-0036), the AI Agents page is real (ADR-0048), and the **Board** page is real
+(ADR-0049, backend ADR-0039). Until a source is wired, the remaining flows are
+stubbed (e.g. a "send" logs to the timeline) and never fail the page.
 
 ---
 
@@ -213,7 +218,8 @@ the siblings are consumers; propose schema changes here.
 2. Real email/SMS sends behind the consent gate; agent/LLM enrichment execution.
 3. Embeddings generation + vector (semantic) search over the gold layer.
 4. ~~The orchestrator agent runtime + the AI Agents page~~ (done — backend ADR-0036,
-   front-end ADR-0048); the Board page remains.
+   front-end ADR-0048); ~~the Board page~~ (done — backend ADR-0039, front-end
+   ADR-0049 + the `/board` module).
 5. Pre-go-live security: rotate the deferred secrets (see the project memory).
 
 Before starting each task, restate the plan briefly and flag anything that
