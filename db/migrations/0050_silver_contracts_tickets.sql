@@ -32,29 +32,16 @@ CREATE TABLE IF NOT EXISTS contract (
 );
 CREATE INDEX IF NOT EXISTS ix_contract_account ON contract (account_id);
 
-CREATE TABLE IF NOT EXISTS ticket (
-  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  account_id       uuid REFERENCES account(id) ON DELETE SET NULL,
-  contact_id       uuid REFERENCES contact(id) ON DELETE SET NULL,
-  ticket_number    text,
-  title            text NOT NULL,
-  status           text,
-  priority         text,
-  issue_type       text,
-  sub_issue_type   text,
-  ticket_type      text,
-  created_date     timestamptz,
-  completed_date   timestamptz,
-  last_activity_at timestamptz,
-  description      text,
-  resolution       text,
-  source           text NOT NULL DEFAULT 'autotask',
-  external_ref     text,
-  created_at       timestamptz NOT NULL DEFAULT now(),
-  updated_at       timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (source, external_ref)
-);
-CREATE INDEX IF NOT EXISTS ix_ticket_account ON ticket (account_id);
+-- `ticket` already exists (migration 0014: id/account_id/contact_id/source/external_ref/
+-- number/title/status/priority/category/opened_at/closed_at/…, with uq_ticket_source_ref)
+-- but was never populated. Extend it with the support-detail columns the Autotask merge
+-- carries rather than shadowing it with a second shape.
+ALTER TABLE ticket
+  ADD COLUMN IF NOT EXISTS last_activity_at timestamptz,
+  ADD COLUMN IF NOT EXISTS description      text,
+  ADD COLUMN IF NOT EXISTS resolution       text,
+  ADD COLUMN IF NOT EXISTS sub_issue_type   text,
+  ADD COLUMN IF NOT EXISTS ticket_type      text;
 CREATE INDEX IF NOT EXISTS ix_ticket_last_activity ON ticket (last_activity_at DESC);
 
 -- Grants: app reads; cloud pipeline merges; on-prem composer reads.
