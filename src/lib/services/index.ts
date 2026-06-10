@@ -56,6 +56,20 @@ export interface AgentReply {
   conversationId?: string;
 }
 
+/**
+ * Agent settings wire shape (backend ADR-0037 — GET/PUT /api/agent/settings).
+ * `presets` is the authoritative preset → model-pair catalog; `models` is the
+ * pair the current preset pins.
+ */
+export interface AgentSettingsWire {
+  preset: "economy" | "balanced" | "premium";
+  /** Hard monthly ceiling in USD; null = no cap. */
+  budgetUsdMonthly: number | null;
+  models: { cheap: string; premium: string };
+  spendMonthToDateUsd: number;
+  presets: Record<"economy" | "balanced" | "premium", { cheap: string; premium: string }>;
+}
+
 /** Orchestrator + sub-agents (backend ADR-0036 — the Claude tool-use loop). */
 export const agentService = {
   /** One orchestrator turn scoped to the acting employee (app_user.id). */
@@ -69,6 +83,20 @@ export const agentService = {
       method: "POST",
       body: JSON.stringify(input),
       timeoutMs: 120_000, // the tool-use loop may take several model turns
+    }),
+
+  /** Current preset + budget + month-to-date spend (backend ADR-0037). */
+  getSettings: () => callService<AgentSettingsWire>(services.agent, "/agent/settings"),
+
+  /** Update preset and/or budget; `actingUserId` feeds the backend's audit trail. */
+  updateSettings: (input: {
+    preset?: "economy" | "balanced" | "premium";
+    budgetUsdMonthly?: number | null;
+    actingUserId?: string;
+  }) =>
+    callService<AgentSettingsWire>(services.agent, "/agent/settings", {
+      method: "PUT",
+      body: JSON.stringify(input),
     }),
 };
 
