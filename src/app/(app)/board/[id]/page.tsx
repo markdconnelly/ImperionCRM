@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canSeeAgentPages } from "@/lib/auth/roles";
 import { Icon } from "@/components/ui/icon";
 import { getBoardSessionDetail } from "@/lib/board/data";
 import {
@@ -62,6 +64,9 @@ export default async function BoardSessionPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // Admin-only (#90): transcripts carry the same sensitivity as the board page.
+  if (!canSeeAgentPages(await getSessionRoles())) redirect("/");
+
   const { id } = await params;
   const detail = await getBoardSessionDetail(id);
   if (!detail) notFound();

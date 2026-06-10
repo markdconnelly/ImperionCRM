@@ -1,6 +1,7 @@
 # ADR-0048: AI Agents operations page (orchestrator settings + activity)
 
-- **Status:** Accepted
+- **Status:** Accepted (amended by ADR-0050 — the page is now admin-only, not
+  visible to all roles)
 - **Date:** 2026-06-09
 
 ## Problem

@@ -87,6 +87,22 @@ export function budgetProgress(
   return { pct, tone: ratio >= 1 ? "red" : ratio >= 0.8 ? "amber" : "green" };
 }
 
+/**
+ * The note the Orchestrator card shows about where its state came from
+ * (`AgentSettingsState.source`). Empty for the live backend — nothing to explain.
+ * Shared by the AI Agents page and the Settings → AI tab (#90).
+ */
+export function settingsSourceNote(source: "backend" | "db" | "mock"): string {
+  switch (source) {
+    case "backend":
+      return "";
+    case "db":
+      return "Showing the persisted settings read directly from the database — the agent backend isn't reachable in this environment (AGENT_SERVICE_URL unset), so saving is disabled.";
+    case "mock":
+      return "Showing defaults — neither the agent backend nor a database is configured in this environment.";
+  }
+}
+
 /** Format a USD amount for display ("$12.34"; sub-cent spend still shows movement). */
 export function formatUsd(n: number): string {
   if (n > 0 && n < 0.01) return "<$0.01";

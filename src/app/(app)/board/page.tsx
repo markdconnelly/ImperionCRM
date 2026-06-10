@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConveneBoardCard } from "@/components/board/convene-board-card";
 import { listBoardPersonas, listBoardSessions } from "@/lib/board/data";
 import { sessionStatusMeta, timeAgo, truncate } from "@/lib/board/session";
 import { getSessionRoles } from "@/lib/auth/session";
+import { canSeeAgentPages } from "@/lib/auth/roles";
 import { can } from "@/lib/auth/policy";
 import { isDbConfigured } from "@/lib/db/client";
 import { conveneBoardAction } from "./actions";
@@ -18,7 +20,9 @@ export const dynamic = "force-dynamic"; // live sessions + deliberation results,
  */
 export default async function BoardPage() {
   const roles = await getSessionRoles();
-  const canConvene = can(roles, "sales:write"); // business-development surface (see actions.ts)
+  // Admin-only (#90): guard at the page too, not just nav visibility.
+  if (!canSeeAgentPages(roles)) redirect("/");
+  const canConvene = can(roles, "agents:operate"); // matches the action gate (ADR-0050)
 
   const [{ personas }, sessions] = await Promise.all([
     listBoardPersonas(),

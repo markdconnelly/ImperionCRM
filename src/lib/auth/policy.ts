@@ -27,6 +27,7 @@ export const CAPABILITIES = [
   "comms:write", // outbound sends + consent ledger
   "catalog:write", // discovery/assessment question + template configuration
   "settings:write", // connections, company credentials, GDAP, poll cadence
+  "agents:operate", // convene the AI board / operate the agent layer (ADR-0050: admin-only, spends model budget)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -44,6 +45,7 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   "comms:write": ["sales", "support"],
   "catalog:write": [],
   "settings:write": [],
+  "agents:operate": [],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */

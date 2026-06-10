@@ -6,6 +6,10 @@ import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { canSeeSettings, type AppRole } from "@/lib/auth/roles";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 import { CompanyCredentialCard } from "@/components/settings/company-credential-card";
+import { OrchestratorSettingsCard } from "@/components/agent/orchestrator-settings-card";
+import { getAgentSettingsState } from "@/lib/agent/settings-data";
+import { settingsSourceNote } from "@/lib/agent/settings";
+import { saveAgentSettingsAction } from "@/app/(app)/agents/actions";
 import { ConnectAccount } from "@/components/integrations/connect-account";
 import { ConnectionCard } from "@/components/integrations/connection-card";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
@@ -104,9 +108,10 @@ export default async function SettingsPage({
   const rolesLabel = roles.map((r) => ROLE_LABEL[r] ?? r).join(", ");
 
   const { connections } = getRepositories();
-  const [personal, company] = await Promise.all([
+  const [personal, company, agentSettings] = await Promise.all([
     connections.listUserConnections(email),
     connections.listCompanyConnections(),
+    getAgentSettingsState(),
   ]);
   const companyByProvider = new Map(company.map((c) => [c.provider, c]));
 
@@ -159,6 +164,36 @@ export default async function SettingsPage({
         </a>
       </Card>
     </div>
+  );
+
+  // ── AI tab (#90): orchestrator tier preset + budget + month-to-date spend ────
+  // Same card as the AI Agents page (ADR-0048); the whole Settings page is
+  // admin-only (redirect above), so non-admins never see this tab.
+  const aiPanel = (
+    <section className="flex flex-col gap-3">
+      <div>
+        <h3 className="font-display text-sm font-semibold tracking-tight">AI</h3>
+        <p className="mt-0.5 text-sm text-dim">
+          The orchestrator&apos;s model-tier preset, hard monthly budget cap, and
+          month-to-date spend. Saved through the backend (backend ADR-0037); the full
+          agent surface lives on{" "}
+          <Link href="/agents" className="text-accent hover:underline">
+            AI Agents
+          </Link>
+          .
+        </p>
+      </div>
+      <OrchestratorSettingsCard
+        preset={agentSettings.preset}
+        budgetUsdMonthly={agentSettings.budgetUsdMonthly}
+        spendMonthToDateUsd={agentSettings.spendMonthToDateUsd}
+        presets={agentSettings.presets}
+        canEdit
+        canSave={agentSettings.source === "backend"}
+        sourceNote={settingsSourceNote(agentSettings.source)}
+        saveAction={saveAgentSettingsAction}
+      />
+    </section>
   );
 
   // ── Your connections tab (personal, ADR-0024) ────────────────────────────────
@@ -257,6 +292,7 @@ export default async function SettingsPage({
       <SettingsTabs
         initialTab={tab}
         profile={profile}
+        ai={aiPanel}
         connections={connectionsPanel}
         credentials={credentials}
         tools={toolsPanel}

@@ -45,16 +45,14 @@ async function resolveActingUserId(): Promise<string | undefined> {
  * POST /board/sessions). This is a PROCESS, so it goes through the backend
  * (ADR-0042); the web role deliberately has no INSERT grant on board_* (0056).
  *
- * Capability: `sales:write` (ADR-0045). Convening is a business-development
- * action — the board deliberates growth/strategy questions, the same surface
- * sales:write already owns (opportunities, proposals, campaigns, workflows) —
- * and it spends real premium-tier model budget, so it shouldn't be open to every
- * role. `settings:write` would be wrong: convening isn't configuration, and
- * admin-only would lock out the people the board exists for. Admin holds every
- * capability implicitly, so admins can always convene.
+ * Capability: `agents:operate` (ADR-0050, superseding ADR-0049's `sales:write`
+ * choice). With the Board page admin-only (#90), a broader write grant would be
+ * unreachable from the GUI yet still invokable as a server-action endpoint —
+ * exactly the gap ADR-0045 closes. Convening spends real premium-tier model
+ * budget, so the action gate matches the page gate.
  */
 export async function conveneBoardAction(formData: FormData): Promise<ConveneBoardResult> {
-  await requireCapability("sales:write");
+  await requireCapability("agents:operate");
 
   const topic = String(formData.get("topic") ?? "").trim();
   const context = String(formData.get("context") ?? "").trim();

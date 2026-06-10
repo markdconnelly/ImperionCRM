@@ -1,10 +1,12 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { OrchestratorSettingsCard } from "@/components/agent/orchestrator-settings-card";
 import { getAgentSettingsState } from "@/lib/agent/settings-data";
 import { listRecentAgentRuns } from "@/lib/agent/activity";
-import { formatUsd } from "@/lib/agent/settings";
+import { formatUsd, settingsSourceNote } from "@/lib/agent/settings";
 import { getSessionRoles } from "@/lib/auth/session";
+import { canSeeAgentPages } from "@/lib/auth/roles";
 import { can } from "@/lib/auth/policy";
 import { isDbConfigured } from "@/lib/db/client";
 import { saveAgentSettingsAction } from "./actions";
@@ -56,17 +58,16 @@ function timeAgo(iso: string): string {
 
 export default async function AgentsPage() {
   const roles = await getSessionRoles();
+  // Admin-only (#90): nav hiding and the edge middleware use the same predicate,
+  // but guard here too so the page can never render for a non-admin (same
+  // defense-in-depth as Settings, ADR-0030).
+  if (!canSeeAgentPages(roles)) redirect("/");
   const canEdit = can(roles, "settings:write"); // admin-only (ADR-0045)
 
   const [settings, runs] = await Promise.all([getAgentSettingsState(), listRecentAgentRuns(20)]);
   const dbConfigured = isDbConfigured();
 
-  const sourceNote =
-    settings.source === "backend"
-      ? ""
-      : settings.source === "db"
-        ? "Showing the persisted settings read directly from the database — the agent backend isn't reachable in this environment (AGENT_SERVICE_URL unset), so saving is disabled."
-        : "Showing defaults — neither the agent backend nor a database is configured in this environment.";
+  const sourceNote = settingsSourceNote(settings.source);
 
   return (
     <div className="flex flex-col gap-4">
