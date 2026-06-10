@@ -4,6 +4,36 @@ The MSP business-management app (CRM + support + delivery + security posture) fo
 
 ## Language
 
+### Projects & delivery
+
+**Project Type**:
+A user-creatable category of project (table, not enum), created from the project board. Onboarding is the seeded, protected, foundational type — it gets its own dedicated page; all other types live on the project board.
+_Avoid_: project category
+
+**Project Task**:
+A task (the one unified task object) linked to a project. There is exactly one task model; sales, project, and ad-hoc tasks differ by category and linkage, never by table.
+_Avoid_: project ticket, delivery task (as a separate object)
+
+**Easy Mode**:
+Onboarding's automation surface: a playbook step carries a button that fires a function performing the real configuration in the customer's environment via the authorized API. Clicking is deploying — not a checkbox.
+_Avoid_: one-click setup, wizard
+
+**Easy-Mode Deploy**:
+One execution of an easy-mode step's configuration function. The corresponding project task is closed by a verification job confirming the configuration is actually in place — close-on-verification, never close-on-click. Idempotent; no-op with an audit note when no linked task exists.
+_Avoid_: auto-complete, step sync
+
+**Project Board**:
+The general surface where projects of every type are created and tracked. Onboarding projects appear here like any other; their dedicated Onboarding page is the easy-mode surface, not their home.
+_Avoid_: board (unqualified — the Board of Directors page owns that word), kanban
+
+**Sales Task**:
+A task with the sales category — a rep's next concrete sales action on a deal or contact. Same task object as everything else; the category is the discriminator.
+_Avoid_: sales ticket, activity (unqualified)
+
+**Sales Queue**:
+A rep's ordered list of their open sales tasks, grouped by due date and deal — the working surface of the sales activity page. A read model, not a stored object.
+_Avoid_: sales pipeline (that's deals by stage), task list (unqualified)
+
 ### Security posture
 
 **Customer Tenant**:
