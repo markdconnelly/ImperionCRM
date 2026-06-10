@@ -2252,16 +2252,17 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.engagements.listContracts();
       try {
+        // Silver `contract` (ADR-0044) — typed columns, account pre-linked by the
+        // pipeline merge; bronze stays the raw tier behind it.
         const { rows } = await pool.query<{
           id: string; account: string | null; name: string | null; number: string | null;
           status: string | null; contract_type: string | null; start_date: string | null; end_date: string | null;
         }>(
-          `SELECT c.external_id AS id, a.name AS account, c.contract_name AS name, c.contract_number AS number,
-                  c.status, c.contract_type, c.start_date, c.end_date
-             FROM autotask_contracts c
-             LEFT JOIN autotask_companies ac ON ac.external_ref = c.company_id
-             LEFT JOIN account a ON a.id = ac.account_id
-            ORDER BY c.contract_name NULLS LAST`,
+          `SELECT c.id::text AS id, a.name AS account, c.name, c.contract_number AS number,
+                  c.status, c.contract_type, c.start_date::text AS start_date, c.end_date::text AS end_date
+             FROM contract c
+             LEFT JOIN account a ON a.id = c.account_id
+            ORDER BY c.name NULLS LAST`,
         );
         return rows.map((r) => ({
           id: r.id, account: r.account, name: r.name, number: r.number,
