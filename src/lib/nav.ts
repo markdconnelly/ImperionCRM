@@ -32,12 +32,13 @@ export const navSecondary: NavItem[] = [
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
 ];
 
-// System group (bottom): the AI surfaces and Settings.
+// System group (bottom): the AI surfaces and Settings. Feedback sits LAST —
+// the bottom of the whole menu (Mark's UI review, 2026-06-09).
 export const navTertiary: NavItem[] = [
   { key: "agents", label: "AI Agents", icon: "Bot", href: "/agents" },
   { key: "board", label: "Board of Directors", icon: "Users", href: "/board" },
-  { key: "feedback", label: "Feedback", icon: "Lightbulb", href: "/feedback" },
   { key: "settings", label: "Settings", icon: "Settings", href: "/settings" },
+  { key: "feedback", label: "Feedback", icon: "Lightbulb", href: "/feedback" },
 ];
 
 // Routes that exist but are NOT rendered in the sidebar (reached from elsewhere),

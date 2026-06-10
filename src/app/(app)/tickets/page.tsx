@@ -1,9 +1,69 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
+import { Icon } from "@/components/ui/icon";
+import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
+import type { TicketFilter } from "@/lib/data/repositories";
+import { createSavedViewAction, deleteSavedViewAction } from "./actions";
 
-export default async function TicketsPage() {
-  const { engagements } = getRepositories();
-  const tickets = await engagements.listTickets();
+const DAY_OPTIONS = [
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+  { value: "90", label: "Last 90 days" },
+  { value: "365", label: "Last year" },
+];
+
+type Params = {
+  status?: string;
+  priority?: string;
+  account?: string;
+  days?: string;
+  view?: string;
+  f?: string; // present when the filter form was submitted (even with all-blank values)
+  saved?: string;
+};
+
+/**
+ * The ticket board (ADR-0046): a filter block (status / priority / account /
+ * time window) + named saved views — personal and company-shared, with one
+ * per-user default that applies when the page opens without explicit filters.
+ */
+export default async function TicketsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Params>;
+}) {
+  const params = await searchParams;
+  const session = await auth();
+  const email = session?.user?.email ?? null;
+
+  const { engagements, crm } = getRepositories();
+  const [views, options, accounts] = await Promise.all([
+    engagements.listSavedViews("ticket", email),
+    engagements.ticketFilterOptions(),
+    crm.listAccounts(),
+  ]);
+
+  // Resolve the active filter set: explicit URL params win; a ?view= applies
+  // that saved view; otherwise the user's default view (if any) applies.
+  const explicit = Boolean(params.f || params.status || params.priority || params.account || params.days);
+  const requestedView = params.view ? views.find((v) => v.id === params.view) : undefined;
+  const defaultView = !explicit && !requestedView ? views.find((v) => v.isMine && v.isDefault) : undefined;
+  const activeView = requestedView ?? defaultView;
+
+  const raw: Record<string, string | undefined> = activeView
+    ? activeView.filters
+    : { status: params.status, priority: params.priority, account: params.account, days: params.days };
+
+  const filter: TicketFilter = {
+    status: raw.status || undefined,
+    priority: raw.priority || undefined,
+    accountId: raw.account || undefined,
+    openedWithinDays: raw.days ? Number(raw.days) || undefined : undefined,
+  };
+
+  const tickets = await engagements.listTickets(filter);
+  const filterCount = Object.values(filter).filter((v) => v !== undefined).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -11,7 +71,127 @@ export default async function TicketsPage() {
         title="Tickets"
         description="Support tickets synced from Autotask, plus items spawned from engagements."
       />
+
+      {params.saved && (
+        <div className="rounded-md border border-green/40 bg-green/10 px-4 py-2 text-sm text-green">
+          View saved.
+        </div>
+      )}
+
+      {/* Saved views: chips for mine + company-shared */}
+      {views.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-dim">Views:</span>
+          <Link
+            href="/tickets?f=1"
+            className={`rounded-md border px-2.5 py-1 text-xs ${
+              !activeView ? "border-accent text-accent" : "border-border text-dim hover:text-text"
+            }`}
+          >
+            All tickets
+          </Link>
+          {views.map((v) => (
+            <span
+              key={v.id}
+              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${
+                activeView?.id === v.id
+                  ? "border-accent text-accent"
+                  : "border-border text-dim"
+              }`}
+            >
+              <Link href={`/tickets?view=${v.id}`} className="hover:text-text">
+                {v.name}
+              </Link>
+              {v.isDefault && v.isMine && <Icon name="Star" size={11} />}
+              {v.isShared && (
+                <span title={`Shared${v.owner ? ` by ${v.owner}` : ""}`}>
+                  <Icon name="Users" size={11} />
+                </span>
+              )}
+              {v.isMine && (
+                <form action={deleteSavedViewAction} className="flex">
+                  <input type="hidden" name="id" value={v.id} />
+                  <button type="submit" aria-label={`Delete view ${v.name}`} className="hover:text-red">
+                    <Icon name="X" size={11} />
+                  </button>
+                </form>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Filter block */}
+      <section className="rounded-xl border border-border bg-panel p-4">
+        <h3 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold tracking-tight">
+          <Icon name="SlidersHorizontal" size={15} />
+          Filters
+          {activeView && (
+            <span className="rounded-md border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-normal text-accent">
+              viewing “{activeView.name}”
+            </span>
+          )}
+        </h3>
+        <form method="get" className="flex flex-wrap items-end gap-3">
+          <input type="hidden" name="f" value="1" />
+          <Select label="Status" name="status" value={raw.status} options={options.statuses} />
+          <Select label="Priority" name="priority" value={raw.priority} options={options.priorities} />
+          <Select
+            label="Account"
+            name="account"
+            value={raw.account}
+            options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+          />
+          <Select label="Opened" name="days" value={raw.days} options={DAY_OPTIONS} />
+          <button
+            type="submit"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+          >
+            Apply
+          </button>
+          <Link href="/tickets?f=1" className="px-2 py-2 text-sm text-dim hover:text-text">
+            Clear
+          </Link>
+        </form>
+
+        {/* Save the current filter set as a named view */}
+        <form
+          action={createSavedViewAction}
+          className="mt-3 flex flex-wrap items-center gap-3 border-t border-border pt-3"
+        >
+          {Object.entries(raw).map(([k, v]) =>
+            v ? <input key={k} type="hidden" name={`filter_${k}`} value={v} /> : null,
+          )}
+          <input
+            type="text"
+            name="name"
+            required
+            placeholder="Save current filters as…"
+            className="w-56 rounded-md border border-border bg-panel-2 px-3 py-1.5 text-sm text-text placeholder:text-dim"
+          />
+          <label className="flex items-center gap-1.5 text-xs text-dim">
+            <input type="checkbox" name="shared" className="accent-[#5B8DEF]" /> Share with company
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-dim">
+            <input type="checkbox" name="default" className="accent-[#5B8DEF]" /> My default view
+          </label>
+          <button
+            type="submit"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+          >
+            Save view
+          </button>
+        </form>
+      </section>
+
+      {/* Results */}
       <div className="rounded-lg border border-border bg-panel">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs text-dim">
+          <span>
+            {tickets.length} ticket{tickets.length === 1 ? "" : "s"}
+            {filterCount > 0 ? ` · ${filterCount} filter${filterCount === 1 ? "" : "s"} applied` : ""}
+          </span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -38,8 +218,9 @@ export default async function TicketsPage() {
               {tickets.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-dim">
-                    No tickets yet. They appear here once Autotask sync runs or one is
-                    spawned from an engagement.
+                    {filterCount > 0
+                      ? "No tickets match these filters."
+                      : "No tickets yet. They appear here once Autotask sync runs or one is spawned from an engagement."}
                   </td>
                 </tr>
               )}
@@ -48,5 +229,38 @@ export default async function TicketsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function Select({
+  label,
+  name,
+  value,
+  options,
+}: {
+  label: string;
+  name: string;
+  value: string | undefined;
+  options: Array<string | { value: string; label: string }>;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-dim">
+      {label}
+      <select
+        name={name}
+        defaultValue={value ?? ""}
+        className="min-w-36 rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text"
+      >
+        <option value="">All</option>
+        {options.map((o) => {
+          const opt = typeof o === "string" ? { value: o, label: o } : o;
+          return (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          );
+        })}
+      </select>
+    </label>
   );
 }
