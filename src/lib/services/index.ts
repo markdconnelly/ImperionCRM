@@ -20,7 +20,11 @@ import { callService, type ServiceDescriptor } from "@/lib/services/external-cli
 // backend (imperioncrmbackend) shares one audience, so integration + credentials point
 // at the same INTEGRATION_SERVICE_AUDIENCE.
 const services = {
-  agent: { name: "Agent orchestrator", baseUrlEnv: "AGENT_SERVICE_URL" },
+  agent: {
+    name: "Agent orchestrator",
+    baseUrlEnv: "AGENT_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE", // same backend host → same Easy Auth audience
+  },
   integration: {
     name: "Integration sync",
     baseUrlEnv: "INTEGRATION_SERVICE_URL",
@@ -42,11 +46,30 @@ const services = {
   },
 } satisfies Record<string, ServiceDescriptor>;
 
-/** Orchestrator + sub-agents (ADR-0015). Hosted externally (container app). */
+/** The orchestrator's reply shape (backend ADR-0032/0036 wire contract). */
+export interface AgentReply {
+  text: string;
+  routedTo: string;
+  routingReason: string;
+  requiresApproval?: boolean;
+  proposedAction?: { kind: string; contactId: string; channel: string; body: string };
+  conversationId?: string;
+}
+
+/** Orchestrator + sub-agents (backend ADR-0036 — the Claude tool-use loop). */
 export const agentService = {
-  /** Send a message to the orchestrator scoped to the acting user. */
-  ask: (input: { userId: string; message: string }) =>
-    callService(services.agent, "/ask", { method: "POST", body: JSON.stringify(input) }),
+  /** One orchestrator turn scoped to the acting employee (app_user.id). */
+  ask: (input: {
+    message: string;
+    actingUserId: string;
+    context?: Record<string, unknown>;
+    conversationId?: string;
+  }) =>
+    callService<AgentReply>(services.agent, "/agent", {
+      method: "POST",
+      body: JSON.stringify(input),
+      timeoutMs: 120_000, // the tool-use loop may take several model turns
+    }),
 };
 
 /** Integration sync — M365/Autotask/IT Glue/Plaud/Facebook (ADR-0012). */
