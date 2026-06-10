@@ -466,6 +466,8 @@ export interface ContactProfile {
   location: string | null;
   avatarUrl: string | null;
   lifecycleStatus: string; // stranger|known|engaged|customer
+  /** CRM lifecycle stage (ADR-0031): audience|lead|prospect|client. Optional so mock literals stay valid. */
+  crmStage?: string | null;
   account: string | null;
   accountId: string | null;
   lastEnrichedAt: string | null;

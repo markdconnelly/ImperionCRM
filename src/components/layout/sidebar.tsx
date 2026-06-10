@@ -82,7 +82,7 @@ export function Sidebar({
         </div>
         {!collapsed && (
           <span className="font-display text-sm font-semibold tracking-tight">
-            Imperion CRM
+            Imperion Business Manager
           </span>
         )}
       </div>

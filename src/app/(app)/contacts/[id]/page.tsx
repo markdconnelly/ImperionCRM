@@ -1,20 +1,33 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { Icon } from "@/components/ui/icon";
 import { Timeline } from "@/components/comms/timeline";
 import { EnrichmentDossier } from "@/components/comms/enrichment-dossier";
 import { SocialIdentities } from "@/components/comms/social-identities";
 import { SourceRecords } from "@/components/comms/source-records";
+import { IntegrationHealth } from "@/components/comms/integration-health";
 import { ConsentPanel } from "@/components/comms/consent-panel";
 import { ActionItems } from "@/components/comms/action-items";
 import { Compose } from "@/components/comms/compose";
 import { sendMessageAction, completeActionItemAction, setConsentAction } from "../actions";
 
-/** A headed panel used across the detail page. */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** A headed panel with an icon, used across the detail page. */
+function Section({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-xl border border-border bg-panel p-4">
-      <h3 className="mb-3 font-display text-sm font-semibold tracking-tight">{title}</h3>
+      <h3 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold tracking-tight">
+        <Icon name={icon} size={15} />
+        {title}
+      </h3>
       {children}
     </section>
   );
@@ -25,6 +38,13 @@ const LIFECYCLE_LABEL: Record<string, string> = {
   known: "Known",
   engaged: "Engaged",
   customer: "Customer",
+};
+
+const CRM_STAGE_LABEL: Record<string, string> = {
+  audience: "Audience",
+  lead: "Lead",
+  prospect: "Prospect",
+  client: "Client",
 };
 
 export default async function ContactDetailPage({
@@ -83,6 +103,11 @@ export default async function ContactDetailPage({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {profile.crmStage && (
+            <span className="rounded-md border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent">
+              {CRM_STAGE_LABEL[profile.crmStage] ?? profile.crmStage}
+            </span>
+          )}
           <span className="rounded-md border border-border px-2 py-1 text-xs text-dim">
             {LIFECYCLE_LABEL[profile.lifecycleStatus] ?? profile.lifecycleStatus}
           </span>
@@ -107,9 +132,9 @@ export default async function ContactDetailPage({
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Main column: communications */}
+        {/* Main column: act on the contact */}
         <div className="flex flex-col gap-4 lg:col-span-2">
-          <Section title="Send a message">
+          <Section title="Send a message" icon="Send">
             <Compose
               action={sendMessageAction}
               contactId={id}
@@ -118,47 +143,69 @@ export default async function ContactDetailPage({
             />
           </Section>
 
-          <Section title="Communications timeline">
-            <Timeline items={timeline} emptyHint="No communications recorded for this contact yet." />
+          <Section title="Integrations" icon="PlugZap">
+            <IntegrationHealth sources={sources} />
           </Section>
 
-          <Section title="Action items">
+          <Section title="Action items" icon="ListChecks">
             <ActionItems items={actions} completeAction={completeActionItemAction} back={back} />
           </Section>
         </div>
 
         {/* Sidebar: profile intelligence */}
         <div className="flex flex-col gap-4">
-          <Section title="Profile">
+          <Section title="Profile" icon="User">
             <dl className="flex flex-col gap-1.5 text-sm">
               <Row label="Email" value={profile.email} />
               <Row label="Phone" value={profile.phone} />
               <Row label="Headline" value={profile.headline} />
               <Row label="Location" value={profile.location} />
+              <Row
+                label="CRM stage"
+                value={
+                  profile.crmStage
+                    ? CRM_STAGE_LABEL[profile.crmStage] ?? profile.crmStage
+                    : null
+                }
+              />
               <Row label="Last enriched" value={profile.lastEnrichedAt} />
             </dl>
           </Section>
 
-          <Section title="Enrichment dossier">
+          <Section title="Enrichment dossier" icon="ScanSearch">
             <EnrichmentDossier facts={enrichment} />
           </Section>
 
-          <Section title="Social profiles">
+          <Section title="Social profiles" icon="AtSign">
             <SocialIdentities identities={social} />
           </Section>
 
-          <Section title="Data sources">
+          <Section title="Data sources" icon="Database">
             <SourceRecords sources={sources} />
           </Section>
 
           {relatedBronze.length > 0 && (
-            <Section title="Related source data">
+            <Section title="Related source data" icon="FolderGit2">
               <SourceRecords sources={relatedBronze} />
             </Section>
           )}
 
-          <Section title="Consent">
+          <Section title="Consent" icon="ShieldCheck">
             <ConsentPanel current={currentConsent} contactId={id} action={setConsentAction} />
+          </Section>
+        </div>
+
+        {/* Full-width bottom: the communications timeline */}
+        <div className="lg:col-span-3">
+          <Section title="Communications timeline" icon="History">
+            <p className="-mt-2 mb-3 text-xs text-dim">
+              Newest first. Click an entry to open the communication in a new window.
+            </p>
+            <Timeline
+              items={timeline}
+              newWindow
+              emptyHint="No communications recorded for this contact yet."
+            />
           </Section>
         </div>
       </div>

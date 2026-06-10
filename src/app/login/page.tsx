@@ -13,7 +13,7 @@ export default function LoginPage() {
             I
           </div>
           <span className="font-display text-lg font-semibold tracking-tight">
-            Imperion CRM
+            Imperion Business Manager
           </span>
         </div>
         <h1 className="font-display text-xl font-semibold tracking-tight">
