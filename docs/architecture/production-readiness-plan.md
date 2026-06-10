@@ -17,8 +17,10 @@ the previous plan landed, merged, and deployed — plus the AI Board:
    bronze→silver in near-real-time with hash parity against the bulk loader (pipeline
    ADR-0013); the local module (v0.5.0) has post writers for all granted bronze tables and
    gold composers for **nine** entity types.
-4. **Migrations `0001–0057` applied to prod** (verified). Grants follow the code: 0055
-   (pipeline writes), 0056 (agent core, backend-writes/web-reads), 0057 (composer reads).
+4. **Migrations `0001–0058` applied to prod** (verified). Grants follow the code: 0055
+   (pipeline writes), 0056 (agent core, backend-writes/web-reads), 0057 (composer reads),
+   0058 (project types as data + project/task columns, ADR-0052 — app-owned; no new
+   pipeline/backend grants).
 
 What remains is **operator configuration** (§ checklist below) and a short tail of
 **deferred builds** (ingestion engines, lead-capture receivers, enrichment endpoints,
@@ -28,7 +30,7 @@ Sentinel/KQM/DocuSign collectors, M365 comms bronze tables).
 
 | Repo | Role | State (2026-06-10) |
 | --- | --- | --- |
-| **`ImperionCRM`** (front-end) ← *this repo* | GUI; direct DB reads; **owns DB schema + migrations** | Live. Migrations `0001–0057` applied. Agents page (ADR-0048), Board module (ADR-0049), OAuth UI + callback route, saved views, device inventory all real. |
+| **`ImperionCRM`** (front-end) ← *this repo* | GUI; direct DB reads; **owns DB schema + migrations** | Live. Migrations `0001–0058` applied. Agents page (ADR-0048), Board module (ADR-0049), **project board** (ADR-0052 #95), OAuth UI + callback route, saved views, device inventory all real. |
 | **`ImperionCRM_Backend`** | ALL processes: agent runtime, OAuth, sends, credentials, semantic search | Claude tool-use orchestrator (ADR-0036) + tier presets/budget (ADR-0037) + per-user OAuth (ADR-0038) + **Board runtime** (ADR-0039) deployed. Sends gated on consent; SMS awaits ACS config. |
 | **`ImperionCRM_Pipeline`** (cloud) | Live data: webhooks, bronze→silver merge, on-demand refresh | Webhook payload handlers **implemented** (ADR-0013): Autotask tickets land + merge inline; Graph notifications trigger GDAP-fail-closed targeted refresh. Merge covers contacts/accounts/devices/contracts/tickets/exposures/assessments. |
 | **`ImperionCRM_LocalPipelineEnrichment`** (on-prem) | Heavy lifting: bulk ingestion + **all** vectorization | Module **v0.5.0**: post writers fanned out (PR #68), **nine** knowledge composers (PR #69 — account, contact, contract, ticket, device, exposure, assessment, proposal, posture), 279 hermetic tests. Vectorization stage built; awaits the real Voyage key. |
@@ -102,8 +104,9 @@ Sentinel/KQM/DocuSign collectors, M365 comms bronze tables).
 
 ## Verified live in prod (2026-06-10)
 
-- Migrations `0001–0057`; agent core + board tables with 5 seeded personas; saved views;
-  device inventory; agent settings singleton.
+- Migrations `0001–0058`; agent core + board tables with 5 seeded personas; saved views;
+  device inventory; agent settings singleton; project_type table (onboarding seeded
+  protected) + project/task columns (ADR-0052, applied + idempotency re-run 2026-06-10).
 - Deploy pipelines green on all three Azure repos (web app + 2 Function Apps, OIDC).
 - Gold layer: 205 knowledge objects (4 entity types) — composers for 9 ready to re-sync.
 - 8 PRs merged this sprint: front-end #76/#77/#78(+#79)/#80/#81/#82 · backend #15/#16 ·

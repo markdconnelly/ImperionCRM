@@ -34,8 +34,10 @@ flowchart LR
 ## Migrations
 
 Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in order with an
-Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0055**
-applied in prod (verified 2026-06-09). Recent: 0044/0047/0048/0049/0051/0055 identity
+Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0058**
+applied in prod (verified 2026-06-10; 0056 agent core + board, 0057 composer read
+grants, 0058 project types as data + project/task columns per ADR-0052).
+Recent: 0044/0047/0048/0049/0051/0055 identity
 grants (local pipeline, backend functions, pipeline managed identity — 0055 adds the
 cloud MI's INSERT/UPDATE on `autotask_tickets` for the live webhook plus the local
 pipeline's per-source bronze writes); 0045/0046 gold
