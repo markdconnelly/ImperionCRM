@@ -151,6 +151,41 @@ export const pipelineService = {
 };
 
 /**
+ * Per-user OAuth connection flows (ADR-0024, backend ADR-0038). The backend owns the
+ * whole authorization-code dance: `start` parks a one-time CSRF state in Key Vault and
+ * returns the provider's authorization URL; the provider redirects the browser to OUR
+ * `/api/connections/{provider}/callback` route, which forwards code+state here
+ * server-side (managed-identity auth — the browser never talks to the backend);
+ * `disconnect` deletes the Key Vault token secret and marks the row `revoked`.
+ * Providers: m365 | google | youtube | linkedin | facebook (plaud is key-based — the
+ * backend answers 501 by design). An unconfigured provider also returns 501 and the
+ * UI degrades to today's stub behavior.
+ */
+export const connectionsService = {
+  /** Begin the flow for the acting employee (`app_user.id`). */
+  startOAuth: (provider: string, input: { userId: string; displayName?: string }) =>
+    callService<{ authorizationUrl: string; state: string }>(
+      services.integration,
+      `/connections/${encodeURIComponent(provider)}/start`,
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+  /** Forward the provider's redirect (code+state) for the one-time exchange. */
+  completeOAuthCallback: (provider: string, input: { code: string; state: string }) =>
+    callService<{ connectionId: string; provider: string; status: string }>(
+      services.integration,
+      `/connections/${encodeURIComponent(provider)}/callback`,
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+  /** Revoke token custody (deletes the Key Vault secret; row → 'revoked'). */
+  disconnectOAuth: (provider: string, input: { userId: string }) =>
+    callService<{ disconnected: boolean; connectionId: string | null; status: string }>(
+      services.integration,
+      `/connections/${encodeURIComponent(provider)}/disconnect`,
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+};
+
+/**
  * Company credential / secret store (ADR-0036). The backend is the only thing that
  * writes secrets to Key Vault (CLAUDE.md §5 / ADR-0028 isolation); this repo just
  * hands it the entered fields and gets back a Key Vault reference — the secret never

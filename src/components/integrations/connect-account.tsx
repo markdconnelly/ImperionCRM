@@ -10,9 +10,11 @@ const PERSONAL_PROVIDERS = [
 ];
 
 /**
- * "Connect your account" buttons (ADR-0024). Each posts a stubbed OAuth connect —
- * real token exchange + Key Vault storage land later. Scope is fixed to the
- * employee's personal account.
+ * "Connect your account" buttons (ADR-0024). Each posts `connectAction`, which
+ * starts the backend's real authorization-code flow and redirects the browser to
+ * the provider's consent screen (backend ADR-0038); unconfigured providers — and
+ * Plaud, which is key-based — degrade to the recorded stub with a notice. Scope is
+ * fixed to the employee's personal account.
  */
 export function ConnectAccount({
   connectAction,

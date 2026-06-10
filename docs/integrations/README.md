@@ -42,9 +42,56 @@ the `ImperionCRM_Pipeline` repo reads it and must honour `0` as paused.
 ### Secrets
 
 OAuth tokens are **never** stored in the database — `connection.keyvault_secret_ref`
-points at the Azure Key Vault secret that holds them (CLAUDE.md §5). Live OAuth flows,
-token storage, and background sync run in external functions (ADR-0018); the current
-scaffold records connections and the identity map only.
+points at the Azure Key Vault secret that holds them (CLAUDE.md §5). Live OAuth flows
+and token storage run in the backend (ADR-0018/0028, backend ADR-0038); background
+sync is still deferred.
+
+## Per-user OAuth flow (ADR-0024 + backend ADR-0038)
+
+Settings → **Your connections** runs the real authorization-code flow for
+`m365 | google | youtube | linkedin | facebook` (Plaud is key-based — no public OAuth —
+and stays a recorded stub):
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant W as Web app (this repo)
+    participant F as Backend (ImperionCRM_Backend)
+    participant P as Provider
+
+    B->>W: Connect <provider> (connectAction, settings:write)
+    W->>F: POST /connections/{provider}/start { userId }   (MI bearer)
+    F-->>W: { authorizationUrl, state }
+    W-->>B: redirect to authorizationUrl
+    B->>P: consent
+    P-->>B: redirect to /api/connections/{provider}/callback?code&state
+    B->>W: GET callback route (session + settings:write required)
+    W->>F: POST /connections/{provider}/callback { code, state }   (MI bearer)
+    F-->>W: { connectionId, status: 'active' }  (tokens → Key Vault; row upserted)
+    W-->>B: redirect /settings?tab=connections&connect=ok (notice)
+```
+
+- **`connectAction`** (`src/app/(app)/settings/actions.ts`) resolves the acting
+  `app_user.id` from the session, calls `connectionsService.startOAuth`
+  (`src/lib/services/index.ts` → `INTEGRATION_SERVICE_URL`, managed-identity bearer),
+  and redirects the browser to the provider. Backend 501 / unset service URL →
+  the previous stub row is recorded with a "not configured yet" notice — the page
+  never breaks.
+- **`/api/connections/[provider]/callback`** receives the provider redirect and
+  forwards `code`+`state` server-side — the browser never talks to the backend and no
+  token material passes through the web app. Provider `error=` (user cancelled) and
+  invalid/expired `state` (the backend's one-time, Key-Vault-parked CSRF nonce) are
+  surfaced as notices via `/settings?tab=connections&connect=<result>`.
+- **`disconnectAction`** calls `POST /connections/{provider}/disconnect` FIRST — the
+  backend deletes the Key Vault token secret (real revocation) and marks the row
+  `revoked` (`connection_status` enum, migrations 0020/0033) — then removes the local
+  row as before. If revocation fails unexpectedly the row is kept visible for retry.
+- Pure flow logic + flag vocabulary live in `src/lib/integrations/personal-oauth.ts`
+  (unit-tested).
+- **Operator settings** (backend Function App): `OAUTH_REDIRECT_BASE_URL` =
+  `https://imperioncrm.azurewebsites.net/api/connections` plus per-provider
+  `OAUTH_<P>_CLIENT_ID` / `OAUTH_<P>_CLIENT_SECRET_SECRET` — see
+  [`../operations/credential-wiring-next-steps.md`](../operations/credential-wiring-next-steps.md) §4b.
 
 ## Company credentials (ADR-0036)
 

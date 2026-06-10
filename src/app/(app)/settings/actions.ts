@@ -9,23 +9,44 @@ import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
-import { credentialsService, pipelineService } from "@/lib/services";
-import { ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { connectionsService, credentialsService, pipelineService } from "@/lib/services";
+import { ServiceCallError, ServiceNotConfiguredError } from "@/lib/services/external-client";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
+import {
+  isPersonalOAuthProvider,
+  settingsConnectionsPath,
+  type ConnectResult,
+} from "@/lib/integrations/personal-oauth";
+import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 
-// Default OAuth scopes for personal connects (mirrors the former /integrations).
+// Default OAuth scopes recorded on the STUB path only (backend unavailable / Plaud).
+// On a live connect the backend writes the real granted scopes (backend ADR-0038).
 const DEFAULT_SCOPES: Record<string, string[]> = {
   m365: ["Mail.Read", "Calendars.Read", "Chat.Read"],
   google: ["gmail.readonly", "calendar.readonly"],
   youtube: ["youtube.readonly"],
-  linkedin: ["r_liteprofile", "r_organization_social"],
+  linkedin: ["openid", "profile", "email"], // OIDC scopes — r_liteprofile is deprecated (backend ADR-0038)
   facebook: ["public_profile", "pages_read_engagement"],
   plaud: ["recordings.read"],
 };
 
+/** True when the backend says a provider/endpoint isn't configured (clean 501). */
+function isBackendNotConfigured(err: unknown): boolean {
+  return (
+    err instanceof ServiceNotConfiguredError ||
+    (err instanceof ServiceCallError && err.status === 501)
+  );
+}
+
 /**
- * Connect a personal external account (ADR-0024). OAuth is stubbed this phase —
- * records the connection row; real token exchange + Key Vault storage land later.
+ * Connect a personal external account (ADR-0024 + backend ADR-0038). For the live
+ * OAuth providers this starts the backend's authorization-code flow (the backend
+ * parks a one-time CSRF state in Key Vault and returns the provider's consent URL)
+ * and redirects the browser there; the provider then redirects back to
+ * `/api/connections/{provider}/callback`, which finishes the exchange server-side
+ * and lands on Settings with a notice. When the backend (or the provider's app
+ * registration) isn't configured yet — or for Plaud, which is key-based — this
+ * degrades to the previous stub behavior: record the row locally and say so.
  */
 export async function connectAction(formData: FormData) {
   const provider = String(formData.get("provider") ?? "");
@@ -35,21 +56,82 @@ export async function connectAction(formData: FormData) {
   if (!provider) return;
 
   const session = await auth();
+  const email = session?.user?.email ?? null;
+
+  // Live flow — only for user-scope OAuth providers with a resolvable app_user.
+  let authorizationUrl: string | null = null;
+  let failure: ConnectResult | null = null;
+  if (scope === "user" && isPersonalOAuthProvider(provider) && email) {
+    const userId = await resolveAppUserIdByEmail(email);
+    if (userId) {
+      try {
+        const res = await connectionsService.startOAuth(provider, {
+          userId,
+          displayName: displayName ?? email,
+        });
+        authorizationUrl = res.authorizationUrl;
+      } catch (err) {
+        if (!isBackendNotConfigured(err)) {
+          console.error(`connectAction(${provider}) backend start failed:`, err);
+          failure = "error";
+        }
+        // 501 / unset INTEGRATION_SERVICE_URL → fall through to the stub below.
+      }
+    }
+  }
+
+  // redirect() throws — keep it outside any try/catch. The backend callback writes
+  // the connection row; this action records nothing for the live path.
+  if (authorizationUrl) redirect(authorizationUrl);
+  if (failure) redirect(settingsConnectionsPath(failure, provider));
+
+  // Stub path (previous behavior, unchanged): record the connection row locally so
+  // the card renders, and surface a notice that the flow isn't live yet.
   const { connections } = getRepositories();
   await connections.connect({
     scope,
-    ownerEmail: session?.user?.email ?? null,
+    ownerEmail: email,
     provider,
-    displayName: displayName ?? session?.user?.email ?? null,
+    displayName: displayName ?? email,
     scopes: DEFAULT_SCOPES[provider] ?? [],
   });
   revalidatePath("/settings");
+  redirect(settingsConnectionsPath("stubbed", provider));
 }
 
+/**
+ * Disconnect a connection. For live per-user OAuth providers the backend is called
+ * FIRST — it deletes the Key Vault token secret (real revocation of token custody)
+ * and marks the row `revoked` (backend ADR-0038) — then the local row is removed as
+ * before. If the backend errors unexpectedly the row is kept so the operator can
+ * see it and retry; an unconfigured backend (501) just falls back to the local delete.
+ */
 export async function disconnectAction(formData: FormData) {
   await requireCapability("settings:write");
   const id = String(formData.get("id") ?? "");
+  const provider = String(formData.get("provider") ?? "");
+  const scope = String(formData.get("scope") ?? "");
   if (!id) return;
+
+  if (scope === "user" && isPersonalOAuthProvider(provider)) {
+    const session = await auth();
+    const email = session?.user?.email ?? "";
+    const userId = email ? await resolveAppUserIdByEmail(email) : null;
+    if (userId) {
+      try {
+        await connectionsService.disconnectOAuth(provider, { userId });
+      } catch (err) {
+        if (!isBackendNotConfigured(err)) {
+          // Token custody was NOT revoked — keep the row visible rather than
+          // deleting it and stranding a live token in Key Vault.
+          console.error(`disconnectAction(${provider}) backend revoke failed:`, err);
+          revalidatePath("/settings");
+          return;
+        }
+      }
+    }
+  }
+
   const { connections } = getRepositories();
   await connections.disconnect(id);
   revalidatePath("/settings");
