@@ -74,6 +74,16 @@ export function canSeeAgentPages(roles: readonly AppRole[] | undefined): boolean
 }
 
 /**
+ * Project-board writes — creating/editing projects and project types — belong
+ * to delivery: admin | project_manager (ADR-0052 §8). This is the GUI-side
+ * twin of the `delivery:write` capability the server actions enforce
+ * (ADR-0045); reads stay open to all roles.
+ */
+export function canManageProjects(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "project_manager");
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */

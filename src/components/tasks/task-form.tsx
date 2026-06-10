@@ -16,6 +16,8 @@ export function TaskForm({
       className="flex max-w-lg flex-col gap-4 rounded-xl border border-border bg-panel p-5"
     >
       {task && <input type="hidden" name="id" value={task.id} />}
+      {/* Preserve the project linkage (ADR-0052) — edited tasks keep their project. */}
+      {task?.projectId && <input type="hidden" name="projectId" value={task.projectId} />}
 
       <Field label="Title">
         <TextInput name="title" defaultValue={task?.title ?? ""} required />

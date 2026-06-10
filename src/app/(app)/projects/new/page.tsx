@@ -1,36 +1,34 @@
-import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProjectForm } from "@/components/projects/project-form";
-import { updateProjectAction } from "../../../projects/actions";
+import { createProjectAction } from "../actions";
 import { getRepositories } from "@/lib/data";
 
-export default async function EditProjectPage({
-  params,
+export default async function NewProjectPage({
+  searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  searchParams: Promise<{ type?: string }>;
 }) {
-  const { id } = await params;
+  const { type } = await searchParams;
   const { crm } = getRepositories();
-  const [project, accounts, opportunities, types, owners] = await Promise.all([
-    crm.getProject(id),
+  const [accounts, opportunities, types, owners] = await Promise.all([
     crm.accountOptions(),
     crm.opportunityOptions(),
     crm.listProjectTypes(),
     crm.userOptions(),
   ]);
-  if (!project) notFound();
+  const defaultTypeId = types.find((t) => t.key === type)?.id;
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="Edit project" description={project.name} />
+      <PageHeader title="New project" description="Track a project of any type on the board." />
       <ProjectForm
-        action={updateProjectAction}
-        project={project}
+        action={createProjectAction}
         accounts={accounts}
         opportunities={opportunities}
         types={types}
         owners={owners}
-        returnTo="/onboarding"
+        defaultTypeId={defaultTypeId}
+        returnTo="/projects"
       />
     </div>
   );

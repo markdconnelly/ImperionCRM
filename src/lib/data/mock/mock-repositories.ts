@@ -109,6 +109,9 @@ export const mockRepositories: Repositories = {
     async listTasks() {
       return [];
     },
+    async listProjectTasks() {
+      return [];
+    },
     async getTask() {
       return null;
     },
@@ -149,6 +152,33 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async deleteProject() {
+      throw new Error(NO_DB);
+    },
+    async listProjectTypes() {
+      // The two seeded types (migration 0058) so the board renders in mock mode.
+      return [
+        {
+          id: "pt-onboarding",
+          key: "onboarding",
+          name: "Onboarding",
+          description: null,
+          isProtected: true,
+          projectCount: 0,
+        },
+        {
+          id: "pt-implementation",
+          key: "implementation",
+          name: "Implementation",
+          description: null,
+          isProtected: false,
+          projectCount: 0,
+        },
+      ];
+    },
+    async createProjectType() {
+      throw new Error(NO_DB);
+    },
+    async deleteProjectType() {
       throw new Error(NO_DB);
     },
     async listOnboarding() {
@@ -232,6 +262,9 @@ export const mockRepositories: Repositories = {
       return contacts.map((c) => ({ id: c.id, name: `${c.fullName}${c.account ? ` (${c.account})` : ""}` }));
     },
     async assessmentOptions() {
+      return [];
+    },
+    async userOptions() {
       return [];
     },
   },

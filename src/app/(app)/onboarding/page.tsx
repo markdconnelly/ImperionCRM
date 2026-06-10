@@ -4,12 +4,14 @@ import { ProjectsTable } from "@/components/projects/projects-table";
 import { OnboardingBoard } from "@/components/onboarding/onboarding-board";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { getRepositories } from "@/lib/data";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canManageProjects } from "@/lib/auth/roles";
 import {
-  deleteProjectAction,
   setMilestoneHealthAction,
   applyTemplateAction,
   toggleStepAction,
 } from "./actions";
+import { deleteProjectAction } from "../projects/actions";
 import { deleteTaskAction } from "../tasks/actions";
 
 // Onboarding is a full project-management dashboard (ADR-0034/0037): per-client
@@ -18,11 +20,13 @@ import { deleteTaskAction } from "../tasks/actions";
 // Autotask PM.
 export default async function OnboardingPage() {
   const { crm } = getRepositories();
-  const [onboarding, projects, tasks] = await Promise.all([
+  const [roles, onboarding, projects, tasks] = await Promise.all([
+    getSessionRoles(),
     crm.listOnboarding(),
     crm.listProjects(),
     crm.listTasks(),
   ]);
+  const canWrite = canManageProjects(roles);
   const pmTasks = tasks.filter((t) => t.category === "project" || t.category === "onboarding");
   const today = new Date().toISOString().slice(0, 10);
 
@@ -66,8 +70,24 @@ export default async function OnboardingPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h3 className="font-display text-base font-semibold tracking-tight">All projects</h3>
-        <ProjectsTable projects={projects} deleteAction={deleteProjectAction} />
+        <div>
+          <h3 className="font-display text-base font-semibold tracking-tight">
+            Onboarding projects
+          </h3>
+          <p className="mt-0.5 text-sm text-dim">
+            The foundational project type (ADR-0052). Every other type lives on the{" "}
+            <Link href="/projects" className="text-accent hover:underline">
+              project board
+            </Link>
+            .
+          </p>
+        </div>
+        <ProjectsTable
+          projects={projects.filter((p) => p.typeKey === "onboarding")}
+          deleteAction={deleteProjectAction}
+          showType={false}
+          canWrite={canWrite}
+        />
       </section>
     </div>
   );

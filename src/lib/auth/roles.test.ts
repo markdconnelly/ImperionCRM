@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  canManageProjects,
   canSeeAgentPages,
   canSeeRevenue,
   canSeeSettings,
@@ -65,6 +66,17 @@ describe("predicates", () => {
     }
     expect(canSeeAgentPages([])).toBe(false);
     expect(canSeeAgentPages(undefined)).toBe(false);
+  });
+
+  test("canManageProjects is admin | project_manager (ADR-0052 §8)", () => {
+    expect(canManageProjects(["admin"])).toBe(true);
+    expect(canManageProjects(["project_manager"])).toBe(true);
+    expect(canManageProjects(["support", "project_manager"])).toBe(true);
+    for (const r of ["finance", "sales", "support"] as const) {
+      expect(canManageProjects([r])).toBe(false);
+    }
+    expect(canManageProjects([])).toBe(false);
+    expect(canManageProjects(undefined)).toBe(false);
   });
 
   test("canSeeFeature hides the agents/board nav for non-admins (#90)", () => {
