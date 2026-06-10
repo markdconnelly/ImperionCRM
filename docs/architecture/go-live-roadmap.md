@@ -20,18 +20,38 @@ The app counts as online when all of the following hold:
 7. The identity perimeter is verified locked (Easy Auth + caller allowlist on both
    Function Apps) and the deferred secrets are rotated.
 
-## Note: the new library-shipped agent skills
+## The new agent-skills configuration — and how it changes execution
 
-This review was prompted by agent skills appearing in the repos. Finding: the only
-skills present are **eight `SKILL.md` files shipped inside `@reduxjs/toolkit` 2.12.0**,
-which arrives in the front end's `node_modules` **transitively via `recharts@3.8.1`**.
-No repo has project-authored skills, and the app does not use Redux.
+All four repos gained an **Agent skills** section in `CLAUDE.md` plus `docs/agents/`
+("Add agent-skills configuration", 2026-06-10): the issue tracker is **GitHub Issues
+via `gh`** (`docs/agents/issue-tracker.md`), triage uses the five-label vocabulary
+**needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix**
+(`docs/agents/triage-labels.md`), and domain docs follow a single-context layout
+(`docs/agents/domain.md`, created lazily).
 
-**Guidance:** these skills change nothing architecturally. The front end stays
-server-components + typed repositories (no client state library). If RTK is ever
-adopted deliberately (a heavy client-state feature), follow the bundled skills —
-notably the SSR store-per-request pattern — and record the adoption as an ADR. Until
-then, do not let the skills' presence steer new code toward Redux.
+**What that means for this roadmap:** the phase tasks below should be worked as
+labeled GitHub issues in their owning repo, not as a static checklist.
+
+- `ready-for-agent` — code tasks an agent can complete end to end: the 0058+ grant
+  migration (front end), the Graph subscription timer (pipeline), the CI gates in all
+  four repos, App Insights wiring (front end).
+- `ready-for-human` — everything needing Azure/Partner-Center/Key-Vault/host access:
+  all of Phase 0, the operator rows of Phases 1–3, secret rotation, and the on-prem
+  host bringup.
+- The five labels must exist in each repo before triage starts; the existing coarse
+  epics (front-end issues #5–#14) should be linked from the new per-task issues or
+  closed as superseded.
+
+Two side observations from the review:
+
+- `docs/agents/domain.md` names `CONTEXT.md` + `docs/adr/` as the ADR home, but these
+  repos keep decisions in `docs/decision-records/`. Per that doc's own conflict rule:
+  when `/grill-with-docs` first materializes ADRs, point it at `docs/decision-records/`
+  rather than forking a second ADR location.
+- Unrelated to the above: eight `SKILL.md` files also sit in the front end's
+  `node_modules` — library-shipped by `@reduxjs/toolkit` (transitive via
+  `recharts@3.8.1`). The app does not use Redux; don't let their presence steer new
+  code toward it.
 
 ## Review delta — what the 2026-06-10 review confirmed and found
 
