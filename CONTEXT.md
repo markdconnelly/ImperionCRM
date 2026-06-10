@@ -34,6 +34,24 @@ _Avoid_: sales ticket, activity (unqualified)
 A rep's ordered list of their open sales tasks, grouped by due date and deal — the working surface of the sales activity page. A read model, not a stored object.
 _Avoid_: sales pipeline (that's deals by stage), task list (unqualified)
 
+### Marketing & events
+
+**Event**:
+A scheduled gathering Imperion hosts — a webinar or a live event — with its own registration and attendance. An event is a thing that happens; campaigns are how it gets filled.
+_Avoid_: meeting (that's a per-contact interaction record), webinar campaign
+
+**Event Registration**:
+One contact's signup for an event, arriving through the capture inbox like any other lead. Attendance (attended / no-show) is recorded after the event and can drive nurture.
+_Avoid_: RSVP, attendee (before the event has happened)
+
+**Campaign Send**:
+One schedulable blast — email or SMS — from a campaign to an audience or to an event's registrants, fired at a set time or relative to the event's start. Always consent-gated per recipient at send time.
+_Avoid_: blast (in UI copy), broadcast, workflow (that's a per-contact journey)
+
+**Builder**:
+A guided, per-channel form that produces a previewable, typed configuration — for an ad, an email, an SMS, or an event. Not a drag-drop canvas.
+_Avoid_: designer, editor (unqualified)
+
 ### Security posture
 
 **Customer Tenant**:
