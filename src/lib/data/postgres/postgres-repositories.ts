@@ -107,6 +107,7 @@ import type {
   TaskRow,
   TicketRow,
   ContractRow,
+  DeviceInventoryRow,
   WorkflowDetail,
   WorkflowRow,
 } from "@/types";
@@ -462,6 +463,47 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return null;
+      }
+    },
+
+    async listDeviceInventory(): Promise<DeviceInventoryRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listDeviceInventory();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string | null;
+          device_type: string | null;
+          manufacturer: string | null;
+          model: string | null;
+          serial_number: string | null;
+          os: string | null;
+          status: string | null;
+          account: string | null;
+          origin: string;
+          last_seen: string | null;
+        }>(
+          `SELECT id, name, device_type, manufacturer, model, serial_number, os, status,
+                  account, origin, last_seen
+           FROM device_inventory_all
+           ORDER BY account NULLS LAST, name NULLS LAST`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          deviceType: r.device_type,
+          manufacturer: r.manufacturer,
+          model: r.model,
+          serialNumber: r.serial_number,
+          os: r.os,
+          status: r.status,
+          account: r.account,
+          origin: r.origin,
+          // The view returns text timestamps (mixed bronze/silver) — trim to minutes.
+          lastSeen: r.last_seen ? r.last_seen.slice(0, 16).replace("T", " ") : null,
+        }));
+      } catch {
+        return mockRepositories.crm.listDeviceInventory();
       }
     },
 

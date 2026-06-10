@@ -59,6 +59,7 @@ import type {
   TaskRow,
   TicketRow,
   ContractRow,
+  DeviceInventoryRow,
   WorkflowDetail,
   WorkflowRow,
 } from "@/types";
@@ -163,6 +164,9 @@ export interface CrmRepository {
   // Accounts (full CRUD)
   listAccounts(): Promise<Account[]>;
   getAccount(id: string): Promise<AccountDetail | null>;
+
+  /** Read-only device & cloud-asset inventory (ADR-0047, view migration 0053). */
+  listDeviceInventory(): Promise<DeviceInventoryRow[]>;
   createAccount(input: AccountInput): Promise<void>;
   updateAccount(id: string, input: AccountInput): Promise<void>;
   deleteAccount(id: string): Promise<void>;

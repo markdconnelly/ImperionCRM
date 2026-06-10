@@ -29,6 +29,7 @@ export const navSecondary: NavItem[] = [
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
+  { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
 ];
 
