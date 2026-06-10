@@ -27,12 +27,18 @@ schema object in this repo already references it.
   immune to the >200-group overage).
 - Until this lands, every user defaults to `support`. Land it **before** go-live.
 
-## 2. Connection OAuth + token storage (ADR-0024/0035)
+## 2. Connection OAuth + token storage (ADR-0024/0035) — ✅ per-user flows implemented
 
-- Live OAuth flows for the per-user providers (M365, LinkedIn, Plaud, Google, YouTube,
-  Facebook) and the company providers (Autotask, IT Glue, **Apollo**). Tokens to **Key
-  Vault**; `connection.keyvault_secret_ref` only in the DB.
-- Background refresh + `connection.status` reconciliation.
+- ✅ **Per-user flows (backend ADR-0038 + front-end wiring, 2026-06-09):**
+  authorization-code flows for M365, Google, YouTube, LinkedIn, Facebook
+  (`/connections/{provider}/{start,callback,disconnect}`); tokens custodied in **Key
+  Vault** with refresh-on-read; `connection.keyvault_secret_ref` only in the DB. Plaud
+  is key-based (no public OAuth) → company credential store when its engine lands.
+  Remaining: per-provider app registrations + backend app settings
+  (`../operations/credential-wiring-next-steps.md` §4b).
+- Company providers (Autotask, IT Glue, **Apollo**) use the credential store (ADR-0036).
+- Background refresh + `connection.status` reconciliation (refresh-on-read covers the
+  read path — backend ADR-0038; a proactive timer is future work).
 
 ## 3. Ingestion engines → bronze (ADR-0032) — ✅ implemented (pipeline)
 

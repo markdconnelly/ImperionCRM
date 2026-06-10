@@ -19,6 +19,10 @@ import {
   setPollIntervalAction,
 } from "./actions";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
+import {
+  CONNECT_RESULT_NOTICES,
+  isConnectResult,
+} from "@/lib/integrations/personal-oauth";
 
 /** Human labels for the application roles. */
 const ROLE_LABEL: Record<AppRole, string> = {
@@ -39,6 +43,41 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+/** Friendly names for the connect-flow notice (falls back to the raw key). */
+const PROVIDER_LABEL: Record<string, string> = {
+  m365: "Microsoft 365",
+  google: "Google",
+  youtube: "YouTube",
+  linkedin: "LinkedIn",
+  facebook: "Facebook",
+  plaud: "Plaud",
+};
+
+const NOTICE_TONE: Record<"success" | "warning" | "error", string> = {
+  success: "border-green/40 text-green",
+  warning: "border-amber/40 text-amber",
+  error: "border-red/40 text-red",
+};
+
+/**
+ * One-shot notice for an OAuth connect outcome (backend ADR-0038). The connect
+ * action and the `/api/connections/[provider]/callback` route both land on
+ * `/settings?tab=connections&connect=<result>`; this renders it.
+ */
+function ConnectNotice({ connect, provider }: { connect?: string; provider?: string }) {
+  if (!connect || !isConnectResult(connect)) return null;
+  const notice = CONNECT_RESULT_NOTICES[connect];
+  const label = provider ? (PROVIDER_LABEL[provider] ?? provider) : "The account";
+  return (
+    <p
+      role="status"
+      className={`rounded-md border bg-panel-2 px-3 py-2 text-sm ${NOTICE_TONE[notice.tone]}`}
+    >
+      {notice.message(label)}
+    </p>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
@@ -51,9 +90,9 @@ function Row({ label, value }: { label: string; value: string }) {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; connect?: string; provider?: string }>;
 }) {
-  const { tab } = await searchParams;
+  const { tab, connect, provider: connectProvider } = await searchParams;
   const session = await auth();
   const roles = session?.user?.roles ?? ["support"];
   // Settings is admin-only (ADR-0030). Middleware already redirects, but guard
@@ -134,6 +173,7 @@ export default async function SettingsPage({
           timeline — attributed first to you, then to the company. Tokens live in Key Vault.
         </p>
       </div>
+      <ConnectNotice connect={connect} provider={connectProvider} />
       <ConnectAccount connectAction={connectAction} />
       {personal.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

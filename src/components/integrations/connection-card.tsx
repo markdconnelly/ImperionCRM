@@ -83,8 +83,12 @@ export function ConnectionCard({
         action={pollAction}
       />
 
+      {/* provider+scope let the action revoke token custody via the backend first
+          (backend ADR-0038) before removing the local row. */}
       <form action={disconnectAction} className="mt-1">
         <input type="hidden" name="id" value={connection.id} />
+        <input type="hidden" name="provider" value={connection.provider} />
+        <input type="hidden" name="scope" value={connection.scope} />
         <button type="submit" className="text-xs text-dim hover:text-red">
           Disconnect
         </button>

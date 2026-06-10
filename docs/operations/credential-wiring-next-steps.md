@@ -88,6 +88,30 @@ preferred in the meantime, unset `INTEGRATION_SERVICE_URL` on the web app._
   `/api/gdap/consent` 501 becomes a live consent URL), and build the web-app consent
   callback that flips the `gdap` row to `active`.
 
+### 4b. Per-user OAuth connections (backend ADR-0038 ↔ front-end wiring, 2026-06-09)
+
+The web app's Settings → Your connections flow is now wired to the backend's
+authorization-code endpoints (`/connections/{provider}/{start,callback,disconnect}`,
+providers `m365 | google | youtube | linkedin | facebook`; Plaud is key-based and
+stays on the stub). Code is done on both sides; what remains is **operator
+configuration on the BACKEND Function App (`imperioncrmbackend`)**:
+
+- **`OAUTH_REDIRECT_BASE_URL`** = `https://imperioncrm.azurewebsites.net/api/connections`
+  — the backend builds each provider's `redirect_uri` as
+  `<OAUTH_REDIRECT_BASE_URL>/<provider>/callback`, which must land on the web app's
+  `src/app/api/connections/[provider]/callback/route.ts`. Register the same URLs
+  (e.g. `https://imperioncrm.azurewebsites.net/api/connections/m365/callback`) on each
+  provider's app registration.
+- Per provider `P ∈ {M365, GOOGLE, YOUTUBE, LINKEDIN, FACEBOOK}`:
+  **`OAUTH_<P>_CLIENT_ID`**, **`OAUTH_<P>_CLIENT_SECRET_SECRET`** (the Key Vault
+  secret NAME holding the client secret), optional **`OAUTH_<P>_SCOPES`**, and
+  **`OAUTH_M365_TENANT`** for m365 (defaults to `organizations`). See backend
+  ADR-0038 for endpoints/scopes per provider.
+- The web app needs nothing new: it reuses `INTEGRATION_SERVICE_URL` +
+  `INTEGRATION_SERVICE_AUDIENCE` (tasks 1–2 above). Until a provider is configured the
+  backend answers **501** and the UI records the stub row with a "not configured yet"
+  notice — nothing breaks.
+
 ### 5. Pipeline consumption
 - Implement the per-provider ingest/poll in `ImperionCRM_Pipeline`
   (`docs/credential-pipeline-todo.md`): read `conn-company-<provider>` from Key Vault →

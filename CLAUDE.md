@@ -141,7 +141,8 @@ serving data.
   (ADR-0048: orchestrator preset + budget via the backend's GET/PUT `/agent/settings`,
   registered sub-agents, `agent.turn` audit activity). Editable
   discovery/assessment question catalog.
-- **Data:** PostgreSQL + pgvector; migrations **0001–0043 applied** to prod. Typed
+- **Data:** PostgreSQL + pgvector; migrations **0001–0054 applied** to prod (per
+  ADR-0048; 0055 pipeline-MI Autotask ticket writes is in the repo, pending). Typed
   repositories with a mock fallback. Entra SSO (certificate client auth) + break-glass.
 - **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
 - **Per-connection poll cadence (ADR-0038, migration 0035):** `connection.poll_interval_minutes`
@@ -157,6 +158,13 @@ serving data.
 - **Security/assessment ingestion (ADR-0040, migrations 0042/0043):** **Dark Web ID** compromised
   credentials → silver `credential_exposure`; **Televy** reports → `assessment_artifact`. Wired
   but gated (no-op until the API key is configured).
+- **Per-user OAuth connections (ADR-0024 + backend ADR-0038):** Settings → Your connections
+  runs the backend's real authorization-code flow (`connectionsService` →
+  `/connections/{provider}/{start,callback,disconnect}`; callback route
+  `/api/connections/[provider]/callback`; tokens custodied in Key Vault by the backend;
+  disconnect revokes custody first). Unconfigured providers (and key-based Plaud) degrade
+  to the recorded stub with a notice. Activation = backend app settings
+  (`OAUTH_REDIRECT_BASE_URL` + per-provider client ids — docs/operations/credential-wiring-next-steps.md §4b).
 
 **Aesthetic:** dense, premium internal-tool feel (Linear/Vercel-grade), dark theme.
 Design tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · panel-2
@@ -164,13 +172,13 @@ Design tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · 
 accent-2 `#7C6BF0` · green `#3FBF8F` · amber `#E0A33E` · red `#E2615A`. Display font
 Space Grotesk, body IBM Plex Sans.
 
-**Deferred to the next phase (deliberately stubbed, not broken):** live OAuth flows
-and the actual ingestion engines (Microsoft Graph / YouTube / LinkedIn / Facebook),
-real email/SMS sends, agent/LLM enrichment execution, embeddings generation + vector
-search, and the **Board** page (still a placeholder — the orchestrator runtime is
-live in the backend, backend ADR-0036, and the AI Agents page is real, ADR-0048).
-Until a source is wired, those flows are stubbed (e.g. a "send" logs
-to the timeline) and never fail the page.
+**Deferred to the next phase (deliberately stubbed, not broken):** the actual
+ingestion engines (Microsoft Graph / YouTube / LinkedIn / Facebook — the per-user
+OAuth flow itself is now live-wired, see above), real email/SMS sends, agent/LLM
+enrichment execution, embeddings generation + vector search, and the **Board** page
+(still a placeholder — the orchestrator runtime is live in the backend, backend
+ADR-0036, and the AI Agents page is real, ADR-0048). Until a source is wired, those
+flows are stubbed (e.g. a "send" logs to the timeline) and never fail the page.
 
 ---
 
@@ -197,9 +205,11 @@ bulk ingestion, IT Glue hub, ALL vectorization). The shared security baseline is
 [docs/security/unified-security-standard.md](docs/security/unified-security-standard.md).
 **This repo remains the single source of truth for the database schema/migrations** —
 the siblings are consumers; propose schema changes here.
-1. Live OAuth flows + Key Vault token storage for per-user connections, then the
-   ingestion engines (Graph email/Teams, YouTube, LinkedIn, Facebook, Plaud) writing
-   into the `interaction` timeline and `contact_enrichment` dossier.
+1. ~~Live OAuth flows + Key Vault token storage for per-user connections~~ (done —
+   backend ADR-0038 + this repo's wiring; per-provider app registrations remain an
+   ops task), then the ingestion engines (Graph email/Teams, YouTube, LinkedIn,
+   Facebook, Plaud) writing into the `interaction` timeline and `contact_enrichment`
+   dossier.
 2. Real email/SMS sends behind the consent gate; agent/LLM enrichment execution.
 3. Embeddings generation + vector (semantic) search over the gold layer.
 4. ~~The orchestrator agent runtime + the AI Agents page~~ (done — backend ADR-0036,
