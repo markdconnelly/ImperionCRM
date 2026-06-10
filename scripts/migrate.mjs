@@ -15,7 +15,7 @@
 //   node scripts/migrate.mjs --list               # list available migration files
 //
 // Connection defaults to prod (overridable via PGHOST/PGPORT/PGDATABASE/PGUSER):
-//   host imperioncrm-pg-prd.postgres.database.azure.com  db imperioncrm
+//   host imperioncrm-pg-prd-cus.postgres.database.azure.com  db imperioncrm
 //   user = your signed-in `az` account (az account show) unless PGUSER is set.
 import { readFile, readdir } from "node:fs/promises";
 import { execSync } from "node:child_process";
@@ -106,7 +106,7 @@ async function main() {
   const user = process.env.PGUSER || az(["account", "show", "--query", "user.name", "-o", "tsv"]);
 
   const client = new pg.Client({
-    host: process.env.PGHOST || "imperioncrm-pg-prd.postgres.database.azure.com",
+    host: process.env.PGHOST || "imperioncrm-pg-prd-cus.postgres.database.azure.com",
     port: Number(process.env.PGPORT || 5432),
     database: process.env.PGDATABASE || "imperioncrm",
     user,

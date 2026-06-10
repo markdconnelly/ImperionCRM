@@ -17,7 +17,7 @@ db/migrations/NNNN_description.sql   -- ordered, idempotent, transactional
 
 ## Target
 
-- Server: `imperioncrm-pg-prd.postgres.database.azure.com` (Azure Flexible Server,
+- Server: `imperioncrm-pg-prd-cus.postgres.database.azure.com` (Azure Flexible Server,
   PostgreSQL 18), database **`imperioncrm`**.
 - **pgvector** must be allowlisted on the server before `0001` runs:
   `az postgres flexible-server parameter set -g Imperion_CRM -s imperioncrm-pg-prd --name azure.extensions --value VECTOR`
@@ -34,7 +34,7 @@ PGPASSWORD="$(az account get-access-token \
   --resource https://ossrdbms-aad.database.windows.net \
   --query accessToken -o tsv)"
 export PGUSER PGPASSWORD
-psql "host=imperioncrm-pg-prd.postgres.database.azure.com port=5432 dbname=imperioncrm sslmode=require" \
+psql "host=imperioncrm-pg-prd-cus.postgres.database.azure.com port=5432 dbname=imperioncrm sslmode=require" \
   -v ON_ERROR_STOP=1 -f db/migrations/0001_phase1_core.sql
 ```
 
