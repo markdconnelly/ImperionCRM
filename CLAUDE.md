@@ -143,7 +143,10 @@ serving data.
   (ADR-0049 + backend ADR-0039: convene → POST `/board/sessions` runs the synchronous
   two-round deliberation + synthesis; sessions list + `/board/[id]` transcript &
   recommendation read the 0056 tables directly; convening is guarded by `sales:write`).
-  Editable discovery/assessment question catalog.
+  Editable discovery/assessment question catalog. The AI Agents and Board pages are
+  **admin-only** (#90, `canSeeAgentPages` — same gate as Settings/ADR-0030), and
+  Settings has an **AI tab** surfacing the orchestrator preset / budget cap /
+  month-to-date spend card (same card + backend PUT as the AI Agents page).
 - **Data:** PostgreSQL + pgvector; migrations **0001–0056 applied** to prod (0056 =
   agent core + board persistence with 5 seeded personas, ADR-0049; verified 2026-06-10).
   Typed repositories with a mock fallback. Entra SSO (certificate client auth) +

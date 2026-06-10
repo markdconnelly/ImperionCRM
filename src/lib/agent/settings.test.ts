@@ -8,6 +8,7 @@ import {
   isAgentPreset,
   modelShortName,
   parseBudgetInput,
+  settingsSourceNote,
 } from "./settings";
 
 describe("isAgentPreset", () => {
@@ -73,6 +74,14 @@ describe("budgetProgress", () => {
   });
   it("clamps negative spend to 0%", () => {
     expect(budgetProgress(-5, 100)).toEqual({ pct: 0, tone: "green" });
+  });
+});
+
+describe("settingsSourceNote", () => {
+  it("is silent for the live backend, explanatory for the degraded tiers", () => {
+    expect(settingsSourceNote("backend")).toBe("");
+    expect(settingsSourceNote("db")).toMatch(/AGENT_SERVICE_URL/);
+    expect(settingsSourceNote("mock")).toMatch(/defaults/i);
   });
 });
 

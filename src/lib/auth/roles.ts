@@ -65,6 +65,15 @@ export function canSeeSettings(roles: readonly AppRole[] | undefined): boolean {
 }
 
 /**
+ * The AI operations pages — AI Agents and Board of Directors — are admin-only
+ * (#90): they expose org-wide model-tier, budget, and deliberation controls, so
+ * they match the Settings gate (ADR-0030) rather than a per-module capability.
+ */
+export function canSeeAgentPages(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles);
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -90,6 +99,8 @@ export function redactMoney(
 const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) => boolean>> = {
   settings: canSeeSettings,
   security: canSeeSettings,
+  agents: canSeeAgentPages,
+  board: canSeeAgentPages,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

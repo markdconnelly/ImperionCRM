@@ -69,5 +69,6 @@ export async function saveAgentSettingsAction(
   }
 
   revalidatePath("/agents");
+  revalidatePath("/settings"); // the card also lives on Settings → AI (#90)
   return { ok: true, message: "Orchestrator settings saved." };
 }

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  canSeeAgentPages,
   canSeeRevenue,
   canSeeSettings,
   canSeeFeature,
@@ -54,5 +55,24 @@ describe("predicates", () => {
     expect(canSeeFeature("security", ["support"])).toBe(false);
     expect(canSeeFeature("settings", ["admin"])).toBe(true);
     expect(canSeeFeature("accounts", ["support"])).toBe(true);
+  });
+
+  test("canSeeAgentPages is admin-only (#90 — AI Agents + Board match the Settings gate)", () => {
+    expect(canSeeAgentPages(["admin"])).toBe(true);
+    expect(canSeeAgentPages(["support", "admin"])).toBe(true);
+    for (const r of ["finance", "sales", "project_manager", "support"] as const) {
+      expect(canSeeAgentPages([r])).toBe(false);
+    }
+    expect(canSeeAgentPages([])).toBe(false);
+    expect(canSeeAgentPages(undefined)).toBe(false);
+  });
+
+  test("canSeeFeature hides the agents/board nav for non-admins (#90)", () => {
+    for (const key of ["agents", "board"]) {
+      expect(canSeeFeature(key, ["admin"])).toBe(true);
+      for (const r of ["finance", "sales", "project_manager", "support"] as const) {
+        expect(canSeeFeature(key, [r])).toBe(false);
+      }
+    }
   });
 });
