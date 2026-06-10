@@ -64,6 +64,9 @@ export const mockRepositories: Repositories = {
     async getAccount() {
       return null;
     },
+    async listDeviceInventory() {
+      return [];
+    },
     async createAccount() {
       throw new Error(NO_DB);
     },

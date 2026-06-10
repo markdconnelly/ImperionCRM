@@ -332,6 +332,24 @@ export interface TicketRow {
   opened: string | null;
 }
 
+/**
+ * One row of the read-only device & cloud-asset inventory (ADR-0047) — silver
+ * `device` rows merged with not-yet-merged IT Glue configurations.
+ */
+export interface DeviceInventoryRow {
+  id: string;
+  name: string | null;
+  deviceType: string | null;
+  manufacturer: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  os: string | null;
+  status: string | null;
+  account: string | null;
+  origin: string; // silver | itglue
+  lastSeen: string | null;
+}
+
 /** A contract row from Autotask bronze, joined to its account (migration 0038 / 0040). */
 export interface ContractRow {
   id: string;
