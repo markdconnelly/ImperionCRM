@@ -55,7 +55,7 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
 | M365 / Graph (contacts) | `m365_contacts` | from per-user + org Graph (`m365_synced` key) |
 | Autotask (contacts, companies) | `autotask_contacts`, `autotask_companies` | also tickets (local-pipeline) |
 | IT Glue (contacts, companies, devices) | `itglue_contacts`, `itglue_companies`, `itglue_devices` | poll, never duplicate |
-| Manual (in-app) | `website_contacts`, `website_companies` | the in-app form is the source of record (`website`, replaces `imperion_crm_entered`) |
+| Manual (in-app) | `website_contacts`, `website_companies` | the in-app form is the source of record (`website`, replaces `imperion_crm_entered`); a save also fires a fire-and-forget `POST /api/refresh {source:"merge"}` (`requestMergeRefresh`, issue #89) so the silver record updates immediately instead of on the 5-minute sweep |
 | Dark Web ID (exposures) | `darkwebid_exposures` → silver `credential_exposure` | compromised credentials (ADR-0040); match by email/domain |
 | Televy (assessment reports) | `televy_reports` → `assessment_artifact` | assessment scorecards (ADR-0040) |
 

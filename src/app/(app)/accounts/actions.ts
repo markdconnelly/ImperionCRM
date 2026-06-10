@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
+import { requestMergeRefresh } from "@/lib/integrations/merge-refresh";
 import type { AccountInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): AccountInput {
@@ -20,6 +21,7 @@ export async function createAccountAction(formData: FormData) {
   await requireCapability("crm:write");
   const { crm } = getRepositories();
   await crm.createAccount(parse(formData));
+  requestMergeRefresh(); // fire-and-forget merge nudge — never throws or blocks (#89)
   revalidatePath("/accounts");
   redirect("/accounts");
 }
@@ -29,6 +31,7 @@ export async function updateAccountAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const { crm } = getRepositories();
   await crm.updateAccount(id, parse(formData));
+  requestMergeRefresh(); // fire-and-forget (#89)
   revalidatePath("/accounts");
   redirect("/accounts");
 }
