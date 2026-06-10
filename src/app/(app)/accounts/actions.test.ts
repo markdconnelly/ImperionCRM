@@ -67,6 +67,8 @@ describe("createAccountAction", () => {
       "NEXT_REDIRECT:/accounts",
     );
     expect(h.createAccount).toHaveBeenCalled();
+    expect(h.refresh).toHaveBeenCalledWith({ source: "merge" }); // the nudge was attempted
+    await new Promise((r) => setTimeout(r, 0)); // let the swallowed rejection settle
     errorSpy.mockRestore();
   });
 });
@@ -90,6 +92,8 @@ describe("updateAccountAction", () => {
       "NEXT_REDIRECT:/accounts",
     );
     expect(h.updateAccount).toHaveBeenCalled();
+    expect(h.refresh).toHaveBeenCalledWith({ source: "merge" }); // the nudge was attempted
+    await new Promise((r) => setTimeout(r, 0)); // let the swallowed rejection settle
     errorSpy.mockRestore();
   });
 });

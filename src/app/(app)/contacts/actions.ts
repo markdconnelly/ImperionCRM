@@ -29,7 +29,7 @@ export async function createContactAction(formData: FormData) {
   await requireCapability("crm:write");
   const { contacts } = getRepositories();
   const id = await contacts.createContact(parse(formData));
-  await requestMergeRefresh(); // never throws — surface the merged record now, not on the 5-min sweep (#89)
+  requestMergeRefresh(); // fire-and-forget merge nudge — never throws or blocks (#89)
   revalidatePath("/contacts");
   redirect(`/contacts/${id}`);
 }
@@ -39,7 +39,7 @@ export async function updateContactAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const { contacts } = getRepositories();
   await contacts.updateContact(id, parse(formData));
-  await requestMergeRefresh(); // never throws (#89)
+  requestMergeRefresh(); // fire-and-forget (#89)
   revalidatePath("/contacts");
   revalidatePath(`/contacts/${id}`);
   redirect(`/contacts/${id}`);

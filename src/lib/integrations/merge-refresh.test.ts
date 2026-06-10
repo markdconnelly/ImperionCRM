@@ -14,21 +14,24 @@ describe("requestMergeRefresh", () => {
     refresh.mockReset();
   });
 
-  it("asks the pipeline for a merge refresh", async () => {
+  it("asks the pipeline for a merge refresh", () => {
     refresh.mockResolvedValue({ source: "merge", ran: true });
-    await requestMergeRefresh();
+    requestMergeRefresh();
     expect(refresh).toHaveBeenCalledWith({ source: "merge" });
   });
 
-  it("resolves after the bounded wait when the pipeline call hangs", async () => {
+  it("returns without waiting — a hanging pipeline call cannot block the caller", () => {
     refresh.mockReturnValue(new Promise(() => {})); // never settles
-    await expect(requestMergeRefresh(25)).resolves.toBeUndefined();
+    requestMergeRefresh(); // synchronous return IS the assertion
+    expect(refresh).toHaveBeenCalledWith({ source: "merge" });
   });
 
-  it("resolves even when the pipeline call fails", async () => {
+  it("swallows a failing pipeline call (logged, never thrown)", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     refresh.mockRejectedValue(new Error("pipeline down"));
-    await expect(requestMergeRefresh()).resolves.toBeUndefined();
+    expect(() => requestMergeRefresh()).not.toThrow();
+    await new Promise((r) => setTimeout(r, 0)); // let the rejection reach the catch
+    expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
   });
 });

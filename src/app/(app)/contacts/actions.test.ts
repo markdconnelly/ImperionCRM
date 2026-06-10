@@ -66,6 +66,8 @@ describe("createContactAction", () => {
       "NEXT_REDIRECT:/contacts/c1",
     );
     expect(h.createContact).toHaveBeenCalled();
+    expect(h.refresh).toHaveBeenCalledWith({ source: "merge" }); // the nudge was attempted
+    await new Promise((r) => setTimeout(r, 0)); // let the swallowed rejection settle
     errorSpy.mockRestore();
   });
 });
@@ -89,6 +91,8 @@ describe("updateContactAction", () => {
       updateContactAction(form({ id: "c1", fullName: "Ada Lovelace" })),
     ).rejects.toThrow("NEXT_REDIRECT:/contacts/c1");
     expect(h.updateContact).toHaveBeenCalled();
+    expect(h.refresh).toHaveBeenCalledWith({ source: "merge" }); // the nudge was attempted
+    await new Promise((r) => setTimeout(r, 0)); // let the swallowed rejection settle
     errorSpy.mockRestore();
   });
 });
