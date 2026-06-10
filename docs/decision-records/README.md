@@ -62,3 +62,4 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0045](./ADR-0045-server-action-authorization.md) | Server-action authorization (write capabilities) & fail-closed bootstrap | Accepted |
 | [0046](./ADR-0046-saved-list-views.md) | Ticket board filters & saved/shareable list views | Accepted |
 | [0047](./ADR-0047-device-inventory.md) | Read-only device & cloud-asset inventory | Accepted |
+| [0048](./ADR-0048-ai-agents-operations-page.md) | AI Agents operations page (orchestrator settings + activity) | Accepted |
