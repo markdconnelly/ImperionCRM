@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import type { SbrInput, SbrScoreInput } from "@/lib/data/repositories";
 
@@ -40,6 +41,7 @@ function parseTicketIds(formData: FormData): string[] {
 }
 
 export async function createSbrAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const { engagements } = getRepositories();
   const id = await engagements.createSbr(parseSbr(formData));
   await engagements.saveSbrScores(id, parseScores(formData));
@@ -49,6 +51,7 @@ export async function createSbrAction(formData: FormData) {
 }
 
 export async function updateSbrAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
   const { engagements } = getRepositories();
   await engagements.updateSbr(id, parseSbr(formData));
@@ -59,6 +62,7 @@ export async function updateSbrAction(formData: FormData) {
 }
 
 export async function deleteSbrAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
   const { engagements } = getRepositories();
   await engagements.deleteSbr(id);
@@ -68,6 +72,7 @@ export async function deleteSbrAction(formData: FormData) {
 // ── Provenance: spawn downstream work from an SBR (ADR-0023) ─────────────────
 
 export async function spawnOpportunityFromSbr(formData: FormData) {
+  await requireCapability("delivery:write");
   const sbrId = String(formData.get("sbrId") ?? "");
   const accountId = String(formData.get("accountId") ?? "");
   const { engagements } = getRepositories();
@@ -84,6 +89,7 @@ export async function spawnOpportunityFromSbr(formData: FormData) {
 }
 
 export async function spawnTicketFromSbr(formData: FormData) {
+  await requireCapability("delivery:write");
   const sbrId = String(formData.get("sbrId") ?? "");
   const accountId = String(formData.get("accountId") ?? "");
   const { engagements } = getRepositories();

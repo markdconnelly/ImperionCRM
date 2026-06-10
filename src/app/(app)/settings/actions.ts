@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
 import { credentialsService, pipelineService } from "@/lib/services";
@@ -30,6 +31,7 @@ export async function connectAction(formData: FormData) {
   const provider = String(formData.get("provider") ?? "");
   const scope = String(formData.get("scope") ?? "user");
   const displayName = String(formData.get("displayName") ?? "").trim() || null;
+  await requireCapability("settings:write");
   if (!provider) return;
 
   const session = await auth();
@@ -45,6 +47,7 @@ export async function connectAction(formData: FormData) {
 }
 
 export async function disconnectAction(formData: FormData) {
+  await requireCapability("settings:write");
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const { connections } = getRepositories();
@@ -58,6 +61,7 @@ export async function disconnectAction(formData: FormData) {
  * value — this only persists the operator's choice.
  */
 export async function setPollIntervalAction(formData: FormData) {
+  await requireCapability("settings:write");
   const id = String(formData.get("id") ?? "");
   const minutes = Number(formData.get("pollIntervalMinutes"));
   if (!id || !Number.isFinite(minutes) || minutes < 0) return;
@@ -74,6 +78,7 @@ export async function setPollIntervalAction(formData: FormData) {
  * yet) and records an error status on any other failure so the card surfaces it.
  */
 export async function refreshNowAction(formData: FormData) {
+  await requireCapability("settings:write");
   const providerKey = String(formData.get("provider") ?? "");
   const source = REFRESH_SOURCES[providerKey];
   if (!source) return;
@@ -99,6 +104,7 @@ export async function refreshNowAction(formData: FormData) {
  * lights up once the backend ships.
  */
 export async function saveCredentialAction(formData: FormData) {
+  await requireCapability("settings:write");
   const providerKey = String(formData.get("provider") ?? "");
   const provider = COMPANY_PROVIDERS.find((p) => p.key === providerKey);
   if (!provider || provider.kind !== "credential") return;
@@ -144,6 +150,7 @@ export async function saveCredentialAction(formData: FormData) {
  * `state` it embeds in the consent URL, the callback should additionally match it.
  */
 export async function grantGdapAction(formData: FormData) {
+  await requireCapability("settings:write");
   const providerKey = String(formData.get("provider") ?? "");
   const provider = COMPANY_PROVIDERS.find((p) => p.key === providerKey);
   if (!provider || provider.kind !== "consent") return;

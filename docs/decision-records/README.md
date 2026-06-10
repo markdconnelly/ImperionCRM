@@ -58,3 +58,5 @@ fields, and `CLAUDE.md` section 8 / the project standards doc.
 | [0041](./ADR-0041-gold-knowledge-vector-store.md) | Gold knowledge layer + pinned Voyage/1024 vector store | Accepted |
 | [0042](./ADR-0042-division-of-labor-reads-direct-processes-backend.md) | Division of labor: direct reads OK, every process in the backend | Accepted |
 | [0043](./ADR-0043-settled-ai-stack-drop-legacy-vectors.md) | Settled AI stack (Claude + Voyage); drop legacy 1536-dim vector tables | Accepted |
+| [0044](./ADR-0044-silver-contracts-tickets.md) | Silver contracts + tickets from Autotask bronze | Accepted |
+| [0045](./ADR-0045-server-action-authorization.md) | Server-action authorization (write capabilities) & fail-closed bootstrap | Accepted |

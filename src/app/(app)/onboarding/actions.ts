@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
+import { requireCapability } from "@/lib/auth/guard";
 import type { ProjectInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): ProjectInput {
@@ -21,6 +22,7 @@ function parse(formData: FormData): ProjectInput {
 }
 
 export async function createProjectAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const { crm } = getRepositories();
   await crm.createProject(parse(formData));
   revalidatePath("/onboarding");
@@ -28,6 +30,7 @@ export async function createProjectAction(formData: FormData) {
 }
 
 export async function updateProjectAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
   const { crm } = getRepositories();
   await crm.updateProject(id, parse(formData));
@@ -36,6 +39,7 @@ export async function updateProjectAction(formData: FormData) {
 }
 
 export async function deleteProjectAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
   const { crm } = getRepositories();
   await crm.deleteProject(id);
@@ -49,6 +53,7 @@ export async function deleteProjectAction(formData: FormData) {
  * (ADR-0034/0037). Tolerant of mock mode so the demo board doesn't error.
  */
 export async function setMilestoneHealthAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
   const health = String(formData.get("health") ?? "");
   if (!id || !["green", "amber", "red"].includes(health)) return;
@@ -63,6 +68,7 @@ export async function setMilestoneHealthAction(formData: FormData) {
 
 /** Instantiate the standard onboarding playbook for a project (ADR-0037). */
 export async function applyTemplateAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const projectId = String(formData.get("projectId") ?? "");
   const startAt = String(formData.get("startAt") ?? "").trim();
   if (!projectId) return;
@@ -77,6 +83,7 @@ export async function applyTemplateAction(formData: FormData) {
 
 /** Check/uncheck a playbook checklist step; the phase R/Y/G re-derives (ADR-0037). */
 export async function toggleStepAction(formData: FormData) {
+  await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
   const done = String(formData.get("done") ?? "") === "true";
   if (!id) return;
