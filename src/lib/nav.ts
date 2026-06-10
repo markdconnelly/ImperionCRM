@@ -26,6 +26,8 @@ export const navSecondary: NavItem[] = [
   { key: "assessments", label: "Assessments", icon: "ShieldAlert", href: "/assessments" },
   { key: "proposals", label: "Proposals", icon: "FileText", href: "/proposals" },
   { key: "contracts", label: "Contracts", icon: "FileSignature", href: "/contracts" },
+  // The project board (ADR-0052) — "board" unqualified is the AI Board of Directors.
+  { key: "projects", label: "Projects", icon: "FolderKanban", href: "/projects" },
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },

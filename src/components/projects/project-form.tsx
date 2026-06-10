@@ -1,16 +1,27 @@
 import { Field, TextInput, TextArea, Select, FormActions } from "@/components/ui/form";
 import type { Option, ProjectEditable } from "@/lib/data/repositories";
+import type { ProjectTypeRow } from "@/types";
 
 export function ProjectForm({
   action,
   project,
   accounts,
   opportunities,
+  types,
+  owners,
+  defaultTypeId,
+  returnTo = "/projects",
 }: {
   action: (formData: FormData) => void | Promise<void>;
   project?: ProjectEditable | null;
   accounts: Option[];
   opportunities: Option[];
+  types: ProjectTypeRow[];
+  owners: Option[];
+  /** Preselected project type for create flows (e.g. Onboarding's New project). */
+  defaultTypeId?: string;
+  /** Allowlisted surface to return to after save/cancel (see projects/actions.ts). */
+  returnTo?: string;
 }) {
   return (
     <form
@@ -18,6 +29,7 @@ export function ProjectForm({
       className="flex max-w-lg flex-col gap-4 rounded-xl border border-border bg-panel p-5"
     >
       {project && <input type="hidden" name="id" value={project.id} />}
+      <input type="hidden" name="returnTo" value={returnTo} />
 
       <Field label="Name">
         <TextInput name="name" defaultValue={project?.name ?? ""} required />
@@ -48,9 +60,27 @@ export function ProjectForm({
       </Field>
 
       <Field label="Type">
-        <Select name="type" defaultValue={project?.type ?? "onboarding"}>
-          <option value="onboarding">Onboarding</option>
-          <option value="implementation">Implementation</option>
+        <Select
+          name="projectTypeId"
+          defaultValue={project?.projectTypeId ?? defaultTypeId ?? types[0]?.id ?? ""}
+          required
+        >
+          {types.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </Select>
+      </Field>
+
+      <Field label="Owner">
+        <Select name="ownerUserId" defaultValue={project?.ownerUserId ?? ""}>
+          <option value="">— Unassigned —</option>
+          {owners.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
+          ))}
         </Select>
       </Field>
 
@@ -71,7 +101,7 @@ export function ProjectForm({
         <TextArea name="notes" rows={3} defaultValue={project?.notes ?? ""} />
       </Field>
 
-      <FormActions cancelHref="/onboarding" />
+      <FormActions cancelHref={returnTo} />
     </form>
   );
 }

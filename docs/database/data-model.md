@@ -39,6 +39,7 @@ erDiagram
     OPPORTUNITY ||--o{ ASSESSMENT : "sold via"
     OPPORTUNITY ||--o| PROJECT : "won -> onboarding"
     OPPORTUNITY ||--o{ INTERACTION : "context"
+    PROJECT_TYPE ||--o{ PROJECT : "categorizes (RESTRICT)"
     PROJECT ||--o{ MILESTONE : has
     PROJECT ||--o{ READINESS_ITEM : "checklist"
     PROJECT ||--o| HANDOFF : "completes"
@@ -107,12 +108,20 @@ erDiagram
       date kickoff_at
       timestamptz delivered_at
     }
+    PROJECT_TYPE {
+      uuid id PK
+      text key "stable machine key, unique (0058, ADR-0052)"
+      text name "unique display name"
+      text description
+      boolean is_protected "Onboarding seeded protected"
+    }
     PROJECT {
       uuid id PK
       uuid account_id FK
       uuid opportunity_id FK
+      uuid project_type_id FK "table, not enum (0058, ADR-0052)"
+      uuid owner_user_id FK
       text name
-      text type "enum onboarding|implementation"
       text status "enum not_started|in_progress|blocked|complete"
       date target_live_date
       text notes
@@ -144,8 +153,11 @@ erDiagram
       uuid id PK
       uuid account_id FK
       uuid owner_user_id FK
+      uuid project_id FK "SET NULL — one task model (0058, ADR-0052)"
       text title
       text status
+      text category "sales|project|onboarding|general"
+      text autotask_ticket_ref "on-demand push, unique (backend #19)"
       timestamptz due_at
     }
     INTERACTION {

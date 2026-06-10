@@ -133,7 +133,10 @@ serving data.
 - **Modules (all real):** Dashboard, Leads (+ capture hooks & inbox), Discovery
   (+ agent-answer approval → fit/nurture routing), Accounts, Contacts (+ 360 detail:
   dossier, timeline, consent, composer), Pipeline (interactive — move deals between
-  stages), Assessments, Proposals, Onboarding, Business Reviews, Tickets, Tasks,
+  stages), Assessments, Proposals, **Projects** (the project board, ADR-0052 #95:
+  every project type on one surface, user-creatable types — table not enum,
+  migration 0058 — owners, per-project tasks via `task.project_id`,
+  `canManageProjects`), Onboarding, Business Reviews, Tickets, Tasks,
   Campaigns (+ audiences/ads + builders), Communications (unified multi-channel
   timeline), Reporting, Knowledge (search over the gold layer), Workflows (+ builder
   & step editor), Consent (ledger), Integrations (per-user personal connections),

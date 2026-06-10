@@ -34,6 +34,7 @@ import type {
   Option,
   ProjectEditable,
   ProjectInput,
+  ProjectTypeInput,
   ProposalEditable,
   ProposalInput,
   QuestionEditable,
@@ -92,6 +93,7 @@ import type {
   PipelineColumn,
   PipelineStage,
   ProjectRow,
+  ProjectTypeRow,
   ProposalRow,
   QuestionRow,
   QuestionTemplateRow,
@@ -660,8 +662,10 @@ export const postgresRepositories: Repositories = {
           category: TaskCategory;
           due_at: Date | null;
           account: string | null;
+          project_id: string | null;
         }>(
-          `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account
+          `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account,
+                  t.project_id
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
            ORDER BY t.due_at NULLS LAST, t.title`,
@@ -673,6 +677,7 @@ export const postgresRepositories: Repositories = {
           category: row.category,
           due: fmtDate(row.due_at),
           account: row.account,
+          projectId: row.project_id,
         }));
       } catch {
         return mockRepositories.crm.listTasks();
@@ -691,8 +696,9 @@ export const postgresRepositories: Repositories = {
           status: string;
           category: string;
           due_at: Date | null;
+          project_id: string | null;
         }>(
-          `SELECT id, account_id, title, detail, status, category, due_at
+          `SELECT id, account_id, title, detail, status, category, due_at, project_id
            FROM task WHERE id = $1`,
           [id],
         );
@@ -706,6 +712,7 @@ export const postgresRepositories: Repositories = {
           status: r.status,
           category: r.category,
           dueAt: fmtDate(r.due_at),
+          projectId: r.project_id,
         };
       } catch {
         return null;
@@ -716,8 +723,8 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.createTask(input);
       await pool.query(
-        `INSERT INTO task (account_id, title, detail, status, category, due_at)
-         VALUES ($1, $2, $3, $4, $5::task_category, $6::timestamptz)`,
+        `INSERT INTO task (account_id, title, detail, status, category, due_at, project_id)
+         VALUES ($1, $2, $3, $4, $5::task_category, $6::timestamptz, $7)`,
         [
           nullIfEmpty(input.accountId),
           input.title,
@@ -725,6 +732,7 @@ export const postgresRepositories: Repositories = {
           input.status,
           input.category,
           nullIfEmpty(input.dueAt),
+          nullIfEmpty(input.projectId),
         ],
       );
     },
@@ -735,8 +743,8 @@ export const postgresRepositories: Repositories = {
       await pool.query(
         `UPDATE task
          SET account_id = $1, title = $2, detail = $3, status = $4,
-             category = $5::task_category, due_at = $6::timestamptz
-         WHERE id = $7`,
+             category = $5::task_category, due_at = $6::timestamptz, project_id = $7
+         WHERE id = $8`,
         [
           nullIfEmpty(input.accountId),
           input.title,
@@ -744,6 +752,7 @@ export const postgresRepositories: Repositories = {
           input.status,
           input.category,
           nullIfEmpty(input.dueAt),
+          nullIfEmpty(input.projectId),
           id,
         ],
       );
@@ -888,14 +897,20 @@ export const postgresRepositories: Repositories = {
           account: string;
           opportunity: string | null;
           type: string;
+          type_key: string;
+          owner: string | null;
           status: string;
           target_live_date: Date | null;
         }>(
           `SELECT pr.id, pr.name, a.name AS account, o.name AS opportunity,
-                  pr.type, pr.status, pr.target_live_date
+                  pt.name AS type, pt.key AS type_key,
+                  coalesce(u.display_name, u.email) AS owner,
+                  pr.status, pr.target_live_date
            FROM project pr
            JOIN account a ON a.id = pr.account_id
+           JOIN project_type pt ON pt.id = pr.project_type_id
            LEFT JOIN opportunity o ON o.id = pr.opportunity_id
+           LEFT JOIN app_user u ON u.id = pr.owner_user_id
            ORDER BY pr.target_live_date NULLS LAST, a.name`,
         );
         return rows.map((row) => ({
@@ -904,6 +919,8 @@ export const postgresRepositories: Repositories = {
           account: row.account,
           opportunity: row.opportunity,
           type: row.type,
+          typeKey: row.type_key,
+          owner: row.owner,
           status: row.status,
           targetLive: fmtDate(row.target_live_date),
         }));
@@ -921,13 +938,14 @@ export const postgresRepositories: Repositories = {
           account_id: string;
           opportunity_id: string | null;
           name: string;
-          type: string;
+          project_type_id: string;
+          owner_user_id: string | null;
           status: string;
           target_live_date: Date | null;
           notes: string | null;
         }>(
-          `SELECT id, account_id, opportunity_id, name, type, status,
-                  target_live_date, notes
+          `SELECT id, account_id, opportunity_id, name, project_type_id,
+                  owner_user_id, status, target_live_date, notes
            FROM project WHERE id = $1`,
           [id],
         );
@@ -938,7 +956,8 @@ export const postgresRepositories: Repositories = {
           accountId: r.account_id,
           opportunityId: r.opportunity_id,
           name: r.name,
-          type: r.type,
+          projectTypeId: r.project_type_id,
+          ownerUserId: r.owner_user_id,
           status: r.status,
           targetLiveDate: fmtDate(r.target_live_date),
           notes: r.notes,
@@ -954,18 +973,19 @@ export const postgresRepositories: Repositories = {
       // Stamp lifecycle timestamps from the chosen status (ADR-0020).
       await pool.query(
         `INSERT INTO project
-           (account_id, opportunity_id, name, type, status, target_live_date, notes,
-            started_at, completed_at)
+           (account_id, opportunity_id, name, project_type_id, owner_user_id,
+            status, target_live_date, notes, started_at, completed_at)
          VALUES (
-           $1, $2, $3, $4::project_type, $5::project_status, $6::date, $7,
-           CASE WHEN $5 = 'not_started' THEN NULL ELSE now() END,
-           CASE WHEN $5 = 'complete' THEN now() ELSE NULL END
+           $1, $2, $3, $4, $5, $6::project_status, $7::date, $8,
+           CASE WHEN $6 = 'not_started' THEN NULL ELSE now() END,
+           CASE WHEN $6 = 'complete' THEN now() ELSE NULL END
          )`,
         [
           input.accountId,
           nullIfEmpty(input.opportunityId),
           input.name,
-          input.type,
+          input.projectTypeId,
+          nullIfEmpty(input.ownerUserId),
           input.status,
           nullIfEmpty(input.targetLiveDate),
           nullIfEmpty(input.notes),
@@ -979,18 +999,20 @@ export const postgresRepositories: Repositories = {
       // Preserve existing started/completed timestamps; stamp on first transition.
       await pool.query(
         `UPDATE project
-         SET account_id = $1, opportunity_id = $2, name = $3, type = $4::project_type,
-             status = $5::project_status, target_live_date = $6::date, notes = $7,
-             started_at = CASE WHEN $5 = 'not_started' THEN NULL
+         SET account_id = $1, opportunity_id = $2, name = $3, project_type_id = $4,
+             owner_user_id = $5, status = $6::project_status,
+             target_live_date = $7::date, notes = $8,
+             started_at = CASE WHEN $6 = 'not_started' THEN NULL
                                ELSE coalesce(started_at, now()) END,
-             completed_at = CASE WHEN $5 = 'complete'
+             completed_at = CASE WHEN $6 = 'complete'
                                  THEN coalesce(completed_at, now()) ELSE NULL END
-         WHERE id = $8`,
+         WHERE id = $9`,
         [
           input.accountId,
           nullIfEmpty(input.opportunityId),
           input.name,
-          input.type,
+          input.projectTypeId,
+          nullIfEmpty(input.ownerUserId),
           input.status,
           nullIfEmpty(input.targetLiveDate),
           nullIfEmpty(input.notes),
@@ -1003,6 +1025,57 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteProject(id);
       await pool.query(`DELETE FROM project WHERE id = $1`, [id]);
+    },
+
+    async listProjectTypes(): Promise<ProjectTypeRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProjectTypes();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          name: string;
+          description: string | null;
+          is_protected: boolean;
+          project_count: string;
+        }>(
+          `SELECT pt.id, pt.key, pt.name, pt.description, pt.is_protected,
+                  count(pr.id) AS project_count
+           FROM project_type pt
+           LEFT JOIN project pr ON pr.project_type_id = pt.id
+           GROUP BY pt.id
+           ORDER BY pt.is_protected DESC, pt.name`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          key: r.key,
+          name: r.name,
+          description: r.description,
+          isProtected: r.is_protected,
+          projectCount: Number(r.project_count),
+        }));
+      } catch {
+        return mockRepositories.crm.listProjectTypes();
+      }
+    },
+
+    async createProjectType(input: ProjectTypeInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createProjectType(input);
+      await pool.query(
+        `INSERT INTO project_type (key, name, description)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (key) DO NOTHING`,
+        [input.key, input.name, nullIfEmpty(input.description)],
+      );
+    },
+
+    async deleteProjectType(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteProjectType(id);
+      // Protected types (Onboarding) are never deletable; a type in use fails
+      // on the RESTRICT FK (ADR-0052 §1).
+      await pool.query(`DELETE FROM project_type WHERE id = $1 AND NOT is_protected`, [id]);
     },
 
     async listOnboarding(): Promise<OnboardingProject[]> {
@@ -1375,6 +1448,21 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ id: r.id, name: r.name }));
       } catch {
         return mockRepositories.crm.assessmentOptions();
+      }
+    },
+
+    async userOptions(): Promise<Option[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.userOptions();
+      try {
+        const { rows } = await pool.query<{ id: string; name: string }>(
+          `SELECT id, coalesce(display_name, email) AS name
+           FROM app_user
+           ORDER BY 2`,
+        );
+        return rows.map((r) => ({ id: r.id, name: r.name }));
+      } catch {
+        return mockRepositories.crm.userOptions();
       }
     },
   },
@@ -2246,10 +2334,12 @@ export const postgresRepositories: Repositories = {
     async spawnProject(input: SpawnProjectInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.engagements.spawnProject(input);
+      // `type` is the stable project_type key (ADR-0052: table, not enum).
       await pool.query(
         `INSERT INTO project
-           (account_id, name, type, status, source_assessment_id, source_sbr_id)
-         VALUES ($1, $2, $3::project_type, 'not_started', $4, $5)`,
+           (account_id, name, project_type_id, status, source_assessment_id, source_sbr_id)
+         VALUES ($1, $2, (SELECT id FROM project_type WHERE key = $3),
+                 'not_started', $4, $5)`,
         [
           input.accountId,
           input.name,

@@ -47,6 +47,7 @@ import type {
   OpportunityRow,
   PipelineColumn,
   ProjectRow,
+  ProjectTypeRow,
   ProposalRow,
   QuestionRow,
   QuestionTemplateRow,
@@ -96,6 +97,7 @@ export interface TaskInput {
   status: string;
   category: string; // sales|project|onboarding|general (ADR-0034)
   dueAt: string | null; // yyyy-mm-dd or null
+  projectId: string | null; // owning project (one task model, ADR-0052)
 }
 export interface TaskEditable extends TaskInput {
   id: string;
@@ -139,13 +141,21 @@ export interface ProjectInput {
   accountId: string;
   opportunityId: string | null;
   name: string;
-  type: string; // onboarding|implementation
+  projectTypeId: string; // FK into project_type (table, not enum — ADR-0052)
+  ownerUserId: string | null; // owning app_user
   status: string; // not_started|in_progress|blocked|complete
   targetLiveDate: string | null; // yyyy-mm-dd or null
   notes: string | null;
 }
 export interface ProjectEditable extends ProjectInput {
   id: string;
+}
+
+/** Fields for creating a project type from the project board (ADR-0052 §1). */
+export interface ProjectTypeInput {
+  key: string; // stable machine key, slugified from the name
+  name: string;
+  description: string | null;
 }
 
 /** A {id,name} option for select dropdowns (e.g. picking an account). */
@@ -204,12 +214,18 @@ export interface CrmRepository {
   updateProposal(id: string, input: ProposalInput): Promise<void>;
   deleteProposal(id: string): Promise<void>;
 
-  // Delivery projects (full CRUD) — onboarding/implementation (ADR-0020)
+  // Delivery projects (full CRUD) — typed via the project_type table (ADR-0020/0052)
   listProjects(): Promise<ProjectRow[]>;
   getProject(id: string): Promise<ProjectEditable | null>;
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;
   deleteProject(id: string): Promise<void>;
+
+  // Project types — user-creatable from the project board (ADR-0052 §1)
+  listProjectTypes(): Promise<ProjectTypeRow[]>;
+  createProjectType(input: ProjectTypeInput): Promise<void>;
+  /** Refuses protected types; deleting a type in use fails on the RESTRICT FK. */
+  deleteProjectType(id: string): Promise<void>;
 
   // Onboarding dashboard — projects with their R/Y/G milestones + checklist (ADR-0034/0037)
   listOnboarding(): Promise<OnboardingProject[]>;
@@ -238,6 +254,9 @@ export interface CrmRepository {
 
   /** Assessment options ("Account — Assessment") for select dropdowns. */
   assessmentOptions(): Promise<Option[]>;
+
+  /** App-user options (display name) for owner select dropdowns. */
+  userOptions(): Promise<Option[]>;
 
   /** Per-source bronze rows that fed this company's unified record (ADR-0032). */
   listAccountSources(accountId: string): Promise<AccountSourceRow[]>;

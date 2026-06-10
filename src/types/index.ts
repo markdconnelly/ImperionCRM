@@ -108,15 +108,27 @@ export interface AssessmentRow {
   scores: AssessmentScore[]; // the six dimensions
 }
 
-/** A row in the Onboarding (delivery projects) list. */
+/** A row in the project board / onboarding project lists. */
 export interface ProjectRow {
   id: string;
   name: string;
   account: string; // account name
   opportunity: string | null; // opportunity name
-  type: string; // project_type label
+  type: string; // project_type display name
+  typeKey: string; // project_type stable key, e.g. 'onboarding'
+  owner: string | null; // owning app_user display name
   status: string; // project_status label
   targetLive: string | null; // formatted target go-live date
+}
+
+/** A project category — a row in the project_type table, not an enum (ADR-0052). */
+export interface ProjectTypeRow {
+  id: string;
+  key: string; // stable machine key, e.g. 'onboarding'
+  name: string;
+  description: string | null;
+  isProtected: boolean; // protected types (Onboarding) are never deletable
+  projectCount: number; // projects of this type (delete is RESTRICTed while > 0)
 }
 
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
@@ -130,6 +142,7 @@ export interface TaskRow {
   category: TaskCategory;
   due: string | null; // formatted due date
   account: string | null; // account name
+  projectId: string | null; // owning project (one task model, ADR-0052)
 }
 
 // ── Onboarding project management (ADR-0034 / template ADR-0037) ─────────────

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProjectForm } from "@/components/projects/project-form";
-import { updateProjectAction } from "../../../projects/actions";
+import { updateProjectAction } from "../../actions";
 import { getRepositories } from "@/lib/data";
 
 export default async function EditProjectPage({
@@ -30,7 +30,7 @@ export default async function EditProjectPage({
         opportunities={opportunities}
         types={types}
         owners={owners}
-        returnTo="/onboarding"
+        returnTo="/projects"
       />
     </div>
   );

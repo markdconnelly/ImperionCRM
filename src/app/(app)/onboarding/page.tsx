@@ -5,11 +5,11 @@ import { OnboardingBoard } from "@/components/onboarding/onboarding-board";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { getRepositories } from "@/lib/data";
 import {
-  deleteProjectAction,
   setMilestoneHealthAction,
   applyTemplateAction,
   toggleStepAction,
 } from "./actions";
+import { deleteProjectAction } from "../projects/actions";
 import { deleteTaskAction } from "../tasks/actions";
 
 // Onboarding is a full project-management dashboard (ADR-0034/0037): per-client
@@ -66,8 +66,23 @@ export default async function OnboardingPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h3 className="font-display text-base font-semibold tracking-tight">All projects</h3>
-        <ProjectsTable projects={projects} deleteAction={deleteProjectAction} />
+        <div>
+          <h3 className="font-display text-base font-semibold tracking-tight">
+            Onboarding projects
+          </h3>
+          <p className="mt-0.5 text-sm text-dim">
+            The foundational project type (ADR-0052). Every other type lives on the{" "}
+            <Link href="/projects" className="text-accent hover:underline">
+              project board
+            </Link>
+            .
+          </p>
+        </div>
+        <ProjectsTable
+          projects={projects.filter((p) => p.typeKey === "onboarding")}
+          deleteAction={deleteProjectAction}
+          showType={false}
+        />
       </section>
     </div>
   );

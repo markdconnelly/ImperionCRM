@@ -12,10 +12,17 @@ const statusTone: Record<string, string> = {
 export function ProjectsTable({
   projects,
   deleteAction,
+  base = "/onboarding",
+  showType = true,
 }: {
   projects: ProjectRow[];
   deleteAction: (formData: FormData) => void | Promise<void>;
+  /** Surface owning the row links: "/projects" (board, with detail pages) or "/onboarding". */
+  base?: "/projects" | "/onboarding";
+  /** Hide the Type column inside the board's per-type sections. */
+  showType?: boolean;
 }) {
+  const cols = showType ? 7 : 6;
   return (
     <div className="rounded-lg border border-border bg-panel">
       <div className="overflow-x-auto">
@@ -24,7 +31,8 @@ export function ProjectsTable({
             <tr className="text-left text-xs text-dim">
               <th className="px-4 py-2 font-medium">Project</th>
               <th className="px-4 py-2 font-medium">Account</th>
-              <th className="px-4 py-2 font-medium">Type</th>
+              {showType && <th className="px-4 py-2 font-medium">Type</th>}
+              <th className="px-4 py-2 font-medium">Owner</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Target live</th>
               <th className="px-4 py-2 font-medium" />
@@ -33,9 +41,18 @@ export function ProjectsTable({
           <tbody>
             {projects.map((p) => (
               <tr key={p.id} className="border-t border-border hover:bg-panel-2">
-                <td className="px-4 py-3 font-medium">{p.name}</td>
+                <td className="px-4 py-3 font-medium">
+                  {base === "/projects" ? (
+                    <Link href={`/projects/${p.id}`} className="hover:text-accent">
+                      {p.name}
+                    </Link>
+                  ) : (
+                    p.name
+                  )}
+                </td>
                 <td className="px-4 py-3 text-dim">{p.account}</td>
-                <td className="px-4 py-3 text-dim">{p.type}</td>
+                {showType && <td className="px-4 py-3 text-dim">{p.type}</td>}
+                <td className="px-4 py-3 text-dim">{p.owner ?? "—"}</td>
                 <td className={cn("px-4 py-3", statusTone[p.status] ?? "text-dim")}>
                   {p.status.replace(/_/g, " ")}
                 </td>
@@ -43,7 +60,7 @@ export function ProjectsTable({
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3">
                     <Link
-                      href={`/onboarding/${p.id}/edit`}
+                      href={`${base}/${p.id}/edit`}
                       className="text-dim hover:text-text"
                     >
                       Edit
@@ -60,8 +77,8 @@ export function ProjectsTable({
             ))}
             {projects.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-dim">
-                  No delivery projects yet. Create one to get started.
+                <td colSpan={cols} className="px-4 py-8 text-center text-dim">
+                  No projects yet. Create one to get started.
                 </td>
               </tr>
             )}

@@ -10,6 +10,7 @@ function parse(formData: FormData): TaskInput {
   const accountId = String(formData.get("accountId") ?? "").trim();
   const detail = String(formData.get("detail") ?? "").trim();
   const dueAt = String(formData.get("dueAt") ?? "").trim();
+  const projectId = String(formData.get("projectId") ?? "").trim();
   return {
     accountId: accountId === "" ? null : accountId,
     title: String(formData.get("title") ?? "").trim(),
@@ -17,6 +18,7 @@ function parse(formData: FormData): TaskInput {
     status: String(formData.get("status") ?? "open"),
     category: String(formData.get("category") ?? "general"),
     dueAt: dueAt === "" ? null : dueAt,
+    projectId: projectId === "" ? null : projectId,
   };
 }
 
@@ -34,6 +36,7 @@ export async function updateTaskAction(formData: FormData) {
   const { crm } = getRepositories();
   await crm.updateTask(id, parse(formData));
   revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
   redirect("/tasks");
 }
 
@@ -43,4 +46,5 @@ export async function deleteTaskAction(formData: FormData) {
   const { crm } = getRepositories();
   await crm.deleteTask(id);
   revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
 }
