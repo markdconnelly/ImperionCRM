@@ -34,11 +34,15 @@ flowchart LR
 ## Migrations
 
 Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in order with an
-Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0043**
-applied in prod. Recent: 0035 poll cadence (ADR-0038); 0036/0037 per-source bronze +
-`device` (ADR-0039); 0038–0041 on-prem local-pipeline bronze + related-source citation
-views + question/template m2m + IT Glue cleanup; 0042/0043 Dark Web ID + Televy ingestion
-(ADR-0040). The company-credentials migration is **0033** — see the
+Entra token — see [`db/README.md`](../../db/README.md). The repo contains **0001–0055**;
+**0001–0054** are applied in prod (per ADR-0048) and **0055** (pipeline-MI Autotask
+ticket writes) is pending. Recent: 0044/0047/0048/0049/0051 identity grants (local
+pipeline, backend functions, pipeline managed identity); 0045/0046 gold
+`knowledge_object` vector store + drop of the never-populated legacy vector tables
+(ADR-0041/ADR-0043); 0050 silver `contract` + `ticket` from Autotask bronze (ADR-0044);
+0052 saved list views (ADR-0046); 0053 `device_inventory_all` view (ADR-0047); 0054
+`agent_settings` singleton (ADR-0048, backend ADR-0037).
+The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
 status, and a per-company-provider unique index (ADR-0036).
