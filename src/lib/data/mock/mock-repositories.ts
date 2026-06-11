@@ -721,5 +721,17 @@ export const mockRepositories: Repositories = {
     async listUnmappedTenants() {
       return [];
     },
+    async listTenantPostureForAccount() {
+      return [];
+    },
+    async listPosturePoliciesForAccount() {
+      return [];
+    },
+    async listSecureScoreControlsForAccount() {
+      return [];
+    },
+    async listCredentialExposuresForAccount() {
+      return [];
+    },
   },
 };

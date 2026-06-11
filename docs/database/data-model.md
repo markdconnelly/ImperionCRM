@@ -991,6 +991,13 @@ erDiagram
 > `account_tenant` — posture for an unmapped tenant still lands and surfaces in the
 > unmapped list rather than being rejected (ADR-0051: surface, never hide).
 
+The web app's posture reads (#93) are account-scoped and always join THROUGH
+`account_tenant`: the tenant rollup is a LEFT JOIN from the mapping (a mapped tenant
+the pipeline hasn't classified yet surfaces with an all-null rollup), the policy and
+secure-score-control reads are INNER JOINs (no mapping → no rows), and credential
+exposures read silver `credential_exposure` by its own `account_id` (the ADR-0040
+domain match, independent of Tenant Mapping).
+
 ## Enumerations
 
 - `account.relationship`: `prospect | customer | partner` (null = unknown)
