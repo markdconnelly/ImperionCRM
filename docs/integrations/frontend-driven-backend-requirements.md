@@ -69,6 +69,12 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
   pipeline re-classifies that account's mapped Customer Tenants into
   `posture_policy`/`tenant_posture` and the page revalidates after it lands. Bulk
   posture merges (all tenants, scheduled) belong to the on-prem pipeline.
+- **Posture overview page (#93):** ✅ `/accounts/{id}/posture` renders the account's
+  mapped tenants' `tenant_posture` rollups, the `posture_policy` classification
+  drill-down (vs Golden State), the bronze secure-score control profiles, and the
+  account's `credential_exposure` rows — all via the account-scoped reads documented
+  in `../database/data-model.md`. Unmapped → points at Settings → Tenant mapping;
+  mapped-but-unclassified → points at Refresh posture (reused on this page).
 - **Gold:** summaries + embeddings over merged records — still deferred (next phase).
 
 ## 4. Communications ingestion (ADR-0011)
