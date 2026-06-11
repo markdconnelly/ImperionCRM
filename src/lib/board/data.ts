@@ -54,6 +54,14 @@ export interface BoardSessionDetail {
     id: string;
     topic: string;
     status: string;
+    /**
+     * The persisted Board Packet (ADR-0054 §3) — byte-for-byte what the personas
+     * deliberated over, including the `(degraded: …)` header / "Unavailable
+     * inputs" footer when the composer or a pull failed. Null on pre-0059 sessions.
+     */
+    packetMd: string | null;
+    /** The human CISO's convene-time position (ADR-0054 §4); null when none given. */
+    cisoPositionMd: string | null;
     openedBy: string | null;
     createdAt: string;
     concludedAt: string | null;
@@ -106,6 +114,10 @@ const MOCK_DETAILS: Record<string, BoardSessionDetail> = {
       id: "mock-session-1",
       topic: MOCK_SESSIONS[0].topic,
       status: "concluded",
+      packetMd:
+        "# Board Packet\n\n## Business snapshot\n- Pipeline: 14 open opportunities · $412k weighted\n- Managed-services seats: 1,240 across 38 accounts\n\n## Campaigns (last 30 days)\n- Co-managed SOC webinar — 86 leads, $2.1k spend\n\n## Security posture (aggregates)\n- Median Secure Score 71% · 3 tenants below 60%\n- 12 open credential exposures across 4 tenants\n\n## Relevant knowledge\n- 2025 SOC delivery retro: staffing was the bottleneck, not tooling.",
+      cisoPositionMd:
+        "Bundling a SOC offering is security-positive overall, but only if 24/7 coverage is real — partial coverage marketed as a SOC is a liability. No objection if delivery is staffed before launch.",
       openedBy: "Avery Chen",
       createdAt: "2026-06-08T15:10:00Z",
       concludedAt: "2026-06-08T15:11:30Z",
@@ -176,6 +188,8 @@ const MOCK_DETAILS: Record<string, BoardSessionDetail> = {
       id: "mock-session-2",
       topic: MOCK_SESSIONS[1].topic,
       status: "failed",
+      packetMd: null,
+      cisoPositionMd: null,
       openedBy: "Jordan Patel",
       createdAt: "2026-06-07T11:40:00Z",
       concludedAt: "2026-06-07T11:40:20Z",
@@ -303,12 +317,14 @@ async function detailFromDb(id: string): Promise<BoardSessionDetail | null> {
       id: string;
       topic: string;
       status: string;
+      packet_md: string | null;
+      ciso_position_md: string | null;
       opened_by: string | null;
       created_at: string;
       concluded_at: string | null;
     }>(
-      `SELECT s.id, s.topic, s.status, u.display_name AS opened_by,
-              s.created_at, s.concluded_at
+      `SELECT s.id, s.topic, s.status, s.packet_md, s.ciso_position_md,
+              u.display_name AS opened_by, s.created_at, s.concluded_at
        FROM board_session s
        LEFT JOIN app_user u ON u.id = s.opened_by
        WHERE s.id = $1::uuid`,
@@ -352,6 +368,8 @@ async function detailFromDb(id: string): Promise<BoardSessionDetail | null> {
         id: session.id,
         topic: session.topic,
         status: session.status,
+        packetMd: session.packet_md,
+        cisoPositionMd: session.ciso_position_md,
         openedBy: session.opened_by,
         createdAt: new Date(session.created_at).toISOString(),
         concludedAt: session.concluded_at ? new Date(session.concluded_at).toISOString() : null,

@@ -156,12 +156,16 @@ export interface BoardConveneWire {
   usage: BoardUsage;
 }
 
-/** GET /board/sessions/{id} wire shape (backend ADR-0039). */
+/** GET /board/sessions/{id} wire shape (backend ADR-0039 + 0059 fields). */
 export interface BoardSessionWire {
   session: {
     id: string;
     topic: string;
     status: string;
+    /** The persisted Board Packet — byte-for-byte what the personas saw (ADR-0054 §3). */
+    packetMd: string | null;
+    /** The human CISO's convene-time position (ADR-0054 §4 deputy model). */
+    cisoPositionMd: string | null;
     openedBy: string;
     createdAt: string;
     concludedAt: string | null;

@@ -121,6 +121,53 @@ export default async function BoardSessionPage({
         </div>
       </section>
 
+      {/* Human CISO position (ADR-0054 §4 deputy model) */}
+      {session.cisoPositionMd && (
+        <section className="rounded-xl border border-border bg-panel p-4">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-sm font-semibold tracking-tight">
+              Human CISO position
+            </h3>
+            <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-amber">
+              veto weight on security matters
+            </span>
+            <span className="text-[11px] text-dim">
+              shown to every seat · the staff-analyst deputy defers to it
+            </span>
+          </div>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">
+            {session.cisoPositionMd}
+          </p>
+        </section>
+      )}
+
+      {/* The Board Packet — byte-for-byte what the personas saw (ADR-0054 §3) */}
+      {session.packetMd && (
+        <details className="group rounded-xl border border-border bg-panel">
+          <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 p-4 [&::-webkit-details-marker]:hidden">
+            <Icon
+              name="ChevronRight"
+              size={14}
+              className="text-dim transition-transform group-open:rotate-90"
+            />
+            <h3 className="font-display text-sm font-semibold tracking-tight">
+              What the board knew
+            </h3>
+            {session.packetMd.startsWith("(degraded:") && (
+              <span className="rounded border border-amber/40 px-1.5 py-0.5 text-[10px] text-amber">
+                degraded packet
+              </span>
+            )}
+            <span className="text-[11px] text-dim">
+              the persisted Board Packet — exactly what every persona deliberated over
+            </span>
+          </summary>
+          <pre className="overflow-x-auto whitespace-pre-wrap border-t border-border p-4 font-sans text-sm leading-relaxed text-dim">
+            {session.packetMd}
+          </pre>
+        </details>
+      )}
+
       {/* Recommendation */}
       {recommendation && rationale && (
         <section className="rounded-xl border border-accent/40 bg-panel p-5">
