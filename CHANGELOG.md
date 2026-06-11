@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.4.0...imperion-crm-v0.5.0) (2026-06-11)
+
+
+### Features
+
+* **db:** migration 0063 - posture_snapshot + posture_snapshot_pillar ([#164](https://github.com/markdconnelly/ImperionCRM/issues/164)) ([#165](https://github.com/markdconnelly/ImperionCRM/issues/165)) ([c5bd706](https://github.com/markdconnelly/ImperionCRM/commit/c5bd7060050d136dd1c95c7b541a3deee29772f8))
+
+
+### Bug Fixes
+
+* **auth:** resolve group GUIDs arriving in the roles claim ([#169](https://github.com/markdconnelly/ImperionCRM/issues/169)) ([#170](https://github.com/markdconnelly/ImperionCRM/issues/170)) ([c0d5e7c](https://github.com/markdconnelly/ImperionCRM/commit/c0d5e7c04acfbc8304f143b0608955ccd015d819))
+* **auth:** restore ADR-0045 fail-closed - revert interim fail-open ([#171](https://github.com/markdconnelly/ImperionCRM/issues/171)) ([#172](https://github.com/markdconnelly/ImperionCRM/issues/172)) ([56e6357](https://github.com/markdconnelly/ImperionCRM/commit/56e63577ca98322e533af597837eac57cc56e55c))
+* **settings:** poll cadence no longer snaps back after save ([#91](https://github.com/markdconnelly/ImperionCRM/issues/91)) ([#173](https://github.com/markdconnelly/ImperionCRM/issues/173)) ([0cf68cb](https://github.com/markdconnelly/ImperionCRM/commit/0cf68cbacf74f31edaa744c578a593f9928176c8))
+
 ## [0.4.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.3.0...imperion-crm-v0.4.0) (2026-06-11)
 
 
