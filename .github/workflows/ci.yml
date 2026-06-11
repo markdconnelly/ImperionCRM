@@ -14,8 +14,8 @@ jobs:
     env:
       AUTH_SECRET: ci-build-only-not-a-real-secret
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           # Match the App Service runtime and the deploy workflow (Node 24 LTS).
           node-version: 24
@@ -37,7 +37,7 @@ jobs:
     # OpenAPI validation, diagram generation, and ADR formatting as docs grow.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Required /docs structure exists
         run: |
           required=(architecture security agents integrations database api \

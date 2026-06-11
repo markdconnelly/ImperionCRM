@@ -25,7 +25,7 @@ jobs:
       # Manifest mode pinned at 0.1.0 (pre-v1); bootstrap-sha in the config marks
       # standard adoption so prior history is never re-released. v1.0.0 waits for
       # the roadmap's v1 gates + Mark's declaration (ADR-0056 §Decision).
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
