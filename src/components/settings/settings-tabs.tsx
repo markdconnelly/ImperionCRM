@@ -3,13 +3,14 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 
-type TabKey = "profile" | "ai" | "connections" | "credentials" | "tools";
+type TabKey = "profile" | "ai" | "connections" | "credentials" | "tenants" | "tools";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "profile", label: "Profile" },
   { key: "ai", label: "AI" },
   { key: "connections", label: "Your connections" },
   { key: "credentials", label: "Company credentials" },
+  { key: "tenants", label: "Tenant mapping" },
   { key: "tools", label: "Tools & configuration" },
 ];
 
@@ -24,6 +25,7 @@ export function SettingsTabs({
   ai,
   connections,
   credentials,
+  tenants,
   tools,
 }: {
   initialTab?: string;
@@ -31,6 +33,7 @@ export function SettingsTabs({
   ai: ReactNode;
   connections: ReactNode;
   credentials: ReactNode;
+  tenants: ReactNode;
   tools: ReactNode;
 }) {
   const valid = TABS.some((t) => t.key === initialTab) ? (initialTab as TabKey) : "profile";
@@ -45,7 +48,9 @@ export function SettingsTabs({
           ? connections
           : tab === "credentials"
             ? credentials
-            : tools;
+            : tab === "tenants"
+              ? tenants
+              : tools;
 
   return (
     <div className="flex flex-col gap-4">

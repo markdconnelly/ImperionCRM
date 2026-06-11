@@ -23,6 +23,11 @@ import {
   setPollIntervalAction,
 } from "./actions";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
+import { TenantMappingPanel } from "@/components/settings/tenant-mapping-panel";
+import {
+  deleteTenantMappingAction,
+  saveTenantMappingAction,
+} from "./tenant-mapping-actions";
 import {
   CONNECT_RESULT_NOTICES,
   isConnectResult,
@@ -107,12 +112,16 @@ export default async function SettingsPage({
   const email = session?.user?.email ?? "—";
   const rolesLabel = roles.map((r) => ROLE_LABEL[r] ?? r).join(", ");
 
-  const { connections } = getRepositories();
-  const [personal, company, agentSettings] = await Promise.all([
-    connections.listUserConnections(email),
-    connections.listCompanyConnections(),
-    getAgentSettingsState(),
-  ]);
+  const { connections, crm, security } = getRepositories();
+  const [personal, company, agentSettings, tenantMappings, unmappedTenants, accounts] =
+    await Promise.all([
+      connections.listUserConnections(email),
+      connections.listCompanyConnections(),
+      getAgentSettingsState(),
+      security.listTenantMappings(),
+      security.listUnmappedTenants(),
+      crm.listAccounts(),
+    ]);
   const companyByProvider = new Map(company.map((c) => [c.provider, c]));
 
   // ── Profile tab ────────────────────────────────────────────────────────────
@@ -258,6 +267,17 @@ export default async function SettingsPage({
     </section>
   );
 
+  // ── Tenant Mapping tab (ADR-0051, #150) ─────────────────────────────────────
+  const tenantsPanel = (
+    <TenantMappingPanel
+      mappings={tenantMappings}
+      unmapped={unmappedTenants}
+      accounts={accounts}
+      saveAction={saveTenantMappingAction}
+      deleteAction={deleteTenantMappingAction}
+    />
+  );
+
   const toolsPanel = (
     <Card title="Tools & configuration">
       <p className="mb-3 text-sm text-dim">
@@ -295,6 +315,7 @@ export default async function SettingsPage({
         ai={aiPanel}
         connections={connectionsPanel}
         credentials={credentials}
+        tenants={tenantsPanel}
         tools={toolsPanel}
       />
     </div>
