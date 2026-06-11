@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.5.0...imperion-crm-v0.5.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* **settings:** open the credential form when no credential is actually stored ([#176](https://github.com/markdconnelly/ImperionCRM/issues/176)) ([#177](https://github.com/markdconnelly/ImperionCRM/issues/177)) ([1f70257](https://github.com/markdconnelly/ImperionCRM/commit/1f702578a5a04a494f58d75652aa0cf729bad11d))
+
 ## [0.5.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.4.0...imperion-crm-v0.5.0) (2026-06-11)
 
 
