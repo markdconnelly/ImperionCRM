@@ -8,6 +8,13 @@
 
 ## What "online" means (the go-live definition)
 
+> **Recut note (ADR-0057, 2026-06-11): go-live = the v1.0.0 cut = the first time
+> employees touch the app.** There is no earlier 0.x soft launch. The phases below are
+> the *internal sequencing* of v1's operational track — they exit before the cut, they
+> are not themselves a launch. v1's full scope (the complete filed product) lives in
+> `product-roadmap-v1-v3.md`; outbound sends are **in** v1 (gate 5 there), so item 5's
+> "consciously deferred" branch no longer applies to the v1 cut.
+
 The app counts as online when all of the following hold:
 
 1. Employees sign in via Entra SSO and every module serves real data (already true).
