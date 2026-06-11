@@ -706,5 +706,17 @@ export const mockRepositories: Repositories = {
         ],
       };
     },
+    async listTenantMappings() {
+      return [];
+    },
+    async upsertTenantMapping() {
+      throw new Error(NO_DB);
+    },
+    async deleteTenantMapping() {
+      throw new Error(NO_DB);
+    },
+    async listUnmappedTenants() {
+      return [];
+    },
   },
 };

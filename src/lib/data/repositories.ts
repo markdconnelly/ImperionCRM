@@ -58,9 +58,11 @@ import type {
   SocialIdentityRow,
   StageValueDatum,
   TaskRow,
+  TenantMapping,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
+  UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
 } from "@/types";
@@ -755,9 +757,17 @@ export interface KnowledgeRepository {
   search(query: string): Promise<KnowledgeHit[]>;
 }
 
-/** Security repository: the read-only compliance/posture dashboard. */
+/** Security repository: the read-only compliance/posture dashboard + Tenant Mapping (ADR-0051). */
 export interface SecurityRepository {
   getPosture(): Promise<SecurityPosture>;
+
+  /** Tenant Mappings (tenant GUID → account), joined to the account name. */
+  listTenantMappings(): Promise<TenantMapping[]>;
+  /** Create or repoint a Tenant Mapping (tenant_id is the PK — one account per tenant). */
+  upsertTenantMapping(input: { tenantId: string; accountId: string; displayName: string | null }): Promise<void>;
+  deleteTenantMapping(tenantId: string): Promise<void>;
+  /** Tenant GUIDs present in posture bronze with no mapping — surfaced, never hidden (ADR-0051). */
+  listUnmappedTenants(): Promise<UnmappedTenant[]>;
 }
 
 /** The full set of repositories a request can resolve. */

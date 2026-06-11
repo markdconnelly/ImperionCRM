@@ -377,6 +377,20 @@ export interface ContractRow {
   source: string;
 }
 
+/** An admin-managed Tenant Mapping row (ADR-0051): Microsoft tenant GUID → account. */
+export interface TenantMapping {
+  tenantId: string;
+  accountId: string;
+  accountName: string | null;
+  displayName: string | null;
+  updatedAt: string | null;
+}
+
+/** A tenant GUID present in posture bronze with no Tenant Mapping (ADR-0051). */
+export interface UnmappedTenant {
+  tenantId: string;
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;

@@ -107,9 +107,11 @@ import type {
   StageValueDatum,
   TaskCategory,
   TaskRow,
+  TenantMapping,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
+  UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
 } from "@/types";
@@ -3955,6 +3957,75 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return mockRepositories.security.getPosture();
+      }
+    },
+
+    // ── Tenant Mapping (ADR-0051 — admin-managed, never inferred from domains) ──
+    async listTenantMappings(): Promise<TenantMapping[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listTenantMappings();
+      try {
+        const { rows } = await pool.query<{
+          tenant_id: string; account_id: string; account: string | null;
+          display_name: string | null; updated_at: string | null;
+        }>(
+          `SELECT t.tenant_id, t.account_id::text AS account_id, a.name AS account,
+                  t.display_name, t.updated_at::text AS updated_at
+             FROM account_tenant t
+             LEFT JOIN account a ON a.id = t.account_id
+            ORDER BY a.name NULLS LAST, t.tenant_id`,
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id, accountId: r.account_id, accountName: r.account,
+          displayName: r.display_name, updatedAt: r.updated_at,
+        }));
+      } catch {
+        return mockRepositories.security.listTenantMappings();
+      }
+    },
+
+    async upsertTenantMapping(input): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.upsertTenantMapping(input);
+      await pool.query(
+        `INSERT INTO account_tenant (tenant_id, account_id, display_name)
+         VALUES ($1, $2::uuid, $3)
+         ON CONFLICT (tenant_id) DO UPDATE SET
+           account_id = EXCLUDED.account_id, display_name = EXCLUDED.display_name,
+           updated_at = now()`,
+        [input.tenantId, input.accountId, input.displayName],
+      );
+    },
+
+    async deleteTenantMapping(tenantId): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.deleteTenantMapping(tenantId);
+      await pool.query(`DELETE FROM account_tenant WHERE tenant_id = $1`, [tenantId]);
+    },
+
+    async listUnmappedTenants(): Promise<UnmappedTenant[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listUnmappedTenants();
+      try {
+        // Envelope tenant_id across the posture bronze set (local-pipeline
+        // security-posture loads, migrations 0038–0041) minus the mapped set —
+        // unmapped tenants surface rather than disappear (ADR-0051).
+        const { rows } = await pool.query<{ tenant_id: string }>(
+          `SELECT DISTINCT tenant_id FROM (
+                     SELECT tenant_id FROM secure_scores
+           UNION ALL SELECT tenant_id FROM entra_conditional_access_policies
+           UNION ALL SELECT tenant_id FROM intune_security_policies
+           UNION ALL SELECT tenant_id FROM device_configuration_policies
+           UNION ALL SELECT tenant_id FROM autopilot_policies
+           UNION ALL SELECT tenant_id FROM defender_xdr_security_policies
+           ) b
+           WHERE tenant_id IS NOT NULL
+             AND NOT EXISTS (SELECT 1 FROM account_tenant m WHERE m.tenant_id = b.tenant_id)
+           ORDER BY tenant_id`,
+        );
+        return rows.map((r) => ({ tenantId: r.tenant_id }));
+      } catch {
+        return mockRepositories.security.listUnmappedTenants();
       }
     },
   },
