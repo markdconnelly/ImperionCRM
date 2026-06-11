@@ -1,14 +1,21 @@
 # ADR-0051: Security posture model — tenant mapping, posture silver, and the Imperion Secure Score
 
-**Status:** accepted (2026-06-10, decisions locked with Mark in design session for issue #86)
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted (2026-06-10, decisions locked with Mark in design session for issue #86) |
+| **Date** | 2026-06-10 |
+| **Cross-references** | — |
 
-## Context and decision
+## Context
+
+**Context and decision**
 
 Posture bronze (secure scores, five policy families + golden baselines, exposures) is keyed by Microsoft tenant GUID, but the app navigates by account, and no tenant→account link existed. We also want client-facing quarterly benchmarking across *all* security tooling (M365, network, vulnerability scanning, phishing, dark web), not just Microsoft's number.
 
 We decided: an explicit admin-managed tenant mapping; pipeline-maintained silver posture tables (not views); a versioned, pillar-based composite score (**Imperion Secure Score**) snapshotted immutably per account; and per-device truth only from Intune device compliance — never proxied from tenant level. Vocabulary is defined in `CONTEXT.md` (Customer Tenant, Tenant Mapping, Imperion Secure Score, Posture Pillar, Posture Snapshot, Score Model, Golden State, Device Compliance).
 
-## Decisions
+## Decision
 
 1. **Tenant Mapping is explicit.** `account_tenant` maps tenant GUID → account; tenant is the PK (one account per tenant; an account may own several tenants). Managed by admins in Settings; never inferred from domains (rejected: the credential_exposure-style domain match — silent mismatches on posture are unacceptable). Tenants present in posture bronze with no mapping surface in an "unmapped tenants" admin list rather than disappearing.
 
@@ -22,13 +29,13 @@ We decided: an explicit admin-managed tenant mapping; pipeline-maintained silver
 
 6. **Device-level posture comes only from Intune Device Compliance.** A new on-prem bulk feed lands Intune `managedDevices` in bronze **per device, unreduced**; the device page shows that device's compliance; the account page shows the tenant-level overview. Until the feed lands, device pages show no per-device indicator (rejected: tenant-proxy — a green dot on a non-reporting laptop is worse than no dot).
 
-## Score Model v1
+**Score Model v1**
 
 - Pillars and weights: `m365_secure_score`, `policy_compliance`, `darkweb` — equal weight. (`network`, `vulnerability`, `phishing` join in later model versions when UniFi / Kaseya vulnerability / phishing-campaign feeds exist.)
 - Normalization: m365_secure_score = licensed-user-weighted mean of `current/max × 100` across the account's mapped tenants; policy_compliance = `compliant / (compliant + drift + ungoverned + missing) × 100` across all families and mapped tenants; darkweb = `max(0, 100 − 10 × open exposures)`.
 - Grade bands: A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, else F.
 
-## Table specifications (migration 0058+, verify next number on disk)
+**Table specifications (migration 0058+, verify next number on disk)**
 
 ```sql
 account_tenant (

@@ -1,10 +1,14 @@
 # ADR-0048: AI Agents operations page (orchestrator settings + activity)
 
-- **Status:** Accepted (amended by ADR-0050 — the page is now admin-only, not
-  visible to all roles)
-- **Date:** 2026-06-09
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted (amended by ADR-0050 — the page is now admin-only, not visible to all roles) |
+| **Date** | 2026-06-09 |
+| **Cross-references** | backend ADR-0036, backend ADR-0037, backend ADR-0032 |
 
 ## Problem
+
 The backend now has a real Claude tool-use orchestrator (backend ADR-0036) and
 agent settings endpoints (backend ADR-0037, `agent_settings` migration 0054
 applied), but the front end's AI Agents page was still a `<ModulePlaceholder>`.
@@ -12,6 +16,7 @@ Operators had no GUI for the model-tier preset, the monthly budget ceiling, or
 what the agent layer is actually doing/spending.
 
 ## Context
+
 - Backend wire contract: `GET/PUT /api/agent/settings` →
   `{ preset, budgetUsdMonthly, models, spendMonthToDateUsd, presets }` with
   preset ∈ economy | balanced | premium, each pinning a (cheap, premium) Claude
@@ -27,6 +32,7 @@ what the agent layer is actually doing/spending.
   *process* calls the backend.
 
 ## Options considered
+
 1. Read through the backend GET with a direct-DB read fallback; write ONLY via
    the backend PUT (this decision).
 2. Read/write `agent_settings` directly from the app (rejected — writes are a
@@ -38,7 +44,8 @@ what the agent layer is actually doing/spending.
 4. Keep the placeholder until the Board page lands too (rejected — settings
    are live in prod with no GUI; the budget control is a cost-safety feature).
 
-## Tradeoffs
+### Tradeoffs
+
 - (1) The page is honest in every environment: backend wired → live state +
   editable; backend unset but DB present → persisted truth rendered read-only
   with a clear notice; neither → mock defaults (the app-wide ADR-0007 pattern).
@@ -50,6 +57,7 @@ what the agent layer is actually doing/spending.
   as a render fallback; the live GET's `presets` map wins when available.
 
 ## Decision
+
 - **Service client** — `agentService.getSettings()` / `updateSettings()` on the
   existing agent descriptor (`/agent/settings`, MI bearer via Easy Auth,
   ADR-0028/0035).
@@ -70,22 +78,28 @@ what the agent layer is actually doing/spending.
 - Non-admins see the Orchestrator card read-only; the page itself stays visible
   to all roles (reads are broadly available, ADR-0030/0045).
 
-## Security impact
+## Consequences
+
+### Security impact
+
 Writes are double-gated: the front-end capability guard (admin-only) plus the
 backend's caller-auth (only the web app's MI). The page adds no new DB writes;
 activity is a read of the existing audit trail. The budget control itself is a
 cost-abuse guard for the agent layer.
 
-## Cost impact
+### Cost impact
+
 None material — two extra queries per page view in the fallback tier; the
 backend GET is one function call. The page makes the cost ceiling operable.
 
-## Operational impact
+### Operational impact
+
 None to deploy (migration 0054 already applied). When AGENT_SERVICE_URL is
 unset the page degrades read-only with an explicit notice. When a new sub-agent
 registers in the backend, update the SUB_AGENTS list on the page.
 
 ## Future considerations
+
 A live `GET /agent/registry` endpoint to replace the static sub-agents card;
 per-run drill-down (the audit `detail.calls` array already carries per-model
 metering); monthly spend trend chart; budget alerts ahead of the hard stop;

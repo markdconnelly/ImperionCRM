@@ -1,9 +1,14 @@
 # ADR-0023: Engagement capture & long-term-relationship data model
 
-- **Status:** Accepted
-- **Date:** 2026-06-07
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-07 |
+| **Cross-references** | — |
 
 ## Problem
+
 The discovery call, the paid assessment, and the ongoing Strategic Business Reviews
 each generate structured data (questionnaire answers, Televy/M365/Google evidence,
 re-benchmarks, ticket history, concerns). It must be: captured **as received** in a
@@ -12,6 +17,7 @@ contact; **editable** as the discovery/assessment questions change; and **never
 duplicated downstream** — instead feeding tickets, opportunities, and projects.
 
 ## Context
+
 Builds on the assessment-led lifecycle (ADR-0022,
 [customer-lifecycle](../architecture/customer-lifecycle.md)). The discovery script
 defines eight captures; the assessment scores six dimensions with deeper evidence; the
@@ -19,6 +25,18 @@ relationship is governed by ~quarterly SBRs. Heavy collection (Televy, Graph/Goo
 pulls, Autotask sync) runs in external functions (ADR-0018); this ADR is about how the
 results are **stored and related**. Aligns with the bronze→silver→gold pipeline
 (CLAUDE.md §4) and the company-centric spine (ADR-0010).
+
+## Options considered
+
+- **Typed columns per capture** — rejected: every question change is a migration; can't
+  edit questions in-app.
+- **One generic EAV answer table keyed by question (this decision)** — editable,
+  normalized, single source of truth; the small cost is value-type handling in the data
+  layer.
+- **Duplicating assessment ratings onto SBR rows** — rejected as duplication; SBR
+  re-scores are a separate time series (`sbr_dimension_score`).
+- **Linking engagements to the contact** — rejected per the company-centric rule; the
+  contact is only the performing employee.
 
 ## Decision
 
@@ -59,29 +77,23 @@ source_assessment_id / source_sbr_id`, `project.source_assessment_id / source_sb
 `ticket.source_assessment_id / source_sbr_id`. "Feed back into" = a pointer to the
 origin, never a copy of its data.
 
-## Options considered
-- **Typed columns per capture** — rejected: every question change is a migration; can't
-  edit questions in-app.
-- **One generic EAV answer table keyed by question (this decision)** — editable,
-  normalized, single source of truth; the small cost is value-type handling in the data
-  layer.
-- **Duplicating assessment ratings onto SBR rows** — rejected as duplication; SBR
-  re-scores are a separate time series (`sbr_dimension_score`).
-- **Linking engagements to the contact** — rejected per the company-centric rule; the
-  contact is only the performing employee.
+## Consequences
 
-## Security impact
+### Security impact
+
 No new internet-facing surface; collection runs in external functions with their own
 credentials (ADR-0018). Raw third-party payloads (Televy/Graph/Google/Autotask) land
 in `*_bronze` JSONB and may contain sensitive environment data — treated as PII-adjacent
 and access-controlled/audited (ADR-0016); `blob_ref` keeps large reports in object
 storage, not the row. Answers may include sensitive business detail; same controls.
 
-## Cost impact
+### Cost impact
+
 Postgres storage for JSONB payloads; large artifacts go to object storage via
 `blob_ref`. No new always-on compute.
 
-## Operational impact
+### Operational impact
+
 Adds migrations `0011`–`0017` (idempotent, transactional, ADR-0017): question catalog +
 answers, discovery_call, assessment_artifact, ticket, SBR (+ dimension scores + ticket
 links), provenance FKs, and seed questions. ERD gains Diagram 4. A new
@@ -89,6 +101,7 @@ links), provenance FKs, and seed questions. ERD gains Diagram 4. A new
 discovery & SBR pages) follows in later PRs.
 
 ## Future considerations
+
 The question-editor and discovery/SBR UIs; auto-create opportunities/projects/tickets
 from engagement outcomes (wiring the provenance FKs); silver/gold enrichment of
 artifacts for agent retrieval (embeddings, §4); SBR scheduling/reminders; mapping

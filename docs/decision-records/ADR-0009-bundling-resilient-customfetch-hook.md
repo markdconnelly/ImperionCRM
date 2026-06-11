@@ -1,9 +1,14 @@
 # ADR-0009: Bundling-resilient certificate `customFetch` hook
 
-- **Status:** Accepted
-- **Date:** 2026-06-07
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-06 |
+| **Cross-references** | — |
 
 ## Problem
+
 After the certificate-based Entra sign-in (ADR-0005) was deployed, SSO failed on
 the public site: completing Microsoft login landed the user on Auth.js's generic
 **"There is a problem with the server configuration"** page. Local typecheck and
@@ -11,6 +16,7 @@ build passed; the certificate, PFX, app registration, redirect URIs, and App
 Service settings were all confirmed correct.
 
 ## Context
+
 Auth.js v5 (`next-auth@5.0.0-beta.25` → `@auth/core@0.37.2`) has no turnkey
 certificate support for the Entra provider, so ADR-0005 injects a signed client
 assertion into the token request via the provider's `customFetch` hook. That hook
@@ -37,6 +43,7 @@ Root cause (reproduced and verified against the live deployment):
   to the one `@auth/core` looks up. The property lookup misses.
 
 ## Options considered
+
 1. **Proxy the provider** so any `Symbol("custom-fetch")` access returns
    `entraFetch`, independent of symbol identity.
 2. **`serverExternalPackages`** in `next.config` to stop Next from bundling
@@ -51,7 +58,8 @@ Root cause (reproduced and verified against the live deployment):
    reference, so a `globalThis.fetch` wrapper does not intercept the token
    request (confirmed empirically).
 
-## Tradeoffs
+### Tradeoffs
+
 - Option 1 is a small, self-contained change in `auth.ts`, proven against the
   live deployment, and degrades gracefully (if symbol identity is ever fixed by a
   build change, the Proxy still serves the correct hook). It depends on
@@ -62,23 +70,29 @@ Root cause (reproduced and verified against the live deployment):
   passthrough of the token response shape).
 
 ## Decision
+
 Adopt **Option 1**. Build the Entra provider, then wrap it in a `Proxy` whose
 `get` trap returns `entraFetch` for any symbol whose `description` is
 `"custom-fetch"`, and passes everything else through via `Reflect.get`. The
 explicit `[customFetch]: entraFetch` is kept as well (harmless, and correct if a
 future build makes the symbol identity match). Implemented in `src/auth.ts`.
 
-## Security impact
+## Consequences
+
+### Security impact
+
 - No change to the security model of ADR-0005: still certificate client
   assertion, no shared secret, sign-in still enforced by middleware.
 - Restores the intended posture by making the certificate path actually execute;
   before the fix, client authentication was effectively broken (failing closed —
   sign-in was denied, not bypassed).
 
-## Cost impact
+### Cost impact
+
 None. No new dependencies; one `Proxy` allocation at module load.
 
-## Operational impact
+### Operational impact
+
 - The `customFetch` integration remains version-sensitive (ADR-0005). On Auth.js
   / Next.js upgrades, re-verify a real sign-in. If `@auth/core` stops reading
   `provider[customFetch]` directly (e.g. it deep-clones the provider), revisit
@@ -88,6 +102,7 @@ None. No new dependencies; one `Proxy` allocation at module load.
   the runbooks for future auth incidents.
 
 ## Future considerations
+
 - Prefer **Option 2 or 3** as a cleaner long-term fix if the Proxy proves fragile
   across upgrades.
 - Move to **workload identity federation / managed identity** for the App Service

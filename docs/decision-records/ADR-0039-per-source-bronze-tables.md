@@ -1,7 +1,12 @@
 # ADR-0039: Per-source physical bronze tables + union-view merge → silver
 
-- **Status:** Accepted (supersedes ADR-0032)
-- **Date:** 2026-06-08
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted (supersedes ADR-0032) |
+| **Date** | 2026-06-08 |
+| **Supersedes** | ADR-0032 |
+| **Cross-references** | pipeline ADR-0006, pipeline ADR-0009 |
 
 ## Problem
 
@@ -48,17 +53,19 @@ those two read methods — silver and the rest of the app are unchanged.
   (non-destructive). `0037` drops `contact_source` / `account_source` + their enums **after** the
   new code is deployed (zero-downtime expand/contract).
 
-## Security impact
+## Consequences
+
+### Security impact
 
 None new — bronze holds the same raw source payloads (no secrets; tokens stay in Key Vault).
 Per-source tables make per-source retention/redaction policies easier to apply later.
 
-## Cost impact
+### Cost impact
 
 Negligible. More tables/views but the same row volume; `LIKE … INCLUDING ALL` keeps the schema
 DRY. No new dependency.
 
-## Operational impact
+### Operational impact
 
 Deploy is expand/contract: apply `0036`, deploy app + pipeline, then apply `0037`. "Drop &
 recreate fresh" — no data migration; bronze is a re-fetchable cache and the next source poll

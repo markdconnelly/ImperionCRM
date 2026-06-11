@@ -1,9 +1,14 @@
 # ADR-0027: Pre-discovery automation & agent-answer human approval
 
-- **Status:** Accepted
-- **Date:** 2026-06-07
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-07 |
+| **Cross-references** | — |
 
 ## Problem
+
 Before a salesperson runs a discovery call, as much of the discovery data as possible
 should already be gathered — by chat/text/email outreach and agent enrichment — so the
 human call confirms rather than collects. The salesperson must then **confirm and stamp**
@@ -12,6 +17,7 @@ drops back into the nurture workflow. The existing answer store has no notion of
 produced an answer or whether a human approved it.
 
 ## Context
+
 Builds on the engagement capture model (ADR-0023: editable questionnaires, one
 normalized `engagement_answer` per question, discovery verdict `fit|not_fit|nurture`),
 the consent ledger (ADR-0014), and the enrichment dossier (ADR-0025). Nurture and
@@ -19,6 +25,7 @@ pre-discovery sequences are modelled in-app; Power Automate only fires the actua
 send/notify (CLAUDE.md §3).
 
 ## Options considered
+
 1. Add provenance + approval columns to `engagement_answer`, and model sequences as
    `workflow` → `workflow_step` → `workflow_enrollment` (this decision).
 2. A separate `agent_answer` table merged at display time (rejected — two sources of
@@ -26,7 +33,8 @@ send/notify (CLAUDE.md §3).
 3. Free-form agent notes with no structured approval (rejected — no human stamp,
    no auditable gate before the verdict).
 
-## Tradeoffs
+### Tradeoffs
+
 - (1) one answer row, now carrying `source` (human|agent|automation), `confidence`,
   `status` (draft|confirmed|rejected), and an approval stamp — backward-compatible
   (existing answers default human/confirmed). Reuses the EAV store. Small added gate
@@ -34,6 +42,7 @@ send/notify (CLAUDE.md §3).
 - (2) duplicates the answer; (3) is indefensible and unstructured.
 
 ## Decision
+
 - Extend **`engagement_answer`** with `source`, `confidence`, `status`,
   `approved_by_user_id`, `approved_at` (migration `0025`). Agent/automation answers
   land as `draft`; the salesperson **confirms** (stamp) or **rejects** each before the
@@ -47,21 +56,27 @@ send/notify (CLAUDE.md §3).
   functions (ADR-0018); this scaffold defines the store, the approval gate, and the
   routing.
 
-## Security impact
+## Consequences
+
+### Security impact
+
 Every confirmed answer records the approving user and time (auditable, ADR-0016).
 Outreach steps that send are consent-gated (ADR-0014). Agent-drafted facts are never
 treated as truth until a human stamps them.
 
-## Cost impact
+### Cost impact
+
 Negligible storage. Agent/LLM and send volume accrue when execution is wired.
 
-## Operational impact
+### Operational impact
+
 Adds migrations `0024` (workflows) and `0025` (answer provenance). The `engagements`
 repository gains `confirmAnswer`/`rejectAnswer`; a `workflows` repository carries
 list/enroll/exit. The discovery UI (agent-answer review + confirm/stamp, fit/nurture
 routing) follows.
 
 ## Future considerations
+
 The workflow execution engine and step runners; chat/SMS/email channel integrations;
 draft-answer generation and confidence calibration; branching/conditional steps;
 per-answer history if audit needs it.

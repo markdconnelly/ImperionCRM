@@ -1,10 +1,12 @@
-# ADR-0044 — Silver `contract` and `ticket` entities
+# ADR-0044: Silver `contract` and `ticket` entities
 
-- **Status:** Accepted
-- **Date:** 2026-06-09
-- **Relates to:** ADR-0018 (the app reads silver), ADR-0039 (per-source bronze +
-  precedence), local-pipeline ADR-0009 (the knowledge composers these feed),
-  pipeline ADR-0011 (merge-sources, which populates them).
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-09 |
+| **Relates to** | ADR-0018 (the app reads silver), ADR-0039 (per-source bronze + precedence), local-pipeline ADR-0009 (the knowledge composers these feed), pipeline ADR-0011 (merge-sources, which populates them). |
+| **Cross-references** | local-pipeline ADR-0009, pipeline ADR-0011 |
 
 ## Problem
 
@@ -14,6 +16,15 @@ composers read bronze directly — typed dates/amounts were impossible, account/
 links were recomputed at every read, and a second source (DocuSign contracts, manual
 `website` rows) had nowhere to merge. Every other entity the app shows has a silver
 tier; these two didn't.
+
+## Options considered
+
+1. **Silver tables + merge (chosen)** — consistent with every other entity; unblocks
+   typed UI and multi-source merging.
+2. Keep reading bronze. Rejected — the reasons above; bronze is access-controlled raw
+   tier, not the app contract.
+3. Views over bronze. Rejected — no typed columns without fragile casts in the view; no
+   place for a second source's precedence.
 
 ## Decision
 
@@ -29,16 +40,9 @@ under the ADR-0039 precedence convention.
 Grants: web/backend SELECT · cloud pipeline SELECT/INSERT/UPDATE · on-prem SELECT (its
 knowledge composers can later read silver instead of re-joining bronze).
 
-## Options considered
+## Consequences
 
-1. **Silver tables + merge (chosen)** — consistent with every other entity; unblocks
-   typed UI and multi-source merging.
-2. Keep reading bronze. Rejected — the reasons above; bronze is access-controlled raw
-   tier, not the app contract.
-3. Views over bronze. Rejected — no typed columns without fragile casts in the view; no
-   place for a second source's precedence.
-
-## Security / cost / ops impact
+**Security / cost / ops impact**
 
 - **Security:** silver carries no payloads (raw stays in bronze); grants are read-only
   for readers.

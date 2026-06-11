@@ -1,9 +1,14 @@
 # ADR-0025: Contact-360 enrichment dossier & lawful-basis gating
 
-- **Status:** Accepted
-- **Date:** 2026-06-07
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-07 |
+| **Cross-references** | — |
 
 ## Problem
+
 Sales wants to know as much as practical about a person **before** the first human
 conversation — employer, role, interests, tech stack, social presence — assembled
 from M365, public LinkedIn/YouTube, and web sources. Building such a profile on a
@@ -12,12 +17,14 @@ We need a rich, agent-consumable dossier **and** a defensible record of *why* we
 allowed to hold and use each fact.
 
 ## Context
+
 Builds on the unified timeline (ADR-0011), per-user connections (ADR-0024), and the
 append-only consent ledger (ADR-0014). Gold-layer per CLAUDE.md §4 — agents consume
 distilled facts, not raw bronze. The company-centric spine (ADR-0010) still holds:
 the dossier hangs off the contact, the relationship off the account.
 
 ## Options considered
+
 1. EAV dossier where **every fact carries provenance + a lawful basis**, and the
    consent ledger is extended to gate enrichment and ad use (this decision).
 2. Wide typed columns on `contact` (rejected — every new attribute is a migration;
@@ -25,13 +32,15 @@ the dossier hangs off the contact, the relationship off the account.
 3. Provenance only, no lawful-basis gating (rejected — indefensible; chosen against
    by the product owner).
 
-## Tradeoffs
+### Tradeoffs
+
 - (1) editable, normalized, one fact = one row with confidence, source, and basis;
   mirrors the existing `engagement_answer` pattern. Cost: value-type handling and a
   consent check on use.
 - (2)/(3) cheaper now, but brittle and legally weak.
 
 ## Decision
+
 - **`contact_enrichment`** — one row per discovered fact: `attribute_key`,
   `value_text`/`value_json`, `confidence`, `source`, `source_connection_id`, and
   **`lawful_basis`** (`consent | legitimate_interest | contract | public_data`),
@@ -47,21 +56,27 @@ the dossier hangs off the contact, the relationship off the account.
 Enrichment **execution** (LLM/web scraping, embeddings) runs in external functions
 (ADR-0018) later; this scaffold defines the store, contracts, and gates.
 
-## Security impact
+## Consequences
+
+### Security impact
+
 Facts are PII; access is audit-logged (ADR-0016). Each fact's `lawful_basis` and
 `source` make holding it auditable; `expires_at` supports retention limits. Use is
 consent-gated at the point of send/targeting, not just at collection.
 
-## Cost impact
+### Cost impact
+
 JSONB + a small per-contact vector. Enrichment compute/embeddings accrue when wired.
 
-## Operational impact
+### Operational impact
+
 Adds migration `0021` (enrichment, social identities, embedding, contact header) and
 extends `0019` (consent channels). A `contacts` repository (profile, CRUD, social,
 enrichment with required lawful basis) and the extended `consent` repository carry the
 contracts; the Contact-360 UI follows.
 
 ## Future considerations
+
 Live enrichment agents and confidence calibration; per-jurisdiction basis rules;
 contact-facing preference center; embedding generation + audience similarity search;
 automatic `expires_at`-driven purge.

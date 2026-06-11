@@ -1,8 +1,12 @@
 # ADR-0050: AI pages are admin-only; Settings gains an AI tab
 
-- **Status:** Accepted
-- **Date:** 2026-06-10
-- **Amends:** ADR-0048 (page visibility), ADR-0036 (Settings tab list); supersedes the `sales:write` convene gate chosen with ADR-0049
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-10 |
+| **Amends** | ADR-0048 (page visibility), ADR-0036 (Settings tab list); supersedes the `sales:write` convene gate chosen with ADR-0049 |
+| **Cross-references** | backend ADR-0037 |
 
 ## Problem
 
@@ -42,7 +46,7 @@ requested access model.
 4. Keep ADR-0048's all-roles visibility and only add the Settings tab
    (rejected — contradicts #90's acceptance criteria).
 
-## Tradeoffs
+### Tradeoffs
 
 Tightening convene locks business-development roles out of a surface built for
 their questions — accepted for now because the pages are invisible to them
@@ -67,19 +71,21 @@ only.
   `/settings`. The shared source-tier notice lives in the pure
   `settingsSourceNote` helper.
 
-## Security impact
+## Consequences
+
+### Security impact
 
 Positive: the agent layer's costed operations (board deliberations) and
 org-wide model/budget controls are admin-only end to end — nav, edge, page,
 and action — instead of GUI-only. Fail-closed semantics of `requireCapability`
 are unchanged.
 
-## Cost impact
+### Cost impact
 
 None at runtime. Convening (a multi-call premium-tier process) is now
 restricted to admins, reducing accidental spend surface.
 
-## Operational impact
+### Operational impact
 
 Sales/PM/finance/support users lose sight of the AI Agents and Board pages and
 the ability to convene. If the board should later open to business-development

@@ -1,7 +1,11 @@
 # ADR-0041: Gold knowledge layer + unified vector store (pinned Voyage AI embeddings)
 
-- **Status:** Accepted
-- **Date:** 2026-06-09
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-09 |
+| **Cross-references** | — |
 
 ## Problem
 
@@ -25,7 +29,7 @@ single surface to query. Both must agree on one vector space.
   verified, then pruned; cost telemetry per batch.
 - The two legacy 1536 tables are unused (embedding generation was deferred, CLAUDE.md §6/§7).
 
-## Options
+## Options considered
 
 1. **Per-entity embedding tables** (extend the `interaction_embedding` pattern per source). More
    tables, no single retrieval surface, repeated provenance columns.
@@ -34,6 +38,15 @@ single surface to query. Both must agree on one vector space.
 3. Embedding model: **OpenAI `text-embedding-3-small`/1536** (reuse existing space, cheapest) vs
    **`text-embedding-3-large`/3072** vs **local on-prem model** (zero egress) vs **Voyage AI
    `voyage-3-large`/1024** (Anthropic's recommended RAG embeddings, strongest retrieval).
+
+### Tradeoffs
+
+Voyage gives the best retrieval quality and is the provider Anthropic recommends for Claude RAG,
+at the cost of a **new vendor + a new egress path for client text** (a data-governance
+consideration for an MSP) and a 1024-dim space distinct from the legacy 1536 tables. The
+provenance columns make a later switch (to a local model for zero-egress, or a different
+dimension) a versioned re-embed rather than a schema rewrite — except a *dimension* change, which
+needs a new `vector(N)` column because pgvector columns are fixed-width.
 
 ## Decision
 
@@ -50,16 +63,9 @@ single surface to query. Both must agree on one vector space.
   superseded vector versions per the retention policy) — its one scoped DELETE. The web identity
   inherits `SELECT` via 0002's default privileges.
 
-## Tradeoffs
+## Consequences
 
-Voyage gives the best retrieval quality and is the provider Anthropic recommends for Claude RAG,
-at the cost of a **new vendor + a new egress path for client text** (a data-governance
-consideration for an MSP) and a 1024-dim space distinct from the legacy 1536 tables. The
-provenance columns make a later switch (to a local model for zero-egress, or a different
-dimension) a versioned re-embed rather than a schema rewrite — except a *dimension* change, which
-needs a new `vector(N)` column because pgvector columns are fixed-width.
-
-## Security impact
+### Security impact
 
 Per-tenant isolation via `tenant_id` on every knowledge object (local-pipeline §3). The new
 DELETE grant is scoped to one table and justified by the re-embed lifecycle; it does not widen
@@ -67,14 +73,14 @@ the pipeline role elsewhere. Client text is sent to Voyage for embedding — if 
 unacceptable for some tenants, the pinned model can be swapped to the on-prem option behind the
 same interface (versioned re-embed) without a schema change.
 
-## Cost impact
+### Cost impact
 
 Voyage `voyage-3-large` is billed per token by the provider; the local pipeline embeds off Azure
 compute and records `token_count` per chunk for cost telemetry. `content_hash` idempotency
 prevents re-billing unchanged text. 1024-dim vectors are smaller than 1536/3072 → smaller HNSW
 index and lower storage.
 
-## Operational impact
+### Operational impact
 
 Embedding generation runs unattended on the home server (local-pipeline §7) — chunk → embed →
 upsert `knowledge_embedding`, prune superseded versions after verification. The two legacy 1536

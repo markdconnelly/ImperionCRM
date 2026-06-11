@@ -1,12 +1,13 @@
-# ADR-0043 — Adopt the settled AI stack; drop the legacy 1536-dim vector tables
+# ADR-0043: Adopt the settled AI stack; drop the legacy 1536-dim vector tables
 
-- **Status:** Accepted
-- **Date:** 2026-06-09
-- **Amends:** CLAUDE.md §3's "AI must be provider-agnostic" (now settled);
-  [ADR-0011](ADR-0011-unified-interaction-timeline.md) (its `interaction_embedding`
-  companion table is dropped); [ADR-0041](ADR-0041-gold-knowledge-vector-store.md)
-  (resolves its "converge the legacy space later" note).
-- **Companion:** backend **ADR-0034** (the stack itself: Claude + Voyage, router code).
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-09 |
+| **Amends** | CLAUDE.md §3's "AI must be provider-agnostic" (now settled); [ADR-0011](ADR-0011-unified-interaction-timeline.md) (its `interaction_embedding` companion table is dropped); [ADR-0041](ADR-0041-gold-knowledge-vector-store.md) (resolves its "converge the legacy space later" note). |
+| **Companion** | backend **ADR-0034** (the stack itself: Claude + Voyage, router code). |
+| **Cross-references** | backend ADR-0034 |
 
 ## Problem
 
@@ -16,6 +17,15 @@ The system carried two parallel embedding designs: the legacy 1536-dim OpenAI pl
 migration 0045). The legacy tables were **never populated** — no embedding provider was
 ever configured — yet every readiness review re-inherited a "converge the vector spaces"
 task, and the schema, docs, and backend code all paid the dual-space tax.
+
+## Options considered
+
+1. **Drop the empty legacy tables (chosen).** No data exists to migrate; deletes the
+   standing convergence liability.
+2. Re-embed legacy content into the gold store. Not applicable — there is no legacy
+   content; the tables are empty.
+3. Keep both spaces "just in case". Rejected — an empty table with a different
+   dimension is pure footgun (the backend would need permanent dual-space code).
 
 ## Decision
 
@@ -34,16 +44,9 @@ task, and the schema, docs, and backend code all paid the dual-space tax.
    `AZURE_OPENAI_*` / `ANTHROPIC_API_KEY` placeholders are removed from `.env.example`;
    AI keys exist only as Key Vault secrets read by the backend and the on-prem pipeline.
 
-## Options considered
+## Consequences
 
-1. **Drop the empty legacy tables (chosen).** No data exists to migrate; deletes the
-   standing convergence liability.
-2. Re-embed legacy content into the gold store. Not applicable — there is no legacy
-   content; the tables are empty.
-3. Keep both spaces "just in case". Rejected — an empty table with a different
-   dimension is pure footgun (the backend would need permanent dual-space code).
-
-## Security / cost / ops impact
+**Security / cost / ops impact**
 
 - **Security:** smaller schema surface; the dropped tables' GRANTs disappear with them.
 - **Cost:** none — the tables are empty; the HNSW indexes they carried stop existing.
