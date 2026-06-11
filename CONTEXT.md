@@ -52,6 +52,28 @@ _Avoid_: blast (in UI copy), broadcast, workflow (that's a per-contact journey)
 A guided, per-channel form that produces a previewable, typed configuration — for an ad, an email, an SMS, or an event. Not a drag-drop canvas.
 _Avoid_: designer, editor (unqualified)
 
+### Board of Directors (ADR-0054)
+
+**Influence Profile**:
+A board persona's character: a reasoning lens built from named thinkers' published frameworks, cited by work. A persona never impersonates or speaks as a real person.
+_Avoid_: impersonation, AI clone, digital twin
+
+**Anchor / Lens**:
+An influence profile's structure — one dominant anchor framework that sets the persona's voice, plus named secondary lenses it invokes when relevant.
+_Avoid_: blend, mixture
+
+**Board Packet**:
+The pre-deliberation written brief (reporting, knowledge pulls, posture, pipeline data) composed once per session; every persona deliberates over the same packet, persisted for audit.
+_Avoid_: context dump, snapshot (that's the legacy thin input)
+
+**Advisor Seat**:
+A convene-time invited board persona (≤2 per session). Advisors speak in deliberation but are counsel, not votes.
+_Avoid_: board member (advisors are not members), guest
+
+**Ratify / Overrule**:
+The human CISO's post-session review verdict on a board recommendation, with written rationale. An overruled recommendation never reads as board consensus.
+_Avoid_: approve/reject (that vocabulary belongs to ADR-0033 action proposals)
+
 ### Security posture
 
 **Customer Tenant**:
