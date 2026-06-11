@@ -59,6 +59,7 @@ export async function refreshPostureAction(formData: FormData) {
     }
   }
   revalidatePath(`/accounts/${accountId}`);
+  revalidatePath(`/accounts/${accountId}/posture`); // the posture page reuses this action (#159)
 }
 
 export async function deleteAccountAction(formData: FormData) {

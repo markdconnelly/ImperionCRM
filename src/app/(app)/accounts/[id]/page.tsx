@@ -74,6 +74,13 @@ export default async function AccountDetailPage({
       <div className="flex items-start justify-between gap-4">
         <PageHeader title={account.name} description="Company 360" />
         <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href={`/accounts/${id}/posture`}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+          >
+            <Icon name="Shield" size={14} />
+            Posture
+          </Link>
           {tenantMappings.length > 0 && (
             // Account-scoped posture refresh (ADR-0051 §2, pipeline ADR-0015) —
             // only offered when a Tenant Mapping exists: no mapped Customer
