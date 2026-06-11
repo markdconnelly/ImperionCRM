@@ -934,6 +934,29 @@ erDiagram
 > Bronze read via the `exposure_bronze_all` view (single-source today). Wired but gated —
 > nothing ingests until the Dark Web ID / Televy API key is configured in Settings (ADR-0040).
 
+## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
+
+Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.
+`account_tenant` is the explicit, admin-managed mapping (Settings surface) — one account
+per tenant, an account may own several tenants, never inferred from domains. Tenants in
+posture bronze with no mapping surface in an "unmapped tenants" admin list. Both pipeline
+roles read it to resolve account→tenants for posture merges (pipeline #20 on-demand;
+on-prem bulk + quarterly snapshots). The posture silver tables (`posture_policy`,
+`tenant_posture`) follow in migration 0062 (#151).
+
+```mermaid
+erDiagram
+    ACCOUNT ||--o{ ACCOUNT_TENANT : "owns tenants"
+
+    ACCOUNT_TENANT {
+      text tenant_id PK "Microsoft tenant GUID"
+      uuid account_id FK "CASCADE"
+      text display_name
+      timestamptz created_at
+      timestamptz updated_at
+    }
+```
+
 ## Enumerations
 
 - `account.relationship`: `prospect | customer | partner` (null = unknown)
