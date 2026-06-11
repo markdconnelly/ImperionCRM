@@ -5,6 +5,8 @@ making changes. It captures the architecture, the decisions already made, the
 current state of the work, and the immediate build plan. When a decision here
 conflicts with a quick instinct, this file wins unless the human says otherwise.
 
+/handoff commits files to C:\Development\GitHub\handoff-memory\filename instead of system settings.
+
 ---
 
 ## 1. What this project is
