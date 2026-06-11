@@ -108,6 +108,10 @@ import type {
   TaskCategory,
   TaskRow,
   TenantMapping,
+  TenantPostureRollup,
+  PosturePolicyRow,
+  SecureScoreControl,
+  CredentialExposureRow,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -4051,6 +4055,156 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ tenantId: r.tenant_id }));
       } catch {
         return mockRepositories.security.listUnmappedTenants();
+      }
+    },
+
+    // ── Account-scoped posture reads (#93, ADR-0051) ─────────────────────────
+    async listTenantPostureForAccount(accountId): Promise<TenantPostureRollup[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listTenantPostureForAccount(accountId);
+      try {
+        // LEFT JOIN: a mapped tenant the pipeline hasn't classified yet still
+        // surfaces (all-null rollup) — "not refreshed" is a state, not an absence.
+        const { rows } = await pool.query<{
+          tenant_id: string; display_name: string | null;
+          secure_score_current: string | null; secure_score_max: string | null;
+          licensed_user_count: number | null; active_user_count: number | null;
+          policies_compliant: number | null; policies_drift: number | null;
+          policies_ungoverned: number | null; policies_missing: number | null;
+          exposures_open: number | null; refreshed_at: string | null;
+        }>(
+          `SELECT m.tenant_id, m.display_name,
+                  p.secure_score_current, p.secure_score_max,
+                  p.licensed_user_count, p.active_user_count,
+                  p.policies_compliant, p.policies_drift,
+                  p.policies_ungoverned, p.policies_missing,
+                  p.exposures_open, p.refreshed_at::text AS refreshed_at
+             FROM account_tenant m
+             LEFT JOIN tenant_posture p ON p.tenant_id = m.tenant_id
+            WHERE m.account_id = $1::uuid
+            ORDER BY m.display_name NULLS LAST, m.tenant_id`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id,
+          displayName: r.display_name,
+          secureScoreCurrent: r.secure_score_current === null ? null : Number(r.secure_score_current),
+          secureScoreMax: r.secure_score_max === null ? null : Number(r.secure_score_max),
+          licensedUserCount: r.licensed_user_count,
+          activeUserCount: r.active_user_count,
+          policiesCompliant: r.policies_compliant ?? 0,
+          policiesDrift: r.policies_drift ?? 0,
+          policiesUngoverned: r.policies_ungoverned ?? 0,
+          policiesMissing: r.policies_missing ?? 0,
+          exposuresOpen: r.exposures_open ?? 0,
+          refreshedAt: r.refreshed_at,
+        }));
+      } catch {
+        return mockRepositories.security.listTenantPostureForAccount(accountId);
+      }
+    },
+
+    async listPosturePoliciesForAccount(accountId): Promise<PosturePolicyRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listPosturePoliciesForAccount(accountId);
+      try {
+        const { rows } = await pool.query<{
+          tenant_id: string; policy_family: string; policy_id: string;
+          policy_name: string | null; classification: string;
+          observed_modified_at: string | null; golden_approved_at: string | null;
+        }>(
+          `SELECT p.tenant_id, p.policy_family, p.policy_id, p.policy_name,
+                  p.classification,
+                  p.observed_modified_at::text AS observed_modified_at,
+                  p.golden_approved_at::text AS golden_approved_at
+             FROM posture_policy p
+             JOIN account_tenant m ON m.tenant_id = p.tenant_id
+            WHERE m.account_id = $1::uuid
+            ORDER BY p.policy_family,
+                     array_position(ARRAY['drift','missing','ungoverned','compliant'], p.classification),
+                     p.policy_name NULLS LAST`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id,
+          policyFamily: r.policy_family,
+          policyId: r.policy_id,
+          policyName: r.policy_name,
+          classification: r.classification,
+          observedModifiedAt: r.observed_modified_at,
+          goldenApprovedAt: r.golden_approved_at,
+        }));
+      } catch {
+        return mockRepositories.security.listPosturePoliciesForAccount(accountId);
+      }
+    },
+
+    async listSecureScoreControlsForAccount(accountId): Promise<SecureScoreControl[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listSecureScoreControlsForAccount(accountId);
+      try {
+        // Bronze is all-text (migration 0038): `deprecated` holds 'True'/'False'
+        // strings verbatim from Graph, so the filter is a case-folded text match.
+        const { rows } = await pool.query<{
+          tenant_id: string; control_name: string | null; control_category: string | null;
+          title: string | null; max_score: string | null; service: string | null;
+          user_impact: string | null; tier: string | null;
+        }>(
+          `SELECT c.tenant_id, c.control_name, c.control_category, c.title,
+                  c.max_score, c.service, c.user_impact, c.tier
+             FROM secure_score_control_profiles c
+             JOIN account_tenant m ON m.tenant_id = c.tenant_id
+            WHERE m.account_id = $1::uuid
+              AND lower(COALESCE(c.deprecated, 'false')) <> 'true'
+            ORDER BY c.control_category NULLS LAST, c.title NULLS LAST`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id,
+          controlName: r.control_name,
+          controlCategory: r.control_category,
+          title: r.title,
+          maxScore: r.max_score,
+          service: r.service,
+          userImpact: r.user_impact,
+          tier: r.tier,
+        }));
+      } catch {
+        return mockRepositories.security.listSecureScoreControlsForAccount(accountId);
+      }
+    },
+
+    async listCredentialExposuresForAccount(accountId): Promise<CredentialExposureRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listCredentialExposuresForAccount(accountId);
+      try {
+        const { rows } = await pool.query<{
+          id: string; email: string | null; breach_source: string | null;
+          breach_date: string | null; exposed_data: string[] | null;
+          password_status: string | null; severity: string | null; status: string;
+          last_seen_at: string | null;
+        }>(
+          `SELECT id::text AS id, email, breach_source, breach_date::text AS breach_date,
+                  exposed_data, password_status, severity, status,
+                  last_seen_at::text AS last_seen_at
+             FROM credential_exposure
+            WHERE account_id = $1::uuid
+            ORDER BY (status = 'resolved'), last_seen_at DESC NULLS LAST`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          email: r.email,
+          breachSource: r.breach_source,
+          breachDate: r.breach_date,
+          exposedData: r.exposed_data ?? [],
+          passwordStatus: r.password_status,
+          severity: r.severity,
+          status: r.status,
+          lastSeenAt: r.last_seen_at,
+        }));
+      } catch {
+        return mockRepositories.security.listCredentialExposuresForAccount(accountId);
       }
     },
   },

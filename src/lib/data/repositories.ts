@@ -59,6 +59,10 @@ import type {
   StageValueDatum,
   TaskRow,
   TenantMapping,
+  TenantPostureRollup,
+  PosturePolicyRow,
+  SecureScoreControl,
+  CredentialExposureRow,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -770,6 +774,16 @@ export interface SecurityRepository {
   deleteTenantMapping(tenantId: string): Promise<void>;
   /** Tenant GUIDs present in posture bronze with no mapping — surfaced, never hidden (ADR-0051). */
   listUnmappedTenants(): Promise<UnmappedTenant[]>;
+
+  // ── Account-scoped posture reads (#93 — all keyed through account_tenant) ──
+  /** Every mapped Customer Tenant with its tenant_posture rollup (LEFT JOIN — unrefreshed tenants still surface). */
+  listTenantPostureForAccount(accountId: string): Promise<TenantPostureRollup[]>;
+  /** posture_policy classification rows for the account's mapped tenants (ADR-0051 §3). */
+  listPosturePoliciesForAccount(accountId: string): Promise<PosturePolicyRow[]>;
+  /** Bronze secure-score control profiles for the drill-down (deprecated controls filtered). */
+  listSecureScoreControlsForAccount(accountId: string): Promise<SecureScoreControl[]>;
+  /** Silver credential_exposure rows owned by the account (ADR-0040 domain match). */
+  listCredentialExposuresForAccount(accountId: string): Promise<CredentialExposureRow[]>;
 }
 
 /** The full set of repositories a request can resolve. */

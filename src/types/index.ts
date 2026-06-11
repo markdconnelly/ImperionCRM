@@ -391,6 +391,62 @@ export interface UnmappedTenant {
   tenantId: string;
 }
 
+/**
+ * One mapped Customer Tenant's posture rollup (silver `tenant_posture`, ADR-0051).
+ * A mapped tenant with no rollup yet still surfaces — every numeric field is then
+ * null/zero and `refreshedAt` is null ("not refreshed" is a state, not an absence).
+ */
+export interface TenantPostureRollup {
+  tenantId: string;
+  displayName: string | null;
+  secureScoreCurrent: number | null;
+  secureScoreMax: number | null;
+  licensedUserCount: number | null;
+  activeUserCount: number | null;
+  policiesCompliant: number;
+  policiesDrift: number;
+  policiesUngoverned: number;
+  policiesMissing: number;
+  exposuresOpen: number;
+  refreshedAt: string | null;
+}
+
+/** One classified policy row (silver `posture_policy`, ADR-0051 §3). */
+export interface PosturePolicyRow {
+  tenantId: string;
+  policyFamily: string; // conditional_access|intune_security|device_configuration|autopilot|defender_xdr
+  policyId: string;
+  policyName: string | null;
+  classification: string; // compliant|drift|ungoverned|missing
+  observedModifiedAt: string | null;
+  goldenApprovedAt: string | null;
+}
+
+/** One Microsoft secure-score control profile (bronze, for the #93 drill-down). */
+export interface SecureScoreControl {
+  tenantId: string;
+  controlName: string | null;
+  controlCategory: string | null;
+  title: string | null;
+  maxScore: string | null;
+  service: string | null;
+  userImpact: string | null;
+  tier: string | null;
+}
+
+/** One compromised-credential record for an account (silver `credential_exposure`, ADR-0040). */
+export interface CredentialExposureRow {
+  id: string;
+  email: string | null;
+  breachSource: string | null;
+  breachDate: string | null;
+  exposedData: string[];
+  passwordStatus: string | null;
+  severity: string | null;
+  status: string; // new|acknowledged|resolved
+  lastSeenAt: string | null;
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;
