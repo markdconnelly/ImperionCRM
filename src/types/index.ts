@@ -363,7 +363,7 @@ export interface DeviceInventoryRow {
   lastSeen: string | null;
 }
 
-/** A contract row from Autotask bronze, joined to its account (migration 0038 / 0040). */
+/** A silver `contract` row joined to its account (Autotask or DocuSign — pipeline merge). */
 export interface ContractRow {
   id: string;
   account: string | null;
@@ -373,6 +373,8 @@ export interface ContractRow {
   contractType: string | null;
   startDate: string | null;
   endDate: string | null;
+  /** Originating system (`autotask` | `docusign`) — pipeline merge stamps it. */
+  source: string;
 }
 
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */

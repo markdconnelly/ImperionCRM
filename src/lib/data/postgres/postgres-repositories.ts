@@ -2571,9 +2571,11 @@ export const postgresRepositories: Repositories = {
         const { rows } = await pool.query<{
           id: string; account: string | null; name: string | null; number: string | null;
           status: string | null; contract_type: string | null; start_date: string | null; end_date: string | null;
+          source: string;
         }>(
           `SELECT c.id::text AS id, a.name AS account, c.name, c.contract_number AS number,
-                  c.status, c.contract_type, c.start_date::text AS start_date, c.end_date::text AS end_date
+                  c.status, c.contract_type, c.start_date::text AS start_date, c.end_date::text AS end_date,
+                  c.source
              FROM contract c
              LEFT JOIN account a ON a.id = c.account_id
             ORDER BY c.name NULLS LAST`,
@@ -2581,6 +2583,7 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({
           id: r.id, account: r.account, name: r.name, number: r.number,
           status: r.status, contractType: r.contract_type, startDate: r.start_date, endDate: r.end_date,
+          source: r.source,
         }));
       } catch {
         return mockRepositories.engagements.listContracts();

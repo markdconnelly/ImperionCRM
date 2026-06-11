@@ -9,7 +9,7 @@ export default async function ContractsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Contracts"
-        description="Contracts synced from Autotask, linked to their account."
+        description="Contracts synced from Autotask and DocuSign, linked to their account."
       />
       <div className="rounded-lg border border-border bg-panel">
         <div className="overflow-x-auto">
@@ -19,6 +19,7 @@ export default async function ContractsPage() {
                 <th className="px-4 py-2 font-medium">Contract</th>
                 <th className="px-4 py-2 font-medium">Account</th>
                 <th className="px-4 py-2 font-medium">Type</th>
+                <th className="px-4 py-2 font-medium">Source</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2 font-medium">Start</th>
                 <th className="px-4 py-2 font-medium">End</th>
@@ -33,6 +34,11 @@ export default async function ContractsPage() {
                   </td>
                   <td className="px-4 py-3 text-dim">{c.account ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">{c.contractType ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <span className="rounded border border-border px-1.5 py-0.5 text-[11px] text-dim">
+                      {c.source === "docusign" ? "DocuSign" : "Autotask"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-dim">{c.status ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">{c.startDate ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">{c.endDate ?? "—"}</td>
@@ -40,8 +46,8 @@ export default async function ContractsPage() {
               ))}
               {contracts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-dim">
-                    No contracts yet. They populate from the Autotask sync.
+                  <td colSpan={7} className="px-4 py-8 text-center text-dim">
+                    No contracts yet. They populate from the Autotask and DocuSign syncs.
                   </td>
                 </tr>
               )}
