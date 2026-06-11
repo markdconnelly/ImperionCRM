@@ -6,7 +6,22 @@ import { Timeline } from "@/components/comms/timeline";
 import { SourceRecords } from "@/components/comms/source-records";
 import { IntegrationHealth } from "@/components/comms/integration-health";
 import { getRepositories } from "@/lib/data";
+import { computeImperionScore } from "@/lib/security/imperion-score";
 import { refreshPostureAction } from "../actions";
+
+const PILLAR_LABEL: Record<string, string> = {
+  m365_secure_score: "M365 secure score",
+  policy_compliance: "Policy compliance",
+  darkweb: "Dark web",
+};
+
+const GRADE_COLOR: Record<string, string> = {
+  A: "text-green",
+  B: "text-green",
+  C: "text-amber",
+  D: "text-red",
+  F: "text-red",
+};
 
 const STAGE_LABEL: Record<string, string> = {
   prospect: "Prospect",
@@ -60,14 +75,18 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   const { crm, comms, security } = getRepositories();
-  const [account, timeline, sources, relatedBronze, tenantMappings] = await Promise.all([
+  const [account, timeline, sources, relatedBronze, tenantPostures] = await Promise.all([
     crm.getAccount(id),
     comms.listInteractionsByAccount(id),
     crm.listAccountSources(id),
     crm.listAccountRelatedBronze(id),
-    security.listTenantMappingsForAccount(id),
+    security.listTenantPostureForAccount(id),
   ]);
   if (!account) notFound();
+
+  // At-a-glance Imperion Secure Score (#94, ADR-0051 §4) — live Score Model v1
+  // over the mapped tenants' rollups. No Tenant Mappings → no posture card.
+  const imperionScore = tenantPostures.length > 0 ? computeImperionScore(tenantPostures) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -81,7 +100,7 @@ export default async function AccountDetailPage({
             <Icon name="Shield" size={14} />
             Posture
           </Link>
-          {tenantMappings.length > 0 && (
+          {tenantPostures.length > 0 && (
             // Account-scoped posture refresh (ADR-0051 §2, pipeline ADR-0015) —
             // only offered when a Tenant Mapping exists: no mapped Customer
             // Tenants means there is nothing for the pipeline to re-classify.
@@ -89,7 +108,7 @@ export default async function AccountDetailPage({
               <input type="hidden" name="accountId" value={id} />
               <button
                 type="submit"
-                title={`Re-classify posture for ${tenantMappings.length} mapped tenant${tenantMappings.length === 1 ? "" : "s"}`}
+                title={`Re-classify posture for ${tenantPostures.length} mapped tenant${tenantPostures.length === 1 ? "" : "s"}`}
                 className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
               >
                 <Icon name="ShieldCheck" size={14} />
@@ -134,6 +153,54 @@ export default async function AccountDetailPage({
         >
           <IntegrationHealth sources={sources} />
         </Section>
+
+        {imperionScore && (
+          <Section
+            title="Security posture"
+            icon="Shield"
+            hint="Imperion Secure Score — Score Model v1 over this company's mapped tenants. Grey pillars have no coverage yet; that scores 0, never 'fine' (ADR-0051)."
+            className="lg:col-span-3"
+          >
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <div>
+                <div
+                  className={`font-display text-3xl ${GRADE_COLOR[imperionScore.grade] ?? "text-text"}`}
+                >
+                  {imperionScore.grade}
+                  <span className="ml-2 text-xl text-text">{imperionScore.composite}</span>
+                </div>
+                <div className="text-[11px] text-dim">
+                  Imperion Secure Score · model v{imperionScore.modelVersion}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {imperionScore.pillars.map((p) => (
+                  <span
+                    key={p.pillar}
+                    className={`rounded px-2 py-1 text-[11px] ${
+                      !p.covered
+                        ? "bg-panel-2 text-dim"
+                        : p.score >= 80
+                          ? "bg-green/10 text-green"
+                          : p.score >= 60
+                            ? "bg-amber/10 text-amber"
+                            : "bg-red/10 text-red"
+                    }`}
+                  >
+                    {PILLAR_LABEL[p.pillar] ?? p.pillar}:{" "}
+                    {p.covered ? Math.round(p.score) : "No coverage"}
+                  </span>
+                ))}
+              </div>
+              <Link
+                href={`/accounts/${id}/posture`}
+                className="ml-auto text-sm text-dim underline-offset-2 hover:text-text hover:underline"
+              >
+                Full posture view →
+              </Link>
+            </div>
+          </Section>
+        )}
 
         <Section
           title="Data sources"
