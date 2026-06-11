@@ -51,15 +51,12 @@ export function rolesFromClaims(claims: RoleClaims | null | undefined): AppRole[
   // 3. Local dev override.
   if (roleEnv.devRole) candidates.push(roleEnv.devRole);
 
-  // 4. Bootstrap escape hatch — INTERIM UNCONDITIONAL FAIL-OPEN (#140). Entra App
-  // Roles are not yet assigned (#139), so every token arrives claimless; ADR-0045's
-  // fail-closed default therefore locks everyone (including the operator) out of the
-  // admin-gated pages. Until #139's role assignment lands, a no-claim user opens up
-  // to `admin` regardless of `RBAC_FAIL_OPEN_ADMIN`. Users who DO carry a recognized
-  // claim always get exactly their real role. REVERT to the env-gated line below when
-  // closing out #139 (restores ADR-0045 fail-closed):
-  //   if (candidates.length === 0 && roleEnv.failOpenAdmin) candidates.push("admin");
-  if (candidates.length === 0) candidates.push("admin");
+  // 4. Bootstrap escape hatch (ADR-0045, fail-closed by default): a claimless user
+  // becomes `admin` ONLY when the operator sets RBAC_FAIL_OPEN_ADMIN=true — the
+  // documented break-glass for claim-mapping outages. Unset (the normal state since
+  // #139/#169 landed the live claim mapping), a claimless user falls through to
+  // DEFAULT_ROLE via normalizeRoles.
+  if (candidates.length === 0 && roleEnv.failOpenAdmin) candidates.push("admin");
 
   return normalizeRoles(candidates);
 }

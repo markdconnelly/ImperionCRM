@@ -44,24 +44,29 @@ describe("rolesFromClaims", () => {
     expect(rolesFromClaims({ roles: ["11111111-2222-3333-4444-555555555555"] })).toEqual([
       "sales",
     ]);
-    // unmapped GUIDs in roles still fall through (here: to the interim fail-open)
+    // unmapped GUIDs in roles still fall through (fail-closed: default support)
     expect(rolesFromClaims({ roles: ["99999999-0000-0000-0000-000000000000"] })).toEqual([
-      "admin",
+      "support",
     ]);
   });
 
-  // INTERIM (#140): unconditional fail-open while Entra App Roles are unassigned
-  // (#139). When reverting, restore the fail-closed expectations (support) and the
-  // RBAC_FAIL_OPEN_ADMIN=true bootstrap test — see this file's history at 95782f2.
-  test("INTERIM #140: a claimless user fails OPEN to admin, flag or not", () => {
-    expect(rolesFromClaims({})).toEqual(["admin"]);
-    expect(rolesFromClaims({ roles: ["SomethingUnmapped"] })).toEqual(["admin"]);
-    expect(rolesFromClaims(null)).toEqual(["admin"]);
-    process.env.RBAC_FAIL_OPEN_ADMIN = "false";
-    expect(rolesFromClaims({})).toEqual(["admin"]);
+  // ADR-0045 fail-closed restored (#171): the #140 interim ended when #139/#169
+  // landed the live claim mapping and Mark verified sign-in.
+  test("a claimless user fails CLOSED to the default support role", () => {
+    expect(rolesFromClaims({})).toEqual(["support"]);
+    expect(rolesFromClaims({ roles: ["SomethingUnmapped"] })).toEqual(["support"]);
+    expect(rolesFromClaims(null)).toEqual(["support"]);
   });
 
-  test("the fail-open NEVER overrides a recognized claim", () => {
+  test("RBAC_FAIL_OPEN_ADMIN=true is the documented break-glass for claimless users", () => {
+    process.env.RBAC_FAIL_OPEN_ADMIN = "true";
+    expect(rolesFromClaims({})).toEqual(["admin"]);
+    process.env.RBAC_FAIL_OPEN_ADMIN = "false";
+    expect(rolesFromClaims({})).toEqual(["support"]);
+  });
+
+  test("the break-glass NEVER overrides a recognized claim", () => {
+    process.env.RBAC_FAIL_OPEN_ADMIN = "true";
     expect(rolesFromClaims({ roles: ["Application.ImperionCRM.Support"] })).toEqual(["support"]);
   });
 

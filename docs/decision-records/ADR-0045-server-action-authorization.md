@@ -69,12 +69,13 @@ ADR-0030, and each write is granted to the roles that own that part of the syste
   `RBAC_FAIL_OPEN_ADMIN=true` restores admin-on-no-claim as a *temporary* bootstrap
   while Entra App Roles are assigned; break-glass (forced admin) is the preferred
   interim path.
-  - **INTERIM AMENDMENT (2026-06-10, #140):** Entra App Roles remain unassigned
-    (#139), so the fail-closed default locked all users — operator included — out of
-    the admin-gated pages once #103 added edge enforcement. `claims.ts` currently
-    fails OPEN unconditionally on no-claim (recognized claims still win). This
-    bullet's fail-closed behavior is restored by reverting #140's PR when #139's
-    role assignment lands.
+  - **INTERIM AMENDMENT (2026-06-10, #140) — CLOSED (2026-06-11, #171):** while
+    #139 was open, `claims.ts` failed OPEN unconditionally on no-claim (recognized
+    claims still won). #169/#170 landed the live claim mapping (group GUIDs in the
+    `roles` claim via `emit_as_roles` + the `ENTRA_GROUP_*` env map) and the
+    operator verified sign-in, so #171 restored this bullet's fail-closed behavior
+    verbatim. `RBAC_FAIL_OPEN_ADMIN` remains the documented break-glass (unset in
+    prod).
 - This is **defense in depth**: the GUI still hides controls a role can't use
   (ADR-0030); the server simply never trusts the client to have done so.
 
