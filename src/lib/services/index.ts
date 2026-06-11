@@ -190,7 +190,11 @@ export const boardService = {
     topic: string;
     actingUserId: string;
     personaAgentIds?: string[];
+    /** Invited advisors — counsel, not votes (ADR-0054; backend trims to the 7-seat cap). */
+    advisorAgentIds?: string[];
     context?: string;
+    /** The human CISO's stated position (ADR-0054 §4 deputy model) → ciso_position_md. */
+    cisoPosition?: string;
   }) =>
     callService<BoardConveneWire>(services.board, "/board/sessions", {
       method: "POST",
@@ -202,12 +206,16 @@ export const boardService = {
   getSession: (id: string) =>
     callService<BoardSessionWire>(services.board, `/board/sessions/${encodeURIComponent(id)}`),
 
-  /** Active board personas for the convene picker. */
+  /**
+   * Convene picker: active personas + the advisor bench. Advisors are
+   * seat_kind='advisor' selected IGNORING is_active — invitation IS the
+   * activation (migration 0059's deliberate deviation; backend docs/agents/board.md).
+   */
   listAgents: () =>
-    callService<{ agents: Array<{ id: string; name: string; personaRole: string | null }> }>(
-      services.board,
-      "/board/agents",
-    ),
+    callService<{
+      agents: Array<{ id: string; name: string; personaRole: string | null }>;
+      advisors: Array<{ id: string; name: string; personaRole: string | null }>;
+    }>(services.board, "/board/agents"),
 };
 
 /**

@@ -30,6 +30,11 @@ export interface BoardPersona {
 
 export interface BoardPersonasState {
   personas: BoardPersona[];
+  /**
+   * The advisor bench (seat_kind='advisor', selected IGNORING is_active —
+   * invitation IS the activation, migration 0059). Counsel, not votes.
+   */
+  advisors: BoardPersona[];
   source: "db" | "backend" | "mock";
 }
 
@@ -66,6 +71,12 @@ const MOCK_PERSONAS: BoardPersona[] = [
   { id: "mock-coo", name: "Chief Operating Officer", personaRole: "COO" },
   { id: "mock-cmo", name: "Chief Marketing Officer", personaRole: "CMO" },
   { id: "mock-ciso", name: "Chief Information Security Officer", personaRole: "CISO" },
+];
+
+const MOCK_ADVISORS: BoardPersona[] = [
+  { id: "mock-adv-product", name: "Product Strategy Advisor", personaRole: "Advisor — Product" },
+  { id: "mock-adv-pricing", name: "Pricing Advisor", personaRole: "Advisor — Pricing" },
+  { id: "mock-adv-people", name: "People & Culture Advisor", personaRole: "Advisor — People" },
 ];
 
 const MOCK_SESSIONS: BoardSessionRow[] = [
@@ -187,44 +198,62 @@ const MOCK_DETAILS: Record<string, BoardSessionDetail> = {
 
 // ── Tier 1: direct DB reads ─────────────────────────────────────────────────────
 
-async function personasFromDb(): Promise<BoardPersona[] | null> {
+async function personasFromDb(): Promise<{ personas: BoardPersona[]; advisors: BoardPersona[] } | null> {
   const pool = getPool();
   if (!pool) return null;
   try {
-    const { rows } = await pool.query<{ id: string; name: string; persona_role: string | null }>(
-      // Mirrors the backend's picker query (backend ADR-0039): active board
-      // personas only — the hidden synthesis agent is excluded by persona_role.
-      `SELECT id, name, persona_role FROM agent
-       WHERE module = 'board' AND is_active AND persona_role IS NOT NULL
-       ORDER BY created_at`,
-    );
-    return rows.map((r) => ({ id: r.id, name: r.name, personaRole: r.persona_role }));
+    const [personas, advisors] = await Promise.all([
+      pool.query<{ id: string; name: string; persona_role: string | null }>(
+        // Mirrors the backend's picker query (backend ADR-0039 + 0059 seats):
+        // active voting/deputy personas only — the hidden synthesis/composer rows
+        // are excluded by persona_role/is_active, the advisor bench by seat_kind.
+        `SELECT id, name, persona_role FROM agent
+         WHERE module = 'board' AND is_active AND persona_role IS NOT NULL
+           AND (seat_kind IS NULL OR seat_kind NOT IN ('advisor', 'facilitator'))
+         ORDER BY created_at`,
+      ),
+      pool.query<{ id: string; name: string; persona_role: string | null }>(
+        // Advisors are selected by seat_kind IGNORING is_active — invitation IS
+        // the activation (0059's documented deviation); never flip is_active.
+        `SELECT id, name, persona_role FROM agent
+         WHERE module = 'board' AND seat_kind = 'advisor'
+         ORDER BY created_at`,
+      ),
+    ]);
+    const map = (r: { id: string; name: string; persona_role: string | null }) => ({
+      id: r.id,
+      name: r.name,
+      personaRole: r.persona_role,
+    });
+    return { personas: personas.rows.map(map), advisors: advisors.rows.map(map) };
   } catch (err) {
     console.error("board personas DB read failed:", err);
     return null;
   }
 }
 
-/** Active board personas through the DB → backend → mock tiers. */
+/** Active board personas + the advisor bench through the DB → backend → mock tiers. */
 export async function listBoardPersonas(): Promise<BoardPersonasState> {
   const fromDb = await personasFromDb();
-  if (fromDb && fromDb.length > 0) return { personas: fromDb, source: "db" };
+  if (fromDb && fromDb.personas.length > 0) return { ...fromDb, source: "db" };
   try {
     const wire = await boardService.listAgents();
     if (wire.agents.length > 0) {
+      const map = (a: { id: string; name: string; personaRole: string | null }) => ({
+        id: a.id,
+        name: a.name,
+        personaRole: a.personaRole,
+      });
       return {
-        personas: wire.agents.map((a) => ({
-          id: a.id,
-          name: a.name,
-          personaRole: a.personaRole,
-        })),
+        personas: wire.agents.map(map),
+        advisors: (wire.advisors ?? []).map(map),
         source: "backend",
       };
     }
   } catch {
     // Backend unset/unreachable — fall through to mock.
   }
-  return { personas: MOCK_PERSONAS, source: "mock" };
+  return { personas: MOCK_PERSONAS, advisors: MOCK_ADVISORS, source: "mock" };
 }
 
 /** Recent board sessions, newest first. DB → mock; query failure → empty list. */

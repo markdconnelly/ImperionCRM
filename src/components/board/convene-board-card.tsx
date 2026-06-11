@@ -8,21 +8,28 @@ import type { ConveneBoardResult } from "@/app/(app)/board/actions";
 
 const TOPIC_MAX = 2000;
 const CONTEXT_MAX = 8000;
+const CISO_POSITION_MAX = 8000;
+/** Epic #122: at most 2 invited advisors per session (counsel, not votes). */
+const ADVISORS_MAX = 2;
 
 /**
  * "Convene the board" card (ADR-0049, backend ADR-0039): topic + optional
- * context + persona checkbox chips, submitting through the server action to the
- * backend's synchronous deliberation. A full session is many sequential premium
- * model calls (~30–90s), so the pending state is loud about what's happening.
+ * context + the human CISO's position (ADR-0054 §4 deputy model) + persona and
+ * advisor checkbox chips, submitting through the server action to the backend's
+ * synchronous deliberation. A full session is many sequential premium model
+ * calls (~30–90s), so the pending state is loud about what's happening.
  */
 export function ConveneBoardCard({
   personas,
+  advisors,
   canConvene,
   canSubmit,
   sourceNote,
   conveneAction,
 }: {
   personas: BoardPersona[];
+  /** The advisor bench — invited per session, weighed as counsel not votes. */
+  advisors: BoardPersona[];
   /** Holds the sales:write capability (ADR-0045) — controls render enabled. */
   canConvene: boolean;
   /** Backend reachable — convening can actually run. */
@@ -32,8 +39,10 @@ export function ConveneBoardCard({
   conveneAction: (formData: FormData) => Promise<ConveneBoardResult>;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(personas.map((p) => p.id)));
+  const [invited, setInvited] = useState<Set<string>>(new Set());
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
+  const [cisoPosition, setCisoPosition] = useState("");
   const [result, setResult] = useState<ConveneBoardResult | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -48,6 +57,15 @@ export function ConveneBoardCard({
     });
   }
 
+  function toggleAdvisor(id: string) {
+    setInvited((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < ADVISORS_MAX) next.add(id);
+      return next;
+    });
+  }
+
   function onSubmit(formData: FormData) {
     setResult(null);
     startTransition(async () => {
@@ -56,6 +74,8 @@ export function ConveneBoardCard({
       if (r.ok) {
         setTopic("");
         setContext("");
+        setCisoPosition("");
+        setInvited(new Set());
       }
     });
   }
@@ -116,6 +136,23 @@ export function ConveneBoardCard({
           />
         </label>
 
+        <label className="block">
+          <span className="mb-1 block text-xs text-dim">
+            Your position as CISO (optional) — shown to every seat with veto weight on
+            security matters; the staff-analyst deputy defers to it
+          </span>
+          <textarea
+            name="cisoPosition"
+            value={cisoPosition}
+            onChange={(e) => setCisoPosition(e.target.value)}
+            maxLength={CISO_POSITION_MAX}
+            rows={2}
+            disabled={!editable}
+            placeholder="State your security position up front — leave blank and the deputy's draft is labeled unreviewed staff analysis…"
+            className="w-full resize-y rounded-md border border-border bg-panel-2 px-3 py-2 text-sm text-text placeholder:text-dim focus:border-accent focus:outline-none disabled:opacity-60"
+          />
+        </label>
+
         <fieldset disabled={!editable}>
           <legend className="mb-2 text-xs text-dim">
             Who sits this session — default is the full board (max 5)
@@ -154,6 +191,50 @@ export function ConveneBoardCard({
             })}
           </div>
         </fieldset>
+
+        {advisors.length > 0 && (
+          <fieldset disabled={!editable}>
+            <legend className="mb-2 text-xs text-dim">
+              Invite advisors (optional, max {ADVISORS_MAX}) — counsel, not votes; the
+              facilitator weighs them as expert input
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {advisors.map((a) => {
+                const active = invited.has(a.id);
+                const full = !active && invited.size >= ADVISORS_MAX;
+                return (
+                  <label
+                    key={a.id}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors ${
+                      active
+                        ? "border-accent-2 bg-panel-2"
+                        : "border-border bg-panel-2/50 hover:border-accent-2/50"
+                    } ${editable && !full ? "cursor-pointer" : "cursor-default opacity-80"}`}
+                  >
+                    <input
+                      type="checkbox"
+                      name="advisorAgentIds"
+                      value={a.id}
+                      checked={active}
+                      disabled={full}
+                      onChange={() => toggleAdvisor(a.id)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`rounded border border-border px-1.5 py-0.5 text-[10px] ${
+                        active ? "text-accent-2" : "text-dim"
+                      }`}
+                    >
+                      advisor
+                    </span>
+                    <span className="text-sm text-text">{a.name}</span>
+                    {active && <Icon name="Check" size={13} className="text-accent-2" />}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
 
         <div className="flex flex-wrap items-center gap-3">
           <button
