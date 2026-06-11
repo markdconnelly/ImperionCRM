@@ -304,6 +304,7 @@ erDiagram
     AGENT ||--o{ BOARD_SESSION_MEMBER : "as persona"
     BOARD_SESSION ||--o{ BOARD_MESSAGE : "deliberation"
     BOARD_SESSION ||--o| BOARD_RECOMMENDATION : synthesizes
+    APP_USER ||--o{ BOARD_RECOMMENDATION : "reviews (ratify/overrule)"
     APP_USER ||--o{ FEATURE_REQUEST : submits
     FEATURE_REQUEST ||--o{ FEATURE_VOTE : "upvotes"
     FEATURE_REQUEST ||--o{ FEATURE_STATUS_HISTORY : "triage"
@@ -323,6 +324,7 @@ erDiagram
       text instructions
       jsonb model_routing
       text persona_role "board only"
+      text seat_kind "officer|advisor|facilitator|deputy"
     }
     AGENT_TOOL_GRANT {
       uuid id PK
@@ -358,6 +360,8 @@ erDiagram
       uuid opened_by FK
       text topic
       text status
+      text packet_md "board packet"
+      text ciso_position_md "human CISO"
     }
     BOARD_SESSION_MEMBER {
       uuid id PK
@@ -375,6 +379,9 @@ erDiagram
       uuid session_id FK
       text recommendation
       jsonb rationale
+      text review_status "pending_review|ratified|overruled"
+      uuid reviewed_by FK
+      text review_rationale
     }
     FEATURE_REQUEST {
       uuid id PK
