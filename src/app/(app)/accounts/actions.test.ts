@@ -35,7 +35,8 @@ vi.mock("@/lib/data", () => ({
   }),
 }));
 
-import { createAccountAction, updateAccountAction } from "./actions";
+import { ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { createAccountAction, refreshPostureAction, updateAccountAction } from "./actions";
 
 function form(fields: Record<string, string>): FormData {
   const fd = new FormData();
@@ -69,6 +70,41 @@ describe("createAccountAction", () => {
     expect(h.createAccount).toHaveBeenCalled();
     expect(h.refresh).toHaveBeenCalledWith({ source: "merge" }); // the nudge was attempted
     await new Promise((r) => setTimeout(r, 0)); // let the swallowed rejection settle
+    errorSpy.mockRestore();
+  });
+});
+
+describe("refreshPostureAction (#155 — account-scoped posture refresh, ADR-0051 §2)", () => {
+  it("awaits the account-scoped posture refresh, then revalidates the account page", async () => {
+    await refreshPostureAction(form({ accountId: "acc-1" }));
+    expect(h.requireCapability).toHaveBeenCalledWith("crm:write");
+    expect(h.refresh).toHaveBeenCalledWith({ source: "posture", accountId: "acc-1" });
+    expect(h.revalidatePath).toHaveBeenCalledWith("/accounts/acc-1");
+  });
+
+  it("does nothing without an accountId (posture is the only account-scoped source)", async () => {
+    await refreshPostureAction(form({}));
+    expect(h.refresh).not.toHaveBeenCalled();
+    expect(h.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("degrades silently when the pipeline is unconfigured", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    h.refresh.mockRejectedValueOnce(
+      new ServiceNotConfiguredError("pipeline", "PIPELINE_SERVICE_URL"),
+    );
+    await refreshPostureAction(form({ accountId: "acc-1" }));
+    expect(errorSpy).not.toHaveBeenCalled(); // unconfigured → quiet no-op
+    expect(h.revalidatePath).toHaveBeenCalledWith("/accounts/acc-1");
+    errorSpy.mockRestore();
+  });
+
+  it("logs but never throws on other pipeline failures", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    h.refresh.mockRejectedValueOnce(new Error("pipeline down"));
+    await expect(refreshPostureAction(form({ accountId: "acc-1" }))).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
+    expect(h.revalidatePath).toHaveBeenCalledWith("/accounts/acc-1");
     errorSpy.mockRestore();
   });
 });

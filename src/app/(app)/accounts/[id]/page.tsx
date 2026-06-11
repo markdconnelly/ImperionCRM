@@ -6,6 +6,7 @@ import { Timeline } from "@/components/comms/timeline";
 import { SourceRecords } from "@/components/comms/source-records";
 import { IntegrationHealth } from "@/components/comms/integration-health";
 import { getRepositories } from "@/lib/data";
+import { refreshPostureAction } from "../actions";
 
 const STAGE_LABEL: Record<string, string> = {
   prospect: "Prospect",
@@ -58,12 +59,13 @@ export default async function AccountDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { crm, comms } = getRepositories();
-  const [account, timeline, sources, relatedBronze] = await Promise.all([
+  const { crm, comms, security } = getRepositories();
+  const [account, timeline, sources, relatedBronze, tenantMappings] = await Promise.all([
     crm.getAccount(id),
     comms.listInteractionsByAccount(id),
     crm.listAccountSources(id),
     crm.listAccountRelatedBronze(id),
+    security.listTenantMappingsForAccount(id),
   ]);
   if (!account) notFound();
 
@@ -71,12 +73,30 @@ export default async function AccountDetailPage({
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <PageHeader title={account.name} description="Company 360" />
-        <Link
-          href={`/accounts/${id}/edit`}
-          className="shrink-0 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
-        >
-          Edit
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          {tenantMappings.length > 0 && (
+            // Account-scoped posture refresh (ADR-0051 §2, pipeline ADR-0015) —
+            // only offered when a Tenant Mapping exists: no mapped Customer
+            // Tenants means there is nothing for the pipeline to re-classify.
+            <form action={refreshPostureAction}>
+              <input type="hidden" name="accountId" value={id} />
+              <button
+                type="submit"
+                title={`Re-classify posture for ${tenantMappings.length} mapped tenant${tenantMappings.length === 1 ? "" : "s"}`}
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+              >
+                <Icon name="ShieldCheck" size={14} />
+                Refresh posture
+              </button>
+            </form>
+          )}
+          <Link
+            href={`/accounts/${id}/edit`}
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+          >
+            Edit
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

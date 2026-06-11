@@ -63,6 +63,12 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
   matches each `*_source` row to a silver `contact`/`account` (domain/email), upserts, and
   stamps `matched_at` / `match_confidence`. Survivorship = field precedence
   `imperion > autotask > itglue > m365 > apollo` (pipeline ADR-0006).
+- **Account-scoped posture refresh (ADR-0051 §2, pipeline ADR-0015):** ✅ the account
+  detail page's **Refresh posture** button (#155, shown only when the account has a
+  Tenant Mapping) awaits `POST /api/refresh {source:"posture", accountId}` — the cloud
+  pipeline re-classifies that account's mapped Customer Tenants into
+  `posture_policy`/`tenant_posture` and the page revalidates after it lands. Bulk
+  posture merges (all tenants, scheduled) belong to the on-prem pipeline.
 - **Gold:** summaries + embeddings over merged records — still deferred (next phase).
 
 ## 4. Communications ingestion (ADR-0011)

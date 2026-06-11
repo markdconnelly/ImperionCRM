@@ -3984,6 +3984,31 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async listTenantMappingsForAccount(accountId): Promise<TenantMapping[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listTenantMappingsForAccount(accountId);
+      try {
+        const { rows } = await pool.query<{
+          tenant_id: string; account_id: string; account: string | null;
+          display_name: string | null; updated_at: string | null;
+        }>(
+          `SELECT t.tenant_id, t.account_id::text AS account_id, a.name AS account,
+                  t.display_name, t.updated_at::text AS updated_at
+             FROM account_tenant t
+             LEFT JOIN account a ON a.id = t.account_id
+            WHERE t.account_id = $1::uuid
+            ORDER BY t.tenant_id`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id, accountId: r.account_id, accountName: r.account,
+          displayName: r.display_name, updatedAt: r.updated_at,
+        }));
+      } catch {
+        return mockRepositories.security.listTenantMappingsForAccount(accountId);
+      }
+    },
+
     async upsertTenantMapping(input): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.security.upsertTenantMapping(input);

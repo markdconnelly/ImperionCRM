@@ -265,7 +265,9 @@ export const boardService = {
  * path, so a refresh can never duplicate a scheduled load.
  */
 export const pipelineService = {
-  refresh: (input: { source: RefreshSource }) =>
+  // accountId is required by the pipeline when source is "posture" (the only
+  // account-scoped source — pipeline ADR-0015) and ignored for every other source.
+  refresh: (input: { source: RefreshSource; accountId?: string }) =>
     callService<{ source: string; ran: boolean; reason?: string; counts?: Record<string, number> }>(
       services.pipeline,
       "/refresh",
