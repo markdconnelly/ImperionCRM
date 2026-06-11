@@ -75,6 +75,12 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
   account's `credential_exposure` rows — all via the account-scoped reads documented
   in `../database/data-model.md`. Unmapped → points at Settings → Tenant mapping;
   mapped-but-unclassified → points at Refresh posture (reused on this page).
+- **Company at-a-glance posture (#94):** ✅ the Company 360 shows the **Imperion Secure
+  Score** (Score Model v1: m365_secure_score · policy_compliance · darkweb, equal
+  weight — `src/lib/security/imperion-score.ts`, the same math the snapshot job must
+  reproduce) computed live from the mapped tenants' rollups; uncovered pillars render
+  "No coverage" (grey), score 0, never green (ADR-0051 §4). The per-DEVICE indicator is
+  deliberately absent until the Intune managedDevices feed lands (#162, ADR-0051 §6).
 - **Gold:** summaries + embeddings over merged records — still deferred (next phase).
 
 ## 4. Communications ingestion (ADR-0011)
