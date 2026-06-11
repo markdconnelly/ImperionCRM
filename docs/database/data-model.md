@@ -941,12 +941,20 @@ Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.
 per tenant, an account may own several tenants, never inferred from domains. Tenants in
 posture bronze with no mapping surface in an "unmapped tenants" admin list. Both pipeline
 roles read it to resolve account→tenants for posture merges (pipeline #20 on-demand;
-on-prem bulk + quarterly snapshots). The posture silver tables (`posture_policy`,
-`tenant_posture`) follow in migration 0062 (#151).
+on-prem bulk + quarterly snapshots).
+
+Migration 0062 adds the posture silver pair: `posture_policy` (current classification
+per tenant + family + policy — the Get-ImperionPolicyDrift FULL OUTER JOIN semantics:
+`compliant | drift | ungoverned | missing`; replaced per merge) and `tenant_posture`
+(one-row-per-tenant rollup). Writers: both pipeline roles (on-prem bulk, cloud
+on-demand) — the SAME classification rules by ADR-0051 decision 2. The immutable
+`posture_snapshot(_pillar)` tables follow with the snapshot-job work.
 
 ```mermaid
 erDiagram
     ACCOUNT ||--o{ ACCOUNT_TENANT : "owns tenants"
+    ACCOUNT_TENANT ||--o| TENANT_POSTURE : "rolls up"
+    ACCOUNT_TENANT ||--o{ POSTURE_POLICY : "classifies"
 
     ACCOUNT_TENANT {
       text tenant_id PK "Microsoft tenant GUID"
@@ -955,7 +963,33 @@ erDiagram
       timestamptz created_at
       timestamptz updated_at
     }
+    POSTURE_POLICY {
+      text tenant_id PK
+      text policy_family PK "conditional_access|intune_security|device_configuration|autopilot|defender_xdr"
+      text policy_id PK
+      text policy_name
+      text classification "compliant|drift|ungoverned|missing"
+      text observed_hash
+      text golden_hash
+      timestamptz refreshed_at
+    }
+    TENANT_POSTURE {
+      text tenant_id PK
+      numeric secure_score_current
+      numeric secure_score_max
+      integer licensed_user_count
+      integer policies_compliant
+      integer policies_drift
+      integer policies_ungoverned
+      integer policies_missing
+      integer exposures_open
+      timestamptz refreshed_at
+    }
 ```
+
+> `posture_policy`/`tenant_posture` are keyed by tenant GUID, not FK'd to
+> `account_tenant` — posture for an unmapped tenant still lands and surfaces in the
+> unmapped list rather than being rejected (ADR-0051: surface, never hide).
 
 ## Enumerations
 
