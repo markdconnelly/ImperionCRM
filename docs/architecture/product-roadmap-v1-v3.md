@@ -31,6 +31,8 @@ Capability gates (all must hold):
    Easy Auth verified; secret rotation done.
 2. **Release machinery real:** PR-gating CI on all four repos (the backend's 105 tests
    currently gate nothing), release-please wired everywhere, branch rulesets verified.
+   Version digits, release authority, and the coordinated-major mechanics are defined
+   in `versioning-standard.md` (ADR-0056) — v1.0.0 itself is cut per that standard.
 3. **Board upgrade shipped** (ADR-0054, §4 as amended — deputy model): influence
    personas + CISO Staff Analyst deputy (migration + data migration), board packet
    composer, facilitator synthesis, advisor invitees (cap 7), convene-time CISO-position
