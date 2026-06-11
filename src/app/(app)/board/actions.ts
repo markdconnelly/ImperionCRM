@@ -7,10 +7,13 @@ import { requireCapability } from "@/lib/auth/guard";
 import { boardService } from "@/lib/services";
 import { ServiceNotConfiguredError } from "@/lib/services/external-client";
 
-/** Backend validation limits (backend ADR-0039 convene schema). */
+/** Backend validation limits (backend ADR-0039 convene schema + 0059 seats). */
 const TOPIC_MAX = 2000;
 const CONTEXT_MAX = 8000;
+const CISO_POSITION_MAX = 8000;
 const PERSONAS_MAX = 5;
+/** Epic #122: max 2 invitees (the backend separately trims to the 7-seat cap). */
+const ADVISORS_MAX = 2;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -56,6 +59,9 @@ export async function conveneBoardAction(formData: FormData): Promise<ConveneBoa
 
   const topic = String(formData.get("topic") ?? "").trim();
   const context = String(formData.get("context") ?? "").trim();
+  // The human CISO's stated position (ADR-0054 §4 deputy model) — optional,
+  // shown to every seat with veto weight on security matters; the deputy defers.
+  const cisoPosition = String(formData.get("cisoPosition") ?? "").trim();
   // Checkbox chips post one entry per selected persona. Non-UUID values (mock
   // personas) are dropped; an empty remainder means "default: all active".
   const personaAgentIds = formData
@@ -63,6 +69,12 @@ export async function conveneBoardAction(formData: FormData): Promise<ConveneBoa
     .map((v) => String(v))
     .filter((v) => UUID_RE.test(v))
     .slice(0, PERSONAS_MAX);
+  // Invited advisors — counsel, not votes (ADR-0054). Same chip mechanics.
+  const advisorAgentIds = formData
+    .getAll("advisorAgentIds")
+    .map((v) => String(v))
+    .filter((v) => UUID_RE.test(v))
+    .slice(0, ADVISORS_MAX);
 
   if (!topic) {
     return { ok: false, status: "error", message: "Give the board a topic to deliberate.", sessionId: null, recommendation: null };
@@ -72,6 +84,9 @@ export async function conveneBoardAction(formData: FormData): Promise<ConveneBoa
   }
   if (context.length > CONTEXT_MAX) {
     return { ok: false, status: "error", message: `Keep the context under ${CONTEXT_MAX} characters.`, sessionId: null, recommendation: null };
+  }
+  if (cisoPosition.length > CISO_POSITION_MAX) {
+    return { ok: false, status: "error", message: `Keep the CISO position under ${CISO_POSITION_MAX} characters.`, sessionId: null, recommendation: null };
   }
 
   const actingUserId = await resolveActingUserId();
@@ -90,7 +105,9 @@ export async function conveneBoardAction(formData: FormData): Promise<ConveneBoa
       topic,
       actingUserId,
       ...(personaAgentIds.length > 0 ? { personaAgentIds } : {}),
+      ...(advisorAgentIds.length > 0 ? { advisorAgentIds } : {}),
       ...(context ? { context } : {}),
+      ...(cisoPosition ? { cisoPosition } : {}),
     });
     revalidatePath("/board");
     return {

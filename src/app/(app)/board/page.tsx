@@ -24,7 +24,7 @@ export default async function BoardPage() {
   if (!canSeeAgentPages(roles)) redirect("/");
   const canConvene = can(roles, "agents:operate"); // matches the action gate (ADR-0050)
 
-  const [{ personas }, sessions] = await Promise.all([
+  const [{ personas, advisors }, sessions] = await Promise.all([
     listBoardPersonas(),
     listBoardSessions(20),
   ]);
@@ -45,6 +45,7 @@ export default async function BoardPage() {
       {/* 1 ── Convene: topic + context + persona picker → backend deliberation */}
       <ConveneBoardCard
         personas={personas}
+        advisors={advisors}
         canConvene={canConvene}
         canSubmit={backendConfigured}
         sourceNote={sourceNote}
