@@ -39,19 +39,18 @@ describe("rolesFromClaims", () => {
     ]);
   });
 
-  test("FAILS CLOSED by default: an unrecognized user becomes support", () => {
-    expect(rolesFromClaims({})).toEqual(["support"]);
-    expect(rolesFromClaims({ roles: ["SomethingUnmapped"] })).toEqual(["support"]);
-    expect(rolesFromClaims(null)).toEqual(["support"]);
-  });
-
-  test("RBAC_FAIL_OPEN_ADMIN=true opens an unrecognized user to admin (bootstrap only)", () => {
-    process.env.RBAC_FAIL_OPEN_ADMIN = "true";
+  // INTERIM (#140): unconditional fail-open while Entra App Roles are unassigned
+  // (#139). When reverting, restore the fail-closed expectations (support) and the
+  // RBAC_FAIL_OPEN_ADMIN=true bootstrap test — see this file's history at 95782f2.
+  test("INTERIM #140: a claimless user fails OPEN to admin, flag or not", () => {
+    expect(rolesFromClaims({})).toEqual(["admin"]);
+    expect(rolesFromClaims({ roles: ["SomethingUnmapped"] })).toEqual(["admin"]);
+    expect(rolesFromClaims(null)).toEqual(["admin"]);
+    process.env.RBAC_FAIL_OPEN_ADMIN = "false";
     expect(rolesFromClaims({})).toEqual(["admin"]);
   });
 
-  test("the fail-open flag NEVER overrides a recognized claim", () => {
-    process.env.RBAC_FAIL_OPEN_ADMIN = "true";
+  test("the fail-open NEVER overrides a recognized claim", () => {
     expect(rolesFromClaims({ roles: ["Application.ImperionCRM.Support"] })).toEqual(["support"]);
   });
 
