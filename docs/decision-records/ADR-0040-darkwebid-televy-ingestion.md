@@ -1,7 +1,11 @@
 # ADR-0040: Dark Web ID + Televy ingestion (credential_exposure entity)
 
-- **Status:** Accepted
-- **Date:** 2026-06-08
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-08 |
+| **Cross-references** | pipeline ADR-0010 |
 
 ## Problem
 
@@ -40,19 +44,21 @@ autotask/itglue/apollo.
   pipeline config; response-field mappings are flagged assumptions to confirm on first live run
   (same posture as Autotask/IT Glue). Pipeline side: pipeline ADR-0010.
 
-## Security impact
+## Consequences
+
+### Security impact
 
 Positive: Dark Web ID surfaces compromised-credential risk per contact/company (a security
 feature). No secrets in the repo/DB — API keys live in Key Vault, referenced by the company
 `connection` row (CLAUDE.md §5). `credential_exposure` is sensitive; access is gated by the
 app's existing auth/RBAC and it is not exposed to unauthenticated paths.
 
-## Cost impact
+### Cost impact
 
 Negligible schema cost. Polling cost is operator-controlled via the cadence selector (ADR-0038)
 and `0 = paused`.
 
-## Operational impact
+### Operational impact
 
 Additive migrations 0042 (enum, non-transactional) + 0043 (tables, transactional), applied
 before the new code deploys. Nothing ingests until the Dark Web ID / Televy API keys are entered

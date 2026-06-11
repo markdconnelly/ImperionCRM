@@ -1,7 +1,11 @@
 # ADR-0038: Per-connection poll cadence
 
-- **Status:** Accepted
-- **Date:** 2026-06-08
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-08 |
+| **Cross-references** | — |
 
 ## Problem
 
@@ -27,7 +31,7 @@ Your connections / Company credentials** (ADR-0036). "Ingest vs poll" is describ
 2. **Global polling interval** in app config / env, one value for all connections.
 3. **Cron-style expression per connection** for arbitrary schedules.
 
-## Tradeoffs
+### Tradeoffs
 
 - (1) gives operators per-source control with a tiny additive schema change and a
   preset dropdown; the pipeline reads one integer. Matches the existing connection model.
@@ -49,20 +53,22 @@ Your connections / Company credentials** (ADR-0036). "Ingest vs poll" is describ
 - Carried on `ConnectionRow.pollIntervalMinutes` through the typed repositories
   (`setPollInterval(id, minutes)` on both the Postgres and mock implementations).
 
-## Security impact
+## Consequences
+
+### Security impact
 
 None. The value is a non-secret integer cadence; no token or credential is read or
 written. The input is clamped non-negative server-side. Setting is gated by the
 existing admin-only Settings route (company) / the signed-in employee's own
 connections (personal).
 
-## Cost impact
+### Cost impact
 
 A shorter cadence means more frequent pipeline runs and more external API calls
 (possible rate-limit / cost pressure on the source). The default of hourly is
 conservative; `0` (manual) lets an operator stop polling a source entirely.
 
-## Operational impact
+### Operational impact
 
 Migration `0035` must be applied to prod as a deploy step (0001–0034 already applied).
 The column is additive with a default, so existing rows poll hourly until changed. The

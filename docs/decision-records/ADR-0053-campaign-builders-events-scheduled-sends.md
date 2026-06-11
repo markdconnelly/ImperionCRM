@@ -1,14 +1,21 @@
 # ADR-0053: Campaign builders — events, scheduled sends, and the provider set
 
-**Status:** accepted (2026-06-10, decisions locked with Mark in design session for issue #88)
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted (2026-06-10, decisions locked with Mark in design session for issue #88) |
+| **Date** | 2026-06-10 |
+| **Cross-references** | — |
 
-## Context and decision
+## Context
+
+**Context and decision**
 
 Demand gen had bones but no muscles: `campaign/ad/campaign_metric/audience/lead_hook` existed (ADR-0026, migrations 0022/0023), Workflows had step/enrollment tables with no executor, consent gating worked, and connections/Key Vault custody was the provider pattern — but there were no builders beyond thin forms, no scheduler, no SMS channel, and no event/webinar model at all. Mark wants builders for Facebook ads, email, SMS, webinars, and live events, with scheduling and automation; leads from every source feed the leads object (`contact.crm_stage`).
 
 We decided: **events become first-class objects** (`event` + `event_registration`) that campaigns promote — not campaign channels; **builders are structured forms + preview** producing typed config — not drag-drop canvases; scheduling splits into two grains — **Campaign Sends** (schedulable blasts, absolute or event-relative) vs **Workflows** (per-contact journeys), bridged by auto-enroll hooks; and the provider set is **Meta Marketing API + Azure Communication Services (email & SMS) + Teams links**, chosen on cost and stack fit. Execution (send executor, Meta pushes, metric polling) stays backend/pipeline-deferred per ADR-0042's division of labor. Vocabulary in `CONTEXT.md`: Event, Event Registration, Campaign Send, Builder.
 
-## Decisions
+## Decision
 
 1. **Events are objects, campaigns are delivery vehicles.** New `event` (kind `webinar | live_event`) and `event_registration` tables. The webinar/live-event builders create events; a campaign of any channel can point at the event it promotes (`campaign.event_id`). (Rejected: webinar/live_event as `campaign_platform` values — a webinar promoted by FB ads AND email needs two campaigns and the event itself has nowhere to live; modeling events on `meeting` — a 200-attendee webinar is not one per-contact interaction record.)
 
@@ -26,7 +33,7 @@ We decided: **events become first-class objects** (`event` + `event_registration
 
 8. **RBAC.** New `canManageCampaigns` predicate (admin | sales, ADR-0030 pattern) gates campaign/event/send writes; reads open to all roles.
 
-## Table specifications (migration 0058+, verify next number on disk; parallel sessions active)
+**Table specifications (migration 0058+, verify next number on disk; parallel sessions active)**
 
 ```sql
 CREATE TYPE event_kind   AS ENUM ('webinar','live_event');

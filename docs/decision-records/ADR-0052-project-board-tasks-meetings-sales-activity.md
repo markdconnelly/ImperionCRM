@@ -1,14 +1,21 @@
 # ADR-0052: Project board model — project types, unified tasks, meetings linkage, sales activity
 
-**Status:** accepted (2026-06-10, decisions locked with Mark in design session for issue #87)
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted (2026-06-10, decisions locked with Mark in design session for issue #87) |
+| **Date** | 2026-06-10 |
+| **Cross-references** | — |
 
-## Context and decision
+## Context
+
+**Context and decision**
 
 The delivery model was half-built: a `project` table existed with a hard two-value `project_type` enum (`onboarding | implementation`), the onboarding playbook (milestones + `onboarding_step`) hung off it, and one unified `task` table carried a category enum but no project link. Meetings existed as silver objects (1:1 with `interaction` kind=`meeting`) but attached only to account/contact/opportunity. There was no general projects surface, no sales work queue, and no path from onboarding automation to project status.
 
 We decided: project types become a **table** (user-creatable from the project board; Onboarding seeded and protected as the foundational type with its own dedicated page); there is exactly **one task model** (`task` gains `project_id`); **easy mode** is real automation (a deploy button fires a configuration function; a verification check — reading the posture silver ADR-0051 already maintains — closes the linked project task); meetings attach to projects via `interaction.project_id`; and the sales activity page is a pure read model (per-owner queue of sales tasks + sales meetings). Vocabulary is defined in `CONTEXT.md` (Project Type, Project Task, Project Board, Easy Mode, Easy-Mode Deploy, Sales Task, Sales Queue).
 
-## Decisions
+## Decision
 
 1. **Project types are data, not code.** A `project_type` table replaces the enum; new types ("Office move", "M365 migration") are created from the project board without a migration. Rows carry a stable `key`, a display `name`, and `is_protected`. `Onboarding` (key `onboarding`) is seeded protected — never deletable; the dedicated Onboarding page keys off it. `Implementation` is seeded to preserve existing rows. Deleting a type in use is RESTRICTed. (Rejected: extending the enum per type — contradicts "the board creates different project types"; per-type task templates — deferred, the onboarding playbook stays the only template for now.)
 
@@ -26,7 +33,7 @@ We decided: project types become a **table** (user-creatable from the project bo
 
 8. **Surfaces and RBAC.** Onboarding projects appear on the project board like any other type (the board is the general surface; the Onboarding page is the easy-mode surface). `project` gains `owner_user_id`. New role predicates per ADR-0030: `canManageProjects` (admin | project_manager) gates project-board writes; `canManageSales` (admin | sales) gates sales-activity writes; reads are open to all roles.
 
-## Table specifications (migration 0058+, verify next number on disk)
+**Table specifications (migration 0058+, verify next number on disk)**
 
 The existing enum is also named `project_type`; Postgres won't allow the new table while it exists, so the migration must rename the enum first, in this order:
 

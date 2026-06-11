@@ -1,7 +1,11 @@
 # ADR-0036: Company credential configuration in Settings
 
-- **Status:** Accepted
-- **Date:** 2026-06-07
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-07 |
+| **Cross-references** | — |
 
 ## Problem
 
@@ -30,7 +34,7 @@ not yet configured.
    the returned reference here.
 3. **Stub only** — UI + reference naming, no real write path.
 
-## Tradeoffs
+### Tradeoffs
 
 - (1) works end-to-end today but puts secret-handling in the front-end App Service, a
   deviation from ADR-0028 isolation.
@@ -55,18 +59,20 @@ not yet configured.
   `quotemanager`, `gdap`), adds a `pending` `connection_status`, and a partial unique
   index `uq_connection_company_provider` so re-saving rotates rather than duplicates.
 
-## Security impact
+## Consequences
+
+### Security impact
 
 The secret never touches this DB or this App Service — only a Key Vault reference is
 stored (CLAUDE.md §5). Secret-handling stays inside the network-isolated backend
 (ADR-0028). UI inputs are write-only; stored secrets are never returned to the client.
 
-## Cost impact
+### Cost impact
 
 None new — reuses the existing `INTEGRATION_SERVICE_URL` backend descriptor and Key
 Vault. No new dependency added to the front-end.
 
-## Operational impact
+### Operational impact
 
 Until the backend `/credentials` and `/gdap/consent` endpoints exist, saves degrade
 gracefully: the row is recorded `pending` with the intended reference and the card

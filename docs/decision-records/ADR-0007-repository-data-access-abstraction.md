@@ -1,31 +1,40 @@
 # ADR-0007: Repository abstraction for data access
 
-- **Status:** Accepted
-- **Date:** 2026-06-06
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-06 |
+| **Cross-references** | — |
 
 ## Problem
+
 The UI imported mock fixtures directly. We need a seam that lets the data source
 change (mock → PostgreSQL + pgvector, ADR-0003) without rewriting callers, and
 that fits the bronze/silver/gold pipeline (CLAUDE.md §4) and the future agent
 orchestrator (§7.5).
 
 ## Context
+
 CLAUDE.md §7.4 calls for "a typed data-access layer; replace mock data on the
 Dashboard with real queries behind a repository abstraction." Components were
 coupled to `lib/mock-data`, so swapping in a database would touch every view.
 
 ## Options considered
+
 - Keep importing fixtures / call the DB directly from components.
 - A **repository abstraction**: typed interfaces, swappable implementations,
   resolved by a single server-only provider.
 
-## Tradeoffs
+### Tradeoffs
+
 Direct imports are simplest but couple UI to the data source and can't host
 server-side queries cleanly. The repository layer adds a thin indirection but
 gives one swap point, keeps server-only data code out of client bundles, and
 makes the eventual Postgres/gold reads a drop-in.
 
 ## Decision
+
 Introduce `src/lib/data`:
 - `repositories.ts` — async typed contracts (`DashboardRepository`,
   `AgentRepository`, `Repositories`).
@@ -36,19 +45,25 @@ Introduce `src/lib/data`:
 Views call `getRepositories()` server-side and pass plain data to presentational
 components.
 
-## Security impact
+## Consequences
+
+### Security impact
+
 - `index.ts` is `server-only`; data-access code never reaches the client bundle.
 - Centralizes where row-level scoping / Entra-permission filtering will be
   enforced as the gold layer and RBAC land.
 
-## Cost impact
+### Cost impact
+
 None (no new dependencies).
 
-## Operational impact
+### Operational impact
+
 Methods are async, ready to become real queries; switching data sources is a
 one-line change in `index.ts`.
 
 ## Future considerations
+
 - Postgres-backed implementation (ADR-0003) reading the gold layer (§4).
 - Vector/semantic retrieval and agent-memory repositories.
 - Per-request scoping to the signed-in user's Entra permissions.

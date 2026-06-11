@@ -1,9 +1,14 @@
 # ADR-0022: Assessment-led GTM and the AI Security Readiness Assessment model
 
-- **Status:** Accepted
-- **Date:** 2026-06-07
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-07 |
+| **Cross-references** | — |
 
 ## Problem
+
 The CRM's sales/delivery model (ADR-0010) was generic. Imperion's actual motion is
 **assessment-led**: a *paid* AI Security Readiness Assessment is run before proposing
 managed services and is the wedge that wins the long-term contract. The data model had
@@ -11,6 +16,7 @@ no representation of this engagement, its six-dimension scorecard, or the credit
 — so the funnel couldn't be tracked faithfully.
 
 ## Context
+
 Source business assets (archived at `docs/reference/sales-marketing/`) define the
 motion: a white-paper lead magnet → segmented nurture (Track A/B) → executive
 discovery call (eight captures + verdict) → the **AI Security Readiness Assessment**
@@ -20,7 +26,21 @@ discovery call (eight captures + verdict) → the **AI Security Readiness Assess
 assessment record is in-repo (DB + UI); the heavy scanning/agents/phishing simulation
 that *produce* the scores run in external services.
 
+## Options considered
+
+- **Assessment as its own entity (this decision)** — matches the business: a distinct
+  paid engagement with its own lifecycle, scorecard, and credited fee; gates managed
+  services cleanly.
+- **Reuse `opportunity` with a type flag** — rejected: an opportunity tracks a sales
+  motion with MRR, not a six-dimension scored engagement with a one-time credited fee.
+- **Reuse `proposal`** — rejected: a proposal is a document moving draft→accepted, not
+  a scored deliverable.
+- **Six ratings as a child `assessment_finding` table** — deferred: cleaner for
+  per-finding text and history, but the six dimensions are fixed and columns keep the
+  first cut simple. Revisit when per-dimension findings/evidence are needed.
+
 ## Decision
+
 Model the assessment as a first-class **`assessment`** entity (migration
 `0010_assessment.sql`):
 
@@ -45,34 +65,28 @@ both the data mapping and the UI scorecard, so the names stay canonical in one p
 The **remediation roadmap is NOT stored here** — it is realized as the delivery
 `project`'s milestones (ADR-0020).
 
-## Options considered
-- **Assessment as its own entity (this decision)** — matches the business: a distinct
-  paid engagement with its own lifecycle, scorecard, and credited fee; gates managed
-  services cleanly.
-- **Reuse `opportunity` with a type flag** — rejected: an opportunity tracks a sales
-  motion with MRR, not a six-dimension scored engagement with a one-time credited fee.
-- **Reuse `proposal`** — rejected: a proposal is a document moving draft→accepted, not
-  a scored deliverable.
-- **Six ratings as a child `assessment_finding` table** — deferred: cleaner for
-  per-finding text and history, but the six dimensions are fixed and columns keep the
-  first cut simple. Revisit when per-dimension findings/evidence are needed.
+## Consequences
 
-## Security impact
+### Security impact
+
 No new internet-facing surface in the web tier. Writes go through server actions behind
 the Entra gate (ADR-0002); the scanning/agent/phishing workloads that generate scores
 are external services with their own credentials (ADR-0018). `report_url` is a pointer,
 not file content. Access inherits account ownership scoping (ADR-0016). The assessment
 itself secures the legal basis (contract) for the deep-dive admin access.
 
-## Cost impact
+### Cost impact
+
 None beyond Postgres storage. (The assessment is revenue-generating.)
 
-## Operational impact
+### Operational impact
+
 Adds `0010_assessment.sql` (idempotent, transactional, ADR-0017) and the
 `assessment_status` / `assessment_rating` enums; ERD and customer-lifecycle docs
 updated. Adds an "Assessments" nav entry between Pipeline and Proposals.
 
 ## Future considerations
+
 Per-dimension findings/evidence (child table); auto-create the managed-services
 opportunity and apply the fee credit on conversion; tie the assessment's remediation
 roadmap to generated `project` milestones; capture the discovery-call eight fields and

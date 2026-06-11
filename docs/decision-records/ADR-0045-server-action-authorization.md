@@ -1,9 +1,14 @@
 # ADR-0045: Server-action authorization (write capabilities) & fail-closed bootstrap
 
-- **Status:** Accepted
-- **Date:** 2026-06-09
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-09 |
+| **Cross-references** | — |
 
 ## Problem
+
 ADR-0030 gave the app *roles* and gated the GUI (nav visibility, Settings/Security
 routes, server-side revenue redaction). It did **not** gate the mutating server
 actions: a stress test of the role model found that all ~48 `*/actions.ts` server
@@ -16,6 +21,7 @@ recognized role claim defaulted to `admin`, so in the current deployment every
 user was effectively admin.
 
 ## Context
+
 Roles derive from Entra group/App-Role claims and ride the JWT/session
 (`lib/auth/{roles,claims}.ts`, ADR-0030). The five roles are
 `admin|finance|project_manager|sales|support`, default `support`. Server actions
@@ -25,6 +31,7 @@ model (2026-06-09): reads stay broadly available, revenue stays redacted per
 ADR-0030, and each write is granted to the roles that own that part of the system.
 
 ## Options considered
+
 1. A small **capability matrix** (write domains → roles) enforced by a server-only
    `requireCapability()` guard called at the top of every mutating action, with the
    pure decision (`can()`) unit-tested as a repeatable stress test (this decision).
@@ -34,7 +41,8 @@ ADR-0030, and each write is granted to the roles that own that part of the syste
    good *second* layer, but it does not express "Support may not create proposals";
    tracked as a future consideration).
 
-## Tradeoffs
+### Tradeoffs
+
 - (1) one matrix (`lib/auth/policy.ts`, pure/edge-safe) is the single source of
   truth, reused by the guard and by a 50-test suite that asserts the full
   role×capability grid plus the claims mapping. Cost: a one-line guard call per
@@ -43,6 +51,7 @@ ADR-0030, and each write is granted to the roles that own that part of the syste
 - (2)/(3) cheaper to start but unsafe/incomplete or solve a different problem.
 
 ## Decision
+
 - **`lib/auth/policy.ts`** (pure): eight write capabilities — `crm`, `sales`,
   `delivery`, `contracts`, `tickets`, `comms`, `catalog`, `settings` (`:write`) —
   and `CAPABILITY_ROLES` mapping each to the roles that hold it (`admin` holds all).
@@ -63,7 +72,10 @@ ADR-0030, and each write is granted to the roles that own that part of the syste
 - This is **defense in depth**: the GUI still hides controls a role can't use
   (ADR-0030); the server simply never trusts the client to have done so.
 
-## Security impact
+## Consequences
+
+### Security impact
+
 Closes the critical gap: writes now fail closed and are least-privilege per role.
 The deployment-wide "everyone is admin" fail-open is gone by default. The pure
 `can()` matrix is covered by an explicit stress-test grid so regressions surface in
@@ -72,16 +84,19 @@ domain may write *any* object in it (IDOR within a domain); tracked below. The
 bootstrap flag, if ever set in prod, re-opens no-claim users to admin — documented
 as not-for-prod in `.env.example`.
 
-## Cost impact
+### Cost impact
+
 None material — pure logic plus one guard call per action; one new dev dependency
 (`vitest`).
 
-## Operational impact
+### Operational impact
+
 No migration. Operators must ensure Entra emits the App-Role/`groups` claim (or set
 `ENTRA_GROUP_*`) so real users resolve to real roles; until then, use break-glass or
 the documented `RBAC_FAIL_OPEN_ADMIN` flag. New npm scripts: `test` / `test:watch`.
 
 ## Future considerations
+
 Row-level/owner scoping (`account.owner_user_id`) as a second layer; finer task
 gating by category; PII-access audit logging; extending the guard to new backend
 process endpoints as plain CRUD migrates server-side (ADR-0042).

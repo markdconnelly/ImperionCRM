@@ -1,7 +1,11 @@
 # ADR-0049: Materialize the agent core + AI Board persistence (migration 0056)
 
-- **Status:** Accepted
-- **Date:** 2026-06-10
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-09 |
+| **Cross-references** | backend ADR-0036, backend ADR-0037 |
 
 ## Problem
 
@@ -40,7 +44,9 @@ updates folded in:
    orchestrator's per-turn audit into `agent_run`/`agent_message` is a separate,
    later change; the Board runtime writes `agent_run` rows from day one.
 
-## Security impact
+## Consequences
+
+### Security impact
 
 Least privilege per ADR-0042: the backend MI gets SELECT/INSERT/UPDATE (no
 DELETE — runs and transcripts are append-only), the web identity gets SELECT
@@ -49,13 +55,13 @@ get nothing. Board personas inherit the convening user's permission scope
 (`agent_run.permission_scope`, ADR-0016) and are walled off from CRM operational
 writes — their tool surface is read-only business context.
 
-## Cost impact
+### Cost impact
 
 Board deliberations are multi-persona premium-tier model calls; every run records
 `tokens` + `cost_usd` and the backend's monthly budget ceiling (ADR-0037) gates
 convening exactly as it gates the orchestrator.
 
-## Operational impact
+### Operational impact
 
 `agent_run` becomes the Board's audit/cost trail. `agent_memory` needs periodic
 compaction once used; re-embeds follow the versioned re-embed rule (ADR-0041).

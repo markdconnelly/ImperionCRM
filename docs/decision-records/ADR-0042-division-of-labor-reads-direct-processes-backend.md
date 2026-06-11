@@ -1,11 +1,13 @@
-# ADR-0042 — Division of labor: direct reads OK, every process runs in the backend
+# ADR-0042: Division of labor: direct reads OK, every process runs in the backend
 
-- **Status:** Accepted
-- **Date:** 2026-06-09
-- **Amends:** [ADR-0018 — GUI-only front end](ADR-0018-gui-only-frontend-external-functions.md)
-  (makes its boundary precise) and ADR-0028 (the backend call contract).
-- **Relates to:** backend ADR-0034/0035, pipeline ADR-0011, the
-  [unified security standard](../security/unified-security-standard.md).
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Accepted |
+| **Date** | 2026-06-09 |
+| **Amends** | [ADR-0018 — GUI-only front end](ADR-0018-gui-only-frontend-external-functions.md) (makes its boundary precise) and ADR-0028 (the backend call contract). |
+| **Relates to** | backend ADR-0034/0035, pipeline ADR-0011, the [unified security standard](../security/unified-security-standard.md). |
+| **Cross-references** | backend ADR-0034, backend ADR-0035, pipeline ADR-0011 |
 
 ## Problem
 
@@ -15,6 +17,17 @@ identity) doing both reads *and* writes, plus server actions that execute busine
 processes. Meanwhile the backend exists and is the designated home for processes. The
 boundary needed an explicit, enforceable rule — and a decision on how strict to be about
 the existing direct DB access.
+
+## Options considered
+
+1. **Reads direct, processes in backend (chosen).** Matches how the app actually
+   performs on B-tier compute; the security boundary (per-identity Postgres roles,
+   consent gate in the backend) is preserved where it matters — on actions.
+2. Full strictness now (zero DB access in the front end). Rejected — 50+ repo methods
+   would become HTTP endpoints before any new value ships, and every page render would
+   pay a backend hop.
+3. Status quo (front end keeps reads + writes + some processes). Rejected — processes in
+   the GUI duplicate the backend's consent/audit/identity controls or bypass them.
 
 ## Decision
 
@@ -54,18 +67,9 @@ flowchart LR
    consumer, and the migration tooling (`scripts/migrate.mjs`, Entra-token auth) already
    lives here. ADR-0017 unchanged.
 
-## Options considered
+## Consequences
 
-1. **Reads direct, processes in backend (chosen).** Matches how the app actually
-   performs on B-tier compute; the security boundary (per-identity Postgres roles,
-   consent gate in the backend) is preserved where it matters — on actions.
-2. Full strictness now (zero DB access in the front end). Rejected — 50+ repo methods
-   would become HTTP endpoints before any new value ships, and every page render would
-   pay a backend hop.
-3. Status quo (front end keeps reads + writes + some processes). Rejected — processes in
-   the GUI duplicate the backend's consent/audit/identity controls or bypass them.
-
-## Security / cost / ops impact
+**Security / cost / ops impact**
 
 - **Security:** the consent gate, approval gates, audit logging, and Key Vault access
   live in the backend — by routing every *process* there, the front end cannot bypass

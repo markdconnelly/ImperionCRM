@@ -1,14 +1,28 @@
-# ADR-NNNN: <title>
+# ADR-NNNN: <Title>
 
-- **Status:** Proposed | Accepted | Superseded by ADR-XXXX
-- **Date:** YYYY-MM-DD
+| Field | Value |
+|---|---|
+| **Repo** | frontend |
+| **Status** | Proposed \| Accepted \| Superseded by ADR-XXXX |
+| **Date** | YYYY-MM-DD |
+| **Cross-references** | <repo-qualified ADR refs, or "—"> |
 
 ## Problem
+
 ## Context
+
 ## Options considered
-## Tradeoffs
+
+### Tradeoffs
+
 ## Decision
-## Security impact
-## Cost impact
-## Operational impact
+
+## Consequences
+
+### Security impact
+
+### Cost impact
+
+### Operational impact
+
 ## Future considerations
