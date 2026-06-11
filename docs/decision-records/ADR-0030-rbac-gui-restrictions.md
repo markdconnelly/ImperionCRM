@@ -57,6 +57,14 @@ base (`auth.config.ts`, used by middleware) and a Node config (`auth.ts`).
 - The Entra `groups`/`roles` claim is emitted by the **app-registration manifest**
   (groupMembershipClaims, or assigned App Roles) — NOT by an OAuth scope; the scope
   is unchanged.
+- **As-built note (2026-06-11, #139/#169):** the five App Roles were never defined in
+  the manifest (its two appRoles are valueless auto-defaults), and the five groups are
+  cloud-only, so neither App-Role values nor `sam_account_name` names can be emitted.
+  The live configuration instead emits **group object-id GUIDs in the `roles` claim**
+  (`emit_as_roles`); `rolesFromClaims` therefore resolves the `roles` claim against
+  both the App-Role name table and the `ENTRA_GROUP_*` env GUID map (which the
+  operator sets on the App Service). Defining real App Roles later requires no code
+  change — name-valued `roles` claims still map first.
 
 ## Consequences
 
