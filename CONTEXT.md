@@ -70,6 +70,14 @@ _Avoid_: context dump, snapshot (that's the legacy thin input)
 A convene-time invited board persona (≤2 per session). Advisors speak in deliberation but are counsel, not votes.
 _Avoid_: board member (advisors are not members), guest
 
+**Deputy Draft**:
+The CISO Staff Analyst's security position, drafted from posture gold data *for* the human CISO. It stands only when the human CISO hasn't spoken, and is then labeled unreviewed staff analysis.
+_Avoid_: CISO position (that's the human's), AI CISO
+
+**CISO Position**:
+The human CISO's stated position in a session — convene-time field in v1, captured at the `awaiting_ciso` pause in v2. Carries veto weight on security matters in synthesis; supersedes the Deputy Draft wherever they conflict.
+_Avoid_: convener context (that's general input), override (that's post-session)
+
 **Ratify / Overrule**:
 The human CISO's post-session review verdict on a board recommendation, with written rationale. An overruled recommendation never reads as board consensus.
 _Avoid_: approve/reject (that vocabulary belongs to ADR-0033 action proposals)

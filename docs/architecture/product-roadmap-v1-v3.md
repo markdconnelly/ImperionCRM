@@ -31,9 +31,10 @@ Capability gates (all must hold):
    Easy Auth verified; secret rotation done.
 2. **Release machinery real:** PR-gating CI on all four repos (the backend's 105 tests
    currently gate nothing), release-please wired everywhere, branch rulesets verified.
-3. **Board upgrade shipped** (ADR-0054): influence personas (migration + data
-   migration), board packet composer, facilitator synthesis, advisor invitees (cap 7),
-   `board_recommendation` ratify/overrule review UI for the human CISO.
+3. **Board upgrade shipped** (ADR-0054, §4 as amended — deputy model): influence
+   personas + CISO Staff Analyst deputy (migration + data migration), board packet
+   composer, facilitator synthesis, advisor invitees (cap 7), convene-time CISO-position
+   field, `board_recommendation` ratify/overrule review UI for the human CISO.
 4. **Autonomy policy adopted** (ADR-0055): ADR merged; tier labels carried in any new
    tool/action surface from here on.
 5. **Budget set:** $250/month org ceiling configured; balanced preset default; board on
@@ -58,7 +59,10 @@ Capability gates:
    inbox; M365 mail/Teams ingestion populates the `interaction` timeline (bronze tables +
    collectors already built on-prem); LLM contact-enrichment executor fills the dossier.
 4. **Agent memory in use:** `agent_memory` read/write wired into the orchestrator loop.
-5. **Cost telemetry visible:** per-process cost rollups (spend per board session, per
+5. **Deputy flow live** (ADR-0054 §4 v2 stage): board sessions become resumable and
+   pause `awaiting_ciso` after round 2 for the human CISO to approve/amend the deputy
+   draft before synthesis.
+6. **Cost telemetry visible:** per-process cost rollups (spend per board session, per
    enriched contact, per drafted send) surfaced on the AI Agents page.
 
 ## v3.0 "Refined" — the closed loop

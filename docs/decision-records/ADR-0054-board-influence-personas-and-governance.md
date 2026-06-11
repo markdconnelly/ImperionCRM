@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema owner; runtime changes land in backend per ADR-0042) |
-| **Status** | Accepted (2026-06-10, decisions locked with Mark in the board-vision grilling session, issue #118) |
+| **Status** | Accepted (2026-06-10, decisions locked with Mark in the board-vision grilling session, issue #118; §4 amended to the deputy model the same day, issue #123) |
 | **Date** | 2026-06-10 |
 | **Cross-references** | ADR-0049 (board persistence), backend ADR-0039 (board runtime), ADR-0050 (admin-only AI pages), ADR-0055 (autonomy tiers) |
 
@@ -43,8 +43,9 @@ power the seats and reserved the CISO role for himself.
    - **CMO** — anchor: Alex Hormozi (offers, $100M Leads — feeds the demand-gen engine);
      lenses: Vaynerchuk (attention arbitrage, content volume), Carnegie (relationship-led
      sales for an MSP motion).
-   - **CISO** — stays an AI persona (see decision 4), grounded in the security-posture
-     gold data; threat-model-of-an-MSP-under-continuous-attack character retained.
+   - **CISO** — the seat belongs to the human owner (see decision 4); an AI **CISO Staff
+     Analyst** deputy drafts the security position, grounded in the security-posture gold
+     data; threat-model-of-an-MSP-under-continuous-attack character retained.
    (Rejected: even blends — voices average into generic advice; rival personas per seat —
    blows the seat cap and triples cost.)
 
@@ -56,12 +57,21 @@ power the seats and reserved the CISO role for himself.
    the board knew when it recommended. (Rejected: live tools per persona — ~5× cost and
    unpredictable latency; snapshot-only status quo — ungrounded "vibes" deliberation.)
 
-4. **The human CISO reviews after the fact, with formal overrule power.** The AI CISO
-   persona deliberates autonomously; Mark reviews each concluded recommendation and
-   ratifies or overrules it with a written rationale. An overruled recommendation must
-   never read as board consensus. (Rejected: pause-before-synthesis deputy flow — Mark
-   chose not to be a per-session bottleneck; pure human seat — loses the posture-grounded
-   security position when he isn't available.)
+4. **The human CISO holds the seat; an AI deputy drafts for him** *(amended 2026-06-10,
+   issue #123 — supersedes the original review-after model)*. The board's security voice
+   is the **CISO Staff Analyst**, a deputy persona (`seat_kind='deputy'`) that deliberates
+   in rounds 1–2 like any member but is labeled as drafting *for* the human CISO. Mark is
+   the CISO of record: synthesis is instructed that the human CISO's stated position
+   carries **veto weight on security matters** and supersedes the deputy's draft wherever
+   they conflict. Mechanically staged: **v1** — a convene-time CISO-position field
+   (`board_session.ciso_position_md`, optional; when empty the deputy's draft stands,
+   explicitly labeled as unreviewed staff analysis); **v2** — the full deputy flow:
+   sessions become resumable and pause after round 2 (`awaiting_ciso`) for Mark to
+   approve, amend, or overrule the deputy's draft before synthesis runs. The post-session
+   **ratify/overrule review** on `board_recommendation` is retained as the accountability
+   record on the final recommendation — voice before synthesis, verdict after it.
+   (Rejected: review-after only — auditor authority, not seat authority; pure human seat —
+   loses the posture-grounded draft when he isn't available.)
 
 5. **Synthesis becomes the facilitator; advisors are convene-time invitees.** The hidden
    synthesis agent takes a Lencioni-influenced facilitation character: surface
@@ -77,19 +87,23 @@ power the seats and reserved the CISO role for himself.
 - `board_recommendation`: `review_status text NOT NULL DEFAULT 'pending_review'`
   (`pending_review | ratified | overruled`), `reviewed_by` (app_user ref), `reviewed_at
   timestamptz`, `review_rationale text`.
-- `board_session`: `packet_md text` — the persisted board packet.
-- `agent`: `seat_kind text` check (`officer | advisor | facilitator`) for `module='board'`
-  rows; data migration rewrites the five officer personas' `instructions` to the influence
-  profiles, re-characterizes the synthesis agent as facilitator, and seeds the three
-  advisor personas (`is_active=true`, never convened by default).
-- Backend constant: seated-persona cap 5 → 7 (officers + ≤2 advisors).
+- `board_session`: `packet_md text` — the persisted board packet; `ciso_position_md text`
+  — the human CISO's position (convene-time in v1; captured at the pause in v2). The v2
+  `awaiting_ciso` session status ships with the v2 resumable-session migration, not 0059.
+- `agent`: `seat_kind text` check (`officer | advisor | facilitator | deputy`) for
+  `module='board'` rows; data migration rewrites the four officer personas' `instructions`
+  to the influence profiles, converts the CISO row to the CISO Staff Analyst deputy,
+  re-characterizes the synthesis agent as facilitator, and seeds the three advisor
+  personas (`is_active=true`, never convened by default).
+- Backend constant: seated-persona cap 5 → 7 (officers + deputy + ≤2 advisors).
 
 ## Security impact
 
 Less, not more, exposure: no real person's identity is simulated (public-repo and
 client-facing safe); the packet composer is read-only over data the convener can already
-see; advisors and personas remain tool-less in deliberation; review/overrule adds a human
-accountability record on top of the existing audit trail. Board pages stay admin-only
+see; advisors and personas remain tool-less in deliberation; the deputy model puts the
+human security owner's voice *inside* the deliberation record, and review/overrule adds a
+human accountability record on top of the existing audit trail. Board pages stay admin-only
 (ADR-0050). Session cost rises bounded-ly: packet pass (cheap tier) + up to 2 advisors ≈
 worst case ~15 model calls, still under the ADR-0037 budget ceiling.
 
