@@ -6,6 +6,7 @@ current state of the work, and the immediate build plan. When a decision here
 conflicts with a quick instinct, this file wins unless the human says otherwise.
 
 /handoff commits files to C:\Development\GitHub\handoff-memory\filename instead of system settings.
+when reporting information to me be extremley concise and sacrifice grammar for the sake of concision.
 
 ---
 
