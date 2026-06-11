@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { PollFrequency } from "@/components/integrations/poll-frequency";
+import { credentialCardState } from "@/lib/integrations/credential-card-state";
 import type { CompanyProvider } from "@/lib/integrations/company-providers";
 import type { ConnectionRow } from "@/types";
 
@@ -40,7 +41,9 @@ export function CompanyCredentialCard({
   refreshable?: boolean;
 }) {
   const configured = connection != null;
-  const [open, setOpen] = useState(!configured);
+  // A row with a failed/never-completed save must not hide the entry form (#176).
+  const { stored, defaultOpen, statusLabel } = credentialCardState(connection);
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-panel p-4">
@@ -51,7 +54,7 @@ export function CompanyCredentialCard({
           </div>
           <div>
             <p className="text-sm font-medium text-text">{provider.label}</p>
-            <p className="text-xs text-dim">{configured ? "Configured" : "Not configured"}</p>
+            <p className="text-xs text-dim">{statusLabel}</p>
           </div>
         </div>
         {configured && (
@@ -110,7 +113,7 @@ export function CompanyCredentialCard({
             {configured ? "Re-grant admin consent" : "Grant admin consent"}
           </button>
         </form>
-      ) : configured && !open ? (
+      ) : stored && !open ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -150,7 +153,7 @@ export function CompanyCredentialCard({
                   required={f.required}
                   autoComplete="off"
                   placeholder={
-                    f.secret && configured ? "•••••••• (stored — enter to rotate)" : f.placeholder
+                    f.secret && stored ? "•••••••• (stored — enter to rotate)" : f.placeholder
                   }
                   className="rounded-md border border-border bg-panel-2 px-2.5 py-1.5 text-sm text-text outline-none focus:border-accent"
                 />
@@ -164,9 +167,9 @@ export function CompanyCredentialCard({
               className="inline-flex items-center gap-1.5 rounded-md border border-accent bg-accent/10 px-3 py-1.5 text-sm text-text hover:bg-accent/20"
             >
               <Icon name="Save" size={14} />
-              {configured ? "Rotate credential" : "Save credential"}
+              {stored ? "Rotate credential" : "Save credential"}
             </button>
-            {configured && (
+            {stored && (
               <button
                 type="button"
                 onClick={() => setOpen(false)}
