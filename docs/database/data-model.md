@@ -947,14 +947,24 @@ Migration 0062 adds the posture silver pair: `posture_policy` (current classific
 per tenant + family + policy — the Get-ImperionPolicyDrift FULL OUTER JOIN semantics:
 `compliant | drift | ungoverned | missing`; replaced per merge) and `tenant_posture`
 (one-row-per-tenant rollup). Writers: both pipeline roles (on-prem bulk, cloud
-on-demand) — the SAME classification rules by ADR-0051 decision 2. The immutable
-`posture_snapshot(_pillar)` tables follow with the snapshot-job work.
+on-demand) — the SAME classification rules by ADR-0051 decision 2.
+
+Migration 0063 adds the immutable snapshot pair: `posture_snapshot` (per-account
+Imperion Secure Score at capture — composite, stored letter grade, Score Model
+version; triggers `scheduled | on_demand | business_review`, the last FK'd to
+`strategic_business_review` with ON DELETE SET NULL so deleting a review never
+destroys posture history) and `posture_snapshot_pillar` (one row per pillar:
+covered flag, 0–100 score — 0 when uncovered, weight, report-ready `metrics`
+jsonb). Append-only by GRANT: pipeline writers hold INSERT but no UPDATE/DELETE —
+grades and composites are never recomputed after capture (ADR-0051 decision 5).
 
 ```mermaid
 erDiagram
     ACCOUNT ||--o{ ACCOUNT_TENANT : "owns tenants"
     ACCOUNT_TENANT ||--o| TENANT_POSTURE : "rolls up"
     ACCOUNT_TENANT ||--o{ POSTURE_POLICY : "classifies"
+    ACCOUNT ||--o{ POSTURE_SNAPSHOT : "immutable score history"
+    POSTURE_SNAPSHOT ||--|{ POSTURE_SNAPSHOT_PILLAR : "per-pillar result"
 
     ACCOUNT_TENANT {
       text tenant_id PK "Microsoft tenant GUID"
@@ -984,6 +994,24 @@ erDiagram
       integer policies_missing
       integer exposures_open
       timestamptz refreshed_at
+    }
+    POSTURE_SNAPSHOT {
+      uuid id PK
+      uuid account_id FK "CASCADE"
+      timestamptz taken_at "UNIQUE with account_id"
+      text trigger "scheduled|on_demand|business_review"
+      uuid business_review_id FK "strategic_business_review, SET NULL"
+      integer score_model_version
+      numeric composite_score
+      text grade "stored at capture, never recomputed"
+    }
+    POSTURE_SNAPSHOT_PILLAR {
+      uuid snapshot_id PK "CASCADE"
+      text pillar PK "m365_secure_score|policy_compliance|network|vulnerability|phishing|darkweb"
+      boolean covered
+      numeric score "0-100; 0 when uncovered"
+      numeric weight
+      jsonb metrics "report-ready headline metrics"
     }
 ```
 
