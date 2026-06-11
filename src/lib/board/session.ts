@@ -32,6 +32,46 @@ export function sessionStatusMeta(status: string): StatusMeta {
   return (STATUS_META as Record<string, StatusMeta>)[status] ?? { label: status || "unknown", tone: "text-dim" };
 }
 
+// ── Recommendation review (board_recommendation.review_status, 0059) ───────────
+
+/** board_recommendation.review_status values (migration 0059, ADR-0054 §4). */
+export const REVIEW_STATUSES = ["pending_review", "ratified", "overruled"] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
+
+const REVIEW_META: Record<ReviewStatus, StatusMeta> = {
+  pending_review: { label: "pending CISO review", tone: "text-amber" },
+  ratified: { label: "ratified", tone: "text-green" },
+  overruled: { label: "overruled — not board consensus", tone: "text-red" },
+};
+
+/** Badge metadata for a recommendation's review status; unknown renders dim, never throws. */
+export function reviewStatusMeta(status: string): StatusMeta {
+  return (REVIEW_META as Record<string, StatusMeta>)[status] ?? { label: status || "unknown", tone: "text-dim" };
+}
+
+// ── Seat labeling (agent.seat_kind, 0059 — ADR-0054 deputy/advisor model) ──────
+
+/**
+ * The label a seat carries next to its name, mirroring how the backend names
+ * seats to each other (backend docs/agents/board.md). Deputy turns without a
+ * human CISO position are explicitly "unreviewed staff analysis" (epic #122).
+ * Null for officers/unknown kinds — they carry no extra label.
+ */
+export function seatLabel(
+  seatKind: string | null | undefined,
+  hasCisoPosition: boolean,
+): { text: string; tone: string } | null {
+  if (seatKind === "deputy") {
+    return hasCisoPosition
+      ? { text: "deputy — drafts for the human CISO", tone: "text-amber" }
+      : { text: "unreviewed staff analysis", tone: "text-amber" };
+  }
+  if (seatKind === "advisor") {
+    return { text: "advisor — counsel, not a vote", tone: "text-accent-2" };
+  }
+  return null;
+}
+
 // ── Rationale (board_recommendation.rationale jsonb) ───────────────────────────
 
 export interface BoardStance {
@@ -110,6 +150,8 @@ export interface BoardTranscriptMessage {
   agentId: string | null;
   name: string | null;
   personaRole: string | null;
+  /** agent.seat_kind (0059) — drives deputy/advisor labeling; absent on the wire tier. */
+  seatKind?: string | null;
   content: string;
   createdAt: string;
 }

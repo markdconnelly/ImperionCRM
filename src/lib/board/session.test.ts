@@ -3,6 +3,8 @@ import {
   formatDateTime,
   groupTranscript,
   parseRationale,
+  reviewStatusMeta,
+  seatLabel,
   sessionStatusMeta,
   timeAgo,
   truncate,
@@ -19,6 +21,49 @@ describe("sessionStatusMeta", () => {
   it("never throws on unknown statuses", () => {
     expect(sessionStatusMeta("weird")).toEqual({ label: "weird", tone: "text-dim" });
     expect(sessionStatusMeta("")).toEqual({ label: "unknown", tone: "text-dim" });
+  });
+});
+
+describe("reviewStatusMeta", () => {
+  it("maps every 0059 review status to a tone", () => {
+    expect(reviewStatusMeta("pending_review")).toEqual({
+      label: "pending CISO review",
+      tone: "text-amber",
+    });
+    expect(reviewStatusMeta("ratified").tone).toBe("text-green");
+    expect(reviewStatusMeta("overruled")).toEqual({
+      label: "overruled — not board consensus",
+      tone: "text-red",
+    });
+  });
+  it("never throws on unknown statuses", () => {
+    expect(reviewStatusMeta("weird")).toEqual({ label: "weird", tone: "text-dim" });
+    expect(reviewStatusMeta("")).toEqual({ label: "unknown", tone: "text-dim" });
+  });
+});
+
+describe("seatLabel", () => {
+  it("labels the deputy as drafting for the human CISO when a position was given", () => {
+    expect(seatLabel("deputy", true)).toEqual({
+      text: "deputy — drafts for the human CISO",
+      tone: "text-amber",
+    });
+  });
+  it("labels the deputy's draft as unreviewed staff analysis when no position was given", () => {
+    expect(seatLabel("deputy", false)).toEqual({
+      text: "unreviewed staff analysis",
+      tone: "text-amber",
+    });
+  });
+  it("labels advisors as counsel, not a vote (regardless of CISO position)", () => {
+    expect(seatLabel("advisor", false)?.text).toBe("advisor — counsel, not a vote");
+    expect(seatLabel("advisor", true)?.text).toBe("advisor — counsel, not a vote");
+  });
+  it("returns null for officers, unknown kinds, and missing seat_kind", () => {
+    expect(seatLabel("officer", true)).toBeNull();
+    expect(seatLabel("facilitator", true)).toBeNull();
+    expect(seatLabel(null, false)).toBeNull();
+    expect(seatLabel(undefined, false)).toBeNull();
   });
 });
 

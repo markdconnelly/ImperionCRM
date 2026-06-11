@@ -180,7 +180,27 @@ export interface BoardSessionWire {
     content: string;
     createdAt: string;
   }>;
-  recommendation: { recommendation: string; rationale: unknown; createdAt: string } | null;
+  recommendation: {
+    id: string;
+    recommendation: string;
+    rationale: unknown;
+    createdAt: string;
+    /** Human-CISO accountability record (0059): pending_review | ratified | overruled. */
+    reviewStatus: string;
+    reviewedBy: string | null;
+    reviewedAt: string | null;
+    reviewRationale: string | null;
+  } | null;
+}
+
+/** POST /board/recommendations/{id}/review response (backend docs/agents/board.md). */
+export interface BoardReviewWire {
+  id: string;
+  sessionId: string;
+  reviewStatus: "ratified" | "overruled";
+  reviewedBy: string;
+  reviewedAt: string;
+  reviewRationale: string;
 }
 
 /**
@@ -209,6 +229,21 @@ export const boardService = {
   /** One session with members + transcript + recommendation. */
   getSession: (id: string) =>
     callService<BoardSessionWire>(services.board, `/board/sessions/${encodeURIComponent(id)}`),
+
+  /**
+   * The human CISO's verdict on a recommendation (ADR-0054 §4). Rationale is
+   * REQUIRED for both verdicts; the verdict is amendable — every call appends a
+   * board.review audit row, the columns hold the latest.
+   */
+  reviewRecommendation: (
+    recommendationId: string,
+    input: { actingUserId: string; reviewStatus: "ratified" | "overruled"; rationale: string },
+  ) =>
+    callService<BoardReviewWire>(
+      services.board,
+      `/board/recommendations/${encodeURIComponent(recommendationId)}/review`,
+      { method: "POST", body: JSON.stringify(input) },
+    ),
 
   /**
    * Convene picker: active personas + the advisor bench. Advisors are
