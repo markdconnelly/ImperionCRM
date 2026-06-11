@@ -4,6 +4,24 @@ The MSP business-management app (CRM + support + delivery + security posture) fo
 
 ## Language
 
+### Versions & launch
+
+**v1 "Complete"**:
+The first release — the complete filed product, shipped AI-first. Scope rule: every feature filed by 2026-06-11 is v1. Not an MVP, not an operational core that automates later.
+_Avoid_: Operational (the old thin-v1 name), MVP, phase 1
+
+**v2 "Refined"**:
+The first major iteration: refinement driven by real usage — feedback review, earned autonomy, trend-aware board, persona editing. Never new-wave completion work.
+_Avoid_: Automated (a retired wave name; automation is v1 scope)
+
+**Go-Live**:
+The v1.0.0 cut, the employee rollout, and employees' first touch of the app — one event, not three. There is no 0.x soft launch or per-module rollout.
+_Avoid_: soft launch, pilot, beta
+
+**Agent-Quality Eval**:
+The scripted v1 acceptance gate for the AI experience: orchestrator answers across all nine gold entity types, a board session over a real packet, RAG citation spot-checks — run green plus Mark's hands-on UX sign-off.
+_Avoid_: smoke test, vibe check
+
 ### Projects & delivery
 
 **Project Type**:
