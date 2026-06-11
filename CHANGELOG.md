@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.3.0...imperion-crm-v0.4.0) (2026-06-11)
+
+
+### Features
+
+* **accounts:** company at-a-glance Imperion Secure Score ([#94](https://github.com/markdconnelly/ImperionCRM/issues/94)) ([#163](https://github.com/markdconnelly/ImperionCRM/issues/163)) ([46c24ef](https://github.com/markdconnelly/ImperionCRM/commit/46c24ef286bf59e60718276006621a0c132716b6))
+* **accounts:** per-customer security posture overview page ([#159](https://github.com/markdconnelly/ImperionCRM/issues/159)) ([#161](https://github.com/markdconnelly/ImperionCRM/issues/161)) ([1dc7d18](https://github.com/markdconnelly/ImperionCRM/commit/1dc7d1840fcefcf37c69f631cad8c7a82052266f))
+* **accounts:** Refresh posture button - account-scoped pipeline refresh ([#155](https://github.com/markdconnelly/ImperionCRM/issues/155)) ([#156](https://github.com/markdconnelly/ImperionCRM/issues/156)) ([a9552fe](https://github.com/markdconnelly/ImperionCRM/commit/a9552feb1f5e700cc504babc71e21e4ab8ab1ed0))
+* **data:** account-scoped posture read model ([#158](https://github.com/markdconnelly/ImperionCRM/issues/158)) ([#160](https://github.com/markdconnelly/ImperionCRM/issues/160)) ([ea42f23](https://github.com/markdconnelly/ImperionCRM/commit/ea42f23e86073f1b86b07d634421f53a737d154a))
+
 ## [0.3.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.2.0...imperion-crm-v0.3.0) (2026-06-11)
 
 
