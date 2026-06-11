@@ -8,7 +8,8 @@
  *
  * `RefreshSource` is the full `POST /api/refresh` contract: the provider sources the
  * Settings cards can trigger via `REFRESH_SOURCES`, plus the `merge` sweep that manual
- * edits fire directly (pipeline ADR-0012) — `merge` is not a provider and must never
+ * edits fire directly (pipeline ADR-0012) and the account-scoped `posture`
+ * re-classification (pipeline ADR-0015) — neither is a provider and neither may
  * appear in the map.
  */
 export type RefreshSource =
@@ -18,7 +19,8 @@ export type RefreshSource =
   | "darkwebid"
   | "televy"
   | "m365"
-  | "merge"; // bronze→silver merge sweep (pipeline ADR-0012) — not a provider, so never in REFRESH_SOURCES
+  | "merge" // bronze→silver merge sweep (pipeline ADR-0012) — not a provider, so never in REFRESH_SOURCES
+  | "posture"; // account-scoped posture re-classification (ADR-0051 §2, pipeline ADR-0015) — requires accountId, never in REFRESH_SOURCES
 
 export const REFRESH_SOURCES: Record<string, RefreshSource> = {
   autotask: "autotask",

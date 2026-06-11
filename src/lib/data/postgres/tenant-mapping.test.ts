@@ -43,6 +43,28 @@ describe("Tenant Mapping repository (ADR-0051 — issue #149)", () => {
     expect(sql).toContain("LEFT JOIN account");
   });
 
+  it("lists one account's mappings filtered by account_id (#155 — posture surfaces)", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          tenant_id: "11111111-aaaa-bbbb-cccc-222222222222", account_id: "acc-1",
+          account: "Contoso", display_name: null, updated_at: null,
+        },
+      ],
+    });
+    const rows = await security.listTenantMappingsForAccount("acc-1");
+    expect(rows).toEqual([
+      {
+        tenantId: "11111111-aaaa-bbbb-cccc-222222222222", accountId: "acc-1",
+        accountName: "Contoso", displayName: null, updatedAt: null,
+      },
+    ]);
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("FROM account_tenant");
+    expect(sql).toContain("WHERE t.account_id = $1::uuid");
+    expect(params).toEqual(["acc-1"]);
+  });
+
   it("upserts keyed on tenant_id (one account per tenant — repoint, never duplicate)", async () => {
     await security.upsertTenantMapping({
       tenantId: "t-1", accountId: "acc-1", displayName: null,
@@ -77,6 +99,7 @@ describe("Tenant Mapping repository (ADR-0051 — issue #149)", () => {
   it("falls back to the mock (empty lists) when no pool is configured", async () => {
     getPool.mockReturnValue(null);
     await expect(security.listTenantMappings()).resolves.toEqual([]);
+    await expect(security.listTenantMappingsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listUnmappedTenants()).resolves.toEqual([]);
     expect(query).not.toHaveBeenCalled();
   });

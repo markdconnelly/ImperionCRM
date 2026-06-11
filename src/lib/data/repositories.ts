@@ -763,6 +763,8 @@ export interface SecurityRepository {
 
   /** Tenant Mappings (tenant GUID → account), joined to the account name. */
   listTenantMappings(): Promise<TenantMapping[]>;
+  /** The Tenant Mappings owned by one account — drives the account page's posture surfaces. */
+  listTenantMappingsForAccount(accountId: string): Promise<TenantMapping[]>;
   /** Create or repoint a Tenant Mapping (tenant_id is the PK — one account per tenant). */
   upsertTenantMapping(input: { tenantId: string; accountId: string; displayName: string | null }): Promise<void>;
   deleteTenantMapping(tenantId: string): Promise<void>;

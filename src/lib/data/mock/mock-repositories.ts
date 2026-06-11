@@ -709,6 +709,9 @@ export const mockRepositories: Repositories = {
     async listTenantMappings() {
       return [];
     },
+    async listTenantMappingsForAccount() {
+      return [];
+    },
     async upsertTenantMapping() {
       throw new Error(NO_DB);
     },

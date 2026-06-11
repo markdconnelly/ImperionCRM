@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { requestMergeRefresh } from "@/lib/integrations/merge-refresh";
+import { pipelineService } from "@/lib/services";
+import { ServiceNotConfiguredError } from "@/lib/services/external-client";
 import type { AccountInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): AccountInput {
@@ -34,6 +36,29 @@ export async function updateAccountAction(formData: FormData) {
   requestMergeRefresh(); // fire-and-forget (#89)
   revalidatePath("/accounts");
   redirect("/accounts");
+}
+
+/**
+ * Re-classify this account's mapped Customer Tenants into posture silver right now
+ * (ADR-0051 §2 two-tier refresh — this is the narrow cloud tier; pipeline ADR-0015).
+ * Awaited, unlike the merge nudge: the user clicked FOR fresh posture, so the page
+ * revalidates only after the pipeline has rewritten posture_policy/tenant_posture.
+ * Degrades silently when PIPELINE_SERVICE_URL is unset (same contract as
+ * refreshNowAction); other failures are logged, never thrown at the page.
+ */
+export async function refreshPostureAction(formData: FormData) {
+  await requireCapability("crm:write");
+  const accountId = String(formData.get("accountId") ?? "");
+  if (!accountId) return;
+
+  try {
+    await pipelineService.refresh({ source: "posture", accountId });
+  } catch (err) {
+    if (!(err instanceof ServiceNotConfiguredError)) {
+      console.error(`refreshPostureAction(${accountId}) failed:`, err);
+    }
+  }
+  revalidatePath(`/accounts/${accountId}`);
 }
 
 export async function deleteAccountAction(formData: FormData) {
