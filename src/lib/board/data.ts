@@ -26,6 +26,8 @@ export interface BoardPersona {
   id: string;
   name: string;
   personaRole: string | null;
+  /** agent.seat_kind (0059) — deputy/advisor labeling; absent on picker/wire tiers. */
+  seatKind?: string | null;
 }
 
 export interface BoardPersonasState {
@@ -68,7 +70,19 @@ export interface BoardSessionDetail {
   };
   members: BoardPersona[];
   messages: BoardTranscriptMessage[];
-  recommendation: { recommendation: string; rationale: unknown; createdAt: string } | null;
+  recommendation: {
+    /** board_recommendation.id — the review endpoint's target. */
+    id: string;
+    recommendation: string;
+    rationale: unknown;
+    createdAt: string;
+    /** Human-CISO accountability record (0059): pending_review | ratified | overruled. */
+    reviewStatus: string;
+    /** Reviewer display name (DB tier) — null when unreviewed or unresolvable. */
+    reviewedByName: string | null;
+    reviewedAt: string | null;
+    reviewRationale: string | null;
+  } | null;
 }
 
 // ── Mock tier (the app runs DB-less on sample data, ADR-0007) ──────────────────
@@ -170,6 +184,11 @@ const MOCK_DETAILS: Record<string, BoardSessionDetail> = {
       },
     ],
     recommendation: {
+      id: "mock-rec-1",
+      reviewStatus: "pending_review",
+      reviewedByName: null,
+      reviewedAt: null,
+      reviewRationale: null,
       recommendation:
         "The board recommends bundling the co-managed SOC offering with a per-seat price uplift, gated on a 90-day delivery pilot.",
       rationale: {
@@ -334,8 +353,8 @@ async function detailFromDb(id: string): Promise<BoardSessionDetail | null> {
     if (!session) return null;
 
     const [members, messages, recommendations] = await Promise.all([
-      pool.query<{ agent_id: string; name: string; persona_role: string | null }>(
-        `SELECT m.agent_id, a.name, a.persona_role
+      pool.query<{ agent_id: string; name: string; persona_role: string | null; seat_kind: string | null }>(
+        `SELECT m.agent_id, a.name, a.persona_role, a.seat_kind
          FROM board_session_member m JOIN agent a ON a.id = m.agent_id
          WHERE m.session_id = $1::uuid
          ORDER BY a.created_at`,
@@ -346,18 +365,32 @@ async function detailFromDb(id: string): Promise<BoardSessionDetail | null> {
         agent_id: string | null;
         name: string | null;
         persona_role: string | null;
+        seat_kind: string | null;
         content: string;
         created_at: string;
       }>(
-        `SELECT msg.id, msg.agent_id, a.name, a.persona_role, msg.content, msg.created_at
+        `SELECT msg.id, msg.agent_id, a.name, a.persona_role, a.seat_kind, msg.content, msg.created_at
          FROM board_message msg LEFT JOIN agent a ON a.id = msg.agent_id
          WHERE msg.session_id = $1::uuid
          ORDER BY msg.created_at`,
         [id],
       ),
-      pool.query<{ recommendation: string; rationale: unknown; created_at: string }>(
-        `SELECT recommendation, rationale, created_at
-         FROM board_recommendation WHERE session_id = $1::uuid`,
+      pool.query<{
+        id: string;
+        recommendation: string;
+        rationale: unknown;
+        created_at: string;
+        review_status: string;
+        reviewed_by_name: string | null;
+        reviewed_at: string | null;
+        review_rationale: string | null;
+      }>(
+        `SELECT r.id, r.recommendation, r.rationale, r.created_at,
+                r.review_status, u.display_name AS reviewed_by_name,
+                r.reviewed_at, r.review_rationale
+         FROM board_recommendation r
+         LEFT JOIN app_user u ON u.id = r.reviewed_by
+         WHERE r.session_id = $1::uuid`,
         [id],
       ),
     ]);
@@ -378,20 +411,27 @@ async function detailFromDb(id: string): Promise<BoardSessionDetail | null> {
         id: m.agent_id,
         name: m.name,
         personaRole: m.persona_role,
+        seatKind: m.seat_kind,
       })),
       messages: messages.rows.map((m) => ({
         id: m.id,
         agentId: m.agent_id,
         name: m.name,
         personaRole: m.persona_role,
+        seatKind: m.seat_kind,
         content: m.content,
         createdAt: new Date(m.created_at).toISOString(),
       })),
       recommendation: rec
         ? {
+            id: rec.id,
             recommendation: rec.recommendation,
             rationale: rec.rationale,
             createdAt: new Date(rec.created_at).toISOString(),
+            reviewStatus: rec.review_status,
+            reviewedByName: rec.reviewed_by_name,
+            reviewedAt: rec.reviewed_at ? new Date(rec.reviewed_at).toISOString() : null,
+            reviewRationale: rec.review_rationale,
           }
         : null,
     };
@@ -423,7 +463,20 @@ export async function getBoardSessionDetail(id: string): Promise<BoardSessionDet
         personaRole: m.personaRole,
       })),
       messages: wire.messages,
-      recommendation: wire.recommendation,
+      recommendation: wire.recommendation
+        ? {
+            id: wire.recommendation.id,
+            recommendation: wire.recommendation.recommendation,
+            rationale: wire.recommendation.rationale,
+            createdAt: wire.recommendation.createdAt,
+            reviewStatus: wire.recommendation.reviewStatus,
+            // The wire carries the reviewer's app_user UUID; without a DB we
+            // can't resolve a display name (same as openedBy above).
+            reviewedByName: null,
+            reviewedAt: wire.recommendation.reviewedAt,
+            reviewRationale: wire.recommendation.reviewRationale,
+          }
+        : null,
     };
   } catch {
     return null; // backend unset/unreachable or 404 → route notFound()

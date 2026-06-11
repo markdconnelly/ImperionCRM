@@ -2,15 +2,19 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeAgentPages } from "@/lib/auth/roles";
+import { can } from "@/lib/auth/policy";
 import { Icon } from "@/components/ui/icon";
+import { ReviewRecommendationPanel } from "@/components/board/review-recommendation-panel";
 import { getBoardSessionDetail } from "@/lib/board/data";
 import {
   formatDateTime,
   groupTranscript,
   parseRationale,
+  seatLabel,
   sessionStatusMeta,
   type BoardTranscriptMessage,
 } from "@/lib/board/session";
+import { reviewRecommendationAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +24,9 @@ function roundTitle(index: number): string {
   return ROUND_TITLES[index] ?? `Round ${index + 1}`;
 }
 
-/** One persona turn in the transcript. */
-function PersonaMessage({ m }: { m: BoardTranscriptMessage }) {
+/** One persona turn in the transcript; deputy/advisor seats carry their label (0059). */
+function PersonaMessage({ m, hasCisoPosition }: { m: BoardTranscriptMessage; hasCisoPosition: boolean }) {
+  const label = seatLabel(m.seatKind, hasCisoPosition);
   return (
     <div className="rounded-lg border border-border bg-panel-2 p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -31,6 +36,11 @@ function PersonaMessage({ m }: { m: BoardTranscriptMessage }) {
           </span>
         )}
         <span className="text-sm font-medium text-text">{m.name ?? "Director"}</span>
+        {label && (
+          <span className={`rounded border border-border px-1.5 py-0.5 text-[10px] ${label.tone}`}>
+            {label.text}
+          </span>
+        )}
         <span className="ml-auto text-[11px] text-dim" title={m.createdAt}>
           {formatDateTime(m.createdAt)}
         </span>
@@ -65,7 +75,10 @@ export default async function BoardSessionPage({
   params: Promise<{ id: string }>;
 }) {
   // Admin-only (#90): transcripts carry the same sensitivity as the board page.
-  if (!canSeeAgentPages(await getSessionRoles())) redirect("/");
+  const roles = await getSessionRoles();
+  if (!canSeeAgentPages(roles)) redirect("/");
+  // The review verdict is the human-CISO act — same gate as convening (ADR-0050).
+  const canReview = can(roles, "agents:operate");
 
   const { id } = await params;
   const detail = await getBoardSessionDetail(id);
@@ -75,6 +88,8 @@ export default async function BoardSessionPage({
   const meta = sessionStatusMeta(session.status);
   const { rounds, synthesis } = groupTranscript(messages);
   const rationale = recommendation ? parseRationale(recommendation.rationale) : null;
+  const hasCisoPosition = Boolean(session.cisoPositionMd);
+  const overruled = recommendation?.reviewStatus === "overruled";
 
   return (
     <div className="flex flex-col gap-4">
@@ -106,17 +121,25 @@ export default async function BoardSessionPage({
           {members.length === 0 ? (
             <p className="text-sm text-dim">No members recorded for this session.</p>
           ) : (
-            members.map((m) => (
-              <span
-                key={m.id}
-                className="flex items-center gap-2 rounded-lg border border-border bg-panel-2 px-3 py-1.5"
-              >
-                <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-accent">
-                  {m.personaRole ?? "—"}
+            members.map((m) => {
+              const label = seatLabel(m.seatKind, hasCisoPosition);
+              return (
+                <span
+                  key={m.id}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-panel-2 px-3 py-1.5"
+                >
+                  <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-accent">
+                    {m.personaRole ?? "—"}
+                  </span>
+                  <span className="text-sm text-text">{m.name}</span>
+                  {label && (
+                    <span className={`rounded border border-border px-1.5 py-0.5 text-[10px] ${label.tone}`}>
+                      {label.text}
+                    </span>
+                  )}
                 </span>
-                <span className="text-sm text-text">{m.name}</span>
-              </span>
-            ))
+              );
+            })
           )}
         </div>
       </section>
@@ -170,15 +193,24 @@ export default async function BoardSessionPage({
 
       {/* Recommendation */}
       {recommendation && rationale && (
-        <section className="rounded-xl border border-accent/40 bg-panel p-5">
+        <section
+          className={`rounded-xl border bg-panel p-5 ${overruled ? "border-red/40" : "border-accent/40"}`}
+        >
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-2 font-display text-sm font-semibold tracking-tight">
-              <Icon name="Gavel" size={14} className="text-accent" />
+              <Icon name="Gavel" size={14} className={overruled ? "text-red" : "text-accent"} />
               Board recommendation
+              {overruled && (
+                <span className="rounded border border-red/40 px-1.5 py-0.5 text-[10px] font-normal text-red">
+                  OVERRULED — not board consensus
+                </span>
+              )}
             </h3>
             <span className="text-[11px] text-dim">{formatDateTime(recommendation.createdAt)}</span>
           </div>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">
+          <p
+            className={`whitespace-pre-wrap text-sm leading-relaxed ${overruled ? "text-dim line-through decoration-red/50" : "text-text"}`}
+          >
             {recommendation.recommendation}
           </p>
           {rationale.parseError && (
@@ -233,6 +265,17 @@ export default async function BoardSessionPage({
               )}
             </div>
           )}
+
+          {/* Human-CISO accountability record (ADR-0054 §4) */}
+          <ReviewRecommendationPanel
+            recommendationId={recommendation.id}
+            reviewStatus={recommendation.reviewStatus}
+            reviewedByName={recommendation.reviewedByName}
+            reviewedAt={recommendation.reviewedAt}
+            reviewRationale={recommendation.reviewRationale}
+            canReview={canReview}
+            reviewAction={reviewRecommendationAction}
+          />
         </section>
       )}
 
@@ -248,7 +291,7 @@ export default async function BoardSessionPage({
                 <div className="mb-2 text-[11px] uppercase tracking-wide text-dim">{roundTitle(i)}</div>
                 <div className="flex flex-col gap-2">
                   {round.map((m) => (
-                    <PersonaMessage key={m.id} m={m} />
+                    <PersonaMessage key={m.id} m={m} hasCisoPosition={hasCisoPosition} />
                   ))}
                 </div>
               </div>
