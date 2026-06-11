@@ -39,6 +39,17 @@ describe("rolesFromClaims", () => {
     ]);
   });
 
+  test("maps group GUIDs arriving in the `roles` claim (emit_as_roles) via the env group map", () => {
+    process.env.ENTRA_GROUP_SALES = "11111111-2222-3333-4444-555555555555";
+    expect(rolesFromClaims({ roles: ["11111111-2222-3333-4444-555555555555"] })).toEqual([
+      "sales",
+    ]);
+    // unmapped GUIDs in roles still fall through (here: to the interim fail-open)
+    expect(rolesFromClaims({ roles: ["99999999-0000-0000-0000-000000000000"] })).toEqual([
+      "admin",
+    ]);
+  });
+
   // INTERIM (#140): unconditional fail-open while Entra App Roles are unassigned
   // (#139). When reverting, restore the fail-closed expectations (support) and the
   // RBAC_FAIL_OPEN_ADMIN=true bootstrap test — see this file's history at 95782f2.

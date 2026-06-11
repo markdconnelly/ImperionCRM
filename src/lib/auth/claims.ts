@@ -2,9 +2,10 @@
  * Map Entra ID token claims → application roles (ADR-0030).
  *
  * Two claim shapes are supported, in priority order:
- *  1. App-Role `roles` claim (RECOMMENDED) — stable strings like
- *     "Application.ImperionCRM.Admins", mapped via APP_ROLE_CLAIM_MAP. Immune to
- *     the >200-group "groups overage" problem.
+ *  1. `roles` claim — App-Role value strings like
+ *     "Application.ImperionCRM.Admins" (APP_ROLE_CLAIM_MAP), or group object-id
+ *     GUIDs when the app registration emits groups as the role claim
+ *     (`emit_as_roles`, the live Entra config — #169), mapped via env.
  *  2. `groups` claim — raw group object-id GUIDs, mapped via env (`roleEnv`),
  *     which the operator populates with the five group GUIDs.
  *
@@ -28,17 +29,20 @@ export interface RoleClaims {
 
 export function rolesFromClaims(claims: RoleClaims | null | undefined): AppRole[] {
   const candidates: string[] = [];
+  const groupMap = roleEnv.groupMap;
 
-  // 1. App-Role strings (recommended path).
+  // 1. `roles` claim. Carries App-Role value strings when App Roles are assigned,
+  //    OR group object-id GUIDs when the app registration emits groups as the role
+  //    claim (`emit_as_roles` — the live config since 2026-06-11, #169). Check both
+  //    tables so the mapping survives either Entra configuration.
   for (const value of claims?.roles ?? []) {
-    const mapped = APP_ROLE_CLAIM_MAP[value];
+    const mapped = APP_ROLE_CLAIM_MAP[value] ?? groupMap[value];
     if (mapped) candidates.push(mapped);
   }
 
   // 2. Groups claim → role. Match each value against the operator-configured env map (group
   //    object-id GUIDs) AND the stable App-Role name table — so it resolves whether the
   //    groups claim is configured to emit GUIDs or names like "Application.ImperionCRM.Admins".
-  const groupMap = roleEnv.groupMap;
   for (const value of claims?.groups ?? []) {
     const mapped = groupMap[value] ?? APP_ROLE_CLAIM_MAP[value];
     if (mapped) candidates.push(mapped);
