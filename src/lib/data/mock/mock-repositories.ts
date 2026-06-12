@@ -365,6 +365,9 @@ export const mockRepositories: Repositories = {
     async createSavedView() {
       throw new Error(NO_DB);
     },
+    async updateSavedView() {
+      throw new Error(NO_DB);
+    },
     async deleteSavedView() {
       throw new Error(NO_DB);
     },
