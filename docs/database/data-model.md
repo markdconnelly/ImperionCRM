@@ -957,6 +957,9 @@ destroys posture history) and `posture_snapshot_pillar` (one row per pillar:
 covered flag, 0–100 score — 0 when uncovered, weight, report-ready `metrics`
 jsonb). Append-only by GRANT: pipeline writers hold INSERT but no UPDATE/DELETE —
 grades and composites are never recomputed after capture (ADR-0051 decision 5).
+Migration 0064 (#167) completes the enforcement: the web app role is SELECT-only on
+both tables (inherited INSERT/UPDATE/DELETE revoked) — snapshot creation is a
+*process* (ADR-0042) owned by the pipeline/backend roles, never the GUI.
 
 ```mermaid
 erDiagram
