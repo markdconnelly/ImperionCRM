@@ -5,34 +5,27 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
-import type { AnswerInput, AssessmentInput } from "@/lib/data/repositories";
-import type { QuestionRow } from "@/types";
-
-function str(formData: FormData, key: string): string {
-  return String(formData.get(key) ?? "").trim();
-}
-function orNull(v: string): string | null {
-  return v === "" ? null : v;
-}
+import { checkbox, hasAnswerValue, parseAnswer, str, strOr, strOrNull } from "@/lib/form-data";
+import type { AssessmentInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): AssessmentInput {
   const ratings: Record<string, string | null> = {};
   for (const d of ASSESSMENT_DIMENSIONS) {
-    ratings[d.key] = orNull(str(formData, `rating_${d.key}`));
+    ratings[d.key] = strOrNull(formData, `rating_${d.key}`);
   }
   return {
     accountId: str(formData, "accountId"),
-    opportunityId: orNull(str(formData, "opportunityId")),
+    opportunityId: strOrNull(formData, "opportunityId"),
     name: str(formData, "name"),
-    status: str(formData, "status") || "proposed",
-    feeAmount: orNull(str(formData, "feeAmount")),
-    creditToOnboarding: formData.get("creditToOnboarding") === "on",
+    status: strOr(formData, "status", "proposed"),
+    feeAmount: strOrNull(formData, "feeAmount"),
+    creditToOnboarding: checkbox(formData, "creditToOnboarding"),
     ratings,
-    topPriorities: orNull(str(formData, "topPriorities")),
-    recommendation: orNull(str(formData, "recommendation")),
-    reportUrl: orNull(str(formData, "reportUrl")),
-    notes: orNull(str(formData, "notes")),
-    kickoffAt: orNull(str(formData, "kickoffAt")),
+    topPriorities: strOrNull(formData, "topPriorities"),
+    recommendation: strOrNull(formData, "recommendation"),
+    reportUrl: strOrNull(formData, "reportUrl"),
+    notes: strOrNull(formData, "notes"),
+    kickoffAt: strOrNull(formData, "kickoffAt"),
   };
 }
 
@@ -63,53 +56,8 @@ export async function deleteAssessmentAction(formData: FormData) {
 
 // ── Non-Televy data entry: save the assessment questionnaire answers ─────────
 // The user fills in what Televy doesn't cover; agent/automation drafts already
-// land via the engagement_answer provenance flow (ADR-0027).
-
-/** Map a question's posted `q_<id>` field to a typed answer. */
-function answerFor(q: QuestionRow, formData: FormData): AnswerInput {
-  const name = `q_${q.id}`;
-  const a: AnswerInput = {
-    questionId: q.id,
-    valueText: null,
-    valueNumber: null,
-    valueBool: null,
-    valueJson: null,
-    valueDate: null,
-    answeredByContactId: null,
-  };
-  switch (q.responseType) {
-    case "number":
-    case "currency":
-      a.valueNumber = orNull(str(formData, name));
-      break;
-    case "boolean": {
-      const s = str(formData, name);
-      a.valueBool = s === "" ? null : s === "true";
-      break;
-    }
-    case "date":
-      a.valueDate = orNull(str(formData, name));
-      break;
-    case "multi_select": {
-      const all = formData.getAll(name).map(String).filter((s) => s !== "");
-      a.valueJson = all.length > 0 ? all : null;
-      break;
-    }
-    default:
-      a.valueText = orNull(str(formData, name));
-  }
-  return a;
-}
-
-function hasValue(a: AnswerInput): boolean {
-  return (
-    a.valueText != null ||
-    a.valueNumber != null ||
-    a.valueBool != null ||
-    a.valueJson != null ||
-    a.valueDate != null
-  );
-}
+// land via the engagement_answer provenance flow (ADR-0027). Field coercion
+// lives in the shared form-data grammar (#189).
 
 export async function saveAssessmentAnswersAction(formData: FormData) {
   await requireCapability("sales:write");
@@ -117,7 +65,7 @@ export async function saveAssessmentAnswersAction(formData: FormData) {
   if (!id) return;
   const { engagements } = getRepositories();
   const questions = await engagements.getQuestions("assessment");
-  const answers = questions.map((q) => answerFor(q, formData)).filter(hasValue);
+  const answers = questions.map((q) => parseAnswer(q, formData)).filter(hasAnswerValue);
   if (answers.length > 0) await engagements.saveAnswers("assessment", id, answers);
   revalidatePath(`/assessments/${id}`);
   redirect(`/assessments/${id}?saved=1`);

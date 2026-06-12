@@ -10,7 +10,9 @@ exactly two kinds of work; anything else is hosted elsewhere.
 
 - **UI** — Next.js App Router pages, React components, theme.
 - **Thin server layer** — server components, server actions, route handlers, and the
-  Entra auth gate.
+  Entra auth gate. Server actions follow guard → parse → repo call; form-field
+  coercion lives in ONE shared grammar, [`src/lib/form-data.ts`](../../src/lib/form-data.ts)
+  (#189) — new forms import it rather than re-implementing `str`/`orNull` locally.
 - **Data access** — the repository abstraction (`src/lib/data`, ADR-0007). The GUI
   reads/writes **PostgreSQL** directly through it (`src/lib/db`, managed-identity
   connection). This is allowed and expected.

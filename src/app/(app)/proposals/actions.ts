@@ -4,19 +4,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
+import { str, strOr, strOrNull } from "@/lib/form-data";
 import type { ProposalInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): ProposalInput {
-  const amountMrr = String(formData.get("amountMrr") ?? "").trim();
-  const documentUrl = String(formData.get("documentUrl") ?? "").trim();
-  const notes = String(formData.get("notes") ?? "").trim();
   return {
-    opportunityId: String(formData.get("opportunityId") ?? "").trim(),
-    title: String(formData.get("title") ?? "").trim(),
-    status: String(formData.get("status") ?? "draft"),
-    amountMrr: amountMrr === "" ? null : amountMrr,
-    documentUrl: documentUrl === "" ? null : documentUrl,
-    notes: notes === "" ? null : notes,
+    opportunityId: str(formData, "opportunityId"),
+    title: str(formData, "title"),
+    status: strOr(formData, "status", "draft"),
+    amountMrr: strOrNull(formData, "amountMrr"),
+    documentUrl: strOrNull(formData, "documentUrl"),
+    notes: strOrNull(formData, "notes"),
   };
 }
 

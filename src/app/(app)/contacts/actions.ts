@@ -8,23 +8,19 @@ import { requestMergeRefresh } from "@/lib/integrations/merge-refresh";
 import { agentService } from "@/lib/services";
 import { callServiceWithFallback } from "@/lib/services/call-guard";
 import { resolveActingUser } from "@/lib/services/acting-user";
+import { str, strOr, strOrNull } from "@/lib/form-data";
 import type { ContactInput } from "@/lib/data/repositories";
-
-function orNull(v: FormDataEntryValue | null): string | null {
-  const s = String(v ?? "").trim();
-  return s === "" ? null : s;
-}
 
 function parse(formData: FormData): ContactInput {
   return {
-    accountId: orNull(formData.get("accountId")),
-    fullName: String(formData.get("fullName") ?? "").trim(),
-    email: orNull(formData.get("email")),
-    phone: orNull(formData.get("phone")),
-    title: orNull(formData.get("title")),
-    headline: orNull(formData.get("headline")),
-    location: orNull(formData.get("location")),
-    lifecycleStatus: String(formData.get("lifecycleStatus") ?? "stranger"),
+    accountId: strOrNull(formData, "accountId"),
+    fullName: str(formData, "fullName"),
+    email: strOrNull(formData, "email"),
+    phone: strOrNull(formData, "phone"),
+    title: strOrNull(formData, "title"),
+    headline: strOrNull(formData, "headline"),
+    location: strOrNull(formData, "location"),
+    lifecycleStatus: strOr(formData, "lifecycleStatus", "stranger"),
   };
 }
 

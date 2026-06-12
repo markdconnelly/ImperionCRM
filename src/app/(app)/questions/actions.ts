@@ -4,30 +4,24 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
+import { checkbox, intOr, str, strOr, strOrNull } from "@/lib/form-data";
 import type { QuestionInput } from "@/lib/data/repositories";
 
-function str(formData: FormData, key: string): string {
-  return String(formData.get(key) ?? "").trim();
-}
-
 function parse(formData: FormData): QuestionInput {
-  const help = str(formData, "helpText");
-  const dimension = str(formData, "dimension");
   const options = str(formData, "options")
     .split("\n")
     .map((s) => s.trim())
     .filter((s) => s !== "");
-  const ordinal = Number(str(formData, "ordinal"));
   return {
     key: str(formData, "key"),
     prompt: str(formData, "prompt"),
-    helpText: help === "" ? null : help,
-    responseType: str(formData, "responseType") || "text",
+    helpText: strOrNull(formData, "helpText"),
+    responseType: strOr(formData, "responseType", "text"),
     options: options.length > 0 ? options : null,
-    dimension: dimension === "" ? null : dimension,
-    ordinal: Number.isFinite(ordinal) ? ordinal : 0,
-    required: formData.get("required") === "on",
-    active: formData.get("active") === "on",
+    dimension: strOrNull(formData, "dimension"),
+    ordinal: intOr(formData, "ordinal", 0),
+    required: checkbox(formData, "required"),
+    active: checkbox(formData, "active"),
   };
 }
 

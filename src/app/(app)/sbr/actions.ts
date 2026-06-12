@@ -7,39 +7,33 @@ import { requireCapability } from "@/lib/auth/guard";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { pipelineService, ticketsService } from "@/lib/services";
 import { isBackendNotConfigured } from "@/lib/services/call-guard";
+import { str, strList, strOr, strOrNull } from "@/lib/form-data";
 import type { SbrInput, SbrScoreInput } from "@/lib/data/repositories";
-
-function str(formData: FormData, key: string): string {
-  return String(formData.get(key) ?? "").trim();
-}
-function orNull(v: string): string | null {
-  return v === "" ? null : v;
-}
 
 function parseSbr(formData: FormData): SbrInput {
   return {
     accountId: str(formData, "accountId"),
-    contactId: orNull(str(formData, "contactId")),
-    benchmarkAssessmentId: orNull(str(formData, "benchmarkAssessmentId")),
+    contactId: strOrNull(formData, "contactId"),
+    benchmarkAssessmentId: strOrNull(formData, "benchmarkAssessmentId"),
     reviewDate: str(formData, "reviewDate"),
-    periodLabel: orNull(str(formData, "periodLabel")),
-    status: str(formData, "status") || "scheduled",
-    concerns: orNull(str(formData, "concerns")),
-    summary: orNull(str(formData, "summary")),
-    nextActions: orNull(str(formData, "nextActions")),
+    periodLabel: strOrNull(formData, "periodLabel"),
+    status: strOr(formData, "status", "scheduled"),
+    concerns: strOrNull(formData, "concerns"),
+    summary: strOrNull(formData, "summary"),
+    nextActions: strOrNull(formData, "nextActions"),
   };
 }
 
 function parseScores(formData: FormData): SbrScoreInput[] {
   return ASSESSMENT_DIMENSIONS.map((d) => ({
     dimension: d.key,
-    rating: orNull(str(formData, `score_${d.key}`)),
+    rating: strOrNull(formData, `score_${d.key}`),
     note: null,
   }));
 }
 
 function parseTicketIds(formData: FormData): string[] {
-  return formData.getAll("ticketIds").map(String).filter((s) => s !== "");
+  return strList(formData, "ticketIds");
 }
 
 /**
