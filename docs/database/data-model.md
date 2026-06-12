@@ -934,6 +934,24 @@ erDiagram
 > Bronze read via the `exposure_bronze_all` view (single-source today). Wired but gated —
 > nothing ingests until the Dark Web ID / Televy API key is configured in Settings (ADR-0040).
 
+### M365 communications bronze (migration 0065, issue #182)
+
+Three local-pipeline-envelope bronze tables (0038's contract: text flat columns,
+lossless `raw_payload` jsonb, `content_hash`, PK `(tenant_id, source, external_id)`)
+for the on-prem collectors' cross-org Imperion↔client communications — the lead-loop
+feed (v1 gate 6):
+
+| Table | Source | Collector (local pipeline) |
+| --- | --- | --- |
+| `m365_mail_messages` | `m365_email` | `Get-ImperionM365Mail` — mailbox, from/to/cc, subject, conversation_id, received/sent times |
+| `m365_teams_chats` | `m365_teams` | `Get-ImperionM365TeamsChat` — user_upn, topic, chat_type, member emails/names |
+| `m365_teams_meetings` | `m365_teams` | `Get-ImperionM365TeamsMeeting` — user_upn, organizer/attendees, start/end, join_url |
+
+Writer: `imperion-localpipeline` (SELECT/INSERT/UPDATE, idempotent upserts, never
+DELETE). Readers: the cloud pipeline (bronze→silver merge into `interaction`) and the
+backend functions (interaction-timeline ingestion). The Teams collectors' flat `user`
+property lands in `user_upn` (reserved keyword).
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.
