@@ -790,5 +790,9 @@ export const mockRepositories: Repositories = {
       // No DB → no Defender data; the badge renders nothing (total 0).
       return { open: 0, total: 0 };
     },
+    async countMfaRegistrationForAccount() {
+      // No DB → no auth-methods data; the badge renders nothing (total 0).
+      return { registered: 0, total: 0 };
+    },
   },
 };

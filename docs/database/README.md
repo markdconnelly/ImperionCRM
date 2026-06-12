@@ -64,7 +64,10 @@ and audit-logs `workflow.auto_enroll`); 0074 `ticket.queue` + index (#219, ADR-0
 update — raw Autotask queue_id as text, label lookup deferred; populated by the
 cloud pipeline's `mergeTicketSources`); 0076 `defender_incidents` + `defender_alerts`
 bronze + `defender_incident_ticket_link` (#256, ADR-0059 — Defender XDR layered with
-Autotask per incident; link PK = sync-back idempotency key).
+Autotask per incident; link PK = sync-back idempotency key); 0077 `entra_auth_methods`
+bronze (#258, ADR-0051 — per-user MFA registration state from Graph
+userRegistrationDetails; feeds the account posture card's MFA coverage badge,
+collector = local #140).
 The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`

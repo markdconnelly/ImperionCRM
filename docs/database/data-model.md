@@ -1042,6 +1042,23 @@ Writers: `imperion-localpipeline` (bronze + auto-link) and
 ADR-0042). Cloud pipeline + web read. Surfaced today as the open-incident badge on
 the account Security posture card (joined via `account_tenant`).
 
+### Entra auth methods bronze — per-user MFA registration (migration 0077, #258)
+
+`entra_auth_methods` — local-pipeline envelope, fed by the on-prem collector (local
+#140; `UserAuthenticationMethod.Read.All`). One Graph call per tenant —
+`/reports/authenticationMethods/userRegistrationDetails` — covers every user's
+`isMfaRegistered` / `isMfaCapable` / `methodsRegistered` / SSPR state /
+preferred-method fields, flattened to all-text columns (true types live in
+`raw_payload`). `external_id` = the Entra user object id, so re-collection upserts
+per user. **MFA registered** = `is_mfa_registered` case-folded `'true'` (bronze is
+all-text).
+
+Writer: `imperion-localpipeline`. Cloud pipeline, backend, and web read. Surfaced
+today as the MFA coverage badge ("X% MFA registered (of Y users)") on the account
+Security posture card, joined via `account_tenant` (ADR-0051). It is posture-pillar
+*input* only — the Imperion Secure Score composite is unchanged (model versioning is
+ADR-0051-governed; a pillar change would be a new Score Model version + ADR).
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.

@@ -125,6 +125,7 @@ import type {
   SecureScoreControl,
   CredentialExposureRow,
   DefenderIncidentCounts,
+  MfaRegistrationCounts,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -4957,6 +4958,31 @@ export const postgresRepositories: Repositories = {
         return { open: Number(rows[0]?.open ?? 0), total: Number(rows[0]?.total ?? 0) };
       } catch {
         return mockRepositories.security.countDefenderIncidentsForAccount(accountId);
+      }
+    },
+
+    async countMfaRegistrationForAccount(accountId): Promise<MfaRegistrationCounts> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.countMfaRegistrationForAccount(accountId);
+      try {
+        // Bronze is all-text (0077): is_mfa_registered holds the Graph boolean
+        // stringified, so "registered" is a case-folded 'true' match.
+        const { rows } = await pool.query<{ registered: string; total: string }>(
+          `SELECT COUNT(*) FILTER (
+                    WHERE lower(COALESCE(a.is_mfa_registered, '')) = 'true'
+                  ) AS registered,
+                  COUNT(*) AS total
+             FROM entra_auth_methods a
+             JOIN account_tenant m ON m.tenant_id = a.tenant_id
+            WHERE m.account_id = $1::uuid`,
+          [accountId],
+        );
+        return {
+          registered: Number(rows[0]?.registered ?? 0),
+          total: Number(rows[0]?.total ?? 0),
+        };
+      } catch {
+        return mockRepositories.security.countMfaRegistrationForAccount(accountId);
       }
     },
   },
