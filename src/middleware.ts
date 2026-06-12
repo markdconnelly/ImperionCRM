@@ -15,9 +15,13 @@ export const config = {
   /**
    * Run on everything except Next internals, the auth endpoints/pages, and
    * static assets. `/api/auth`, `/login`, and `/break-glass` MUST be excluded
-   * or the sign-in flow would gate (and redirect-loop) itself.
+   * or the sign-in flow would gate (and redirect-loop) itself. `/story` is the
+   * deliberately public build-story page (#248) — static marketing content
+   * under public/story, no app data; the `(?:$|/)` anchor (non-capturing —
+   * Next matchers reject capturing groups) keeps the exclusion from leaking
+   * onto other routes that merely start with "story".
    */
   matcher: [
-    "/((?!api/auth|login|break-glass|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|login|break-glass|story(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
