@@ -1,9 +1,12 @@
 import { TextInput, TextArea, Select } from "@/components/ui/form";
 
 /**
- * Consent-gated message composer (ADR-0014). Only channels with current opt-in are
- * offered; if none are, the composer is replaced by a notice. The actual provider
- * send is stubbed — submitting logs an outbound entry to the timeline.
+ * Consent-gated message composer (ADR-0014, #183). Only channels with current opt-in
+ * are offered; if none are, the composer is replaced by a notice. Submitting IS the
+ * approval (ADR-0055 T2 propose-only): the send executes through the backend's
+ * approval-gated send path — email as your own M365 mailbox, SMS via ACS — with
+ * consent re-asserted at execution. Where the backend isn't wired, it degrades to
+ * logging the entry to the timeline (the notice says which happened).
  */
 export function Compose({
   action,
@@ -36,13 +39,17 @@ export function Compose({
         <TextInput name="subject" placeholder="Subject (email)" />
       </div>
       <TextArea name="body" rows={3} placeholder="Message…" required />
-      <div>
+      <div className="flex items-center gap-3">
         <button
           type="submit"
           className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
         >
-          Send (logged to timeline)
+          Approve &amp; send
         </button>
+        <span className="text-[11px] text-dim">
+          Submitting approves the send — consent is re-checked at execution; every send
+          is logged to the timeline.
+        </span>
       </div>
     </form>
   );

@@ -39,7 +39,13 @@ export function isBackendNotConfigured(err: unknown): boolean {
 /** What a guarded call resolves to — callers branch on `ok`, never on error class. */
 export type ServiceOutcome<T> =
   | { ok: true; value: T }
-  | { ok: false; kind: ServiceFailureKind; message: string };
+  | {
+      ok: false;
+      kind: ServiceFailureKind;
+      message: string;
+      /** HTTP status when the backend answered (`rejected`), e.g. 403 consent_denied. */
+      status?: number;
+    };
 
 export interface ServiceGuardMessages {
   /** Log label for real failures, e.g. "saveAgentSettingsAction". */
@@ -69,6 +75,7 @@ export async function callServiceWithFallback<T>(
       ok: false,
       kind,
       message: kind === "not_configured" ? messages.notConfigured : messages.failed,
+      ...(err instanceof ServiceCallError ? { status: err.status } : {}),
     };
   }
 }

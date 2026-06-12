@@ -52,10 +52,19 @@ export default async function ContactDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ sent?: string; blocked?: string }>;
+  searchParams: Promise<{
+    sent?: string;
+    blocked?: string;
+    /** 'real' = delivered via the backend send path; 'logged' = stub timeline entry (#183). */
+    mode?: string;
+    /** Why a send fell back to the stub: no_address | no_app_user | no_connection | backend_unconfigured. */
+    reason?: string;
+    /** A REAL send attempt failed — nothing was sent or logged. */
+    error?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { sent, blocked } = await searchParams;
+  const { sent, blocked, mode, reason, error } = await searchParams;
   const { contacts, comms, consent } = getRepositories();
 
   const profile = await contacts.getProfile(id);
@@ -120,14 +129,32 @@ export default async function ContactDetailPage({
         </div>
       </div>
 
-      {sent && (
+      {sent && mode === "real" && (
         <div className="rounded-md border border-green/40 bg-green/10 px-4 py-2 text-sm text-green">
-          Sent via {sent} — logged to the timeline.
+          Sent via {sent} — consent re-checked at send, delivered through the backend, and
+          logged to the timeline.
+        </div>
+      )}
+      {sent && mode !== "real" && (
+        <div className="rounded-md border border-green/40 bg-green/10 px-4 py-2 text-sm text-green">
+          Logged to the timeline (not delivered
+          {reason === "no_connection" &&
+            " — connect your Microsoft 365 account under Settings → Your connections to send real email"}
+          {reason === "no_address" && ` — this contact has no ${sent === "sms" ? "phone number" : "email address"} on file`}
+          {(reason === "backend_unconfigured" || reason === "no_app_user") &&
+            " — the send backend isn't wired up in this environment"}
+          ).
         </div>
       )}
       {blocked && (
         <div className="rounded-md border border-amber/40 bg-amber/10 px-4 py-2 text-sm text-amber">
           Blocked — this contact has no current {blocked} consent. Record consent first.
+        </div>
+      )}
+      {error && (
+        <div className="rounded-md border border-red/40 bg-red/10 px-4 py-2 text-sm text-red">
+          Send failed — nothing was sent via {error} and nothing was logged. Try again in a
+          moment.
         </div>
       )}
 

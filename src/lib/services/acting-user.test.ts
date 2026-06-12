@@ -22,8 +22,12 @@ beforeEach(() => {
 });
 
 describe("resolveActingUser", () => {
-  it("resolves the signed-in employee's app_user.id", async () => {
-    await expect(resolveActingUser()).resolves.toEqual({ ok: true, id: "user-1" });
+  it("resolves the signed-in employee's app_user.id (and carries the email)", async () => {
+    await expect(resolveActingUser()).resolves.toEqual({
+      ok: true,
+      id: "user-1",
+      email: "ada@imperionllc.com",
+    });
     expect(h.resolveAppUserIdByEmail).toHaveBeenCalledWith("ada@imperionllc.com");
   });
 
