@@ -7,8 +7,8 @@ import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { isAdmin } from "@/lib/auth/roles";
 
-/** The filter keys a ticket view may persist (ADR-0046). */
-const FILTER_KEYS = ["status", "priority", "account", "days"] as const;
+/** The filter keys a ticket view may persist (ADR-0046; queue added by #219). */
+const FILTER_KEYS = ["status", "priority", "account", "queue", "days"] as const;
 
 /**
  * Save (or update, by name) the current filter set as a named view. Personal by

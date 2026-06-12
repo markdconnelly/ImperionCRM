@@ -508,6 +508,11 @@ export interface TicketFilter {
   status?: string;
   priority?: string;
   accountId?: string;
+  /**
+   * Autotask queue (#219, migration 0074) — the raw queue_id picklist value as
+   * text; label lookup is deferred polish (see the migration header).
+   */
+  queue?: string;
   /** Only tickets opened within the last N days. */
   openedWithinDays?: number;
 }
@@ -516,6 +521,8 @@ export interface TicketFilter {
 export interface TicketFilterOptions {
   statuses: string[];
   priorities: string[];
+  /** Distinct `ticket.queue` values (raw Autotask queue ids — #219). */
+  queues: string[];
 }
 
 /** A saved list view: a named filter set, personal or company-shared. */

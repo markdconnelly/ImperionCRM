@@ -2639,6 +2639,11 @@ export const postgresRepositories: Repositories = {
           params.push(filter.accountId);
           where.push(`t.account_id = $${params.length}`);
         }
+        // Queue (#219, migration 0074): raw Autotask queue_id values as text.
+        if (filter?.queue) {
+          params.push(filter.queue);
+          where.push(`t.queue = $${params.length}`);
+        }
         if (filter?.openedWithinDays && Number.isFinite(filter.openedWithinDays)) {
           params.push(Math.floor(filter.openedWithinDays));
           where.push(`t.opened_at >= now() - make_interval(days => $${params.length}::int)`);
@@ -2676,17 +2681,26 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.engagements.ticketFilterOptions();
       try {
-        const [statuses, priorities] = await Promise.all([
+        const [statuses, priorities, queues] = await Promise.all([
           pool.query<{ v: string }>(
             `SELECT DISTINCT status AS v FROM ticket WHERE status IS NOT NULL ORDER BY 1`,
           ),
           pool.query<{ v: string }>(
             `SELECT DISTINCT priority AS v FROM ticket WHERE priority IS NOT NULL ORDER BY 1`,
           ),
+          // Raw Autotask queue ids (#219). Guarded separately: until migration
+          // 0074 is applied the column does not exist, and that must degrade to
+          // "no queue select" — never break the status/priority filters.
+          pool
+            .query<{ v: string }>(
+              `SELECT DISTINCT queue AS v FROM ticket WHERE queue IS NOT NULL ORDER BY 1`,
+            )
+            .catch(() => ({ rows: [] as Array<{ v: string }> })),
         ]);
         return {
           statuses: statuses.rows.map((r) => r.v),
           priorities: priorities.rows.map((r) => r.v),
+          queues: queues.rows.map((r) => r.v),
         };
       } catch {
         return mockRepositories.engagements.ticketFilterOptions();

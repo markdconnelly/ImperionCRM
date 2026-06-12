@@ -22,6 +22,7 @@ type Params = {
   status?: string;
   priority?: string;
   account?: string;
+  queue?: string;
   days?: string;
   view?: string;
   f?: string; // present when the filter form was submitted (even with all-blank values)
@@ -30,8 +31,11 @@ type Params = {
 
 /**
  * The ticket board (ADR-0046): a filter block (status / priority / account /
- * time window) + named saved views — personal and company-shared, with one
- * per-user default that applies when the page opens without explicit filters.
+ * queue / time window) + named saved views — personal and company-shared, with
+ * one per-user default that applies when the page opens without explicit
+ * filters. The queue select (#219, migration 0074) shows raw Autotask queue
+ * ids (label lookup is deferred polish) and hides itself until queue data
+ * exists in silver.
  */
 export default async function TicketsPage({
   searchParams,
@@ -51,24 +55,40 @@ export default async function TicketsPage({
 
   // Resolve the active filter set: explicit URL params win; a ?view= applies
   // that saved view; otherwise the user's default view (if any) applies.
-  const explicit = Boolean(params.f || params.status || params.priority || params.account || params.days);
+  const explicit = Boolean(
+    params.f || params.status || params.priority || params.account || params.queue || params.days,
+  );
   const requestedView = params.view ? views.find((v) => v.id === params.view) : undefined;
   const defaultView = !explicit && !requestedView ? views.find((v) => v.isMine && v.isDefault) : undefined;
   const activeView = requestedView ?? defaultView;
 
   const raw: Record<string, string | undefined> = activeView
     ? activeView.filters
-    : { status: params.status, priority: params.priority, account: params.account, days: params.days };
+    : {
+        status: params.status,
+        priority: params.priority,
+        account: params.account,
+        queue: params.queue,
+        days: params.days,
+      };
 
   const filter: TicketFilter = {
     status: raw.status || undefined,
     priority: raw.priority || undefined,
     accountId: raw.account || undefined,
+    queue: raw.queue || undefined,
     openedWithinDays: raw.days ? Number(raw.days) || undefined : undefined,
   };
 
   const tickets = await engagements.listTickets(filter);
   const filterCount = Object.values(filter).filter((v) => v !== undefined).length;
+
+  // Keep a persisted queue selectable even if no current ticket carries it
+  // (e.g. a saved view from before the queue emptied out).
+  const queueOptions =
+    raw.queue && !options.queues.includes(raw.queue)
+      ? [...options.queues, raw.queue]
+      : options.queues;
 
   return (
     <div className="flex flex-col gap-4">
@@ -188,6 +208,11 @@ export default async function TicketsPage({
             value={raw.account}
             options={accounts.map((a) => ({ value: a.id, label: a.name }))}
           />
+          {/* Hidden until queue data lands in silver (migration 0074 + pipeline
+              merge). Raw Autotask queue ids — labels are deferred polish (#219). */}
+          {queueOptions.length > 0 && (
+            <Select label="Queue" name="queue" value={raw.queue} options={queueOptions} />
+          )}
           <Select label="Opened" name="days" value={raw.days} options={DAY_OPTIONS} />
           <button
             type="submit"
