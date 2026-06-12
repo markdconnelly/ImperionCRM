@@ -5,7 +5,13 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { indexedPairs, str, strOr, strOrNull } from "@/lib/form-data";
-import type { CampaignInput, AudienceInput, AdInput, AudienceCriterion } from "@/lib/data/repositories";
+import type {
+  CampaignInput,
+  AudienceInput,
+  AdInput,
+  AdCreativeInput,
+  AudienceCriterion,
+} from "@/lib/data/repositories";
 
 function parseCampaign(formData: FormData): CampaignInput {
   return {
@@ -66,14 +72,32 @@ export async function previewAudienceAction(formData: FormData) {
   redirect(`/campaigns/audiences/new?${params.toString()}`);
 }
 
+/**
+ * Create an ad from the structured creative builder (ADR-0053 §3, #111). The typed
+ * shape lands in `ad.creative` jsonb; the Meta push stays a backend slice — nothing
+ * leaves the building here. Gated like every campaign write (canManageCampaigns'
+ * server twin, ADR-0045).
+ */
 export async function createAdAction(formData: FormData) {
   await requireCapability("sales:write");
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) return;
+  const headline = str(formData, "headline");
+  const creative: AdCreativeInput | null = headline
+    ? {
+        headline,
+        body: strOrNull(formData, "body"),
+        imageRef: strOrNull(formData, "imageRef"),
+        cta: strOrNull(formData, "cta"),
+        landingUrl: strOrNull(formData, "landingUrl"),
+        utm: strOrNull(formData, "utm"),
+        audienceId: strOrNull(formData, "audienceId"),
+      }
+    : null;
   const input: AdInput = {
     name: str(formData, "name"),
     status: strOr(formData, "status", "draft"),
-    creative: strOrNull(formData, "creative"),
+    creative,
   };
   const { campaigns } = getRepositories();
   await campaigns.createAd(campaignId, input);

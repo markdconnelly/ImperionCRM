@@ -737,6 +737,10 @@ export interface AdRow {
   id: string;
   name: string;
   status: string;
+  /** Creative summary: the typed headline (ADR-0053 §3), or legacy free-text copy. */
+  creative: string | null;
+  /** Audience the ad targets (from the typed creative), when set. */
+  audienceName: string | null;
   spend: string;
   impressions: number;
   clicks: number;

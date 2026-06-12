@@ -29,6 +29,7 @@ to-do here.
 - **Know a contact:** open a contact → read the dossier, timeline, and consent before you call.
 - **Run a discovery call:** review the agent-gathered answers, confirm/stamp, set the verdict, route to assessment or nurture.
 - **Launch a campaign:** create a campaign, build an audience over the dossier, see who's ad-eligible, launch.
+- **Build an ad:** on a campaign, **+ Ad** opens the structured creative builder — headline, body, image ref, CTA, landing URL, UTM — with a live ad-card preview and an audience picker that shows the ad-eligible (ad_targeting opt-in) count (ADR-0053 §3 / ADR-0026; the push to Meta is a backend slice — nothing leaves the building yet).
 - **Run an event:** build a webinar (Teams link) or live event (venue) in Events, point a campaign at it, watch registrations land in the capture inbox (ADR-0053; registration/attendance flow ships with #230).
 - **Schedule a blast:** compose an email ({{merge_fields}} + preview) or SMS (segment counter) send on a campaign; schedule absolute or relative to the linked event; consent is enforced at fire time per recipient (ADR-0053 §4–§5 — nothing fires until the backend executor is live).
 - **Connect your accounts:** link your M365/LinkedIn/YouTube so your comms flow in. *(UI built; the live OAuth pull is the next phase.)*

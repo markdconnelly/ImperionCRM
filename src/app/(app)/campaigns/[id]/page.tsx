@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
-import { Field, TextInput, Select } from "@/components/ui/form";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageCampaigns } from "@/lib/auth/roles";
-import { createAdAction, cancelSendAction } from "../actions";
+import { cancelSendAction } from "../actions";
 
 export default async function CampaignDetailPage({
   params,
@@ -127,73 +126,65 @@ export default async function CampaignDetailPage({
         </div>
       </section>
 
-      <div className="rounded-lg border border-border bg-panel">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-dim">
-                <th className="px-4 py-2 font-medium">Ad</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Spend</th>
-                <th className="px-4 py-2 font-medium">Impressions</th>
-                <th className="px-4 py-2 font-medium">Clicks</th>
-                <th className="px-4 py-2 font-medium">Leads</th>
-              </tr>
-            </thead>
-            <tbody>
-              {campaign.ads.map((ad) => (
-                <tr key={ad.id} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium">{ad.name}</td>
-                  <td className="px-4 py-3 text-dim">{ad.status}</td>
-                  <td className="px-4 py-3 text-dim">{ad.spend}</td>
-                  <td className="px-4 py-3 text-dim">{ad.impressions.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-dim">{ad.clicks.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-dim">{ad.leads}</td>
+      {/* Ads (ADR-0053 §3, #111) — typed creative via the builder; metrics are polled. */}
+      <section className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-display text-base font-semibold tracking-tight">Ads</h3>
+            <p className="mt-0.5 text-sm text-dim">
+              Structured creatives. Metrics arrive from the platform poll; the Meta push is a
+              backend slice.
+            </p>
+          </div>
+          {canWrite ? (
+            <Link
+              href={`/campaigns/${campaign.id}/ads/new`}
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+            >
+              + Ad
+            </Link>
+          ) : null}
+        </div>
+        <div className="rounded-lg border border-border bg-panel">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-dim">
+                  <th className="px-4 py-2 font-medium">Ad</th>
+                  <th className="px-4 py-2 font-medium">Creative</th>
+                  <th className="px-4 py-2 font-medium">Audience</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium">Spend</th>
+                  <th className="px-4 py-2 font-medium">Impressions</th>
+                  <th className="px-4 py-2 font-medium">Clicks</th>
+                  <th className="px-4 py-2 font-medium">Leads</th>
                 </tr>
-              ))}
-              {campaign.ads.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-dim">
-                    No ads yet. Ads and their polled metrics arrive from the platform.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {campaign.ads.map((ad) => (
+                  <tr key={ad.id} className="border-t border-border">
+                    <td className="px-4 py-3 font-medium">{ad.name}</td>
+                    <td className="max-w-56 truncate px-4 py-3 text-dim">{ad.creative ?? "—"}</td>
+                    <td className="px-4 py-3 text-dim">{ad.audienceName ?? "—"}</td>
+                    <td className="px-4 py-3 text-dim">{ad.status}</td>
+                    <td className="px-4 py-3 text-dim">{ad.spend}</td>
+                    <td className="px-4 py-3 text-dim">{ad.impressions.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-dim">{ad.clicks.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-dim">{ad.leads}</td>
+                  </tr>
+                ))}
+                {campaign.ads.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-dim">
+                      No ads yet. Build one with the structured creative form.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-
-      <form
-        action={createAdAction}
-        className="flex max-w-lg flex-col gap-3 rounded-xl border border-border bg-panel p-4"
-      >
-        <input type="hidden" name="campaignId" value={campaign.id} />
-        <p className="text-xs font-medium text-dim">Add an ad</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Name">
-            <TextInput name="name" required placeholder="e.g. Carousel — what attackers see" />
-          </Field>
-          <Field label="Status">
-            <Select name="status" defaultValue="draft">
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="completed">Completed</option>
-            </Select>
-          </Field>
-        </div>
-        <Field label="Creative (copy)">
-          <TextInput name="creative" placeholder="Headline / body" />
-        </Field>
-        <div>
-          <button
-            type="submit"
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
-          >
-            Add ad
-          </button>
-        </div>
-      </form>
+      </section>
     </div>
   );
 }
