@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
+import { str, strOr, strOrNull } from "@/lib/form-data";
 import type { ProjectInput } from "@/lib/data/repositories";
 
 /**
@@ -27,19 +28,15 @@ function revalidateProjectSurfaces() {
 }
 
 function parse(formData: FormData): ProjectInput {
-  const opportunityId = String(formData.get("opportunityId") ?? "").trim();
-  const ownerUserId = String(formData.get("ownerUserId") ?? "").trim();
-  const targetLiveDate = String(formData.get("targetLiveDate") ?? "").trim();
-  const notes = String(formData.get("notes") ?? "").trim();
   return {
-    accountId: String(formData.get("accountId") ?? "").trim(),
-    opportunityId: opportunityId === "" ? null : opportunityId,
-    name: String(formData.get("name") ?? "").trim(),
-    projectTypeId: String(formData.get("projectTypeId") ?? "").trim(),
-    ownerUserId: ownerUserId === "" ? null : ownerUserId,
-    status: String(formData.get("status") ?? "not_started"),
-    targetLiveDate: targetLiveDate === "" ? null : targetLiveDate,
-    notes: notes === "" ? null : notes,
+    accountId: str(formData, "accountId"),
+    opportunityId: strOrNull(formData, "opportunityId"),
+    name: str(formData, "name"),
+    projectTypeId: str(formData, "projectTypeId"),
+    ownerUserId: strOrNull(formData, "ownerUserId"),
+    status: strOr(formData, "status", "not_started"),
+    targetLiveDate: strOrNull(formData, "targetLiveDate"),
+    notes: strOrNull(formData, "notes"),
   };
 }
 

@@ -7,15 +7,15 @@ import { requireCapability } from "@/lib/auth/guard";
 import { requestMergeRefresh } from "@/lib/integrations/merge-refresh";
 import { pipelineService } from "@/lib/services";
 import { isBackendNotConfigured } from "@/lib/services/call-guard";
+import { str, strOr, strOrNull } from "@/lib/form-data";
 import type { AccountInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): AccountInput {
-  const relationship = String(formData.get("relationship") ?? "").trim();
   return {
-    name: String(formData.get("name") ?? "").trim(),
-    relationship: relationship === "" ? null : relationship,
-    lifecycleStage: String(formData.get("lifecycleStage") ?? "prospect"),
-    isActive: String(formData.get("isActive") ?? "true") === "true",
+    name: str(formData, "name"),
+    relationship: strOrNull(formData, "relationship"),
+    lifecycleStage: strOr(formData, "lifecycleStage", "prospect"),
+    isActive: strOr(formData, "isActive", "true") === "true",
   };
 }
 

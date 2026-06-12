@@ -5,21 +5,18 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { ticketsService } from "@/lib/services";
+import { str, strOr, strOrNull } from "@/lib/form-data";
 import type { TaskInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): TaskInput {
-  const accountId = String(formData.get("accountId") ?? "").trim();
-  const detail = String(formData.get("detail") ?? "").trim();
-  const dueAt = String(formData.get("dueAt") ?? "").trim();
-  const projectId = String(formData.get("projectId") ?? "").trim();
   return {
-    accountId: accountId === "" ? null : accountId,
-    title: String(formData.get("title") ?? "").trim(),
-    detail: detail === "" ? null : detail,
-    status: String(formData.get("status") ?? "open"),
-    category: String(formData.get("category") ?? "general"),
-    dueAt: dueAt === "" ? null : dueAt,
-    projectId: projectId === "" ? null : projectId,
+    accountId: strOrNull(formData, "accountId"),
+    title: str(formData, "title"),
+    detail: strOrNull(formData, "detail"),
+    status: strOr(formData, "status", "open"),
+    category: strOr(formData, "category", "general"),
+    dueAt: strOrNull(formData, "dueAt"),
+    projectId: strOrNull(formData, "projectId"),
   };
 }
 
