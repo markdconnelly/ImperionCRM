@@ -229,8 +229,8 @@
   <div class="hero-stats reveal in d3">
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
-    <div class="hs"><div class="n" id="hero-commits">300+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="26"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n" id="hero-commits">590+</div><div class="l">commits</div></div>
+    <div class="hs"><div class="n"><span data-count="74"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -276,28 +276,28 @@
     <p class="say reveal d1">A deliberate division of labor: <b>front end = GUI · backend = processes · cloud pipeline = live data · on-prem = heavy lifting.</b></p>
     <div class="repos reveal d2">
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live</span></div>
+        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.7.0</span></div>
         <div class="role">Front end · the GUI</div>
         <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 68 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 256 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-scaf">Scaffolded</span></div>
+        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.4.0</span></div>
         <div class="role">Backend · every process</div>
-        <p>Azure Functions, private to the front end. OAuth, sends, semantic search, and the orchestrator agent + sub-agents.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 4 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
+        <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the AI Board of Directors, OAuth token custody, consent-gated sends, and per-process cost metering.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 85 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Pipeline" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-built">Deployed</span></div>
+        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.4.0</span></div>
         <div class="role">Cloud · live data</div>
-        <p>Azure Functions for inbound webhooks, the fail-closed GDAP health sweep, and the bronze→silver merge.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 64 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
+        <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, a source-schema registry that fails loudly on drift, and the bronze→silver merge.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 75 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-dev">In dev</span></div>
+        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-built">Built · v0.5.0</span></div>
         <div class="role">On-prem · heavy lifting</div>
-        <p>PowerShell 7 scheduled tasks on a home server. Bulk polling, the medallion transforms, and all vectorization.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 176 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
+        <p>PowerShell 7 scheduled tasks on a home server. Collectors for ten+ sources, the medallion transforms, and all vectorization — 386 tests green, awaiting server bringup.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 181 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
       </a>
     </div>
     <p class="repos-note reveal d2">Each repo reads and writes the same Postgres — but only the front end owns migrations.</p>
@@ -353,7 +353,7 @@
     <div class="secgrid reveal d2">
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><b>Entra-only identity</b><span>Certificate client auth; managed-identity DB access with no stored passwords.</span></div></div>
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0 1 1l5-5L21 6V2z"/></svg></div><div><b>Secrets in Key Vault</b><span>Per-user OAuth tokens are referenced from Key Vault — never written to the database.</span></div></div>
-      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div><b>GDAP, read-only</b><span>Per-customer delegated access — least-privileged, time-bound, and it fails closed on expiry.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div><b>Per-client app, read-only</b><span>Each client tenant consents a least-privileged read-only Graph app (ADR-0018); access still fails closed.</span></div></div>
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><b>Consent ledger</b><span>Append-only lawful-basis tracking; outbound is blocked unless consent is current (TCPA / CAN-SPAM / GDPR).</span></div></div>
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div><b>Golden-state + drift</b><span>Conditional Access, Intune, Defender, and Secure Score tracked against an approved baseline.</span></div></div>
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><b>Human-gated grants</b><span>Widening any privilege or promoting a baseline is a deliberate, human-approved security event.</span></div></div>
@@ -387,25 +387,25 @@
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live</span></div>
-        <p>Running on Azure with Entra SSO. 26 migrations applied; dashboards, pipeline, proposals, onboarding, assessments, discovery, SBRs, contact-360 and demand-gen all built as real screens over a typed data layer.</p>
+        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.7.0</span></div>
+        <p>Running on Azure with Entra SSO. 74 migrations applied; the CRM core plus campaigns, events, meetings, workflows, posture dashboards, the AI Agents page, and the Board of Directors — all real screens over a typed data layer.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-built">Deployed</span></div>
-        <p>Webhook receivers, the daily fail-closed GDAP sweep, the 5-minute bronze→silver merge, and on-demand refresh are live in Azure Functions.</p>
+        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.4.0</span></div>
+        <p>The orchestrator and its specialist sub-agents (Autotask, IT Glue, CRM, M365, documentation, advisors), the board runtime with resumable deputy sessions, M365 mail/calendar ingestion, Autotask ticket creation, lead capture, contact enrichment, and per-process cost metering.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-dev">In dev</span></div>
-        <p>The most-built repo. Connect + get layers and security-posture sync are done and tested across six sources; the bronze writers and scheduled tasks are next.</p>
+        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.4.0</span></div>
+        <p>Autotask ticket webhooks are live in production. Per-tenant Graph subscription upkeep (per-client app model, ADR-0018), a source-schema registry that fails loudly on drift, the 5-minute bronze→silver merge, and on-demand posture snapshots.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-scaf">Scaffolded</span></div>
-        <p>Functions host and the shared layer (DB, Key Vault, consent gate, model router) are running and aligned to the schema; the heavy lifting is the next phase.</p>
+        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-built">Built · v0.5.0</span></div>
+        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, and Plaud; the knowledge-composer spine; all vectorization. 386 tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
       </div>
     </div>
     <div class="deferred reveal d2">
-      <b>Deliberately deferred</b>
-      <span>Live OAuth pulls, real provider sends, runtime agent execution, and live vector search are stubbed on purpose — a "send" logs to the timeline instead of failing the page — until each source is wired in the next phase.</span>
+      <b>Switches not yet flipped</b>
+      <span>The remaining gaps are activation gates, not missing code: M365 ingestion and Graph subscriptions wait on activation settings, Teams reads on Microsoft's protected-API approval, real email sends on DNS verification of the sending domain, and the on-prem collectors on the server bringup. Every gated path says so honestly — nothing fakes success.</span>
     </div>
   </article>
 
