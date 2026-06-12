@@ -84,6 +84,7 @@ import type {
   EnrichmentFactRow,
   EnrollmentRow,
   EventDetail,
+  EventRegistrationRow,
   EventRow,
   ExternalIdentityRow,
   Health,
@@ -3818,6 +3819,57 @@ export const postgresRepositories: Repositories = {
         ],
       );
     },
+
+    async listRegistrations(eventId: string): Promise<EventRegistrationRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.events.listRegistrations(eventId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          contact: string | null;
+          contact_id: string | null;
+          status: string;
+          source: string | null;
+          registered_at: Date | null;
+          checked_in_at: Date | null;
+        }>(
+          `SELECT r.id, c.full_name AS contact, r.contact_id, r.status, r.source,
+                  r.registered_at, r.checked_in_at
+           FROM event_registration r
+           LEFT JOIN contact c ON c.id = r.contact_id
+           WHERE r.event_id = $1
+           ORDER BY r.registered_at DESC`,
+          [eventId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          contact: r.contact,
+          contactId: r.contact_id,
+          status: r.status,
+          source: r.source,
+          registeredAt: fmtDateTime(r.registered_at),
+          checkedInAt: fmtDateTime(r.checked_in_at),
+        }));
+      } catch {
+        return mockRepositories.events.listRegistrations(eventId);
+      }
+    },
+
+    async setRegistrationStatus(
+      registrationId: string,
+      status: string,
+      checkIn: boolean,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.events.setRegistrationStatus(registrationId, status, checkIn);
+      await pool.query(
+        `UPDATE event_registration
+         SET status = $2,
+             checked_in_at = CASE WHEN $3 THEN COALESCE(checked_in_at, now()) ELSE checked_in_at END
+         WHERE id = $1`,
+        [registrationId, status, checkIn],
+      );
+    },
   },
 
   campaigns: {
@@ -4142,7 +4194,26 @@ export const postgresRepositories: Repositories = {
          RETURNING contact_id`,
         [eventId],
       );
-      return rows[0]?.contact_id ?? "";
+      const contactId = rows[0]?.contact_id ?? "";
+      // Event-registration hooks (ADR-0053 §2): resolving a capture from an
+      // event_registration hook links the signup — one event_registration row per
+      // (event, contact), idempotent on re-resolution via the partial unique index.
+      // The hook's config carries the event id; no-op when the capture has no
+      // contact yet or the hook isn't an event hook.
+      if (contactId) {
+        await pool.query(
+          `INSERT INTO event_registration (event_id, contact_id, capture_event_id, source)
+           SELECT (h.config->>'eventId')::uuid, e.contact_id, e.id, h.kind::text
+           FROM lead_capture_event e
+           JOIN lead_hook h ON h.id = e.hook_id
+           WHERE e.id = $1
+             AND h.kind = 'event_registration'
+             AND h.config ? 'eventId'
+           ON CONFLICT (event_id, contact_id) WHERE contact_id IS NOT NULL DO NOTHING`,
+          [eventId],
+        );
+      }
+      return contactId;
     },
   },
 

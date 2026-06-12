@@ -37,6 +37,7 @@ import type {
   EnrichmentFactRow,
   EnrollmentRow,
   EventDetail,
+  EventRegistrationRow,
   EventRow,
   ExternalIdentityRow,
   InteractionRow,
@@ -746,6 +747,10 @@ export interface EventsRepository {
   getEvent(id: string): Promise<EventDetail | null>;
   createEvent(input: EventInput): Promise<string>;
   updateEvent(id: string, input: EventInput): Promise<void>;
+  /** Signups for the record page (derived funnel comes from these rows). */
+  listRegistrations(eventId: string): Promise<EventRegistrationRow[]>;
+  /** Record attendance post-event (attended | no_show) or check a walk-in in. */
+  setRegistrationStatus(registrationId: string, status: string, checkIn: boolean): Promise<void>;
 }
 
 // ── Demand generation (ADR-0012/0026) ────────────────────────────────────────

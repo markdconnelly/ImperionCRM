@@ -1,9 +1,13 @@
 import { Field, TextInput, Select, FormActions } from "@/components/ui/form";
+import type { EventRow } from "@/types";
 
 export function HookForm({
   action,
+  events,
 }: {
   action: (formData: FormData) => void | Promise<void>;
+  /** Open events for the event_registration kind (ADR-0053 §2). */
+  events?: EventRow[];
 }) {
   return (
     <form
@@ -24,6 +28,7 @@ export function HookForm({
             <option value="inbound_email">Inbound email</option>
             <option value="qr">QR</option>
             <option value="manual">Manual</option>
+            <option value="event_registration">Event registration</option>
           </Select>
         </Field>
         <Field label="Active">
@@ -33,6 +38,19 @@ export function HookForm({
           </Select>
         </Field>
       </div>
+
+      {events && events.length > 0 ? (
+        <Field label="Event (for the event-registration kind)">
+          <Select name="eventId" defaultValue="">
+            <option value="">— none —</option>
+            {events.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
 
       <Field label="Config (note / path)">
         <TextInput name="config" placeholder="e.g. /contact or ad set id" />

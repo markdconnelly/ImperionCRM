@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageCampaigns } from "@/lib/auth/roles";
+import { setRegistrationStatusAction } from "../actions";
 
 function Fact({ label, value }: { label: string; value: string | number | null }) {
   return (
@@ -14,7 +15,7 @@ function Fact({ label, value }: { label: string; value: string | number | null }
   );
 }
 
-/** Event record (ADR-0053): facts + derived funnel. Registrations/attendance UI lands with #230. */
+/** Event record (ADR-0053): facts, derived funnel, registrations + attendance (#230). */
 export default async function EventDetailPage({
   params,
 }: {
@@ -22,7 +23,11 @@ export default async function EventDetailPage({
 }) {
   const { id } = await params;
   const { events } = getRepositories();
-  const [roles, event] = await Promise.all([getSessionRoles(), events.getEvent(id)]);
+  const [roles, event, registrations] = await Promise.all([
+    getSessionRoles(),
+    events.getEvent(id),
+    events.listRegistrations(id),
+  ]);
   if (!event) notFound();
   const canWrite = canManageCampaigns(roles);
   const isWebinar = event.kind === "webinar";
@@ -63,6 +68,81 @@ export default async function EventDetailPage({
           {event.description}
         </div>
       ) : null}
+
+      {/* Registrations + attendance (ADR-0053 §2, #230). */}
+      <section className="flex flex-col gap-2">
+        <h3 className="font-display text-base font-semibold tracking-tight">Registrations</h3>
+        <div className="overflow-hidden rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-panel-2 text-left text-xs text-dim">
+              <tr>
+                <th className="px-3 py-2 font-medium">Contact</th>
+                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2 font-medium">Source</th>
+                <th className="px-3 py-2 font-medium">Registered</th>
+                <th className="px-3 py-2 font-medium">Checked in</th>
+                {canWrite ? <th className="px-3 py-2 text-right font-medium">Attendance</th> : null}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border bg-panel">
+              {registrations.length === 0 ? (
+                <tr>
+                  <td colSpan={canWrite ? 6 : 5} className="px-3 py-5 text-center text-dim">
+                    No registrations yet — signups arrive via the event-registration capture hook.
+                  </td>
+                </tr>
+              ) : (
+                registrations.map((r) => (
+                  <tr key={r.id} className="hover:bg-panel-2/60">
+                    <td className="px-3 py-2">
+                      {r.contactId ? (
+                        <Link href={`/contacts/${r.contactId}`} className="text-text hover:text-accent">
+                          {r.contact ?? "Contact"}
+                        </Link>
+                      ) : (
+                        <span className="text-dim">Unresolved</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-dim">{r.status}</td>
+                    <td className="px-3 py-2 text-dim">{r.source ?? "—"}</td>
+                    <td className="px-3 py-2 text-dim">{r.registeredAt ?? "—"}</td>
+                    <td className="px-3 py-2 text-dim">{r.checkedInAt ?? "—"}</td>
+                    {canWrite ? (
+                      <td className="px-3 py-2">
+                        <div className="flex justify-end gap-1.5">
+                          {(
+                            [
+                              ["attended", "Attended", "1"],
+                              ["no_show", "No-show", ""],
+                            ] as const
+                          ).map(([status, label, checkIn]) => (
+                            <form key={status} action={setRegistrationStatusAction}>
+                              <input type="hidden" name="eventId" value={event.id} />
+                              <input type="hidden" name="registrationId" value={r.id} />
+                              <input type="hidden" name="status" value={status} />
+                              <input type="hidden" name="checkIn" value={checkIn} />
+                              <button
+                                type="submit"
+                                className={`rounded border px-2 py-0.5 text-xs ${
+                                  r.status === status
+                                    ? "border-accent text-accent"
+                                    : "border-border text-dim hover:text-text"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            </form>
+                          ))}
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <div className="rounded-xl border border-border bg-panel-2 p-4 text-xs text-dim">
         Registration page: <span className="text-text">{event.registrationHeadline ?? event.name}</span>

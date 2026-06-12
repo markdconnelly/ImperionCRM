@@ -576,6 +576,12 @@ export const mockRepositories: Repositories = {
     async updateEvent() {
       throw new Error(NO_DB);
     },
+    async listRegistrations() {
+      return [];
+    },
+    async setRegistrationStatus() {
+      throw new Error(NO_DB);
+    },
   },
   campaigns: {
     async listCampaigns() {
