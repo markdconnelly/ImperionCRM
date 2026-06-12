@@ -43,6 +43,40 @@ export async function createSavedViewAction(formData: FormData) {
   redirect("/tickets?saved=1");
 }
 
+/**
+ * Rename an existing view (#92). Owner-only — the repository write enforces
+ * ownership in the UPDATE's WHERE clause; a non-owner submission is a no-op.
+ */
+export async function renameSavedViewAction(formData: FormData) {
+  await requireCapability("tickets:write");
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!id || !name || !email) redirect("/tickets");
+  const { engagements } = getRepositories();
+  await engagements.updateSavedView(id, { name }, email);
+  revalidatePath("/tickets");
+  redirect("/tickets?saved=1");
+}
+
+/**
+ * Make an existing view my default, or clear it (#92). Owner-only (same
+ * repository-level enforcement); setting clears the previous default first.
+ */
+export async function setDefaultViewAction(formData: FormData) {
+  await requireCapability("tickets:write");
+  const id = String(formData.get("id") ?? "");
+  const makeDefault = formData.get("makeDefault") === "1";
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!id || !email) redirect("/tickets");
+  const { engagements } = getRepositories();
+  await engagements.updateSavedView(id, { isDefault: makeDefault }, email);
+  revalidatePath("/tickets");
+  redirect("/tickets");
+}
+
 /** Owners delete their own views; admins may also remove shared ones. */
 export async function deleteSavedViewAction(formData: FormData) {
   const roles = await requireCapability("tickets:write");

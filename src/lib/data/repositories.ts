@@ -470,6 +470,16 @@ export interface EngagementsRepository {
   listSavedViews(entityType: string, viewerEmail: string | null): Promise<SavedViewRow[]>;
   /** Upserts by (owner, entity, name); making it default clears the previous default. */
   createSavedView(input: SavedViewInput, ownerEmail: string): Promise<void>;
+  /**
+   * Rename and/or (un)set-default an EXISTING view (#92). Owner-only — enforced in
+   * the write itself, never by trusting the caller. Setting default clears the
+   * owner's previous default for the entity type first.
+   */
+  updateSavedView(
+    id: string,
+    patch: { name?: string; isDefault?: boolean },
+    ownerEmail: string,
+  ): Promise<void>;
   /** Owners delete their own views; admins may delete any (shared cleanup). */
   deleteSavedView(id: string, ownerEmail: string | null, asAdmin: boolean): Promise<void>;
 

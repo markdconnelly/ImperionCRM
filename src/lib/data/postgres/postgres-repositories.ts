@@ -2724,6 +2724,38 @@ export const postgresRepositories: Repositories = {
       );
     },
 
+    async updateSavedView(
+      id: string,
+      patch: { name?: string; isDefault?: boolean },
+      ownerEmail: string,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.updateSavedView(id, patch, ownerEmail);
+      if (patch.isDefault) {
+        // One default per (owner, entity): clear the owner's previous default for
+        // this view's entity type first (scoped by ownership, like the write below).
+        await pool.query(
+          `UPDATE saved_view SET is_default = false, updated_at = now()
+           WHERE owner_user_id =
+                 (SELECT id FROM app_user WHERE email = $2 ORDER BY updated_at DESC LIMIT 1)
+             AND entity_type = (SELECT entity_type FROM saved_view WHERE id = $1)
+             AND is_default`,
+          [id, ownerEmail],
+        );
+      }
+      // Owner-only: the WHERE clause is the enforcement — a non-owner id updates 0 rows.
+      await pool.query(
+        `UPDATE saved_view
+         SET name = COALESCE($3, name),
+             is_default = COALESCE($4, is_default),
+             updated_at = now()
+         WHERE id = $1
+           AND owner_user_id =
+               (SELECT id FROM app_user WHERE email = $2 ORDER BY updated_at DESC LIMIT 1)`,
+        [id, ownerEmail, patch.name ?? null, patch.isDefault ?? null],
+      );
+    },
+
     async deleteSavedView(id: string, ownerEmail: string | null, asAdmin: boolean): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.engagements.deleteSavedView(id, ownerEmail, asAdmin);

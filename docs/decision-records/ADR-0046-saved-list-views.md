@@ -63,6 +63,13 @@ want the same capability.
   admins may delete any.
 - Mock repo degrades to empty lists, so the page is safe before the migration
   is applied.
+- **Amended for #92 (2026-06-11):** `updateSavedView(id, {name?, isDefault?},
+  ownerEmail)` completes the lifecycle — rename an existing view and make/clear
+  it as my default without re-creating it. Ownership is enforced in the UPDATE's
+  WHERE clause (non-owners update 0 rows); setting default clears the owner's
+  previous default first. UI: a per-chip manage menu (`<details>`, no client JS)
+  on views you own — rename / make-or-clear default / delete. Visibility and
+  ownership rules are covered by `saved-views.test.ts`.
 
 ## Consequences
 

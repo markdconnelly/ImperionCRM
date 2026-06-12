@@ -4,7 +4,12 @@ import { Icon } from "@/components/ui/icon";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import type { TicketFilter } from "@/lib/data/repositories";
-import { createSavedViewAction, deleteSavedViewAction } from "./actions";
+import {
+  createSavedViewAction,
+  deleteSavedViewAction,
+  renameSavedViewAction,
+  setDefaultViewAction,
+} from "./actions";
 
 const DAY_OPTIONS = [
   { value: "7", label: "Last 7 days" },
@@ -93,7 +98,7 @@ export default async function TicketsPage({
           {views.map((v) => (
             <span
               key={v.id}
-              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${
+              className={`relative flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${
                 activeView?.id === v.id
                   ? "border-accent text-accent"
                   : "border-border text-dim"
@@ -109,12 +114,53 @@ export default async function TicketsPage({
                 </span>
               )}
               {v.isMine && (
-                <form action={deleteSavedViewAction} className="flex">
-                  <input type="hidden" name="id" value={v.id} />
-                  <button type="submit" aria-label={`Delete view ${v.name}`} className="hover:text-red">
-                    <Icon name="X" size={11} />
-                  </button>
-                </form>
+                // Manage menu for views I own (#92): rename, (un)set default, delete.
+                // <details> popover — server-rendered, no client JS.
+                <details className="group">
+                  <summary
+                    aria-label={`Manage view ${v.name}`}
+                    className="flex cursor-pointer list-none items-center hover:text-text [&::-webkit-details-marker]:hidden"
+                  >
+                    <Icon name="MoreHorizontal" size={12} />
+                  </summary>
+                  <div className="absolute left-0 top-full z-10 mt-1 flex w-56 flex-col gap-2 rounded-md border border-border bg-panel-2 p-2 shadow-lg">
+                    <form action={renameSavedViewAction} className="flex items-center gap-1.5">
+                      <input type="hidden" name="id" value={v.id} />
+                      <input
+                        type="text"
+                        name="name"
+                        required
+                        defaultValue={v.name}
+                        aria-label={`Rename view ${v.name}`}
+                        className="w-full min-w-0 rounded border border-border bg-panel px-2 py-1 text-xs text-text"
+                      />
+                      <button type="submit" className="rounded border border-border px-1.5 py-1 text-dim hover:text-text">
+                        Rename
+                      </button>
+                    </form>
+                    <div className="flex items-center justify-between gap-1.5">
+                      <form action={setDefaultViewAction} className="flex">
+                        <input type="hidden" name="id" value={v.id} />
+                        <input type="hidden" name="makeDefault" value={v.isDefault ? "0" : "1"} />
+                        <button type="submit" className="flex items-center gap-1 rounded border border-border px-1.5 py-1 text-dim hover:text-text">
+                          <Icon name="Star" size={11} />
+                          {v.isDefault ? "Clear default" : "Make default"}
+                        </button>
+                      </form>
+                      <form action={deleteSavedViewAction} className="flex">
+                        <input type="hidden" name="id" value={v.id} />
+                        <button
+                          type="submit"
+                          aria-label={`Delete view ${v.name}`}
+                          className="flex items-center gap-1 rounded border border-border px-1.5 py-1 text-dim hover:text-red"
+                        >
+                          <Icon name="X" size={11} />
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </details>
               )}
             </span>
           ))}
