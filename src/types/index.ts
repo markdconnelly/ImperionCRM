@@ -703,6 +703,9 @@ export interface EventDetail {
   location: string | null; // venue (live_event)
   registrationHeadline: string | null; // typed registration_page jsonb
   registrationBlurb: string | null;
+  /** Workflow registrants auto-enroll into on resolution (ADR-0053 §4, #112). */
+  workflowId: string | null;
+  workflowName: string | null;
   registered: number;
   attended: number;
   noShow: number;
@@ -760,6 +763,8 @@ export interface CampaignDetail {
   /** Linked event the campaign promotes (ADR-0053 §1) — enables event-relative sends. */
   eventId: string | null;
   eventName: string | null;
+  /** Workflow campaign-attributed responders auto-enroll into (ADR-0053 §4, #112). */
+  workflowName: string | null;
   ads: AdRow[];
 }
 

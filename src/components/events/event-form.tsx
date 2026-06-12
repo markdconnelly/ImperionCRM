@@ -1,5 +1,5 @@
 import { Field, TextInput, TextArea, Select, FormActions } from "@/components/ui/form";
-import type { EventDetail } from "@/types";
+import type { EventDetail, WorkflowRow } from "@/types";
 
 /**
  * The webinar / live-event builder (ADR-0053 §3): one structured form whose
@@ -11,10 +11,13 @@ export function EventForm({
   action,
   kind,
   event,
+  workflows,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   kind: "webinar" | "live_event";
   event?: EventDetail | null;
+  /** Workflows registrants auto-enroll into on resolution (ADR-0053 §4, #112). */
+  workflows?: WorkflowRow[];
 }) {
   const isWebinar = kind === "webinar";
   return (
@@ -96,6 +99,19 @@ export function EventForm({
             </Field>
           </div>
         </div>
+
+        {workflows && workflows.length > 0 ? (
+          <Field label="Auto-enroll registrants into workflow (optional)">
+            <Select name="workflowId" defaultValue={event?.workflowId ?? ""}>
+              <option value="">— none —</option>
+              {workflows.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
 
         <FormActions cancelHref="/events" />
       </form>

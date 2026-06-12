@@ -61,6 +61,9 @@ export default async function EventDetailPage({
         <Fact label="Registered" value={event.registered} />
         <Fact label="Attended" value={event.attended} />
         <Fact label="No-shows" value={event.noShow} />
+        {event.workflowName ? (
+          <Fact label="Auto-enrolls into" value={event.workflowName} />
+        ) : null}
       </div>
 
       {event.description ? (

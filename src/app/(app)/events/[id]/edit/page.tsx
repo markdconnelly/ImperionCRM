@@ -10,8 +10,11 @@ export default async function EditEventPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { events } = getRepositories();
-  const event = await events.getEvent(id);
+  const { events, workflows } = getRepositories();
+  const [event, workflowList] = await Promise.all([
+    events.getEvent(id),
+    workflows.listWorkflows(),
+  ]);
   if (!event) notFound();
   const kind = event.kind === "live_event" ? "live_event" : "webinar";
   return (
@@ -20,7 +23,12 @@ export default async function EditEventPage({
         title={`Edit: ${event.name}`}
         description="Blank schedule fields keep the stored times."
       />
-      <EventForm action={updateEventAction} kind={kind} event={event} />
+      <EventForm
+        action={updateEventAction}
+        kind={kind}
+        event={event}
+        workflows={workflowList.filter((w) => w.status === "active" || w.id === event.workflowId)}
+      />
     </div>
   );
 }
