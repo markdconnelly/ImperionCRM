@@ -475,6 +475,18 @@ export interface CredentialExposureRow {
   lastSeenAt: string | null;
 }
 
+/**
+ * Defender-incident counts for an account's mapped tenants (bronze
+ * `defender_incidents` joined through `account_tenant`, #256/ADR-0059).
+ * `total` distinguishes "no data collected" (0) from "all incidents closed".
+ */
+export interface DefenderIncidentCounts {
+  /** Incidents whose status is not resolved/redirected. */
+  open: number;
+  /** All collected incidents for the mapped tenants. */
+  total: number;
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;

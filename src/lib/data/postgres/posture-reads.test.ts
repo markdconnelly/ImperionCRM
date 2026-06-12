@@ -144,12 +144,28 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     expect(params).toEqual(["acc-1"]);
   });
 
+  it("Defender incident counts join account_tenant and exclude resolved/redirected from open (#256)", async () => {
+    query.mockResolvedValueOnce({ rows: [{ open: "3", total: "7" }] });
+    const counts = await security.countDefenderIncidentsForAccount("acc-1");
+    expect(counts).toEqual({ open: 3, total: 7 });
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("FROM defender_incidents i");
+    expect(sql).toContain("JOIN account_tenant m");
+    expect(sql).toContain("NOT IN ('resolved', 'redirected')");
+    expect(sql).toContain("WHERE m.account_id = $1::uuid");
+    expect(params).toEqual(["acc-1"]);
+  });
+
   it("falls back to the mock (empty lists) when no pool is configured", async () => {
     getPool.mockReturnValue(null);
     await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listPosturePoliciesForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listSecureScoreControlsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listCredentialExposuresForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.countDefenderIncidentsForAccount("acc-1")).resolves.toEqual({
+      open: 0,
+      total: 0,
+    });
     expect(query).not.toHaveBeenCalled();
   });
 });

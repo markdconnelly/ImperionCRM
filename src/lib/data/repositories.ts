@@ -68,6 +68,7 @@ import type {
   PosturePolicyRow,
   SecureScoreControl,
   CredentialExposureRow,
+  DefenderIncidentCounts,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -929,6 +930,8 @@ export interface SecurityRepository {
   listSecureScoreControlsForAccount(accountId: string): Promise<SecureScoreControl[]>;
   /** Silver credential_exposure rows owned by the account (ADR-0040 domain match). */
   listCredentialExposuresForAccount(accountId: string): Promise<CredentialExposureRow[]>;
+  /** Open/total Defender incidents over the account's mapped tenants (#256, ADR-0059 badge). */
+  countDefenderIncidentsForAccount(accountId: string): Promise<DefenderIncidentCounts>;
 }
 
 /** The full set of repositories a request can resolve. */

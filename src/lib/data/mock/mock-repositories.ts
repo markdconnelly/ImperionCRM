@@ -786,5 +786,9 @@ export const mockRepositories: Repositories = {
     async listCredentialExposuresForAccount() {
       return [];
     },
+    async countDefenderIncidentsForAccount() {
+      // No DB → no Defender data; the badge renders nothing (total 0).
+      return { open: 0, total: 0 };
+    },
   },
 };
