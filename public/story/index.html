@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Imperion CRM — the build story</title>
+<meta name="description" content="How a CRM idea became Imperion CRM: the operational brain for an MSP, built across four repos by AI agents and now live on Azure." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#070B1E; --bg-2:#0B1130; --surface:#121A3D; --surface-2:#19224A;
+    --line:#243056; --ink:#EAF0FF; --muted:#9AA8C7; --muted-2:#6B7AA0;
+    --cyan:#2DD4BF; --cyan-bright:#5EEAD4; --amber:#FBBF24; --indigo:#5B6CFF;
+    --bronze:#C77B3C; --silver:#AEB8C9; --gold:#E3B341;
+    --green:#34D399;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --maxw:1080px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--cyan);color:#04121a}
+
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora::before,.aurora::after{content:"";position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
+  .aurora::before{width:62vw;height:62vw;left:-18vw;top:-22vw;background:radial-gradient(circle at 30% 30%, rgba(45,212,191,.40), transparent 62%)}
+  .aurora::after{width:54vw;height:54vw;right:-16vw;top:6vw;background:radial-gradient(circle at 60% 40%, rgba(91,108,255,.32), transparent 60%)}
+  .stars{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.28) .8px, transparent .8px);background-size:46px 46px;-webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,.5), transparent 70%);mask-image:linear-gradient(180deg, rgba(0,0,0,.5), transparent 70%);opacity:.45}
+
+  header.nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(12px);background:rgba(7,11,30,.6);border-bottom:1px solid rgba(36,48,86,.6)}
+  .nav-inner{max-width:var(--maxw);margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600}
+  .brand .glyph{width:22px;height:22px;color:var(--cyan)}
+  .nav-links{display:flex;gap:26px;align-items:center}
+  .nav-links a{font-family:var(--mono);font-size:12.5px;color:var(--muted);transition:color .2s}
+  .nav-links a:hover{color:var(--ink)}
+  .gh{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--bg);background:var(--cyan);padding:8px 14px;border-radius:8px;font-weight:600;transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
+  .gh:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(45,212,191,.35)}
+  .gh svg{width:15px;height:15px}
+  @media(max-width:720px){.nav-links a:not(.gh){display:none}}
+
+  .hero{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:clamp(64px,12vw,132px) 24px clamp(44px,8vw,84px)}
+  .eyebrow{font-family:var(--mono);font-size:13px;color:var(--cyan);letter-spacing:1px;margin-bottom:20px;display:inline-block}
+  .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(52px,11vw,120px);line-height:.96;letter-spacing:-.02em;margin-bottom:22px}
+  .hero h1 .glow{background:linear-gradient(120deg,var(--cyan-bright),var(--indigo) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lede{max-width:660px;font-size:clamp(17px,2.4vw,21px);color:var(--muted)}
+  .hero p.lede b{color:var(--ink);font-weight:600}
+  .hero p.lede .accent{color:var(--cyan-bright);font-weight:600}
+  .badge-live{margin-top:26px;display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 16px}
+  .badge-live .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2.4s infinite}
+  .badge-live .u{color:var(--muted)}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}70%{box-shadow:0 0 0 9px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+  .meta{margin-top:22px;display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:13px;color:var(--muted-2)}
+  .meta .dot{width:5px;height:5px;border-radius:50%;background:var(--amber)}
+  .hero-stats{margin-top:clamp(34px,6vw,56px);display:flex;flex-wrap:wrap;gap:14px}
+  .hs{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 22px}
+  .hs .n{font-family:var(--display);font-weight:700;font-size:30px;color:var(--cyan-bright);line-height:1}
+  .hs .l{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:6px;letter-spacing:.3px}
+
+  .story{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .chapter{position:relative;padding-left:92px;padding-top:clamp(44px,8vw,80px);padding-bottom:clamp(44px,8vw,80px)}
+  .chapter::before{content:"";position:absolute;left:31px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,rgba(45,212,191,.45),rgba(36,48,86,.55))}
+  .chapter:first-of-type::before{top:44px}
+  .chapter:last-of-type::before{bottom:auto;height:90px}
+  .node{position:absolute;left:0;top:clamp(44px,8vw,80px);width:64px;height:64px;border-radius:50%;display:grid;place-items:center;z-index:2;background:var(--bg-2);border:1px solid var(--line);font-family:var(--mono);font-size:15px;font-weight:600;color:var(--cyan);box-shadow:0 0 0 6px var(--bg)}
+  .ch-eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:1px;color:var(--muted-2);text-transform:uppercase;margin-bottom:12px}
+  .chapter h2{font-family:var(--display);font-weight:600;font-size:clamp(27px,4.4vw,42px);line-height:1.06;letter-spacing:-.01em;margin-bottom:16px}
+  .chapter .say{max-width:660px;color:var(--muted);font-size:clamp(15.5px,2vw,18px)}
+  .chapter .say b{color:var(--ink);font-weight:600}
+  .chapter .say em{color:var(--cyan-bright);font-style:normal;font-weight:600}
+  .chapter .say + .say{margin-top:14px}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+
+  .icon-badge{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--cyan);color:var(--bg);flex:none}
+  .icon-badge.amber{background:var(--amber)}
+  .icon-badge svg{width:23px;height:23px}
+
+  /* problem list */
+  .problem{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:720px}
+  .prob{display:flex;gap:13px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:15px 17px}
+  .prob svg{width:18px;height:18px;color:var(--cyan);flex:none;margin-top:2px}
+  .prob span{font-size:13.5px;color:var(--muted)}
+  .prob span b{color:var(--ink);font-weight:600}
+  @media(max-width:640px){.problem{grid-template-columns:1fr}}
+
+  /* four-repo grid */
+  .repos{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .repo{display:block;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;transition:transform .22s var(--ease),border-color .22s var(--ease),background .22s var(--ease)}
+  .repo:hover{transform:translateY(-3px);border-color:rgba(45,212,191,.5);background:var(--surface-2)}
+  .repo .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .repo .name{font-family:var(--mono);font-size:13.5px;color:var(--cyan-bright);font-weight:600;word-break:break-word}
+  .repo .role{font-family:var(--display);font-size:16px;font-weight:600;margin-bottom:6px}
+  .repo p{font-size:13px;color:var(--muted);line-height:1.5}
+  .repo .foot{margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted-2)}
+  .lang{display:inline-flex;align-items:center;gap:6px}
+  .lang .sw{width:9px;height:9px;border-radius:50%}
+  .chip-status{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;letter-spacing:.3px;white-space:nowrap}
+  .st-live{color:#062a22;background:var(--green)}
+  .st-built{color:#04121a;background:var(--cyan)}
+  .st-dev{color:#2a1c02;background:var(--amber)}
+  .st-scaf{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .repos-note{margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--muted-2)}
+  @media(max-width:640px){.repos{grid-template-columns:1fr}}
+
+  /* medallion flow */
+  .flow{margin-top:28px;display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .fnode{flex:1 1 0;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 15px;text-align:center}
+  .fnode.dest{background:var(--surface-2);border-color:rgba(251,191,36,.4)}
+  .fnode .icon-badge{margin:0 auto 12px;width:42px;height:42px;border-radius:11px}
+  .fnode .icon-badge svg{width:21px;height:21px}
+  .fnode h3{font-family:var(--display);font-size:14.5px;font-weight:600;margin-bottom:6px}
+  .fnode p{font-size:11.5px;color:var(--muted);line-height:1.4}
+  .medallion-chips{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+  .mc{font-family:var(--mono);font-size:10.5px;display:flex;align-items:center;gap:6px;justify-content:center}
+  .mc .sw{width:8px;height:8px;border-radius:2px}
+  .connector{flex:0 0 40px;align-self:center;height:2px;position:relative;background:var(--line);margin:0 2px;border-radius:2px}
+  .connector::after{content:"";position:absolute;top:50%;left:0;width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 9px var(--cyan);transform:translateY(-50%);animation:packet 2.3s var(--ease) infinite}
+  .connector:nth-of-type(4)::after{animation-delay:.3s}.connector:nth-of-type(6)::after{animation-delay:.6s}.connector:nth-of-type(8)::after{animation-delay:.9s}
+  @keyframes packet{0%{left:-2px;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:38px;opacity:0}}
+  .flow-note{margin-top:18px;display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 19px}
+  .flow-note .icon-badge{width:36px;height:36px;border-radius:10px}
+  .flow-note .icon-badge svg{width:18px;height:18px}
+  .flow-note p{font-size:13.5px;color:var(--muted)}
+  .flow-note p b{color:var(--ink);font-weight:600}
+  @media(max-width:780px){
+    .flow{flex-direction:column}
+    .connector{width:2px;height:26px;flex-basis:26px;align-self:center;margin:2px 0}
+    .connector::after{top:0;left:50%;transform:translateX(-50%);animation:packetv 2.3s var(--ease) infinite}
+    @keyframes packetv{0%{top:-2px;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:24px;opacity:0}}
+  }
+
+  /* source chips */
+  .srcchips{margin-top:22px;display:flex;flex-wrap:wrap;gap:8px;max-width:720px}
+  .chip{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px}
+  .chip b{color:var(--cyan-bright);font-weight:600}
+
+  /* security grid */
+  .secgrid{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:13px;max-width:760px}
+  .sec{display:flex;gap:13px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:17px}
+  .sec .icon-badge{width:38px;height:38px;border-radius:10px}
+  .sec .icon-badge svg{width:19px;height:19px}
+  .sec b{font-family:var(--display);font-weight:600;font-size:14.5px;display:block;margin-bottom:3px}
+  .sec span{font-size:12.5px;color:var(--muted);line-height:1.45}
+  @media(max-width:640px){.secgrid{grid-template-columns:1fr}}
+
+  /* terminal */
+  .terminal{margin-top:26px;max-width:660px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#0A1130,#0A0F26)}
+  .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--muted-2)}
+  .terminal .bar i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .terminal .bar i:nth-child(1){background:#ff5f57}.terminal .bar i:nth-child(2){background:#febc2e}.terminal .bar i:nth-child(3){background:#28c840}
+  .terminal .bar span{margin-left:8px}
+  .terminal .body{padding:16px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.95}
+  .terminal .body .c{color:var(--cyan)}.terminal .body .h{color:var(--amber)}.terminal .body .m{color:var(--muted)}.terminal .body .ok{color:var(--cyan-bright)}
+
+  /* status ledger */
+  .ledger{margin-top:28px;display:flex;flex-direction:column;gap:12px}
+  .lrow{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+  .lrow .lhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .lrow .lname{font-family:var(--mono);font-size:13px;color:var(--cyan-bright);font-weight:600}
+  .lrow .lmeta{font-family:var(--mono);font-size:11px;color:var(--muted-2)}
+  .lrow p{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .deferred{margin-top:16px;background:var(--surface-2);border:1px dashed var(--line);border-radius:14px;padding:16px 20px}
+  .deferred b{font-family:var(--display);font-size:14px;display:block;margin-bottom:6px;color:var(--ink)}
+  .deferred span{font-size:13px;color:var(--muted)}
+
+  .closing{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:clamp(64px,11vw,120px) 24px clamp(46px,8vw,84px)}
+  .closing .eyebrow{color:var(--amber)}
+  .closing h2{font-family:var(--display);font-weight:700;font-size:clamp(38px,7.5vw,74px);line-height:.99;letter-spacing:-.02em;margin-bottom:38px}
+  .takeaways{display:grid;gap:16px;max-width:780px}
+  .takeaway{display:flex;gap:16px;align-items:flex-start}
+  .takeaway .icon-badge{width:40px;height:40px;border-radius:11px}
+  .takeaway .icon-badge svg{width:20px;height:20px}
+  .takeaway b{font-family:var(--display);font-weight:600;font-size:16.5px;display:block;margin-bottom:2px}
+  .takeaway span{color:var(--muted);font-size:14.5px}
+  .cta-row{margin-top:42px;display:flex;gap:14px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13.5px;font-weight:600;padding:13px 20px;border-radius:10px;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease)}
+  .btn svg{width:16px;height:16px}
+  .btn.primary{background:var(--cyan);color:var(--bg)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(45,212,191,.35)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--cyan);color:var(--cyan-bright)}
+
+  footer{position:relative;z-index:1;border-top:1px solid var(--line);max-width:var(--maxw);margin:0 auto;padding:26px 24px 60px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:var(--mono);font-size:12.5px;color:var(--muted-2)}
+  footer a:hover{color:var(--cyan)}
+  #liveflag{color:var(--green)}
+  .updated{color:var(--muted-2)}
+
+  @media(max-width:680px){.chapter{padding-left:64px}.chapter::before{left:23px}.node{width:48px;height:48px;font-size:13px}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<div class="stars" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+      Imperion CRM
+    </a>
+    <nav class="nav-links">
+      <a href="#system">system</a>
+      <a href="#architecture">architecture</a>
+      <a href="#status">status</a>
+      <a class="gh" href="https://github.com/markdconnelly" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
+        GitHub
+      </a>
+    </nav>
+  </div>
+</header>
+
+<a id="top"></a>
+<section class="hero">
+  <span class="eyebrow reveal in">// imperion crm · an autonomous build story</span>
+  <h1 class="reveal in d1">The <span class="glow">Moonshot</span></h1>
+  <p class="lede reveal in d2">How a CRM idea became <b>Imperion CRM</b> — <span class="accent">the operational brain for an MSP</span> — built across four repositories by AI agents, and now running in production.</p>
+  <div class="badge-live reveal in d2"><span class="pulse"></span> Live on Azure App Service <span class="u">·&nbsp; imperioncrm.azurewebsites.net · Entra SSO</span></div>
+  <div class="meta reveal in d3"><span class="dot"></span> Mark Connelly &nbsp;·&nbsp; Imperion &nbsp;·&nbsp; Champaign, IL</div>
+  <div class="hero-stats reveal in d3">
+    <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
+    <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
+    <div class="hs"><div class="n" id="hero-commits">300+</div><div class="l">commits</div></div>
+    <div class="hs"><div class="n"><span data-count="26"></span></div><div class="l">schema migrations</div></div>
+  </div>
+</section>
+
+<main class="story" id="system">
+
+  <!-- 01 spark -->
+  <article class="chapter">
+    <div class="node reveal">01</div>
+    <div class="ch-eyebrow reveal">The spark</div>
+    <h2 class="reveal d1">It started with a game</h2>
+    <p class="say reveal d1">A friend was using Claude Code to build a prize game for RuneScape. The thought landed instantly: <em>if it can do that, I can build a business application that delivers real value.</em></p>
+    <p class="say reveal d2">That night the target was a CRM to fix our sales pipeline. The ambition didn't stay small for long.</p>
+  </article>
+
+  <!-- 02 problem -->
+  <article class="chapter">
+    <div class="node reveal">02</div>
+    <div class="ch-eyebrow reveal">The problem</div>
+    <h2 class="reveal d1">An MSP's knowledge is scattered and decaying</h2>
+    <p class="say reveal d1">Running a managed-services business means knowing your customers cold. In practice that knowledge lives in ten disconnected places, and no one can see all of it at once.</p>
+    <div class="problem reveal d2">
+      <div class="prob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.5z"/></svg><span><b>Ten silos per contact</b> — email, Teams, a text thread, a call recording, a LinkedIn comment, an Autotask ticket, someone's memory.</span></div>
+      <div class="prob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span><b>Reps walk in cold</b> — hours of manual research and data entry an agent could have done overnight.</span></div>
+      <div class="prob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v6c0 5-3.8 8-9 9-5.2-1-9-4-9-9V7z"/></svg><span><b>Profiling is legal risk</b> — every text, call, and profile is a liability unless you can prove consent.</span></div>
+      <div class="prob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span><b>Tool sprawl</b> — M365 + Kaseya + spreadsheets, re-keyed by hand, with no single source of truth.</span></div>
+    </div>
+  </article>
+
+  <!-- 03 what it is -->
+  <article class="chapter">
+    <div class="node reveal">03</div>
+    <div class="ch-eyebrow reveal">What it is</div>
+    <h2 class="reveal d1">One place to work. One agent to ask.</h2>
+    <p class="say reveal d1">Imperion CRM is an AI-enabled operations platform that sits as an <b>intelligence layer above Microsoft 365 and Kaseya</b> — augmenting them, never replacing them. It manages the whole lifecycle of a managed-services customer, from the first ad they see to the quarterly business review years later.</p>
+    <p class="say reveal d2">The defining motion is <em>assessment-led</em>: a paid AI Security Readiness Assessment — six scored dimensions and a remediation roadmap — is the wedge that earns a multi-year managed-services contract.</p>
+  </article>
+
+  <!-- 04 four-repo system (signature) -->
+  <article class="chapter" id="architecture">
+    <div class="node reveal">04</div>
+    <div class="ch-eyebrow reveal">The system</div>
+    <h2 class="reveal d1">One system, four repos, one database</h2>
+    <p class="say reveal d1">A deliberate division of labor: <b>front end = GUI · backend = processes · cloud pipeline = live data · on-prem = heavy lifting.</b></p>
+    <div class="repos reveal d2">
+      <a class="repo" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener">
+        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live</span></div>
+        <div class="role">Front end · the GUI</div>
+        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 68 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
+      </a>
+      <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
+        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-scaf">Scaffolded</span></div>
+        <div class="role">Backend · every process</div>
+        <p>Azure Functions, private to the front end. OAuth, sends, semantic search, and the orchestrator agent + sub-agents.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 4 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
+      </a>
+      <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Pipeline" rel="noopener">
+        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-built">Deployed</span></div>
+        <div class="role">Cloud · live data</div>
+        <p>Azure Functions for inbound webhooks, the fail-closed GDAP health sweep, and the bronze→silver merge.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 64 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
+      </a>
+      <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment" rel="noopener">
+        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-dev">In dev</span></div>
+        <div class="role">On-prem · heavy lifting</div>
+        <p>PowerShell 7 scheduled tasks on a home server. Bulk polling, the medallion transforms, and all vectorization.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 176 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
+      </a>
+    </div>
+    <p class="repos-note reveal d2">Each repo reads and writes the same Postgres — but only the front end owns migrations.</p>
+  </article>
+
+  <!-- 05 architecture / medallion -->
+  <article class="chapter">
+    <div class="node reveal">05</div>
+    <div class="ch-eyebrow reveal">How the data moves</div>
+    <h2 class="reveal d1">Every source, unified and vectorized</h2>
+    <p class="say reveal d1">Data flows in from across the business, is folded into single entity records through a bronze→silver→gold pipeline, embedded into <b>pgvector</b>, and read by one orchestrator agent.</p>
+    <div class="srcchips reveal d2">
+      <span class="chip">M365 <b>Graph</b></span><span class="chip">Autotask</span><span class="chip">IT Glue</span><span class="chip">Apollo</span><span class="chip">Telivy</span><span class="chip">Dark Web ID</span><span class="chip">Kaseya Quote Mgr</span><span class="chip">DocuSign</span><span class="chip">LinkedIn · YouTube · FB</span><span class="chip">Plaud calls</span>
+    </div>
+    <div class="flow reveal d2">
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/></svg></div>
+        <h3>Sources</h3><p>Ten+ systems, polled or pushed.</p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
+        <h3>Medallion</h3>
+        <div class="medallion-chips">
+          <span class="mc"><span class="sw" style="background:var(--bronze)"></span>Bronze · lossless</span>
+          <span class="mc"><span class="sw" style="background:var(--silver)"></span>Silver · unified</span>
+          <span class="mc"><span class="sw" style="background:var(--gold)"></span>Gold · summaries</span>
+        </div>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0-2 7 4 4 0 0 0 6 5 4 4 0 0 0 6-5 4 4 0 0 0-2-7 4 4 0 0 0-4-4z"/><path d="M12 6v14"/></svg></div>
+        <h3>pgvector</h3><p>Voyage embeddings @ 1024.</p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode dest">
+        <div class="icon-badge amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M12 12H5v4M12 12h7v4"/></svg></div>
+        <h3>Agent → app</h3><p>One agent, one interface.</p>
+      </div>
+    </div>
+    <div class="flow-note reveal d2">
+      <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div>
+      <p><b>Cloud catches the live edge; the home server does the bulk.</b> Webhooks and GDAP checks run in Azure Functions; scheduled bulk loads, transforms, and embeddings run on-prem — all into one shared PostgreSQL 18 + pgvector.</p>
+    </div>
+  </article>
+
+  <!-- 06 security -->
+  <article class="chapter">
+    <div class="node reveal">06</div>
+    <div class="ch-eyebrow reveal">Security as a product feature</div>
+    <h2 class="reveal d1">Built the way an MSP would secure it</h2>
+    <p class="say reveal d1">Identity-first, least-privilege, fail-closed — the same posture Imperion sells, applied to its own platform.</p>
+    <div class="secgrid reveal d2">
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><b>Entra-only identity</b><span>Certificate client auth; managed-identity DB access with no stored passwords.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0 1 1l5-5L21 6V2z"/></svg></div><div><b>Secrets in Key Vault</b><span>Per-user OAuth tokens are referenced from Key Vault — never written to the database.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div><b>GDAP, read-only</b><span>Per-customer delegated access — least-privileged, time-bound, and it fails closed on expiry.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div><b>Consent ledger</b><span>Append-only lawful-basis tracking; outbound is blocked unless consent is current (TCPA / CAN-SPAM / GDPR).</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div><b>Golden-state + drift</b><span>Conditional Access, Intune, Defender, and Secure Score tracked against an approved baseline.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><b>Human-gated grants</b><span>Widening any privilege or promoting a baseline is a deliberate, human-approved security event.</span></div></div>
+    </div>
+  </article>
+
+  <!-- 07 discipline -->
+  <article class="chapter">
+    <div class="node reveal">07</div>
+    <div class="ch-eyebrow reveal">Trust, but verify</div>
+    <h2 class="reveal d1">The governance is in the repo</h2>
+    <p class="say reveal d1">Autonomy is only useful when it's accountable. Every repo carries the rules the agents must follow, and every decision is written down before it ships.</p>
+    <div class="terminal reveal d2">
+      <div class="bar"><i></i><i></i><i></i><span>~/ImperionCRM · how it's built</span></div>
+      <div class="body">
+        <div><span class="c">✓</span> <span class="h">CLAUDE.md</span> <span class="m">per-repo rule file the agent reads first</span></div>
+        <div><span class="c">✓</span> <span class="h">ADRs</span> <span class="m">numbered decision records — the "why" is committed</span></div>
+        <div><span class="c">✓</span> <span class="h">docs</span> <span class="m">a required deliverable: code without docs is incomplete</span></div>
+        <div><span class="c">✓</span> <span class="h">ci</span> <span class="m">typecheck · lint · tests (Pester · PSScriptAnalyzer) gate every merge</span></div>
+        <div><span class="c">✓</span> <span class="h">cd</span> <span class="m">OIDC-federated deploys — no stored publish secrets</span></div>
+        <div><span class="ok">→ trust, but verify.</span></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- 08 status -->
+  <article class="chapter" id="status">
+    <div class="node reveal">08</div>
+    <div class="ch-eyebrow reveal">Where it is today</div>
+    <h2 class="reveal d1">Honest about what's done</h2>
+    <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
+    <div class="ledger reveal d2">
+      <div class="lrow">
+        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live</span></div>
+        <p>Running on Azure with Entra SSO. 26 migrations applied; dashboards, pipeline, proposals, onboarding, assessments, discovery, SBRs, contact-360 and demand-gen all built as real screens over a typed data layer.</p>
+      </div>
+      <div class="lrow">
+        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-built">Deployed</span></div>
+        <p>Webhook receivers, the daily fail-closed GDAP sweep, the 5-minute bronze→silver merge, and on-demand refresh are live in Azure Functions.</p>
+      </div>
+      <div class="lrow">
+        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-dev">In dev</span></div>
+        <p>The most-built repo. Connect + get layers and security-posture sync are done and tested across six sources; the bronze writers and scheduled tasks are next.</p>
+      </div>
+      <div class="lrow">
+        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-scaf">Scaffolded</span></div>
+        <p>Functions host and the shared layer (DB, Key Vault, consent gate, model router) are running and aligned to the schema; the heavy lifting is the next phase.</p>
+      </div>
+    </div>
+    <div class="deferred reveal d2">
+      <b>Deliberately deferred</b>
+      <span>Live OAuth pulls, real provider sends, runtime agent execution, and live vector search are stubbed on purpose — a "send" logs to the timeline instead of failing the page — until each source is wired in the next phase.</span>
+    </div>
+  </article>
+
+</main>
+
+<section class="closing" id="proves">
+  <span class="eyebrow reveal">// what this proves</span>
+  <h2 class="reveal d1">Set the moonshot.<br/>Build it in the open.</h2>
+  <div class="takeaways">
+    <div class="takeaway reveal d1"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><b>One person, a whole system</b><span>Four repos, one database, a live product — scoped, documented, and shipped by one architect with AI agents.</span></div></div>
+    <div class="takeaway reveal d2"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><b>Governed autonomy</b><span>Rule files, ADRs, fail-closed access, and a consent ledger turn speed into something defensible.</span></div></div>
+    <div class="takeaway reveal d3"><div class="icon-badge amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div><b>Honesty is the headline</b><span>Built where it counts, clear about what's deferred. The discipline is the moat.</span></div></div>
+  </div>
+  <div class="cta-row reveal d3">
+    <a class="btn primary" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg> Explore the repos</a>
+    <a class="btn ghost" href="#top">Back to top</a>
+  </div>
+</section>
+
+<footer>
+  <span>Imperion CRM — the build story</span>
+  <span>Grounded in the repos · <span id="yr"></span><span id="liveflag"></span></span>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var reveals = document.querySelectorAll('.reveal:not(.in)');
+  if (reduce) { reveals.forEach(function(el){ el.classList.add('in'); }); }
+  else if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
+    reveals.forEach(function(el){ io.observe(el); });
+  } else { reveals.forEach(function(el){ el.classList.add('in'); }); }
+
+  function countUp(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    if (reduce){ el.textContent = target; return; }
+    var dur = 1100, start = null;
+    function tick(ts){ if(!start) start=ts; var p=Math.min((ts-start)/dur,1); var e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e); if(p<1) requestAnimationFrame(tick); }
+    requestAnimationFrame(tick);
+  }
+  // ---- live hydration from the GitHub API (best-effort; falls back to static values) ----
+  (function(){
+    if (!window.fetch) return;
+    var OWNER = 'markdconnelly';
+    var REPOS = ['ImperionCRM','ImperionCRM_Backend','ImperionCRM_Pipeline','ImperionCRM_LocalPipelineEnrichment'];
+    function rel(d){
+      var s = (Date.now() - new Date(d).getTime())/1000;
+      if (s < 3600)  return Math.max(1, Math.round(s/60)) + 'm ago';
+      if (s < 86400) return Math.round(s/3600) + 'h ago';
+      var days = Math.round(s/86400);
+      if (days < 30)  return days + 'd ago';
+      if (days < 365) return Math.round(days/30) + 'mo ago';
+      return Math.round(days/365) + 'y ago';
+    }
+    async function commitCount(repo){
+      var r = await fetch('https://api.github.com/repos/'+OWNER+'/'+repo+'/commits?per_page=1');
+      if (!r.ok) throw new Error('http '+r.status);
+      var link = r.headers.get('Link');
+      if (link){ var m = link.match(/[?&]page=(\d+)>;\s*rel="last"/); if (m) return parseInt(m[1],10); }
+      var a = await r.json(); return Array.isArray(a) ? a.length : null;
+    }
+    async function meta(repo){
+      var r = await fetch('https://api.github.com/repos/'+OWNER+'/'+repo);
+      if (!r.ok) throw new Error('http '+r.status);
+      return r.json();
+    }
+    (async function(){
+      var total = 0, ok = 0;
+      await Promise.all(REPOS.map(async function(repo){
+        try {
+          var res = await Promise.all([commitCount(repo), meta(repo)]);
+          var cc = res[0], md = res[1];
+          if (cc != null){
+            total += cc; ok++;
+            var el = document.querySelector('.commits[data-repo="'+repo+'"]');
+            if (el) el.textContent = '· ' + cc + ' commits';
+          }
+          if (md && md.pushed_at){
+            var up = document.querySelector('.updated[data-repo-upd="'+repo+'"]');
+            if (up) up.textContent = ' · updated ' + rel(md.pushed_at);
+          }
+        } catch (e) { /* keep the static fallback for this repo */ }
+      }));
+      if (ok === REPOS.length){
+        var h = document.getElementById('hero-commits'); if (h) h.textContent = total;
+        var f = document.getElementById('liveflag'); if (f) f.textContent = ' · live from GitHub';
+      }
+    })();
+  })();
+
+</script>
+</body>
+</html>

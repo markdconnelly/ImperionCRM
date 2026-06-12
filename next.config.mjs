@@ -9,6 +9,11 @@ const nextConfig = {
   // with a bundled server.js + traced node_modules. Avoids relying on
   // `npm start` / node_modules symlinks / Oryx at container startup.
   output: "standalone",
+  // Bare /story serves the public build-story page (#248); public/ files don't
+  // get directory-index resolution on their own.
+  async rewrites() {
+    return [{ source: "/story", destination: "/story/index.html" }];
+  },
 };
 
 export default nextConfig;
