@@ -124,6 +124,7 @@ import type {
   PosturePolicyRow,
   SecureScoreControl,
   CredentialExposureRow,
+  DefenderIncidentCounts,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -4933,6 +4934,29 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.security.listCredentialExposuresForAccount(accountId);
+      }
+    },
+
+    async countDefenderIncidentsForAccount(accountId): Promise<DefenderIncidentCounts> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.countDefenderIncidentsForAccount(accountId);
+      try {
+        // Bronze is all-text (0076): status holds Graph values verbatim
+        // ('active'|'inProgress'|'awaitingAction'|'resolved'|'redirected'), so
+        // "open" is a case-folded exclusion of the two terminal states.
+        const { rows } = await pool.query<{ open: string; total: string }>(
+          `SELECT COUNT(*) FILTER (
+                    WHERE lower(COALESCE(i.status, '')) NOT IN ('resolved', 'redirected')
+                  ) AS open,
+                  COUNT(*) AS total
+             FROM defender_incidents i
+             JOIN account_tenant m ON m.tenant_id = i.tenant_id
+            WHERE m.account_id = $1::uuid`,
+          [accountId],
+        );
+        return { open: Number(rows[0]?.open ?? 0), total: Number(rows[0]?.total ?? 0) };
+      } catch {
+        return mockRepositories.security.countDefenderIncidentsForAccount(accountId);
       }
     },
   },

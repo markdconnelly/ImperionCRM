@@ -1018,6 +1018,30 @@ Writer: `imperion-localpipeline` (bronze write + widened silver merge surface:
 `interaction` insert, lead capture, contact create, `contact_social_identity`); web role
 reads. Collector contract: local-pipeline `docs/integrations/meta.md` (local #126).
 
+### Defender incidents + alerts bronze and Autotask layering (migration 0076, #256, ADR-0059)
+
+`defender_incidents` (Graph `/security/incidents`) and `defender_alerts`
+(`/security/alerts_v2`) — local-pipeline envelope, fed by the on-prem collector
+(local #138; `SecurityIncident/SecurityAlert.Read.All` already consented). The
+existing `sentinel_*` bronze (0038) is Sentinel rules/automation only and does NOT
+cover these. `defender_alerts.incident_external_id` (indexed with tenant) groups
+alerts under their incident. **Open incident** = `status` not
+`resolved`/`redirected` (case-folded text match — bronze is all-text).
+
+`defender_incident_ticket_link` (ADR-0059) pairs an incident with the Autotask
+ticket worked for it — a standalone table, never a bronze column (loader full-row
+upserts would clobber it). PK `(tenant_id, incident_external_id)` is the sync-back
+idempotency key: at most one ticket per incident, writers use
+`INSERT … ON CONFLICT DO NOTHING`, so ticket creation can never loop. Both sides
+are external ids (no FKs — collectors land in any order); `origin` records who
+asserted the link (`defender_to_autotask` | `autotask_to_defender` | `manual`).
+Indexed on `autotask_ticket_external_id` for the ticket→incident reverse lookup.
+
+Writers: `imperion-localpipeline` (bronze + auto-link) and
+`mgid-imperioncrmbackendfunction` (link only — ticket creation is a process,
+ADR-0042). Cloud pipeline + web read. Surfaced today as the open-incident badge on
+the account Security posture card (joined via `account_tenant`).
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.

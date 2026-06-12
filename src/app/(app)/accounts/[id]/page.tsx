@@ -75,13 +75,15 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   const { crm, comms, security } = getRepositories();
-  const [account, timeline, sources, relatedBronze, tenantPostures] = await Promise.all([
-    crm.getAccount(id),
-    comms.listInteractionsByAccount(id),
-    crm.listAccountSources(id),
-    crm.listAccountRelatedBronze(id),
-    security.listTenantPostureForAccount(id),
-  ]);
+  const [account, timeline, sources, relatedBronze, tenantPostures, defenderIncidents] =
+    await Promise.all([
+      crm.getAccount(id),
+      comms.listInteractionsByAccount(id),
+      crm.listAccountSources(id),
+      crm.listAccountRelatedBronze(id),
+      security.listTenantPostureForAccount(id),
+      security.countDefenderIncidentsForAccount(id),
+    ]);
   if (!account) notFound();
 
   // At-a-glance Imperion Secure Score (#94, ADR-0051 §4) — live Score Model v1
@@ -191,6 +193,22 @@ export default async function AccountDetailPage({
                     {p.covered ? Math.round(p.score) : "No coverage"}
                   </span>
                 ))}
+                {/* Open Defender incidents (#256, ADR-0059) — red when any are
+                    open, grey when collected-but-clear, nothing when no data. */}
+                {defenderIncidents.total > 0 &&
+                  (defenderIncidents.open > 0 ? (
+                    <span
+                      className="flex items-center gap-1.5 rounded bg-red/10 px-2 py-1 text-[11px] text-red"
+                      title={`${defenderIncidents.open} of ${defenderIncidents.total} Defender incidents open across this company's mapped tenants`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-red" />
+                      Defender incidents: {defenderIncidents.open} open
+                    </span>
+                  ) : (
+                    <span className="rounded bg-panel-2 px-2 py-1 text-[11px] text-dim">
+                      Defender incidents: 0 open
+                    </span>
+                  ))}
               </div>
               <Link
                 href={`/accounts/${id}/posture`}
