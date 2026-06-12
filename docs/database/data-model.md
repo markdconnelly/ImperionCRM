@@ -1136,6 +1136,14 @@ The **on-prem local pipeline is the sole producer**; the backend embeds only que
 and reads by cosine distance, filtered to the pinned contract. Retrieval is gold-only —
 agents query summaries + embeddings, never raw bronze.
 
+**Draft convention (migration 0068, #214 / backend #58):** `knowledge_object.status`
+(`'draft' | 'published'`, default `'published'`). The backend documentation sub-agent
+may INSERT/UPDATE *draft* knowledge objects (AI-labeled in `metadata`, audited
+`agent.knowledge.draft`) for human review — it never publishes. **Drafts carry NO
+embeddings**, so they are invisible to semantic retrieval until a human approves and the
+on-prem hub publishes + vectorizes; `knowledge_embedding` writes remain on-prem-only.
+A partial index (`ix_knowledge_object_drafts`) serves the review queue.
+
 The legacy 1536-dim `interaction_embedding` / `contact_embedding` tables (migrations
 0001/0021) were never populated and are **dropped by migration 0046** (ADR-0043).
 
