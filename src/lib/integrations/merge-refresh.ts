@@ -11,13 +11,13 @@
  * succeeded and the 5-minute sweep remains the backstop.
  */
 import { pipelineService } from "@/lib/services";
-import { ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { isBackendNotConfigured } from "@/lib/services/call-guard";
 
 export function requestMergeRefresh(): void {
   pipelineService.refresh({ source: "merge" }).catch((err: unknown) => {
-    // Unconfigured pipeline URL → quiet no-op (same as refreshNowAction);
-    // anything else is logged but still swallowed.
-    if (!(err instanceof ServiceNotConfiguredError)) {
+    // Unconfigured pipeline (env unset or clean 501, #190 taxonomy) → quiet
+    // no-op (same as refreshNowAction); anything else is logged but swallowed.
+    if (!isBackendNotConfigured(err)) {
       console.error("requestMergeRefresh failed:", err);
     }
   });

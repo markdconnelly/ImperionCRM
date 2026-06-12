@@ -22,6 +22,14 @@ vi.mock("next/navigation", () => ({ redirect: h.redirect }));
 vi.mock("@/lib/services", () => ({ pipelineService: { refresh: h.refresh } }));
 vi.mock("@/lib/services/external-client", () => ({
   ServiceNotConfiguredError: class ServiceNotConfiguredError extends Error {},
+  ServiceCallError: class ServiceCallError extends Error {
+    constructor(
+      name: string,
+      public status: number,
+    ) {
+      super(`${name} returned ${status}`);
+    }
+  },
 }));
 vi.mock("@/lib/data", () => ({
   getRepositories: () => ({

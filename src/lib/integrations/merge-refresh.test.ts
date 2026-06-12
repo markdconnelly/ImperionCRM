@@ -5,6 +5,14 @@ const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock("@/lib/services", () => ({ pipelineService: { refresh } }));
 vi.mock("@/lib/services/external-client", () => ({
   ServiceNotConfiguredError: class ServiceNotConfiguredError extends Error {},
+  ServiceCallError: class ServiceCallError extends Error {
+    constructor(
+      name: string,
+      public status: number,
+    ) {
+      super(`${name} returned ${status}`);
+    }
+  },
 }));
 
 import { requestMergeRefresh } from "./merge-refresh";
