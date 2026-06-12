@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.5.1...imperion-crm-v0.6.0) (2026-06-12)
+
+
+### Features
+
+* **db:** migration 0064 - posture snapshot tables read-only for the web role ([#167](https://github.com/markdconnelly/ImperionCRM/issues/167)) ([#200](https://github.com/markdconnelly/ImperionCRM/issues/200)) ([d788f68](https://github.com/markdconnelly/ImperionCRM/commit/d788f6843f557d3486b38df5703faa770a07ac8d))
+
+
+### Bug Fixes
+
+* **comms:** only link http(s) social profile URLs - untrusted schemes render as text ([#191](https://github.com/markdconnelly/ImperionCRM/issues/191)) ([#197](https://github.com/markdconnelly/ImperionCRM/issues/197)) ([d9085be](https://github.com/markdconnelly/ImperionCRM/commit/d9085be18fdf7b67f2ae1e6cab904513f6956d67))
+* **data:** refuse mock fallback when a database is configured ([#193](https://github.com/markdconnelly/ImperionCRM/issues/193)) ([#199](https://github.com/markdconnelly/ImperionCRM/issues/199)) ([9de3d6f](https://github.com/markdconnelly/ImperionCRM/commit/9de3d6fa6023315a61fb006c50f4e0be9502480c))
+* **gdap:** tenant pinning fails closed when callback omits tenant ([#192](https://github.com/markdconnelly/ImperionCRM/issues/192)) ([#195](https://github.com/markdconnelly/ImperionCRM/issues/195)) ([6b0f34d](https://github.com/markdconnelly/ImperionCRM/commit/6b0f34dce7fdb46ef9539c3360b001d434b681d2))
+* **settings:** connectAction validates provider/scope allowlist and fails closed on unresolvable owner ([#194](https://github.com/markdconnelly/ImperionCRM/issues/194)) ([#198](https://github.com/markdconnelly/ImperionCRM/issues/198)) ([d9b6a01](https://github.com/markdconnelly/ImperionCRM/commit/d9b6a0188881bb382fa942b3302cb8673b9358e4))
+
 ## [0.5.1](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.5.0...imperion-crm-v0.5.1) (2026-06-11)
 
 
