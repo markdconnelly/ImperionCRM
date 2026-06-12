@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { OrchestratorSettingsCard } from "@/components/agent/orchestrator-settings-card";
+import { CostRollupCard } from "@/components/agent/cost-rollup-card";
 import { getAgentSettingsState } from "@/lib/agent/settings-data";
+import { getCostRollupState } from "@/lib/agent/cost-rollup-data";
+import { parseMonthParam } from "@/lib/agent/cost-rollup";
 import { listRecentAgentRuns } from "@/lib/agent/activity";
 import { formatUsd, settingsSourceNote } from "@/lib/agent/settings";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -56,7 +59,11 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default async function AgentsPage() {
+export default async function AgentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const roles = await getSessionRoles();
   // Admin-only (#90): nav hiding and the edge middleware use the same predicate,
   // but guard here too so the page can never render for a non-admin (same
@@ -64,7 +71,14 @@ export default async function AgentsPage() {
   if (!canSeeAgentPages(roles)) redirect("/");
   const canEdit = can(roles, "settings:write"); // admin-only (ADR-0045)
 
-  const [settings, runs] = await Promise.all([getAgentSettingsState(), listRecentAgentRuns(20)]);
+  // ?month=YYYY-MM browses past rollup months (#184); anything else = current.
+  const month = parseMonthParam((await searchParams).month);
+
+  const [settings, runs, costRollup] = await Promise.all([
+    getAgentSettingsState(),
+    listRecentAgentRuns(20),
+    getCostRollupState(month),
+  ]);
   const dbConfigured = isDbConfigured();
 
   const sourceNote = settingsSourceNote(settings.source);
@@ -88,7 +102,13 @@ export default async function AgentsPage() {
         saveAction={saveAgentSettingsAction}
       />
 
-      {/* 2 ── Registered sub-agents (backend ADR-0036 wiring) */}
+      {/* 2 ── Per-process cost telemetry (#184, backend #65) */}
+      <CostRollupCard
+        state={costRollup}
+        month={costRollup.ok ? costRollup.rollup.month : (month ?? new Date().toISOString().slice(0, 7))}
+      />
+
+      {/* 3 ── Registered sub-agents (backend ADR-0036 wiring) */}
       <section className="rounded-xl border border-border bg-panel p-5">
         <div className="mb-1 flex items-center justify-between gap-2">
           <h3 className="font-display text-sm font-semibold tracking-tight">
@@ -148,7 +168,7 @@ export default async function AgentsPage() {
         </p>
       </section>
 
-      {/* 3 ── Recent activity: the orchestrator's audit trail (agent.turn) */}
+      {/* 4 ── Recent activity: the orchestrator's audit trail (agent.turn) */}
       <section className="rounded-xl border border-border bg-panel p-5">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-display text-sm font-semibold tracking-tight">Recent agent activity</h3>

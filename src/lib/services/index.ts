@@ -77,6 +77,34 @@ export interface AgentSettingsWire {
   presets: Record<"economy" | "balanced" | "premium", { cheap: string; premium: string }>;
 }
 
+/** One process's usage rollup (backend #65 — GET /agent/cost-rollup). */
+export interface CostRollupProcess {
+  /** Audit verb identifying the process, e.g. 'agent.turn', 'board.conclude'. */
+  action: string;
+  /** What the spend attaches to, e.g. 'agent_conversation', 'board_session'. */
+  entityType: string | null;
+  runs: number;
+  modelCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  /** The costliest entities of this process (top 20 by spend). */
+  entities: Array<{ entityId: string; runs: number; costUsd: number; lastAt: string }>;
+}
+
+/** GET /agent/cost-rollup?month=YYYY-MM wire shape (backend #65/PR #74). */
+export interface CostRollupWire {
+  month: string;
+  totals: {
+    runs: number;
+    modelCalls: number;
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number;
+  };
+  processes: CostRollupProcess[];
+}
+
 /** Orchestrator + sub-agents (backend ADR-0036 — the Claude tool-use loop). */
 export const agentService = {
   /** One orchestrator turn scoped to the acting employee (app_user.id). */
@@ -94,6 +122,16 @@ export const agentService = {
 
   /** Current preset + budget + month-to-date spend (backend ADR-0037). */
   getSettings: () => callService<AgentSettingsWire>(services.agent, "/agent/settings"),
+
+  /**
+   * Per-process cost telemetry rollup over the agent-work audit rows (backend #65).
+   * `month` is YYYY-MM; omitted = the current month.
+   */
+  costRollup: (month?: string) =>
+    callService<CostRollupWire>(
+      services.agent,
+      `/agent/cost-rollup${month ? `?month=${encodeURIComponent(month)}` : ""}`,
+    ),
 
   /** Update preset and/or budget; `actingUserId` feeds the backend's audit trail. */
   updateSettings: (input: {

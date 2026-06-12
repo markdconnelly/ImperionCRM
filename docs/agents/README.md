@@ -51,9 +51,14 @@ from this template and link it back here.
   `GET /agent/settings`, falls back to a direct `agent_settings` read, then mock;
   saves only via the backend `PUT` behind the `settings:write` capability
   (admin-only, ADR-0045).
-- **Registered sub-agents** — the static-from-contract catalog of what the
-  orchestrator can route to today (keep in lockstep with the backend's
-  `registerSubAgent` calls).
+- **Cost telemetry rollups (#184, v1 gate 9)** — spend per metered process and per
+  entity (per board session, per conversation; enrichment/send executors appear
+  automatically as they land — anything auditing the ADR-0032 usage shape).
+  Reads the backend `GET /agent/cost-rollup?month=YYYY-MM` (backend #65) through
+  the #190 call-guard seam; no DB fallback by design (the rollup SQL lives in one
+  place). Month totals strip + per-process `<details>` rows with the top-20
+  entities by spend (board sessions link to `/board/[id]`); `?month=` browses
+  past months. Degrades to a notice when the backend isn't configured.
 - **Recent agent activity** — the last 20 `agent.turn` audit rows (time, actor,
   routed-to, routing reason, model turns, cost).
 
