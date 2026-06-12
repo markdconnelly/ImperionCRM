@@ -63,6 +63,32 @@ export async function refreshPostureAction(formData: FormData) {
   revalidatePath(`/accounts/${accountId}/posture`); // the posture page reuses this action (#159)
 }
 
+/**
+ * Store an immutable Imperion Secure Score snapshot for this account right now
+ * (ADR-0051 §5, #168 — the "Snapshot now" button on the posture page; pipeline
+ * #38's posture_snapshot source, trigger 'on_demand'). Same degradation contract
+ * as refreshPostureAction: unconfigured pipeline → quiet no-op, other failures
+ * logged, never thrown at the page.
+ */
+export async function snapshotPostureAction(formData: FormData) {
+  await requireCapability("crm:write");
+  const accountId = String(formData.get("accountId") ?? "");
+  if (!accountId) return;
+
+  try {
+    await pipelineService.refresh({
+      source: "posture_snapshot",
+      accountId,
+      trigger: "on_demand",
+    });
+  } catch (err) {
+    if (!isBackendNotConfigured(err)) {
+      console.error(`snapshotPostureAction(${accountId}) failed:`, err);
+    }
+  }
+  revalidatePath(`/accounts/${accountId}/posture`);
+}
+
 export async function deleteAccountAction(formData: FormData) {
   await requireCapability("crm:write");
   const id = String(formData.get("id") ?? "");

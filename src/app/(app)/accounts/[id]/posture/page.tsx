@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { getRepositories } from "@/lib/data";
-import { refreshPostureAction } from "../../actions";
+import { refreshPostureAction, snapshotPostureAction } from "../../actions";
 
 // Per-customer security posture overview (#93, ADR-0051). Everything here is a
 // READ of posture silver/bronze keyed through the account's Tenant Mappings;
@@ -121,6 +121,20 @@ export default async function AccountPosturePage({
               >
                 <Icon name="ShieldCheck" size={14} />
                 Refresh posture
+              </button>
+            </form>
+          )}
+          {tenants.length > 0 && (
+            // Store an immutable Imperion Secure Score snapshot now (ADR-0051 §5, #168).
+            <form action={snapshotPostureAction}>
+              <input type="hidden" name="accountId" value={id} />
+              <button
+                type="submit"
+                title="Store an immutable Imperion Secure Score snapshot for this account now"
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+              >
+                <Icon name="Camera" size={14} />
+                Snapshot now
               </button>
             </form>
           )}

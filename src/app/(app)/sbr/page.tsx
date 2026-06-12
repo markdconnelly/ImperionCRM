@@ -7,14 +7,21 @@ import { deleteSbrAction } from "./actions";
 export default async function SbrPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ticket?: string }>;
+  searchParams: Promise<{ ticket?: string; snapshot?: string }>;
 }) {
-  const { ticket } = await searchParams;
+  const { ticket, snapshot } = await searchParams;
   const { engagements } = getRepositories();
   const reviews = await engagements.listSbrs();
 
   return (
     <div className="flex flex-col gap-4">
+      {snapshot === "failed" && (
+        <p className="rounded-lg border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-amber">
+          The review was saved, but its posture snapshot could not be taken (ADR-0051 §5).
+          The scheduled quarterly snapshot still covers this account; you can also use
+          &quot;Snapshot now&quot; on the account&apos;s posture page.
+        </p>
+      )}
       {ticket === "failed" && (
         <p className="rounded-lg border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-amber">
           The review was saved, but its business-review queue ticket could not be filed.

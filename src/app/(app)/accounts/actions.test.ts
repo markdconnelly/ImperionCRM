@@ -44,7 +44,12 @@ vi.mock("@/lib/data", () => ({
 }));
 
 import { ServiceNotConfiguredError } from "@/lib/services/external-client";
-import { createAccountAction, refreshPostureAction, updateAccountAction } from "./actions";
+import {
+  createAccountAction,
+  refreshPostureAction,
+  snapshotPostureAction,
+  updateAccountAction,
+} from "./actions";
 
 function form(fields: Record<string, string>): FormData {
   const fd = new FormData();
@@ -113,6 +118,43 @@ describe("refreshPostureAction (#155 — account-scoped posture refresh, ADR-005
     await expect(refreshPostureAction(form({ accountId: "acc-1" }))).resolves.toBeUndefined();
     expect(errorSpy).toHaveBeenCalled();
     expect(h.revalidatePath).toHaveBeenCalledWith("/accounts/acc-1");
+    errorSpy.mockRestore();
+  });
+});
+
+describe("snapshotPostureAction (#168 — Snapshot now, ADR-0051 §5)", () => {
+  it("requests an on-demand posture snapshot, then revalidates the posture page", async () => {
+    await snapshotPostureAction(form({ accountId: "acc-1" }));
+    expect(h.requireCapability).toHaveBeenCalledWith("crm:write");
+    expect(h.refresh).toHaveBeenCalledWith({
+      source: "posture_snapshot",
+      accountId: "acc-1",
+      trigger: "on_demand",
+    });
+    expect(h.revalidatePath).toHaveBeenCalledWith("/accounts/acc-1/posture");
+  });
+
+  it("does nothing without an accountId (snapshots are account-scoped)", async () => {
+    await snapshotPostureAction(form({}));
+    expect(h.refresh).not.toHaveBeenCalled();
+  });
+
+  it("degrades silently when the pipeline is unconfigured", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    h.refresh.mockRejectedValueOnce(
+      new ServiceNotConfiguredError("pipeline", "PIPELINE_SERVICE_URL"),
+    );
+    await snapshotPostureAction(form({ accountId: "acc-1" }));
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(h.revalidatePath).toHaveBeenCalledWith("/accounts/acc-1/posture");
+    errorSpy.mockRestore();
+  });
+
+  it("logs but never throws on other pipeline failures", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    h.refresh.mockRejectedValueOnce(new Error("pipeline down"));
+    await expect(snapshotPostureAction(form({ accountId: "acc-1" }))).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
   });
 });

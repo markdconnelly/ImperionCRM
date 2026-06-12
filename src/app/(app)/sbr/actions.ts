@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
-import { ticketsService } from "@/lib/services";
+import { pipelineService, ticketsService } from "@/lib/services";
+import { isBackendNotConfigured } from "@/lib/services/call-guard";
 import type { SbrInput, SbrScoreInput } from "@/lib/data/repositories";
 
 function str(formData: FormData, key: string): string {
@@ -71,6 +72,35 @@ async function fileBusinessReviewTicket(
   }
 }
 
+/**
+ * Posture-snapshot side effect (#168, ADR-0051 §5): every QBR carries a fresh
+ * posture record — after the create commits, request an immutable Imperion
+ * Secure Score snapshot from the pipeline (pipeline #38: posture_snapshot,
+ * trigger 'business_review' + businessReviewId, awaited like
+ * refreshPostureAction). Snapshot failure must NOT fail review creation: the
+ * review exists either way and the scheduled quarterly job still covers the
+ * account — surface a non-blocking notice and log. Unconfigured pipeline
+ * degrades quietly (#190 taxonomy).
+ */
+async function requestBusinessReviewSnapshot(
+  id: string,
+  accountId: string,
+): Promise<boolean> {
+  try {
+    await pipelineService.refresh({
+      source: "posture_snapshot",
+      accountId,
+      trigger: "business_review",
+      businessReviewId: id,
+    });
+    return true;
+  } catch (err) {
+    if (isBackendNotConfigured(err)) return true; // quietly covered by the quarterly job
+    console.error(`[sbr] posture snapshot failed for ${id}:`, err);
+    return false;
+  }
+}
+
 export async function createSbrAction(formData: FormData) {
   await requireCapability("delivery:write");
   const { engagements } = getRepositories();
@@ -79,8 +109,13 @@ export async function createSbrAction(formData: FormData) {
   await engagements.saveSbrScores(id, parseScores(formData));
   await engagements.setSbrTickets(id, parseTicketIds(formData));
   const ticketOk = await fileBusinessReviewTicket(id, input);
+  const snapshotOk = await requestBusinessReviewSnapshot(id, input.accountId);
   revalidatePath("/sbr");
-  redirect(ticketOk ? "/sbr" : "/sbr?ticket=failed");
+  const notices = [
+    ...(ticketOk ? [] : ["ticket=failed"]),
+    ...(snapshotOk ? [] : ["snapshot=failed"]),
+  ];
+  redirect(notices.length ? `/sbr?${notices.join("&")}` : "/sbr");
 }
 
 /** Retry filing the queue ticket from the SBR record — idempotent (backend #19). */
