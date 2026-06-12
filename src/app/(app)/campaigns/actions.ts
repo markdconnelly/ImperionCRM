@@ -92,3 +92,52 @@ export async function launchAudienceAction(formData: FormData) {
   const eligible = await campaigns.launchAudience(id);
   redirect(`/campaigns/audiences/${id}?launched=${eligible}`);
 }
+
+// ── Campaign Sends (ADR-0053 §4 — save/schedule only; the backend executor fires) ──
+
+/**
+ * Create an email/SMS blast as draft or scheduled. NOTHING fires here: due sends
+ * are walked by the backend executor (consent-gated per recipient at fire time);
+ * until it exists the send sits in its honest scheduled/draft state — never a
+ * faked success (stubbed-not-broken).
+ */
+export async function createSendAction(formData: FormData) {
+  await requireCapability("sales:write");
+  const campaignId = String(formData.get("campaignId") ?? "");
+  if (!campaignId) return;
+  const channel = strOr(formData, "channel", "email") === "sms" ? "sms" : "email";
+  const recipientScope =
+    strOr(formData, "recipientScope", "audience") === "event_registrants"
+      ? "event_registrants"
+      : "audience";
+  const audienceId = strOrNull(formData, "audienceId");
+  if (recipientScope === "audience" && !audienceId) return; // DB CHECK backstops this
+  const scheduleMode = strOr(formData, "scheduleMode", "draft"); // draft|absolute|offset
+  const offsetMinutes = Math.trunc(Number(str(formData, "eventOffsetMinutes")));
+  const { campaigns } = getRepositories();
+  await campaigns.createSend(campaignId, {
+    channel,
+    recipientScope,
+    audienceId,
+    subject: strOrNull(formData, "subject"),
+    bodyMarkdown: strOrNull(formData, "bodyMarkdown"),
+    smsText: strOrNull(formData, "smsText"),
+    sendAt: scheduleMode === "absolute" ? strOrNull(formData, "sendAt") : null,
+    eventOffsetMinutes:
+      scheduleMode === "offset" && Number.isFinite(offsetMinutes) ? offsetMinutes : null,
+    schedule: scheduleMode !== "draft",
+  });
+  revalidatePath(`/campaigns/${campaignId}`);
+  redirect(`/campaigns/${campaignId}`);
+}
+
+/** Cancel a draft/scheduled send (sending/sent are immutable history, §5). */
+export async function cancelSendAction(formData: FormData) {
+  await requireCapability("sales:write");
+  const campaignId = String(formData.get("campaignId") ?? "");
+  const sendId = String(formData.get("sendId") ?? "");
+  if (!sendId) return;
+  const { campaigns } = getRepositories();
+  await campaigns.cancelSend(sendId);
+  revalidatePath(`/campaigns/${campaignId}`);
+}
