@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Accepted |
+| **Status** | Superseded by [ADR-0058](./ADR-0058-feedback-files-to-app-dev-queue.md) (2026-06-11) |
 | **Date** | 2026-06-07 |
-| **Cross-references** | — |
+| **Cross-references** | Superseded by ADR-0058 — feedback now files an Autotask ticket in the app-dev queue (#100) |
 
 ## Problem
 
