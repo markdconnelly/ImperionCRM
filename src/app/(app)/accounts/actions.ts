@@ -6,7 +6,7 @@ import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { requestMergeRefresh } from "@/lib/integrations/merge-refresh";
 import { pipelineService } from "@/lib/services";
-import { ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { isBackendNotConfigured } from "@/lib/services/call-guard";
 import type { AccountInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): AccountInput {
@@ -54,7 +54,8 @@ export async function refreshPostureAction(formData: FormData) {
   try {
     await pipelineService.refresh({ source: "posture", accountId });
   } catch (err) {
-    if (!(err instanceof ServiceNotConfiguredError)) {
+    // Unconfigured pipeline (#190 taxonomy) → quiet no-op; other failures logged.
+    if (!isBackendNotConfigured(err)) {
       console.error(`refreshPostureAction(${accountId}) failed:`, err);
     }
   }

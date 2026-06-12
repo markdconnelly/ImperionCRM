@@ -1,11 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { getPool } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/guard";
 import { boardService } from "@/lib/services";
-import { ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { callServiceWithFallback } from "@/lib/services/call-guard";
+import { resolveActingUser } from "@/lib/services/acting-user";
 
 /** Backend validation limit (review schema, backend docs/agents/board.md). */
 const RATIONALE_MAX = 8000;
@@ -16,22 +15,6 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export interface ReviewRecommendationResult {
   ok: boolean;
   message: string;
-}
-
-/** Resolve the signed-in employee's app_user.id (same lookup as the convene action). */
-async function resolveActingUserId(): Promise<string | undefined> {
-  const email = (await auth())?.user?.email;
-  const pool = getPool();
-  if (!email || !pool) return undefined;
-  try {
-    const { rows } = await pool.query<{ id: string }>(
-      `SELECT id FROM app_user WHERE lower(email) = lower($1) ORDER BY created_at LIMIT 1`,
-      [email],
-    );
-    return rows[0]?.id;
-  } catch {
-    return undefined;
-  }
 }
 
 /**
@@ -63,34 +46,34 @@ export async function reviewRecommendationAction(
     return { ok: false, message: `Keep the rationale under ${RATIONALE_MAX} characters.` };
   }
 
-  const actingUserId = await resolveActingUserId();
-  if (!actingUserId) {
+  const acting = await resolveActingUser();
+  if (!acting.ok) {
     return {
       ok: false,
       message: "Couldn't resolve your app user — sign in again (or provision your account under Settings).",
     };
   }
 
-  try {
-    const result = await boardService.reviewRecommendation(recommendationId, {
-      actingUserId,
-      reviewStatus: verdict,
-      rationale,
-    });
-    revalidatePath("/board");
-    revalidatePath(`/board/${result.sessionId}`);
-    return {
-      ok: true,
-      message: verdict === "ratified" ? "Recommendation ratified." : "Recommendation overruled — it no longer reads as board consensus.",
-    };
-  } catch (err) {
-    if (err instanceof ServiceNotConfiguredError) {
-      return {
-        ok: false,
-        message: "The board backend isn't wired up in this environment (AGENT_SERVICE_URL unset) — reviews can't be recorded yet.",
-      };
-    }
-    console.error("reviewRecommendationAction failed:", err);
-    return { ok: false, message: "Something went wrong recording the verdict — try again in a moment." };
-  }
+  const outcome = await callServiceWithFallback(
+    () =>
+      boardService.reviewRecommendation(recommendationId, {
+        actingUserId: acting.id,
+        reviewStatus: verdict,
+        rationale,
+      }),
+    {
+      label: "reviewRecommendationAction",
+      notConfigured:
+        "The board backend isn't wired up in this environment (AGENT_SERVICE_URL unset) — reviews can't be recorded yet.",
+      failed: "Something went wrong recording the verdict — try again in a moment.",
+    },
+  );
+  if (!outcome.ok) return { ok: false, message: outcome.message };
+
+  revalidatePath("/board");
+  revalidatePath(`/board/${outcome.value.sessionId}`);
+  return {
+    ok: true,
+    message: verdict === "ratified" ? "Recommendation ratified." : "Recommendation overruled — it no longer reads as board consensus.",
+  };
 }

@@ -10,7 +10,7 @@ import { requireCapability } from "@/lib/auth/guard";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
 import { connectionsService, credentialsService, pipelineService } from "@/lib/services";
-import { ServiceCallError, ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { isBackendNotConfigured } from "@/lib/services/call-guard";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
 import {
   isConnectableProvider,
@@ -30,14 +30,6 @@ const DEFAULT_SCOPES: Record<string, string[]> = {
   facebook: ["public_profile", "pages_read_engagement"],
   plaud: ["recordings.read"],
 };
-
-/** True when the backend says a provider/endpoint isn't configured (clean 501). */
-function isBackendNotConfigured(err: unknown): boolean {
-  return (
-    err instanceof ServiceNotConfiguredError ||
-    (err instanceof ServiceCallError && err.status === 501)
-  );
-}
 
 /**
  * Connect a personal external account (ADR-0024 + backend ADR-0038). For the live
@@ -179,9 +171,10 @@ export async function refreshNowAction(formData: FormData) {
   try {
     await pipelineService.refresh({ source });
   } catch (err) {
-    // Unconfigured pipeline URL → quiet no-op; the pipeline records run health on the
-    // connection row itself (sync_cursor/status), so other failures surface there.
-    if (!(err instanceof ServiceNotConfiguredError)) {
+    // Unconfigured pipeline (#190 taxonomy) → quiet no-op; the pipeline records run
+    // health on the connection row itself (sync_cursor/status), so other failures
+    // surface there.
+    if (!isBackendNotConfigured(err)) {
       console.error(`refreshNowAction(${source}) failed:`, err);
     }
   }
@@ -215,9 +208,9 @@ export async function saveCredentialAction(formData: FormData) {
     keyvaultSecretRef = res.keyvaultSecretRef;
     status = "active";
   } catch (err) {
-    // Backend not wired yet → keep the placeholder ref + pending. Any other failure
-    // is recorded as an error so the operator sees it on the card.
-    if (!(err instanceof ServiceNotConfiguredError)) status = "error";
+    // Backend not wired yet (#190 taxonomy) → keep the placeholder ref + pending.
+    // Any other failure is recorded as an error so the operator sees it on the card.
+    if (!isBackendNotConfigured(err)) status = "error";
   }
 
   const { connections } = getRepositories();
@@ -256,7 +249,7 @@ export async function grantGdapAction(formData: FormData) {
     consentUrl = res.consentUrl;
     consentState = res.state;
   } catch (err) {
-    if (!(err instanceof ServiceNotConfiguredError)) status = "error";
+    if (!isBackendNotConfigured(err)) status = "error";
   }
 
   const { connections } = getRepositories();

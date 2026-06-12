@@ -1,11 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { getPool } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/guard";
 import { boardService } from "@/lib/services";
-import { ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { callServiceWithFallback } from "@/lib/services/call-guard";
+import { resolveActingUser } from "@/lib/services/acting-user";
 
 /** Backend validation limits (backend ADR-0039 convene schema + 0059 seats). */
 const TOPIC_MAX = 2000;
@@ -25,22 +24,6 @@ export interface ConveneBoardResult {
   message: string;
   sessionId: string | null;
   recommendation: string | null;
-}
-
-/** Resolve the signed-in employee's app_user.id (same lookup as the agent panel). */
-async function resolveActingUserId(): Promise<string | undefined> {
-  const email = (await auth())?.user?.email;
-  const pool = getPool();
-  if (!email || !pool) return undefined;
-  try {
-    const { rows } = await pool.query<{ id: string }>(
-      `SELECT id FROM app_user WHERE lower(email) = lower($1) ORDER BY created_at LIMIT 1`,
-      [email],
-    );
-    return rows[0]?.id;
-  } catch {
-    return undefined;
-  }
 }
 
 /**
@@ -89,8 +72,8 @@ export async function conveneBoardAction(formData: FormData): Promise<ConveneBoa
     return { ok: false, status: "error", message: `Keep the CISO position under ${CISO_POSITION_MAX} characters.`, sessionId: null, recommendation: null };
   }
 
-  const actingUserId = await resolveActingUserId();
-  if (!actingUserId) {
+  const acting = await resolveActingUser();
+  if (!acting.ok) {
     return {
       ok: false,
       status: "error",
@@ -100,41 +83,34 @@ export async function conveneBoardAction(formData: FormData): Promise<ConveneBoa
     };
   }
 
-  try {
-    const result = await boardService.convene({
-      topic,
-      actingUserId,
-      ...(personaAgentIds.length > 0 ? { personaAgentIds } : {}),
-      ...(advisorAgentIds.length > 0 ? { advisorAgentIds } : {}),
-      ...(context ? { context } : {}),
-      ...(cisoPosition ? { cisoPosition } : {}),
-    });
-    revalidatePath("/board");
-    return {
-      ok: result.status === "concluded",
-      status: result.status,
-      message: result.message,
-      sessionId: result.sessionId,
-      recommendation: result.recommendation,
-    };
-  } catch (err) {
-    if (err instanceof ServiceNotConfiguredError) {
-      return {
-        ok: false,
-        status: "error",
-        message:
-          "The board backend isn't wired up in this environment (AGENT_SERVICE_URL unset) — sessions can't be convened yet.",
-        sessionId: null,
-        recommendation: null,
-      };
-    }
-    console.error("conveneBoardAction failed:", err);
-    return {
-      ok: false,
-      status: "error",
-      message: "Something went wrong reaching the board runtime — try again in a moment.",
-      sessionId: null,
-      recommendation: null,
-    };
+  const outcome = await callServiceWithFallback(
+    () =>
+      boardService.convene({
+        topic,
+        actingUserId: acting.id,
+        ...(personaAgentIds.length > 0 ? { personaAgentIds } : {}),
+        ...(advisorAgentIds.length > 0 ? { advisorAgentIds } : {}),
+        ...(context ? { context } : {}),
+        ...(cisoPosition ? { cisoPosition } : {}),
+      }),
+    {
+      label: "conveneBoardAction",
+      notConfigured:
+        "The board backend isn't wired up in this environment (AGENT_SERVICE_URL unset) — sessions can't be convened yet.",
+      failed: "Something went wrong reaching the board runtime — try again in a moment.",
+    },
+  );
+  if (!outcome.ok) {
+    return { ok: false, status: "error", message: outcome.message, sessionId: null, recommendation: null };
   }
+
+  const result = outcome.value;
+  revalidatePath("/board");
+  return {
+    ok: result.status === "concluded",
+    status: result.status,
+    message: result.message,
+    sessionId: result.sessionId,
+    recommendation: result.recommendation,
+  };
 }
