@@ -12,13 +12,16 @@ flowchart LR
     PR["Pull request"] --> LINT["ESLint"]
     PR --> TYPES["tsc --noEmit (strict)"]
     PR --> BUILD["next build"]
+    PR --> TEST["vitest run (unit suite)"]
     PR --> DOCS["Docs completeness check"]
-    LINT & TYPES & BUILD & DOCS --> MERGE{"All green?"}
+    LINT & TYPES & BUILD & TEST & DOCS --> MERGE{"All green?"}
     MERGE -->|yes| OK["mergeable"]
 ```
 
-CI (`.github/workflows/ci.yml`) blocks merge unless **lint, typecheck, build, and the
-docs check** all pass. Strict TypeScript is the first line of defense.
+CI (`.github/workflows/ci.yml`) blocks merge unless **lint, typecheck, build, the vitest
+suite, and the docs check** all pass (`build`, `test`, and `docs` are required status
+checks in the main branch ruleset — #188). Strict TypeScript is the first line of
+defense; the unit suite (175+ tests) is the second.
 
 ## Strategy (to expand)
 

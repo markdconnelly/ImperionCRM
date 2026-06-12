@@ -31,6 +31,19 @@ jobs:
       - name: Build
         run: npm run build
 
+  test:
+    # Required PR check (#188, v1 gate 11): the vitest suite must pass before merge.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # INTERIM: `npm install` until package-lock.json is committed (see build job).
+      - run: npm install --no-audit --no-fund
+      - name: Test
+        run: npm test
+
   docs:
     # Documentation validation gate (CLAUDE.md §8). PRs fail if required docs
     # are missing. Lightweight checks now; expand to markdownlint, link-check,
