@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.7.0...imperion-crm-v0.8.0) (2026-06-12)
+
+
+### Features
+
+* **db:** Meta Business Manager bronze + social_metric silver + facebook_dm lead kind ([#253](https://github.com/markdconnelly/ImperionCRM/issues/253)) ([#254](https://github.com/markdconnelly/ImperionCRM/issues/254)) ([5c2424c](https://github.com/markdconnelly/ImperionCRM/commit/5c2424ca1fbad3792b6f7a62cf545d0ff63bcb77))
+* **story:** public unauthenticated /story build-story page ([#248](https://github.com/markdconnelly/ImperionCRM/issues/248)) ([#249](https://github.com/markdconnelly/ImperionCRM/issues/249)) ([aae02f4](https://github.com/markdconnelly/ImperionCRM/commit/aae02f470bbaa5c6fc8dbc77fb672408a2f2d86f))
+
 ## [0.7.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.6.0...imperion-crm-v0.7.0) (2026-06-12)
 
 
