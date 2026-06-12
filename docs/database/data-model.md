@@ -819,6 +819,10 @@ erDiagram
       boolean is_comm "a Send- client communication step"
       text status "open|done"
       date due_at
+      text deploy_key "easy-mode backend config function (0067, ADR-0052 §3); NULL = ordinary step"
+      text verify_key "posture-silver state that verifies the deploy (ADR-0052 §4)"
+      uuid task_id FK "linked project task, auto-created at template apply; closed by verification (#101)"
+      timestamptz deploy_requested_at "set when the Deploy button fires"
     }
 ```
 
@@ -827,6 +831,17 @@ erDiagram
 > it: each phase → a `PROJECT_MILESTONE`, each step → an `ONBOARDING_STEP`. Checking off
 > steps re-derives the phase R/Y/G. Ad-hoc PM work still uses `TASK` (category
 > project/onboarding); the playbook checklist does not.
+
+> **Easy mode (ADR-0052 §3/§4, #101, migration 0067).** A step with a `deploy_key`
+> renders the Deploy button and auto-creates ONE linked project task when the template
+> is applied. Close is **verify-to-close**: completing the step (today the manual check,
+> later the backend verification over posture silver — same path) closes the linked task
+> idempotently; a deploy-flagged step completing with no linked task writes an
+> `audit_log` note (`onboarding.deploy.no_linked_task`) instead. v1 ships SPARSE — no
+> template step carries a key until the project-plan solidification exercise assigns
+> them, so the button renders nowhere yet. Migration 0067 also grants the backend role
+> SELECT on posture silver + UPDATE on `task`/`onboarding_step` for the verification
+> check.
 
 > **Apollo** (ADR-0035) is a company-scope `connection` provider and an enrichment
 > source for both contacts and companies. The normalization/merge job

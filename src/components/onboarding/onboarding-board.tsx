@@ -23,12 +23,14 @@ export function OnboardingBoard({
   setHealthAction,
   applyTemplateAction,
   toggleStepAction,
+  deployStepAction,
   today,
 }: {
   projects: OnboardingProject[];
   setHealthAction: (formData: FormData) => void | Promise<void>;
   applyTemplateAction: (formData: FormData) => void | Promise<void>;
   toggleStepAction: (formData: FormData) => void | Promise<void>;
+  deployStepAction: (formData: FormData) => void | Promise<void>;
   today: string;
 }) {
   if (projects.length === 0) {
@@ -68,7 +70,12 @@ export function OnboardingBoard({
             {p.hasTemplate ? (
               <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3">
                 {p.milestones.map((m) => (
-                  <PhaseRow key={m.id} milestone={m} toggleStepAction={toggleStepAction} />
+                  <PhaseRow
+                    key={m.id}
+                    milestone={m}
+                    toggleStepAction={toggleStepAction}
+                    deployStepAction={deployStepAction}
+                  />
                 ))}
               </div>
             ) : (
@@ -123,9 +130,11 @@ export function OnboardingBoard({
 function PhaseRow({
   milestone: m,
   toggleStepAction,
+  deployStepAction,
 }: {
   milestone: OnboardingMilestone;
   toggleStepAction: (formData: FormData) => void | Promise<void>;
+  deployStepAction: (formData: FormData) => void | Promise<void>;
 }) {
   return (
     <details className="rounded-md border border-border bg-panel-2/40">
@@ -166,6 +175,30 @@ function PhaseRow({
                   </span>
                 )}
               </span>
+              {/* Easy mode (ADR-0052 §3, #101): deploy-flagged steps carry the
+                  Deploy button — clicking IS deploying; the linked task closes
+                  only when verification observes the configuration (§4). */}
+              {s.deployKey && !done && (
+                <form action={deployStepAction} className="shrink-0">
+                  <input type="hidden" name="id" value={s.id} />
+                  <button
+                    type="submit"
+                    title={
+                      s.deployRequestedAt
+                        ? `Deploy requested ${s.deployRequestedAt} — awaiting verification`
+                        : `Run ${s.deployKey} in the customer environment`
+                    }
+                    className={cn(
+                      "rounded-md border px-2 py-0.5 text-[11px] transition-colors",
+                      s.deployRequestedAt
+                        ? "border-amber/50 text-amber"
+                        : "border-accent/50 text-accent hover:bg-accent/10",
+                    )}
+                  >
+                    {s.deployRequestedAt ? "Deploy requested" : "Deploy"}
+                  </button>
+                </form>
+              )}
             </li>
           );
         })}

@@ -171,6 +171,12 @@ export interface OnboardingStep {
   isComm: boolean; // a "Send - …" client communication step
   status: string; // open|done
   due: string | null;
+  /** Easy mode (ADR-0052 §3, #101): backend config function key; null = ordinary step. */
+  deployKey: string | null;
+  /** When the Deploy button last fired (verify-to-close pends on the backend check). */
+  deployRequestedAt: string | null;
+  /** The linked project task auto-created at template apply; closed on verification. */
+  taskId: string | null;
 }
 
 /** A red/yellow/green onboarding milestone (major step / phase) under a project. */
