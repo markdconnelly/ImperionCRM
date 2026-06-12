@@ -673,9 +673,11 @@ erDiagram
     CAMPAIGN {
       uuid id PK
       text name
-      text platform "facebook|google|youtube|linkedin|email"
+      text platform "facebook|google|youtube|linkedin|email|sms"
       text status "draft|active|paused|completed"
       numeric budget
+      uuid event_id FK "event this campaign promotes (ADR-0053)"
+      uuid workflow_id FK "auto-enroll attributed responders (#112)"
     }
     AD {
       uuid id PK
@@ -740,7 +742,7 @@ erDiagram
       uuid workflow_id FK
       uuid contact_id FK
       uuid account_id FK
-      text status "active|completed|exited"
+      text status "active|completed|exited — one ACTIVE per (workflow, contact), migration 0073"
       int current_step_ordinal
     }
 ```

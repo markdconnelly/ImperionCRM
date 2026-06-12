@@ -39,6 +39,9 @@ export default async function CampaignDetailPage({
         <Stat label="Start" value={campaign.startAt ?? "—"} />
         <Stat label="End" value={campaign.endAt ?? "—"} />
         {campaign.eventName ? <Stat label="Promotes" value={campaign.eventName} /> : null}
+        {campaign.workflowName ? (
+          <Stat label="Auto-enrolls into" value={campaign.workflowName} />
+        ) : null}
       </div>
 
       {/* Campaign Sends (ADR-0053 §4) — schedule only; the backend executor fires. */}

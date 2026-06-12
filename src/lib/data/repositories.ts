@@ -740,6 +740,8 @@ export interface EventInput {
   location: string | null; // venue (live_event)
   registrationHeadline: string | null; // → registration_page jsonb
   registrationBlurb: string | null;
+  /** Workflow registrants auto-enroll into on resolution (ADR-0053 §4, #112). */
+  workflowId: string | null;
 }
 
 /** Events repository: list/detail with derived funnel counts, builder writes. */
@@ -767,6 +769,8 @@ export interface CampaignInput {
   endAt: string | null;
   /** Event this campaign promotes (ADR-0053 §1; enables event-relative sends). */
   eventId: string | null;
+  /** Workflow campaign-attributed responders auto-enroll into (ADR-0053 §4, #112). */
+  workflowId: string | null;
 }
 
 /** One schedulable blast (ADR-0053 §4): draft, or exactly one schedule grain. */

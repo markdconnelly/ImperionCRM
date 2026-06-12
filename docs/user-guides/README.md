@@ -31,6 +31,7 @@ to-do here.
 - **Launch a campaign:** create a campaign, build an audience over the dossier, see who's ad-eligible, launch.
 - **Build an ad:** on a campaign, **+ Ad** opens the structured creative builder — headline, body, image ref, CTA, landing URL, UTM — with a live ad-card preview and an audience picker that shows the ad-eligible (ad_targeting opt-in) count (ADR-0053 §3 / ADR-0026; the push to Meta is a backend slice — nothing leaves the building yet).
 - **Run an event:** build a webinar (Teams link) or live event (venue) in Events, point a campaign at it, watch registrations land in the capture inbox (ADR-0053; registration/attendance flow ships with #230).
+- **Auto-enroll responders:** pick a workflow on the campaign or event builder; when a capture attributed to that campaign (hook config names the campaign) or an event registration resolves to a contact, the contact auto-enrolls in the workflow — once per active enrollment, audit-logged, silent no-op when no workflow is set (ADR-0053 §4, #112).
 - **Schedule a blast:** compose an email ({{merge_fields}} + preview) or SMS (segment counter) send on a campaign; schedule absolute or relative to the linked event; consent is enforced at fire time per recipient (ADR-0053 §4–§5 — nothing fires until the backend executor is live).
 - **Connect your accounts:** link your M365/LinkedIn/YouTube so your comms flow in. *(UI built; the live OAuth pull is the next phase.)*
 

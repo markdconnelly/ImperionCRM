@@ -1,13 +1,16 @@
 import { Field, TextInput, Select, FormActions } from "@/components/ui/form";
-import type { EventRow } from "@/types";
+import type { EventRow, WorkflowRow } from "@/types";
 
 export function CampaignForm({
   action,
   events,
+  workflows,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   /** Events this campaign can promote (ADR-0053 §1; enables event-relative sends). */
   events?: EventRow[];
+  /** Workflows campaign-attributed responders auto-enroll into (ADR-0053 §4, #112). */
+  workflows?: WorkflowRow[];
 }) {
   return (
     <form
@@ -50,6 +53,19 @@ export function CampaignForm({
             {events.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
+
+      {workflows && workflows.length > 0 ? (
+        <Field label="Auto-enroll responders into workflow (optional)">
+          <Select name="workflowId" defaultValue="">
+            <option value="">— none —</option>
+            {workflows.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
               </option>
             ))}
           </Select>

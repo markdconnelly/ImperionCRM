@@ -3718,6 +3718,8 @@ export const postgresRepositories: Repositories = {
           location: string | null;
           reg_headline: string | null;
           reg_blurb: string | null;
+          workflow_id: string | null;
+          workflow_name: string | null;
           registered: string;
           attended: string;
           no_show: string;
@@ -3726,11 +3728,14 @@ export const postgresRepositories: Repositories = {
                   e.starts_at, e.ends_at, e.timezone, e.capacity, e.join_url, e.location,
                   e.registration_page->>'headline' AS reg_headline,
                   e.registration_page->>'blurb'    AS reg_blurb,
+                  e.workflow_id, w.name AS workflow_name,
                   COUNT(r.id) FILTER (WHERE r.status <> 'canceled') AS registered,
                   COUNT(r.id) FILTER (WHERE r.status = 'attended')  AS attended,
                   COUNT(r.id) FILTER (WHERE r.status = 'no_show')   AS no_show
-           FROM event e LEFT JOIN event_registration r ON r.event_id = e.id
-           WHERE e.id = $1 GROUP BY e.id`,
+           FROM event e
+           LEFT JOIN workflow w ON w.id = e.workflow_id
+           LEFT JOIN event_registration r ON r.event_id = e.id
+           WHERE e.id = $1 GROUP BY e.id, w.name`,
           [id],
         );
         const r = rows[0];
@@ -3749,6 +3754,8 @@ export const postgresRepositories: Repositories = {
           location: r.location,
           registrationHeadline: r.reg_headline,
           registrationBlurb: r.reg_blurb,
+          workflowId: r.workflow_id,
+          workflowName: r.workflow_name,
           registered: Number(r.registered),
           attended: Number(r.attended),
           noShow: Number(r.no_show),
@@ -3763,9 +3770,9 @@ export const postgresRepositories: Repositories = {
       if (!pool) return mockRepositories.events.createEvent(input);
       const { rows } = await pool.query<{ id: string }>(
         `INSERT INTO event (kind, name, description, status, starts_at, ends_at, timezone,
-                            capacity, join_url, location, registration_page)
+                            capacity, join_url, location, registration_page, workflow_id)
          VALUES ($1::event_kind, $2, $3, $4::event_status, $5::timestamptz, $6::timestamptz,
-                 $7, $8, $9, $10, $11::jsonb)
+                 $7, $8, $9, $10, $11::jsonb, $12::uuid)
          RETURNING id`,
         [
           input.kind,
@@ -3783,6 +3790,7 @@ export const postgresRepositories: Repositories = {
             blurb: input.registrationBlurb,
             fields: ["full_name", "email"],
           }),
+          nullIfEmpty(input.workflowId),
         ],
       );
       return rows[0].id;
@@ -3800,7 +3808,8 @@ export const postgresRepositories: Repositories = {
                 starts_at = COALESCE($6::timestamptz, starts_at),
                 ends_at   = COALESCE($7::timestamptz, ends_at),
                 timezone = $8, capacity = $9, join_url = $10, location = $11,
-                registration_page = registration_page || $12::jsonb
+                registration_page = registration_page || $12::jsonb,
+                workflow_id = $13::uuid
          WHERE id = $1`,
         [
           id,
@@ -3818,6 +3827,7 @@ export const postgresRepositories: Repositories = {
             headline: input.registrationHeadline,
             blurb: input.registrationBlurb,
           }),
+          nullIfEmpty(input.workflowId),
         ],
       );
     },
@@ -3922,11 +3932,14 @@ export const postgresRepositories: Repositories = {
           end_at: Date | null;
           event_id: string | null;
           event_name: string | null;
+          workflow_name: string | null;
         }>(
           `SELECT c.id, c.name, c.platform::text AS platform, c.objective,
                   c.status::text AS status, c.budget, c.start_at, c.end_at,
-                  c.event_id, ev.name AS event_name
-           FROM campaign c LEFT JOIN event ev ON ev.id = c.event_id
+                  c.event_id, ev.name AS event_name, w.name AS workflow_name
+           FROM campaign c
+           LEFT JOIN event ev ON ev.id = c.event_id
+           LEFT JOIN workflow w ON w.id = c.workflow_id
            WHERE c.id = $1`,
           [id],
         );
@@ -3965,6 +3978,7 @@ export const postgresRepositories: Repositories = {
           endAt: fmtDate(r.end_at),
           eventId: r.event_id,
           eventName: r.event_name,
+          workflowName: r.workflow_name,
           ads: ads.map((ad) => ({
             id: ad.id,
             name: ad.name,
@@ -3986,8 +4000,10 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.campaigns.createCampaign(input);
       await pool.query(
-        `INSERT INTO campaign (name, platform, objective, status, budget, start_at, end_at, event_id)
-         VALUES ($1, $2::campaign_platform, $3, $4::campaign_status, $5::numeric, $6::date, $7::date, $8::uuid)`,
+        `INSERT INTO campaign (name, platform, objective, status, budget, start_at, end_at,
+                               event_id, workflow_id)
+         VALUES ($1, $2::campaign_platform, $3, $4::campaign_status, $5::numeric, $6::date,
+                 $7::date, $8::uuid, $9::uuid)`,
         [
           input.name,
           input.platform,
@@ -3997,6 +4013,7 @@ export const postgresRepositories: Repositories = {
           nullIfEmpty(input.startAt),
           nullIfEmpty(input.endAt),
           nullIfEmpty(input.eventId),
+          nullIfEmpty(input.workflowId),
         ],
       );
     },
@@ -4331,6 +4348,52 @@ export const postgresRepositories: Repositories = {
            ON CONFLICT (event_id, contact_id) WHERE contact_id IS NOT NULL DO NOTHING`,
           [eventId],
         );
+        // Auto-enroll (ADR-0053 §4, #112): a capture whose hook config names a
+        // campaign enrolls the contact in campaign.workflow_id; an event-
+        // registration hook enrolls in event.workflow_id. Silent no-op when no
+        // workflow is set; idempotent on re-resolution via the one-active-
+        // enrollment-per-(workflow, contact) partial unique index (migration
+        // 0073). Each enrollment actually created is audit-logged.
+        const { rows: targets } = await pool.query<{
+          workflow_id: string;
+          account_id: string | null;
+          via: string;
+          via_id: string;
+        }>(
+          `WITH cap AS (
+             SELECT e.account_id, h.kind::text AS hook_kind, h.config
+             FROM lead_capture_event e
+             JOIN lead_hook h ON h.id = e.hook_id
+             WHERE e.id = $1
+           )
+           SELECT c.workflow_id, cap.account_id, 'campaign' AS via, c.id::text AS via_id
+           FROM cap JOIN campaign c ON c.id::text = cap.config->>'campaignId'
+           WHERE c.workflow_id IS NOT NULL
+           UNION
+           SELECT ev.workflow_id, cap.account_id, 'event' AS via, ev.id::text AS via_id
+           FROM cap JOIN event ev ON ev.id::text = cap.config->>'eventId'
+           WHERE cap.hook_kind = 'event_registration' AND ev.workflow_id IS NOT NULL`,
+          [eventId],
+        );
+        for (const t of targets) {
+          const { rows: created } = await pool.query<{ id: string }>(
+            `INSERT INTO workflow_enrollment (workflow_id, contact_id, account_id)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (workflow_id, contact_id) WHERE status = 'active' DO NOTHING
+             RETURNING id`,
+            [t.workflow_id, contactId, t.account_id],
+          );
+          if (created[0]) {
+            await pool.query(
+              `INSERT INTO audit_log (action, entity_type, entity_id, detail)
+               VALUES ('workflow.auto_enroll', 'workflow_enrollment', $1::uuid,
+                       jsonb_build_object('workflowId', $2::text, 'contactId', $3::text,
+                                          'via', $4::text, 'viaId', $5::text,
+                                          'captureEventId', $6::text))`,
+              [created[0].id, t.workflow_id, contactId, t.via, t.via_id, eventId],
+            );
+          }
+        }
       }
       return contactId;
     },
@@ -4480,9 +4543,11 @@ export const postgresRepositories: Repositories = {
     async enroll(workflowId: string, contactId: string, accountId: string | null): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.workflows.enroll(workflowId, contactId, accountId);
+      // Idempotent: one ACTIVE enrollment per (workflow, contact) — migration 0073.
       await pool.query(
         `INSERT INTO workflow_enrollment (workflow_id, contact_id, account_id)
-         VALUES ($1, $2, $3)`,
+         VALUES ($1, $2, $3)
+         ON CONFLICT (workflow_id, contact_id) WHERE status = 'active' DO NOTHING`,
         [workflowId, contactId, nullIfEmpty(accountId)],
       );
     },

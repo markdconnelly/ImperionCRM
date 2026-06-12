@@ -57,7 +57,10 @@ decision 6 — feeds the #162 device policy indicator); 0070 `event` +
 (#228 / #109, ADR-0053 slice A — events as first-class objects); 0071 `campaign_send`
 (one schedulable blast: email|sms, audience or event registrants, absolute or
 event-relative schedule) + `campaign_platform` 'sms' + `connection_provider` 'acs' +
-backend executor grants (#236 / #110, ADR-0053 slice B).
+backend executor grants (#236 / #110, ADR-0053 slice B); 0073 `campaign.workflow_id` +
+one-ACTIVE-enrollment-per-(workflow, contact) partial unique index (#112, ADR-0053
+slice D — auto-enroll responders/registrants; resolution path enrolls idempotently
+and audit-logs `workflow.auto_enroll`).
 The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`

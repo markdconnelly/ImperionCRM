@@ -28,6 +28,7 @@ function parse(formData: FormData): EventInput {
     location: strOrNull(formData, "location"),
     registrationHeadline: strOrNull(formData, "registrationHeadline"),
     registrationBlurb: strOrNull(formData, "registrationBlurb"),
+    workflowId: strOrNull(formData, "workflowId"),
   };
 }
 

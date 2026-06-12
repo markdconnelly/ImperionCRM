@@ -23,6 +23,7 @@ function parseCampaign(formData: FormData): CampaignInput {
     startAt: strOrNull(formData, "startAt"),
     endAt: strOrNull(formData, "endAt"),
     eventId: strOrNull(formData, "eventId"),
+    workflowId: strOrNull(formData, "workflowId"),
   };
 }
 
