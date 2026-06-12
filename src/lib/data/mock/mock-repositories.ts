@@ -563,6 +563,20 @@ export const mockRepositories: Repositories = {
       return [];
     },
   },
+  events: {
+    async listEvents() {
+      return [];
+    },
+    async getEvent() {
+      return null;
+    },
+    async createEvent(): Promise<string> {
+      throw new Error(NO_DB);
+    },
+    async updateEvent() {
+      throw new Error(NO_DB);
+    },
+  },
   campaigns: {
     async listCampaigns() {
       return campaigns;

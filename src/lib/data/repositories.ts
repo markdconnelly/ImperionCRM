@@ -36,6 +36,8 @@ import type {
   DiscoveryCallRow,
   EnrichmentFactRow,
   EnrollmentRow,
+  EventDetail,
+  EventRow,
   ExternalIdentityRow,
   InteractionRow,
   KnowledgeHit,
@@ -720,6 +722,32 @@ export interface ConnectionsRepository {
   listExternalIdentities(accountId: string): Promise<ExternalIdentityRow[]>;
 }
 
+// ── Events (ADR-0053): first-class objects campaigns promote ─────────────────
+
+/** Editable event fields (the webinar/live-event builders). */
+export interface EventInput {
+  kind: string; // webinar|live_event
+  name: string;
+  description: string | null;
+  status: string; // draft|scheduled|live|completed|canceled
+  startsAt: string | null; // datetime-local string
+  endsAt: string | null;
+  timezone: string | null;
+  capacity: number | null;
+  joinUrl: string | null; // Teams link (webinar)
+  location: string | null; // venue (live_event)
+  registrationHeadline: string | null; // → registration_page jsonb
+  registrationBlurb: string | null;
+}
+
+/** Events repository: list/detail with derived funnel counts, builder writes. */
+export interface EventsRepository {
+  listEvents(): Promise<EventRow[]>;
+  getEvent(id: string): Promise<EventDetail | null>;
+  createEvent(input: EventInput): Promise<string>;
+  updateEvent(id: string, input: EventInput): Promise<void>;
+}
+
 // ── Demand generation (ADR-0012/0026) ────────────────────────────────────────
 
 /** Editable campaign fields. */
@@ -863,6 +891,7 @@ export interface Repositories {
   consent: ConsentRepository;
   connections: ConnectionsRepository;
   campaigns: CampaignsRepository;
+  events: EventsRepository;
   leads: LeadsRepository;
   workflows: WorkflowsRepository;
   knowledge: KnowledgeRepository;

@@ -675,6 +675,39 @@ export interface ExternalIdentityRow {
   contact: string | null;
 }
 
+// ── Events: first-class objects campaigns promote (ADR-0053) ─────────────────
+
+/** A row in the Events list. Funnel counts are derived, never stored. */
+export interface EventRow {
+  id: string;
+  kind: string; // webinar|live_event
+  name: string;
+  status: string; // draft|scheduled|live|completed|canceled
+  startsAt: string | null; // formatted
+  registered: number;
+  attended: number;
+}
+
+/** Full event detail for the record page. */
+export interface EventDetail {
+  id: string;
+  kind: string;
+  name: string;
+  description: string | null;
+  status: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  timezone: string | null;
+  capacity: number | null;
+  joinUrl: string | null; // Teams link (webinar)
+  location: string | null; // venue (live_event)
+  registrationHeadline: string | null; // typed registration_page jsonb
+  registrationBlurb: string | null;
+  registered: number;
+  attended: number;
+  noShow: number;
+}
+
 // ── Demand generation: campaigns, ads, audiences (ADR-0012/0026) ─────────────
 
 /** A row in the Campaigns list. */
