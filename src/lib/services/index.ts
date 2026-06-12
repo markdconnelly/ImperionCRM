@@ -117,6 +117,31 @@ export const integrationService = {
     callService(services.integration, "/ingest", { method: "POST", body: JSON.stringify(input) }),
 };
 
+/**
+ * Autotask ticket creation with a server-side idempotency ledger (backend #19,
+ * POST /api/autotask/tickets on the backend). The idempotency identity is the
+ * originating app object (`origin.type` + `origin.id` → key
+ * `imperioncrm-{type}-{id}`, ADR-0052 §7): retrying the SAME origin returns the
+ * existing ticketRef (`created: false`) and can never file twice. Queue is a
+ * name resolved through the backend's AUTOTASK_QUEUE_IDS map (or a numeric
+ * Autotask queue id). Callers: Business Reviews → 'business-review' (#99),
+ * Feedback → 'app-dev' (#100), Tasks → per-category queue (#98).
+ */
+export const ticketsService = {
+  createTicket: (input: {
+    queue: string | number;
+    title: string;
+    description?: string;
+    accountId: string;
+    origin: { type: string; id: string };
+  }) =>
+    callService<{ ticketRef: string; created: boolean }>(
+      services.integration,
+      "/autotask/tickets",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
+    ),
+};
+
 /** Agentic web-scrape lead intel (ADR-0012). */
 export const enrichmentService = {
   briefForContact: (input: { contactId: string }) =>

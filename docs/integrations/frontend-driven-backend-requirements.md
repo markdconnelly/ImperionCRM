@@ -115,6 +115,23 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
 - Agent answer drafting (ADR-0027), enrichment reasoning, embeddings generation, and the
   orchestrator runtime + AI Agents/Board pages remain back-end/deferred (ADR-0015/0018).
 
+## 9. Autotask ticket creation (backend #19) — ✅ implemented, consumed by the GUI
+
+- Backend `POST /api/autotask/tickets` `{queue, title, description?, accountId,
+  origin:{type,id}}` with a **server-side idempotency ledger** (key
+  `imperioncrm-{origin.type}-{origin.id}`, ADR-0052 §7): a retried push returns the
+  existing `ticketRef` (`created:false`), and the pipeline ticket sync-back links via
+  `(source='autotask', external_ref)` instead of re-importing.
+- Front-end caller: `ticketsService.createTicket` (`src/lib/services/index.ts`).
+  Consumers: **Business Reviews → `business-review` queue** (#99, origin
+  `business_review` — the created ticket carries `ticket.source_sbr_id` and renders on
+  the SBR record; ticket failure never fails the review, the record offers an
+  idempotent retry). Feedback → `app-dev` (#100) and Tasks → per-category queue (#98)
+  follow the same path.
+- **Ops prerequisite:** the backend app setting `AUTOTASK_QUEUE_IDS` must map the queue
+  names (`business-review`, `app-dev`, …) to Autotask queue picklist ids; an unmapped
+  name returns 400 and surfaces as the non-blocking notice.
+
 ## Pipeline summary (bronze → silver → gold)
 
 ```

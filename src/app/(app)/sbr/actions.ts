@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
+import { ticketsService } from "@/lib/services";
 import type { SbrInput, SbrScoreInput } from "@/lib/data/repositories";
 
 function str(formData: FormData, key: string): string {
@@ -40,14 +41,63 @@ function parseTicketIds(formData: FormData): string[] {
   return formData.getAll("ticketIds").map(String).filter((s) => s !== "");
 }
 
+/**
+ * Queue-ticket side effect (#99): every Business Review files exactly one
+ * Autotask ticket in the business-review queue via the backend's idempotent
+ * ticket API (backend #19 — origin {business_review, sbrId} is the server-side
+ * idempotency identity, so retries link instead of duplicating; the created
+ * ticket row carries source_sbr_id and surfaces on the SBR record). A ticket
+ * failure must NEVER fail the review — the SBR exists either way; we surface a
+ * non-blocking notice and the record page offers a retry.
+ */
+async function fileBusinessReviewTicket(
+  id: string,
+  input: Pick<SbrInput, "accountId" | "periodLabel" | "reviewDate">,
+): Promise<boolean> {
+  try {
+    await ticketsService.createTicket({
+      queue: "business-review",
+      title: `Business Review — ${input.periodLabel ?? input.reviewDate}`,
+      description:
+        "Strategic Business Review created in Imperion CRM. " +
+        `Review date: ${input.reviewDate}.`,
+      accountId: input.accountId,
+      origin: { type: "business_review", id },
+    });
+    return true;
+  } catch (err) {
+    console.error(`[sbr] business-review queue ticket failed for ${id}:`, err);
+    return false;
+  }
+}
+
 export async function createSbrAction(formData: FormData) {
   await requireCapability("delivery:write");
   const { engagements } = getRepositories();
-  const id = await engagements.createSbr(parseSbr(formData));
+  const input = parseSbr(formData);
+  const id = await engagements.createSbr(input);
   await engagements.saveSbrScores(id, parseScores(formData));
   await engagements.setSbrTickets(id, parseTicketIds(formData));
+  const ticketOk = await fileBusinessReviewTicket(id, input);
   revalidatePath("/sbr");
-  redirect("/sbr");
+  redirect(ticketOk ? "/sbr" : "/sbr?ticket=failed");
+}
+
+/** Retry filing the queue ticket from the SBR record — idempotent (backend #19). */
+export async function createSbrTicketAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const id = String(formData.get("sbrId") ?? "").trim();
+  if (!id) return;
+  const { engagements } = getRepositories();
+  const sbr = await engagements.getSbr(id);
+  if (!sbr) return;
+  const ticketOk = await fileBusinessReviewTicket(id, {
+    accountId: sbr.accountId,
+    periodLabel: sbr.periodLabel,
+    reviewDate: sbr.reviewDate,
+  });
+  revalidatePath(`/sbr/${id}`);
+  if (!ticketOk) redirect(`/sbr/${id}?ticket=failed`);
 }
 
 export async function updateSbrAction(formData: FormData) {
