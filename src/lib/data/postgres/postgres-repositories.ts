@@ -1,14 +1,16 @@
 /**
  * PostgreSQL-backed repositories (ADR-0007). Reads the real schema and maps rows to
- * the UI shapes. Every method falls back to mock data on any error, so a transient
- * DB issue degrades to the prior behavior instead of breaking the app.
+ * the UI shapes. Error paths route through the guarded fallback seam (#193,
+ * `./fallback`): with NO database configured they return mock data so the UI still
+ * renders; with a database configured they throw `DataUnavailableError` instead of
+ * silently substituting demo data for a real outage.
  *
  * Server-only. Selected by lib/data/index.ts when a database is configured.
  */
 import "server-only";
 import type { Pool } from "pg";
 import { getPool } from "@/lib/db/client";
-import { mockRepositories } from "@/lib/data/mock/mock-repositories";
+import { mockRepositories } from "@/lib/data/postgres/fallback";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import type {

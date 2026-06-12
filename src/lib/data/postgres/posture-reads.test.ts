@@ -9,7 +9,9 @@ const { query, getPool } = vi.hoisted(() => ({
   ),
   getPool: vi.fn((): unknown => ({ query })),
 }));
-vi.mock("@/lib/db/client", () => ({ getPool }));
+// isDbConfigured mirrors the real semantics (pool present) so the guarded fallback
+// seam (#193) sees "not configured" when getPool is stubbed to null.
+vi.mock("@/lib/db/client", () => ({ getPool, isDbConfigured: () => getPool() !== null }));
 vi.mock("server-only", () => ({})); // Next.js marker module — inert under vitest
 
 import { postgresRepositories } from "./postgres-repositories";

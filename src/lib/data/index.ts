@@ -5,8 +5,9 @@
  * orchestrator) get repositories from here and never construct a data source
  * themselves. When a database is configured (Azure managed identity or
  * DATABASE_URL) the Postgres-backed repositories are used; otherwise mock data so
- * the UI still renders. The Postgres repositories themselves fall back to mock per
- * call on error, so this never hard-fails the page.
+ * the UI still renders. With a configured database, a failing query throws
+ * `DataUnavailableError` (#193, postgres/fallback.ts) and surfaces through the route
+ * error boundary — live pages never silently show demo data during an outage.
  */
 import "server-only";
 import type { Repositories } from "@/lib/data/repositories";
