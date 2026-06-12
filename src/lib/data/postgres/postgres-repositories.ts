@@ -3936,16 +3936,22 @@ export const postgresRepositories: Repositories = {
           id: string;
           name: string;
           status: string;
+          creative: { headline?: string; copy?: string } | null;
+          audience_name: string | null;
           spend: string | null;
           impressions: string | null;
           clicks: string | null;
           leads: string | null;
         }>(
-          `SELECT ad.id, ad.name, ad.status::text AS status,
+          // Typed creative (ADR-0053 §3) carries an optional audienceId; legacy rows carry {copy}.
+          `SELECT ad.id, ad.name, ad.status::text AS status, ad.creative,
+                  au.name AS audience_name,
                   SUM(m.spend) AS spend, COALESCE(SUM(m.impressions),0) AS impressions,
                   COALESCE(SUM(m.clicks),0) AS clicks, COALESCE(SUM(m.leads),0) AS leads
-           FROM ad LEFT JOIN campaign_metric m ON m.ad_id = ad.id
-           WHERE ad.campaign_id = $1 GROUP BY ad.id ORDER BY ad.created_at`,
+           FROM ad
+           LEFT JOIN campaign_metric m ON m.ad_id = ad.id
+           LEFT JOIN audience au ON au.id::text = ad.creative->>'audienceId'
+           WHERE ad.campaign_id = $1 GROUP BY ad.id, au.name ORDER BY ad.created_at`,
           [id],
         );
         return {
@@ -3963,6 +3969,8 @@ export const postgresRepositories: Repositories = {
             id: ad.id,
             name: ad.name,
             status: ad.status,
+            creative: ad.creative?.headline ?? ad.creative?.copy ?? null,
+            audienceName: ad.audience_name,
             spend: ad.spend != null ? fmtUsd(Number(ad.spend)) : "—",
             impressions: Number(ad.impressions ?? 0),
             clicks: Number(ad.clicks ?? 0),
@@ -3996,6 +4004,7 @@ export const postgresRepositories: Repositories = {
     async createAd(campaignId: string, input: AdInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.campaigns.createAd(campaignId, input);
+      // Typed creative shape (ADR-0053 §3) persisted as-is; legacy rows keep {copy}.
       await pool.query(
         `INSERT INTO ad (campaign_id, name, status, creative)
          VALUES ($1, $2, $3::campaign_status, $4::jsonb)`,
@@ -4003,7 +4012,7 @@ export const postgresRepositories: Repositories = {
           campaignId,
           input.name,
           input.status,
-          input.creative == null ? null : JSON.stringify({ copy: input.creative }),
+          input.creative == null ? null : JSON.stringify(input.creative),
         ],
       );
     },

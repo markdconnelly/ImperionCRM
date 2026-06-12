@@ -798,11 +798,23 @@ export interface AudienceInput {
   criteria: AudienceCriterion[];
 }
 
+/** Typed ad creative (ADR-0053 §3): the structured shape persisted in `ad.creative`. */
+export interface AdCreativeInput {
+  headline: string;
+  body: string | null;
+  imageRef: string | null; // asset reference (URL/path); upload pipeline is backend work
+  cta: string | null; // e.g. "Learn more"
+  landingUrl: string | null;
+  utm: string | null; // e.g. utm_campaign=q3-webinar
+  /** Audience the ad targets (consent-eligible members only, ADR-0026). */
+  audienceId: string | null;
+}
+
 /** Editable ad fields (an ad belongs to a campaign). */
 export interface AdInput {
   name: string;
   status: string; // draft|active|paused|completed
-  creative: string | null; // free-text headline/body for the scaffold
+  creative: AdCreativeInput | null; // typed shape (legacy rows carry {copy})
 }
 
 /** Demand-gen repository: campaigns/ads/metrics and audiences over profiles. */

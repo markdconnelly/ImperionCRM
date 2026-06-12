@@ -681,7 +681,7 @@ erDiagram
       uuid id PK
       uuid campaign_id FK
       text name
-      jsonb creative
+      jsonb creative "typed ADR-0053: headline, body, imageRef, cta, landingUrl, utm, audienceId; legacy rows: copy"
       text status
     }
     CAMPAIGN_METRIC {
