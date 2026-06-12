@@ -165,6 +165,7 @@ erDiagram
       uuid account_id FK
       uuid contact_id FK
       uuid opportunity_id FK
+      uuid project_id FK "SET NULL — project meetings (0066, ADR-0052 §5)"
       text source "m365|plaud|sms|facebook|system"
       text channel
       text direction
@@ -593,6 +594,7 @@ erDiagram
       uuid contact_id FK
       uuid owner_user_id FK "employee"
       uuid source_connection_id FK
+      uuid project_id FK "SET NULL — project meetings (0066, ADR-0052 §5); NULL on sales meetings"
       text source "enum interaction_source"
       text kind "email|message|call|meeting|social_comment|…"
       text subject

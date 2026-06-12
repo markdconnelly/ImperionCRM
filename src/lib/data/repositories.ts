@@ -540,6 +540,10 @@ export interface InteractionFilter {
   accountId?: string;
   source?: string;
   kind?: string;
+  /** Interactions attached to one project via interaction.project_id (ADR-0052 §5). */
+  projectId?: string;
+  /** Only interactions with NO project linkage — sales meetings (ADR-0052 §6). */
+  noProject?: boolean;
   limit?: number;
 }
 
@@ -555,6 +559,23 @@ export interface InteractionInput {
 }
 
 /**
+ * A manually logged meeting (ADR-0052 §5, #97): writes `interaction`
+ * (source 'meeting', kind 'meeting') + its 1:1 `meeting` silver row
+ * (platform 'other') in one transaction. Attach to a project via projectId
+ * (project meetings) or to opportunity/account/contact (sales meetings) —
+ * never both shapes at once by convention, not constraint.
+ */
+export interface MeetingCreateInput {
+  accountId: string | null;
+  contactId: string | null;
+  opportunityId: string | null;
+  projectId: string | null;
+  title: string;
+  occurredAt: string | null; // yyyy-mm-dd or null (defaults to now)
+  notes: string | null; // stored as summary_gold
+}
+
+/**
  * Communications repository (ADR-0011): the universal multi-channel timeline plus
  * meeting action items. Reads are "gold" (agent-ready); createInteraction logs an
  * entry to the timeline (the actual provider send is stubbed in this phase).
@@ -566,6 +587,8 @@ export interface CommsRepository {
   /** One communication with its meeting detail + action items (drill-down). */
   getInteraction(id: string): Promise<CommunicationDetail | null>;
   createInteraction(input: InteractionInput): Promise<void>;
+  /** Manually log a meeting: interaction + meeting silver row (ADR-0052 §5). */
+  createMeeting(input: MeetingCreateInput): Promise<void>;
   listActionItems(contactId?: string): Promise<ActionItemRow[]>;
   completeActionItem(id: string): Promise<void>;
 }

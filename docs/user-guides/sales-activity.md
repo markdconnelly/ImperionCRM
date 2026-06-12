@@ -22,8 +22,11 @@ flowchart LR
   first), each showing its deal and account.
 - **Team queues** — everyone else's open sales tasks, one card per owner;
   tasks with no owner land under *Unassigned*.
-- **Recent sales meetings** — the latest meeting interactions from the
-  communications timeline; click through to the full meeting record.
+- **Recent sales meetings** — the latest *sales* meetings (meetings with no
+  project linkage, ADR-0052 §6) from the communications timeline; click
+  through to the full meeting record. With the sales capability you can log a
+  meeting in place (title, account, deal, date) — it lands on the timeline as
+  a communication object (#97), exactly like an ingested meeting.
 
 ## Working the queue
 
