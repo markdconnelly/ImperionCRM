@@ -356,9 +356,18 @@ export const boardService = {
  * path, so a refresh can never duplicate a scheduled load.
  */
 export const pipelineService = {
-  // accountId is required by the pipeline when source is "posture" (the only
-  // account-scoped source — pipeline ADR-0015) and ignored for every other source.
-  refresh: (input: { source: RefreshSource; accountId?: string }) =>
+  // accountId is required by the pipeline when source is "posture" or
+  // "posture_snapshot" (the account-scoped sources — pipeline ADR-0015/#38) and
+  // ignored for every other source. trigger/businessReviewId are ONLY valid for
+  // "posture_snapshot" (ADR-0051 §5): trigger defaults to 'on_demand';
+  // 'business_review' requires businessReviewId — the pipeline enforces the
+  // pairing rule, mirroring the on-prem cmdlet.
+  refresh: (input: {
+    source: RefreshSource;
+    accountId?: string;
+    trigger?: "on_demand" | "business_review";
+    businessReviewId?: string;
+  }) =>
     callService<{ source: string; ran: boolean; reason?: string; counts?: Record<string, number> }>(
       services.pipeline,
       "/refresh",

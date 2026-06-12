@@ -20,7 +20,8 @@ export type RefreshSource =
   | "televy"
   | "m365"
   | "merge" // bronze→silver merge sweep (pipeline ADR-0012) — not a provider, so never in REFRESH_SOURCES
-  | "posture"; // account-scoped posture re-classification (ADR-0051 §2, pipeline ADR-0015) — requires accountId, never in REFRESH_SOURCES
+  | "posture" // account-scoped posture re-classification (ADR-0051 §2, pipeline ADR-0015) — requires accountId, never in REFRESH_SOURCES
+  | "posture_snapshot"; // account-scoped immutable Imperion Secure Score snapshot (ADR-0051 §5, pipeline #38) — requires accountId (+ trigger), never in REFRESH_SOURCES
 
 export const REFRESH_SOURCES: Record<string, RefreshSource> = {
   autotask: "autotask",

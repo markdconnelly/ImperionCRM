@@ -69,6 +69,13 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
   pipeline re-classifies that account's mapped Customer Tenants into
   `posture_policy`/`tenant_posture` and the page revalidates after it lands. Bulk
   posture merges (all tenants, scheduled) belong to the on-prem pipeline.
+- **Posture snapshot triggers (ADR-0051 §5, #168):** ✅ creating a Business Review
+  requests an immutable Imperion Secure Score snapshot from the cloud pipeline
+  (`POST /api/refresh {source:"posture_snapshot", accountId, trigger:"business_review",
+  businessReviewId}`, pipeline #38) — awaited, but snapshot failure never fails review
+  creation (non-blocking notice; the scheduled quarterly on-prem job still covers the
+  account). The posture page's **Snapshot now** button fires the same call with
+  `trigger:"on_demand"`. The GUI never computes or inserts snapshots (ADR-0042).
 - **Posture overview page (#93):** ✅ `/accounts/{id}/posture` renders the account's
   mapped tenants' `tenant_posture` rollups, the `posture_policy` classification
   drill-down (vs Golden State), the bronze secure-score control profiles, and the
