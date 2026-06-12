@@ -53,6 +53,7 @@ import type {
   QuestionTemplateRow,
   ReportSummary,
   RevenueSplit,
+  SalesTaskRow,
   SbrDetail,
   SbrRow,
   SocialIdentityRow,
@@ -107,6 +108,19 @@ export interface TaskInput {
 }
 export interface TaskEditable extends TaskInput {
   id: string;
+}
+
+/**
+ * A sales task created from the Sales Activity page (ADR-0052 §6): always
+ * `category='sales'`, owned by the creating rep, optionally tied to a deal.
+ */
+export interface SalesTaskInput {
+  title: string;
+  detail: string | null;
+  accountId: string | null;
+  opportunityId: string | null;
+  ownerUserId: string | null;
+  dueAt: string | null; // yyyy-mm-dd or null
 }
 
 /** Editable proposal fields. A proposal always belongs to one opportunity. */
@@ -214,6 +228,14 @@ export interface CrmRepository {
   createTask(input: TaskInput): Promise<void>;
   updateTask(id: string, input: TaskInput): Promise<void>;
   deleteTask(id: string): Promise<void>;
+
+  // Sales Activity (ADR-0052 §6) — the Sales Queue read model + its two writes
+  /** Open `category='sales'` tasks with owner + deal context (the Sales Queue). */
+  listSalesTasks(): Promise<SalesTaskRow[]>;
+  /** Create a sales task (category fixed to 'sales', owned by the creating rep). */
+  createSalesTask(input: SalesTaskInput): Promise<void>;
+  /** Set a task's status (Sales Queue complete button; idempotent). */
+  setTaskStatus(id: string, status: string): Promise<void>;
 
   // Proposals (full CRUD) — attach to an opportunity (ADR-0019)
   listProposals(): Promise<ProposalRow[]>;

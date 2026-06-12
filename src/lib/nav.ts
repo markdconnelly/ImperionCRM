@@ -15,8 +15,8 @@ export const navPrimary: NavItem[] = [
 // Main work group (below the divider): the customer journey — Accounts, the
 // people in them (Contacts, with Leads reached via the in-page toggle, ADR-0031),
 // how we reach them (Campaigns, Communications), the engagements (Discovery →
-// Assessments → Proposals), delivery (Onboarding), and operations (Tasks,
-// Tickets, Business Reviews, Reporting).
+// Assessments → Proposals), delivery (Onboarding), and operations (Sales
+// Activity, Tasks, Tickets, Business Reviews, Reporting).
 export const navSecondary: NavItem[] = [
   { key: "accounts", label: "Accounts", icon: "Building2", href: "/accounts" },
   { key: "contacts", label: "Contacts", icon: "Contact", href: "/contacts" },
@@ -29,6 +29,8 @@ export const navSecondary: NavItem[] = [
   // The project board (ADR-0052) — "board" unqualified is the AI Board of Directors.
   { key: "projects", label: "Projects", icon: "FolderKanban", href: "/projects" },
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
+  // The Sales Queue read model (ADR-0052 §6) — a rep's open sales tasks + meetings.
+  { key: "sales-activity", label: "Sales Activity", icon: "Activity", href: "/sales-activity" },
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },

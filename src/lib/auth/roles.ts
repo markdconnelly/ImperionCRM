@@ -84,6 +84,16 @@ export function canManageProjects(roles: readonly AppRole[] | undefined): boolea
 }
 
 /**
+ * Sales-activity writes — creating/completing sales tasks from the Sales
+ * Activity page — belong to sales: admin | sales (ADR-0052 §8). GUI-side twin
+ * of the `sales:write` capability the server actions enforce (ADR-0045);
+ * reads stay open to all roles.
+ */
+export function canManageSales(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "sales");
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */

@@ -42,6 +42,7 @@ import type {
   QuestionEditable,
   QuestionInput,
   Repositories,
+  SalesTaskInput,
   SavedViewInput,
   SavedViewRow,
   SbrInput,
@@ -101,6 +102,7 @@ import type {
   QuestionTemplateRow,
   ReportSummary,
   RevenueSplit,
+  SalesTaskRow,
   SbrDetail,
   SbrRow,
   SocialIdentityRow,
@@ -805,6 +807,69 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteTask(id);
       await pool.query(`DELETE FROM task WHERE id = $1`, [id]);
+    },
+
+    async listSalesTasks(): Promise<SalesTaskRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listSalesTasks();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          title: string;
+          status: string;
+          due_at: Date | null;
+          account: string | null;
+          opportunity: string | null;
+          owner_user_id: string | null;
+          owner: string | null;
+        }>(
+          `SELECT t.id, t.title, t.status, t.due_at, a.name AS account,
+                  o.name AS opportunity, t.owner_user_id, u.display_name AS owner
+           FROM task t
+           LEFT JOIN account a ON a.id = t.account_id
+           LEFT JOIN opportunity o ON o.id = t.opportunity_id
+           LEFT JOIN app_user u ON u.id = t.owner_user_id
+           WHERE t.category = 'sales' AND t.status <> 'done'
+           ORDER BY t.due_at NULLS LAST, t.title`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          status: row.status,
+          due: fmtDate(row.due_at),
+          dueAt: fmtDate(row.due_at),
+          account: row.account,
+          opportunity: row.opportunity,
+          ownerUserId: row.owner_user_id,
+          owner: row.owner,
+        }));
+      } catch {
+        return mockRepositories.crm.listSalesTasks();
+      }
+    },
+
+    async createSalesTask(input: SalesTaskInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createSalesTask(input);
+      await pool.query(
+        `INSERT INTO task (account_id, opportunity_id, owner_user_id, title, detail,
+                           status, category, due_at)
+         VALUES ($1, $2, $3, $4, $5, 'open', 'sales'::task_category, $6::timestamptz)`,
+        [
+          nullIfEmpty(input.accountId),
+          nullIfEmpty(input.opportunityId),
+          nullIfEmpty(input.ownerUserId),
+          input.title,
+          nullIfEmpty(input.detail),
+          nullIfEmpty(input.dueAt),
+        ],
+      );
+    },
+
+    async setTaskStatus(id: string, status: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskStatus(id, status);
+      await pool.query(`UPDATE task SET status = $2 WHERE id = $1`, [id, status]);
     },
 
     async listProposals(): Promise<ProposalRow[]> {

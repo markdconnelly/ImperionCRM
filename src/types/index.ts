@@ -145,6 +145,22 @@ export interface TaskRow {
   projectId: string | null; // owning project (one task model, ADR-0052)
 }
 
+/**
+ * A row in the Sales Queue (ADR-0052 §6) — an open `category='sales'` task with
+ * its owner and deal context. Pure read model; no new tables.
+ */
+export interface SalesTaskRow {
+  id: string;
+  title: string;
+  status: string;
+  due: string | null; // formatted due date
+  dueAt: string | null; // ISO yyyy-mm-dd for due-bucket grouping
+  account: string | null; // account name
+  opportunity: string | null; // deal name
+  ownerUserId: string | null;
+  owner: string | null; // owner display name
+}
+
 // ── Onboarding project management (ADR-0034 / template ADR-0037) ─────────────
 
 /** A single checklist step under a phase (instantiated from the playbook). */
