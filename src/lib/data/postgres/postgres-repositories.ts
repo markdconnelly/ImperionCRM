@@ -2166,10 +2166,15 @@ export const postgresRepositories: Repositories = {
             priority: string | null;
             opened_at: Date | null;
           }>(
-            `SELECT t.id, a.name AS account, t.number, t.title, t.status, t.priority, t.opened_at
-             FROM sbr_ticket st JOIN ticket t ON t.id = st.ticket_id
+            // Manually linked tickets (sbr_ticket) plus the backend-filed
+            // business-review queue ticket (ticket.source_sbr_id, backend #19/#99).
+            `SELECT DISTINCT t.id, a.name AS account, t.number, t.title, t.status,
+                    t.priority, t.opened_at
+             FROM ticket t
              JOIN account a ON a.id = t.account_id
-             WHERE st.sbr_id = $1 ORDER BY t.opened_at DESC NULLS LAST`,
+             LEFT JOIN sbr_ticket st ON st.ticket_id = t.id AND st.sbr_id = $1
+             WHERE st.sbr_id IS NOT NULL OR t.source_sbr_id = $1
+             ORDER BY t.opened_at DESC NULLS LAST`,
             [id],
           ),
         ]);
