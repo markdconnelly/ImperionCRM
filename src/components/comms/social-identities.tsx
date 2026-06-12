@@ -1,5 +1,6 @@
 import { Icon } from "@/components/ui/icon";
 import { sourceMeta } from "@/lib/comms";
+import { safeHttpUrl } from "@/lib/safe-url";
 import type { SocialIdentityRow } from "@/types";
 
 /** Linked social profiles for a contact (ADR-0025). */
@@ -11,6 +12,8 @@ export function SocialIdentities({ identities }: { identities: SocialIdentityRow
     <ul className="flex flex-col gap-1.5">
       {identities.map((s) => {
         const meta = sourceMeta(s.platform);
+        // Integration-written URL — only link http(s) (#191); anything else renders as text.
+        const href = safeHttpUrl(s.profileUrl);
         const inner = (
           <span className="flex items-center gap-2 text-sm">
             <Icon name={meta.icon} size={14} className="text-dim" />
@@ -25,9 +28,9 @@ export function SocialIdentities({ identities }: { identities: SocialIdentityRow
         );
         return (
           <li key={s.id}>
-            {s.profileUrl ? (
+            {href ? (
               <a
-                href={s.profileUrl}
+                href={href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block rounded-md px-1 py-0.5 hover:bg-panel-2"
