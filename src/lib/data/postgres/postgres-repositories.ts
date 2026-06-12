@@ -33,6 +33,7 @@ import type {
   InteractionFilter,
   InteractionInput,
   LeadHookInput,
+  MeetingCreateInput,
   Option,
   ProjectEditable,
   ProjectInput,
@@ -2739,6 +2740,8 @@ export const postgresRepositories: Repositories = {
         if (filter.accountId) { params.push(filter.accountId); where.push(`i.account_id = $${params.length}`); }
         if (filter.source) { params.push(filter.source); where.push(`i.source = $${params.length}::interaction_source`); }
         if (filter.kind) { params.push(filter.kind); where.push(`i.kind = $${params.length}`); }
+        if (filter.projectId) { params.push(filter.projectId); where.push(`i.project_id = $${params.length}`); }
+        if (filter.noProject) where.push(`i.project_id IS NULL`);
         const limit = Math.min(Math.max(filter.limit ?? 200, 1), 500);
         const { rows } = await pool.query<InteractionDbRow>(
           `SELECT i.id, i.source::text AS source, i.kind, i.channel, i.direction::text AS direction,
@@ -2887,6 +2890,46 @@ export const postgresRepositories: Repositories = {
           nullIfEmpty(input.body),
         ],
       );
+    },
+
+    async createMeeting(input: MeetingCreateInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.comms.createMeeting(input);
+      // One transaction: the interaction timeline entry + its 1:1 meeting silver
+      // row (ADR-0052 §5). Meetings stay communication objects.
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows } = await client.query<{ id: string; occurred_at: Date }>(
+          `INSERT INTO interaction
+             (account_id, contact_id, opportunity_id, project_id, source, kind,
+              direction, subject, summary_gold, occurred_at)
+           VALUES ($1, $2, $3, $4, 'meeting'::interaction_source, 'meeting',
+                   'internal'::interaction_direction, $5, $6,
+                   COALESCE($7::timestamptz, now()))
+           RETURNING id, occurred_at`,
+          [
+            nullIfEmpty(input.accountId),
+            nullIfEmpty(input.contactId),
+            nullIfEmpty(input.opportunityId),
+            nullIfEmpty(input.projectId),
+            input.title,
+            nullIfEmpty(input.notes),
+            nullIfEmpty(input.occurredAt),
+          ],
+        );
+        await client.query(
+          `INSERT INTO meeting (interaction_id, platform, title, summary_gold, occurred_at)
+           VALUES ($1, 'other'::meeting_platform, $2, $3, $4)`,
+          [rows[0].id, input.title, nullIfEmpty(input.notes), rows[0].occurred_at],
+        );
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
     },
 
     async listActionItems(contactId?: string): Promise<ActionItemRow[]> {

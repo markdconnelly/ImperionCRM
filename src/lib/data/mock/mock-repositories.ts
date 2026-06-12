@@ -443,6 +443,9 @@ export const mockRepositories: Repositories = {
     async createInteraction() {
       throw new Error(NO_DB);
     },
+    async createMeeting() {
+      throw new Error(NO_DB);
+    },
     async listActionItems() {
       return actionItems;
     },

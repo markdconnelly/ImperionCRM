@@ -8,7 +8,11 @@ import { getSessionRoles } from "@/lib/auth/session";
 import { canManageSales } from "@/lib/auth/roles";
 import { groupByDueBucket, splitByOwner } from "@/lib/sales-queue";
 import type { SalesTaskRow } from "@/types";
-import { completeSalesTaskAction, createSalesTaskAction } from "./actions";
+import {
+  completeSalesTaskAction,
+  createSalesMeetingAction,
+  createSalesTaskAction,
+} from "./actions";
 
 /**
  * Sales Activity (ADR-0052 §6) — the Sales Queue read model: a rep's open
@@ -28,7 +32,8 @@ export default async function SalesActivityPage() {
     crm.listSalesTasks(),
     canWrite ? crm.accountOptions() : Promise.resolve([]),
     canWrite ? crm.opportunityOptions() : Promise.resolve([]),
-    comms.listInteractions({ kind: "meeting", limit: 10 }),
+    // Sales meetings = kind 'meeting' with NO project linkage (ADR-0052 §6).
+    comms.listInteractions({ kind: "meeting", noProject: true, limit: 10 }),
   ]);
 
   const { mine, others } = splitByOwner(tasks, currentUserId);
@@ -104,6 +109,38 @@ export default async function SalesActivityPage() {
         <div className="flex flex-col gap-4">
           <section className="rounded-xl border border-border bg-panel p-4">
             <h2 className="mb-3 text-sm font-medium text-text">Recent sales meetings</h2>
+            {canWrite && (
+              <form action={createSalesMeetingAction} className="mb-3 flex flex-col gap-2">
+                <TextInput name="title" placeholder="Log a sales meeting…" required />
+                <div className="grid grid-cols-2 gap-2">
+                  <Select name="accountId" defaultValue="">
+                    <option value="">Account —</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select name="opportunityId" defaultValue="">
+                    <option value="">Deal —</option>
+                    {opportunities.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <TextInput type="date" name="occurredAt" />
+                  <button
+                    type="submit"
+                    className="shrink-0 rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:text-text"
+                  >
+                    + Log
+                  </button>
+                </div>
+              </form>
+            )}
             {meetings.length === 0 ? (
               <p className="text-sm text-dim">No meetings logged yet.</p>
             ) : (

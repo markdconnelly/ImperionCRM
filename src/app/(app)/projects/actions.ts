@@ -129,3 +129,32 @@ export async function createProjectTaskAction(formData: FormData) {
   revalidatePath("/projects/[id]", "page");
   revalidatePath("/tasks");
 }
+
+// ── Project meetings (ADR-0052 §5, #97) ──────────────────────────────────────
+
+/**
+ * Log a meeting against a project: interaction (source/kind 'meeting',
+ * project_id set) + its 1:1 meeting silver row. Meetings stay communication
+ * objects — they render on the comms timeline and open as communications.
+ */
+export async function createProjectMeetingAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const accountId = String(formData.get("accountId") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const occurredAt = String(formData.get("occurredAt") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!projectId || !title) return;
+  const { comms } = getRepositories();
+  await comms.createMeeting({
+    accountId: accountId === "" ? null : accountId,
+    contactId: null,
+    opportunityId: null,
+    projectId,
+    title,
+    occurredAt: occurredAt === "" ? null : occurredAt,
+    notes: notes === "" ? null : notes,
+  });
+  revalidatePath("/projects/[id]", "page");
+  revalidatePath("/communications");
+}

@@ -7,7 +7,7 @@ import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageProjects } from "@/lib/auth/roles";
 import { cn } from "@/lib/cn";
-import { createProjectTaskAction } from "../actions";
+import { createProjectMeetingAction, createProjectTaskAction } from "../actions";
 import { deleteTaskAction } from "../../tasks/actions";
 
 const statusTone: Record<string, string> = {
@@ -28,12 +28,13 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { crm } = getRepositories();
-  const [roles, project, rows, projectTasks] = await Promise.all([
+  const { crm, comms } = getRepositories();
+  const [roles, project, rows, projectTasks, meetings] = await Promise.all([
     getSessionRoles(),
     crm.getProject(id),
     crm.listProjects(),
     crm.listProjectTasks(id),
+    comms.listInteractions({ kind: "meeting", projectId: id, limit: 50 }),
   ]);
   if (!project) notFound();
   const row = rows.find((r) => r.id === id);
@@ -118,6 +119,66 @@ export default async function ProjectDetailPage({
           </form>
         )}
         <TasksTable tasks={projectTasks} deleteAction={deleteTaskAction} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div>
+          <h3 className="font-display text-base font-semibold tracking-tight">Meetings</h3>
+          <p className="mt-0.5 text-sm text-dim">
+            Meetings attached to this project via their interaction (ADR-0052 §5) — they
+            stay communication objects on the timeline.
+          </p>
+        </div>
+        {canWrite && (
+          <form
+            action={createProjectMeetingAction}
+            className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-panel px-4 py-3"
+          >
+            <input type="hidden" name="projectId" value={id} />
+            <input type="hidden" name="accountId" value={project.accountId} />
+            <div className="min-w-48 flex-1">
+              <TextInput name="title" placeholder="Log a meeting…" required />
+            </div>
+            <TextInput type="date" name="occurredAt" />
+            <div className="min-w-48 flex-1">
+              <TextInput name="notes" placeholder="Notes / summary (optional)" />
+            </div>
+            <button
+              type="submit"
+              className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:text-text"
+            >
+              + Log meeting
+            </button>
+          </form>
+        )}
+        {meetings.length === 0 ? (
+          <p className="rounded-lg border border-border bg-panel px-4 py-3 text-sm text-dim">
+            No meetings logged for this project yet.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {meetings.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-panel px-4 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/communications/${m.id}`}
+                    className="block truncate text-sm text-text hover:text-accent"
+                  >
+                    {m.subject ?? "Meeting"}
+                  </Link>
+                  <div className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-dim">
+                    {m.contact && <span>{m.contact}</span>}
+                    {m.occurredAt && <span>{m.occurredAt}</span>}
+                    {m.summary && <span className="truncate">{m.summary}</span>}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

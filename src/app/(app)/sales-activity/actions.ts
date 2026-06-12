@@ -39,6 +39,33 @@ export async function createSalesTaskAction(formData: FormData) {
   revalidatePath("/tasks");
 }
 
+/**
+ * Log a sales meeting (ADR-0052 §5/§6, #97): interaction (source/kind
+ * 'meeting') + meeting silver row, attached via account/deal — never a
+ * project. Renders on the comms timeline like any meeting.
+ */
+export async function createSalesMeetingAction(formData: FormData) {
+  await requireCapability("sales:write");
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) return;
+  const accountId = String(formData.get("accountId") ?? "").trim();
+  const opportunityId = String(formData.get("opportunityId") ?? "").trim();
+  const occurredAt = String(formData.get("occurredAt") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const { comms } = getRepositories();
+  await comms.createMeeting({
+    accountId: accountId === "" ? null : accountId,
+    contactId: null,
+    opportunityId: opportunityId === "" ? null : opportunityId,
+    projectId: null, // sales meetings carry no project linkage (ADR-0052 §6)
+    title,
+    occurredAt: occurredAt === "" ? null : occurredAt,
+    notes: notes === "" ? null : notes,
+  });
+  revalidatePath("/sales-activity");
+  revalidatePath("/communications");
+}
+
 export async function completeSalesTaskAction(formData: FormData) {
   await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "").trim();
