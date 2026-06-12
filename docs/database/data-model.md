@@ -995,6 +995,29 @@ the merge-join keys to silver `device` (and the #162 device policy-applied indic
 Writer: `imperion-localpipeline`; readers: `mgid-imperioncrmpipeline` (merge) and the
 web role (device page).
 
+### Meta Business Manager bronze + organic social silver (migration 0075, #253)
+
+Six local-pipeline-envelope bronze tables for Imperion's own Business Suite assets
+(FB Page + Instagram business account), read with a BM **system-user token** (on-prem
+SecretStore custody) and collected/merged by the local pipeline (posture-merge
+precedent — local repo writes silver here too):
+
+| Table | What | Silver destination |
+| --- | --- | --- |
+| `facebook_posts` | Page feed posts | `interaction` (`social_post`, source `facebook`) |
+| `facebook_comments` | Comments on page posts | `interaction` (`social_comment`) — timeline-only, never leads |
+| `facebook_messages` | Page-inbox (Messenger) messages | `interaction` (`dm`) **+** `lead_capture_event` (kind `facebook_dm`) + contact resolve/create |
+| `instagram_media` | IG media via the linked page | `interaction` (`social_post`, source `instagram`) |
+| `instagram_comments` | Comments on IG media | `interaction` (`social_comment`) |
+| `meta_insights` | Raw Page/IG insight snapshots | `social_metric` |
+
+New silver table **`social_metric`** = the organic insights time series (platform,
+entity, metric, period, value, captured_at); `campaign_metric` stays paid-campaign-only
+(ADR-0012). Enums: `interaction_source` += `instagram`; `lead_hook_kind` += `facebook_dm`.
+Writer: `imperion-localpipeline` (bronze write + widened silver merge surface:
+`interaction` insert, lead capture, contact create, `contact_social_identity`); web role
+reads. Collector contract: local-pipeline `docs/integrations/meta.md` (local #126).
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.
