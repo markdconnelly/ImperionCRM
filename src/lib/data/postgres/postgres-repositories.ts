@@ -743,8 +743,10 @@ export const postgresRepositories: Repositories = {
           category: string;
           due_at: Date | null;
           project_id: string | null;
+          autotask_ticket_ref: string | null;
         }>(
-          `SELECT id, account_id, title, detail, status, category, due_at, project_id
+          `SELECT id, account_id, title, detail, status, category, due_at, project_id,
+                  autotask_ticket_ref
            FROM task WHERE id = $1`,
           [id],
         );
@@ -759,6 +761,7 @@ export const postgresRepositories: Repositories = {
           category: r.category,
           dueAt: fmtDate(r.due_at),
           projectId: r.project_id,
+          autotaskTicketRef: r.autotask_ticket_ref,
         };
       } catch {
         return null;
@@ -2573,6 +2576,41 @@ export const postgresRepositories: Repositories = {
           nullIfEmpty(input.sourceSbrId),
         ],
       );
+    },
+
+    async getTicketByRef(externalRef: string): Promise<TicketRow | null> {
+      const pool = getPool();
+      if (!pool) return null;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account: string;
+          number: string | null;
+          title: string;
+          status: string | null;
+          priority: string | null;
+          opened_at: Date | null;
+        }>(
+          `SELECT t.id, a.name AS account, t.number, t.title, t.status, t.priority, t.opened_at
+           FROM ticket t JOIN account a ON a.id = t.account_id
+           WHERE t.source = 'autotask' AND t.external_ref = $1
+           LIMIT 1`,
+          [externalRef],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          account: r.account,
+          number: r.number,
+          title: r.title,
+          status: r.status,
+          priority: r.priority,
+          opened: fmtDate(r.opened_at),
+        };
+      } catch {
+        return null;
+      }
     },
 
     async listTickets(filter?: TicketFilter): Promise<TicketRow[]> {

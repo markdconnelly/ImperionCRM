@@ -362,6 +362,9 @@ export const mockRepositories: Repositories = {
     async listTickets() {
       return [];
     },
+    async getTicketByRef() {
+      return null;
+    },
     async ticketFilterOptions() {
       return { statuses: [], priorities: [] };
     },

@@ -133,11 +133,16 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
   Consumers: **Business Reviews → `business-review` queue** (#99, origin
   `business_review` — the created ticket carries `ticket.source_sbr_id` and renders on
   the SBR record; ticket failure never fails the review, the record offers an
-  idempotent retry). Feedback → `app-dev` (#100) and Tasks → per-category queue (#98)
-  follow the same path.
+  idempotent retry). **Feedback → `app-dev`** (#100, ADR-0058). **Tasks →
+  per-category queue** (#98, ADR-0052 §7: the on-demand "Create Autotask ticket"
+  button on the task — queue name = task category `project`/`onboarding`/`general`;
+  sales tasks never push, §6; the backend writes `task.autotask_ticket_ref` back
+  server-side and the task page renders the synced ticket's status/priority/number
+  as its ticket history).
 - **Ops prerequisite:** the backend app setting `AUTOTASK_QUEUE_IDS` must map the queue
-  names (`business-review`, `app-dev`, …) to Autotask queue picklist ids; an unmapped
-  name returns 400 and surfaces as the non-blocking notice.
+  names (`business-review`, `app-dev`, `project`, `onboarding`, `general`) to Autotask
+  queue picklist ids; an unmapped name returns 400 and surfaces as the non-blocking
+  notice.
 - **Feedback (#100, ADR-0058):** additionally needs the web app setting
   `FEEDBACK_ACCOUNT_ID` — the internal Imperion account uuid the app-dev tickets belong
   to (must be linked to an Autotask company). Unset → the Feedback page shows the
