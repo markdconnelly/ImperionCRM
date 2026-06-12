@@ -487,6 +487,18 @@ export interface DefenderIncidentCounts {
   total: number;
 }
 
+/**
+ * Per-user MFA registration coverage for an account's mapped tenants (bronze
+ * `entra_auth_methods` joined through `account_tenant`, #258/ADR-0051).
+ * `total` distinguishes "no data collected" (0) from "nobody registered".
+ */
+export interface MfaRegistrationCounts {
+  /** Users whose is_mfa_registered is true. */
+  registered: number;
+  /** All collected users for the mapped tenants. */
+  total: number;
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;

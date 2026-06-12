@@ -156,6 +156,18 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     expect(params).toEqual(["acc-1"]);
   });
 
+  it("MFA registration counts join account_tenant and match is_mfa_registered case-folded (#258)", async () => {
+    query.mockResolvedValueOnce({ rows: [{ registered: "31", total: "40" }] });
+    const counts = await security.countMfaRegistrationForAccount("acc-1");
+    expect(counts).toEqual({ registered: 31, total: 40 });
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("FROM entra_auth_methods a");
+    expect(sql).toContain("JOIN account_tenant m");
+    expect(sql).toContain("lower(COALESCE(a.is_mfa_registered, '')) = 'true'");
+    expect(sql).toContain("WHERE m.account_id = $1::uuid");
+    expect(params).toEqual(["acc-1"]);
+  });
+
   it("falls back to the mock (empty lists) when no pool is configured", async () => {
     getPool.mockReturnValue(null);
     await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
@@ -164,6 +176,10 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     await expect(security.listCredentialExposuresForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.countDefenderIncidentsForAccount("acc-1")).resolves.toEqual({
       open: 0,
+      total: 0,
+    });
+    await expect(security.countMfaRegistrationForAccount("acc-1")).resolves.toEqual({
+      registered: 0,
       total: 0,
     });
     expect(query).not.toHaveBeenCalled();

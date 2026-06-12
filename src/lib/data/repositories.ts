@@ -69,6 +69,7 @@ import type {
   SecureScoreControl,
   CredentialExposureRow,
   DefenderIncidentCounts,
+  MfaRegistrationCounts,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -932,6 +933,8 @@ export interface SecurityRepository {
   listCredentialExposuresForAccount(accountId: string): Promise<CredentialExposureRow[]>;
   /** Open/total Defender incidents over the account's mapped tenants (#256, ADR-0059 badge). */
   countDefenderIncidentsForAccount(accountId: string): Promise<DefenderIncidentCounts>;
+  /** MFA-registered/total users over the account's mapped tenants (#258 badge). */
+  countMfaRegistrationForAccount(accountId: string): Promise<MfaRegistrationCounts>;
 }
 
 /** The full set of repositories a request can resolve. */

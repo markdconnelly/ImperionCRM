@@ -75,7 +75,7 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   const { crm, comms, security } = getRepositories();
-  const [account, timeline, sources, relatedBronze, tenantPostures, defenderIncidents] =
+  const [account, timeline, sources, relatedBronze, tenantPostures, defenderIncidents, mfa] =
     await Promise.all([
       crm.getAccount(id),
       comms.listInteractionsByAccount(id),
@@ -83,6 +83,7 @@ export default async function AccountDetailPage({
       crm.listAccountRelatedBronze(id),
       security.listTenantPostureForAccount(id),
       security.countDefenderIncidentsForAccount(id),
+      security.countMfaRegistrationForAccount(id),
     ]);
   if (!account) notFound();
 
@@ -209,6 +210,27 @@ export default async function AccountDetailPage({
                       Defender incidents: 0 open
                     </span>
                   ))}
+                {/* MFA registration coverage (#258) — posture-pillar INPUT only
+                    (ADR-0051 model versioning: no composite change here); same
+                    color bands as the pillar chips, nothing when no data. */}
+                {mfa.total > 0 &&
+                  (() => {
+                    const pct = Math.round((mfa.registered / mfa.total) * 100);
+                    return (
+                      <span
+                        className={`rounded px-2 py-1 text-[11px] ${
+                          pct >= 80
+                            ? "bg-green/10 text-green"
+                            : pct >= 60
+                              ? "bg-amber/10 text-amber"
+                              : "bg-red/10 text-red"
+                        }`}
+                        title={`${mfa.registered} of ${mfa.total} users MFA-registered across this company's mapped tenants (Entra auth methods)`}
+                      >
+                        MFA: {pct}% registered (of {mfa.total} users)
+                      </span>
+                    );
+                  })()}
               </div>
               <Link
                 href={`/accounts/${id}/posture`}
