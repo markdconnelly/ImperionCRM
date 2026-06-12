@@ -19,8 +19,12 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /** What the Convene card renders after a deliberation attempt. */
 export interface ConveneBoardResult {
   ok: boolean;
-  /** 'paused' = monthly budget reached, no session started (backend ADR-0037/0039). */
-  status: "concluded" | "failed" | "paused" | "error";
+  /**
+   * 'paused' = monthly budget reached, no session started (backend ADR-0037/0039);
+   * 'awaiting_ciso' = the deputy pause (ADR-0054 §4 / #185) — the session stopped
+   * after round 2 and waits for the human CISO's position on the session page.
+   */
+  status: "concluded" | "failed" | "paused" | "awaiting_ciso" | "error";
   message: string;
   sessionId: string | null;
   recommendation: string | null;
@@ -107,7 +111,9 @@ export async function conveneBoardAction(formData: FormData): Promise<ConveneBoa
   const result = outcome.value;
   revalidatePath("/board");
   return {
-    ok: result.status === "concluded",
+    // 'awaiting_ciso' is a successful convene too — the session exists and waits
+    // for the human CISO on its page (the deputy pause, ADR-0054 §4 / #185).
+    ok: result.status === "concluded" || result.status === "awaiting_ciso",
     status: result.status,
     message: result.message,
     sessionId: result.sessionId,

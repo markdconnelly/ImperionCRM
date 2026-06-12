@@ -241,7 +241,9 @@ export interface BoardUsage {
  */
 export interface BoardConveneWire {
   sessionId: string | null;
-  status: "concluded" | "failed" | "paused";
+  /** 'awaiting_ciso' = the deputy pause (ADR-0054 §4 / backend #64): deliberation
+   * stopped after round 2 awaiting the human CISO's position; resume concludes it. */
+  status: "concluded" | "failed" | "paused" | "awaiting_ciso";
   message: string;
   recommendation: string | null;
   usage: BoardUsage;
@@ -260,6 +262,8 @@ export interface BoardSessionWire {
     openedBy: string;
     createdAt: string;
     concludedAt: string | null;
+    /** When the deputy pause started (migration 0066) — the deputy-review SLA clock. */
+    pausedAt?: string | null;
   };
   members: Array<{ agentId: string; name: string; personaRole: string | null }>;
   /** `agentId === null` is the orchestrator/synthesis voice (0056 transcript contract). */
@@ -320,6 +324,24 @@ export const boardService = {
   /** One session with members + transcript + recommendation. */
   getSession: (id: string) =>
     callService<BoardSessionWire>(services.board, `/board/sessions/${encodeURIComponent(id)}`),
+
+  /**
+   * Resume a deputy-paused (awaiting_ciso) session with the human CISO's position
+   * (ADR-0054 §4 / backend #64): persists ciso_position_md, audits board.resume,
+   * reconstructs final stances from the transcript, and runs synthesis → conclude.
+   * Returns the convene result shape: 'concluded', 'awaiting_ciso' again when the
+   * synthesis call failed (the session stays resumable), or 'paused' on budget.
+   */
+  resume: (sessionId: string, input: { actingUserId: string; cisoPosition: string }) =>
+    callService<BoardConveneWire>(
+      services.board,
+      `/board/sessions/${encodeURIComponent(sessionId)}/resume`,
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+        timeoutMs: 120_000, // synthesis is a premium model call
+      },
+    ),
 
   /**
    * The human CISO's verdict on a recommendation (ADR-0054 §4). Rationale is

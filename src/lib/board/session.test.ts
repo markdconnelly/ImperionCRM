@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  deputyFinalStance,
   formatDateTime,
   groupTranscript,
   parseRationale,
@@ -17,6 +18,12 @@ describe("sessionStatusMeta", () => {
     expect(sessionStatusMeta("failed")).toEqual({ label: "failed", tone: "text-red" });
     expect(sessionStatusMeta("deliberating").tone).toBe("text-amber");
     expect(sessionStatusMeta("open").tone).toBe("text-accent");
+  });
+  it("maps the deputy pause (0066, #185) to an amber badge", () => {
+    expect(sessionStatusMeta("awaiting_ciso")).toEqual({
+      label: "awaiting human CISO",
+      tone: "text-amber",
+    });
   });
   it("never throws on unknown statuses", () => {
     expect(sessionStatusMeta("weird")).toEqual({ label: "weird", tone: "text-dim" });
@@ -156,6 +163,32 @@ describe("groupTranscript", () => {
 
   it("returns empty groups for an empty transcript", () => {
     expect(groupTranscript([])).toEqual({ rounds: [], synthesis: [] });
+  });
+});
+
+describe("deputyFinalStance (#185 — the draft the human CISO approves/amends)", () => {
+  function seatMsg(id: string, agentId: string | null, seatKind: string | null): BoardTranscriptMessage {
+    return { id, agentId, name: agentId, personaRole: null, seatKind, content: id, createdAt: "t" };
+  }
+
+  it("returns the deputy's LAST message (round 2 when it ran, mirroring the backend)", () => {
+    const out = deputyFinalStance([
+      seatMsg("ceo1", "ceo", "officer"),
+      seatMsg("dep1", "dep", "deputy"),
+      seatMsg("ceo2", "ceo", "officer"),
+      seatMsg("dep2", "dep", "deputy"),
+    ]);
+    expect(out?.id).toBe("dep2");
+  });
+
+  it("falls back to the round-1 turn when the deputy only spoke once", () => {
+    expect(deputyFinalStance([seatMsg("dep1", "dep", "deputy")])?.id).toBe("dep1");
+  });
+
+  it("returns null when no deputy spoke (or only the synthesis voice exists)", () => {
+    expect(deputyFinalStance([seatMsg("ceo1", "ceo", "officer")])).toBeNull();
+    expect(deputyFinalStance([seatMsg("syn", null, null)])).toBeNull();
+    expect(deputyFinalStance([])).toBeNull();
   });
 });
 

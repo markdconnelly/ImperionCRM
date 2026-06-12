@@ -10,8 +10,14 @@
 
 // ── Session status ──────────────────────────────────────────────────────────────
 
-/** board_session.status values (migration 0056). */
-export const BOARD_SESSION_STATUSES = ["open", "deliberating", "concluded", "failed"] as const;
+/** board_session.status values (migration 0056; 'awaiting_ciso' = deputy pause, 0066/#64). */
+export const BOARD_SESSION_STATUSES = [
+  "open",
+  "deliberating",
+  "awaiting_ciso",
+  "concluded",
+  "failed",
+] as const;
 export type BoardSessionStatus = (typeof BOARD_SESSION_STATUSES)[number];
 
 export interface StatusMeta {
@@ -23,6 +29,7 @@ export interface StatusMeta {
 const STATUS_META: Record<BoardSessionStatus, StatusMeta> = {
   open: { label: "open", tone: "text-accent" },
   deliberating: { label: "deliberating", tone: "text-amber" },
+  awaiting_ciso: { label: "awaiting human CISO", tone: "text-amber" },
   concluded: { label: "concluded", tone: "text-green" },
   failed: { label: "failed", tone: "text-red" },
 };
@@ -139,6 +146,25 @@ export function parseRationale(raw: unknown): BoardRationale {
     disagreements: asStringArray(obj.disagreements),
     parseError: obj.parseError === true,
   };
+}
+
+// ── Deputy draft (the awaiting_ciso pause, ADR-0054 §4 / #185) ─────────────────
+
+/**
+ * The deputy's final stance — the draft the human CISO reviews during an
+ * `awaiting_ciso` pause. The backend reconstructs final stances as the LAST
+ * `board_message` per seated agent (round 2 when it ran, else round 1), so we
+ * mirror that: the last message whose agent sits a deputy seat. Null when no
+ * deputy spoke (then the pause panel shows the transcript pointer only).
+ */
+export function deputyFinalStance(
+  messages: readonly BoardTranscriptMessage[],
+): BoardTranscriptMessage | null {
+  let last: BoardTranscriptMessage | null = null;
+  for (const m of messages) {
+    if (m.agentId !== null && m.seatKind === "deputy") last = m;
+  }
+  return last;
 }
 
 // ── Transcript grouping ─────────────────────────────────────────────────────────
