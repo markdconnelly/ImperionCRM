@@ -39,6 +39,28 @@ export async function createEventAction(formData: FormData) {
   redirect(`/events/${id}`);
 }
 
+const REGISTRATION_STATUSES = ["registered", "attended", "no_show", "canceled"] as const;
+
+/**
+ * Record attendance / check-in on a registration post-event (ADR-0053 §2).
+ * `checkIn` stamps checked_in_at (manual check-in for live events / qr flow).
+ */
+export async function setRegistrationStatusAction(formData: FormData) {
+  await requireCapability("sales:write");
+  const eventId = String(formData.get("eventId") ?? "");
+  const registrationId = String(formData.get("registrationId") ?? "");
+  const status = strOr(formData, "status", "registered");
+  if (!eventId || !registrationId) return;
+  if (!(REGISTRATION_STATUSES as readonly string[]).includes(status)) return;
+  const { events } = getRepositories();
+  await events.setRegistrationStatus(
+    registrationId,
+    status,
+    formData.get("checkIn") === "1",
+  );
+  revalidatePath(`/events/${eventId}`);
+}
+
 export async function updateEventAction(formData: FormData) {
   await requireCapability("sales:write");
   const id = String(formData.get("id") ?? "");

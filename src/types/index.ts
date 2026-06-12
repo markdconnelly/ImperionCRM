@@ -708,6 +708,17 @@ export interface EventDetail {
   noShow: number;
 }
 
+/** One signup on an event (attendance recorded post-event, ADR-0053 §2). */
+export interface EventRegistrationRow {
+  id: string;
+  contact: string | null; // resolved contact name
+  contactId: string | null;
+  status: string; // registered|attended|no_show|canceled
+  source: string | null;
+  registeredAt: string | null;
+  checkedInAt: string | null;
+}
+
 // ── Demand generation: campaigns, ads, audiences (ADR-0012/0026) ─────────────
 
 /** A row in the Campaigns list. */

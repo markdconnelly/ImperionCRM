@@ -4,16 +4,24 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
+import { str, strOr, strOrNull } from "@/lib/form-data";
 
 export async function createHookAction(formData: FormData) {
   await requireCapability("sales:write");
-  const path = String(formData.get("config") ?? "").trim();
+  const note = strOrNull(formData, "config");
+  const kind = strOr(formData, "kind", "web_form");
+  // Event-registration hooks carry the event id in config (ADR-0053 §2) —
+  // resolution uses it to link the signup to the event.
+  const eventId = kind === "event_registration" ? strOrNull(formData, "eventId") : null;
+  const config: Record<string, string> = {};
+  if (note) config.note = note;
+  if (eventId) config.eventId = eventId;
   const { leads } = getRepositories();
   await leads.createHook({
-    name: String(formData.get("name") ?? "").trim(),
-    kind: String(formData.get("kind") ?? "web_form"),
-    active: String(formData.get("active") ?? "true") === "true",
-    config: path === "" ? null : { note: path },
+    name: str(formData, "name"),
+    kind,
+    active: strOr(formData, "active", "true") === "true",
+    config: Object.keys(config).length > 0 ? config : null,
   });
   revalidatePath("/leads");
   redirect("/leads");
