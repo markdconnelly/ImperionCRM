@@ -16,6 +16,7 @@ function parseCampaign(formData: FormData): CampaignInput {
     budget: strOrNull(formData, "budget"),
     startAt: strOrNull(formData, "startAt"),
     endAt: strOrNull(formData, "endAt"),
+    eventId: strOrNull(formData, "eventId"),
   };
 }
 

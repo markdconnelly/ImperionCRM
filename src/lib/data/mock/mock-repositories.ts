@@ -611,6 +611,15 @@ export const mockRepositories: Repositories = {
     async launchAudience(id) {
       return mockAudienceMembers(id).filter((m) => m.adConsent).length;
     },
+    async listSends() {
+      return [];
+    },
+    async createSend() {
+      throw new Error(NO_DB);
+    },
+    async cancelSend() {
+      throw new Error(NO_DB);
+    },
   },
   leads: {
     async listHooks() {

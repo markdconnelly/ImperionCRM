@@ -753,7 +753,25 @@ export interface CampaignDetail {
   budget: string;
   startAt: string | null;
   endAt: string | null;
+  /** Linked event the campaign promotes (ADR-0053 §1) — enables event-relative sends. */
+  eventId: string | null;
+  eventName: string | null;
   ads: AdRow[];
+}
+
+/** One schedulable blast on a campaign (ADR-0053 §4, migration 0071). */
+export interface CampaignSendRow {
+  id: string;
+  channel: string; // email|sms
+  recipientScope: string; // audience|event_registrants
+  audienceName: string | null;
+  summary: string | null; // email subject / sms text excerpt
+  status: string; // draft|scheduled|sending|sent|canceled
+  schedule: string; // human label: absolute time or event offset
+  queued: number;
+  sent: number;
+  delivered: number;
+  failed: number;
 }
 
 /** A row in the Audiences list. */

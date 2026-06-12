@@ -1,9 +1,13 @@
 import { Field, TextInput, Select, FormActions } from "@/components/ui/form";
+import type { EventRow } from "@/types";
 
 export function CampaignForm({
   action,
+  events,
 }: {
   action: (formData: FormData) => void | Promise<void>;
+  /** Events this campaign can promote (ADR-0053 §1; enables event-relative sends). */
+  events?: EventRow[];
 }) {
   return (
     <form
@@ -22,6 +26,7 @@ export function CampaignForm({
             <option value="youtube">YouTube</option>
             <option value="linkedin">LinkedIn</option>
             <option value="email">Email</option>
+            <option value="sms">SMS</option>
           </Select>
         </Field>
         <Field label="Status">
@@ -37,6 +42,19 @@ export function CampaignForm({
       <Field label="Objective">
         <TextInput name="objective" placeholder="e.g. lead generation" />
       </Field>
+
+      {events && events.length > 0 ? (
+        <Field label="Promotes event (optional)">
+          <Select name="eventId" defaultValue="">
+            <option value="">— none —</option>
+            {events.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
 
       <div className="grid grid-cols-3 gap-3">
         <Field label="Budget (USD)">

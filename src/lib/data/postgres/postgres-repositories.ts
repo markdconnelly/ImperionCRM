@@ -23,6 +23,7 @@ import type {
   AudienceCriterion,
   AudienceInput,
   CampaignInput,
+  CampaignSendInput,
   CompanyCredentialInput,
   ConnectionInput,
   ConsentEventInput,
@@ -70,6 +71,7 @@ import type {
   AudienceRow,
   CampaignDetail,
   CampaignRow,
+  CampaignSendRow,
   CommunicationDetail,
   ConnectionRow,
   ConsentEventRow,
@@ -3918,10 +3920,14 @@ export const postgresRepositories: Repositories = {
           budget: string | null;
           start_at: Date | null;
           end_at: Date | null;
+          event_id: string | null;
+          event_name: string | null;
         }>(
-          `SELECT id, name, platform::text AS platform, objective, status::text AS status,
-                  budget, start_at, end_at
-           FROM campaign WHERE id = $1`,
+          `SELECT c.id, c.name, c.platform::text AS platform, c.objective,
+                  c.status::text AS status, c.budget, c.start_at, c.end_at,
+                  c.event_id, ev.name AS event_name
+           FROM campaign c LEFT JOIN event ev ON ev.id = c.event_id
+           WHERE c.id = $1`,
           [id],
         );
         const r = rows[0];
@@ -3951,6 +3957,8 @@ export const postgresRepositories: Repositories = {
           budget: r.budget != null ? fmtUsd(Number(r.budget)) : "—",
           startAt: fmtDate(r.start_at),
           endAt: fmtDate(r.end_at),
+          eventId: r.event_id,
+          eventName: r.event_name,
           ads: ads.map((ad) => ({
             id: ad.id,
             name: ad.name,
@@ -3970,8 +3978,8 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.campaigns.createCampaign(input);
       await pool.query(
-        `INSERT INTO campaign (name, platform, objective, status, budget, start_at, end_at)
-         VALUES ($1, $2::campaign_platform, $3, $4::campaign_status, $5::numeric, $6::date, $7::date)`,
+        `INSERT INTO campaign (name, platform, objective, status, budget, start_at, end_at, event_id)
+         VALUES ($1, $2::campaign_platform, $3, $4::campaign_status, $5::numeric, $6::date, $7::date, $8::uuid)`,
         [
           input.name,
           input.platform,
@@ -3980,6 +3988,7 @@ export const postgresRepositories: Repositories = {
           nullIfEmpty(input.budget),
           nullIfEmpty(input.startAt),
           nullIfEmpty(input.endAt),
+          nullIfEmpty(input.eventId),
         ],
       );
     },
@@ -4104,6 +4113,107 @@ export const postgresRepositories: Repositories = {
       // Consent gate: only members with current ad_targeting opt-in are eligible.
       const members = await postgresRepositories.campaigns.getAudienceMembers(id);
       return members.filter((m) => m.adConsent).length;
+    },
+
+    // ── Campaign Sends (ADR-0053 §4, migration 0071) — schedule only ────────
+    async listSends(campaignId: string): Promise<CampaignSendRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.listSends(campaignId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          channel: string;
+          recipient_scope: string;
+          audience_name: string | null;
+          template: { subject?: string; text?: string } | null;
+          status: string;
+          send_at: Date | null;
+          event_offset_minutes: number | null;
+          queued_count: number;
+          sent_count: number;
+          delivered_count: number;
+          failed_count: number;
+        }>(
+          `SELECT s.id, s.channel, s.recipient_scope, au.name AS audience_name, s.template,
+                  s.status::text AS status, s.send_at, s.event_offset_minutes,
+                  s.queued_count, s.sent_count, s.delivered_count, s.failed_count
+           FROM campaign_send s LEFT JOIN audience au ON au.id = s.audience_id
+           WHERE s.campaign_id = $1 ORDER BY s.created_at DESC`,
+          [campaignId],
+        );
+        return rows.map((r) => {
+          const offset = r.event_offset_minutes;
+          const schedule =
+            r.send_at != null
+              ? (fmtDateTime(r.send_at) ?? "—")
+              : offset != null
+                ? offset === 0
+                  ? "At event start"
+                  : `${Math.abs(offset / 60) % 1 === 0 ? Math.abs(offset) / 60 + "h" : Math.abs(offset) + "m"} ${offset < 0 ? "before" : "after"} event`
+                : "Draft — unscheduled";
+          return {
+            id: r.id,
+            channel: r.channel,
+            recipientScope: r.recipient_scope,
+            audienceName: r.audience_name,
+            summary: r.template?.subject ?? r.template?.text?.slice(0, 80) ?? null,
+            status: r.status,
+            schedule,
+            queued: r.queued_count,
+            sent: r.sent_count,
+            delivered: r.delivered_count,
+            failed: r.failed_count,
+          };
+        });
+      } catch {
+        return mockRepositories.campaigns.listSends(campaignId);
+      }
+    },
+
+    async createSend(campaignId: string, input: CampaignSendInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.createSend(campaignId, input);
+      // Typed template (ADR-0053 §3): email {subject, bodyMarkdown, mergeFields[]} / sms {text}.
+      const template =
+        input.channel === "sms"
+          ? { text: input.smsText ?? "" }
+          : {
+              subject: input.subject ?? "",
+              bodyMarkdown: input.bodyMarkdown ?? "",
+              mergeFields: [...(input.bodyMarkdown ?? "").matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]),
+            };
+      // Scheduled needs exactly one grain (DB CHECK is the backstop).
+      const sendAt = input.schedule ? nullIfEmpty(input.sendAt) : null;
+      const offset = input.schedule && sendAt == null ? input.eventOffsetMinutes : null;
+      const status = input.schedule && (sendAt != null || offset != null) ? "scheduled" : "draft";
+      await pool.query(
+        `INSERT INTO campaign_send
+           (campaign_id, channel, recipient_scope, audience_id, template,
+            send_at, event_offset_minutes, status)
+         VALUES ($1, $2, $3, $4::uuid, $5::jsonb, $6::timestamptz, $7,
+                 $8::campaign_send_status)`,
+        [
+          campaignId,
+          input.channel,
+          input.recipientScope,
+          nullIfEmpty(input.audienceId),
+          JSON.stringify(template),
+          sendAt,
+          offset,
+          status,
+        ],
+      );
+    },
+
+    async cancelSend(sendId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.campaigns.cancelSend(sendId);
+      // Only pre-fire states cancel; sending/sent are immutable history (§5).
+      await pool.query(
+        `UPDATE campaign_send SET status = 'canceled'
+         WHERE id = $1 AND status IN ('draft','scheduled')`,
+        [sendId],
+      );
     },
   },
 
