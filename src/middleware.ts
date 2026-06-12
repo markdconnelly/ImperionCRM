@@ -17,10 +17,11 @@ export const config = {
    * static assets. `/api/auth`, `/login`, and `/break-glass` MUST be excluded
    * or the sign-in flow would gate (and redirect-loop) itself. `/story` is the
    * deliberately public build-story page (#248) — static marketing content
-   * under public/story, no app data; the `($|/)` anchor keeps the exclusion
-   * from leaking onto other routes that merely start with "story".
+   * under public/story, no app data; the `(?:$|/)` anchor (non-capturing —
+   * Next matchers reject capturing groups) keeps the exclusion from leaking
+   * onto other routes that merely start with "story".
    */
   matcher: [
-    "/((?!api/auth|login|break-glass|story($|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|login|break-glass|story(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
