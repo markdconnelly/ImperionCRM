@@ -366,7 +366,7 @@ export const mockRepositories: Repositories = {
       return null;
     },
     async ticketFilterOptions() {
-      return { statuses: [], priorities: [] };
+      return { statuses: [], priorities: [], queues: [] };
     },
     async listSavedViews() {
       return [];

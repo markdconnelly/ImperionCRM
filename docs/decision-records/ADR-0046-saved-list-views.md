@@ -91,6 +91,26 @@ a new `entity_type`.
 
 ## Future considerations
 
-Views for tasks/contacts/devices; a queue filter once Autotask queue lands in
-silver (bronze has `queue_id`); per-view column layouts; org-managed "pinned"
-views.
+Views for tasks/contacts/devices; ~~a queue filter once Autotask queue lands in
+silver (bronze has `queue_id`)~~ — **shipped 2026-06-12 (#219)**, see the update
+below; per-view column layouts; org-managed "pinned" views.
+
+## Update 2026-06-12 — queue filter (#219)
+
+Migration **0074** adds `ticket.queue` (nullable text + index); the cloud
+pipeline's `mergeTicketSources` maps bronze `autotask_tickets.queue_id` into it
+(ImperionCRM_Pipeline follow-up PR, sequenced after the migration). The filter
+block gains a **Queue** select, `TicketFilter`/`ticketFilterOptions()` gain
+queue/queues, and saved views may persist `queue` (FILTER_KEYS).
+
+**Label decision (documented in the 0074 header):** `queue` stores the RAW
+Autotask `queue_id` picklist value as text — Autotask labels live behind the
+`/Tickets/entityInformation/fields` picklist endpoint and resolving them is
+deferred polish (a pipeline/on-prem concern). Filtering and saved views are
+correct on raw ids; a future label lookup decorates at read time or backfills,
+no schema change either way.
+
+**Degradation:** the queues lookup is guarded separately in
+`ticketFilterOptions()` so a not-yet-applied migration degrades to "no queue
+select" without breaking the existing filters; the select also hides itself
+while no ticket carries a queue.

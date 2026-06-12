@@ -60,7 +60,9 @@ event-relative schedule) + `campaign_platform` 'sms' + `connection_provider` 'ac
 backend executor grants (#236 / #110, ADR-0053 slice B); 0073 `campaign.workflow_id` +
 one-ACTIVE-enrollment-per-(workflow, contact) partial unique index (#112, ADR-0053
 slice D — auto-enroll responders/registrants; resolution path enrolls idempotently
-and audit-logs `workflow.auto_enroll`).
+and audit-logs `workflow.auto_enroll`); 0074 `ticket.queue` + index (#219, ADR-0046
+update — raw Autotask queue_id as text, label lookup deferred; populated by the
+cloud pipeline's `mergeTicketSources`).
 The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
