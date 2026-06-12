@@ -48,6 +48,27 @@ Does the feature need heavy/long-running/integration/secret work?
                  a typed method to the matching client in src/lib/services.
 ```
 
+## The call-guard seam (#190)
+
+Every server action that crosses this boundary goes through ONE seam instead of
+hand-rolled catch blocks:
+
+- `src/lib/services/call-guard.ts` — `callServiceWithFallback<T>` folds a failed
+  backend call into a `ServiceOutcome` with a ready-to-render message, under a single
+  error taxonomy: **not_configured** (base-URL env unset OR a clean backend 501 — the
+  same condition to a user, resolved here once), **rejected** (any other non-2xx),
+  **unreachable** (network/timeout). `not_configured` is an expected deployment state
+  (ADR-0018 graceful degradation) and is never logged; the rest are logged under the
+  caller's label. `isBackendNotConfigured`/`classifyServiceError` serve the
+  fire-and-forget callers (merge nudge, refresh actions).
+- `src/lib/services/acting-user.ts` — `resolveActingUser()`, the one session-email →
+  `app_user.id` resolution backend processes are scoped/audited by (backend
+  ADR-0036/0037/0039), with a discriminated reason (`no_session` / `no_database` /
+  `not_provisioned`) so each caller keeps its own degradation posture.
+
+The seam is the test surface (`call-guard.test.ts`, `acting-user.test.ts`); new
+backend-calling actions must use it rather than catching `ServiceCallError` directly.
+
 ## Why (ADR-0018)
 Keeps the internet-facing web tier small and low-privilege, lets workloads scale and
 deploy independently, and concentrates integration secrets in the external services
