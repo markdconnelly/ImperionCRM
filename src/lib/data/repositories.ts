@@ -108,6 +108,9 @@ export interface TaskInput {
 }
 export interface TaskEditable extends TaskInput {
   id: string;
+  /** Autotask ticket ref set by the on-demand push (backend #19, ADR-0052 §7).
+   * Read-only here — the backend writes it server-side, never the form. */
+  autotaskTicketRef: string | null;
 }
 
 /**
@@ -463,6 +466,8 @@ export interface EngagementsRepository {
   // Read-only feeds
   listAssessmentArtifacts(assessmentId: string): Promise<ArtifactRow[]>;
   listTickets(filter?: TicketFilter): Promise<TicketRow[]>;
+  /** One synced ticket by its Autotask ref — the task's ticket history (#98). */
+  getTicketByRef(externalRef: string): Promise<TicketRow | null>;
   /** Distinct status/priority values present in the data, for the filter selects. */
   ticketFilterOptions(): Promise<TicketFilterOptions>;
 
