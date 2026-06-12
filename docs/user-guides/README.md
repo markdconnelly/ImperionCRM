@@ -16,6 +16,11 @@ flowchart LR
 Three columns: navigate on the left, work in the middle, **ask the agent** on the
 right (scoped to your Entra permissions).
 
+## Written guides
+
+- [Sales Activity — the Sales Queue](sales-activity.md): work your open sales
+  tasks by due date and deal; create and complete them in place.
+
 ## Walkthroughs to write
 
 The features below are **built and live**; the step-by-step guides for them are the
