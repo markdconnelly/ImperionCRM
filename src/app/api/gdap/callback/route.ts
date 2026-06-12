@@ -13,7 +13,8 @@
  *    on use.
  *  - Matches the `state` Microsoft echoes back against the cookie value (the backend's
  *    unguessable nonce from `POST /api/gdap/consent`), rejecting any mismatch.
- *  - Optionally pins the returning `tenant` to `GDAP_EXPECTED_TENANT` when set.
+ *  - Pins the returning `tenant` to `GDAP_EXPECTED_TENANT` when set — fail-closed: a
+ *    callback without a tenant is a mismatch (`gdapConsentOutcome`).
  *  - No secret is handled here — the GDAP relationship lives in Microsoft; this only
  *    records that consent was granted. The token/secret path stays in the backend.
  */
@@ -24,7 +25,7 @@ import { getRepositories } from "@/lib/data";
 import { can } from "@/lib/auth/policy";
 import { DEFAULT_ROLE } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
-import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
+import { GDAP_CONSENT_COOKIE, gdapConsentOutcome } from "@/lib/integrations/gdap";
 
 function settingsRedirect(req: NextRequest, result: string): NextResponse {
   const url = new URL("/settings", req.nextUrl.origin);
@@ -54,30 +55,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return settingsRedirect(req, "invalid");
   }
 
-  const error = params.get("error");
-  const adminConsent = params.get("admin_consent");
-  const tenant = params.get("tenant");
-
-  // 3. Decide the outcome.
-  let status: "active" | "error";
-  let result: string;
-  const expectedTenant = process.env.GDAP_EXPECTED_TENANT?.trim();
-  if (error) {
-    status = "error";
-    result = "denied";
-  } else if (adminConsent?.toLowerCase() === "true") {
-    if (expectedTenant && tenant && tenant !== expectedTenant) {
-      status = "error";
-      result = "tenant_mismatch";
-    } else {
-      status = "active";
-      result = "granted";
-    }
-  } else {
-    // Neither success nor an explicit error — treat as inconclusive.
-    status = "error";
-    result = "unknown";
-  }
+  // 3. Decide the outcome (tenant pinning fails closed — see gdapConsentOutcome).
+  const { status, result } = gdapConsentOutcome({
+    error: params.get("error"),
+    adminConsent: params.get("admin_consent"),
+    tenant: params.get("tenant"),
+    expectedTenant: process.env.GDAP_EXPECTED_TENANT?.trim() || undefined,
+  });
 
   // 4. Record the outcome on the company gdap row (upsert by provider).
   const provider = COMPANY_PROVIDERS.find((p) => p.key === "gdap");

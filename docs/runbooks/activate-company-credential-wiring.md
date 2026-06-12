@@ -110,7 +110,9 @@ consent URL. To light it up:
 - On the **backend**, set `GDAP_CLIENT_ID`, `GDAP_REDIRECT_URI`
   (`https://imperioncrm.azurewebsites.net/api/gdap/callback`), `GDAP_TENANT` so
   `/api/gdap/consent` returns a live URL.
-- (Optional, recommended) pin the returning tenant on the **web app**:
+- (Optional, recommended) pin the returning tenant on the **web app**. Pinning fails
+  closed (#192): when set, a consent callback must echo exactly this tenant — a missing
+  `tenant` parameter is rejected as `tenant_mismatch`, never accepted.
 
 ```bash
 az webapp config appsettings set \
