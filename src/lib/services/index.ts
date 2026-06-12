@@ -120,6 +120,34 @@ export const agentService = {
       timeoutMs: 120_000, // the tool-use loop may take several model turns
     }),
 
+  /**
+   * Execute an approval-gated outbound action (backend POST /agent/actions/execute —
+   * the ONLY path that sends; backend ADR-0033). Requires an explicit human approver;
+   * the backend re-asserts `current_consent` at execution (403 consent_denied) and
+   * logs the send to the `interaction` timeline. Used for agent-proposed sends AND
+   * the composer's human-initiated 1:1 sends (#183 — the composing human is both
+   * proposer and approver, ADR-0055 T2 propose-only).
+   */
+  executeAction: (input: {
+    action: {
+      kind: "send_email" | "send_sms";
+      contactId: string;
+      channel: "email" | "sms";
+      subject?: string;
+      body: string;
+    };
+    approval: { approvedByUserId: string; approved: true };
+    /** Recipient address/number, resolved by the web app at approval time. */
+    to: string;
+    /** The sender's M365 connection (required for send_email). */
+    fromConnectionId?: string;
+  }) =>
+    callService<{ channel: "email" | "sms"; interactionId?: string }>(
+      services.agent,
+      "/agent/actions/execute",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
+    ),
+
   /** Current preset + budget + month-to-date spend (backend ADR-0037). */
   getSettings: () => callService<AgentSettingsWire>(services.agent, "/agent/settings"),
 

@@ -189,8 +189,12 @@ Space Grotesk, body IBM Plex Sans.
 
 **Deferred to the next phase (deliberately stubbed, not broken):** the actual
 ingestion engines (Microsoft Graph / YouTube / LinkedIn / Facebook — the per-user
-OAuth flow itself is now live-wired, see above), real email/SMS sends, agent/LLM
-enrichment execution, and embeddings generation + vector search. The agent layer is
+OAuth flow itself is now live-wired, see above), agent/LLM
+enrichment execution, and embeddings generation + vector search. **Real 1:1 email/SMS
+sends are wired (#183, ADR-0058):** the composer executes through the backend's
+approval-gated send path (consent re-asserted at execution; email as the employee's
+own M365 mailbox, SMS via ACS) and degrades to the logged-to-timeline stub with an
+honest notice where the backend/prerequisites aren't configured. The agent layer is
 no longer deferred: the orchestrator runtime is live in the backend (backend
 ADR-0036), the AI Agents page is real (ADR-0048), and the **Board** page is real
 (ADR-0049, backend ADR-0039). Until a source is wired, the remaining flows are

@@ -18,7 +18,7 @@ import { getPool } from "@/lib/db/client";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 
 export type ActingUserResolution =
-  | { ok: true; id: string }
+  | { ok: true; id: string; email: string }
   | {
       ok: false;
       /**
@@ -36,5 +36,5 @@ export async function resolveActingUser(): Promise<ActingUserResolution> {
   if (!email) return { ok: false, reason: "no_session", email: null };
   if (!getPool()) return { ok: false, reason: "no_database", email };
   const id = await resolveAppUserIdByEmail(email); // catches its own query failures
-  return id ? { ok: true, id } : { ok: false, reason: "not_provisioned", email };
+  return id ? { ok: true, id, email } : { ok: false, reason: "not_provisioned", email };
 }

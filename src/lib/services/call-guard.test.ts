@@ -95,7 +95,12 @@ describe("callServiceWithFallback", () => {
     const outcome = await callServiceWithFallback(async () => {
       throw new ServiceCallError("agent", 500, "boom");
     }, MESSAGES);
-    expect(outcome).toEqual({ ok: false, kind: "rejected", message: MESSAGES.failed });
+    expect(outcome).toEqual({
+      ok: false,
+      kind: "rejected",
+      message: MESSAGES.failed,
+      status: 500, // surfaced so callers can branch on specific rejections (403 consent)
+    });
     expect(errorSpy).toHaveBeenCalledWith("testAction failed:", expect.anything());
   });
 

@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { requestMergeRefresh } from "@/lib/integrations/merge-refresh";
+import { agentService } from "@/lib/services";
+import { callServiceWithFallback } from "@/lib/services/call-guard";
+import { resolveActingUser } from "@/lib/services/acting-user";
 import type { ContactInput } from "@/lib/data/repositories";
 
 function orNull(v: FormDataEntryValue | null): string | null {
@@ -55,9 +58,21 @@ export async function deleteContactAction(formData: FormData) {
 }
 
 /**
- * Log a message to the timeline. Consent-gated (ADR-0014): the actual provider send
- * is stubbed in this phase; we re-check consent server-side and no-op if the contact
- * has not opted in for the channel (the UI also disables the control).
+ * Send a 1:1 message from the composer — REAL sends via the backend (#183, v1 gate 5).
+ *
+ * Consent-gated twice (ADR-0014): pre-checked here for the UI, re-asserted by the
+ * backend at execution (403 consent_denied → blocked notice). The send goes through
+ * the backend's ONLY send path, POST /agent/actions/execute (backend ADR-0033):
+ * the composing human is both proposer and approver (ADR-0055 T2 propose-only —
+ * submitting the composer IS the approval), so `approvedByUserId` is the acting
+ * user. Email sends as the acting user's own M365 mailbox (their active m365
+ * connection); SMS goes via ACS.
+ *
+ * Degradation (ADR-0018): backend unconfigured, no app user resolvable (mock mode),
+ * no recipient address, or no M365 connection → the previous stub behavior (log the
+ * message to the timeline) with an honest notice (`mode=logged`). A REAL attempt
+ * that fails does NOT fall back to the stub — faking success would be worse than
+ * failing (`error=` notice instead).
  */
 export async function sendMessageAction(formData: FormData) {
   const contactId = String(formData.get("contactId") ?? "");
@@ -67,12 +82,68 @@ export async function sendMessageAction(formData: FormData) {
   await requireCapability("comms:write");
   if (!contactId || body === "") return;
 
-  const { comms, consent } = getRepositories();
+  const { comms, consent, contacts, connections } = getRepositories();
   const allowed = await consent.canSend(contactId, channel);
   if (!allowed) {
     redirect(`/contacts/${contactId}?blocked=${channel}`); // no current consent
   }
 
+  // Resolve the real-send prerequisites: recipient address, approver, sender mailbox.
+  const profile = await contacts.getProfile(contactId);
+  const to = channel === "sms" ? profile?.phone : profile?.email;
+  const acting = await resolveActingUser();
+  let stubReason = ""; // why we fell back to the logged-to-timeline stub
+  if (!to) stubReason = "no_address";
+  else if (!acting.ok) stubReason = "no_app_user";
+
+  let fromConnectionId: string | undefined;
+  if (!stubReason && channel === "email" && acting.ok) {
+    const userConnections = await connections.listUserConnections(acting.email);
+    fromConnectionId = userConnections.find(
+      (c) => c.provider === "m365" && c.status === "active",
+    )?.id;
+    if (!fromConnectionId) stubReason = "no_connection";
+  }
+
+  if (!stubReason && acting.ok && to) {
+    const kind = channel === "sms" ? ("send_sms" as const) : ("send_email" as const);
+    const outcome = await callServiceWithFallback(
+      () =>
+        agentService.executeAction({
+          action: {
+            kind,
+            contactId,
+            channel: channel === "sms" ? "sms" : "email",
+            ...(subject ? { subject } : {}),
+            body,
+          },
+          approval: { approvedByUserId: acting.id, approved: true },
+          to,
+          ...(fromConnectionId ? { fromConnectionId } : {}),
+        }),
+      {
+        label: "sendMessageAction",
+        notConfigured: "", // not rendered — unconfigured backend falls back to the stub
+        failed: "", // not rendered — failures surface via the error= notice
+      },
+    );
+    if (outcome.ok) {
+      revalidatePath(`/contacts/${contactId}`);
+      revalidatePath("/communications");
+      redirect(`/contacts/${contactId}?sent=${channel}&mode=real`);
+    }
+    if (outcome.kind === "rejected" && outcome.status === 403) {
+      // The backend's consent gate refused at execution — the authoritative answer.
+      redirect(`/contacts/${contactId}?blocked=${channel}`);
+    }
+    if (outcome.kind !== "not_configured") {
+      // A real attempt failed — never fake success by logging a stub entry.
+      redirect(`/contacts/${contactId}?error=${channel}`);
+    }
+    stubReason = "backend_unconfigured";
+  }
+
+  // Stub path: log the message to the timeline (the pre-#183 behavior), honestly labeled.
   const source = channel === "sms" ? "sms" : "email";
   await comms.createInteraction({
     accountId: null,
@@ -85,7 +156,7 @@ export async function sendMessageAction(formData: FormData) {
   });
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/communications");
-  redirect(`/contacts/${contactId}?sent=${channel}`);
+  redirect(`/contacts/${contactId}?sent=${channel}&mode=logged&reason=${stubReason}`);
 }
 
 /**
