@@ -21,6 +21,8 @@ export const navSecondary: NavItem[] = [
   { key: "accounts", label: "Accounts", icon: "Building2", href: "/accounts" },
   { key: "contacts", label: "Contacts", icon: "Contact", href: "/contacts" },
   { key: "campaigns", label: "Campaigns", icon: "Megaphone", href: "/campaigns" },
+  // Events are first-class objects campaigns promote (ADR-0053 §1).
+  { key: "events", label: "Events", icon: "CalendarDays", href: "/events" },
   { key: "communications", label: "Communications", icon: "MessagesSquare", href: "/communications" },
   { key: "discovery", label: "Discovery", icon: "ClipboardList", href: "/discovery" },
   { key: "assessments", label: "Assessments", icon: "ShieldAlert", href: "/assessments" },
