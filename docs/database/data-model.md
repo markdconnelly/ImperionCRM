@@ -969,6 +969,16 @@ DELETE). Readers: the cloud pipeline (bronze→silver merge into `interaction`) 
 backend functions (interaction-timeline ingestion). The Teams collectors' flat `user`
 property lands in `user_upn` (reserved keyword).
 
+### Intune managed-devices bronze (migration 0069, #225 / local #75)
+
+`intune_managed_devices` — same local-pipeline envelope, one row per Graph managedDevice
+(unreduced, flat compliance queryable per ADR-0051 decision 6). Fed by the on-prem
+collector `scheduled-tasks/m365/intune-devices.task.ps1` (local PR #123; self-gates
+until this migration is applied). Indexed on `serial_number` and `azure_ad_device_id` —
+the merge-join keys to silver `device` (and the #162 device policy-applied indicator).
+Writer: `imperion-localpipeline`; readers: `mgid-imperioncrmpipeline` (merge) and the
+web role (device page).
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.
