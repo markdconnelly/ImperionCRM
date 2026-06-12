@@ -131,6 +131,10 @@ read back through the union views `contact_bronze_all` / `account_bronze_all` / 
 - **Ops prerequisite:** the backend app setting `AUTOTASK_QUEUE_IDS` must map the queue
   names (`business-review`, `app-dev`, …) to Autotask queue picklist ids; an unmapped
   name returns 400 and surfaces as the non-blocking notice.
+- **Feedback (#100, ADR-0058):** additionally needs the web app setting
+  `FEEDBACK_ACCOUNT_ID` — the internal Imperion account uuid the app-dev tickets belong
+  to (must be linked to an Autotask company). Unset → the Feedback page shows the
+  "not configured" notice and files nothing.
 
 ## Pipeline summary (bronze → silver → gold)
 
