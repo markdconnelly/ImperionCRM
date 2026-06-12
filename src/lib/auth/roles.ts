@@ -94,6 +94,16 @@ export function canManageSales(roles: readonly AppRole[] | undefined): boolean {
 }
 
 /**
+ * Campaign/event/send writes — campaigns, ads, audiences, events, scheduled
+ * sends — belong to marketing-capable roles: admin | sales (ADR-0053 §8). GUI-side
+ * twin of the `sales:write` capability the server actions enforce (ADR-0045);
+ * reads stay open to all roles.
+ */
+export function canManageCampaigns(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "sales");
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */

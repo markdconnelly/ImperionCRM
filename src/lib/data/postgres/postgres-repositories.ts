@@ -30,6 +30,7 @@ import type {
   ContactInput,
   DiscoveryCallInput,
   EnrichmentInput,
+  EventInput,
   InteractionFilter,
   InteractionInput,
   LeadHookInput,
@@ -82,6 +83,8 @@ import type {
   DiscoveryCallRow,
   EnrichmentFactRow,
   EnrollmentRow,
+  EventDetail,
+  EventRow,
   ExternalIdentityRow,
   Health,
   InteractionRow,
@@ -3659,6 +3662,164 @@ export const postgresRepositories: Repositories = {
   },
 
   // ── Demand generation (ADR-0012/0026) ─────────────────────────────────────
+  // ── Events: first-class objects campaigns promote (ADR-0053, #109) ────────
+  events: {
+    async listEvents(): Promise<EventRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.events.listEvents();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          kind: string;
+          name: string;
+          status: string;
+          starts_at: Date | null;
+          registered: string;
+          attended: string;
+        }>(
+          `SELECT e.id, e.kind::text AS kind, e.name, e.status::text AS status, e.starts_at,
+                  COUNT(r.id) FILTER (WHERE r.status <> 'canceled') AS registered,
+                  COUNT(r.id) FILTER (WHERE r.status = 'attended')  AS attended
+           FROM event e LEFT JOIN event_registration r ON r.event_id = e.id
+           GROUP BY e.id ORDER BY e.starts_at DESC NULLS LAST, e.created_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          kind: r.kind,
+          name: r.name,
+          status: r.status,
+          startsAt: fmtDateTime(r.starts_at),
+          registered: Number(r.registered),
+          attended: Number(r.attended),
+        }));
+      } catch {
+        return mockRepositories.events.listEvents();
+      }
+    },
+
+    async getEvent(id: string): Promise<EventDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.events.getEvent(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          kind: string;
+          name: string;
+          description: string | null;
+          status: string;
+          starts_at: Date | null;
+          ends_at: Date | null;
+          timezone: string | null;
+          capacity: number | null;
+          join_url: string | null;
+          location: string | null;
+          reg_headline: string | null;
+          reg_blurb: string | null;
+          registered: string;
+          attended: string;
+          no_show: string;
+        }>(
+          `SELECT e.id, e.kind::text AS kind, e.name, e.description, e.status::text AS status,
+                  e.starts_at, e.ends_at, e.timezone, e.capacity, e.join_url, e.location,
+                  e.registration_page->>'headline' AS reg_headline,
+                  e.registration_page->>'blurb'    AS reg_blurb,
+                  COUNT(r.id) FILTER (WHERE r.status <> 'canceled') AS registered,
+                  COUNT(r.id) FILTER (WHERE r.status = 'attended')  AS attended,
+                  COUNT(r.id) FILTER (WHERE r.status = 'no_show')   AS no_show
+           FROM event e LEFT JOIN event_registration r ON r.event_id = e.id
+           WHERE e.id = $1 GROUP BY e.id`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          kind: r.kind,
+          name: r.name,
+          description: r.description,
+          status: r.status,
+          startsAt: fmtDateTime(r.starts_at),
+          endsAt: fmtDateTime(r.ends_at),
+          timezone: r.timezone,
+          capacity: r.capacity,
+          joinUrl: r.join_url,
+          location: r.location,
+          registrationHeadline: r.reg_headline,
+          registrationBlurb: r.reg_blurb,
+          registered: Number(r.registered),
+          attended: Number(r.attended),
+          noShow: Number(r.no_show),
+        };
+      } catch {
+        return mockRepositories.events.getEvent(id);
+      }
+    },
+
+    async createEvent(input: EventInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.events.createEvent(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO event (kind, name, description, status, starts_at, ends_at, timezone,
+                            capacity, join_url, location, registration_page)
+         VALUES ($1::event_kind, $2, $3, $4::event_status, $5::timestamptz, $6::timestamptz,
+                 $7, $8, $9, $10, $11::jsonb)
+         RETURNING id`,
+        [
+          input.kind,
+          input.name,
+          nullIfEmpty(input.description),
+          input.status,
+          nullIfEmpty(input.startsAt),
+          nullIfEmpty(input.endsAt),
+          nullIfEmpty(input.timezone),
+          input.capacity,
+          nullIfEmpty(input.joinUrl),
+          nullIfEmpty(input.location),
+          JSON.stringify({
+            headline: input.registrationHeadline,
+            blurb: input.registrationBlurb,
+            fields: ["full_name", "email"],
+          }),
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateEvent(id: string, input: EventInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.events.updateEvent(id, input);
+      await pool.query(
+        `UPDATE event SET kind = $2::event_kind, name = $3, description = $4,
+                status = $5::event_status,
+                -- blank schedule inputs keep the stored times (the edit form posts
+                -- empty datetime fields; nulling starts_at would trip the
+                -- leave-draft CHECK on scheduled events)
+                starts_at = COALESCE($6::timestamptz, starts_at),
+                ends_at   = COALESCE($7::timestamptz, ends_at),
+                timezone = $8, capacity = $9, join_url = $10, location = $11,
+                registration_page = registration_page || $12::jsonb
+         WHERE id = $1`,
+        [
+          id,
+          input.kind,
+          input.name,
+          nullIfEmpty(input.description),
+          input.status,
+          nullIfEmpty(input.startsAt),
+          nullIfEmpty(input.endsAt),
+          nullIfEmpty(input.timezone),
+          input.capacity,
+          nullIfEmpty(input.joinUrl),
+          nullIfEmpty(input.location),
+          JSON.stringify({
+            headline: input.registrationHeadline,
+            blurb: input.registrationBlurb,
+          }),
+        ],
+      );
+    },
+  },
+
   campaigns: {
     async listCampaigns(): Promise<CampaignRow[]> {
       const pool = getPool();
