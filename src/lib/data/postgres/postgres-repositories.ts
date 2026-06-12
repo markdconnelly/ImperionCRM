@@ -1229,8 +1229,12 @@ export const postgresRepositories: Repositories = {
           is_comm: boolean;
           status: string;
           due_at: Date | null;
+          deploy_key: string | null;
+          deploy_requested_at: Date | null;
+          task_id: string | null;
         }>(
-          `SELECT id, project_id, milestone_id, code, title, is_comm, status, due_at
+          `SELECT id, project_id, milestone_id, code, title, is_comm, status, due_at,
+                  deploy_key, deploy_requested_at, task_id
            FROM onboarding_step
            ORDER BY ordinal, code`,
         );
@@ -1248,6 +1252,9 @@ export const postgresRepositories: Repositories = {
             isComm: s.is_comm,
             status: s.status,
             due: fmtDate(s.due_at),
+            deployKey: s.deploy_key,
+            deployRequestedAt: fmtDateTime(s.deploy_requested_at),
+            taskId: s.task_id,
           });
           stepsByMilestone.set(s.milestone_id, list);
         }
@@ -1311,6 +1318,13 @@ export const postgresRepositories: Repositories = {
         );
         if (Number(existing[0]?.n ?? 0) > 0) return;
 
+        // The project's account scopes the auto-created easy-mode tasks (#101).
+        const { rows: pRows } = await client.query<{ account_id: string | null }>(
+          `SELECT account_id FROM project WHERE id = $1`,
+          [projectId],
+        );
+        const accountId = pRows[0]?.account_id ?? null;
+
         await client.query("BEGIN");
         for (const phase of ONBOARDING_TEMPLATE.phases) {
           const phaseStart = addDays(start, phase.offsetDays);
@@ -1325,12 +1339,37 @@ export const postgresRepositories: Repositories = {
           const milestoneId = mRows[0].id;
           let ord = 0;
           for (const step of phase.steps) {
+            // Easy mode (ADR-0052 §3, #101): a deploy-flagged step auto-creates
+            // ONE linked project task; ordinary checklist steps create nothing,
+            // so the board shows deployment-shaped work without a 100-task flood.
+            let taskId: string | null = null;
+            if (step.deployKey) {
+              const { rows: tRows } = await client.query<{ id: string }>(
+                `INSERT INTO task (account_id, project_id, title, status, category, due_at)
+                 VALUES ($1, $2, $3, 'open', 'project'::task_category, $4::date)
+                 RETURNING id`,
+                [accountId, projectId, step.title, phaseEnd],
+              );
+              taskId = tRows[0].id;
+            }
             await client.query(
               `INSERT INTO onboarding_step
-                 (project_id, milestone_id, code, title, is_comm, ordinal, status, due_at)
-               VALUES ($1, $2, $3, $4, $5, $6, 'open', $7::date)
+                 (project_id, milestone_id, code, title, is_comm, ordinal, status, due_at,
+                  deploy_key, verify_key, task_id)
+               VALUES ($1, $2, $3, $4, $5, $6, 'open', $7::date, $8, $9, $10)
                ON CONFLICT (project_id, code) DO NOTHING`,
-              [projectId, milestoneId, step.code, step.title, Boolean(step.send), ord++, phaseEnd],
+              [
+                projectId,
+                milestoneId,
+                step.code,
+                step.title,
+                Boolean(step.send),
+                ord++,
+                phaseEnd,
+                step.deployKey ?? null,
+                step.verifyKey ?? null,
+                taskId,
+              ],
             );
           }
         }
@@ -1346,12 +1385,68 @@ export const postgresRepositories: Repositories = {
     async setOnboardingStepStatus(id: string, done: boolean): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.setOnboardingStepStatus(id, done);
-      await pool.query(
-        `UPDATE onboarding_step
-         SET status = $2, completed_at = ${done ? "now()" : "NULL"}
-         WHERE id = $1`,
-        [id, done ? "done" : "open"],
+      // Completing a step also closes its linked project task (#101, ADR-0052
+      // §4) — the same close path the backend verification check drives.
+      // Idempotent: re-completing a done step / done task is a no-op. A
+      // deploy-flagged step completing with NO linked task records an audit
+      // note instead of failing.
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows } = await client.query<{
+          task_id: string | null;
+          deploy_key: string | null;
+        }>(
+          `UPDATE onboarding_step
+           SET status = $2, completed_at = ${done ? "now()" : "NULL"}
+           WHERE id = $1
+           RETURNING task_id, deploy_key`,
+          [id, done ? "done" : "open"],
+        );
+        const step = rows[0];
+        if (done && step?.task_id) {
+          await client.query(
+            `UPDATE task SET status = 'done' WHERE id = $1 AND status <> 'done'`,
+            [step.task_id],
+          );
+        } else if (done && step?.deploy_key && !step.task_id) {
+          await client.query(
+            `INSERT INTO audit_log (action, entity_type, entity_id, detail)
+             VALUES ('onboarding.deploy.no_linked_task', 'onboarding_step', $1::uuid,
+                     jsonb_build_object('deployKey', $2::text, 'note',
+                       'deploy-flagged step completed with no linked project task — no-op (#101)'))`,
+            [id, step.deploy_key],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async requestOnboardingDeploy(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.requestOnboardingDeploy(id);
+      // Records the deploy request + audit trail. The backend configuration
+      // function named by deploy_key is dispatched in the integration phase
+      // (ADR-0052 §3); verification (§4) closes the step + linked task.
+      const { rows } = await pool.query<{ deploy_key: string | null }>(
+        `UPDATE onboarding_step SET deploy_requested_at = now()
+         WHERE id = $1 AND deploy_key IS NOT NULL
+         RETURNING deploy_key`,
+        [id],
       );
+      if (rows[0]?.deploy_key) {
+        await pool.query(
+          `INSERT INTO audit_log (action, entity_type, entity_id, detail)
+           VALUES ('onboarding.deploy.requested', 'onboarding_step', $1::uuid,
+                   jsonb_build_object('deployKey', $2::text))`,
+          [id, rows[0].deploy_key],
+        );
+      }
     },
 
     async listAssessments(): Promise<AssessmentRow[]> {

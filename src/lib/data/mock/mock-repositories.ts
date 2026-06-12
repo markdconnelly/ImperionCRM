@@ -203,6 +203,9 @@ export const mockRepositories: Repositories = {
             isComm: Boolean(st.send),
             status: done ? "done" : "open",
             due: null,
+            deployKey: st.deployKey ?? null,
+            deployRequestedAt: null,
+            taskId: null,
           };
         });
         const total = steps.length;
@@ -244,6 +247,9 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async setOnboardingStepStatus() {
+      throw new Error(NO_DB);
+    },
+    async requestOnboardingDeploy() {
       throw new Error(NO_DB);
     },
     async listAssessments() {

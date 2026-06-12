@@ -263,8 +263,13 @@ export interface CrmRepository {
   setMilestoneHealth(id: string, health: string): Promise<void>;
   /** Instantiate the standard onboarding playbook for a project (phases + checklist). */
   applyOnboardingTemplate(projectId: string, startAt: string): Promise<void>;
-  /** Check/uncheck a playbook checklist step. */
+  /** Check/uncheck a playbook checklist step. Completing a step also closes its
+   * linked project task (#101, ADR-0052 §4) — idempotent; a deploy-flagged step
+   * with no linked task records an audit note instead. */
   setOnboardingStepStatus(id: string, done: boolean): Promise<void>;
+  /** Stamp an easy-mode step's deploy request (ADR-0052 §3; backend dispatch is
+   * the integration phase — this records the request + audit honestly). */
+  requestOnboardingDeploy(id: string): Promise<void>;
 
   // AI Security Readiness Assessments (full CRUD) — gates managed services (ADR-0022)
   listAssessments(): Promise<AssessmentRow[]>;

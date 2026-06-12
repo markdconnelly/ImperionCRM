@@ -10,6 +10,7 @@ import {
   setMilestoneHealthAction,
   applyTemplateAction,
   toggleStepAction,
+  deployStepAction,
 } from "./actions";
 import { deleteProjectAction } from "../projects/actions";
 import { deleteTaskAction } from "../tasks/actions";
@@ -55,6 +56,7 @@ export default async function OnboardingPage() {
           setHealthAction={setMilestoneHealthAction}
           applyTemplateAction={applyTemplateAction}
           toggleStepAction={toggleStepAction}
+          deployStepAction={deployStepAction}
           today={today}
         />
       </section>

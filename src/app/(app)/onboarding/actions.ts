@@ -42,7 +42,8 @@ export async function applyTemplateAction(formData: FormData) {
   revalidatePath("/onboarding");
 }
 
-/** Check/uncheck a playbook checklist step; the phase R/Y/G re-derives (ADR-0037). */
+/** Check/uncheck a playbook checklist step; the phase R/Y/G re-derives (ADR-0037).
+ * Completing a step also closes its linked project task (#101, ADR-0052 §4). */
 export async function toggleStepAction(formData: FormData) {
   await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
@@ -51,6 +52,27 @@ export async function toggleStepAction(formData: FormData) {
   const { crm } = getRepositories();
   try {
     await crm.setOnboardingStepStatus(id, done);
+  } catch {
+    // mock mode — no-op
+  }
+  revalidatePath("/onboarding");
+  revalidatePath("/projects/[id]", "page");
+  revalidatePath("/tasks");
+}
+
+/**
+ * Easy-mode Deploy (ADR-0052 §3, #101): stamps deploy_requested_at + audit.
+ * The backend configuration function named by deploy_key dispatches in the
+ * integration phase; the step + linked task close ONLY when verification
+ * observes the configuration (§4) — never on click.
+ */
+export async function deployStepAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const { crm } = getRepositories();
+  try {
+    await crm.requestOnboardingDeploy(id);
   } catch {
     // mock mode — no-op
   }

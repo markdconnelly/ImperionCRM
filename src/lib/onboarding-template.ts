@@ -18,6 +18,16 @@ export interface OnboardingStepDef {
   title: string;
   /** A "Send - …" client communication step (vs hands-on work). */
   send?: boolean;
+  /**
+   * Easy mode (ADR-0052 §3, #101): names the backend configuration function the
+   * Deploy button fires. Only genuinely automatable steps get a key — which
+   * steps comes from the project-plan solidification exercise, so v1 ships
+   * SPARSE (currently none). Applying the template creates one linked project
+   * task per deploy-flagged step.
+   */
+  deployKey?: string;
+  /** The posture-silver observed state that verifies the deploy (ADR-0052 §4). */
+  verifyKey?: string;
 }
 
 /** A phase — a major step with its own R/Y/G health and a window. */
