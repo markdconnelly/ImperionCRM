@@ -46,7 +46,9 @@ pipeline's per-source bronze writes); 0045/0046 gold
 0052 saved list views (ADR-0046); 0053 `device_inventory_all` view (ADR-0047); 0054
 `agent_settings` singleton (ADR-0048, backend ADR-0037); 0065 M365 mail/Teams bronze
 (`m365_mail_messages`, `m365_teams_chats`, `m365_teams_meetings` — #182, the local
-pipeline's communication collectors' landing tables + writer/reader grants).
+pipeline's communication collectors' landing tables + writer/reader grants); 0066
+`board_session` 'awaiting_ciso' status + `paused_at` (#208 — resumable deputy pause,
+ADR-0054 §4 / backend #64).
 The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
