@@ -13,6 +13,7 @@ import { getPool } from "@/lib/db/client";
 import { mockRepositories } from "@/lib/data/postgres/fallback";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
+import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import type {
   AccountDetail,
   AccountInput,
@@ -489,6 +490,12 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.listDeviceInventory();
       try {
+        // Policy indicator (#162, ADR-0051 §6): join the Intune managedDevices
+        // bronze (migration 0069 — web role holds an explicit SELECT grant for
+        // exactly this read) by serial number, the one join key the inventory
+        // view exposes. (azure_ad_device_id becomes usable once the pipeline's
+        // silver merge stamps it; serial covers both view arms today.) Devices
+        // without a matching, recently-synced Intune row show NO indicator.
         const { rows } = await pool.query<{
           id: string;
           name: string | null;
@@ -501,11 +508,21 @@ export const postgresRepositories: Repositories = {
           account: string | null;
           origin: string;
           last_seen: string | null;
+          compliance_state: string | null;
+          last_sync_date_time: string | null;
         }>(
-          `SELECT id, name, device_type, manufacturer, model, serial_number, os, status,
-                  account, origin, last_seen
-           FROM device_inventory_all
-           ORDER BY account NULLS LAST, name NULLS LAST`,
+          `SELECT v.id, v.name, v.device_type, v.manufacturer, v.model, v.serial_number,
+                  v.os, v.status, v.account, v.origin, v.last_seen,
+                  imd.compliance_state, imd.last_sync_date_time
+           FROM device_inventory_all v
+           LEFT JOIN LATERAL (
+             SELECT i.compliance_state, i.last_sync_date_time
+             FROM intune_managed_devices i
+             WHERE i.serial_number = v.serial_number AND i.serial_number <> ''
+             ORDER BY i.collected_at DESC
+             LIMIT 1
+           ) imd ON v.serial_number IS NOT NULL
+           ORDER BY v.account NULLS LAST, v.name NULLS LAST`,
         );
         return rows.map((r) => ({
           id: r.id,
@@ -520,6 +537,7 @@ export const postgresRepositories: Repositories = {
           origin: r.origin,
           // The view returns text timestamps (mixed bronze/silver) — trim to minutes.
           lastSeen: r.last_seen ? r.last_seen.slice(0, 16).replace("T", " ") : null,
+          policyCompliance: classifyDevicePolicy(r.compliance_state, r.last_sync_date_time),
         }));
       } catch {
         return mockRepositories.crm.listDeviceInventory();

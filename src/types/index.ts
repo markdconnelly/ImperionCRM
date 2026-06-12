@@ -383,6 +383,12 @@ export interface DeviceInventoryRow {
   account: string | null;
   origin: string; // silver | itglue
   lastSeen: string | null;
+  /**
+   * Per-device policy-applied indicator (#162, ADR-0051 §6), sourced ONLY from
+   * Intune Device Compliance (`intune_managed_devices` bronze, migration 0069).
+   * null = absent: device not Intune-managed, not reporting, or feed not run.
+   */
+  policyCompliance: "compliant" | "drift" | "ungoverned" | null;
 }
 
 /** A silver `contract` row joined to its account (Autotask or DocuSign — pipeline merge). */
