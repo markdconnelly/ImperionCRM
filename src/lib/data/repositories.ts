@@ -21,6 +21,7 @@ import type {
   AudienceRow,
   CampaignDetail,
   CampaignRow,
+  CampaignSendRow,
   CommunicationDetail,
   ConnectionRow,
   ConsentEventRow,
@@ -764,6 +765,23 @@ export interface CampaignInput {
   budget: string | null; // numeric as string or null
   startAt: string | null;
   endAt: string | null;
+  /** Event this campaign promotes (ADR-0053 §1; enables event-relative sends). */
+  eventId: string | null;
+}
+
+/** One schedulable blast (ADR-0053 §4): draft, or exactly one schedule grain. */
+export interface CampaignSendInput {
+  channel: string; // email|sms
+  recipientScope: string; // audience|event_registrants
+  audienceId: string | null; // required when scope=audience
+  /** Typed template: email {subject, bodyMarkdown, mergeFields[]} / sms {text}. */
+  subject: string | null;
+  bodyMarkdown: string | null;
+  smsText: string | null;
+  sendAt: string | null; // absolute schedule (datetime-local)
+  eventOffsetMinutes: number | null; // relative to the linked event's start
+  /** false = save as draft; true = scheduled (needs exactly one schedule field). */
+  schedule: boolean;
 }
 
 /** One enrichment-attribute criterion for an audience (contains-match on value). */
@@ -801,6 +819,12 @@ export interface CampaignsRepository {
   previewAudienceMembers(criteria: AudienceCriterion[]): Promise<AudienceMemberRow[]>;
   /** Launch ads against an audience — consent-gated stub; returns # eligible. */
   launchAudience(id: string): Promise<number>;
+
+  // ── Campaign Sends (ADR-0053 §4 — schedule only; the backend executor fires) ──
+  listSends(campaignId: string): Promise<CampaignSendRow[]>;
+  createSend(campaignId: string, input: CampaignSendInput): Promise<void>;
+  /** Cancel a draft/scheduled send (sent/sending are immutable history). */
+  cancelSend(sendId: string): Promise<void>;
 }
 
 // ── Lead-capture hooks (ADR-0024) ────────────────────────────────────────────
