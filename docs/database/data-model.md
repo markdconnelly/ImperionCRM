@@ -195,6 +195,20 @@ erDiagram
 > `lead_capture_event`**, **`meeting_action_item`**, and the `engagement_answer`
 > provenance columns were added. Diagram 5 is authoritative where they differ.
 
+### Events + registration (ADR-0053, migration 0070)
+
+**Events are first-class objects, campaigns are delivery vehicles.** `event`
+(kind `webinar | live_event`; Teams `join_url` for webinars, `location` for live
+events; typed `registration_page` jsonb; `workflow_id` auto-enrolls registrants once
+#112 wires it) and `event_registration` (one row per signup: `contact_id`,
+`capture_event_id` back to the capture inbox, status
+`registered|attended|no_show|canceled`, unique per event+contact). A campaign of any
+channel points at the event it promotes via `campaign.event_id`. Registration IS lead
+capture: the `event_registration` lead-hook kind lands signups in
+`lead_capture_event`, resolving to contacts like every other lead source. Funnel
+numbers (registrations, attendance) are derived from `event_registration`, never
+stored.
+
 
 ```mermaid
 erDiagram
@@ -1123,7 +1137,13 @@ domain match, independent of Tenant Mapping).
 - `campaign.status` (and `ad.status`): `draft | active | paused | completed`
 - `audience.kind`: `static | dynamic`
 - `lead_hook.kind`: `web_form | facebook_lead | youtube_comment | linkedin_message |
-  inbound_email | qr | manual`
+  inbound_email | qr | manual | event_registration` (event_registration by ADR-0053,
+  migration 0070 — hook `config` carries the event id)
+- `event.kind`: `webinar | live_event` (ADR-0053, migration 0070)
+- `event.status`: `draft | scheduled | live | completed | canceled` (leaving draft
+  requires `starts_at`)
+- `event_registration.status`: `registered | attended | no_show | canceled`
+  (attendance recorded post-event; funnel counts derived, never stored)
 - `workflow.kind`: `nurture | pre_discovery | re_engagement`
 - `workflow_step.kind`: `send_email | send_sms | chat_prompt | agent_enrich | wait |
   branch`

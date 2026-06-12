@@ -52,7 +52,9 @@ ADR-0054 §4 / backend #64); 0068 `knowledge_object.status` draft convention + b
 MI INSERT/UPDATE grant (#214 / backend #58 — documentation sub-agent drafts, no
 embeddings until human-approved + on-prem publish); 0069 `intune_managed_devices`
 bronze + merge-join indexes + grants (#225 / local #75 schema handoff, ADR-0051
-decision 6 — feeds the #162 device policy indicator).
+decision 6 — feeds the #162 device policy indicator); 0070 `event` +
+`event_registration` + `campaign.event_id` + the `event_registration` lead-hook kind
+(#228 / #109, ADR-0053 slice A — events as first-class objects).
 The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
