@@ -29,6 +29,20 @@ export function isPersonalOAuthProvider(value: string): value is PersonalOAuthPr
   return (PERSONAL_OAUTH_PROVIDERS as readonly string[]).includes(value);
 }
 
+/**
+ * Everything `connectAction` may connect: the live-OAuth providers plus key-based
+ * Plaud (stub by design). This is the server-side allowlist behind the Settings
+ * "Connect your account" buttons (#194) — form values outside it are rejected
+ * before any DB write, so a tampered POST can't reach the connection enums.
+ */
+export const CONNECTABLE_PROVIDERS = [...PERSONAL_OAUTH_PROVIDERS, "plaud"] as const;
+
+export type ConnectableProvider = (typeof CONNECTABLE_PROVIDERS)[number];
+
+export function isConnectableProvider(value: string): value is ConnectableProvider {
+  return (CONNECTABLE_PROVIDERS as readonly string[]).includes(value);
+}
+
 /** Outcome flags carried back to Settings as `?connect=<result>` (the page renders a notice). */
 export type ConnectResult =
   | "ok" // backend exchanged the code; connection row is active

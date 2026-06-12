@@ -13,6 +13,7 @@ import { connectionsService, credentialsService, pipelineService } from "@/lib/s
 import { ServiceCallError, ServiceNotConfiguredError } from "@/lib/services/external-client";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
 import {
+  isConnectableProvider,
   isPersonalOAuthProvider,
   settingsConnectionsPath,
   type ConnectResult,
@@ -53,30 +54,39 @@ export async function connectAction(formData: FormData) {
   const scope = String(formData.get("scope") ?? "user");
   const displayName = String(formData.get("displayName") ?? "").trim() || null;
   await requireCapability("settings:write");
-  if (!provider) return;
 
+  // This action only connects PERSONAL accounts: the Settings buttons post
+  // scope="user" and a known provider. Anything else is a tampered/stale form —
+  // reject before any DB write so raw values never reach the connection enums (#194).
+  if (scope !== "user" || !isConnectableProvider(provider)) {
+    redirect(settingsConnectionsPath("error", provider || undefined));
+  }
+
+  // Fail closed when the signed-in employee can't be resolved to an app_user: a
+  // user-scope connection row must have an owner, never owner_user_id = NULL (#194).
   const session = await auth();
   const email = session?.user?.email ?? null;
+  const userId = email ? await resolveAppUserIdByEmail(email) : null;
+  if (!email || !userId) {
+    redirect(settingsConnectionsPath("error", provider));
+  }
 
-  // Live flow — only for user-scope OAuth providers with a resolvable app_user.
+  // Live flow — only for the OAuth providers (Plaud is key-based, stub by design).
   let authorizationUrl: string | null = null;
   let failure: ConnectResult | null = null;
-  if (scope === "user" && isPersonalOAuthProvider(provider) && email) {
-    const userId = await resolveAppUserIdByEmail(email);
-    if (userId) {
-      try {
-        const res = await connectionsService.startOAuth(provider, {
-          userId,
-          displayName: displayName ?? email,
-        });
-        authorizationUrl = res.authorizationUrl;
-      } catch (err) {
-        if (!isBackendNotConfigured(err)) {
-          console.error(`connectAction(${provider}) backend start failed:`, err);
-          failure = "error";
-        }
-        // 501 / unset INTEGRATION_SERVICE_URL → fall through to the stub below.
+  if (isPersonalOAuthProvider(provider)) {
+    try {
+      const res = await connectionsService.startOAuth(provider, {
+        userId,
+        displayName: displayName ?? email,
+      });
+      authorizationUrl = res.authorizationUrl;
+    } catch (err) {
+      if (!isBackendNotConfigured(err)) {
+        console.error(`connectAction(${provider}) backend start failed:`, err);
+        failure = "error";
       }
+      // 501 / unset INTEGRATION_SERVICE_URL → fall through to the stub below.
     }
   }
 
@@ -85,8 +95,9 @@ export async function connectAction(formData: FormData) {
   if (authorizationUrl) redirect(authorizationUrl);
   if (failure) redirect(settingsConnectionsPath(failure, provider));
 
-  // Stub path (previous behavior, unchanged): record the connection row locally so
-  // the card renders, and surface a notice that the flow isn't live yet.
+  // Stub path: record the connection row locally so the card renders, and surface a
+  // notice that the flow isn't live yet. Validation above guarantees scope="user", an
+  // allowlisted provider, and a resolvable owner — no orphaned rows (#194).
   const { connections } = getRepositories();
   await connections.connect({
     scope,
