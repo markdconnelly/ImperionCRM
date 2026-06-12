@@ -85,7 +85,7 @@ export function ConveneBoardCard({
       ? ""
       : result.status === "concluded"
         ? "border-green/40 text-green"
-        : result.status === "paused"
+        : result.status === "paused" || result.status === "awaiting_ciso"
           ? "border-amber/40 text-amber"
           : "border-red/40 text-red";
 
@@ -271,7 +271,7 @@ export function ConveneBoardCard({
               name={
                 result.status === "concluded"
                   ? "CheckCircle2"
-                  : result.status === "paused"
+                  : result.status === "paused" || result.status === "awaiting_ciso"
                     ? "PauseCircle"
                     : "AlertTriangle"
               }
@@ -281,9 +281,11 @@ export function ConveneBoardCard({
               ? "Session concluded"
               : result.status === "paused"
                 ? "Board paused — monthly budget reached"
-                : result.status === "failed"
-                  ? "Session failed"
-                  : "Couldn't convene"}
+                : result.status === "awaiting_ciso"
+                  ? "Paused for the human CISO — approve or amend on the session page"
+                  : result.status === "failed"
+                    ? "Session failed"
+                    : "Couldn't convene"}
           </div>
           <p className="mt-2 text-sm text-text">{result.message}</p>
           {result.recommendation && (

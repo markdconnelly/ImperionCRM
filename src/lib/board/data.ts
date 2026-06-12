@@ -67,6 +67,9 @@ export interface BoardSessionDetail {
     openedBy: string | null;
     createdAt: string;
     concludedAt: string | null;
+    /** When the deputy pause started (0066, #185) — the deputy-review SLA clock.
+     * Retained as the historical record after resume. */
+    pausedAt: string | null;
   };
   members: BoardPersona[];
   messages: BoardTranscriptMessage[];
@@ -135,6 +138,7 @@ const MOCK_DETAILS: Record<string, BoardSessionDetail> = {
       openedBy: "Avery Chen",
       createdAt: "2026-06-08T15:10:00Z",
       concludedAt: "2026-06-08T15:11:30Z",
+      pausedAt: null,
     },
     members: MOCK_PERSONAS.slice(0, 3),
     messages: [
@@ -212,6 +216,7 @@ const MOCK_DETAILS: Record<string, BoardSessionDetail> = {
       openedBy: "Jordan Patel",
       createdAt: "2026-06-07T11:40:00Z",
       concludedAt: "2026-06-07T11:40:20Z",
+      pausedAt: null,
     },
     members: MOCK_PERSONAS.slice(0, 2),
     messages: [
@@ -341,9 +346,10 @@ async function detailFromDb(id: string): Promise<BoardSessionDetail | null> {
       opened_by: string | null;
       created_at: string;
       concluded_at: string | null;
+      paused_at: string | null;
     }>(
       `SELECT s.id, s.topic, s.status, s.packet_md, s.ciso_position_md,
-              u.display_name AS opened_by, s.created_at, s.concluded_at
+              u.display_name AS opened_by, s.created_at, s.concluded_at, s.paused_at
        FROM board_session s
        LEFT JOIN app_user u ON u.id = s.opened_by
        WHERE s.id = $1::uuid`,
@@ -406,6 +412,7 @@ async function detailFromDb(id: string): Promise<BoardSessionDetail | null> {
         openedBy: session.opened_by,
         createdAt: new Date(session.created_at).toISOString(),
         concludedAt: session.concluded_at ? new Date(session.concluded_at).toISOString() : null,
+        pausedAt: session.paused_at ? new Date(session.paused_at).toISOString() : null,
       },
       members: members.rows.map((m) => ({
         id: m.agent_id,
@@ -456,7 +463,7 @@ export async function getBoardSessionDetail(id: string): Promise<BoardSessionDet
     return {
       // The wire's openedBy is the convener's app_user UUID; without a DB we
       // can't resolve a display name, so the header shows "—" instead of a raw id.
-      session: { ...wire.session, openedBy: null },
+      session: { ...wire.session, openedBy: null, pausedAt: wire.session.pausedAt ?? null },
       members: wire.members.map((m) => ({
         id: m.agentId,
         name: m.name,

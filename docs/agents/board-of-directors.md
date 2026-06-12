@@ -28,15 +28,20 @@ thinkers' *published frameworks* — they never impersonate or speak as a real p
 Cap: ≤7 seated per session (4 officers + deputy + ≤2 invited advisors). Advisors are
 counsel, not votes. The **human CISO (Mark) holds the security seat** (ADR-0054 §4,
 deputy model): his stated position carries veto weight on security matters and supersedes
-the deputy's draft — entered at convene time in v1 (`board_session.ciso_position_md`), at
-a pause before synthesis (`awaiting_ciso`) in v2. He additionally ratifies or overrules
-every concluded recommendation (`board_recommendation.review_status`).
+the deputy's draft — entered at convene time (`board_session.ciso_position_md`), **or at
+the deputy pause** (pulled into v1 by ADR-0057; #185 / backend #64): when a deputy seat
+sits with no convene-time position, the session stops after round 2 as `awaiting_ciso`
+(`paused_at` starts the review SLA clock), the session page surfaces the deputy's final
+stance as the draft, and the human CISO resumes with his position — approve adopts the
+draft, amend replaces it — which runs synthesis → conclude. He additionally ratifies or
+overrules every concluded recommendation (`board_recommendation.review_status`).
 
 ## Inputs
 
 - Topic + optional convener context (convene form, `agents:operate`, admin-only).
-- Optional human CISO position (v1: convene form; when empty, the deputy's draft stands,
-  labeled as unreviewed staff analysis).
+- Optional human CISO position (convene form; when empty AND a deputy sits, the session
+  pauses `awaiting_ciso` and the position is entered at resume — the deputy pause panel
+  on the session page, #185).
 - **Board packet** (ADR-0054 §3): one cheap-tier pre-deliberation pass composes a written
   packet — reporting aggregations, gold-layer semantic-search pulls, security-posture
   summary, pipeline/campaign numbers — persisted on the session (`packet_md`).
@@ -63,18 +68,22 @@ Unchanged from backend ADR-0039: per-persona degradation (a failed persona is dr
 falls back to its round-1 position), session marked `failed` if round 1 or synthesis
 collapses, budget exhaustion returns `paused` before any spend, endpoint never hard-fails.
 Packet composition failure degrades to the legacy reporting snapshot (stubbed-not-broken).
+Resume-specific: synthesis failure on resume leaves the session `awaiting_ciso`
+(resumable; the recorded position persists); resume is budget-gated like convene.
 
 ## Workflow
 
 ```mermaid
 flowchart TD
-    A[Convene: topic + context + advisor invites + CISO position v1] --> B{Budget OK?}
+    A[Convene: topic + context + advisor invites + optional CISO position] --> B{Budget OK?}
     B -- no --> P[paused — no spend]
     B -- yes --> C[Compose board packet — cheap tier, persisted]
     C --> D[Round 1: opening positions — officers + deputy + invited advisors]
     D --> E[Round 2: cross-examination]
-    E --> V[v2 pause: awaiting_ciso — human CISO approves or amends the deputy draft]
-    V --> F[Facilitator synthesis — human CISO position carries security veto weight]
+    E --> V{CISO position given at convene?}
+    V -- no, deputy seated --> W[awaiting_ciso pause — human CISO approves or amends the deputy draft, then resumes]
+    V -- yes --> F
+    W --> F[Facilitator synthesis — human CISO position carries security veto weight]
     F --> G[Recommendation: pending_review]
     G --> H{Human CISO review}
     H -- ratify --> I[ratified]

@@ -5,8 +5,10 @@ import { canSeeAgentPages } from "@/lib/auth/roles";
 import { can } from "@/lib/auth/policy";
 import { Icon } from "@/components/ui/icon";
 import { ReviewRecommendationPanel } from "@/components/board/review-recommendation-panel";
+import { DeputyPausePanel } from "@/components/board/deputy-pause-panel";
 import { getBoardSessionDetail } from "@/lib/board/data";
 import {
+  deputyFinalStance,
   formatDateTime,
   groupTranscript,
   parseRationale,
@@ -14,7 +16,7 @@ import {
   sessionStatusMeta,
   type BoardTranscriptMessage,
 } from "@/lib/board/session";
-import { reviewRecommendationAction } from "./actions";
+import { resumeSessionAction, reviewRecommendationAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +92,9 @@ export default async function BoardSessionPage({
   const rationale = recommendation ? parseRationale(recommendation.rationale) : null;
   const hasCisoPosition = Boolean(session.cisoPositionMd);
   const overruled = recommendation?.reviewStatus === "overruled";
+  // The deputy pause (ADR-0054 §4 / #185): the draft the human CISO approves/amends.
+  const awaitingCiso = session.status === "awaiting_ciso";
+  const deputyDraft = awaitingCiso ? deputyFinalStance(messages) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -143,6 +148,18 @@ export default async function BoardSessionPage({
           )}
         </div>
       </section>
+
+      {/* Deputy pause (ADR-0054 §4 second stage, #185): approve/amend → resume. */}
+      {awaitingCiso && (
+        <DeputyPausePanel
+          sessionId={session.id}
+          pausedAt={session.pausedAt}
+          deputyName={deputyDraft?.name ?? null}
+          deputyDraft={deputyDraft?.content ?? null}
+          canAct={canReview}
+          resumeAction={resumeSessionAction}
+        />
+      )}
 
       {/* Human CISO position (ADR-0054 §4 deputy model) */}
       {session.cisoPositionMd && (
