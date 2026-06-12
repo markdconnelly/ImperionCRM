@@ -1144,6 +1144,12 @@ domain match, independent of Tenant Mapping).
   requires `starts_at`)
 - `event_registration.status`: `registered | attended | no_show | canceled`
   (attendance recorded post-event; funnel counts derived, never stored)
+- `campaign_send.status`: `draft | scheduled | sending | sent | canceled` (ADR-0053,
+  migration 0071); `channel`: `email | sms`; `recipient_scope`: `audience |
+  event_registrants` — non-draft sends carry exactly one of `send_at` /
+  `event_offset_minutes` (CHECK-enforced); recipients materialize at fire time,
+  consent-gated per recipient per channel
+- `campaign.platform` gains `sms`; `connection.provider` gains `acs` (migration 0071)
 - `workflow.kind`: `nurture | pre_discovery | re_engagement`
 - `workflow_step.kind`: `send_email | send_sms | chat_prompt | agent_enrich | wait |
   branch`
