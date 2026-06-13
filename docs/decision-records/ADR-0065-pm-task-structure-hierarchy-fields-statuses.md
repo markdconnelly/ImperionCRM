@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0010 (single task model), ADR-0034 (milestones + R/Y/G health), ADR-0037 (onboarding playbook instantiation), ADR-0052 (project board, `task.project_id`), `docs/product/pm-feature-requirements.md` Theme B |
 

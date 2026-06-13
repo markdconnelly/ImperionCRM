@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0034/0037 (onboarding playbook), ADR-0042 (GUI/process split), ADR-0053 (events / `registration_page` form), ADR-0061 (ICM automation), `docs/product/pm-feature-requirements.md` Theme E |
 
