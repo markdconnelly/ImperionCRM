@@ -223,6 +223,60 @@ erDiagram
 > stamps the typed id (the front end never holds Autotask creds, ADR-0042). The pipelines
 > read them to reconcile the written Project/Ticket back from `autotask_*` bronze.
 
+### Delivery templates + provisioning contract gate (ADR-0081, migration 0084)
+
+The orchestration spine (0082) needed an **input**: something to turn a won
+opportunity into a native delivery project, and a *template* to shape it. The only
+prior template was the hardcoded onboarding playbook (ADR-0037). Migration 0084 adds
+a **data-driven delivery template** (template → phases → tasks) the team authors and
+a human picks on the board to provision a won deal — generalizing the onboarding
+playbook shape. Each template task optionally carries a **JIT dispatch-ticket spec**
+that maps 1:1 to `task_ticket_fire` at instantiation. Provisioning is **human-triggered**
+(ADR-0081 §2), never auto-on-won (Autotask `canDelete=False` → conservative-on-create).
+
+```mermaid
+erDiagram
+    DELIVERY_TEMPLATE ||--o{ DELIVERY_TEMPLATE_PHASE : "phases"
+    DELIVERY_TEMPLATE_PHASE ||--o{ DELIVERY_TEMPLATE_TASK : "tasks"
+    PROJECT_TYPE ||--o{ DELIVERY_TEMPLATE : "optional binding (picker filter)"
+    DELIVERY_TEMPLATE ||--o{ PROJECT_PROVISIONING : "instantiated from"
+    DELIVERY_TEMPLATE {
+      uuid id PK
+      text key "UNIQUE"
+      text name
+      integer version
+      uuid project_type_id FK "NULL = any type"
+      boolean is_active
+    }
+    DELIVERY_TEMPLATE_PHASE {
+      uuid id PK
+      uuid template_id FK "CASCADE"
+      integer ordinal "UNIQUE per template"
+      text name
+      integer offset_days
+      integer duration_days
+    }
+    DELIVERY_TEMPLATE_TASK {
+      uuid id PK
+      uuid phase_id FK "CASCADE"
+      integer ordinal "UNIQUE per phase"
+      text title
+      integer offset_days
+      integer duration_days
+      boolean dispatches_ticket "→ task_ticket_fire row"
+      bigint ticket_queue_id "Project Mgmt = 29683483 (env config)"
+      text ticket_title "defaults to task title"
+      integer ticket_lead_days "JIT window before task start"
+    }
+```
+
+`project_provisioning` (0082) gains `delivery_template_id` (provenance) and a **hard
+contract gate** — `contract_state` (`none|sent|signed`), `contract_signed_at`,
+`contract_envelope_ref` (DocuSign envelope, ADR-0071). The backend executor **must not**
+provision a row unless `contract_state='signed'`; the `idx_project_provisioning_ready`
+partial index is its gated work queue (`pending` + `signed`). The gate is enforced now
+but **inert** (`'none'`) until DocuSign (#318) is wired.
+
 ### Opportunity as merged silver from three bronze sources (#428, migration 0083)
 
 The `opportunity` (silver, ADR-0010) is **merged from three per-source bronze tables**, not
