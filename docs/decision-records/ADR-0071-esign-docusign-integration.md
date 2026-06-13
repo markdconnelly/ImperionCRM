@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | backend (token custody + send); pipeline (status webhook); frontend (schema + status surface) |
-| **Status** | Proposed (2026-06-12, vendor + topology locked with Mark; envelope mapping under review) |
+| **Status** | Accepted (2026-06-12, merged to main; vendor + topology locked with Mark; envelope mapping under review) |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0019 (proposal lifecycle), ADR-0044 (silver contracts), ADR-0067 (CPQ → proposal materialization), ADR-0042 (division of labor), ADR-0034/0043 (front end never holds provider keys), ADR-0012 (integration identity map / external_ref), ADR-0014 (consent ledger) |
 | **Epic** | #318 · Parent #314 |
