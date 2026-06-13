@@ -1079,6 +1079,32 @@ today as the drillable "SharePoint sites" section on the Company 360, joined via
 `account_tenant` (ADR-0051): per-site drill shows dates, template, storage, and an
 outbound link to the site itself.
 
+### Entra groups + membership bronze — feeds the user object (migration 0079, #257)
+
+`m365_groups` (Graph `/groups`) and `m365_group_members` (per-group member
+expansion, `/groups/{id}/members`) — local-pipeline envelope, fed by the on-prem
+collector (local #139; `Group.Read.All` / `GroupMember.Read.All`). All-text flat
+columns (true types live in `raw_payload`). `m365_groups.external_id` = the Entra
+group object id. Membership has no single natural id, so
+`m365_group_members.external_id` is the collector-built `<group id>/<member id>`
+composite (0078 composite-id precedent — the generic envelope upsert stays
+intact); the flat parts `group_external_id` / `member_external_id` carry the
+(tenant, group, member) key, indexed both ways (group → members, member → groups).
+
+**The user-object join (Mark's 2026-06-12 verdict: groups are bronze to the USER
+object):** `m365_group_members.member_external_id` = the Entra user object id =
+`m365_contacts.external_ref`, whose `contact_id` is the silver contact resolved by
+the pipeline's contact merge. Group kind derives from the raw Graph fields:
+`group_types` containing `Unified` = Microsoft 365 group, else
+`security_enabled` / `mail_enabled` (case-folded — bronze is all-text);
+`membership_rule_processing_state = 'On'` marks dynamic groups.
+
+Writer: `imperion-localpipeline`. Cloud pipeline, backend, and web read. Surfaced
+today as the drillable "Directory groups" section on the Contact 360 (groups the
+contact belongs to, via the bronze join above). A deeper silver merge (group
+context folded into `contact_enrichment` by the pipeline's contact-matcher) is the
+follow-up issue noted on #257.
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.

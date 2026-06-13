@@ -496,6 +496,9 @@ export const mockRepositories: Repositories = {
     async listContactRelatedBronze() {
       return [];
     },
+    async listDirectoryGroups() {
+      return [];
+    },
   },
   consent: {
     async listConsent(id) {

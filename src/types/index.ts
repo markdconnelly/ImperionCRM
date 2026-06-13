@@ -566,6 +566,30 @@ export interface SharePointSiteRow {
   collectedAt: string;
 }
 
+/**
+ * One directory group a contact belongs to, from bronze `m365_groups` joined
+ * through `m365_group_members` on the contact's Entra user object id
+ * (`m365_contacts.external_ref`) — migration 0079, #257. Bronze is all-text:
+ * values arrive verbatim and the UI parses only what it renders.
+ */
+export interface DirectoryGroupRow {
+  tenantId: string;
+  /** Entra group object id (bronze external_id). */
+  externalId: string;
+  displayName: string | null;
+  description: string | null;
+  /** Stringified Graph array — contains "Unified" for Microsoft 365 groups. */
+  groupTypes: string | null;
+  mail: string | null;
+  /** Stringified Graph booleans. */
+  securityEnabled: string | null;
+  mailEnabled: string | null;
+  visibility: string | null;
+  /** "On" when the group is dynamic (rule-driven membership). */
+  membershipRuleProcessingState: string | null;
+  collectedAt: string;
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;
