@@ -20,6 +20,8 @@ right (scoped to your Entra permissions).
 
 - [Sales Activity — the Sales Queue](sales-activity.md): work your open sales
   tasks by due date and deal; create and complete them in place.
+- [Task board — the kanban view](task-board.md): drag tasks between
+  Open / In progress / Done; the drop saves the status.
 
 ## Walkthroughs to write
 

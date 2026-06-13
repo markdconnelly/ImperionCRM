@@ -230,6 +230,10 @@ sales/project/onboarding/general partition.)
 
 ## C1. Kanban board (drag-drop)
 
+> **Status:** tasks board shipped #341 (drag-drop, enum columns, category-filter-aware,
+> List|Board toggle). Remaining C1 scope (projects board, F2 group-by, F3 swimlanes,
+> F4 rich cards, F5 WIP) tracked in #439; activity-feed event (A1) in #438.
+
 - C1-F1 (MUST) Board view of tasks and of projects, columns = status (B5 once built,
   else current enum). Drag a card between columns to change status.
 - C1-F2 (MUST) Group-by selector (status default; assignee, project_type, tag).
