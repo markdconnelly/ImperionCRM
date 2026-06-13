@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.10.0...imperion-crm-v0.11.0) (2026-06-13)
+
+
+### Features
+
+* **dashboard:** cross-domain intelligence strip ([#292](https://github.com/markdconnelly/ImperionCRM/issues/292)) ([#299](https://github.com/markdconnelly/ImperionCRM/issues/299)) ([6171e5e](https://github.com/markdconnelly/ImperionCRM/commit/6171e5ed295200d8c8dfee029ea4884ec41cf174))
+* **reporting:** security fleet BI-hub section ([#291](https://github.com/markdconnelly/ImperionCRM/issues/291)) ([#297](https://github.com/markdconnelly/ImperionCRM/issues/297)) ([f6da01a](https://github.com/markdconnelly/ImperionCRM/commit/f6da01ae3fdd3f2d74e98b6e19dfc1690a7f4edb))
+
 ## [0.10.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.9.0...imperion-crm-v0.10.0) (2026-06-13)
 
 
