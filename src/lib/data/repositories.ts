@@ -49,6 +49,7 @@ import type {
   LeadHookRow,
   MarketingSocialReport,
   OnboardingProject,
+  SecurityFleetReport,
   ServiceDeskReport,
   SecurityPosture,
   OpportunityRow,
@@ -571,6 +572,8 @@ export interface ReportsRepository {
   marketingSocial(): Promise<MarketingSocialReport>;
   /** Service Desk BI-hub section: ticket distributions, opened trend, Defender links (ADR-0062). */
   serviceDesk(): Promise<ServiceDeskReport>;
+  /** Security Fleet BI-hub section: cross-tenant posture/MFA/Defender/Intune rollup (ADR-0062). */
+  securityFleet(): Promise<SecurityFleetReport>;
 }
 
 // ── Communications (ADR-0011) ────────────────────────────────────────────────

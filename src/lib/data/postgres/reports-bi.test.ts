@@ -146,3 +146,90 @@ describe("Service Desk BI section (#290 — ADR-0062)", () => {
     expect(query).not.toHaveBeenCalled();
   });
 });
+
+describe("Security Fleet BI section (#291 — ADR-0062)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPool.mockReturnValue({ query });
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM tenant_posture"))
+        return {
+          rows: [
+            {
+              tenants: "2", cur: "412.5", max: "550",
+              compliant: "12", drift: "2", ungoverned: "1", missing: "3",
+              exposures_open: "4",
+            },
+          ],
+        };
+      if (sql.includes("FROM entra_auth_methods"))
+        return { rows: [{ registered: "31", total: "40" }] };
+      if (sql.includes("FROM defender_incidents"))
+        return { rows: [{ sev: "high", c: "1" }, { sev: "medium", c: "3" }] };
+      if (sql.includes("FROM intune_managed_devices"))
+        return { rows: [{ compliant: "92", total: "104" }] };
+      if (sql.includes("FROM credential_exposure")) return { rows: [{ c: "6" }] };
+      return { rows: [] };
+    });
+  });
+
+  it("rolls the fleet up: score pct, policy mix, MFA, Defender by severity, Intune, exposures", async () => {
+    const r = await reports.securityFleet();
+    expect(r.tenants).toBe(2);
+    expect(r.secureScorePct).toBe(75); // 412.5 / 550
+    expect(r.policyMix).toEqual([
+      { label: "compliant", count: 12 },
+      { label: "drift", count: 2 },
+      { label: "ungoverned", count: 1 },
+      { label: "missing", count: 3 },
+    ]);
+    expect(r.mfa).toEqual({ registered: 31, total: 40 });
+    expect(r.defenderOpenBySeverity).toEqual([
+      { label: "high", count: 1 },
+      { label: "medium", count: 3 },
+    ]);
+    expect(r.intune).toEqual({ compliant: 92, total: 104 });
+    expect(r.exposuresOpen).toBe(6);
+  });
+
+  it("returns null score (not 0) when no tenant has been refreshed — no-coverage semantics", async () => {
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM tenant_posture"))
+        return {
+          rows: [
+            {
+              tenants: "0", cur: "0", max: "0",
+              compliant: "0", drift: "0", ungoverned: "0", missing: "0",
+              exposures_open: "0",
+            },
+          ],
+        };
+      if (sql.includes("registered")) return { rows: [{ registered: "0", total: "0" }] };
+      if (sql.includes("compliant")) return { rows: [{ compliant: "0", total: "0" }] };
+      return { rows: [{ c: "0" }] };
+    });
+    const r = await reports.securityFleet();
+    expect(r.secureScorePct).toBeNull();
+  });
+
+  it("matches the #256/#258 semantics: case-folded bronze flags, resolved/redirected excluded", async () => {
+    await reports.securityFleet();
+    const sqls = query.mock.calls.map((c) => c[0] as string);
+    expect(sqls.find((s) => s.includes("FROM entra_auth_methods"))).toContain(
+      "lower(COALESCE(is_mfa_registered, '')) = 'true'",
+    );
+    expect(sqls.find((s) => s.includes("FROM defender_incidents"))).toContain(
+      "NOT IN ('resolved', 'redirected')",
+    );
+    expect(sqls.find((s) => s.includes("FROM intune_managed_devices"))).toContain(
+      "lower(COALESCE(compliance_state, '')) = 'compliant'",
+    );
+  });
+
+  it("falls back to the mock when no pool is configured", async () => {
+    getPool.mockReturnValue(null);
+    const r = await reports.securityFleet();
+    expect(r.tenants).toBeGreaterThan(0);
+    expect(query).not.toHaveBeenCalled();
+  });
+});

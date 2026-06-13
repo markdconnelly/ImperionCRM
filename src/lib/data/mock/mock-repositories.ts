@@ -769,6 +769,26 @@ export const mockRepositories: Repositories = {
         defenderLinked: 2,
       };
     },
+    async securityFleet() {
+      return {
+        tenants: 4,
+        secureScorePct: 72,
+        policyMix: [
+          { label: "compliant", count: 38 },
+          { label: "drift", count: 7 },
+          { label: "ungoverned", count: 4 },
+          { label: "missing", count: 9 },
+        ],
+        mfa: { registered: 118, total: 146 },
+        defenderOpenBySeverity: [
+          { label: "high", count: 1 },
+          { label: "medium", count: 3 },
+          { label: "low", count: 5 },
+        ],
+        intune: { compliant: 92, total: 104 },
+        exposuresOpen: 6,
+      };
+    },
   },
   knowledge: {
     async search(query) {

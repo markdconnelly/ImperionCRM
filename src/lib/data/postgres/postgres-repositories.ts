@@ -113,6 +113,7 @@ import type {
   ReportSummary,
   RevenueSplit,
   SalesTaskRow,
+  SecurityFleetReport,
   ServiceDeskReport,
   SbrDetail,
   SbrRow,
@@ -2014,6 +2015,86 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return mockRepositories.reports.serviceDesk();
+      }
+    },
+
+    async securityFleet(): Promise<SecurityFleetReport> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.securityFleet();
+      try {
+        // Fleet-wide rollup across ALL mapped tenants (ADR-0062) — the
+        // account-scoped reads on /security stay per-tenant (ADR-0051).
+        // Bronze flags are text (0038 envelope): case-folded matches (#258).
+        const [posture, mfa, defender, intune, exposures] = await Promise.all([
+          pool.query<{
+            tenants: string;
+            cur: string;
+            max: string;
+            compliant: string;
+            drift: string;
+            ungoverned: string;
+            missing: string;
+            exposures_open: string;
+          }>(
+            `SELECT count(*) AS tenants,
+                    coalesce(sum(secure_score_current), 0) AS cur,
+                    coalesce(sum(secure_score_max), 0)     AS max,
+                    coalesce(sum(policies_compliant), 0)   AS compliant,
+                    coalesce(sum(policies_drift), 0)       AS drift,
+                    coalesce(sum(policies_ungoverned), 0)  AS ungoverned,
+                    coalesce(sum(policies_missing), 0)     AS missing,
+                    coalesce(sum(exposures_open), 0)       AS exposures_open
+             FROM tenant_posture`,
+          ),
+          pool.query<{ registered: string; total: string }>(
+            `SELECT count(*) FILTER (WHERE lower(COALESCE(is_mfa_registered, '')) = 'true')
+                      AS registered,
+                    count(*) AS total
+             FROM entra_auth_methods`,
+          ),
+          pool.query<{ sev: string; c: string }>(
+            `SELECT coalesce(nullif(severity, ''), 'unknown') AS sev, count(*) AS c
+             FROM defender_incidents
+             WHERE lower(COALESCE(status, '')) NOT IN ('resolved', 'redirected')
+             GROUP BY 1 ORDER BY 2 DESC`,
+          ),
+          pool.query<{ compliant: string; total: string }>(
+            `SELECT count(*) FILTER (WHERE lower(COALESCE(compliance_state, '')) = 'compliant')
+                      AS compliant,
+                    count(*) AS total
+             FROM intune_managed_devices`,
+          ),
+          pool.query<{ c: string }>(
+            `SELECT count(*) AS c FROM credential_exposure WHERE status <> 'resolved'`,
+          ),
+        ]);
+        const p = posture.rows[0];
+        const max = Number(p.max);
+        return {
+          tenants: Number(p.tenants),
+          secureScorePct: max > 0 ? Math.round((Number(p.cur) / max) * 100) : null,
+          policyMix: [
+            { label: "compliant", count: Number(p.compliant) },
+            { label: "drift", count: Number(p.drift) },
+            { label: "ungoverned", count: Number(p.ungoverned) },
+            { label: "missing", count: Number(p.missing) },
+          ],
+          mfa: {
+            registered: Number(mfa.rows[0].registered),
+            total: Number(mfa.rows[0].total),
+          },
+          defenderOpenBySeverity: defender.rows.map((r) => ({
+            label: r.sev,
+            count: Number(r.c),
+          })),
+          intune: {
+            compliant: Number(intune.rows[0].compliant),
+            total: Number(intune.rows[0].total),
+          },
+          exposuresOpen: Number(exposures.rows[0].c),
+        };
+      } catch {
+        return mockRepositories.reports.securityFleet();
       }
     },
   },
