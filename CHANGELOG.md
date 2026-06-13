@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.9.0...imperion-crm-v0.10.0) (2026-06-13)
+
+
+### Features
+
+* **entra:** groups + membership bronze feeding the user object ([#257](https://github.com/markdconnelly/ImperionCRM/issues/257)) ([#295](https://github.com/markdconnelly/ImperionCRM/issues/295)) ([fd00582](https://github.com/markdconnelly/ImperionCRM/commit/fd00582f5ad3a8936c84100f9aa97446717e5841))
+* **reporting:** marketing & social BI-hub section ([#294](https://github.com/markdconnelly/ImperionCRM/issues/294)) ([48b8b4d](https://github.com/markdconnelly/ImperionCRM/commit/48b8b4de41eb502af31f33e0b941be716d858c1f))
+* **reporting:** service desk BI-hub section ([#290](https://github.com/markdconnelly/ImperionCRM/issues/290)) ([#296](https://github.com/markdconnelly/ImperionCRM/issues/296)) ([ee3d491](https://github.com/markdconnelly/ImperionCRM/commit/ee3d491a149fad449f48e90174f21c3f18a76960))
+* **sharepoint:** site inventory bronze + drillable sites UI ([#255](https://github.com/markdconnelly/ImperionCRM/issues/255)) ([#286](https://github.com/markdconnelly/ImperionCRM/issues/286)) ([8a71e3a](https://github.com/markdconnelly/ImperionCRM/commit/8a71e3a28292e094abf0ffc44d51ee8ced40d76f))
+
 ## [0.9.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.8.0...imperion-crm-v0.9.0) (2026-06-13)
 
 
