@@ -210,6 +210,7 @@
     <nav class="nav-links">
       <a href="#system">system</a>
       <a href="#architecture">architecture</a>
+      <a href="#builders">build</a>
       <a href="#status">status</a>
       <a class="gh" href="https://github.com/markdconnelly" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
@@ -242,7 +243,8 @@
     <div class="ch-eyebrow reveal">The spark</div>
     <h2 class="reveal d1">It started with a game</h2>
     <p class="say reveal d1">A friend was using Claude Code to build a prize game for RuneScape. The thought landed instantly: <em>if it can do that, I can build a business application that delivers real value.</em></p>
-    <p class="say reveal d2">That night the target was a CRM to fix our sales pipeline. The ambition didn't stay small for long.</p>
+    <p class="say reveal d2">That night the target was a CRM to fix our sales pipeline — a single screen to stop losing deals in the cracks between tools. But the moment the first real data landed in a real database, the scope expanded on its own: if one agent could unify the pipeline, it could unify everything an MSP knows about a customer.</p>
+    <p class="say reveal d3">The ambition didn't stay small for long. Within days it was four repositories, one database, and a live product on Azure.</p>
   </article>
 
   <!-- 02 problem -->
@@ -264,8 +266,9 @@
     <div class="node reveal">03</div>
     <div class="ch-eyebrow reveal">What it is</div>
     <h2 class="reveal d1">One place to work. One agent to ask.</h2>
-    <p class="say reveal d1">Imperion CRM is an AI-enabled operations platform that sits as an <b>intelligence layer above Microsoft 365 and Kaseya</b> — augmenting them, never replacing them. It manages the whole lifecycle of a managed-services customer, from the first ad they see to the quarterly business review years later.</p>
-    <p class="say reveal d2">The defining motion is <em>assessment-led</em>: a paid AI Security Readiness Assessment — six scored dimensions and a remediation roadmap — is the wedge that earns a multi-year managed-services contract.</p>
+    <p class="say reveal d1">Imperion CRM is an AI-enabled operations platform that sits as an <b>intelligence layer above Microsoft 365 and Kaseya</b> — augmenting them, never replacing them. It manages the whole lifecycle of a managed-services customer, from the first ad they see to the quarterly business review years later: lead → qualification → proposal → onboarding → implementation → operational readiness → continuous success.</p>
+    <p class="say reveal d2">The promise is two-sided. <b>One place to work</b> — every account, contact, ticket, and conversation on one surface instead of ten. And <b>one agent to ask</b> — a single orchestrator that routes to specialist sub-agents behind the scenes, so the user never has to know which system an answer came from.</p>
+    <p class="say reveal d3">The defining go-to-market motion is <em>assessment-led</em>: a paid AI Security Readiness Assessment — six scored dimensions and a remediation roadmap — is the wedge that turns a cold prospect into a multi-year managed-services contract.</p>
   </article>
 
   <!-- 04 four-repo system (signature) -->
@@ -379,9 +382,49 @@
     </div>
   </article>
 
-  <!-- 08 status -->
-  <article class="chapter" id="status">
+  <!-- 08 who built it -->
+  <article class="chapter" id="builders">
     <div class="node reveal">08</div>
+    <div class="ch-eyebrow reveal">Who built it</div>
+    <h2 class="reveal d1">Two minds, one system</h2>
+    <p class="say reveal d1">This was not one long sprint by one agent. The build happened in <b>three distinct eras</b>, and the git history stamps each commit with the model that did the work — so the split isn't a story we tell, it's a number you can count.</p>
+    <p class="say reveal d2">The foundation was laid on <em>Claude Opus 4.8</em>: the scaffold, the Entra auth gate, the PostgreSQL + pgvector data layer, and the decision that shaped everything after it — the <b>four-repo split</b> (ADR-0042, settled 9 June). Then the bulk of the feature build moved to <em>Claude Fable 5</em>, which carried the modules, the integrations, and the BI hub across the line at speed.</p>
+
+    <!-- era timeline -->
+    <div class="flow reveal d2">
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg></div>
+        <h3>Opus 4.8 · genesis</h3>
+        <p>6–9 Jun · <b>161 commits</b><br/>scaffold · auth · schema · the four-repo split.</p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode" style="border-color:rgba(91,108,255,.5)">
+        <div class="icon-badge" style="background:var(--indigo);color:var(--ink)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <h3>Fable 5 · build-out</h3>
+        <p>9–12 Jun · <b>269 commits</b><br/>every module · integrations · the BI hub.</p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode dest">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+        <h3>Opus 4.8 · forward</h3>
+        <p>12 Jun 21:40 → now<br/>the second Opus era — counted from the line.</p>
+      </div>
+    </div>
+
+    <div class="flow-note reveal d2">
+      <div class="icon-badge" style="background:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="#2a1c02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></div>
+      <p><b>2026-06-12 · 21:40 CDT — Fable 5 was pulled by government order.</b> The last Fable commit landed at 21:38; the build was back on Opus 4.8 by 21:50, mid-stride. That timestamp is the line: everything shipped after it is measured as the second Opus era.</p>
+    </div>
+
+    <div class="deferred reveal d2">
+      <b>Baseline at the pull — measure forward from here</b>
+      <span>2026-06-12, 21:40 CDT: four repos live (front end <b>v0.11.0</b> · backend <b>v0.4.0</b> · cloud pipeline <b>v0.5.0</b> · on-prem <b>v0.8.0</b>), <b>79</b> schema migrations, <b>~430</b> model-stamped commits (161 Opus + 269 Fable). The commit counter at the top of this page hydrates live from GitHub — the gap above this baseline is the forward progress.</span>
+    </div>
+  </article>
+
+  <!-- 09 status -->
+  <article class="chapter" id="status">
+    <div class="node reveal">09</div>
     <div class="ch-eyebrow reveal">Where it is today</div>
     <h2 class="reveal d1">Honest about what's done</h2>
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
@@ -418,6 +461,7 @@
     <div class="takeaway reveal d1"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><b>One person, a whole system</b><span>Four repos, one database, a live product — scoped, documented, and shipped by one architect with AI agents.</span></div></div>
     <div class="takeaway reveal d2"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><b>Governed autonomy</b><span>Rule files, ADRs, fail-closed access, and a consent ledger turn speed into something defensible.</span></div></div>
     <div class="takeaway reveal d3"><div class="icon-badge amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div><b>Honesty is the headline</b><span>Built where it counts, clear about what's deferred. The discipline is the moat.</span></div></div>
+    <div class="takeaway reveal d3"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div><div><b>Resilient to the tools</b><span>Two models built it — Opus 4.8, then Fable 5, then Opus again after Fable was pulled mid-flight. The thread never dropped, because the state lives in the repo and the rule files, not in any one agent's memory.</span></div></div>
   </div>
   <div class="cta-row reveal d3">
     <a class="btn primary" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg> Explore the repos</a>
