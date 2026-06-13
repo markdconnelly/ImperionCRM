@@ -543,6 +543,21 @@ export interface PosturePolicyRow {
   goldenApprovedAt: string | null;
 }
 
+/** Per-domain DNS posture rollup (silver `dns_domain`, ADR-0063). One row per managed domain. */
+export interface DnsDomainRollup {
+  tenantId: string;
+  domain: string;
+  /** Governance verdict — only 'managed' = hosted in Azure AND write proven AND NS delegated. */
+  verdict: "not-in-azure" | "in-azure-readonly" | "managed";
+  recordsCompliant: number;
+  recordsDrift: number;
+  recordsUngoverned: number;
+  recordsMissing: number;
+  /** 0–100 DNS posture score, or null when no golden baseline is approved yet. */
+  score: number | null;
+  lastCapturedAt: string | null;
+}
+
 /** One Microsoft secure-score control profile (bronze, for the #93 drill-down). */
 export interface SecureScoreControl {
   tenantId: string;

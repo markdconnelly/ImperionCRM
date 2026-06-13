@@ -71,6 +71,7 @@ import type {
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
+  DnsDomainRollup,
   SecureScoreControl,
   CredentialExposureRow,
   DefenderIncidentCounts,
@@ -958,6 +959,8 @@ export interface SecurityRepository {
   countMfaRegistrationForAccount(accountId: string): Promise<MfaRegistrationCounts>;
   /** SharePoint site inventory over the account's mapped tenants (#255 — site metadata only, never file content). */
   listSharePointSitesForAccount(accountId: string): Promise<SharePointSiteRow[]>;
+  /** Per-domain DNS posture rollup over the account's mapped tenants (#308, ADR-0063 — verdict + drift counts). */
+  listDnsDomainsForAccount(accountId: string): Promise<DnsDomainRollup[]>;
 }
 
 /** The full set of repositories a request can resolve. */
