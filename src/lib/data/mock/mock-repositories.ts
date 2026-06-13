@@ -740,6 +740,32 @@ export const mockRepositories: Repositories = {
         ],
       };
     },
+    async serviceDesk() {
+      return {
+        byStatus: [
+          { label: "New", count: 69 },
+          { label: "Complete", count: 29 },
+          { label: "Status 8", count: 3 },
+          { label: "Status 7", count: 1 },
+        ],
+        byQueue: [
+          { label: "unassigned", count: 80 },
+          { label: "Queue 6", count: 12 },
+          { label: "Queue 8", count: 10 },
+        ],
+        openedByWeek: [
+          { label: "2026-05-04", count: 9 },
+          { label: "2026-05-11", count: 14 },
+          { label: "2026-05-18", count: 11 },
+          { label: "2026-05-25", count: 17 },
+          { label: "2026-06-01", count: 22 },
+          { label: "2026-06-08", count: 19 },
+        ],
+        total: 102,
+        opened30d: 93,
+        defenderLinked: 2,
+      };
+    },
   },
   knowledge: {
     async search(query) {

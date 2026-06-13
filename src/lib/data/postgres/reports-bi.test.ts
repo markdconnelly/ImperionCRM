@@ -86,3 +86,63 @@ describe("Marketing & Social BI section (#289 — ADR-0062)", () => {
     expect(query).not.toHaveBeenCalled();
   });
 });
+
+describe("Service Desk BI section (#290 — ADR-0062)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPool.mockReturnValue({ query });
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("coalesce(status, 'unknown')"))
+        return {
+          rows: [
+            { k: "1", c: "69" },
+            { k: "5", c: "29" },
+            { k: "19", c: "2" },
+          ],
+        };
+      if (sql.includes("queue AS k"))
+        return {
+          rows: [
+            { k: null, c: "80" },
+            { k: "6", c: "12" },
+          ],
+        };
+      if (sql.includes("date_trunc('week'"))
+        return { rows: [{ wk: "2026-06-08", c: "19" }] };
+      if (sql.includes("opened_30d"))
+        return { rows: [{ total: "102", opened_30d: "93" }] };
+      if (sql.includes("defender_incident_ticket_link")) return { rows: [{ c: "2" }] };
+      return { rows: [] };
+    });
+  });
+
+  it("names only the fixed Autotask system statuses and keeps raw ids honest", async () => {
+    const r = await reports.serviceDesk();
+    expect(r.byStatus).toEqual([
+      { label: "New", count: 69 },
+      { label: "Complete", count: 29 },
+      { label: "Status 19", count: 2 },
+    ]);
+    expect(r.byQueue).toEqual([
+      { label: "unassigned", count: 80 },
+      { label: "Queue 6", count: 12 },
+    ]);
+    expect(r.openedByWeek).toEqual([{ label: "2026-06-08", count: 19 }]);
+    expect(r.total).toBe(102);
+    expect(r.opened30d).toBe(93);
+    expect(r.defenderLinked).toBe(2);
+  });
+
+  it("counts Defender pairings from the 0076 link table", async () => {
+    await reports.serviceDesk();
+    const sqls = query.mock.calls.map((c) => c[0] as string);
+    expect(sqls.some((s) => s.includes("FROM defender_incident_ticket_link"))).toBe(true);
+  });
+
+  it("falls back to the mock when no pool is configured", async () => {
+    getPool.mockReturnValue(null);
+    const r = await reports.serviceDesk();
+    expect(r.total).toBeGreaterThan(0);
+    expect(query).not.toHaveBeenCalled();
+  });
+});

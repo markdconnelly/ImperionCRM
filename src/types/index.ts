@@ -281,6 +281,23 @@ export interface MarketingSocialReport {
   topCampaigns: CampaignPerfRow[];
 }
 
+// ── Reporting BI hub — Service Desk section (ADR-0062, #290) ─────────────────
+
+/**
+ * Service-desk section payload. ticket.status/queue hold raw Autotask picklist
+ * ids (label lookup deferred at 0074); only the fixed Autotask system statuses
+ * are named, the rest render as "Status N"/"Queue N". No open/closed flow yet —
+ * no ticket carries completion dates (ADR-0062).
+ */
+export interface ServiceDeskReport {
+  byStatus: CountDatum[];
+  byQueue: CountDatum[];
+  openedByWeek: CountDatum[]; // label = ISO week start (yyyy-mm-dd), last 8 weeks
+  total: number;
+  opened30d: number;
+  defenderLinked: number; // defender_incident_ticket_link rows (ADR-0059)
+}
+
 // ── Engagements: editable questionnaires, discovery, SBR, artifacts, tickets ──
 // (ADR-0023). All engagement records are account-scoped; the contact is only the
 // employee who performed a given instance.

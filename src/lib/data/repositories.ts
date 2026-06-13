@@ -48,6 +48,7 @@ import type {
   LeadHookRow,
   MarketingSocialReport,
   OnboardingProject,
+  ServiceDeskReport,
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
@@ -567,6 +568,8 @@ export interface ReportsRepository {
   sbrDimensionAverages(): Promise<CountDatum[]>;
   /** Marketing & Social BI-hub section: leads by source, organic social, campaign rollup (ADR-0062). */
   marketingSocial(): Promise<MarketingSocialReport>;
+  /** Service Desk BI-hub section: ticket distributions, opened trend, Defender links (ADR-0062). */
+  serviceDesk(): Promise<ServiceDeskReport>;
 }
 
 // ── Communications (ADR-0011) ────────────────────────────────────────────────
