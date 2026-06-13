@@ -1450,6 +1450,48 @@ The dashboard's five-stage strip (Lead, Qualified, Proposal, Onboarding, Active)
 a **read view** mapping Opportunity `sales_stage` and Account `lifecycle_stage`, not
 a stored field.
 
+## Diagram — Employee time tracking (ADR-0082)
+
+Imperion tracks employee time as **website-authoritative weekly timesheets** (attendance),
+corroborated by Autotask Ticket Time Entries, documented back to Autotask as one weekly
+Time Ticket, and verified paid read-only against QuickBooks. An **Employee** is an existing
+`app_user` EXTENDED — never reshaped — by a payroll-role-gated comp store. This section
+grows with the migrations (0085 comp/mapping → 0086 attendance/timesheet/silver → 0087
+time_ticket/recon); only the **0085** tables are shown below.
+
+```mermaid
+erDiagram
+    APP_USER ||--o| EMPLOYEE_PROFILE : "1:1 time-tracking extension"
+    APP_USER ||--o{ PAY_RATE         : "effective-dated comp"
+    EMPLOYEE_PROFILE {
+      uuid app_user_id PK_FK "CASCADE — 1:1 sidecar on app_user"
+      text classification "1099|W2 (v1 all 1099) — comp-sensitive"
+      bigint autotask_resource_id "mapping — joins Ticket Time Entries"
+      text quickbooks_vendor_id "mapping — matches QB payments"
+      timestamptz mappings_resolved_at "email-resolve audit"
+      uuid mappings_confirmed_by_FK "who confirmed once"
+      boolean is_active
+    }
+    PAY_RATE {
+      uuid id PK
+      uuid app_user_id FK "CASCADE"
+      date effective_from "rate in force from this date"
+      text rate_kind "hourly|salaried (salaried=W2, dormant)"
+      numeric hourly_rate "v1 1099-hourly straight"
+      numeric salaried_annual "W2-dormant"
+      numeric overtime_multiplier "1.5x FLSA, W2-dormant"
+      uuid created_by_FK "who set it"
+    }
+```
+
+> **Comp data is the highest-sensitivity surface here (ADR-0082 §Security).** It lives in
+> a SEPARATE store, never on the Entra-synced `app_user` row, never employee/agent/client-
+> visible. Grants: `pay_rate` (the comp itself) → web (app-gated to `finance`/`admin` via
+> `canApprovePayroll`) + backend reconciliation **read** only. The pipelines get **column-
+> level** SELECT on `employee_profile`'s **mapping** columns only (Resource/vendor ids, to
+> join Autotask Time Entries to an employee) — never `classification`, never `pay_rate`.
+> The Timesheet reconciles against the rate with the greatest `effective_from <=` its week.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
