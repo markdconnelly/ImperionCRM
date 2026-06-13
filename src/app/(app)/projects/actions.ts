@@ -75,6 +75,24 @@ export async function moveProjectAction(id: string, status: string) {
   revalidateProjectSurfaces();
 }
 
+/**
+ * Re-type a project from the kanban board when grouped by type (#443,
+ * ADR-0066 C1-F2). The target is validated against the live project_type table
+ * (not a static allowlist — types are data, ADR-0052) before the write, so a
+ * forged id is rejected rather than hitting the FK. Same audited path as the
+ * status move; no redirect.
+ */
+export async function moveProjectTypeAction(id: string, projectTypeId: string) {
+  await requireCapability("delivery:write");
+  const projectId = id.trim();
+  if (!projectId || !projectTypeId) return;
+  const { crm } = getRepositories();
+  const types = await crm.listProjectTypes();
+  if (!types.some((t) => t.id === projectTypeId)) return;
+  await crm.setProjectType(projectId, projectTypeId);
+  revalidateProjectSurfaces();
+}
+
 export async function deleteProjectAction(formData: FormData) {
   await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");

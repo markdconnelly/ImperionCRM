@@ -27,6 +27,17 @@ flowchart LR
   the per-type sections of the List. Switch to **List** for the type-grouped view
   and the project-type manager.
 
+## Grouping (#443)
+
+The **Group** switch (board view only) changes what the columns represent:
+
+- **Status** (default) — Not started / In progress / Blocked / Complete.
+- **Type** — one column per project type (from the live type table).
+
+Dragging a card reassigns whichever dimension you are grouped by: drop a project
+in another *Type* lane and it is re-typed (same `delivery:write` gate as a status
+move). Grouping by owner waits on the owner reaching the board's read model.
+
 ## Moving a project
 
 Drag a card to another column. The card jumps immediately (optimistic), and the
@@ -42,6 +53,6 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Group-by, swimlanes, WIP limits, richer cards** (assignee avatars, tags,
-  subtask progress, comment/attachment counts) — #439.
+- **Swimlanes, WIP limits, richer cards** (assignee avatars, tags, subtask
+  progress, comment/attachment counts) — #439. (Group-by shipped in #443.)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.

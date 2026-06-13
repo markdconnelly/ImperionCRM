@@ -254,6 +254,8 @@ export interface CrmRepository {
   createSalesTask(input: SalesTaskInput): Promise<void>;
   /** Set a task's status (Sales Queue complete button; idempotent). */
   setTaskStatus(id: string, status: string): Promise<void>;
+  /** Set a task's category (kanban group-by=category drop; idempotent). */
+  setTaskCategory(id: string, category: string): Promise<void>;
 
   // Proposals (full CRUD) — attach to an opportunity (ADR-0019)
   listProposals(): Promise<ProposalRow[]>;
@@ -269,6 +271,8 @@ export interface CrmRepository {
   updateProject(id: string, input: ProjectInput): Promise<void>;
   /** Set a project's status (kanban board drop; idempotent). */
   setProjectStatus(id: string, status: string): Promise<void>;
+  /** Set a project's type (kanban group-by=type drop; idempotent). */
+  setProjectType(id: string, projectTypeId: string): Promise<void>;
   deleteProject(id: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
