@@ -223,6 +223,45 @@ erDiagram
 > stamps the typed id (the front end never holds Autotask creds, ADR-0042). The pipelines
 > read them to reconcile the written Project/Ticket back from `autotask_*` bronze.
 
+### Opportunity as merged silver from three bronze sources (#428, migration 0083)
+
+The `opportunity` (silver, ADR-0010) is **merged from three per-source bronze tables**, not
+modelled per-source. Each adds unique data; the KQM `autotask_*` ids are the cross-source
+join keys. Bronze follows the local-pipeline lossless envelope (LP ingests KQM + Autotask;
+the web app writes the website source). **Precedence: website > autotask > kqm.**
+
+```mermaid
+erDiagram
+    KQM_OPPORTUNITIES        }o--|| OPPORTUNITY_BRONZE_ALL : "source=kqm"
+    AUTOTASK_OPPORTUNITIES   }o--|| OPPORTUNITY_BRONZE_ALL : "source=autotask"
+    WEBSITE_OPPORTUNITIES    }o--|| OPPORTUNITY_BRONZE_ALL : "source=website (highest)"
+    OPPORTUNITY_BRONZE_ALL   ||..|| OPPORTUNITY : "silver merge (pipeline follow-up)"
+    KQM_OPPORTUNITIES ||--o{ KQM_OPPORTUNITY_SECTIONS : groups
+    KQM_OPPORTUNITY_SECTIONS ||--o{ KQM_OPPORTUNITY_LINES : "lines (MRR vs one-off)"
+    KQM_OPPORTUNITIES ||--o| KQM_SALES_ORDERS : "won → order"
+    KQM_SALES_ORDERS ||--o{ KQM_SALES_ORDER_LINES : lines
+    KQM_OPPORTUNITIES {
+      text external_id "KQM quote id"
+      text status "int enum: 3=WON (verified #427)"
+      text sales_order_id "present ⇔ won"
+      text autotask_opportunity_id "join key / sale→delivery seam"
+      text autotask_organization_id "join key"
+      jsonb raw_payload "lossless"
+    }
+    WEBSITE_OPPORTUNITIES {
+      text title
+      text notes "manual sales context"
+      jsonb knowledge_blob_refs "uploaded customer knowledge (#429)"
+      text account_ref
+    }
+```
+
+> **Scope note (0083):** this migration lands the bronze tables + the `opportunity_bronze_all`
+> union view. KQM has **no header total** — the silver merge sums *selected* lines
+> (`is_recurring` splits MRR vs one-off). The silver `opportunity` **merge recompute** over
+> the union (precedence website > autotask > kqm) is a pipeline-repo transform (ADR-0039
+> pattern), shipped separately; 0083 does not modify the live `opportunity` table.
+
 ## Diagram 2 — Integrations, demand generation, communications & consent
 
 > **As-built note:** Diagram 2 is the original *design* sketch. The tables actually
