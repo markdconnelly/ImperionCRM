@@ -46,6 +46,7 @@ import type {
   Kpi,
   LeadCaptureEventRow,
   LeadHookRow,
+  MarketingSocialReport,
   OnboardingProject,
   SecurityPosture,
   OpportunityRow,
@@ -564,6 +565,8 @@ export interface ReportsRepository {
   assessmentConversion(): Promise<AssessmentConversion>;
   /** Average SBR re-benchmark score (1–4) per dimension. */
   sbrDimensionAverages(): Promise<CountDatum[]>;
+  /** Marketing & Social BI-hub section: leads by source, organic social, campaign rollup (ADR-0062). */
+  marketingSocial(): Promise<MarketingSocialReport>;
 }
 
 // ── Communications (ADR-0011) ────────────────────────────────────────────────

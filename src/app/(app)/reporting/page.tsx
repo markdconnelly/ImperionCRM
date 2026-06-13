@@ -24,19 +24,52 @@ function ChartCard({
   );
 }
 
+/** Anchored BI-hub domain heading (ADR-0062) — deep-linkable from the dashboard. */
+function SectionHeading({ id, title, hint }: { id: string; title: string; hint?: string }) {
+  return (
+    <div id={id} className="mt-2 flex scroll-mt-16 items-baseline gap-2">
+      <h2 className="font-display text-base font-semibold tracking-tight">{title}</h2>
+      {hint && <span className="text-xs text-dim">{hint}</span>}
+    </div>
+  );
+}
+
+function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-panel p-4">
+      <div className="text-xs text-dim">{label}</div>
+      <div className="mt-2 font-display text-2xl font-semibold tracking-tight">{value}</div>
+      {hint && <div className="mt-1 text-xs text-dim">{hint}</div>}
+    </div>
+  );
+}
+
+const fmtCount = new Intl.NumberFormat("en-US");
+const humanizeMetric = (m: string) => m.replace(/_/g, " ");
+
 export default async function ReportingPage() {
   const { reports } = getRepositories();
-  const [roles, summary, pipeline, proposals, projects, revenue, conversion, sbrAverages] =
-    await Promise.all([
-      getSessionRoles(),
-      reports.getSummary(),
-      reports.pipelineByStage(),
-      reports.proposalsByStatus(),
-      reports.projectsByStatus(),
-      reports.revenueSplit(),
-      reports.assessmentConversion(),
-      reports.sbrDimensionAverages(),
-    ]);
+  const [
+    roles,
+    summary,
+    pipeline,
+    proposals,
+    projects,
+    revenue,
+    conversion,
+    sbrAverages,
+    marketing,
+  ] = await Promise.all([
+    getSessionRoles(),
+    reports.getSummary(),
+    reports.pipelineByStage(),
+    reports.proposalsByStatus(),
+    reports.projectsByStatus(),
+    reports.revenueSplit(),
+    reports.assessmentConversion(),
+    reports.sbrDimensionAverages(),
+    reports.marketingSocial(),
+  ]);
 
   // Support cannot see revenue (ADR-0030): blank money figures and zero the
   // per-stage MRR so the pipeline chart still shows deal counts.
@@ -65,8 +98,10 @@ export default async function ReportingPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Reporting"
-        description="Pipeline, conversion, and delivery analytics."
+        description="The business-intelligence hub: sales, marketing & social, service desk, and security in one place."
       />
+
+      <SectionHeading id="sales" title="Sales" hint="pipeline, conversion, delivery" />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((c) => (
@@ -104,6 +139,111 @@ export default async function ReportingPage() {
         <ChartCard title="Delivery projects by status" subtitle="Onboarding & implementation">
           <StatusBarChart data={projects} color="#7C6BF0" />
         </ChartCard>
+      </div>
+
+      <SectionHeading id="marketing" title="Marketing & Social" hint="leads, organic reach, campaigns" />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label="New leads (30d)"
+          value={fmtCount.format(marketing.leadsBySource30d.reduce((n, d) => n + d.count, 0))}
+          hint="all capture sources"
+        />
+        <StatTile
+          label="FB engagement (30d)"
+          value={fmtCount.format(
+            marketing.engagement30d.fbReactions +
+              marketing.engagement30d.fbComments +
+              marketing.engagement30d.fbShares,
+          )}
+          hint={`${marketing.engagement30d.fbPosts} posts · reactions + comments + shares`}
+        />
+        <StatTile
+          label="IG engagement (30d)"
+          value={fmtCount.format(
+            marketing.engagement30d.igLikes + marketing.engagement30d.igComments,
+          )}
+          hint={`${marketing.engagement30d.igMedia} media · likes + comments`}
+        />
+        <StatTile
+          label="Posts published (30d)"
+          value={fmtCount.format(
+            marketing.engagement30d.fbPosts + marketing.engagement30d.igMedia,
+          )}
+          hint="Facebook + Instagram"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <ChartCard title="New leads by source" subtitle="Lead captures, last 30 days">
+          {marketing.leadsBySource30d.length > 0 ? (
+            <StatusBarChart data={marketing.leadsBySource30d} color="#5B8DEF" />
+          ) : (
+            <p className="py-10 text-center text-sm text-dim">No lead captures in the last 30 days.</p>
+          )}
+        </ChartCard>
+        <ChartCard
+          title="Organic social stats"
+          subtitle="Source-truthful Meta insight metrics — lifetime latest, daily summed over 28 days"
+        >
+          {marketing.socialStats.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {marketing.socialStats.map((s) => (
+                <div
+                  key={`${s.platform}-${s.metric}-${s.window}`}
+                  className="rounded-lg border border-border bg-panel-2 p-3"
+                >
+                  <div className="text-xs capitalize text-dim">
+                    {s.platform} · {s.window}
+                  </div>
+                  <div className="mt-1 font-display text-xl font-semibold tracking-tight">
+                    {fmtCount.format(s.value)}
+                  </div>
+                  <div className="mt-0.5 text-xs text-dim">{humanizeMetric(s.metric)}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-10 text-center text-sm text-dim">No social insight snapshots yet.</p>
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="rounded-lg border border-border bg-panel p-4">
+        <div className="mb-3">
+          <h3 className="font-display text-sm font-semibold tracking-tight">Top paid campaigns</h3>
+          <p className="text-xs text-dim">All-time spend, clicks, and leads (campaign_metric is paid-only)</p>
+        </div>
+        {marketing.topCampaigns.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-dim">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Campaign</th>
+                  <th className="px-3 py-2 font-medium">Platform</th>
+                  <th className="px-3 py-2 font-medium">Spend</th>
+                  <th className="px-3 py-2 font-medium">Clicks</th>
+                  <th className="px-3 py-2 font-medium">Leads</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marketing.topCampaigns.map((c) => (
+                  <tr key={c.name} className="border-t border-border/60">
+                    <td className="px-3 py-2">{c.name}</td>
+                    <td className="px-3 py-2 capitalize text-dim">{c.platform}</td>
+                    <td className="px-3 py-2">
+                      {showRevenue ? `$${fmtCount.format(c.spend)}` : REDACTED_MONEY}
+                    </td>
+                    <td className="px-3 py-2">{fmtCount.format(c.clicks)}</td>
+                    <td className="px-3 py-2">{fmtCount.format(c.leads)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="py-6 text-center text-sm text-dim">No paid campaign metrics yet.</p>
+        )}
       </div>
     </div>
   );
