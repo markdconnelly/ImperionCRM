@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.12.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.11.0...imperion-crm-v0.12.0) (2026-06-13)
+
+
+### Features
+
+* **db:** account tracked-domains registry, DNS posture goes account-keyed ([#334](https://github.com/markdconnelly/ImperionCRM/issues/334)) ([#360](https://github.com/markdconnelly/ImperionCRM/issues/360)) ([ab8bb9f](https://github.com/markdconnelly/ImperionCRM/commit/ab8bb9fc3f151dceffb8965e150d52b57496eb6b))
+* **db:** DNS posture bronze migration 0080 + account read ([#308](https://github.com/markdconnelly/ImperionCRM/issues/308)) ([#313](https://github.com/markdconnelly/ImperionCRM/issues/313)) ([ff6f9d9](https://github.com/markdconnelly/ImperionCRM/commit/ff6f9d942c4a8c109d53496691578d5cf0456f49))
+* **delivery:** delivery-template data layer ([#451](https://github.com/markdconnelly/ImperionCRM/issues/451)) ([#452](https://github.com/markdconnelly/ImperionCRM/issues/452)) ([1a18d9d](https://github.com/markdconnelly/ImperionCRM/commit/1a18d9dde2b234607d7a66064b457c61c49a7c59))
+* **delivery:** delivery-template model + provisioning contract gate ([#449](https://github.com/markdconnelly/ImperionCRM/issues/449)) ([#450](https://github.com/markdconnelly/ImperionCRM/issues/450)) ([5faa3d9](https://github.com/markdconnelly/ImperionCRM/commit/5faa3d90e85b1c26ab82bfc546b3d95bc93060b1))
+* **delivery:** template-manager GUI ([#453](https://github.com/markdconnelly/ImperionCRM/issues/453)) ([#454](https://github.com/markdconnelly/ImperionCRM/issues/454)) ([631ec86](https://github.com/markdconnelly/ImperionCRM/commit/631ec865104c07fdb50184b9645a6a0662169526))
+* **projects:** kanban board view ([#441](https://github.com/markdconnelly/ImperionCRM/issues/441)) ([#442](https://github.com/markdconnelly/ImperionCRM/issues/442)) ([bc2dad7](https://github.com/markdconnelly/ImperionCRM/commit/bc2dad73a3d27a29a3693897bdc05784eafb507d))
+* **schema:** model opportunity as merged silver from 3 bronze sources ([#428](https://github.com/markdconnelly/ImperionCRM/issues/428)) ([#435](https://github.com/markdconnelly/ImperionCRM/issues/435)) ([50e11be](https://github.com/markdconnelly/ImperionCRM/commit/50e11be2e8be30b093f6d6b3b7cecc76110c6cd5))
+* **schema:** sale→delivery orchestration tracking tables ([#433](https://github.com/markdconnelly/ImperionCRM/issues/433)) ([#434](https://github.com/markdconnelly/ImperionCRM/issues/434)) ([3a454ff](https://github.com/markdconnelly/ImperionCRM/commit/3a454ff43673703562933317f5e79d9bb34c7674))
+* **tasks/projects:** kanban group-by + shared board primitive ([#443](https://github.com/markdconnelly/ImperionCRM/issues/443)) ([#444](https://github.com/markdconnelly/ImperionCRM/issues/444)) ([2e80b0d](https://github.com/markdconnelly/ImperionCRM/commit/2e80b0d98bf917a2de80c5e2126195a0b4e7e762))
+* **tasks/projects:** kanban per-column WIP limits ([#445](https://github.com/markdconnelly/ImperionCRM/issues/445)) ([#446](https://github.com/markdconnelly/ImperionCRM/issues/446)) ([25d01cf](https://github.com/markdconnelly/ImperionCRM/commit/25d01cfedf5bf2eba184381fc8f2b94d1837e467))
+* **tasks/projects:** kanban swimlanes ([#447](https://github.com/markdconnelly/ImperionCRM/issues/447)) ([#448](https://github.com/markdconnelly/ImperionCRM/issues/448)) ([d171664](https://github.com/markdconnelly/ImperionCRM/commit/d17166498f99334ef92f214d0e0c0c1a5820c536))
+* **tasks:** drag-drop kanban board view ([#341](https://github.com/markdconnelly/ImperionCRM/issues/341)) ([#440](https://github.com/markdconnelly/ImperionCRM/issues/440)) ([d9d6415](https://github.com/markdconnelly/ImperionCRM/commit/d9d64153826ca58834ae03cbf6d0e9b975890180))
+
+
+### Bug Fixes
+
+* **data:** optional enrichment reads degrade to empty on schema lag ([#301](https://github.com/markdconnelly/ImperionCRM/issues/301)) ([#302](https://github.com/markdconnelly/ImperionCRM/issues/302)) ([8de82fb](https://github.com/markdconnelly/ImperionCRM/commit/8de82fb0b494868d6730b01a16d632bdb90cf48c))
+
 ## [0.11.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.10.0...imperion-crm-v0.11.0) (2026-06-13)
 
 
