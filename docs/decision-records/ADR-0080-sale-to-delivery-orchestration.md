@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema + GUI); backend (orchestration executor + Autotask write client); local-pipeline (KQM + Autotask opportunity ingest); pipeline (Autotask webhooks) |
-| **Status** | Proposed |
+| **Status** | Accepted (2026-06-13, ratified by Mark) |
 | **Date** | 2026-06-13 |
 | **Cross-references** | ADR-0067 (CPQ — superseded in part by this ADR), ADR-0019 (proposal lifecycle), ADR-0010 (opportunity dual-axis stages), ADR-0039 (per-source bronze → silver aggregate), ADR-0044 (silver contracts/tickets), ADR-0074 (service-desk write-back — this is its superset), ADR-0071 (DocuSign e-sign), ADR-0042 (four-repo division of labor), ADR-0017 (raw SQL migrations), ADR-0055 (tiered agent autonomy) |
 | **Epic** | #425 · supersedes the native-CPQ build of #317/ADR-0067 |
