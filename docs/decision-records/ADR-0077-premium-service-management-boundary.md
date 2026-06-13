@@ -63,10 +63,10 @@ boundaries:
 4. Cluster scope = **CMDB relationships + impact** (#372 / ADR-0078), **ITIL problem +
    change** (#373 / ADR-0079), **asset lifecycle** (folded into #372 / ADR-0078). Each
    gets its own review-gated ADR.
-5. **Client / QBR portal is deferred.** It collides with #314's portal exclusion and is
-   the cluster's largest architectural decision (first external auth surface). It
-   requires an explicit in/off-strategy call from Mark and a dedicated ADR + grill
-   before any issue; it is **not** scoped by this ADR.
+5. **Client / QBR portal is OFF-STRATEGY** (Mark, 2026-06-12). No client-facing portal
+   is built — clients get ticket / SLA / asset visibility through **Autotask** directly.
+   Consistent with #314's portal exclusion. Revisit only via a new ADR if strategy
+   changes.
 6. **Deliberately not built:** PSA ticket editing / workflow engine, native billing,
    RMM agents, and full ITIL ceremony beyond MSP-relevant problem/change.
 
@@ -75,7 +75,7 @@ boundaries:
 ### Security impact
 
 No new external attack surface in this cluster — the one feature that would add one
-(the client portal) is explicitly deferred. CMDB/impact data inherits the read-only
+(the client portal) is ruled out (off-strategy; clients use Autotask). CMDB/impact data inherits the read-only
 source posture (ADR-0047); problem/change records are internal, Entra-gated like the
 rest of the app. Conforms to `docs/security/unified-security-standard.md`. Never commit
 secrets.
@@ -94,6 +94,5 @@ epic with review-gated ADRs.
 
 ## Future considerations
 
-- Client / QBR portal, pending Mark's scope decision (would be ADR-0080 if scoped in).
 - Cross-CI impact could later feed proactive maintenance / SBR health (ADR-0062 BI hub).
 - AI-driven change-risk scoring once change history accumulates.
