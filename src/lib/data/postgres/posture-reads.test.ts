@@ -202,34 +202,37 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     expect(params).toEqual(["acc-1"]);
   });
 
-  it("DNS rollup maps per-domain verdict + drift counts and joins through account_tenant (#308, ADR-0063)", async () => {
+  it("DNS rollup is account_domain-driven: tracked domains surface, uncaptured ones keep a null verdict (#334, ADR-0063 amendment)", async () => {
     query.mockResolvedValueOnce({
       rows: [
         {
-          tenant_id: "t-1", domain: "contoso.com", verdict: "managed",
+          domain: "contoso.com", note: "primary", verdict: "managed",
           records_compliant: 6, records_drift: 1, records_ungoverned: 0,
           records_missing: 0, score: "92.5", last_captured_at: "2026-06-12",
         },
         {
-          // not yet on Azure DNS, no golden approved → null score
-          tenant_id: "t-1", domain: "legacy.contoso.net", verdict: "not-in-azure",
-          records_compliant: 0, records_drift: 0, records_ungoverned: 0,
-          records_missing: 0, score: null, last_captured_at: null,
+          // tracked in the GUI list but the merge hasn't captured it yet → LEFT JOIN nulls
+          domain: "newco.io", note: null, verdict: null,
+          records_compliant: null, records_drift: null, records_ungoverned: null,
+          records_missing: null, score: null, last_captured_at: null,
         },
       ],
     });
     const rows = await security.listDnsDomainsForAccount("acc-1");
     expect(rows[0]).toEqual({
-      tenantId: "t-1", domain: "contoso.com", verdict: "managed",
+      domain: "contoso.com", note: "primary", verdict: "managed",
       recordsCompliant: 6, recordsDrift: 1, recordsUngoverned: 0, recordsMissing: 0,
       score: 92.5, lastCapturedAt: "2026-06-12",
     });
-    expect(rows[1].verdict).toBe("not-in-azure");
-    expect(rows[1].score).toBeNull();
+    expect(rows[1]).toEqual({
+      domain: "newco.io", note: null, verdict: null,
+      recordsCompliant: 0, recordsDrift: 0, recordsUngoverned: 0, recordsMissing: 0,
+      score: null, lastCapturedAt: null,
+    });
     const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
-    expect(sql).toContain("FROM dns_domain d");
-    expect(sql).toContain("JOIN account_tenant m");
-    expect(sql).toContain("WHERE m.account_id = $1::uuid");
+    expect(sql).toContain("FROM account_domain ad");
+    expect(sql).toContain("LEFT JOIN dns_domain d");
+    expect(sql).toContain("WHERE ad.account_id = $1::uuid");
     expect(params).toEqual(["acc-1"]);
   });
 

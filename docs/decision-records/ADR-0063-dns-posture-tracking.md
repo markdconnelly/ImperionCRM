@@ -115,6 +115,10 @@ Grants mirror migration 0079: on-prem LP role writes all four; pipeline + backen
 
 Domain inventory is derived from existing `account_tenant` Customer Tenant verified domains + account website, with an explicit managed-domains override deferred to a later slice.
 
+> **Amendment 2026-06-12 (Mark) — the domain source is an account-scoped GUI registry, superseding the "derived from tenant" sentence above.**
+> Building the public-resolve plane (#156) surfaced that the system has **no domain source**: no `account`/`company` domain column exists, and per-client-tenant Graph (which would yield M365 verified domains) is not built (GDAP was scrapped — see local-pipeline ADR-0018 amendment). Mark's model: **each customer has a GUI-managed list of domains (one or several), and DNS posture checks each one.**
+> So domains are **account-scoped and operator-curated**, not tenant-derived. New table `account_domain(account_id, domain, …)` (migration 0081, issue #334) is the single source of truth; the GUI edits it per account. DNS ownership shifts from tenant-keyed to **account-keyed** — `account_id` is added (additive, nullable) to `dns_zones/dns_records/dns_golden/dns_domain`, and the per-account reads key on it. `tenant_id` stays on the bronze rows as Azure-plane context (a zone lives in a subscription/tenant) but is no longer the account join key. The Graph-verified-domains source remains a possible future automation once per-client Graph access exists (it would *populate* `account_domain`, not replace it).
+
 ## Consequences
 
 - Epic #306; slices: #307 (this ADR), #308 (migration 0080 + reads), #309 (GUI), local-pipeline #155 (ARM zone collector + write probe), #156 (public-resolve collector), #157 (golden/drift merge).

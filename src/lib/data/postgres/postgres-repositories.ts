@@ -5406,30 +5406,31 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.security.listDnsDomainsForAccount(accountId);
       try {
-        // Per-domain DNS posture over the account's mapped tenants (ADR-0063).
-        // Plain JOIN: a domain appears once the drift merge (local #157) has rolled
-        // it up — pre-capture domains are simply absent, not a null-verdict row.
+        // Account-keyed per the ADR-0063 amendment: one row per domain in the account's
+        // GUI-managed account_domain list, LEFT JOINed to its dns_domain rollup — a
+        // tracked-but-not-yet-captured domain still surfaces (null verdict) and sorts last.
         const { rows } = await pool.query<{
-          tenant_id: string; domain: string; verdict: string;
+          domain: string; note: string | null; verdict: string | null;
           records_compliant: number | null; records_drift: number | null;
           records_ungoverned: number | null; records_missing: number | null;
           score: string | null; last_captured_at: string | null;
         }>(
-          `SELECT d.tenant_id, d.domain, d.verdict,
+          `SELECT ad.domain, ad.note, d.verdict,
                   d.records_compliant, d.records_drift,
                   d.records_ungoverned, d.records_missing,
                   d.score, d.last_captured_at::text AS last_captured_at
-             FROM dns_domain d
-             JOIN account_tenant m ON m.tenant_id = d.tenant_id
-            WHERE m.account_id = $1::uuid
-            ORDER BY array_position(ARRAY['not-in-azure','in-azure-readonly','managed'], d.verdict),
-                     d.records_drift DESC, d.domain`,
+             FROM account_domain ad
+             LEFT JOIN dns_domain d
+                    ON d.account_id = ad.account_id AND d.domain = ad.domain
+            WHERE ad.account_id = $1::uuid
+            ORDER BY array_position(ARRAY['not-in-azure','in-azure-readonly','managed'], d.verdict) NULLS LAST,
+                     d.records_drift DESC NULLS LAST, ad.domain`,
           [accountId],
         );
         return rows.map((r) => ({
-          tenantId: r.tenant_id,
           domain: r.domain,
-          verdict: r.verdict as DnsDomainRollup["verdict"],
+          note: r.note,
+          verdict: (r.verdict as DnsDomainRollup["verdict"]) ?? null,
           recordsCompliant: r.records_compliant ?? 0,
           recordsDrift: r.records_drift ?? 0,
           recordsUngoverned: r.records_ungoverned ?? 0,
