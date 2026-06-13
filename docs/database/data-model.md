@@ -183,6 +183,46 @@ erDiagram
     }
 ```
 
+### Sale→delivery orchestration tracking (ADR-0080, migration 0082)
+
+Imperion is the **intent/schedule** plane; **Autotask is the execution SoR**. A won KQM
+quote provisions an Autotask Project (template-emulated) and JIT project-queue Tickets.
+Two **1:1 sidecar tables** track the binding + provisioning state without bloating the
+core `project`/`task` model (one task model, ADR-0052 §2). Idempotency is **ours, not
+Autotask's** — Autotask creates are non-idempotent (spike #426), so each row holds a
+stable `idempotency_key` + state the executor checks before every write.
+
+```mermaid
+erDiagram
+    PROJECT ||--o| PROJECT_PROVISIONING : "provisions to Autotask"
+    TASK    ||--o| TASK_TICKET_FIRE     : "JIT project-queue ticket"
+    PROJECT_PROVISIONING {
+      uuid project_id PK_FK "CASCADE"
+      text source_kqm_quote_id "won-quote provenance (#427)"
+      bigint autotask_opportunity_id "the won→Autotask seam"
+      bigint autotask_project_id "NULL until created"
+      text provision_state "pending|creating|created|failed"
+      text idempotency_key "UNIQUE — imperioncrm-project-{id}"
+      timestamptz provisioned_at
+      text last_error
+    }
+    TASK_TICKET_FIRE {
+      uuid task_id PK_FK "CASCADE"
+      text fire_state "none|scheduled|fired|failed"
+      timestamptz scheduled_for "JIT window; NULL = manual-only"
+      bigint autotask_ticket_id "NULL until fired; links via ticket.projectID"
+      bigint autotask_queue_id "Project Management = 29683483 (env config)"
+      text idempotency_key "UNIQUE — imperioncrm-taskticket-{id}"
+      timestamptz fired_at
+      text last_error
+    }
+```
+
+> **Plane of control:** the web board reads these + *requests* a fire (sets `scheduled_for`
+> / `fire_state='scheduled'`); the **backend executor** does the actual Autotask write and
+> stamps the typed id (the front end never holds Autotask creds, ADR-0042). The pipelines
+> read them to reconcile the written Project/Ticket back from `autotask_*` bronze.
+
 ## Diagram 2 — Integrations, demand generation, communications & consent
 
 > **As-built note:** Diagram 2 is the original *design* sketch. The tables actually
