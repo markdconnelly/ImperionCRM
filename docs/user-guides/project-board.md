@@ -38,6 +38,23 @@ Dragging a card reassigns whichever dimension you are grouped by: drop a project
 in another *Type* lane and it is re-typed (same `delivery:write` gate as a status
 move). Grouping by owner waits on the owner reaching the board's read model.
 
+## Swimlanes (#447)
+
+The **Swimlane** switch (board view only) splits the board into collapsible
+horizontal **bands** running *across* the columns:
+
+- **None** (default) — one flat board.
+- **Account** — one band per account.
+- **Owner** — one band per owning user.
+- **Type** — one band per project type.
+
+The option that matches your current **Group** is hidden. Click a band header
+(`▾` / `▸`) to collapse or expand it; projects with no owner land in an
+**Unassigned** band. Dragging a card still only reassigns the **column**
+dimension — a project keeps its band (account/owner/type), so dropping it into
+another band's column snaps it back on the next refresh. WIP limits stay
+per-column, counted across all bands.
+
 ## WIP limits (#445)
 
 Each column header has a small number box — set a **work-in-progress limit**
@@ -62,6 +79,7 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Swimlanes, richer cards** (assignee avatars, tags, subtask progress,
-  comment/attachment counts) — #439. (Group-by shipped #443, WIP limits #445.)
+- **Richer cards** (assignee avatars, tags, subtask progress,
+  comment/attachment counts) — #439, blocked on ADR-0064/0065 data.
+  (Group-by shipped #443, WIP limits #445, swimlanes #447.)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.

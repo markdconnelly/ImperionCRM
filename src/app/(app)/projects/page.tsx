@@ -2,7 +2,11 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProjectsTable } from "@/components/projects/projects-table";
-import { ProjectsBoard, type ProjectGroupBy } from "@/components/projects/projects-board";
+import {
+  ProjectsBoard,
+  type ProjectGroupBy,
+  type ProjectSwimBy,
+} from "@/components/projects/projects-board";
 import { ProjectTypeManager } from "@/components/projects/project-type-manager";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -25,11 +29,19 @@ const GROUPS = [
   { key: "type", label: "Type" },
 ] as const;
 
-/** Build a board URL preserving view + group. */
-function boardHref(view: string, group: string) {
+const SWIMS = [
+  { key: "none", label: "None" },
+  { key: "account", label: "Account" },
+  { key: "owner", label: "Owner" },
+  { key: "type", label: "Type" },
+] as const;
+
+/** Build a board URL preserving view + group + swimlane. */
+function boardHref(view: string, group: string, swim: string) {
   const qs = new URLSearchParams();
   if (view !== "list") qs.set("view", view);
   if (group !== "status") qs.set("group", group);
+  if (swim !== "none") qs.set("swim", swim);
   const s = qs.toString();
   return s ? `/projects?${s}` : "/projects";
 }
@@ -46,11 +58,16 @@ function boardHref(view: string, group: string) {
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; group?: string }>;
+  searchParams: Promise<{ view?: string; group?: string; swim?: string }>;
 }) {
-  const { view, group } = await searchParams;
+  const { view, group, swim } = await searchParams;
   const activeView = view === "board" ? "board" : "list";
   const activeGroup: ProjectGroupBy = group === "type" ? "type" : "status";
+  // A swimlane that duplicates the active column group-by is meaningless — drop it.
+  const activeSwim: ProjectSwimBy =
+    (swim === "account" || swim === "owner" || swim === "type") && swim !== activeGroup
+      ? swim
+      : "none";
   const { crm } = getRepositories();
   const [roles, projects, types] = await Promise.all([
     getSessionRoles(),
@@ -81,7 +98,7 @@ export default async function ProjectsPage({
           {VIEWS.map((v) => (
             <Link
               key={v.key}
-              href={boardHref(v.key, activeGroup)}
+              href={boardHref(v.key, activeGroup, activeSwim)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm transition-colors",
                 activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -98,13 +115,31 @@ export default async function ProjectsPage({
             {GROUPS.map((g) => (
               <Link
                 key={g.key}
-                href={boardHref(activeView, g.key)}
+                href={boardHref(activeView, g.key, activeSwim)}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm transition-colors",
                   activeGroup === g.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
                 )}
               >
                 {g.label}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {activeView === "board" && (
+          <div className="inline-flex w-fit items-center rounded-lg border border-border bg-panel p-1">
+            <span className="px-2 text-xs text-dim">Swimlane</span>
+            {SWIMS.filter((s) => s.key !== activeGroup).map((s) => (
+              <Link
+                key={s.key}
+                href={boardHref(activeView, activeGroup, s.key)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  activeSwim === s.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
+                )}
+              >
+                {s.label}
               </Link>
             ))}
           </div>
@@ -116,6 +151,7 @@ export default async function ProjectsPage({
           projects={projects}
           types={types}
           groupBy={activeGroup}
+          swimBy={activeSwim}
           moveStatusAction={moveProjectAction}
           moveTypeAction={moveProjectTypeAction}
         />

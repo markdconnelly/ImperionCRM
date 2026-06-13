@@ -34,6 +34,24 @@ the *Onboarding* lane while grouped by category and the task's category becomes
 Onboarding (same `delivery:write` gate as a status move). Grouping by assignee or
 tag waits on that data landing (ADR-0064/0065).
 
+## Swimlanes (#447)
+
+The **Swimlane** switch (board view only) splits the board into collapsible
+horizontal **bands** — a second grouping that runs *across* the columns:
+
+- **None** (default) — one flat board.
+- **Account** — one band per account.
+- **Category** — one band per category (Sales / Project / Onboarding / General).
+
+The option that matches your current **Group** is hidden (no point swimlaning by
+the same thing the columns already split). Click a band header (`▾` / `▸`) to
+collapse or expand it. Tasks with no account land in an **Unassigned** band.
+
+Dragging a card still only reassigns the **column** dimension — a card keeps its
+swimlane (its account/category), so dropping it into another band's column snaps
+it back to its own band on the next refresh. WIP limits stay per-column, counted
+across all bands. Swimlane-by-assignee waits on that data (ADR-0064/0065).
+
 ## WIP limits (#445)
 
 Each column header has a small number box — set a **work-in-progress limit**
@@ -56,9 +74,10 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Swimlanes, richer cards** (assignee avatars, tags, subtask progress,
-  comment/attachment counts) — #439. (Group-by shipped #443, WIP limits #445;
-  the projects board in #441 — see [Project board](project-board.md).)
+- **Richer cards** (assignee avatars, tags, subtask progress,
+  comment/attachment counts) — #439, blocked on ADR-0064/0065 data.
+  (Group-by shipped #443, WIP limits #445, swimlanes #447; the projects board
+  in #441 — see [Project board](project-board.md).)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.
 
 For sales tasks specifically, see [Sales Activity](sales-activity.md).

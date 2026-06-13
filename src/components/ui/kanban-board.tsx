@@ -11,6 +11,9 @@ export interface KanbanLane {
   tone?: string;
 }
 
+/** Separator for the (swimlane, lane) drop-target highlight key — never in a key. */
+const CELL_SEP = "␟";
+
 /**
  * Generic drag-drop kanban (ADR-0066 C1). The tasks board (#341) and projects
  * board (#441) are thin wrappers that supply the lane set, how to read a card's
@@ -24,11 +27,19 @@ export interface KanbanLane {
  * grouping key (`groupBy`) is part of the effect dependency so switching the
  * dimension re-buckets from the authoritative data, never from stale optimism.
  *
+ * Swimlanes (#447, C1-F3) are an OPTIONAL second dimension orthogonal to the
+ * columns: when `swimlanes`/`swimlaneOf` are set, the board splits into
+ * collapsible horizontal bands, each band showing that swimlane's cards
+ * bucketed across the same columns. A drop only ever reassigns the active
+ * column dimension — swimlane membership follows the card's own field, so a
+ * card re-homed to another band's column snaps back to its own band on refresh.
+ *
  * When `wipStorageKey` is set, each column carries an optional WIP limit
  * (#445, C1-F5): a personal, per-browser cap stored in localStorage (no server
  * write) under `${wipStorageKey}:${groupBy}` so status and category/type lanes
- * keep independent limits. Exceeding the limit highlights the column — it does
- * NOT block the drop (a limit is an aid, not a gate).
+ * keep independent limits. The limit is per-column (totalled across swimlanes);
+ * exceeding it highlights the column — it does NOT block the drop (an aid, not
+ * a gate).
  */
 export function KanbanBoard<T>({
   items,
@@ -40,6 +51,8 @@ export function KanbanBoard<T>({
   renderCard,
   emptyLabel = "Nothing here",
   wipStorageKey,
+  swimlanes,
+  swimlaneOf,
 }: {
   items: T[];
   /** Active dimension key — re-buckets when it changes. */
@@ -52,6 +65,10 @@ export function KanbanBoard<T>({
   emptyLabel?: string;
   /** Enables per-column WIP limits, persisted under this localStorage prefix. */
   wipStorageKey?: string;
+  /** Optional swimlane bands (#447). Render order = array order; an extra
+   *  "Unassigned" band catches cards whose `swimlaneOf` matches no band. */
+  swimlanes?: KanbanLane[];
+  swimlaneOf?: (item: T) => string;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -97,6 +114,8 @@ export function KanbanBoard<T>({
   const [columns, setColumns] = useState<Record<string, T[]>>(() => bucket(items));
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  // Collapsed swimlane bands (#447), in-memory and keyed by swimlane key.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   // Re-sync optimistic state on a server round-trip OR a group-by change.
   useEffect(() => setColumns(bucket(items)), [items, groupBy]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -124,97 +143,215 @@ export function KanbanBoard<T>({
     });
   }
 
-  return (
-    <div className="flex gap-3 overflow-x-auto pb-1">
-      {lanes.map((lane) => {
-        const cards = columns[lane.key] ?? [];
-        const limit = limits[lane.key] ?? 0;
-        const overLimit = limit > 0 && cards.length > limit;
-        return (
-          <div
-            key={lane.key}
-            style={{ flex: "1 0 14rem", minWidth: "14rem" }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setOver(lane.key);
-            }}
-            onDragLeave={() => setOver((o) => (o === lane.key ? null : o))}
-            onDrop={(e) => {
-              e.preventDefault();
-              setOver(null);
-              const id = e.dataTransfer.getData("text/plain") || dragId;
-              if (id) move(id, lane.key);
-              setDragId(null);
-            }}
-            className={cn(
-              "flex flex-col rounded-xl border bg-panel transition-colors",
-              over === lane.key
-                ? "border-accent"
-                : overLimit
-                  ? "border-red"
-                  : "border-border",
-            )}
-          >
-            <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  overLimit ? "text-red" : (lane.tone ?? "text-text"),
-                )}
-              >
-                {lane.label}
-              </span>
-              <div className="flex items-center gap-1.5">
+  // ── Shared cell renderers ──────────────────────────────────────────────────
+  function dropZoneProps(cellKey: string, laneKey: string) {
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        e.preventDefault();
+        setOver(cellKey);
+      },
+      onDragLeave: () => setOver((o) => (o === cellKey ? null : o)),
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        setOver(null);
+        const id = e.dataTransfer.getData("text/plain") || dragId;
+        if (id) move(id, laneKey);
+        setDragId(null);
+      },
+    };
+  }
+
+  function card(item: T) {
+    const id = idOf(item);
+    return (
+      <div
+        key={id}
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData("text/plain", id);
+          e.dataTransfer.effectAllowed = "move";
+          setDragId(id);
+        }}
+        onDragEnd={() => setDragId(null)}
+        className={cn(
+          "cursor-grab rounded-lg border border-border bg-panel-2 px-3 py-2 active:cursor-grabbing",
+          dragId === id && "opacity-50",
+        )}
+      >
+        {renderCard(item)}
+      </div>
+    );
+  }
+
+  // ── Flat board (no swimlanes) — original layout ─────────────────────────────
+  if (!swimlanes || !swimlaneOf) {
+    return (
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {lanes.map((lane) => {
+          const cards = columns[lane.key] ?? [];
+          const limit = limits[lane.key] ?? 0;
+          const overLimit = limit > 0 && cards.length > limit;
+          const cellKey = lane.key;
+          return (
+            <div
+              key={lane.key}
+              style={{ flex: "1 0 14rem", minWidth: "14rem" }}
+              {...dropZoneProps(cellKey, lane.key)}
+              className={cn(
+                "flex flex-col rounded-xl border bg-panel transition-colors",
+                over === cellKey ? "border-accent" : overLimit ? "border-red" : "border-border",
+              )}
+            >
+              <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
                 <span
                   className={cn(
-                    "rounded-full px-2 py-0.5 text-xs",
-                    overLimit ? "bg-red/15 text-red" : "bg-panel-2 text-dim",
+                    "text-sm font-medium",
+                    overLimit ? "text-red" : (lane.tone ?? "text-text"),
                   )}
                 >
-                  {limit > 0 ? `${cards.length}/${limit}` : cards.length}
+                  {lane.label}
                 </span>
-                {storeKey && (
-                  <input
-                    type="number"
-                    min={0}
-                    value={limit || ""}
-                    onChange={(e) => setLimit(lane.key, Number(e.target.value) || 0)}
-                    aria-label={`WIP limit for ${lane.label}`}
-                    title="WIP limit (0 = none)"
-                    className="w-10 rounded-md border border-border bg-panel-2 px-1.5 py-0.5 text-xs text-dim [appearance:textfield] focus:border-accent focus:text-text focus:outline-none"
-                  />
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs",
+                      overLimit ? "bg-red/15 text-red" : "bg-panel-2 text-dim",
+                    )}
+                  >
+                    {limit > 0 ? `${cards.length}/${limit}` : cards.length}
+                  </span>
+                  {storeKey && (
+                    <input
+                      type="number"
+                      min={0}
+                      value={limit || ""}
+                      onChange={(e) => setLimit(lane.key, Number(e.target.value) || 0)}
+                      aria-label={`WIP limit for ${lane.label}`}
+                      title="WIP limit (0 = none)"
+                      className="w-10 rounded-md border border-border bg-panel-2 px-1.5 py-0.5 text-xs text-dim [appearance:textfield] focus:border-accent focus:text-text focus:outline-none"
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="flex min-h-24 flex-col gap-2 p-2">
+                {cards.map(card)}
+                {cards.length === 0 && (
+                  <div className="px-1 py-6 text-center text-xs text-dim">{emptyLabel}</div>
                 )}
               </div>
             </div>
-            <div className="flex min-h-24 flex-col gap-2 p-2">
-              {cards.map((item) => {
-                const id = idOf(item);
-                return (
-                  <div
-                    key={id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("text/plain", id);
-                      e.dataTransfer.effectAllowed = "move";
-                      setDragId(id);
-                    }}
-                    onDragEnd={() => setDragId(null)}
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── Swimlane board (#447) ────────────────────────────────────────────────
+  // Bands in declared order, plus a trailing "Unassigned" band for cards whose
+  // swimlane value matches no declared band (so nothing is ever hidden).
+  const knownSwim = new Set(swimlanes.map((s) => s.key));
+  const hasUnassigned = items.some((it) => !knownSwim.has(swimlaneOf(it)));
+  const bands: KanbanLane[] = hasUnassigned
+    ? [...swimlanes, { key: "", label: "Unassigned", tone: "text-dim" }]
+    : swimlanes;
+  // Column-grid template shared by the header row and every band.
+  const gridCols = `repeat(${lanes.length}, minmax(14rem, 1fr))`;
+
+  return (
+    <div className="overflow-x-auto pb-1">
+      <div className="min-w-fit">
+        {/* Column header row — lane labels + per-column WIP, totalled across bands. */}
+        <div className="grid gap-3 pl-7" style={{ gridTemplateColumns: gridCols }}>
+          {lanes.map((lane) => {
+            const total = (columns[lane.key] ?? []).length;
+            const limit = limits[lane.key] ?? 0;
+            const overLimit = limit > 0 && total > limit;
+            return (
+              <div
+                key={lane.key}
+                className="flex items-center justify-between rounded-lg border border-border bg-panel px-3 py-2"
+              >
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    overLimit ? "text-red" : (lane.tone ?? "text-text"),
+                  )}
+                >
+                  {lane.label}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
                     className={cn(
-                      "cursor-grab rounded-lg border border-border bg-panel-2 px-3 py-2 active:cursor-grabbing",
-                      dragId === id && "opacity-50",
+                      "rounded-full px-2 py-0.5 text-xs",
+                      overLimit ? "bg-red/15 text-red" : "bg-panel-2 text-dim",
                     )}
                   >
-                    {renderCard(item)}
-                  </div>
-                );
-              })}
-              {cards.length === 0 && (
-                <div className="px-1 py-6 text-center text-xs text-dim">{emptyLabel}</div>
+                    {limit > 0 ? `${total}/${limit}` : total}
+                  </span>
+                  {storeKey && (
+                    <input
+                      type="number"
+                      min={0}
+                      value={limit || ""}
+                      onChange={(e) => setLimit(lane.key, Number(e.target.value) || 0)}
+                      aria-label={`WIP limit for ${lane.label}`}
+                      title="WIP limit (0 = none)"
+                      className="w-10 rounded-md border border-border bg-panel-2 px-1.5 py-0.5 text-xs text-dim [appearance:textfield] focus:border-accent focus:text-text focus:outline-none"
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {bands.map((band) => {
+          const inBand = (item: T) => swimlaneOf(item) === band.key;
+          const bandCount = items.filter(inBand).length;
+          const isCollapsed = collapsed[band.key] ?? false;
+          return (
+            <div key={band.key || "__unassigned"} className="mt-3">
+              <button
+                type="button"
+                onClick={() => setCollapsed((c) => ({ ...c, [band.key]: !isCollapsed }))}
+                aria-expanded={!isCollapsed}
+                className="flex w-full items-center gap-2 py-1 text-left"
+              >
+                <span className="text-dim">{isCollapsed ? "▸" : "▾"}</span>
+                <span className={cn("text-sm font-medium", band.tone ?? "text-text")}>
+                  {band.label}
+                </span>
+                <span className="rounded-full bg-panel-2 px-2 py-0.5 text-xs text-dim">
+                  {bandCount}
+                </span>
+              </button>
+              {!isCollapsed && (
+                <div className="grid gap-3 pl-7" style={{ gridTemplateColumns: gridCols }}>
+                  {lanes.map((lane) => {
+                    const cards = (columns[lane.key] ?? []).filter(inBand);
+                    const cellKey = `${band.key}${CELL_SEP}${lane.key}`;
+                    return (
+                      <div
+                        key={lane.key}
+                        {...dropZoneProps(cellKey, lane.key)}
+                        className={cn(
+                          "flex min-h-16 flex-col gap-2 rounded-xl border bg-panel p-2 transition-colors",
+                          over === cellKey ? "border-accent" : "border-border",
+                        )}
+                      >
+                        {cards.map(card)}
+                        {cards.length === 0 && (
+                          <div className="px-1 py-4 text-center text-xs text-dim">—</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
