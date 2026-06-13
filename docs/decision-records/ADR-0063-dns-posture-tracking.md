@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed (2026-06-12, decisions locked with Mark) |
+| **Status** | Accepted (2026-06-12, decisions locked with Mark) |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0051 (security posture model / Imperion Secure Score), ADR-0039 (per-source bronze), ADR-0042 (division of labor), local-pipeline ADR-0008 (golden states and drift), local-pipeline ADR-0002 (certificate-rooted unattended execution) |
 
