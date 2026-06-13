@@ -711,6 +711,35 @@ export const mockRepositories: Repositories = {
         { label: "Incident Readiness", count: 2.2 },
       ];
     },
+    async marketingSocial() {
+      return {
+        leadsBySource30d: [
+          { label: "facebook_dm", count: 14 },
+          { label: "web_form", count: 6 },
+          { label: "event_registration", count: 4 },
+          { label: "inbound_email", count: 2 },
+        ],
+        socialStats: [
+          { platform: "instagram", metric: "followers_count", value: 412, window: "lifetime" as const },
+          { platform: "facebook", metric: "page_impressions_unique", value: 1840, window: "28d" as const },
+          { platform: "facebook", metric: "page_post_engagements", value: 263, window: "28d" as const },
+          { platform: "facebook", metric: "page_views_total", value: 97, window: "28d" as const },
+        ],
+        engagement30d: {
+          fbPosts: 9,
+          fbReactions: 122,
+          fbComments: 18,
+          fbShares: 11,
+          igMedia: 6,
+          igLikes: 204,
+          igComments: 13,
+        },
+        topCampaigns: [
+          { name: "Spring security webinar", platform: "facebook", spend: 1200, clicks: 340, leads: 22 },
+          { name: "Managed IT awareness", platform: "linkedin", spend: 800, clicks: 150, leads: 9 },
+        ],
+      };
+    },
   },
   knowledge: {
     async search(query) {

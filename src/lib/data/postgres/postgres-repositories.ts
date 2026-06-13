@@ -108,6 +108,7 @@ import type {
   ProposalRow,
   QuestionRow,
   QuestionTemplateRow,
+  MarketingSocialReport,
   ReportSummary,
   RevenueSplit,
   SalesTaskRow,
@@ -1857,6 +1858,103 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.reports.sbrDimensionAverages();
+      }
+    },
+
+    async marketingSocial(): Promise<MarketingSocialReport> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.marketingSocial();
+      try {
+        // Four independent aggregates (ADR-0062 §marketing). Metric-generic over
+        // social_metric — names shift while local #135 tunes insight defaults.
+        // Meta bronze counters are text (0075 envelope): cast defensively.
+        const [leads, lifetime, daily, fb, ig, campaigns] = await Promise.all([
+          pool.query<{ kind: string; c: string }>(
+            `SELECT coalesce(h.kind::text, 'unknown') AS kind, count(*) AS c
+             FROM lead_capture_event e
+             LEFT JOIN lead_hook h ON h.id = e.hook_id
+             WHERE e.received_at >= now() - interval '30 days'
+             GROUP BY 1 ORDER BY 2 DESC`,
+          ),
+          pool.query<{ platform: string; metric: string; value: string | null }>(
+            `SELECT DISTINCT ON (platform, metric) platform, metric, value
+             FROM social_metric WHERE period = 'lifetime'
+             ORDER BY platform, metric, captured_at DESC`,
+          ),
+          pool.query<{ platform: string; metric: string; value: string | null }>(
+            `SELECT platform, metric, sum(value) AS value
+             FROM social_metric
+             WHERE period = 'day' AND captured_at >= now() - interval '28 days'
+             GROUP BY 1, 2 ORDER BY 1, 2`,
+          ),
+          pool.query<{ posts: string; reactions: string; comments: string; shares: string }>(
+            `SELECT count(*) AS posts,
+                    coalesce(sum(nullif(reaction_count, '')::numeric), 0) AS reactions,
+                    coalesce(sum(nullif(comment_count, '')::numeric), 0)  AS comments,
+                    coalesce(sum(nullif(share_count, '')::numeric), 0)    AS shares
+             FROM facebook_posts
+             WHERE nullif(created_time, '')::timestamptz >= now() - interval '30 days'`,
+          ),
+          pool.query<{ media: string; likes: string; comments: string }>(
+            `SELECT count(*) AS media,
+                    coalesce(sum(nullif(like_count, '')::numeric), 0)     AS likes,
+                    coalesce(sum(nullif(comments_count, '')::numeric), 0) AS comments
+             FROM instagram_media
+             WHERE nullif(created_time, '')::timestamptz >= now() - interval '30 days'`,
+          ),
+          pool.query<{
+            name: string;
+            platform: string;
+            spend: string;
+            clicks: string;
+            leads: string;
+          }>(
+            `SELECT c.name, c.platform,
+                    coalesce(sum(m.spend), 0)  AS spend,
+                    coalesce(sum(m.clicks), 0) AS clicks,
+                    coalesce(sum(m.leads), 0)  AS leads
+             FROM campaign c JOIN campaign_metric m ON m.campaign_id = c.id
+             GROUP BY c.id, c.name, c.platform
+             ORDER BY 3 DESC LIMIT 5`,
+          ),
+        ]);
+        const fbR = fb.rows[0];
+        const igR = ig.rows[0];
+        return {
+          leadsBySource30d: leads.rows.map((r) => ({ label: r.kind, count: Number(r.c) })),
+          socialStats: [
+            ...lifetime.rows.map((r) => ({
+              platform: r.platform,
+              metric: r.metric,
+              value: Number(r.value ?? 0),
+              window: "lifetime" as const,
+            })),
+            ...daily.rows.map((r) => ({
+              platform: r.platform,
+              metric: r.metric,
+              value: Number(r.value ?? 0),
+              window: "28d" as const,
+            })),
+          ],
+          engagement30d: {
+            fbPosts: Number(fbR.posts),
+            fbReactions: Number(fbR.reactions),
+            fbComments: Number(fbR.comments),
+            fbShares: Number(fbR.shares),
+            igMedia: Number(igR.media),
+            igLikes: Number(igR.likes),
+            igComments: Number(igR.comments),
+          },
+          topCampaigns: campaigns.rows.map((r) => ({
+            name: r.name,
+            platform: r.platform,
+            spend: Number(r.spend),
+            clicks: Number(r.clicks),
+            leads: Number(r.leads),
+          })),
+        };
+      } catch {
+        return mockRepositories.reports.marketingSocial();
       }
     },
   },

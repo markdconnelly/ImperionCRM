@@ -239,6 +239,48 @@ export interface ReportSummary {
   avgTimeToLive: string; // formatted "NNd" or "—"
 }
 
+// ── Reporting BI hub — Marketing & Social section (ADR-0062, #289) ───────────
+
+/**
+ * One organic-social stat (social_metric, 0075). Metric names are source-truthful
+ * and metric-generic by design (ADR-0062): lifetime metrics carry the latest
+ * value, daily metrics a 28-day sum.
+ */
+export interface SocialStatDatum {
+  platform: string; // facebook|instagram
+  metric: string; // raw social_metric.metric, humanized in the UI
+  value: number;
+  window: "lifetime" | "28d";
+}
+
+/** Organic engagement totals over the last 30 days (Meta bronze, 0075). */
+export interface SocialEngagement {
+  fbPosts: number;
+  fbReactions: number;
+  fbComments: number;
+  fbShares: number;
+  igMedia: number;
+  igLikes: number;
+  igComments: number;
+}
+
+/** Paid-campaign rollup row (campaign_metric stays paid-only, ADR-0012). */
+export interface CampaignPerfRow {
+  name: string;
+  platform: string;
+  spend: number; // dollars — redacted by the revenue gate (ADR-0030) before render
+  clicks: number;
+  leads: number;
+}
+
+/** The Marketing & Social reporting section payload (ADR-0062). */
+export interface MarketingSocialReport {
+  leadsBySource30d: CountDatum[];
+  socialStats: SocialStatDatum[];
+  engagement30d: SocialEngagement;
+  topCampaigns: CampaignPerfRow[];
+}
+
 // ── Engagements: editable questionnaires, discovery, SBR, artifacts, tickets ──
 // (ADR-0023). All engagement records are account-scoped; the contact is only the
 // employee who performed a given instance.
