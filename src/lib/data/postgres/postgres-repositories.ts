@@ -41,6 +41,7 @@ import type {
   ProjectEditable,
   ProjectInput,
   ProjectTypeInput,
+  DeliveryTemplateInput,
   ProposalEditable,
   ProposalInput,
   QuestionEditable,
@@ -82,6 +83,8 @@ import type {
   ContactRow,
   CountDatum,
   CurrentConsentRow,
+  DeliveryTemplateRow,
+  DeliveryTemplateDetail,
   DirectoryGroupRow,
   DiscoveryCallDetail,
   DiscoveryCallRow,
@@ -1324,6 +1327,211 @@ export const postgresRepositories: Repositories = {
       // Protected types (Onboarding) are never deletable; a type in use fails
       // on the RESTRICT FK (ADR-0052 §1).
       await pool.query(`DELETE FROM project_type WHERE id = $1 AND NOT is_protected`, [id]);
+    },
+
+    // ── Delivery templates (ADR-0081, migration 0084) ──────────────────────────
+    async listDeliveryTemplates(opts): Promise<DeliveryTemplateRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listDeliveryTemplates(opts);
+      try {
+        const where: string[] = [];
+        const params: unknown[] = [];
+        if (opts?.activeOnly) where.push(`dt.is_active`);
+        if (opts?.projectTypeId) {
+          // A type filter matches templates bound to that type OR unbound (any-type).
+          params.push(opts.projectTypeId);
+          where.push(`(dt.project_type_id = $${params.length} OR dt.project_type_id IS NULL)`);
+        }
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          name: string;
+          description: string | null;
+          version: number;
+          project_type_id: string | null;
+          project_type_name: string | null;
+          is_active: boolean;
+          phase_count: string;
+          task_count: string;
+        }>(
+          `SELECT dt.id, dt.key, dt.name, dt.description, dt.version,
+                  dt.project_type_id, pt.name AS project_type_name, dt.is_active,
+                  count(DISTINCT p.id) AS phase_count,
+                  count(t.id)          AS task_count
+           FROM delivery_template dt
+           LEFT JOIN project_type pt ON pt.id = dt.project_type_id
+           LEFT JOIN delivery_template_phase p ON p.template_id = dt.id
+           LEFT JOIN delivery_template_task  t ON t.phase_id = p.id
+           ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+           GROUP BY dt.id, pt.name
+           ORDER BY dt.is_active DESC, dt.name`,
+          params,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          key: r.key,
+          name: r.name,
+          description: r.description,
+          version: Number(r.version),
+          projectTypeId: r.project_type_id,
+          projectTypeName: r.project_type_name,
+          isActive: r.is_active,
+          phaseCount: Number(r.phase_count),
+          taskCount: Number(r.task_count),
+        }));
+      } catch {
+        return mockRepositories.crm.listDeliveryTemplates(opts);
+      }
+    },
+
+    async getDeliveryTemplate(id: string): Promise<DeliveryTemplateDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getDeliveryTemplate(id);
+      const { rows: tRows } = await pool.query<{
+        id: string;
+        key: string;
+        name: string;
+        description: string | null;
+        version: number;
+        project_type_id: string | null;
+        project_type_name: string | null;
+        is_active: boolean;
+      }>(
+        `SELECT dt.id, dt.key, dt.name, dt.description, dt.version,
+                dt.project_type_id, pt.name AS project_type_name, dt.is_active
+         FROM delivery_template dt
+         LEFT JOIN project_type pt ON pt.id = dt.project_type_id
+         WHERE dt.id = $1`,
+        [id],
+      );
+      const t = tRows[0];
+      if (!t) return null;
+      const { rows: pRows } = await pool.query<{
+        id: string;
+        ordinal: number;
+        name: string;
+        offset_days: number;
+        duration_days: number;
+      }>(
+        `SELECT id, ordinal, name, offset_days, duration_days
+         FROM delivery_template_phase WHERE template_id = $1 ORDER BY ordinal`,
+        [id],
+      );
+      const { rows: taskRows } = await pool.query<{
+        id: string;
+        phase_id: string;
+        ordinal: number;
+        title: string;
+        offset_days: number;
+        duration_days: number;
+        dispatches_ticket: boolean;
+        ticket_queue_id: string | null;
+        ticket_title: string | null;
+        ticket_lead_days: number;
+      }>(
+        `SELECT t.id, t.phase_id, t.ordinal, t.title, t.offset_days, t.duration_days,
+                t.dispatches_ticket, t.ticket_queue_id, t.ticket_title, t.ticket_lead_days
+         FROM delivery_template_task t
+         JOIN delivery_template_phase p ON p.id = t.phase_id
+         WHERE p.template_id = $1 ORDER BY t.ordinal`,
+        [id],
+      );
+      return {
+        id: t.id,
+        key: t.key,
+        name: t.name,
+        description: t.description,
+        version: Number(t.version),
+        projectTypeId: t.project_type_id,
+        projectTypeName: t.project_type_name,
+        isActive: t.is_active,
+        phases: pRows.map((p) => ({
+          id: p.id,
+          ordinal: Number(p.ordinal),
+          name: p.name,
+          offsetDays: Number(p.offset_days),
+          durationDays: Number(p.duration_days),
+          tasks: taskRows
+            .filter((tk) => tk.phase_id === p.id)
+            .map((tk) => ({
+              id: tk.id,
+              ordinal: Number(tk.ordinal),
+              title: tk.title,
+              offsetDays: Number(tk.offset_days),
+              durationDays: Number(tk.duration_days),
+              dispatchesTicket: tk.dispatches_ticket,
+              ticketQueueId: tk.ticket_queue_id == null ? null : Number(tk.ticket_queue_id),
+              ticketTitle: tk.ticket_title,
+              ticketLeadDays: Number(tk.ticket_lead_days),
+            })),
+        })),
+      };
+    },
+
+    async createDeliveryTemplate(input: DeliveryTemplateInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createDeliveryTemplate(input);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO delivery_template (key, name, description, version, project_type_id, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id`,
+          [
+            input.key,
+            input.name,
+            nullIfEmpty(input.description),
+            input.version,
+            input.projectTypeId,
+            input.isActive,
+          ],
+        );
+        const templateId = rows[0].id;
+        let phaseOrd = 0;
+        for (const phase of input.phases) {
+          const { rows: phRows } = await client.query<{ id: string }>(
+            `INSERT INTO delivery_template_phase (template_id, ordinal, name, offset_days, duration_days)
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [templateId, phaseOrd++, phase.name, phase.offsetDays, phase.durationDays],
+          );
+          const phaseId = phRows[0].id;
+          let taskOrd = 0;
+          for (const task of phase.tasks) {
+            await client.query(
+              `INSERT INTO delivery_template_task
+                 (phase_id, ordinal, title, offset_days, duration_days,
+                  dispatches_ticket, ticket_queue_id, ticket_title, ticket_lead_days)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+              [
+                phaseId,
+                taskOrd++,
+                task.title,
+                task.offsetDays,
+                task.durationDays,
+                task.dispatchesTicket,
+                task.dispatchesTicket ? task.ticketQueueId : null,
+                task.dispatchesTicket ? nullIfEmpty(task.ticketTitle) : null,
+                task.dispatchesTicket ? task.ticketLeadDays : 0,
+              ],
+            );
+          }
+        }
+        await client.query("COMMIT");
+        return templateId;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteDeliveryTemplate(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteDeliveryTemplate(id);
+      // CASCADE drops phases/tasks; project_provisioning.delivery_template_id SET NULL.
+      await pool.query(`DELETE FROM delivery_template WHERE id = $1`, [id]);
     },
 
     async listOnboarding(): Promise<OnboardingProject[]> {

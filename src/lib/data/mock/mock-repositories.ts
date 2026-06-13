@@ -208,6 +208,66 @@ export const mockRepositories: Repositories = {
     async deleteProjectType() {
       throw new Error(NO_DB);
     },
+    // Delivery templates (ADR-0081) — one seed so the manager/picker render in mock mode.
+    async listDeliveryTemplates(opts?: { activeOnly?: boolean; projectTypeId?: string }) {
+      const all = [
+        {
+          id: "dt-network-refresh",
+          key: "network_refresh",
+          name: "Standard Network Refresh",
+          description: "Switch/firewall/AP replacement delivery playbook.",
+          version: 1,
+          projectTypeId: null,
+          projectTypeName: null,
+          isActive: true,
+          phaseCount: 2,
+          taskCount: 3,
+        },
+      ];
+      return all.filter((t) => (opts?.activeOnly ? t.isActive : true));
+    },
+    async getDeliveryTemplate(id: string) {
+      if (id !== "dt-network-refresh") return null;
+      return {
+        id: "dt-network-refresh",
+        key: "network_refresh",
+        name: "Standard Network Refresh",
+        description: "Switch/firewall/AP replacement delivery playbook.",
+        version: 1,
+        projectTypeId: null,
+        projectTypeName: null,
+        isActive: true,
+        phases: [
+          {
+            id: "dt-nr-p1",
+            ordinal: 0,
+            name: "Procurement & Staging",
+            offsetDays: 0,
+            durationDays: 10,
+            tasks: [
+              { id: "dt-nr-t1", ordinal: 0, title: "Order hardware", offsetDays: 0, durationDays: 5, dispatchesTicket: false, ticketQueueId: null, ticketTitle: null, ticketLeadDays: 0 },
+              { id: "dt-nr-t2", ordinal: 1, title: "Stage & configure", offsetDays: 5, durationDays: 5, dispatchesTicket: false, ticketQueueId: null, ticketTitle: null, ticketLeadDays: 0 },
+            ],
+          },
+          {
+            id: "dt-nr-p2",
+            ordinal: 1,
+            name: "Cutover",
+            offsetDays: 10,
+            durationDays: 2,
+            tasks: [
+              { id: "dt-nr-t3", ordinal: 0, title: "On-site cutover", offsetDays: 10, durationDays: 1, dispatchesTicket: true, ticketQueueId: 29683483, ticketTitle: "Network cutover — on-site", ticketLeadDays: 2 },
+            ],
+          },
+        ],
+      };
+    },
+    async createDeliveryTemplate() {
+      throw new Error(NO_DB);
+    },
+    async deleteDeliveryTemplate() {
+      throw new Error(NO_DB);
+    },
     async listOnboarding() {
       // Acme is instantiated from the standard playbook (ADR-0037): earlier
       // phases mostly checked off so the derived R/Y/G + checklist render.
