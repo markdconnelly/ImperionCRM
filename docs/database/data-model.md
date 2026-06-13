@@ -1105,6 +1105,37 @@ contact belongs to, via the bronze join above). A deeper silver merge (group
 context folded into `contact_enrichment` by the pipeline's contact-matcher) is the
 follow-up issue noted on #257.
 
+### DNS posture — migration 0080 (#308, ADR-0063)
+
+Per-customer DNS posture across two capture planes (ADR-0063). **Bronze** (all-text
+local-pipeline envelope, true types in `raw_payload`):
+
+`dns_zones` — Azure DNS zones via the on-prem ARM collector (local #155).
+`external_id` = the ARM zone resource id; `manageable` = a write role (DNS Zone
+Contributor / Contributor / Owner) proven by a role-assignment read; `verdict` is
+collector-computed (`not-in-azure` | `in-azure-readonly` | `managed`). This is the
+manage plane that proves "hosted in Azure and manageable".
+
+`dns_records` — DNS recordset snapshots via the ARM collector (`plane = azure`,
+authoritative zone config) and the public-resolution collector (`plane = public`,
+local #156 — what the domain resolves to from the outside, the only signal for
+domains not in Azure DNS). `external_id` = `<domain>|<plane>|<type>|<name>`; indexed
+by domain and by (domain, plane) for cross-plane reconciliation.
+
+**Silver** (real types, keyed per `(tenant_id, domain)`, written by the drift merge
+local #157): `dns_golden` — the human-approved DNS Golden State per domain
+(`golden_hash` + `golden_records`, approved via `Set-ImperionDnsGoldenState`);
+`dns_domain` — the per-domain rollup: governance `verdict` (CHECK-constrained),
+`records_compliant|drift|ungoverned|missing` counts (full-outer-join of captured vs
+golden, ADR-0051 §3 semantics), 0–100 `score`, `last_captured_at`.
+
+Writer: `imperion-localpipeline`. Cloud pipeline, backend, and web read. Surfaced on
+the account Security posture card + `/posture` page, joined via `account_tenant`
+(`security.listDnsDomainsForAccount`, optional-enrichment seam #301). DNS is a
+candidate Posture Pillar for Score Model v2 (deferred behind an ADR-0051 amendment,
+blocked-on-data like MFA #265). **Apply 0080 to prod before the GUI read PR (#309)
+merges** (schema-lag foot-gun #301/#302).
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.

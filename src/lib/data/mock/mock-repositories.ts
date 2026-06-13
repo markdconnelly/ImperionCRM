@@ -867,6 +867,9 @@ export const mockRepositories: Repositories = {
     async listPosturePoliciesForAccount() {
       return [];
     },
+    async listDnsDomainsForAccount() {
+      return [];
+    },
     async listSecureScoreControlsForAccount() {
       return [];
     },

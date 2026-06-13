@@ -202,10 +202,42 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     expect(params).toEqual(["acc-1"]);
   });
 
+  it("DNS rollup maps per-domain verdict + drift counts and joins through account_tenant (#308, ADR-0063)", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          tenant_id: "t-1", domain: "contoso.com", verdict: "managed",
+          records_compliant: 6, records_drift: 1, records_ungoverned: 0,
+          records_missing: 0, score: "92.5", last_captured_at: "2026-06-12",
+        },
+        {
+          // not yet on Azure DNS, no golden approved → null score
+          tenant_id: "t-1", domain: "legacy.contoso.net", verdict: "not-in-azure",
+          records_compliant: 0, records_drift: 0, records_ungoverned: 0,
+          records_missing: 0, score: null, last_captured_at: null,
+        },
+      ],
+    });
+    const rows = await security.listDnsDomainsForAccount("acc-1");
+    expect(rows[0]).toEqual({
+      tenantId: "t-1", domain: "contoso.com", verdict: "managed",
+      recordsCompliant: 6, recordsDrift: 1, recordsUngoverned: 0, recordsMissing: 0,
+      score: 92.5, lastCapturedAt: "2026-06-12",
+    });
+    expect(rows[1].verdict).toBe("not-in-azure");
+    expect(rows[1].score).toBeNull();
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("FROM dns_domain d");
+    expect(sql).toContain("JOIN account_tenant m");
+    expect(sql).toContain("WHERE m.account_id = $1::uuid");
+    expect(params).toEqual(["acc-1"]);
+  });
+
   it("falls back to the mock (empty lists) when no pool is configured", async () => {
     getPool.mockReturnValue(null);
     await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listPosturePoliciesForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listDnsDomainsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listSecureScoreControlsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listCredentialExposuresForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.countDefenderIncidentsForAccount("acc-1")).resolves.toEqual({
@@ -240,6 +272,7 @@ describe("Optional enrichment degrades on schema lag, fails closed otherwise (#3
     query.mockRejectedValue(schemaLag);
     await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listPosturePoliciesForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listDnsDomainsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listSecureScoreControlsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listCredentialExposuresForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listSharePointSitesForAccount("acc-1")).resolves.toEqual([]);

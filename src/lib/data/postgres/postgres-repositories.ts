@@ -127,6 +127,7 @@ import type {
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
+  DnsDomainRollup,
   SecureScoreControl,
   CredentialExposureRow,
   DefenderIncidentCounts,
@@ -5398,6 +5399,47 @@ export const postgresRepositories: Repositories = {
       } catch (err) {
         if (isSchemaLagError(err)) return []; // optional enrichment (#301)
         return mockRepositories.security.listSharePointSitesForAccount(accountId);
+      }
+    },
+
+    async listDnsDomainsForAccount(accountId): Promise<DnsDomainRollup[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listDnsDomainsForAccount(accountId);
+      try {
+        // Per-domain DNS posture over the account's mapped tenants (ADR-0063).
+        // Plain JOIN: a domain appears once the drift merge (local #157) has rolled
+        // it up — pre-capture domains are simply absent, not a null-verdict row.
+        const { rows } = await pool.query<{
+          tenant_id: string; domain: string; verdict: string;
+          records_compliant: number | null; records_drift: number | null;
+          records_ungoverned: number | null; records_missing: number | null;
+          score: string | null; last_captured_at: string | null;
+        }>(
+          `SELECT d.tenant_id, d.domain, d.verdict,
+                  d.records_compliant, d.records_drift,
+                  d.records_ungoverned, d.records_missing,
+                  d.score, d.last_captured_at::text AS last_captured_at
+             FROM dns_domain d
+             JOIN account_tenant m ON m.tenant_id = d.tenant_id
+            WHERE m.account_id = $1::uuid
+            ORDER BY array_position(ARRAY['not-in-azure','in-azure-readonly','managed'], d.verdict),
+                     d.records_drift DESC, d.domain`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id,
+          domain: r.domain,
+          verdict: r.verdict as DnsDomainRollup["verdict"],
+          recordsCompliant: r.records_compliant ?? 0,
+          recordsDrift: r.records_drift ?? 0,
+          recordsUngoverned: r.records_ungoverned ?? 0,
+          recordsMissing: r.records_missing ?? 0,
+          score: r.score === null ? null : Number(r.score),
+          lastCapturedAt: r.last_captured_at,
+        }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // optional enrichment (#301)
+        return mockRepositories.security.listDnsDomainsForAccount(accountId);
       }
     },
   },
