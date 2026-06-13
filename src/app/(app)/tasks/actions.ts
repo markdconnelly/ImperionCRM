@@ -47,6 +47,28 @@ export async function deleteTaskAction(formData: FormData) {
   revalidatePath("/projects/[id]", "page");
 }
 
+/** Board columns = the task status enum (ADR-0066 C1). */
+const BOARD_STATUSES = ["open", "in_progress", "done"] as const;
+
+/**
+ * Move a task to a new status from the kanban board (#341, ADR-0066 C1). Drag
+ * persists through the same `delivery:write`-guarded mutation path as the edit
+ * form (ADR-0066: "drag actions go through the same audited mutation path"); a
+ * status-only write avoids reparsing the whole TaskInput. No redirect — the
+ * board stays put and the client refreshes in place.
+ * TODO(#438): emit an activity-feed event once the ADR-0064 A1 feed lands.
+ */
+export async function moveTaskAction(id: string, status: string) {
+  await requireCapability("delivery:write");
+  const taskId = id.trim();
+  if (!taskId) return;
+  if (!(BOARD_STATUSES as readonly string[]).includes(status)) return;
+  const { crm } = getRepositories();
+  await crm.setTaskStatus(taskId, status);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
 /**
  * On-demand Autotask push (#98, ADR-0052 §7): create this task's Autotask
  * ticket via the backend's idempotent ticket API (backend #19). The queue is
