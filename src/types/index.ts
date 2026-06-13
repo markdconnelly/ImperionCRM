@@ -499,6 +499,31 @@ export interface MfaRegistrationCounts {
   total: number;
 }
 
+/**
+ * One SharePoint site from bronze `sharepoint_sites` (migration 0078, #255),
+ * scoped to an account through `account_tenant` (ADR-0051). Site METADATA only
+ * (Sites.Read.All) — no file/drive/item fields exist anywhere in this shape
+ * (Files.Read.All was pruned). Bronze is all-text: values arrive verbatim and
+ * the UI parses only what it renders.
+ */
+export interface SharePointSiteRow {
+  tenantId: string;
+  /** Graph composite site id (bronze external_id). */
+  externalId: string;
+  displayName: string | null;
+  webUrl: string | null;
+  description: string | null;
+  createdAt: string | null;
+  lastModifiedAt: string | null;
+  /** Web template name (e.g. SITEPAGEPUBLISHING, GROUP, SPSPERS). */
+  template: string | null;
+  /** Stringified Graph boolean — personal (OneDrive-style) site flag. */
+  isPersonalSite: string | null;
+  storageUsedBytes: string | null;
+  storageQuotaBytes: string | null;
+  collectedAt: string;
+}
+
 /** Minimal signed-in user shape surfaced in the UI (from the Entra session). */
 export interface SessionUser {
   name: string;

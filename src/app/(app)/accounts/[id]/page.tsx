@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { Timeline } from "@/components/comms/timeline";
 import { SourceRecords } from "@/components/comms/source-records";
+import { SharePointSites } from "@/components/accounts/sharepoint-sites";
 import { IntegrationHealth } from "@/components/comms/integration-health";
 import { getRepositories } from "@/lib/data";
 import { computeImperionScore } from "@/lib/security/imperion-score";
@@ -75,16 +76,25 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   const { crm, comms, security } = getRepositories();
-  const [account, timeline, sources, relatedBronze, tenantPostures, defenderIncidents, mfa] =
-    await Promise.all([
-      crm.getAccount(id),
-      comms.listInteractionsByAccount(id),
-      crm.listAccountSources(id),
-      crm.listAccountRelatedBronze(id),
-      security.listTenantPostureForAccount(id),
-      security.countDefenderIncidentsForAccount(id),
-      security.countMfaRegistrationForAccount(id),
-    ]);
+  const [
+    account,
+    timeline,
+    sources,
+    relatedBronze,
+    tenantPostures,
+    defenderIncidents,
+    mfa,
+    sharePointSites,
+  ] = await Promise.all([
+    crm.getAccount(id),
+    comms.listInteractionsByAccount(id),
+    crm.listAccountSources(id),
+    crm.listAccountRelatedBronze(id),
+    security.listTenantPostureForAccount(id),
+    security.countDefenderIncidentsForAccount(id),
+    security.countMfaRegistrationForAccount(id),
+    security.listSharePointSitesForAccount(id),
+  ]);
   if (!account) notFound();
 
   // At-a-glance Imperion Secure Score (#94, ADR-0051 §4) — live Score Model v1
@@ -259,6 +269,20 @@ export default async function AccountDetailPage({
             className="lg:col-span-3"
           >
             <SourceRecords sources={relatedBronze} />
+          </Section>
+        )}
+
+        {/* SharePoint site inventory (#255) — drillable site METADATA only
+            (Sites.Read.All; Files.Read.All pruned — no file content anywhere).
+            Renders nothing when no sites are collected for the mapped tenants. */}
+        {sharePointSites.length > 0 && (
+          <Section
+            title="SharePoint sites"
+            icon="Globe"
+            hint={`${sharePointSites.length} site${sharePointSites.length === 1 ? "" : "s"} across this company's mapped tenants — site metadata only, no file content (Sites.Read.All).`}
+            className="lg:col-span-3"
+          >
+            <SharePointSites sites={sharePointSites} />
           </Section>
         )}
 

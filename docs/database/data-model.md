@@ -1059,6 +1059,26 @@ Security posture card, joined via `account_tenant` (ADR-0051). It is posture-pil
 *input* only — the Imperion Secure Score composite is unchanged (model versioning is
 ADR-0051-governed; a pillar change would be a new Score Model version + ADR).
 
+### SharePoint sites bronze — site inventory, metadata only (migration 0078, #255)
+
+`sharepoint_sites` — local-pipeline envelope, fed by the on-prem collector
+(local-pipeline companion issue; `Sites.Read.All`). Flattens Graph `/sites`
+(getAllSites enumeration) per tenant: display name, web URL, description,
+created/last-modified, web template, personal-site flag, site-collection hostname,
+and storage used/quota where Graph exposes them — all-text columns (true types live
+in `raw_payload`). `external_id` = the Graph composite site id, so re-collection
+upserts per site.
+
+**No file content, by design.** `Files.Read.All` was pruned from the per-client
+Onboarding app (pipeline ADR-0018, 2026-06-12 per-source review); only
+`Sites.Read.All` remains. The table has no file/drive/item columns and none may be
+added — site *metadata* is the entire surface.
+
+Writer: `imperion-localpipeline`. Cloud pipeline, backend, and web read. Surfaced
+today as the drillable "SharePoint sites" section on the Company 360, joined via
+`account_tenant` (ADR-0051): per-site drill shows dates, template, storage, and an
+outbound link to the site itself.
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.

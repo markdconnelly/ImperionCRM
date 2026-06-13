@@ -70,6 +70,7 @@ import type {
   CredentialExposureRow,
   DefenderIncidentCounts,
   MfaRegistrationCounts,
+  SharePointSiteRow,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -935,6 +936,8 @@ export interface SecurityRepository {
   countDefenderIncidentsForAccount(accountId: string): Promise<DefenderIncidentCounts>;
   /** MFA-registered/total users over the account's mapped tenants (#258 badge). */
   countMfaRegistrationForAccount(accountId: string): Promise<MfaRegistrationCounts>;
+  /** SharePoint site inventory over the account's mapped tenants (#255 — site metadata only, never file content). */
+  listSharePointSitesForAccount(accountId: string): Promise<SharePointSiteRow[]>;
 }
 
 /** The full set of repositories a request can resolve. */

@@ -67,7 +67,11 @@ bronze + `defender_incident_ticket_link` (#256, ADR-0059 — Defender XDR layere
 Autotask per incident; link PK = sync-back idempotency key); 0077 `entra_auth_methods`
 bronze (#258, ADR-0051 — per-user MFA registration state from Graph
 userRegistrationDetails; feeds the account posture card's MFA coverage badge,
-collector = local #140).
+collector = local #140); 0078 `sharepoint_sites` bronze (#255, ADR-0051 join via
+`account_tenant` — SharePoint site inventory from Graph /sites, site METADATA only:
+Sites.Read.All, no file/drive columns ever — Files.Read.All was pruned; feeds the
+drillable SharePoint sites section on the Company 360; collector = local-pipeline
+companion issue).
 The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
