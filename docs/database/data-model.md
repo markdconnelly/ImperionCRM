@@ -1546,6 +1546,40 @@ erDiagram
 > open→submitted→approved; the backend stamps `paid` from Payroll Reconciliation (the front end
 > never holds Autotask/QuickBooks creds, ADR-0042). The Reconciliation read model is added by 0087.
 
+**Time Ticket write-tracking & the Reconciliation read model (migration 0087).** Approval
+writes ONE idempotent Autotask summary ticket per timesheet; reconciliation is **derived**
+(views, not stored). Comp data stays out of every broadly-granted view — expected-pay math
+lives in the backend, the sole reader of `pay_rate`.
+
+```mermaid
+erDiagram
+    TIMESHEET ||--o| TIME_TICKET : "1 idempotent Autotask ticket / week"
+    TIME_TICKET {
+      uuid id PK
+      uuid timesheet_id PK_FK "UNIQUE — one per timesheet"
+      bigint external_ref "Autotask Time Ticket id; NULL until written"
+      text write_state "pending|writing|written|failed"
+      text idempotency_key "UNIQUE — imperioncrm-timeticket-{id}"
+      bigint autotask_company_id "house company (config)"
+      bigint autotask_queue_id "Timesheets queue (config)"
+    }
+```
+
+> **Derived read model (no stored verdicts, no comp leakage):**
+> - `time_reconciliation_day` — per employee per day, attended (envelope) vs logged
+>   (allocation) minutes + verdict `balanced | under_logged | over_logged` (±30 min default
+>   tolerance). Over silver `time_record` only. The **six Deviations** (overlap, orphan, etc.)
+>   are detected by the backend process on this base — they need row-pair logic beyond a view.
+> - `timesheet_payroll_status` — approved attendance minutes per timesheet + state + matched QB
+>   payment ref. **No `pay_rate`** — expected pay (hours × effective rate) is computed in the
+>   backend reconciliation process, which alone reads the comp store (0085).
+>
+> Idempotency is **ours, not Autotask's** (backend ADR-0044): `idempotency_key` + `write_state`
+> + stored `external_ref` → re-approval updates the same ticket. The ticket **links** Ancillary
+> Tickets, never re-creates their TimeEntries, so summing Autotask never double-counts. This
+> completes the ADR-0082 schema; sibling-repo processes (Autotask write, QuickBooks read,
+> bronze→silver merge) build on these tables once the migrations are prod-applied.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
