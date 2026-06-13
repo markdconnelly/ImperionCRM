@@ -1492,6 +1492,60 @@ erDiagram
 > join Autotask Time Entries to an employee) — never `classification`, never `pay_rate`.
 > The Timesheet reconciles against the rate with the greatest `effective_from <=` its week.
 
+**Attendance, timesheet & the silver timeline (migration 0086).** Two per-source bronze
+feeds normalize into one silver `time_record` (ADR-0039 discipline): `website_time_entry`
+(authoritative attendance — start/end blocks, duration **derived**, category) and
+`autotask_time_entry` (corroborating Ticket Time Entries, ingested by the local pipeline).
+The weekly `timesheet` (one employee, one Mon–Sun week) carries the lifecycle.
+
+```mermaid
+erDiagram
+    APP_USER ||--o{ TIMESHEET           : "weekly Mon–Sun"
+    TIMESHEET ||--o{ WEBSITE_TIME_ENTRY : "attendance blocks"
+    APP_USER ||--o{ AUTOTASK_TIME_ENTRY : "Ticket Time Entries"
+    APP_USER ||--o{ TIME_RECORD         : "unified silver timeline"
+    TIMESHEET {
+      uuid id PK
+      uuid app_user_id FK "CASCADE — the Employee"
+      date week_start "Monday"
+      date week_end "Sunday (= week_start+6)"
+      text state "open|submitted|approved|payroll_approved|paid"
+      jsonb attested_snapshot "attested original, audit"
+      text qb_payment_ref "matched QuickBooks payment id"
+    }
+    WEBSITE_TIME_ENTRY {
+      uuid id PK
+      uuid timesheet_id FK "CASCADE"
+      date work_date
+      timestamptz started_at "duration DERIVED, not typed"
+      timestamptz ended_at
+      text category "billable|internal|admin"
+      text ancillary_ticket_ref
+    }
+    AUTOTASK_TIME_ENTRY {
+      uuid id PK
+      text external_ref "AT TimeEntry id — idempotent upsert"
+      uuid app_user_id_FK "resolved via 0085 Resource mapping"
+      bigint autotask_ticket_id "the Ancillary Ticket"
+      numeric hours_worked "AT often stores hours directly"
+    }
+    TIME_RECORD {
+      uuid id PK
+      uuid app_user_id FK "CASCADE"
+      text source "website|autotask"
+      text kind "attendance|allocation (CHECK-paired)"
+      integer minutes "derived duration"
+      uuid source_ref "bronze row id"
+    }
+```
+
+> **Source of truth:** website attendance rows are authoritative; Autotask allocation rows
+> corroborate. The cloud pipeline merge writes `time_record`; `source`↔`kind` is CHECK-paired
+> (website→attendance, autotask→allocation). A `time_entry_bronze_all` union view exposes the
+> raw per-source facts side by side (ADR-0039). Timesheet state transitions: the web GUI drives
+> open→submitted→approved; the backend stamps `paid` from Payroll Reconciliation (the front end
+> never holds Autotask/QuickBooks creds, ADR-0042). The Reconciliation read model is added by 0087.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
