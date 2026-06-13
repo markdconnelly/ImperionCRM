@@ -24,6 +24,8 @@ right (scoped to your Entra permissions).
   Open / In progress / Done; the drop saves the status.
 - [Project board — the kanban view](project-board.md): drag projects across
   Not started / In progress / Blocked / Complete; the drop saves the status.
+- [Delivery templates](delivery-templates.md): author the reusable provisioning
+  playbooks a won opportunity is provisioned from (ADR-0081).
 
 ## Walkthroughs to write
 
