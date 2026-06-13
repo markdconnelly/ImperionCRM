@@ -102,18 +102,22 @@ external functions for heavy/integration work.
 | --- | --- |
 | Entra ID SSO (certificate client auth), middleware gate, break-glass | ✅ Live |
 | PostgreSQL 18 + pgvector on Azure (managed-identity auth, no stored password) | ✅ Live |
-| Full schema — CRM core, engagements, **comms / contact-360 / connections / demand-gen / automation / per-source bronze + devices / security ingestion** | ✅ Applied (`db/migrations` 0001–0043) |
-| Dashboard, accounts, pipeline (interactive), proposals, onboarding, assessments, discovery, SBRs, reporting | ✅ Built |
+| Full schema — CRM core, engagements, **comms / contact-360 / connections / demand-gen / automation / per-source bronze + devices / security ingestion / Meta · Defender · SharePoint · Entra-groups bronze** | ✅ Applied (`db/migrations` 0001–0079) |
+| Dashboard, accounts, pipeline (interactive), proposals, onboarding, assessments, discovery, SBRs | ✅ Built |
+| **Reporting BI hub** (ADR-0062 — marketing/social, service-desk, security-fleet) + Dashboard cross-domain intelligence strip | ✅ Built |
 | **Contact-360 + unified comms, integrations/consent, campaigns/audiences (+ builders), workflows (+ builder), lead hooks** | ✅ Built (UI + data layer) |
 | Knowledge search, Security posture, Settings, Feedback, global search | ✅ Built (UI + data layer) |
-| Live OAuth pulls (Graph/YouTube/LinkedIn/Facebook), real sends, agent enrichment execution, embeddings/vector search | 🟡 Stubbed — next phase |
-| Single orchestrator agent runtime + AI Board / AI Agents pages | 🟡 Deferred — next phase |
+| Single orchestrator agent runtime + AI Agents / AI Board pages (backend ADR-0036/0039) | ✅ Live |
+| Per-user OAuth flows (Key Vault custody) + real consent-gated 1:1 email/SMS sends (ADR-0058); Meta (FB/IG) ingestion | ✅ Live-wired |
+| Remaining ingestion engines (Graph mail/Teams activation, YouTube/LinkedIn/Plaud), embeddings/vector search | 🟡 Next phase |
 
 > **Built (UI + data layer)** means the screens are real and the data layer reads and
-> writes PostgreSQL through typed repositories. The *live* integrations (real OAuth,
-> real provider sends, agent/LLM execution) are deliberately deferred to a later phase;
-> until a source is wired, those flows are stubbed (e.g. a "send" logs to the timeline)
-> and never fail the page.
+> writes PostgreSQL through typed repositories. The agent runtime, per-user OAuth
+> custody, consent-gated 1:1 sends, and Meta (FB/IG) ingestion are now **live-wired**;
+> the *remaining* integrations (Graph mail/Teams activation, YouTube/LinkedIn/Plaud,
+> embeddings/vector search) are deferred to a later phase. Until a source is wired,
+> those flows degrade to an honest stub (e.g. a "send" logs to the timeline) and never
+> fail the page.
 
 ## Architecture at a glance
 

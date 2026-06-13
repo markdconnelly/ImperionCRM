@@ -75,6 +75,41 @@ Data-shape constraints verified against prod (2026-06-12):
 Shipped as four micro-PRs under epic #288 (#289 marketing/social, #290 service
 desk, #291 security fleet, #292 dashboard strip).
 
+### The hub at a glance
+
+```mermaid
+flowchart LR
+    subgraph STORE["One Postgres — gold / silver layer"]
+        SALES["Sales spine<br/>pipeline · proposals · projects · SBR"]
+        SOCIAL["Marketing &amp; social<br/>facebook_* · instagram_media<br/>social_metric · campaign_metric · lead"]
+        DESK["Service desk<br/>ticket (raw queue/status ids)"]
+        FLEET["Security fleet<br/>tenant_posture · entra_auth_methods<br/>defender_incidents · intune_managed_devices"]
+    end
+    subgraph REPO["ReportsRepository — read-only SQL aggregates (ADR-0021)"]
+        M1["sales"]
+        M2["marketing &amp; social"]
+        M3["service desk"]
+        M4["security fleet"]
+    end
+    SALES --> M1
+    SOCIAL --> M2
+    DESK --> M3
+    FLEET --> M4
+    M1 --> HUB
+    M2 --> HUB
+    M3 --> HUB
+    M4 --> HUB
+    HUB["/reporting — central BI hub<br/>#marketing · #service-desk · #security"]
+    M1 --> STRIP
+    M2 --> STRIP
+    M3 --> STRIP
+    M4 --> STRIP
+    STRIP["Dashboard cross-domain<br/>intelligence strip → deep-links to anchors"]
+```
+
+Aggregates only — no row-level PII crosses into the repository; empty fleet
+tables render honest "no coverage yet" states, never fake zeros.
+
 ## Consequences
 
 ### Security impact

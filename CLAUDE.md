@@ -141,7 +141,10 @@ serving data.
   migration 0058 — owners, per-project tasks via `task.project_id`,
   `canManageProjects`), Onboarding, Business Reviews, Tickets, Tasks,
   Campaigns (+ audiences/ads + builders), Communications (unified multi-channel
-  timeline), Reporting, Knowledge (search over the gold layer), Workflows (+ builder
+  timeline), **Reporting** (central **BI hub**, ADR-0062 — marketing/social,
+  service-desk & security-fleet intelligence over the gold layer, with a cross-domain
+  summary strip on the Dashboard that deep-links into each section),
+  Knowledge (search over the gold layer), Workflows (+ builder
   & step editor), Consent (ledger), Integrations (per-user personal connections),
   Security (posture dashboard), Settings, Feedback (GitHub-coupled), **AI Agents**
   (ADR-0048: orchestrator preset + budget via the backend's GET/PUT `/agent/settings`,
@@ -154,9 +157,9 @@ serving data.
   **admin-only** (#90, `canSeeAgentPages` — same gate as Settings/ADR-0030), and
   Settings has an **AI tab** surfacing the orchestrator preset / budget cap /
   month-to-date spend card (same card + backend PUT as the AI Agents page).
-- **Data:** PostgreSQL + pgvector; migrations **0001–0058 applied** to prod (0058 =
-  project types as data + project/task linkage, ADR-0052; applied 2026-06-10 with a
-  clean idempotency re-run).
+- **Data:** PostgreSQL + pgvector; migrations **0001–0079 applied** to prod (latest:
+  0079 Entra groups bronze, 0078 SharePoint sites bronze, 0076/0077 Defender incidents
+  + Entra auth-methods bronze, 0075 Meta business bronze; applied through 2026-06-12).
   Typed repositories with a mock fallback. Entra SSO (certificate client auth) +
   break-glass.
 - **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
@@ -169,7 +172,11 @@ serving data.
   silver **`device`** table; `contact`/`account` remain the silver aggregate. Manual entries use
   the `website` source. The on-prem local-pipeline adds its own security-posture bronze (Secure
   Score, Sentinel, Entra/Intune policies, Autotask contracts/tickets, IT Glue export) + related-
-  source citation views (migrations 0038–0041).
+  source citation views (migrations 0038–0041). Newer bronze feeds (0075–0079):
+  **Meta** business (FB/IG posts, DMs, lead forms — live in prod), **Defender**
+  incidents/alerts, **Entra** auth-methods, **SharePoint** site inventory, and
+  **Entra groups + membership** (feeding the silver user object) — these back the
+  reporting BI hub's marketing/social and security-fleet sections.
 - **Security/assessment ingestion (ADR-0040, migrations 0042/0043):** **Dark Web ID** compromised
   credentials → silver `credential_exposure`; **Televy** reports → `assessment_artifact`. Wired
   but gated (no-op until the API key is configured).
