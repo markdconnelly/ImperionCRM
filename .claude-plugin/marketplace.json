@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "imperion",
+  "description": "Canonical Claude Code skills for the Imperion CRM four-repo system. Skills are versioned here (the cross-repo source-of-truth repo, ADR-0060) and change only via the normal issue -> branch -> micro-PR loop.",
+  "owner": {
+    "name": "Mark Connelly"
+  },
+  "plugins": [
+    {
+      "name": "imperion-skills",
+      "description": "Imperion CRM domain contracts as on-demand skills: Graph access model, MSP source integrations (Autotask/IT Glue), the pinned vector contract, and future domain skills. Loads in any of the four Imperion repos.",
+      "source": "./plugins/imperion-skills",
+      "category": "knowledge"
+    }
+  ]
+}
