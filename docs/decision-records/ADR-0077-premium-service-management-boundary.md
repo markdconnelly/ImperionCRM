@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0042 (four-repo augment-not-replace contract), ADR-0044 (Autotask tickets/contracts silver), ADR-0047 (read-only device inventory), ADR-0059 (Defender incident → Autotask ticket), ADR-0062 (BI hub), #314 (CRM-parity initiative + portal exclusion), #320 / ADR-0074 (service-desk depth + Autotask-SoR decision), #371 (premium service-management epic), #372 (CMDB), #373 (ITIL), ICM #280 |
 

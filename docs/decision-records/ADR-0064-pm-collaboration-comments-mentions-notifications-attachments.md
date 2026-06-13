@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0010 (single task model), ADR-0014/0027 (workflow automation / Power Automate notifications), ADR-0052 (project board), `docs/product/pm-feature-requirements.md` Theme A |
 

@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0052 (project board), ADR-0065 (assignment/estimates fields), ADR-0066 (views), ADR-0062 (reporting BI hub), `docs/product/pm-feature-requirements.md` Theme D |
 

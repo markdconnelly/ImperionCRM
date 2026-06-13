@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0052 (project board), ADR-0034 (milestone health), ADR-0065 (configurable statuses / dependencies / start dates), `docs/product/pm-feature-requirements.md` Theme C |
 
