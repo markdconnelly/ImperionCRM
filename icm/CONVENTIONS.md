@@ -23,6 +23,8 @@ files. Everything else follows upstream.
 ```
 icm/
   CONVENTIONS.md                      # this file
+  skills/
+    <skill-slug>.md                   # SHARED runtime skills — orchestrator-wide library
   workspaces/
     <workflow-slug>/
       CONTEXT.md                      # Layer 1: what this workflow is, trigger, stages, autonomy notes
@@ -30,8 +32,24 @@ icm/
         01-<stage>/CONTEXT.md         # Layer 2 contracts; number = execution order
         02-<stage>/CONTEXT.md
       skills/
-        <skill-slug>.md               # Layer 3 runtime knowledge the stages cite
+        <skill-slug>.md               # Layer 3 runtime knowledge local to THIS workflow
 ```
+
+## Two skill tiers (don't mix them)
+
+| Tier | Home | Consumer | Loaded |
+|---|---|---|---|
+| **Developer skills** | `plugins/imperion-skills/` (ADR-0060) | Claude Code building the system | by the dev tool, per-machine plugin |
+| **Runtime skills** | `icm/skills/` (shared) + `icm/workspaces/<wf>/skills/` (workflow-local) | the orchestration layer — workflow stages AND the orchestrator/sub-agents answering ad-hoc requests | by the backend, on demand |
+
+Runtime skills are the agent workforce's knowledge, dev skills are the build
+crew's. A runtime skill used by (or expected to be used by) more than one
+workflow — voice, consent posture, escalation rules — lives in `icm/skills/`;
+promote a workspace skill there the moment a second workflow needs it, and
+leave a one-line pointer behind. Stage Inputs tables cite shared skills as
+`icm/skills/<slug>.md`. The orchestrator may load shared skills for ad-hoc
+(non-workflow) turns too — same description-based selection model as dev
+skills, same change control: issue → micro-PR.
 
 ## Stage contract format (every stage CONTEXT.md)
 

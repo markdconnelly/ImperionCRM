@@ -11,6 +11,7 @@ orchestrator, with human checkpoints and a per-workflow autonomy dial.
   artifacts are Postgres run records, editable in the GUI between stages.
 - **Trust ramp:** every workflow starts draft-for-approval; admins flip
   trusted workflows to `auto` per ADR-0061. Sends always exit via ADR-0058.
+- **Two skill tiers:** dev skills = `plugins/imperion-skills/` (Claude Code); runtime skills = `icm/skills/` (shared, orchestrator-wide) + per-workspace `skills/` (workflow-local). See CONVENTIONS.md.
 - **Authoring:** use the `imperion-icm` skill (skills plugin); changes are
   normal issue → micro-PR.
 
