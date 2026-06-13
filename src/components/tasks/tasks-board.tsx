@@ -59,6 +59,7 @@ export function TasksBoard({
       laneOf={config.laneOf}
       onMove={config.onMove}
       emptyLabel="No tasks"
+      wipStorageKey="kanban-wip:tasks"
       renderCard={(t) => (
         <>
           <div className="truncate text-sm font-medium">{t.title}</div>

@@ -34,6 +34,15 @@ the *Onboarding* lane while grouped by category and the task's category becomes
 Onboarding (same `delivery:write` gate as a status move). Grouping by assignee or
 tag waits on that data landing (ADR-0064/0065).
 
+## WIP limits (#445)
+
+Each column header has a small number box — set a **work-in-progress limit**
+(blank or `0` = none). When a column holds more cards than its limit, the column
+turns **red** and the count shows `count/limit`. The limit is a personal nudge,
+**not** a hard stop: you can still drop cards past it. Limits are saved in your
+browser (per board, per group-by), so they are yours alone and survive a reload —
+nothing is written to the server.
+
 ## Moving a task
 
 Drag a card to another column. The card jumps immediately (optimistic), and the
@@ -47,9 +56,9 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Swimlanes, WIP limits, richer cards** (assignee avatars, tags, subtask
-  progress, comment/attachment counts) — #439. (Group-by shipped in #443; the
-  projects board in #441 — see [Project board](project-board.md).)
+- **Swimlanes, richer cards** (assignee avatars, tags, subtask progress,
+  comment/attachment counts) — #439. (Group-by shipped #443, WIP limits #445;
+  the projects board in #441 — see [Project board](project-board.md).)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.
 
 For sales tasks specifically, see [Sales Activity](sales-activity.md).
