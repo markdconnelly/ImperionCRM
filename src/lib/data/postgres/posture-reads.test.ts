@@ -168,6 +168,39 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     expect(params).toEqual(["acc-1"]);
   });
 
+  it("SharePoint sites join account_tenant and map the bronze metadata shape — no file columns (#255)", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          tenant_id: "t-1", external_id: "contoso.sharepoint.com,abc,def",
+          display_name: "Operations", web_url: "https://contoso.sharepoint.com/sites/ops",
+          description: "Ops hub", created_date_time: "2023-01-05T10:00:00Z",
+          last_modified_date_time: "2026-06-01T08:00:00Z", web_template: "GROUP",
+          is_personal_site: "false", storage_used_bytes: "1073741824",
+          storage_quota_bytes: "27487790694400", collected_at: "2026-06-12T01:00:00Z",
+        },
+      ],
+    });
+    const rows = await security.listSharePointSitesForAccount("acc-1");
+    expect(rows).toEqual([
+      {
+        tenantId: "t-1", externalId: "contoso.sharepoint.com,abc,def",
+        displayName: "Operations", webUrl: "https://contoso.sharepoint.com/sites/ops",
+        description: "Ops hub", createdAt: "2023-01-05T10:00:00Z",
+        lastModifiedAt: "2026-06-01T08:00:00Z", template: "GROUP",
+        isPersonalSite: "false", storageUsedBytes: "1073741824",
+        storageQuotaBytes: "27487790694400", collectedAt: "2026-06-12T01:00:00Z",
+      },
+    ]);
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("FROM sharepoint_sites s");
+    expect(sql).toContain("JOIN account_tenant m");
+    expect(sql).toContain("WHERE m.account_id = $1::uuid");
+    // NO file content: the read must never select file/drive/item columns.
+    expect(sql).not.toMatch(/file|drive|item/i);
+    expect(params).toEqual(["acc-1"]);
+  });
+
   it("falls back to the mock (empty lists) when no pool is configured", async () => {
     getPool.mockReturnValue(null);
     await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
@@ -182,6 +215,7 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
       registered: 0,
       total: 0,
     });
+    await expect(security.listSharePointSitesForAccount("acc-1")).resolves.toEqual([]);
     expect(query).not.toHaveBeenCalled();
   });
 });

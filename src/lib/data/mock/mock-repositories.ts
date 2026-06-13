@@ -794,5 +794,9 @@ export const mockRepositories: Repositories = {
       // No DB → no auth-methods data; the badge renders nothing (total 0).
       return { registered: 0, total: 0 };
     },
+    async listSharePointSitesForAccount() {
+      // No DB → no site inventory; the section renders nothing (empty list).
+      return [];
+    },
   },
 };

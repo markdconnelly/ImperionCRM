@@ -126,6 +126,7 @@ import type {
   CredentialExposureRow,
   DefenderIncidentCounts,
   MfaRegistrationCounts,
+  SharePointSiteRow,
   TicketRow,
   ContractRow,
   DeviceInventoryRow,
@@ -4983,6 +4984,55 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return mockRepositories.security.countMfaRegistrationForAccount(accountId);
+      }
+    },
+
+    async listSharePointSitesForAccount(accountId): Promise<SharePointSiteRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listSharePointSitesForAccount(accountId);
+      try {
+        // Bronze is all-text (0078): site METADATA only — the table has no
+        // file/drive columns by design (Sites.Read.All; Files.Read.All pruned).
+        const { rows } = await pool.query<{
+          tenant_id: string;
+          external_id: string;
+          display_name: string | null;
+          web_url: string | null;
+          description: string | null;
+          created_date_time: string | null;
+          last_modified_date_time: string | null;
+          web_template: string | null;
+          is_personal_site: string | null;
+          storage_used_bytes: string | null;
+          storage_quota_bytes: string | null;
+          collected_at: string;
+        }>(
+          `SELECT s.tenant_id, s.external_id, s.display_name, s.web_url, s.description,
+                  s.created_date_time, s.last_modified_date_time, s.web_template,
+                  s.is_personal_site, s.storage_used_bytes, s.storage_quota_bytes,
+                  s.collected_at
+             FROM sharepoint_sites s
+             JOIN account_tenant m ON m.tenant_id = s.tenant_id
+            WHERE m.account_id = $1::uuid
+            ORDER BY lower(COALESCE(s.display_name, s.web_url, s.external_id))`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id,
+          externalId: r.external_id,
+          displayName: r.display_name,
+          webUrl: r.web_url,
+          description: r.description,
+          createdAt: r.created_date_time,
+          lastModifiedAt: r.last_modified_date_time,
+          template: r.web_template,
+          isPersonalSite: r.is_personal_site,
+          storageUsedBytes: r.storage_used_bytes,
+          storageQuotaBytes: r.storage_quota_bytes,
+          collectedAt: r.collected_at,
+        }));
+      } catch {
+        return mockRepositories.security.listSharePointSitesForAccount(accountId);
       }
     },
   },
