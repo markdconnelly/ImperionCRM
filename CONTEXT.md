@@ -7,7 +7,7 @@ The MSP business-management app (CRM + support + delivery + security posture) fo
 ### Versions & launch
 
 **v1 "Complete"**:
-The first release — the complete filed product, shipped AI-first. Scope rule: every feature filed by 2026-06-11 is v1. Not an MVP, not an operational core that automates later.
+The first release — the complete filed product, shipped AI-first. Scope rule: every feature filed by 2026-06-11 is v1, plus employee time tracking (ADR-0082, pulled into v1 2026-06-13). Not an MVP, not an operational core that automates later.
 _Avoid_: Operational (the old thin-v1 name), MVP, phase 1
 
 **v2 "Refined"**:
@@ -51,6 +51,72 @@ _Avoid_: sales ticket, activity (unqualified)
 **Sales Queue**:
 A rep's ordered list of their open sales tasks, grouped by due date and deal — the working surface of the sales activity page. A read model, not a stored object.
 _Avoid_: sales pipeline (that's deals by stage), task list (unqualified)
+
+### Time tracking
+
+**Employee**:
+The internal person who tracks time — an existing `app_user` (the Entra-mirrored identity, ADR-0016) extended for time tracking with an Employee Classification, an effective-dated Pay Rate, and the external mappings that let the three signals join: an **Autotask Resource id** (to attribute Ticket Time Entries) and a **QuickBooks vendor/employee id** (to match payments). The employee's **email is the consistent join key** across all three systems — mappings auto-resolve by email (resolved ids stored for stability and audit). Comp fields live in a separate, payroll-role-gated store, never on the Entra-synced identity row.
+_Avoid_: user (unqualified — `app_user` is the identity; Employee is the time-tracking extension), staff, technician (a technician is an Employee who works tickets)
+
+**Time Entry**:
+One block of an employee's day on the Imperion site: a **start time and end time** on a given day, from which **duration is calculated** (never hand-entered) — plus notes, a **category** (`billable` → tied to an Ancillary Ticket · `internal` · `admin`), and optionally a noted Ancillary Ticket. The *authoritative source* for an employee's time. An employee may have several per day. Entered manually (a live punch-clock is a later add). Sourced as `website` bronze. (`pto`/`holiday` categories are dormant until W2 — out of v1.)
+_Avoid_: punch, clock-in record (those are inputs); duration entry (duration is derived, not typed)
+
+**Attestation**:
+The employee's affirmation that a submitted Timesheet's Time Entries are their true, accurate time. Submitting *is* attesting — it moves the Timesheet to **Submitted** and **hard-locks the employee out**: from then on only an Admin can edit. The attested original is preserved for audit even when an Admin later corrects.
+_Avoid_: approval (that's the admin's later act), confirmation
+
+**Approval**:
+The Admin's act of accepting a Submitted Timesheet, optionally after correcting it. Only Admins approve and only Admins edit a Submitted Timesheet. Approval moves it to **Approved** and triggers the write of the Time Ticket to Autotask; corrections before approval are audited against the employee's attested original. Distinct from Payroll Approval.
+_Avoid_: sign-off, attestation (that's the employee's act)
+
+**Payroll Approval**:
+The second, payroll-facing approval — accepting an Approved Timesheet for payment. Held by the **CFO (Nick), Admins, and Super Admins** (`canApprovePayroll`). It does not pay; it authorizes the manual payment outside the app. Moves the Timesheet to **Payroll-Approved**.
+_Avoid_: approval (unqualified — that's the admin correctness gate), finance sign-off
+
+**Employee Classification**:
+Whether an employee is paid as **1099** (contractor) or **W2** (employee). Drives the expected-pay math and which QuickBooks record is authoritative. **v1: every employee is 1099** — paid their hourly Pay Rate directly with no withholding (gross = net), settled as a QuickBooks **vendor/AP payment**. **W2** is supported in the model but dormant: it brings tax withholding (gross ≠ net), a QuickBooks **payroll** record, and overtime — deferred until the first W2 hire.
+_Avoid_: contractor/employee (use 1099/W2), worker type
+
+**Pay Rate**:
+An employee's compensation rate, **effective-dated** (a Timesheet reconciles against the rate in force that week). For 1099 it is an hourly rate paid straight (no overtime); W2 adds hourly-with-overtime or salaried. Sensitive comp data: visible only to payroll roles (`canApprovePayroll`), never to the employee themselves, agents, or any client-facing surface. Kept to compute expected pay and efficiency analytics.
+_Avoid_: salary (a Pay Rate may be hourly or salaried), cost (that's a derived figure)
+
+**Payroll Reconciliation**:
+The check that the manual payment was done and done correctly: **expected pay** (a Timesheet's approved hours under the employee's effective Pay Rate) lined up against the **authoritative QuickBooks payment**. The match — employee + pay period + amount within tolerance — is what sets the Timesheet **Paid**. Distinct from the time-side Reconciliation.
+_Avoid_: payment matching (use the full term)
+
+**Paid**:
+The terminal Timesheet state, set when Payroll Reconciliation matches an Approved Timesheet to its authoritative QuickBooks payment. QuickBooks is read **read-only** and is the system of record for the payment fact; Imperion never initiates or records a payment — it only verifies one QuickBooks already holds.
+_Avoid_: closed, settled; "pay" as a verb the app performs (it never pays)
+
+**Ticket Time Entry**:
+A native Autotask TimeEntry an employee logs against a ticket or project task as they work it. The *corroborating* per-ticket signal, read into `autotask` bronze — generally less total time than the day's attendance, scattered across tickets in the same period. Never authoritative.
+_Avoid_: time entry (unqualified — that's the website one), billable time (a property, not the object)
+
+**Timesheet**:
+The weekly (**Monday–Sunday**), per-employee container of Time Entries. The unit that is attested, reconciled, approved, paid, and documented in Autotask. One employee, one week, one Timesheet. Lifecycle: **Open → Submitted → Approved → Payroll-Approved → Paid**.
+_Avoid_: timecard, pay period (a Timesheet is a week, not a pay cycle)
+
+**Time Ticket**:
+The single weekly ticket Imperion writes to Autotask to document a submitted Timesheet — the attestation artifact in the system of record, mirrored back into Imperion like any other ticket. It records the reconciled summary; it does **not** re-create the Ancillary Ticket Time Entries (which already live in Autotask), so the two never double-count.
+_Avoid_: general time ticket, summary ticket (use Time Ticket)
+
+**Ancillary Ticket**:
+An ordinary client/project ticket that already carries an employee's Ticket Time Entries. At entry time the site surfaces the employee's Ancillary Tickets to jog their memory of the day's blocks before they submit. The Time Ticket is not one of these.
+_Avoid_: work ticket, related ticket
+
+**Time Record**:
+One normalized row in the single silver time-tracking table, discriminated by `source` (`website`/`autotask`) and `kind` (`attendance` for a Time Entry, `allocation` for a Ticket Time Entry). The authoritative unified timeline of every time fact per employee; website attendance rows are the source of truth, Autotask allocation rows corroborate.
+_Avoid_: time row, timesheet line (a Time Record is one fact, not a sheet)
+
+**Reconciliation**:
+The per-employee, per-day lineup of attested attendance (Time Entries) against the same period's Autotask Ticket Time Entries, yielding a daily verdict — **Balanced**, **Under-logged**, or **Over-logged** — and any Deviations. A derived read model over Time Records, not a stored source. Attendance is the envelope; logged ticket work fills it; the visible gap is unallocated time.
+_Avoid_: sync, matching (unqualified)
+
+**Deviation**:
+A flagged mismatch surfaced by Reconciliation, of one of six kinds (over-logged, temporal orphan, under-logged gap, attended-nothing-logged, logged-never-attended, overlap). **Hard** deviations (over-logged, overlap) are logical impossibilities that block Attestation until resolved; **Soft** deviations are real-day texture that nudge and may be attested with an explanatory note.
+_Avoid_: error, exception (unqualified), conflict
 
 ### Marketing & events
 
