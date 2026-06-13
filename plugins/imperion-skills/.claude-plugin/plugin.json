@@ -1,7 +1,7 @@
 {
   "name": "imperion-skills",
   "description": "Imperion CRM domain-contract skills (Graph access, MSP sources, vector contract, ...). Canon lives in the ImperionCRM repo per ADR-0060; sibling repos and all agent clones consume it via the imperion marketplace.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Mark Connelly"
   }
