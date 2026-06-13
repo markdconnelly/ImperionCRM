@@ -132,6 +132,25 @@ _Avoid_: baseline (unqualified), template
 **Device Compliance**:
 The per-device policy state reported by Intune (managedDevices). The only honest source for a device-level posture indicator; tenant-level classification is never proxied down to a device.
 
+**DNS Zone (Azure)**:
+A `Microsoft.Network/dnsZones` resource hosting a customer domain in Azure DNS — the manage plane, read via ARM. Distinct from what a domain publicly resolves to; an Azure zone can be overridden by registrar-level NS.
+_Avoid_: domain (unqualified), hosted zone
+
+**DNS Record Snapshot**:
+One captured DNS recordset (type, name, value, ttl) tagged by `plane` — `azure` (authoritative zone config via ARM) or `public` (what the domain resolves to from the outside). Public is the only signal for domains not in Azure DNS.
+_Avoid_: DNS entry, lookup
+
+**DNS Golden State**:
+The human-approved baseline DNS records for a domain. Captures are classified against it as compliant, drift, ungoverned, or missing — the same semantics as the policy Golden State (ADR-0051), scoped per domain.
+_Avoid_: baseline (unqualified), correct DNS
+
+**DNS Governance Verdict**:
+The per-domain manageability ladder: `not-in-azure` (no Azure zone) -> `in-azure-readonly` (zone exists, no write role) -> `managed` (in Azure, write proven, live NS delegate to that zone). Only `managed` means "hosted in Azure and manageable".
+_Avoid_: DNS status, managed (unqualified)
+
+**DNS Posture Pillar**:
+A future Posture Pillar scoring DNS health (drift + governance verdict). Not in Score Model v1; enters v2 behind an ADR-0051 amendment once the feed is populated.
+
 ### Agent automation (ICM, ADR-0061)
 
 **ICM Workspace**:
