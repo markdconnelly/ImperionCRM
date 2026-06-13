@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.8.0...imperion-crm-v0.9.0) (2026-06-13)
+
+
+### Features
+
+* **agents:** adopt ICM as the business-process automation framework ([#273](https://github.com/markdconnelly/ImperionCRM/issues/273)) ([#275](https://github.com/markdconnelly/ImperionCRM/issues/275)) ([d4932bd](https://github.com/markdconnelly/ImperionCRM/commit/d4932bd4e5e8b586784f5eedc5a0e955d35f9d40))
+* **agents:** establish agent-skills canon as in-repo plugin marketplace ([#266](https://github.com/markdconnelly/ImperionCRM/issues/266)) ([#268](https://github.com/markdconnelly/ImperionCRM/issues/268)) ([00dfd58](https://github.com/markdconnelly/ImperionCRM/commit/00dfd584247e41f20beebc48f1cf984e404c0a8b))
+* **agents:** ICM lead-response workspace - marketing/sales v1 definition ([#274](https://github.com/markdconnelly/ImperionCRM/issues/274)) ([#276](https://github.com/markdconnelly/ImperionCRM/issues/276)) ([5a40485](https://github.com/markdconnelly/ImperionCRM/commit/5a40485796ee50e629a4715a162bf9ebcc05e13d))
+* **agents:** migrate three imperion domain skills into the skills plugin ([#267](https://github.com/markdconnelly/ImperionCRM/issues/267)) ([#271](https://github.com/markdconnelly/ImperionCRM/issues/271)) ([5816824](https://github.com/markdconnelly/ImperionCRM/commit/5816824775dfc99390b9dcfa63fa1f278c0303e3))
+* **posture:** entra auth methods bronze + MFA coverage badge ([#258](https://github.com/markdconnelly/ImperionCRM/issues/258)) ([#264](https://github.com/markdconnelly/ImperionCRM/issues/264)) ([806502e](https://github.com/markdconnelly/ImperionCRM/commit/806502e990630738121f3fd9b8df6f4cb9a02312))
+* **security:** defender incidents/alerts bronze + autotask linkage ([#256](https://github.com/markdconnelly/ImperionCRM/issues/256)) ([#262](https://github.com/markdconnelly/ImperionCRM/issues/262)) ([9cbb3d7](https://github.com/markdconnelly/ImperionCRM/commit/9cbb3d74cdc9b3ee4f692aadb883ffcba7d873cc))
+
 ## [0.8.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.7.0...imperion-crm-v0.8.0) (2026-06-12)
 
 
