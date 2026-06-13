@@ -1,4 +1,5 @@
 import { KpiRow } from "@/components/dashboard/kpi-row";
+import { IntelStripRow } from "@/components/dashboard/intel-strip";
 import { PipelineStrip } from "@/components/dashboard/pipeline-strip";
 import { AttentionTable } from "@/components/dashboard/attention-table";
 import { getRepositories } from "@/lib/data";
@@ -10,11 +11,12 @@ import { canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
 // (ADR-0003) happens behind getRepositories(), with no change here.
 export async function DashboardView() {
   const { dashboard } = getRepositories();
-  const [roles, kpis, pipeline, accounts] = await Promise.all([
+  const [roles, kpis, pipeline, accounts, intel] = await Promise.all([
     getSessionRoles(),
     dashboard.getKpis(),
     dashboard.getPipeline(),
     dashboard.getAccountsNeedingAttention(),
+    dashboard.getIntelStrip(),
   ]);
 
   // Support cannot see revenue (ADR-0030): blank money before it reaches the
@@ -34,6 +36,7 @@ export async function DashboardView() {
   return (
     <div className="flex flex-col gap-4">
       <KpiRow kpis={visibleKpis} />
+      <IntelStripRow intel={intel} />
       <PipelineStrip pipeline={visiblePipeline} />
       <AttentionTable accounts={visibleAccounts} />
     </div>

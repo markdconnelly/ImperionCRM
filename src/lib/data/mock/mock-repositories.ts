@@ -50,6 +50,15 @@ export const mockRepositories: Repositories = {
     async getAccountsNeedingAttention() {
       return accounts;
     },
+    async getIntelStrip() {
+      return {
+        newLeads7d: 6,
+        ticketsOpened30d: 93,
+        defenderOpen: 4,
+        mfaPct: 81,
+        socialEngagement30d: 357,
+      };
+    },
   },
   crm: {
     async listAccountSources() {

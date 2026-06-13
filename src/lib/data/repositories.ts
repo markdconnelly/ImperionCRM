@@ -42,6 +42,7 @@ import type {
   EventRegistrationRow,
   EventRow,
   ExternalIdentityRow,
+  IntelStrip,
   InteractionRow,
   KnowledgeHit,
   Kpi,
@@ -202,6 +203,8 @@ export interface DashboardRepository {
   getKpis(): Promise<Kpi[]>;
   getPipeline(): Promise<PipelineColumn[]>;
   getAccountsNeedingAttention(): Promise<Account[]>;
+  /** Cross-domain intelligence strip — one glance over the BI-hub domains (ADR-0062). */
+  getIntelStrip(): Promise<IntelStrip>;
 }
 
 export interface CrmRepository {
