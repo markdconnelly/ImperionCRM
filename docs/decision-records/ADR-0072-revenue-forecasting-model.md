@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema + read model + GUI); backend/pipeline (snapshot job) |
-| **Status** | Proposed (2026-06-12, scope locked with Mark; schema audited — additions required) |
+| **Status** | Accepted (2026-06-12, merged to main; scope locked with Mark; schema audited — additions required) |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0010 (customer data model / dual-axis stages), ADR-0021 (reporting read model + Recharts), ADR-0062 (reporting BI hub), ADR-0067 (CPQ — quote-derived deal value), ADR-0030/0016 (RBAC — revenue visibility), ADR-0042 (division of labor) |
 | **Epic** | #316 · Parent #314 |

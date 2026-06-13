@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema owner); backend (approval-gated submit) |
-| **Status** | Proposed (2026-06-12, scope locked with Mark; data model under review) |
+| **Status** | Accepted (2026-06-12, merged to main; scope locked with Mark; data model under review) |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0019 (proposal lifecycle), ADR-0044 (silver contracts/tickets), ADR-0055 (tiered agent autonomy / approval policy), ADR-0058 (composer sends via approval-gated backend path), ADR-0042 (division of labor), ADR-0017 (raw SQL migrations) |
 | **Epic** | #317 · Parent #314 |

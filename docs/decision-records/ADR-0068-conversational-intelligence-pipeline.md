@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema + 360 surface); backend (orchestration + token custody); local-pipeline (vectorization) |
-| **Status** | Proposed (2026-06-12, scope locked with Mark; source priority + persistence under review) |
+| **Status** | Accepted (2026-06-12, merged to main; scope locked with Mark; source priority + persistence under review) |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0041 (gold knowledge vector store / Voyage contract), ADR-0043 (settled AI stack), ADR-0014 (consent ledger), ADR-0018 (per-client M365 app), ADR-0011 (unified interaction timeline), ADR-0042 (division of labor) |
 | **Epic** | #315 · Parent #314 |

@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (manifest schema + catalog GUI); backend (connect / token custody / first sync); pipeline (poll registration) |
-| **Status** | Proposed (2026-06-12, scope locked with Mark; lowest priority of the parity set) |
+| **Status** | Accepted (2026-06-12, merged to main; scope locked with Mark; lowest priority of the parity set) |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0012 (integration identity map / ingest-poll), ADR-0038 (per-connection poll cadence), ADR-0035 (Apollo enrichment integration), ADR-0034/0043 (front end never holds provider keys), ADR-0036 (company credential configuration), ADR-0042 (division of labor) |
 | **Epic** | #322 · Parent #314 |

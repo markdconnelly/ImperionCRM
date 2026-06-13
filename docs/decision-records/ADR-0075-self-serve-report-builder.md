@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (semantic model, schema, builder GUI, render) |
-| **Status** | Proposed (2026-06-12, scope locked with Mark) |
+| **Status** | Accepted (2026-06-12, merged to main; scope locked with Mark) |
 | **Date** | 2026-06-12 |
 | **Cross-references** | ADR-0062 (reporting BI hub), ADR-0021 (reporting read model + Recharts), ADR-0046 (saved list views), ADR-0030/0016 (RBAC), ADR-0042 (division of labor — direct reads for rendering allowed) |
 | **Epic** | #321 · Parent #314 |
