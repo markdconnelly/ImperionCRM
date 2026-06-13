@@ -543,12 +543,16 @@ export interface PosturePolicyRow {
   goldenApprovedAt: string | null;
 }
 
-/** Per-domain DNS posture rollup (silver `dns_domain`, ADR-0063). One row per managed domain. */
+/**
+ * Per-domain DNS posture rollup (ADR-0063, account-keyed per the 2026-06-12 amendment).
+ * One row per domain in the account's GUI-managed `account_domain` list, LEFT JOINed to its
+ * `dns_domain` rollup — so a tracked-but-not-yet-captured domain still surfaces (verdict null).
+ */
 export interface DnsDomainRollup {
-  tenantId: string;
   domain: string;
-  /** Governance verdict — only 'managed' = hosted in Azure AND write proven AND NS delegated. */
-  verdict: "not-in-azure" | "in-azure-readonly" | "managed";
+  note: string | null;
+  /** Governance verdict — only 'managed' = hosted in Azure AND write proven AND NS delegated. null = tracked, not yet captured. */
+  verdict: "not-in-azure" | "in-azure-readonly" | "managed" | null;
   recordsCompliant: number;
   recordsDrift: number;
   recordsUngoverned: number;

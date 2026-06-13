@@ -1129,12 +1129,25 @@ local #157): `dns_golden` — the human-approved DNS Golden State per domain
 `records_compliant|drift|ungoverned|missing` counts (full-outer-join of captured vs
 golden, ADR-0051 §3 semantics), 0–100 `score`, `last_captured_at`.
 
-Writer: `imperion-localpipeline`. Cloud pipeline, backend, and web read. Surfaced on
-the account Security posture card + `/posture` page, joined via `account_tenant`
-(`security.listDnsDomainsForAccount`, optional-enrichment seam #301). DNS is a
+Writer: `imperion-localpipeline`. Cloud pipeline, backend, and web read. DNS is a
 candidate Posture Pillar for Score Model v2 (deferred behind an ADR-0051 amendment,
 blocked-on-data like MFA #265). **Apply 0080 to prod before the GUI read PR (#309)
 merges** (schema-lag foot-gun #301/#302).
+
+#### Domain source — `account_domain`, migration 0081 (#334, ADR-0063 amendment)
+
+ADR-0063 originally assumed DNS domains were derived from a tenant's verified domains,
+but the system has **no domain source** (no account/company domain column; per-client
+Graph not built). Mark's model: **each account has a GUI-managed list of domains (one or
+several), and DNS posture checks each.** So `account_domain (account_id, domain, note,
+created_at, created_by)` — PK `(account_id, domain)` — is the **single domain source of
+truth**, edited per account in the GUI (web MI holds SELECT/INSERT/DELETE; pipeline +
+backend read). DNS ownership is now **account-keyed**: `account_id` was added (additive,
+nullable) to the four `dns_*` tables; the silver merge (#157) stamps it from
+`account_domain`. `security.listDnsDomainsForAccount` is account_domain-driven — it LEFT
+JOINs `dns_domain` so a tracked-but-not-yet-captured domain still surfaces (null verdict),
+through the optional-enrichment seam (#301). **Apply 0081 to prod before the read PR
+merges.**
 
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
