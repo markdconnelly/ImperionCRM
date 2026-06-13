@@ -17,6 +17,7 @@ vi.mock("server-only", () => ({})); // Next.js marker module — inert under vit
 import { postgresRepositories } from "./postgres-repositories";
 
 const security = postgresRepositories.security;
+const contacts = postgresRepositories.contacts;
 
 describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
   beforeEach(() => {
@@ -217,5 +218,56 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     });
     await expect(security.listSharePointSitesForAccount("acc-1")).resolves.toEqual([]);
     expect(query).not.toHaveBeenCalled();
+  });
+});
+
+describe("Optional enrichment degrades on schema lag, fails closed otherwise (#301)", () => {
+  // A merged read of a new bronze table can outpace its prod migration (0078/0079). With a
+  // DATABASE CONFIGURED, that read must degrade to an empty section, not blank the page —
+  // while a genuine outage still fails closed through the guarded fallback.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPool.mockReturnValue({ query }); // database configured
+  });
+
+  const schemaLag = Object.assign(new Error('relation "m365_group_members" does not exist'), {
+    code: "42P01", // undefined_table
+  });
+  const undefinedColumn = Object.assign(new Error('column "x" does not exist'), { code: "42703" });
+  const outage = Object.assign(new Error("connection terminated unexpectedly"), { code: "08006" });
+
+  it("returns empty (not a thrown error) when an optional table is not yet migrated", async () => {
+    query.mockRejectedValue(schemaLag);
+    await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listPosturePoliciesForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listSecureScoreControlsForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listCredentialExposuresForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listSharePointSitesForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.countDefenderIncidentsForAccount("acc-1")).resolves.toEqual({
+      open: 0,
+      total: 0,
+    });
+    await expect(security.countMfaRegistrationForAccount("acc-1")).resolves.toEqual({
+      registered: 0,
+      total: 0,
+    });
+    await expect(contacts.listDirectoryGroups("c-1")).resolves.toEqual([]);
+  });
+
+  it("treats an undefined column the same as an undefined table", async () => {
+    query.mockRejectedValue(undefinedColumn);
+    await expect(contacts.listDirectoryGroups("c-1")).resolves.toEqual([]);
+    await expect(security.countMfaRegistrationForAccount("acc-1")).resolves.toEqual({
+      registered: 0,
+      total: 0,
+    });
+  });
+
+  it("still fails closed (throws DataUnavailableError) on a real outage with a DB configured", async () => {
+    query.mockRejectedValue(outage);
+    await expect(security.listSharePointSitesForAccount("acc-1")).rejects.toThrow(
+      /Live data is unavailable/,
+    );
+    await expect(contacts.listDirectoryGroups("c-1")).rejects.toThrow(/Live data is unavailable/);
   });
 });

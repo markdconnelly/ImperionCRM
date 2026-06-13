@@ -10,7 +10,7 @@
 import "server-only";
 import type { Pool } from "pg";
 import { getPool } from "@/lib/db/client";
-import { mockRepositories } from "@/lib/data/postgres/fallback";
+import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
@@ -3772,7 +3772,10 @@ export const postgresRepositories: Repositories = {
           membershipRuleProcessingState: r.membership_rule_processing_state,
           collectedAt: r.collected_at,
         }));
-      } catch {
+      } catch (err) {
+        // Optional enrichment (#301): a not-yet-migrated bronze table is schema lag, not
+        // an outage — degrade to an empty section instead of blanking the contact page.
+        if (isSchemaLagError(err)) return [];
         return mockRepositories.contacts.listDirectoryGroups(contactId);
       }
     },
@@ -5181,7 +5184,10 @@ export const postgresRepositories: Repositories = {
           exposuresOpen: r.exposures_open ?? 0,
           refreshedAt: r.refreshed_at,
         }));
-      } catch {
+      } catch (err) {
+        // Optional posture enrichment (#301): not-yet-migrated table → empty card, not a
+        // page failure. Real outages still fail closed via the guarded fallback.
+        if (isSchemaLagError(err)) return [];
         return mockRepositories.security.listTenantPostureForAccount(accountId);
       }
     },
@@ -5216,7 +5222,8 @@ export const postgresRepositories: Repositories = {
           observedModifiedAt: r.observed_modified_at,
           goldenApprovedAt: r.golden_approved_at,
         }));
-      } catch {
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // optional enrichment (#301)
         return mockRepositories.security.listPosturePoliciesForAccount(accountId);
       }
     },
@@ -5251,7 +5258,8 @@ export const postgresRepositories: Repositories = {
           userImpact: r.user_impact,
           tier: r.tier,
         }));
-      } catch {
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // optional enrichment (#301)
         return mockRepositories.security.listSecureScoreControlsForAccount(accountId);
       }
     },
@@ -5285,7 +5293,8 @@ export const postgresRepositories: Repositories = {
           status: r.status,
           lastSeenAt: r.last_seen_at,
         }));
-      } catch {
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // optional enrichment (#301)
         return mockRepositories.security.listCredentialExposuresForAccount(accountId);
       }
     },
@@ -5308,7 +5317,9 @@ export const postgresRepositories: Repositories = {
           [accountId],
         );
         return { open: Number(rows[0]?.open ?? 0), total: Number(rows[0]?.total ?? 0) };
-      } catch {
+      } catch (err) {
+        // optional badge (#301): not-yet-migrated table → "no coverage", not a page failure
+        if (isSchemaLagError(err)) return { open: 0, total: 0 };
         return mockRepositories.security.countDefenderIncidentsForAccount(accountId);
       }
     },
@@ -5333,7 +5344,9 @@ export const postgresRepositories: Repositories = {
           registered: Number(rows[0]?.registered ?? 0),
           total: Number(rows[0]?.total ?? 0),
         };
-      } catch {
+      } catch (err) {
+        // optional badge (#301): not-yet-migrated table → "no coverage", not a page failure
+        if (isSchemaLagError(err)) return { registered: 0, total: 0 };
         return mockRepositories.security.countMfaRegistrationForAccount(accountId);
       }
     },
@@ -5382,7 +5395,8 @@ export const postgresRepositories: Repositories = {
           storageQuotaBytes: r.storage_quota_bytes,
           collectedAt: r.collected_at,
         }));
-      } catch {
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // optional enrichment (#301)
         return mockRepositories.security.listSharePointSitesForAccount(accountId);
       }
     },
