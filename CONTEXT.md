@@ -131,3 +131,25 @@ _Avoid_: baseline (unqualified), template
 
 **Device Compliance**:
 The per-device policy state reported by Intune (managedDevices). The only honest source for a device-level posture indicator; tenant-level classification is never proxied down to a device.
+
+### Agent automation (ICM, ADR-0061)
+
+**ICM Workspace**:
+One business workflow defined as files under `icm/workspaces/<slug>/` — Layer-1 routing CONTEXT.md, numbered stage contracts, workflow-local runtime skills. The factory; runs are platform records, never files.
+_Avoid_: workflow (unqualified — that's the in-app Workflows module), pipeline (that's data ingestion)
+
+**Stage Contract**:
+A stage's CONTEXT.md: Job, Inputs table, Process, Outputs, Audit, optional Checkpoint. The agent loads only what the Inputs table lists.
+_Avoid_: prompt, stage config
+
+**Checkpoint**:
+A stage boundary where the run parks for human approval/edit in the approval queue. In `auto` mode a checkpoint may self-approve only what its contract explicitly allows.
+_Avoid_: review step, gate (unqualified)
+
+**Autonomy Dial**:
+The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. Tiered mode is a future ADR.
+_Avoid_: autopilot, trust level
+
+**Runtime Skill**:
+Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
+_Avoid_: skill (unqualified where ambiguous), agent prompt
