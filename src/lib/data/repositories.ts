@@ -47,6 +47,8 @@ import type {
   KnowledgeHit,
   Kpi,
   LeadCaptureEventRow,
+  DeliveryTemplateRow,
+  DeliveryTemplateDetail,
   LeadHookRow,
   MarketingSocialReport,
   OnboardingProject,
@@ -200,6 +202,36 @@ export interface Option {
   name: string;
 }
 
+/** A task within a delivery-template-creation payload (ADR-0081). */
+export interface DeliveryTemplateTaskInput {
+  title: string;
+  offsetDays: number;
+  durationDays: number;
+  dispatchesTicket: boolean;
+  ticketQueueId: number | null;
+  ticketTitle: string | null;
+  ticketLeadDays: number;
+}
+
+/** A phase within a delivery-template-creation payload. */
+export interface DeliveryTemplatePhaseInput {
+  name: string;
+  offsetDays: number;
+  durationDays: number;
+  tasks: DeliveryTemplateTaskInput[];
+}
+
+/** Fields for creating a delivery template + its full phase/task tree (ADR-0081 §1). */
+export interface DeliveryTemplateInput {
+  key: string; // stable machine key, slugified from the name
+  name: string;
+  description: string | null;
+  version: number;
+  projectTypeId: string | null; // optional binding; null = any type
+  isActive: boolean;
+  phases: DeliveryTemplatePhaseInput[];
+}
+
 export interface DashboardRepository {
   getKpis(): Promise<Kpi[]>;
   getPipeline(): Promise<PipelineColumn[]>;
@@ -274,6 +306,20 @@ export interface CrmRepository {
   /** Set a project's type (kanban group-by=type drop; idempotent). */
   setProjectType(id: string, projectTypeId: string): Promise<void>;
   deleteProject(id: string): Promise<void>;
+
+  // Delivery templates — reusable provisioning playbooks (ADR-0081, migration 0084)
+  /** Authoring/picker list. `activeOnly` hides retired templates; `projectTypeId`
+   *  filters to templates bound to that type (or unbound). */
+  listDeliveryTemplates(opts?: {
+    activeOnly?: boolean;
+    projectTypeId?: string;
+  }): Promise<DeliveryTemplateRow[]>;
+  /** The full template tree (phases + tasks), or null if not found. */
+  getDeliveryTemplate(id: string): Promise<DeliveryTemplateDetail | null>;
+  /** Create a template + its whole phase/task tree in one transaction; returns the id. */
+  createDeliveryTemplate(input: DeliveryTemplateInput): Promise<string>;
+  /** Delete a template (CASCADE drops its phases/tasks); provisioning refs SET NULL. */
+  deleteDeliveryTemplate(id: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;

@@ -131,6 +131,61 @@ export interface ProjectTypeRow {
   projectCount: number; // projects of this type (delete is RESTRICTed while > 0)
 }
 
+/**
+ * A delivery template — a reusable, data-driven provisioning playbook (ADR-0081,
+ * migration 0084). Generalizes the onboarding playbook so the board can
+ * instantiate ANY won opportunity into a native project + tasks. This is the
+ * list/picker summary; the full tree is `DeliveryTemplateDetail`.
+ */
+export interface DeliveryTemplateRow {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  version: number;
+  projectTypeId: string | null; // optional binding (picker filter); null = any type
+  projectTypeName: string | null; // resolved display name, or null
+  isActive: boolean;
+  phaseCount: number;
+  taskCount: number;
+}
+
+/** A task within a delivery-template phase, incl. its optional JIT dispatch-ticket spec. */
+export interface DeliveryTemplateTask {
+  id: string;
+  ordinal: number;
+  title: string;
+  offsetDays: number;
+  durationDays: number;
+  dispatchesTicket: boolean; // fires an Autotask project-queue ticket (→ task_ticket_fire)
+  ticketQueueId: number | null; // Autotask queue (Project Mgmt = 29683483; env config)
+  ticketTitle: string | null; // defaults to the task title when null
+  ticketLeadDays: number; // JIT window: fire this many days before task start
+}
+
+/** A phase of a delivery template — becomes a project_milestone at instantiation. */
+export interface DeliveryTemplatePhase {
+  id: string;
+  ordinal: number;
+  name: string;
+  offsetDays: number;
+  durationDays: number;
+  tasks: DeliveryTemplateTask[];
+}
+
+/** The full delivery-template tree (template → phases → tasks). */
+export interface DeliveryTemplateDetail {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  version: number;
+  projectTypeId: string | null;
+  projectTypeName: string | null;
+  isActive: boolean;
+  phases: DeliveryTemplatePhase[];
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 

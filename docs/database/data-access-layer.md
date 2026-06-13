@@ -37,6 +37,12 @@ Repositories expose **gold** (AI/UI-ready) reads. Bronze/silver live in Postgres
 gold projections are what the UI and agents consume. Row scoping to the signed-in
 user's Entra permissions will be enforced inside the implementation.
 
+Tree-shaped writes (e.g. `createDeliveryTemplate`, ADR-0081 — template → phases →
+tasks) run in a single `pool.connect()` transaction (`BEGIN`/`COMMIT`/`ROLLBACK`),
+mirroring `applyOnboardingTemplate`; the `getDeliveryTemplate` read assembles the
+tree client-side from three ordered queries. See `delivery-templates.test.ts` for
+the SQL-shape + mapping contract.
+
 ## Swapping to Postgres (ADR-0003)
 1. Add a `postgres/` implementation of the same interfaces (querying gold).
 2. In `index.ts`, return it when `process.env.DATABASE_URL` is set.
