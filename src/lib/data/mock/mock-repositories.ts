@@ -169,6 +169,9 @@ export const mockRepositories: Repositories = {
     async updateProject() {
       throw new Error(NO_DB);
     },
+    async setProjectStatus() {
+      throw new Error(NO_DB);
+    },
     async deleteProject() {
       throw new Error(NO_DB);
     },

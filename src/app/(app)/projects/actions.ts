@@ -57,6 +57,24 @@ export async function updateProjectAction(formData: FormData) {
   redirect(returnTarget(formData));
 }
 
+/** Project status enum values — the kanban board columns (#441, ADR-0066 C1). */
+const BOARD_STATUSES = ["not_started", "in_progress", "blocked", "complete"] as const;
+
+/**
+ * Persist a project's status from a kanban drop (#441). Same
+ * `delivery:write`-guarded path as the edit form, status-allowlisted, no
+ * redirect (the board refreshes in place). Mirrors `moveTaskAction`.
+ */
+export async function moveProjectAction(id: string, status: string) {
+  await requireCapability("delivery:write");
+  const projectId = id.trim();
+  if (!projectId) return;
+  if (!(BOARD_STATUSES as readonly string[]).includes(status)) return;
+  const { crm } = getRepositories();
+  await crm.setProjectStatus(projectId, status);
+  revalidateProjectSurfaces();
+}
+
 export async function deleteProjectAction(formData: FormData) {
   await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");

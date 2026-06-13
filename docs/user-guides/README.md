@@ -22,6 +22,8 @@ right (scoped to your Entra permissions).
   tasks by due date and deal; create and complete them in place.
 - [Task board — the kanban view](task-board.md): drag tasks between
   Open / In progress / Done; the drop saves the status.
+- [Project board — the kanban view](project-board.md): drag projects across
+  Not started / In progress / Blocked / Complete; the drop saves the status.
 
 ## Walkthroughs to write
 

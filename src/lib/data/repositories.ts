@@ -267,6 +267,8 @@ export interface CrmRepository {
   getProject(id: string): Promise<ProjectEditable | null>;
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;
+  /** Set a project's status (kanban board drop; idempotent). */
+  setProjectStatus(id: string, status: string): Promise<void>;
   deleteProject(id: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)

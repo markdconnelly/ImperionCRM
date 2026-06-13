@@ -35,8 +35,9 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Projects board, group-by, swimlanes, WIP limits, richer cards** (assignee
-  avatars, tags, subtask progress, comment/attachment counts) — #439.
+- **Group-by, swimlanes, WIP limits, richer cards** (assignee avatars, tags,
+  subtask progress, comment/attachment counts) — #439. (The projects board
+  shipped in #441 — see [Project board](project-board.md).)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.
 
 For sales tasks specifically, see [Sales Activity](sales-activity.md).
