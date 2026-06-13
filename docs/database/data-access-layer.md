@@ -41,3 +41,19 @@ user's Entra permissions will be enforced inside the implementation.
 1. Add a `postgres/` implementation of the same interfaces (querying gold).
 2. In `index.ts`, return it when `process.env.DATABASE_URL` is set.
 3. No change to any caller or component.
+
+## Failure behaviour — fail closed, with one exception (`postgres/fallback.ts`)
+With **no database configured**, every read returns mock data (dev/demo). With a
+**database configured**, a failed read does NOT silently return demo data — the guarded
+fallback seam (#193) logs and throws `DataUnavailableError`, which the route error
+boundary renders as "Live data is unavailable" rather than fake numbers.
+
+**The one exception is schema lag (#301).** A merged read of a new *optional* bronze
+table can outpace its prod migration (this bit SharePoint 0078 and directory-groups
+0079). That surfaces as Postgres `42P01` (undefined_table) / `42703` (undefined_column) —
+deterministic "not migrated yet", not an outage. So the **optional enrichment reads**
+(account-scoped posture / Defender / MFA / SharePoint / credential-exposure reads and the
+contact directory-groups read) treat those two codes as **empty** (`isSchemaLagError`),
+degrading one section to blank instead of failing the whole page. Every other error —
+connection loss, timeout, syntax — still fails closed. **Core reads** (account, contact,
+timeline, bronze-source drill) are never degraded: a failure there is a real problem.

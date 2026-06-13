@@ -25,6 +25,30 @@ import { mockRepositories as realMockRepositories } from "@/lib/data/mock/mock-r
 import { isDbConfigured } from "@/lib/db/client";
 import type { Repositories } from "@/lib/data/repositories";
 
+/**
+ * Postgres SQLSTATE codes that mean "the schema isn't migrated yet", NOT "the database is
+ * down". A merged read of a new optional bronze table can outpace its prod migration
+ * (happened with 0078 SharePoint and 0079 directory groups, #301); the query then fails
+ * with `undefined_table`/`undefined_column`. That is deterministic schema lag, not an
+ * outage — so OPTIONAL enrichment reads degrade to empty on these codes (a blank section)
+ * rather than blanking the whole page through the fail-closed seam below. Connection/
+ * timeout errors carry different codes and still fail closed.
+ */
+const SCHEMA_LAG_CODES = new Set([
+  "42P01", // undefined_table (or view)
+  "42703", // undefined_column
+]);
+
+/** True when an error is a not-yet-migrated table/column, not a live-database outage (#301). */
+export function isSchemaLagError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    SCHEMA_LAG_CODES.has(String((err as { code?: unknown }).code))
+  );
+}
+
 /** A repository read/write failed against a CONFIGURED database — never mock-masked. */
 export class DataUnavailableError extends Error {
   constructor(public readonly method: string) {
