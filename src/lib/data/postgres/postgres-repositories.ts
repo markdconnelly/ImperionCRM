@@ -1239,6 +1239,24 @@ export const postgresRepositories: Repositories = {
       );
     },
 
+    async setProjectStatus(id: string, status: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setProjectStatus(id, status);
+      // Status-only mutation for the kanban board drop. Keeps the same
+      // started_at/completed_at stamping as updateProject so a drag transition
+      // is indistinguishable from an edit-form transition.
+      await pool.query(
+        `UPDATE project
+         SET status = $2::project_status,
+             started_at = CASE WHEN $2 = 'not_started' THEN NULL
+                               ELSE coalesce(started_at, now()) END,
+             completed_at = CASE WHEN $2 = 'complete'
+                                 THEN coalesce(completed_at, now()) ELSE NULL END
+         WHERE id = $1`,
+        [id, status],
+      );
+    },
+
     async deleteProject(id: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteProject(id);

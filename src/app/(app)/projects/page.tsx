@@ -1,23 +1,40 @@
 import Link from "next/link";
+import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProjectsTable } from "@/components/projects/projects-table";
+import { ProjectsBoard } from "@/components/projects/projects-board";
 import { ProjectTypeManager } from "@/components/projects/project-type-manager";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageProjects } from "@/lib/auth/roles";
 import {
   deleteProjectAction,
+  moveProjectAction,
   createProjectTypeAction,
   deleteProjectTypeAction,
 } from "./actions";
+
+const VIEWS = [
+  { key: "list", label: "List" },
+  { key: "board", label: "Board" },
+] as const;
 
 /**
  * The project board (ADR-0052, #95): the general surface where projects of
  * every type are created and tracked. Onboarding projects appear here like any
  * other type — their dedicated Onboarding page is the easy-mode surface, not
  * their home. Not to be confused with the AI Board of Directors (/board).
+ *
+ * List view groups projects under their type with the type manager; Board view
+ * (#441, ADR-0066 C1) is a single kanban across all types by status.
  */
-export default async function ProjectsPage() {
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const { view } = await searchParams;
+  const activeView = view === "board" ? "board" : "list";
   const { crm } = getRepositories();
   const [roles, projects, types] = await Promise.all([
     getSessionRoles(),
@@ -43,7 +60,27 @@ export default async function ProjectsPage() {
         )}
       </PageHeader>
 
-      {types.map((t) => {
+      <div className="inline-flex w-fit rounded-lg border border-border bg-panel p-1">
+        {VIEWS.map((v) => (
+          <Link
+            key={v.key}
+            href={v.key === "list" ? "/projects" : "/projects?view=board"}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-sm transition-colors",
+              activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
+            )}
+          >
+            {v.label}
+          </Link>
+        ))}
+      </div>
+
+      {activeView === "board" && (
+        <ProjectsBoard projects={projects} moveAction={moveProjectAction} />
+      )}
+
+      {activeView === "list" &&
+        types.map((t) => {
         const ofType = projects.filter((p) => p.typeKey === t.key);
         const counts = ["in_progress", "blocked", "complete"]
           .map((s) => {
@@ -89,10 +126,10 @@ export default async function ProjectsPage() {
               canWrite={canWrite}
             />
           </section>
-        );
-      })}
+          );
+        })}
 
-      {canWrite && (
+      {activeView === "list" && canWrite && (
         <ProjectTypeManager
           types={types}
           createAction={createProjectTypeAction}
