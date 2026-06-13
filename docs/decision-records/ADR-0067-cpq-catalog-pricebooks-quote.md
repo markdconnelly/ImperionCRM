@@ -3,10 +3,23 @@
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema owner); backend (approval-gated submit) |
-| **Status** | Accepted (2026-06-12, merged to main; scope locked with Mark; data model under review) |
-| **Date** | 2026-06-12 |
-| **Cross-references** | ADR-0019 (proposal lifecycle), ADR-0044 (silver contracts/tickets), ADR-0055 (tiered agent autonomy / approval policy), ADR-0058 (composer sends via approval-gated backend path), ADR-0042 (division of labor), ADR-0017 (raw SQL migrations) |
-| **Epic** | #317 · Parent #314 |
+| **Status** | **Superseded in part by ADR-0080 (2026-06-13)** — native quote engine gutted; KQM is the read-only quote SoR. Originally Accepted 2026-06-12. |
+| **Date** | 2026-06-12 (amended 2026-06-13) |
+| **Cross-references** | ADR-0080 (sale→delivery orchestration — supersedes the quote engine here), ADR-0019 (proposal lifecycle), ADR-0044 (silver contracts/tickets), ADR-0055 (tiered agent autonomy / approval policy), ADR-0058 (composer sends via approval-gated backend path), ADR-0042 (division of labor), ADR-0017 (raw SQL migrations), #428 (opportunity merged-silver model) |
+| **Epic** | #317 · Parent #314 · superseded by #425 |
+
+## ⚠️ Amendment 2026-06-13 — native CPQ is gutted (read this first)
+
+The 2026-06-13 grilling (epic #425) established that **Kaseya Quote Manager (KQM) is the system of record for quotes** and Mark's real bottleneck is **sale → delivery, not quoting**. Spikes #427 (KQM read shape) and #426 (Autotask write) verified the APIs. Consequently the **Decision below is superseded** as follows:
+
+- **Gutted (not built):** the native `product` catalog, `price_book` / `price_book_entry`, the `quote` / `quote_line` engine, the discount-approval gate, the catalog/price-book admin GUI, and the quote-builder GUI (issues #385-390, recast/closed).
+- **Why:** KQM is read-only and already owns quoting; a native quote engine would be a second, diverging source of truth. Imperion ingests KQM as a **bronze source of the `opportunity`** (#428) instead of modelling its own quote.
+- **What survives, relocated:** the deal-value math — **MRR / one-off / TCV** — is still wanted, but it is **computed on the silver `opportunity`** from KQM `quoteline` (recurring vs one-off split), not on a native `quote`. Forecasting (#316) reads it there.
+- **Replaced by:** **ADR-0080** (sale→delivery orchestration: KQM won-quote → DocuSign → Autotask project/ticket provisioning). The proposal lifecycle (ADR-0019) and DocuSign e-sign (#318/ADR-0071) survive unchanged.
+
+The original text is retained below for history; treat it as **context, not the current plan**.
+
+---
 
 ## Problem
 
