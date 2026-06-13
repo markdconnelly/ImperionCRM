@@ -92,6 +92,7 @@ import type {
   EventRow,
   ExternalIdentityRow,
   Health,
+  IntelStrip,
   InteractionRow,
   KnowledgeHit,
   Kpi,
@@ -353,6 +354,69 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.dashboard.getAccountsNeedingAttention();
+      }
+    },
+
+    async getIntelStrip(): Promise<IntelStrip> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.dashboard.getIntelStrip();
+      try {
+        // One glance across the BI-hub domains (ADR-0062 §dashboard). Null =
+        // source has no rows at all ("no coverage yet"), never a fake zero.
+        const [leads, tickets, defender, mfa, social] = await Promise.all([
+          pool.query<{ c: string }>(
+            `SELECT count(*) AS c FROM lead_capture_event
+             WHERE received_at >= now() - interval '7 days'`,
+          ),
+          pool.query<{ c: string }>(
+            `SELECT count(*) AS c FROM ticket
+             WHERE opened_at >= now() - interval '30 days'`,
+          ),
+          pool.query<{ open: string; total: string }>(
+            `SELECT count(*) FILTER (WHERE lower(COALESCE(status, ''))
+                      NOT IN ('resolved', 'redirected')) AS open,
+                    count(*) AS total
+             FROM defender_incidents`,
+          ),
+          pool.query<{ registered: string; total: string }>(
+            `SELECT count(*) FILTER (WHERE lower(COALESCE(is_mfa_registered, '')) = 'true')
+                      AS registered,
+                    count(*) AS total
+             FROM entra_auth_methods`,
+          ),
+          // Engagement from the schema-stable bronze counters, not insight
+          // metric names (local #135 is still renaming those).
+          pool.query<{ fb: string | null; ig: string | null; posts: string }>(
+            `SELECT
+               (SELECT sum(coalesce(nullif(reaction_count, '')::numeric, 0)
+                         + coalesce(nullif(comment_count, '')::numeric, 0)
+                         + coalesce(nullif(share_count, '')::numeric, 0))
+                  FROM facebook_posts
+                 WHERE nullif(created_time, '')::timestamptz >= now() - interval '30 days') AS fb,
+               (SELECT sum(coalesce(nullif(like_count, '')::numeric, 0)
+                         + coalesce(nullif(comments_count, '')::numeric, 0))
+                  FROM instagram_media
+                 WHERE nullif(created_time, '')::timestamptz >= now() - interval '30 days') AS ig,
+               (SELECT count(*) FROM facebook_posts) + (SELECT count(*) FROM instagram_media)
+                 AS posts`,
+          ),
+        ]);
+        const d = defender.rows[0];
+        const m = mfa.rows[0];
+        const s = social.rows[0];
+        return {
+          newLeads7d: Number(leads.rows[0].c),
+          ticketsOpened30d: Number(tickets.rows[0].c),
+          defenderOpen: Number(d.total) > 0 ? Number(d.open) : null,
+          mfaPct:
+            Number(m.total) > 0
+              ? Math.round((Number(m.registered) / Number(m.total)) * 100)
+              : null,
+          socialEngagement30d:
+            Number(s.posts) > 0 ? Number(s.fb ?? 0) + Number(s.ig ?? 0) : null,
+        };
+      } catch {
+        return mockRepositories.dashboard.getIntelStrip();
       }
     },
   },

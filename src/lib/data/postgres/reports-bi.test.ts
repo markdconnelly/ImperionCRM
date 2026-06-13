@@ -15,6 +15,7 @@ vi.mock("server-only", () => ({})); // Next.js marker module — inert under vit
 import { postgresRepositories } from "./postgres-repositories";
 
 const reports = postgresRepositories.reports;
+const dashboard = postgresRepositories.dashboard;
 
 describe("Marketing & Social BI section (#289 — ADR-0062)", () => {
   beforeEach(() => {
@@ -230,6 +231,58 @@ describe("Security Fleet BI section (#291 — ADR-0062)", () => {
     getPool.mockReturnValue(null);
     const r = await reports.securityFleet();
     expect(r.tenants).toBeGreaterThan(0);
+    expect(query).not.toHaveBeenCalled();
+  });
+});
+
+describe("Dashboard intelligence strip (#292 — ADR-0062)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPool.mockReturnValue({ query });
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM lead_capture_event")) return { rows: [{ c: "6" }] };
+      if (sql.includes("FROM ticket")) return { rows: [{ c: "93" }] };
+      if (sql.includes("FROM defender_incidents"))
+        return { rows: [{ open: "4", total: "7" }] };
+      if (sql.includes("FROM entra_auth_methods"))
+        return { rows: [{ registered: "31", total: "40" }] };
+      if (sql.includes("FROM facebook_posts"))
+        return { rows: [{ fb: "151", ig: "217", posts: "76" }] };
+      return { rows: [] };
+    });
+  });
+
+  it("maps the five cross-domain figures", async () => {
+    const r = await dashboard.getIntelStrip();
+    expect(r).toEqual({
+      newLeads7d: 6,
+      ticketsOpened30d: 93,
+      defenderOpen: 4,
+      mfaPct: 78, // 31/40
+      socialEngagement30d: 368, // 151 + 217
+    });
+  });
+
+  it("reports null (no coverage), not zero, when a source has no rows at all", async () => {
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM defender_incidents"))
+        return { rows: [{ open: "0", total: "0" }] };
+      if (sql.includes("FROM entra_auth_methods"))
+        return { rows: [{ registered: "0", total: "0" }] };
+      if (sql.includes("FROM facebook_posts"))
+        return { rows: [{ fb: null, ig: null, posts: "0" }] };
+      return { rows: [{ c: "0" }] };
+    });
+    const r = await dashboard.getIntelStrip();
+    expect(r.defenderOpen).toBeNull();
+    expect(r.mfaPct).toBeNull();
+    expect(r.socialEngagement30d).toBeNull();
+  });
+
+  it("falls back to the mock when no pool is configured", async () => {
+    getPool.mockReturnValue(null);
+    const r = await dashboard.getIntelStrip();
+    expect(r.newLeads7d).toBeGreaterThanOrEqual(0);
     expect(query).not.toHaveBeenCalled();
   });
 });

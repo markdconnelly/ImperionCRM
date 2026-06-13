@@ -316,6 +316,22 @@ export interface SecurityFleetReport {
   exposuresOpen: number; // credential_exposure not resolved
 }
 
+// ── Dashboard cross-domain intelligence strip (ADR-0062, #292) ───────────────
+
+/**
+ * One glance across the BI-hub domains, each card deep-linking to its
+ * /reporting anchor (or /security). Nulls mean "no coverage yet", never zero.
+ */
+export interface IntelStrip {
+  newLeads7d: number;
+  ticketsOpened30d: number;
+  defenderOpen: number | null; // null until Defender rows exist at all
+  mfaPct: number | null; // null until auth-method rows exist
+  /** Organic engagement count 30d (Meta bronze counters — schema-stable, unlike
+   * insight metric names which local #135 is still tuning). Null until posts exist. */
+  socialEngagement30d: number | null;
+}
+
 // ── Engagements: editable questionnaires, discovery, SBR, artifacts, tickets ──
 // (ADR-0023). All engagement records are account-scoped; the contact is only the
 // employee who performed a given instance.
