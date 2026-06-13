@@ -60,6 +60,7 @@ export default async function ReportingPage() {
     sbrAverages,
     marketing,
     serviceDesk,
+    fleet,
   ] = await Promise.all([
     getSessionRoles(),
     reports.getSummary(),
@@ -71,6 +72,7 @@ export default async function ReportingPage() {
     reports.sbrDimensionAverages(),
     reports.marketingSocial(),
     reports.serviceDesk(),
+    reports.securityFleet(),
   ]);
 
   // Support cannot see revenue (ADR-0030): blank money figures and zero the
@@ -293,6 +295,69 @@ export default async function ReportingPage() {
           <p className="py-10 text-center text-sm text-dim">No tickets opened in the last 8 weeks.</p>
         )}
       </ChartCard>
+
+      <SectionHeading
+        id="security"
+        title="Security Fleet"
+        hint="all mapped tenants — per-account detail lives on Security & posture pages"
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label="Fleet secure score"
+          value={fleet.secureScorePct != null ? `${fleet.secureScorePct}%` : "—"}
+          hint={
+            fleet.tenants > 0
+              ? `across ${fleet.tenants} refreshed tenant${fleet.tenants === 1 ? "" : "s"}`
+              : "no coverage yet — collectors register at server bringup"
+          }
+        />
+        <StatTile
+          label="MFA registered"
+          value={fleet.mfa.total > 0 ? `${Math.round((fleet.mfa.registered / fleet.mfa.total) * 100)}%` : "—"}
+          hint={fleet.mfa.total > 0 ? `${fleet.mfa.registered} of ${fleet.mfa.total} users` : "no coverage yet"}
+        />
+        <StatTile
+          label="Intune compliant"
+          value={
+            fleet.intune.total > 0
+              ? `${Math.round((fleet.intune.compliant / fleet.intune.total) * 100)}%`
+              : "—"
+          }
+          hint={
+            fleet.intune.total > 0
+              ? `${fleet.intune.compliant} of ${fleet.intune.total} devices`
+              : "no coverage yet"
+          }
+        />
+        <StatTile
+          label="Open credential exposures"
+          value={fmtCount.format(fleet.exposuresOpen)}
+          hint="Dark Web ID, unresolved"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <ChartCard
+          title="Policy posture mix"
+          subtitle="Fleet totals across policy families (ADR-0051 classifications)"
+        >
+          {fleet.policyMix.some((d) => d.count > 0) ? (
+            <StatusBarChart data={fleet.policyMix} color="#E0A33E" />
+          ) : (
+            <p className="py-10 text-center text-sm text-dim">
+              No classified policies yet — posture refresh pending.
+            </p>
+          )}
+        </ChartCard>
+        <ChartCard title="Open Defender incidents" subtitle="By severity, resolved/redirected excluded">
+          {fleet.defenderOpenBySeverity.length > 0 ? (
+            <StatusBarChart data={fleet.defenderOpenBySeverity} color="#E2615A" />
+          ) : (
+            <p className="py-10 text-center text-sm text-dim">No open Defender incidents.</p>
+          )}
+        </ChartCard>
+      </div>
     </div>
   );
 }

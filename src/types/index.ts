@@ -298,6 +298,24 @@ export interface ServiceDeskReport {
   defenderLinked: number; // defender_incident_ticket_link rows (ADR-0059)
 }
 
+// ── Reporting BI hub — Security Fleet section (ADR-0062, #291) ───────────────
+
+/**
+ * Fleet-wide security rollup across ALL mapped tenants (per-account detail
+ * stays on /security and the posture pages, ADR-0051). Sources are empty until
+ * server bringup registers the collectors (local #102) — nulls mean "no
+ * coverage yet", never zero.
+ */
+export interface SecurityFleetReport {
+  tenants: number; // tenant_posture rows (refreshed tenants)
+  secureScorePct: number | null; // sum(current)/sum(max) × 100, null = no coverage
+  policyMix: CountDatum[]; // fleet totals: compliant|drift|ungoverned|missing
+  mfa: { registered: number; total: number }; // entra_auth_methods fleet-wide
+  defenderOpenBySeverity: CountDatum[]; // open = status not resolved/redirected (#256)
+  intune: { compliant: number; total: number }; // intune_managed_devices
+  exposuresOpen: number; // credential_exposure not resolved
+}
+
 // ── Engagements: editable questionnaires, discovery, SBR, artifacts, tickets ──
 // (ADR-0023). All engagement records are account-scoped; the contact is only the
 // employee who performed a given instance.
