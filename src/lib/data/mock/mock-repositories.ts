@@ -142,6 +142,9 @@ export const mockRepositories: Repositories = {
     async setTaskStatus() {
       throw new Error(NO_DB);
     },
+    async setTaskCategory() {
+      throw new Error(NO_DB);
+    },
     async listProposals() {
       return [];
     },
@@ -170,6 +173,9 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     async setProjectStatus() {
+      throw new Error(NO_DB);
+    },
+    async setProjectType() {
       throw new Error(NO_DB);
     },
     async deleteProject() {

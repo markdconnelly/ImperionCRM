@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProjectsTable } from "@/components/projects/projects-table";
-import { ProjectsBoard } from "@/components/projects/projects-board";
+import { ProjectsBoard, type ProjectGroupBy } from "@/components/projects/projects-board";
 import { ProjectTypeManager } from "@/components/projects/project-type-manager";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -10,6 +10,7 @@ import { canManageProjects } from "@/lib/auth/roles";
 import {
   deleteProjectAction,
   moveProjectAction,
+  moveProjectTypeAction,
   createProjectTypeAction,
   deleteProjectTypeAction,
 } from "./actions";
@@ -18,6 +19,20 @@ const VIEWS = [
   { key: "list", label: "List" },
   { key: "board", label: "Board" },
 ] as const;
+
+const GROUPS = [
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+] as const;
+
+/** Build a board URL preserving view + group. */
+function boardHref(view: string, group: string) {
+  const qs = new URLSearchParams();
+  if (view !== "list") qs.set("view", view);
+  if (group !== "status") qs.set("group", group);
+  const s = qs.toString();
+  return s ? `/projects?${s}` : "/projects";
+}
 
 /**
  * The project board (ADR-0052, #95): the general surface where projects of
@@ -31,10 +46,11 @@ const VIEWS = [
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; group?: string }>;
 }) {
-  const { view } = await searchParams;
+  const { view, group } = await searchParams;
   const activeView = view === "board" ? "board" : "list";
+  const activeGroup: ProjectGroupBy = group === "type" ? "type" : "status";
   const { crm } = getRepositories();
   const [roles, projects, types] = await Promise.all([
     getSessionRoles(),
@@ -60,23 +76,49 @@ export default async function ProjectsPage({
         )}
       </PageHeader>
 
-      <div className="inline-flex w-fit rounded-lg border border-border bg-panel p-1">
-        {VIEWS.map((v) => (
-          <Link
-            key={v.key}
-            href={v.key === "list" ? "/projects" : "/projects?view=board"}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm transition-colors",
-              activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
-            )}
-          >
-            {v.label}
-          </Link>
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="inline-flex w-fit rounded-lg border border-border bg-panel p-1">
+          {VIEWS.map((v) => (
+            <Link
+              key={v.key}
+              href={boardHref(v.key, activeGroup)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm transition-colors",
+                activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
+              )}
+            >
+              {v.label}
+            </Link>
+          ))}
+        </div>
+
+        {activeView === "board" && (
+          <div className="inline-flex w-fit items-center rounded-lg border border-border bg-panel p-1">
+            <span className="px-2 text-xs text-dim">Group</span>
+            {GROUPS.map((g) => (
+              <Link
+                key={g.key}
+                href={boardHref(activeView, g.key)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  activeGroup === g.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
+                )}
+              >
+                {g.label}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {activeView === "board" && (
-        <ProjectsBoard projects={projects} moveAction={moveProjectAction} />
+        <ProjectsBoard
+          projects={projects}
+          types={types}
+          groupBy={activeGroup}
+          moveStatusAction={moveProjectAction}
+          moveTypeAction={moveProjectTypeAction}
+        />
       )}
 
       {activeView === "list" &&

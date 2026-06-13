@@ -69,6 +69,24 @@ export async function moveTaskAction(id: string, status: string) {
   revalidatePath("/projects/[id]", "page");
 }
 
+/** Group-by=category lanes = the task category enum (ADR-0034, ADR-0066 C1-F2). */
+const BOARD_CATEGORIES = ["sales", "project", "onboarding", "general"] as const;
+
+/**
+ * Reassign a task's category from the kanban board when grouped by category
+ * (#443, ADR-0066 C1-F2). Same audited path / allowlist as `moveTaskAction`.
+ */
+export async function moveTaskCategoryAction(id: string, category: string) {
+  await requireCapability("delivery:write");
+  const taskId = id.trim();
+  if (!taskId) return;
+  if (!(BOARD_CATEGORIES as readonly string[]).includes(category)) return;
+  const { crm } = getRepositories();
+  await crm.setTaskCategory(taskId, category);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
 /**
  * On-demand Autotask push (#98, ADR-0052 §7): create this task's Autotask
  * ticket via the backend's idempotent ticket API (backend #19). The queue is

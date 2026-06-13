@@ -22,6 +22,18 @@ flowchart LR
 - The board honours the **category filter** — pick a category and the board
   shows only that category, exactly like the list.
 
+## Grouping (#443)
+
+The **Group** switch (board view only) changes what the columns represent:
+
+- **Status** (default) — Open / In progress / Done.
+- **Category** — Sales / Project / Onboarding / General.
+
+Dragging a card reassigns whichever dimension you are grouped by: drop a card in
+the *Onboarding* lane while grouped by category and the task's category becomes
+Onboarding (same `delivery:write` gate as a status move). Grouping by assignee or
+tag waits on that data landing (ADR-0064/0065).
+
 ## Moving a task
 
 Drag a card to another column. The card jumps immediately (optimistic), and the
@@ -35,9 +47,9 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Group-by, swimlanes, WIP limits, richer cards** (assignee avatars, tags,
-  subtask progress, comment/attachment counts) — #439. (The projects board
-  shipped in #441 — see [Project board](project-board.md).)
+- **Swimlanes, WIP limits, richer cards** (assignee avatars, tags, subtask
+  progress, comment/attachment counts) — #439. (Group-by shipped in #443; the
+  projects board in #441 — see [Project board](project-board.md).)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.
 
 For sales tasks specifically, see [Sales Activity](sales-activity.md).

@@ -2,9 +2,9 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { TasksTable } from "@/components/tasks/tasks-table";
-import { TasksBoard } from "@/components/tasks/tasks-board";
+import { TasksBoard, type TaskGroupBy } from "@/components/tasks/tasks-board";
 import { getRepositories } from "@/lib/data";
-import { deleteTaskAction, moveTaskAction } from "./actions";
+import { deleteTaskAction, moveTaskAction, moveTaskCategoryAction } from "./actions";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -19,11 +19,17 @@ const VIEWS = [
   { key: "board", label: "Board" },
 ] as const;
 
-/** Preserve the active category when switching view (and vice-versa). */
-function href(category: string, view: string) {
+const GROUPS = [
+  { key: "status", label: "Status" },
+  { key: "category", label: "Category" },
+] as const;
+
+/** Preserve the active category / group when switching view (and vice-versa). */
+function href(category: string, view: string, group: string) {
   const qs = new URLSearchParams();
   if (category !== "all") qs.set("category", category);
   if (view !== "list") qs.set("view", view);
+  if (group !== "status") qs.set("group", group);
   const s = qs.toString();
   return s ? `/tasks?${s}` : "/tasks";
 }
@@ -31,11 +37,12 @@ function href(category: string, view: string) {
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; view?: string }>;
+  searchParams: Promise<{ category?: string; view?: string; group?: string }>;
 }) {
-  const { category, view } = await searchParams;
+  const { category, view, group } = await searchParams;
   const active = category ?? "all";
   const activeView = view === "board" ? "board" : "list";
+  const activeGroup: TaskGroupBy = group === "category" ? "category" : "status";
   const { crm } = getRepositories();
   const all = await crm.listTasks();
   const tasks = active === "all" ? all : all.filter((t) => t.category === active);
@@ -56,7 +63,7 @@ export default async function TasksPage({
           {FILTERS.map((f) => (
             <Link
               key={f.key}
-              href={href(f.key, activeView)}
+              href={href(f.key, activeView, activeGroup)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm transition-colors",
                 active === f.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -67,24 +74,49 @@ export default async function TasksPage({
           ))}
         </div>
 
-        <div className="inline-flex w-fit rounded-lg border border-border bg-panel p-1">
-          {VIEWS.map((v) => (
-            <Link
-              key={v.key}
-              href={href(active, v.key)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm transition-colors",
-                activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
-              )}
-            >
-              {v.label}
-            </Link>
-          ))}
+        <div className="flex items-center gap-2">
+          {activeView === "board" && (
+            <div className="inline-flex w-fit items-center rounded-lg border border-border bg-panel p-1">
+              <span className="px-2 text-xs text-dim">Group</span>
+              {GROUPS.map((g) => (
+                <Link
+                  key={g.key}
+                  href={href(active, activeView, g.key)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-sm transition-colors",
+                    activeGroup === g.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
+                  )}
+                >
+                  {g.label}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <div className="inline-flex w-fit rounded-lg border border-border bg-panel p-1">
+            {VIEWS.map((v) => (
+              <Link
+                key={v.key}
+                href={href(active, v.key, activeGroup)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
+                )}
+              >
+                {v.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
       {activeView === "board" ? (
-        <TasksBoard tasks={tasks} moveAction={moveTaskAction} />
+        <TasksBoard
+          tasks={tasks}
+          groupBy={activeGroup}
+          moveStatusAction={moveTaskAction}
+          moveCategoryAction={moveTaskCategoryAction}
+        />
       ) : (
         <TasksTable tasks={tasks} deleteAction={deleteTaskAction} />
       )}

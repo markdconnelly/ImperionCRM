@@ -233,8 +233,10 @@ sales/project/onboarding/general partition.)
 > **Status:** tasks board shipped #341 (drag-drop, enum columns, category-filter-aware,
 > List|Board toggle); projects board shipped #441 (same shape over `project_status`,
 > List|Board toggle, started_at/completed_at stamped on drop). F1 now complete for both
-> objects. Remaining C1 scope (F2 group-by, F3 swimlanes, F4 rich cards, F5 WIP) tracked
-> in #439; activity-feed event (A1) in #438.
+> objects. F2 group-by shipped #443 (shared `KanbanBoard` primitive; tasks group by
+> status|category, projects by status|type, drag reassigns the active dimension —
+> assignee/tag deferred to ADR-0064/0065 data). Remaining C1 scope (F3 swimlanes,
+> F4 rich cards, F5 WIP) tracked in #439; activity-feed event (A1) in #438.
 
 - C1-F1 (MUST) Board view of tasks and of projects, columns = status (B5 once built,
   else current enum). Drag a card between columns to change status.

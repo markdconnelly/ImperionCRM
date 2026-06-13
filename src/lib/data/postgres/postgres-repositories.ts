@@ -982,6 +982,12 @@ export const postgresRepositories: Repositories = {
       await pool.query(`UPDATE task SET status = $2 WHERE id = $1`, [id, status]);
     },
 
+    async setTaskCategory(id: string, category: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskCategory(id, category);
+      await pool.query(`UPDATE task SET category = $2 WHERE id = $1`, [id, category]);
+    },
+
     async listProposals(): Promise<ProposalRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.listProposals();
@@ -1255,6 +1261,12 @@ export const postgresRepositories: Repositories = {
          WHERE id = $1`,
         [id, status],
       );
+    },
+
+    async setProjectType(id: string, projectTypeId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setProjectType(id, projectTypeId);
+      await pool.query(`UPDATE project SET project_type_id = $2 WHERE id = $1`, [id, projectTypeId]);
     },
 
     async deleteProject(id: string): Promise<void> {
