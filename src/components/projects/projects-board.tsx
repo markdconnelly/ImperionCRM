@@ -11,8 +11,9 @@ import type { ProjectRow, ProjectTypeRow } from "@/types";
  * whichever dimension is active. Type lanes come from the live project_type
  * table, so dropping a card into a type lane re-types the project.
  *
- * Owner grouping waits on the owner id reaching the read row; tags/rich cards
- * wait on ADR-0064/0065; swimlanes + WIP stay on #439.
+ * Swimlanes (#447, C1-F3) split the board into collapsible bands by account,
+ * owner, or type, orthogonal to the column group-by. Tags/rich cards wait on
+ * ADR-0064/0065.
  */
 const STATUS_LANES: KanbanLane[] = [
   { key: "not_started", label: "Not started", tone: "text-dim" },
@@ -22,17 +23,20 @@ const STATUS_LANES: KanbanLane[] = [
 ];
 
 export type ProjectGroupBy = "status" | "type";
+export type ProjectSwimBy = "none" | "account" | "owner" | "type";
 
 export function ProjectsBoard({
   projects,
   types,
   groupBy,
+  swimBy = "none",
   moveStatusAction,
   moveTypeAction,
 }: {
   projects: ProjectRow[];
   types: ProjectTypeRow[];
   groupBy: ProjectGroupBy;
+  swimBy?: ProjectSwimBy;
   moveStatusAction: (id: string, status: string) => Promise<void>;
   moveTypeAction: (id: string, projectTypeId: string) => Promise<void>;
 }) {
@@ -48,6 +52,21 @@ export function ProjectsBoard({
         }
       : { lanes: STATUS_LANES, laneOf: (p: ProjectRow) => p.status, onMove: moveStatusAction };
 
+  // Swimlane bands (#447): type uses the live project_type set; account/owner are
+  // derived from the names present (sorted, blanks → Unassigned band).
+  const distinct = (sel: (p: ProjectRow) => string | null) =>
+    Array.from(new Set(projects.map(sel).filter(Boolean) as string[]))
+      .sort()
+      .map((v) => ({ key: v, label: v }));
+  const swim =
+    swimBy === "type"
+      ? { lanes: types.map((t) => ({ key: t.key, label: t.name })), of: (p: ProjectRow) => p.typeKey }
+      : swimBy === "account"
+        ? { lanes: distinct((p) => p.account), of: (p: ProjectRow) => p.account }
+        : swimBy === "owner"
+          ? { lanes: distinct((p) => p.owner), of: (p: ProjectRow) => p.owner ?? "" }
+          : null;
+
   return (
     <KanbanBoard
       items={projects}
@@ -56,6 +75,8 @@ export function ProjectsBoard({
       lanes={config.lanes}
       laneOf={config.laneOf}
       onMove={config.onMove}
+      swimlanes={swim?.lanes}
+      swimlaneOf={swim?.of}
       emptyLabel="No projects"
       wipStorageKey="kanban-wip:projects"
       renderCard={(p) => (

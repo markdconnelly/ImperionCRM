@@ -9,8 +9,9 @@ import type { TaskRow } from "@/types";
  * status enum (default) and the task category; a drop reassigns whichever
  * dimension is active, through the matching `delivery:write`-guarded action.
  *
- * Assignee/tag grouping and richer cards wait on the ADR-0064/0065 data
- * (`TaskRow` carries none today); swimlanes + WIP limits stay on #439.
+ * Swimlanes (#447, C1-F3) split the board into collapsible bands by account or
+ * category, orthogonal to the column group-by. Assignee swimlanes/grouping and
+ * richer cards wait on the ADR-0064/0065 data (`TaskRow` carries none today).
  */
 const STATUS_LANES: KanbanLane[] = [
   { key: "open", label: "Open", tone: "text-amber" },
@@ -33,15 +34,18 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export type TaskGroupBy = "status" | "category";
+export type TaskSwimBy = "none" | "account" | "category";
 
 export function TasksBoard({
   tasks,
   groupBy,
+  swimBy = "none",
   moveStatusAction,
   moveCategoryAction,
 }: {
   tasks: TaskRow[];
   groupBy: TaskGroupBy;
+  swimBy?: TaskSwimBy;
   moveStatusAction: (id: string, status: string) => Promise<void>;
   moveCategoryAction: (id: string, category: string) => Promise<void>;
 }) {
@@ -49,6 +53,20 @@ export function TasksBoard({
     groupBy === "category"
       ? { lanes: CATEGORY_LANES, laneOf: (t: TaskRow) => t.category, onMove: moveCategoryAction }
       : { lanes: STATUS_LANES, laneOf: (t: TaskRow) => t.status, onMove: moveStatusAction };
+
+  // Swimlane bands (#447): category uses the fixed enum lanes; account is derived
+  // from the live set of account names present (sorted, blanks → Unassigned band).
+  const swim =
+    swimBy === "category"
+      ? { lanes: CATEGORY_LANES, of: (t: TaskRow) => t.category }
+      : swimBy === "account"
+        ? {
+            lanes: Array.from(new Set(tasks.map((t) => t.account).filter(Boolean) as string[]))
+              .sort()
+              .map((a) => ({ key: a, label: a })),
+            of: (t: TaskRow) => t.account ?? "",
+          }
+        : null;
 
   return (
     <KanbanBoard
@@ -58,6 +76,8 @@ export function TasksBoard({
       lanes={config.lanes}
       laneOf={config.laneOf}
       onMove={config.onMove}
+      swimlanes={swim?.lanes}
+      swimlaneOf={swim?.of}
       emptyLabel="No tasks"
       wipStorageKey="kanban-wip:tasks"
       renderCard={(t) => (

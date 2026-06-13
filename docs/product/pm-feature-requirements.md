@@ -237,8 +237,10 @@ sales/project/onboarding/general partition.)
 > status|category, projects by status|type, drag reassigns the active dimension —
 > assignee/tag deferred to ADR-0064/0065 data). F5 WIP limits shipped #445
 > (per-column, per-browser localStorage cap with over-limit highlight; an aid, not
-> a hard block). Remaining C1 scope (F3 swimlanes, F4 rich cards) tracked in #439;
-> activity-feed event (A1) in #438.
+> a hard block). F3 swimlanes shipped #447 (optional collapsible bands orthogonal to
+> the columns — tasks by account|category, projects by account|owner|type; drag still
+> only reassigns the column dimension). Remaining C1 scope (F4 rich cards) tracked in
+> #439, blocked on ADR-0064/0065 data; activity-feed event (A1) in #438.
 
 - C1-F1 (MUST) Board view of tasks and of projects, columns = status (B5 once built,
   else current enum). Drag a card between columns to change status.
