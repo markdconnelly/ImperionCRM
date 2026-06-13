@@ -57,6 +57,7 @@ export function ProjectsBoard({
       laneOf={config.laneOf}
       onMove={config.onMove}
       emptyLabel="No projects"
+      wipStorageKey="kanban-wip:projects"
       renderCard={(p) => (
         <>
           <Link

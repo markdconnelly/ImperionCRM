@@ -235,8 +235,10 @@ sales/project/onboarding/general partition.)
 > List|Board toggle, started_at/completed_at stamped on drop). F1 now complete for both
 > objects. F2 group-by shipped #443 (shared `KanbanBoard` primitive; tasks group by
 > status|category, projects by status|type, drag reassigns the active dimension —
-> assignee/tag deferred to ADR-0064/0065 data). Remaining C1 scope (F3 swimlanes,
-> F4 rich cards, F5 WIP) tracked in #439; activity-feed event (A1) in #438.
+> assignee/tag deferred to ADR-0064/0065 data). F5 WIP limits shipped #445
+> (per-column, per-browser localStorage cap with over-limit highlight; an aid, not
+> a hard block). Remaining C1 scope (F3 swimlanes, F4 rich cards) tracked in #439;
+> activity-feed event (A1) in #438.
 
 - C1-F1 (MUST) Board view of tasks and of projects, columns = status (B5 once built,
   else current enum). Drag a card between columns to change status.
