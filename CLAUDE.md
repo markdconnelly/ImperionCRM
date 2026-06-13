@@ -333,3 +333,7 @@ Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, 
 ### Domain docs
 
 Single-context: one `CONTEXT.md` at the repo root + ADRs in `docs/decision-records/`. See `docs/agents/domain.md`.
+
+### Skills plugin (canon)
+
+Cross-repo agent skills live in `plugins/imperion-skills/` in this repo, served as the in-repo `imperion` marketplace (ADR-0060). One skill per micro-PR; an ADR that supersedes what a skill teaches updates the skill in the same PR. See `docs/agents/skills.md`.
