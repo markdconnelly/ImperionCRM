@@ -334,6 +334,10 @@ Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, 
 
 Single-context: one `CONTEXT.md` at the repo root + ADRs in `docs/decision-records/`. See `docs/agents/domain.md`.
 
+### ICM business-process automation
+
+MSP business workflows are ICM workspaces under `icm/` (factory, ADR-0061), executed by the backend orchestrator with a per-workflow autonomy dial (draft -> auto). Conventions: `icm/CONVENTIONS.md`; overview: `docs/agents/icm.md`.
+
 ### Skills plugin (canon)
 
 Cross-repo agent skills live in `plugins/imperion-skills/` in this repo, served as the in-repo `imperion` marketplace (ADR-0060). One skill per micro-PR; an ADR that supersedes what a skill teaches updates the skill in the same PR. See `docs/agents/skills.md`.

@@ -1,0 +1,17 @@
+# ICM — business-process automation definitions
+
+Imperion automates MSP business processes (marketing → sales → project
+management → service desk) using the Interpreted Context Methodology
+(ADR-0061): staged pipelines defined as plain files, executed by the backend
+orchestrator, with human checkpoints and a per-workflow autonomy dial.
+
+- **Definitions:** [`icm/`](../../icm/CONVENTIONS.md) in this repo — the
+  factory. One folder per workflow; stage contracts + runtime skill bundles.
+- **Execution:** backend orchestrator (backend ADR-0036) — the product. Stage
+  artifacts are Postgres run records, editable in the GUI between stages.
+- **Trust ramp:** every workflow starts draft-for-approval; admins flip
+  trusted workflows to `auto` per ADR-0061. Sends always exit via ADR-0058.
+- **Authoring:** use the `imperion-icm` skill (skills plugin); changes are
+  normal issue → micro-PR.
+
+Current workspaces: see [`icm/workspaces/`](../../icm/workspaces/).
