@@ -113,6 +113,7 @@ import type {
   ReportSummary,
   RevenueSplit,
   SalesTaskRow,
+  ServiceDeskReport,
   SbrDetail,
   SbrRow,
   SocialIdentityRow,
@@ -200,6 +201,16 @@ function fmtUsdCompact(n: number): string {
 
 /** Fixed display order for opportunity sales stages. */
 const SALES_STAGE_ORDER = ["lead", "qualified", "proposal", "won", "lost"];
+
+/**
+ * Autotask ships exactly two fixed, undeletable system ticket statuses (1=New,
+ * 5=Complete); everything else is an instance-specific picklist whose label
+ * lookup is deferred (0074) — render those as "Status N" until labels merge.
+ */
+const AUTOTASK_SYSTEM_STATUSES: Record<string, string> = { "1": "New", "5": "Complete" };
+function labelAutotaskStatus(raw: string): string {
+  return AUTOTASK_SYSTEM_STATUSES[raw] ?? (raw === "unknown" ? "unknown" : `Status ${raw}`);
+}
 
 /** Map the account lifecycle stage to the dashboard's five-stage strip. */
 function toPipelineStage(lifecycle: string): PipelineStage {
@@ -1956,6 +1967,53 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return mockRepositories.reports.marketingSocial();
+      }
+    },
+
+    async serviceDesk(): Promise<ServiceDeskReport> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.serviceDesk();
+      try {
+        // ticket.status/queue are raw Autotask picklist ids (label lookup
+        // deferred at 0074); only the fixed system statuses are named here.
+        const [byStatus, byQueue, trend, totals, links] = await Promise.all([
+          pool.query<{ k: string; c: string }>(
+            `SELECT coalesce(status, 'unknown') AS k, count(*) AS c
+             FROM ticket GROUP BY 1 ORDER BY 2 DESC`,
+          ),
+          pool.query<{ k: string | null; c: string }>(
+            `SELECT queue AS k, count(*) AS c
+             FROM ticket GROUP BY 1 ORDER BY 2 DESC`,
+          ),
+          pool.query<{ wk: string; c: string }>(
+            `SELECT to_char(date_trunc('week', opened_at), 'YYYY-MM-DD') AS wk, count(*) AS c
+             FROM ticket
+             WHERE opened_at >= now() - interval '8 weeks'
+             GROUP BY 1 ORDER BY 1`,
+          ),
+          pool.query<{ total: string; opened_30d: string }>(
+            `SELECT count(*) AS total,
+                    count(*) FILTER (WHERE opened_at >= now() - interval '30 days') AS opened_30d
+             FROM ticket`,
+          ),
+          pool.query<{ c: string }>(`SELECT count(*) AS c FROM defender_incident_ticket_link`),
+        ]);
+        return {
+          byStatus: byStatus.rows.map((r) => ({
+            label: labelAutotaskStatus(r.k),
+            count: Number(r.c),
+          })),
+          byQueue: byQueue.rows.map((r) => ({
+            label: r.k == null || r.k === "" ? "unassigned" : `Queue ${r.k}`,
+            count: Number(r.c),
+          })),
+          openedByWeek: trend.rows.map((r) => ({ label: r.wk, count: Number(r.c) })),
+          total: Number(totals.rows[0].total),
+          opened30d: Number(totals.rows[0].opened_30d),
+          defenderLinked: Number(links.rows[0].c),
+        };
+      } catch {
+        return mockRepositories.reports.serviceDesk();
       }
     },
   },

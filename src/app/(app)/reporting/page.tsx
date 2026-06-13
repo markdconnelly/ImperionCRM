@@ -59,6 +59,7 @@ export default async function ReportingPage() {
     conversion,
     sbrAverages,
     marketing,
+    serviceDesk,
   ] = await Promise.all([
     getSessionRoles(),
     reports.getSummary(),
@@ -69,6 +70,7 @@ export default async function ReportingPage() {
     reports.assessmentConversion(),
     reports.sbrDimensionAverages(),
     reports.marketingSocial(),
+    reports.serviceDesk(),
   ]);
 
   // Support cannot see revenue (ADR-0030): blank money figures and zero the
@@ -245,6 +247,52 @@ export default async function ReportingPage() {
           <p className="py-6 text-center text-sm text-dim">No paid campaign metrics yet.</p>
         )}
       </div>
+
+      <SectionHeading id="service-desk" title="Service Desk" hint="ticket flow & Defender pairings" />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Tickets (all time)" value={fmtCount.format(serviceDesk.total)} />
+        <StatTile
+          label="Opened (30d)"
+          value={fmtCount.format(serviceDesk.opened30d)}
+          hint="from Autotask webhook + bulk merge"
+        />
+        <StatTile
+          label="Defender-linked"
+          value={fmtCount.format(serviceDesk.defenderLinked)}
+          hint="incident ↔ ticket pairings (ADR-0059)"
+        />
+        <StatTile
+          label="Queues in use"
+          value={fmtCount.format(serviceDesk.byQueue.filter((q) => q.label !== "unassigned").length)}
+          hint="labels pending (0074)"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <ChartCard title="Tickets by status" subtitle="Raw Autotask statuses — labels land with the 0074 follow-up">
+          {serviceDesk.byStatus.length > 0 ? (
+            <StatusBarChart data={serviceDesk.byStatus} color="#5B8DEF" />
+          ) : (
+            <p className="py-10 text-center text-sm text-dim">No tickets ingested yet.</p>
+          )}
+        </ChartCard>
+        <ChartCard title="Tickets by queue" subtitle="Open + closed, all time">
+          {serviceDesk.byQueue.length > 0 ? (
+            <StatusBarChart data={serviceDesk.byQueue} color="#7C6BF0" />
+          ) : (
+            <p className="py-10 text-center text-sm text-dim">No tickets ingested yet.</p>
+          )}
+        </ChartCard>
+      </div>
+
+      <ChartCard title="Tickets opened per week" subtitle="Last 8 weeks (no completion dates in the source yet — opened flow only)">
+        {serviceDesk.openedByWeek.length > 0 ? (
+          <StatusBarChart data={serviceDesk.openedByWeek} color="#3FBF8F" />
+        ) : (
+          <p className="py-10 text-center text-sm text-dim">No tickets opened in the last 8 weeks.</p>
+        )}
+      </ChartCard>
     </div>
   );
 }
