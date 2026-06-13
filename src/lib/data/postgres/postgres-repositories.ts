@@ -82,6 +82,7 @@ import type {
   ContactRow,
   CountDatum,
   CurrentConsentRow,
+  DirectoryGroupRow,
   DiscoveryCallDetail,
   DiscoveryCallRow,
   EnrichmentFactRow,
@@ -3521,6 +3522,55 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.contacts.listContactRelatedBronze(contactId);
+      }
+    },
+
+    async listDirectoryGroups(contactId: string): Promise<DirectoryGroupRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.contacts.listDirectoryGroups(contactId);
+      try {
+        // Bronze is all-text (0079). The contact reaches its membership through
+        // its M365 bronze row: m365_contacts.external_ref = the Entra user
+        // object id = m365_group_members.member_external_id (#257).
+        const { rows } = await pool.query<{
+          tenant_id: string;
+          external_id: string;
+          display_name: string | null;
+          description: string | null;
+          group_types: string | null;
+          mail: string | null;
+          security_enabled: string | null;
+          mail_enabled: string | null;
+          visibility: string | null;
+          membership_rule_processing_state: string | null;
+          collected_at: string;
+        }>(
+          `SELECT g.tenant_id, g.external_id, g.display_name, g.description,
+                  g.group_types, g.mail, g.security_enabled, g.mail_enabled,
+                  g.visibility, g.membership_rule_processing_state, g.collected_at
+             FROM m365_contacts mc
+             JOIN m365_group_members gm ON gm.member_external_id = mc.external_ref
+             JOIN m365_groups g
+               ON g.tenant_id = gm.tenant_id AND g.external_id = gm.group_external_id
+            WHERE mc.contact_id = $1::uuid
+            ORDER BY lower(COALESCE(g.display_name, g.external_id))`,
+          [contactId],
+        );
+        return rows.map((r) => ({
+          tenantId: r.tenant_id,
+          externalId: r.external_id,
+          displayName: r.display_name,
+          description: r.description,
+          groupTypes: r.group_types,
+          mail: r.mail,
+          securityEnabled: r.security_enabled,
+          mailEnabled: r.mail_enabled,
+          visibility: r.visibility,
+          membershipRuleProcessingState: r.membership_rule_processing_state,
+          collectedAt: r.collected_at,
+        }));
+      } catch {
+        return mockRepositories.contacts.listDirectoryGroups(contactId);
       }
     },
 

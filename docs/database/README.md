@@ -71,7 +71,10 @@ collector = local #140); 0078 `sharepoint_sites` bronze (#255, ADR-0051 join via
 `account_tenant` — SharePoint site inventory from Graph /sites, site METADATA only:
 Sites.Read.All, no file/drive columns ever — Files.Read.All was pruned; feeds the
 drillable SharePoint sites section on the Company 360; collector = local-pipeline
-companion issue).
+companion issue); 0079 `m365_groups` + `m365_group_members` bronze (#257 — Entra
+groups + membership feeding the user object: `member_external_id` joins
+`m365_contacts.external_ref` to reach the silver contact; feeds the Directory
+groups section on the Contact 360; collector = local #139).
 The company-credentials migration is **0033** — see the
 [credential-config database to-do](credential-config-todo.md). 0033 extends
 `connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`

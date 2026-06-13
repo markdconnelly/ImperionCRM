@@ -33,6 +33,7 @@ import type {
   ContactRow,
   CountDatum,
   CurrentConsentRow,
+  DirectoryGroupRow,
   DiscoveryCallDetail,
   DiscoveryCallRow,
   EnrichmentFactRow,
@@ -675,6 +676,13 @@ export interface ContactsRepository {
    * citations for drill-down troubleshooting (migration 0039).
    */
   listContactRelatedBronze(contactId: string): Promise<ContactSourceRow[]>;
+
+  /**
+   * Directory groups this contact belongs to — bronze `m365_groups` joined
+   * through `m365_group_members` on the contact's Entra user object id
+   * (migration 0079, #257). Empty until the local-pipeline collector runs.
+   */
+  listDirectoryGroups(contactId: string): Promise<DirectoryGroupRow[]>;
 }
 
 // ── Consent (ADR-0014) ───────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import { SocialIdentities } from "@/components/comms/social-identities";
 import { SourceRecords } from "@/components/comms/source-records";
 import { IntegrationHealth } from "@/components/comms/integration-health";
 import { ConsentPanel } from "@/components/comms/consent-panel";
+import { DirectoryGroups } from "@/components/contacts/directory-groups";
 import { ActionItems } from "@/components/comms/action-items";
 import { Compose } from "@/components/comms/compose";
 import { sendMessageAction, completeActionItemAction, setConsentAction } from "../actions";
@@ -80,6 +81,7 @@ export default async function ContactDetailPage({
     canEmail,
     canSms,
     relatedBronze,
+    directoryGroups,
   ] = await Promise.all([
     contacts.listEnrichment(id),
     contacts.listSocialIdentities(id),
@@ -90,6 +92,7 @@ export default async function ContactDetailPage({
     consent.canSend(id, "email"),
     consent.canSend(id, "sms"),
     contacts.listContactRelatedBronze(id),
+    contacts.listDirectoryGroups(id),
   ]);
 
   const back = `/contacts/${id}`;
@@ -214,6 +217,14 @@ export default async function ContactDetailPage({
           {relatedBronze.length > 0 && (
             <Section title="Related source data" icon="FolderGit2">
               <SourceRecords sources={relatedBronze} />
+            </Section>
+          )}
+
+          {/* Directory groups (#257) — bronze m365_groups via membership on the
+              contact's Entra user id. Renders nothing until collected. */}
+          {directoryGroups.length > 0 && (
+            <Section title="Directory groups" icon="Users">
+              <DirectoryGroups groups={directoryGroups} />
             </Section>
           )}
 
