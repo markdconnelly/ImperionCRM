@@ -83,6 +83,12 @@ export default async function ProjectsPage({
         title="Project board"
         description={`${projects.length} projects across ${types.length} types · ${open} open`}
       >
+        <Link
+          href="/projects/templates"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Delivery templates →
+        </Link>
         {canWrite && (
           <Link
             href="/projects/new"
