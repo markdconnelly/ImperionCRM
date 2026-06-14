@@ -96,6 +96,9 @@ import type {
   ExpenseReportRow,
   ExpenseReportDetail,
   ExpenseItemRow,
+  AdminExpenseRow,
+  AdminExpenseReview,
+  ExpenseReimbursementMatch,
   TimeEntryRow,
   ReconciliationDay,
   DeliveryTemplateDetail,
@@ -2461,6 +2464,195 @@ export const postgresRepositories: Repositories = {
              rejected_at = NULL, rejected_by = NULL, rejection_note = NULL
          WHERE id = $1 AND state IN ('submitted', 'approved', 'finance_approved', 'rejected')`,
         [id],
+      );
+    },
+
+    async listAllExpenseReports(): Promise<AdminExpenseRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAllExpenseReports();
+      try {
+        // Unified lifecycle feed (#548): every report, every state. The lifecycle stamps
+        // live on expense_report itself; LEFT JOIN the items for the count + totals. NO
+        // comp/pay data — the mileage rate + reimbursement math are backend-only.
+        const { rows } = await pool.query<{
+          id: string;
+          app_user_id: string;
+          employee_name: string | null;
+          period_year: number;
+          period_month: number;
+          state: string;
+          attested_at: Date | null;
+          finance_approved_at: Date | null;
+          reimbursed_at: Date | null;
+          qb_payment_ref: string | null;
+          item_count: string;
+          total_amount: string;
+          reimbursable_amount: string;
+        }>(
+          `SELECT er.id, er.app_user_id,
+                  COALESCE(u.display_name, u.email) AS employee_name,
+                  er.period_year, er.period_month, er.state, er.attested_at,
+                  er.finance_approved_at, er.reimbursed_at,
+                  er.qb_bill_payment_ref AS qb_payment_ref,
+                  count(ei.id) AS item_count,
+                  COALESCE(SUM(ei.amount), 0) AS total_amount,
+                  COALESCE(SUM(ei.amount) FILTER (WHERE ei.reimbursable), 0) AS reimbursable_amount
+           FROM expense_report er
+           JOIN app_user u ON u.id = er.app_user_id
+           LEFT JOIN expense_item ei ON ei.expense_report_id = er.id
+           GROUP BY er.id, u.display_name, u.email
+           ORDER BY er.period_year DESC, er.period_month DESC, employee_name`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          employeeId: r.app_user_id,
+          employeeName: r.employee_name ?? "—",
+          periodYear: Number(r.period_year),
+          periodMonth: Number(r.period_month),
+          state: r.state as AdminExpenseRow["state"],
+          itemCount: Number(r.item_count),
+          totalAmount: Number(r.total_amount),
+          reimbursableAmount: Number(r.reimbursable_amount),
+          attestedAt: r.attested_at ? new Date(r.attested_at).toISOString() : null,
+          financeApprovedAt: r.finance_approved_at
+            ? new Date(r.finance_approved_at).toISOString()
+            : null,
+          reimbursedAt: r.reimbursed_at ? new Date(r.reimbursed_at).toISOString() : null,
+          qbPaymentRef: r.qb_payment_ref,
+        }));
+      } catch {
+        return mockRepositories.crm.listAllExpenseReports();
+      }
+    },
+
+    async getExpenseReportById(id): Promise<AdminExpenseReview | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getExpenseReportById(id);
+      const { rows } = await pool.query<BaseExpenseReport & { attested_snapshot: unknown }>(
+        `SELECT id, app_user_id, period_year, period_month, state, attested_at, attested_snapshot
+         FROM expense_report WHERE id = $1`,
+        [id],
+      );
+      const r = rows[0];
+      if (!r) return null;
+      const detail = await assembleExpenseReportDetail(pool, r);
+      // The immutable attested original (jsonb already in ExpenseItemRow shape); coerce the
+      // numeric fields back from JSON for a faithful diff against the live items.
+      const snap = Array.isArray(r.attested_snapshot)
+        ? (r.attested_snapshot as ExpenseItemRow[]).map((i) => ({
+            ...i,
+            amount: Number(i.amount),
+            miles: i.miles === null ? null : Number(i.miles),
+          }))
+        : null;
+      return { ...detail, attestedSnapshot: snap };
+    },
+
+    async getExpenseReimbursementMatch(expenseReportId): Promise<ExpenseReimbursementMatch | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getExpenseReimbursementMatch(expenseReportId);
+      const { rows } = await pool.query<{
+        expense_report_id: string;
+        expected_reimbursable_total: string | null;
+        qb_bill_payment_ref: string | null;
+        qb_payment_amount: string | null;
+        verdict: string;
+        reconciled_at: Date | null;
+      }>(
+        `SELECT expense_report_id, expected_reimbursable_total, qb_bill_payment_ref,
+                qb_payment_amount, verdict, reconciled_at
+         FROM expense_reconciliation WHERE expense_report_id = $1`,
+        [expenseReportId],
+      );
+      const r = rows[0];
+      if (!r) return null;
+      const verdict = r.verdict as ExpenseReimbursementMatch["verdict"];
+      const detail =
+        verdict === "matched"
+          ? "Backend matched a QuickBooks Purchase within tolerance."
+          : verdict === "mismatch"
+            ? "Backend found a QuickBooks Purchase that doesn't match within tolerance — resolve before reimbursing."
+            : "No QuickBooks match yet (recon pending or QBO not live in this environment).";
+      return {
+        expenseReportId: r.expense_report_id,
+        matched: verdict === "matched",
+        qbPaymentRef: r.qb_bill_payment_ref,
+        reimbursedAt: r.reconciled_at ? new Date(r.reconciled_at).toISOString() : null,
+        expectedReimbursableTotal:
+          r.expected_reimbursable_total === null ? null : Number(r.expected_reimbursable_total),
+        qbPaymentAmount: r.qb_payment_amount === null ? null : Number(r.qb_payment_amount),
+        verdict,
+        detail,
+      };
+    },
+
+    async approveExpenseReport(id, approvedBy): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.approveExpenseReport(id, approvedBy);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Only a Submitted report → Approved; stamp the admin approver.
+        const { rowCount } = await client.query(
+          `UPDATE expense_report SET state = 'approved', approved_at = now(), approved_by = $2
+           WHERE id = $1 AND state = 'submitted'`,
+          [id, approvedBy],
+        );
+        // Create the pending Autotask ExpenseReport tracking row the backend writer consumes
+        // (idempotent on the report — re-approval reuses the same row/external_ref).
+        if (rowCount && rowCount > 0) {
+          await client.query(
+            `INSERT INTO autotask_expense_report
+               (expense_report_id, app_user_id, period_year, period_month, idempotency_key)
+             SELECT er.id, er.app_user_id, er.period_year, er.period_month,
+                    'imperioncrm-expensereport-' || er.id
+             FROM expense_report er WHERE er.id = $1
+             ON CONFLICT (expense_report_id) DO NOTHING`,
+            [id],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async financeApproveExpenseReport(id, approvedBy): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.financeApproveExpenseReport(id, approvedBy);
+      // Only an Approved report → Finance-approved; authorizes reimbursement (the app never pays).
+      await pool.query(
+        `UPDATE expense_report
+         SET state = 'finance_approved', finance_approved_at = now(), finance_approved_by = $2
+         WHERE id = $1 AND state = 'approved'`,
+        [id, approvedBy],
+      );
+    },
+
+    async markExpenseReportReimbursed(id, qbPaymentRef): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.markExpenseReportReimbursed(id, qbPaymentRef);
+      // Only a Finance-approved report → Reimbursed; records the CFO's confirmation of the
+      // backend's QuickBooks match. NO comp data.
+      await pool.query(
+        `UPDATE expense_report
+         SET state = 'reimbursed', reimbursed_at = now(), qb_bill_payment_ref = $2
+         WHERE id = $1 AND state = 'finance_approved'`,
+        [id, qbPaymentRef],
+      );
+    },
+
+    async rejectExpenseReport(id, rejectedBy, note): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.rejectExpenseReport(id, rejectedBy, note);
+      await pool.query(
+        `UPDATE expense_report
+         SET state = 'rejected', rejected_at = now(), rejected_by = $2, rejection_note = $3
+         WHERE id = $1 AND state IN ('submitted', 'approved', 'finance_approved')`,
+        [id, rejectedBy, nullIfEmpty(note)],
       );
     },
 

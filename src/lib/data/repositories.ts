@@ -58,6 +58,9 @@ import type {
   EmployeeMappingRow,
   ExpenseReportRow,
   ExpenseReportDetail,
+  AdminExpenseRow,
+  AdminExpenseReview,
+  ExpenseReimbursementMatch,
   TimeEntryCategory,
   LeadHookRow,
   MarketingSocialReport,
@@ -458,6 +461,29 @@ export interface CrmRepository {
   /** Send a submitted/approved/rejected report back to Open: clear the attest/approve/
    *  reject stamps (re-attest required). Keeps the snapshot + Autotask tracking row. */
   reopenExpenseReport(id: string): Promise<void>;
+  /** The unified admin lifecycle feed: EVERY report across EVERY state + employee,
+   *  newest month first (employee name, item count, totals, and the finance/payment
+   *  fields). Comp-free. The admin surface (#548) filters + sorts this in memory. */
+  listAllExpenseReports(): Promise<AdminExpenseRow[]>;
+  /** Admin read of any report by id (NOT employee-scoped) — the live detail plus the
+   *  immutable attested original, for the inline-review surface. */
+  getExpenseReportById(id: string): Promise<AdminExpenseReview | null>;
+  /** The QuickBooks reimbursement match the backend recon suggests for a report
+   *  (from the comp-free `expense_reconciliation`); null if no recon row exists. */
+  getExpenseReimbursementMatch(expenseReportId: string): Promise<ExpenseReimbursementMatch | null>;
+  /** Approve a Submitted report (admin): state→approved, stamp approver, and create the
+   *  pending Autotask ExpenseReport tracking row (idempotent) for the backend writer. */
+  approveExpenseReport(id: string, approvedBy: string): Promise<void>;
+  /** Finance-approve an Approved report (CFO/finance): state→finance_approved, stamp the
+   *  approver. Authorizes reimbursement; the app never pays. Idempotent. */
+  financeApproveExpenseReport(id: string, approvedBy: string): Promise<void>;
+  /** Confirm the QuickBooks-matched reimbursement (finance): state→reimbursed, stamp
+   *  reimbursed_at + qb_bill_payment_ref. Only a finance_approved report moves; idempotent.
+   *  The match comes from the backend recon (BE #111) — this records its confirmation. */
+  markExpenseReportReimbursed(id: string, qbPaymentRef: string): Promise<void>;
+  /** Reject a submitted/approved report (admin/finance): state→rejected, stamp the
+   *  rejecter + note. The employee reopens to correct and re-attest. */
+  rejectExpenseReport(id: string, rejectedBy: string, note: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;
