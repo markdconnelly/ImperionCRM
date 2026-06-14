@@ -10,12 +10,30 @@ Entries** (start/end blocks; duration is calculated, never typed), see a
 **Reconciliation** memory-jogger comparing your attended time to the same day's
 Autotask ticket time, then **Attest** the week to submit it for approval.
 
-You only ever see and edit **your own** timesheet — the surface is scoped to your
+You only ever see and edit **your own** timesheets — the surface is scoped to your
 signed-in identity (resolved by email to your employee record).
+
+## The landing — your weeks
+
+Opening **Timesheets** shows a list, not a single week:
+
+- **Active & upcoming** (top): the current week and the next week (plus any earlier
+  week you started but haven't submitted). Each tile is **Open week** if you've already
+  started it, or **Start timesheet** if not. You don't have to create weeks early — make
+  one only when you have time to log.
+- **Your timesheets** (middle): a table of every week you've worked — week, attended
+  hours, entry count, and status. **Edit** an open week or **View** a submitted one.
+- **Status & payments** (bottom): every week you've submitted, shown moving along the
+  track **Submitted → Admin approved → Finance approved → Paid**, so you can watch your
+  pay progress without asking anyone.
+
+Click any week to open its day-by-day detail.
 
 ## Entering time
 
-1. Pick the week with **← Prev / This week / Next →** (defaults to the current week).
+1. **Open a week** from your list, or **Start timesheet** on the current/upcoming tile
+   (inside a week, **← Prev / This week / Next →** still navigate; **← All timesheets**
+   returns to the list).
 2. Under each day, fill the inline row: **Start**, **End**, a **Category**
    (`Billable` → tie to an Autotask ticket · `Internal` · `Admin`), an optional
    **Ticket #**, and optional **Notes**. Click **Add**.

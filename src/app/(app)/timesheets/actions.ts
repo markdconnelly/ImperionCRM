@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
@@ -30,6 +31,25 @@ async function currentEmployeeId(): Promise<string | null> {
 /** Combine a YYYY-MM-DD + HH:MM (wall clock) into a UTC ISO timestamp. */
 function toIso(workDate: string, hhmm: string): string {
   return `${workDate}T${hhmm}:00.000Z`;
+}
+
+/**
+ * Create (ensure) a timesheet for a week, then open it. Lazy-creation from the
+ * landing's "Start timesheet" button — self-scoped (`time:write`, employee id from
+ * session), idempotent (`ensureTimesheetForWeek` is UNIQUE on employee+week), so a
+ * double-click can't make two. Redirects into the week so the employee starts
+ * entering time immediately.
+ */
+export async function createTimesheetAction(formData: FormData) {
+  await requireCapability("time:write");
+  const employeeId = await currentEmployeeId();
+  if (!employeeId) return;
+  const weekStart = mondayOf(str(formData, "weekStart"));
+
+  const { crm } = getRepositories();
+  await crm.ensureTimesheetForWeek(employeeId, weekStart);
+  revalidatePath("/timesheets");
+  redirect(`/timesheets?week=${weekStart}`);
 }
 
 export async function addTimeEntryAction(formData: FormData) {
