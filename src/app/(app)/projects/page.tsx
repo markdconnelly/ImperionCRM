@@ -84,6 +84,12 @@ export default async function ProjectsPage({
         description={`${projects.length} projects across ${types.length} types · ${open} open`}
       >
         <Link
+          href="/projects/delivery"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Delivery board →
+        </Link>
+        <Link
           href="/projects/templates"
           className="text-sm text-dim transition-colors hover:text-text"
         >

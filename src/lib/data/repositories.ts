@@ -49,6 +49,7 @@ import type {
   LeadCaptureEventRow,
   DeliveryTemplateRow,
   DeliveryTemplateDetail,
+  DeliveryBoardProject,
   TimesheetRow,
   TimesheetDetail,
   TimesheetReviewRow,
@@ -484,6 +485,21 @@ export interface CrmRepository {
    * dispatching task — all in one transaction. Returns the new project id.
    */
   instantiateDeliveryTemplate(input: DeliveryInstantiationInput): Promise<string>;
+  /**
+   * The delivery board read model (ADR-0080 §4/§7, #568): every provisioned
+   * project (`project_provisioning ⋈ project ⋈ account`) with its dispatching
+   * tasks' `task_ticket_fire` state. Read-only; the board steers firing by
+   * writing intent (see `scheduleTaskFire`). Newest provisioning first.
+   */
+  listProvisionedProjects(): Promise<DeliveryBoardProject[]>;
+  /**
+   * Write a task's fire INTENT (ADR-0042 boundary, #568): move its
+   * `task_ticket_fire` row to fire_state='scheduled' with `scheduled_for`. The
+   * backend executor — never the web — creates the Autotask Ticket. "Fire now"
+   * is this with `scheduledFor = now`. No-op-safe: only a non-fired dispatching
+   * row is touched. Gated `delivery:write` at the action layer.
+   */
+  scheduleTaskFire(taskId: string, scheduledFor: string): Promise<void>;
 
   // Time tracking — employee weekly timesheets (ADR-0082, migrations 0085–0087)
   /** An employee's timesheets, most-recent week first (history/list). */
