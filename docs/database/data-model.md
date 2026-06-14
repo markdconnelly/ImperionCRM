@@ -1580,6 +1580,75 @@ erDiagram
 > completes the ADR-0082 schema; sibling-repo processes (Autotask write, QuickBooks read,
 > bronze→silver merge) build on these tables once the migrations are prod-applied.
 
+## Diagram — Employee expense tracking (ADR-0083)
+
+Imperion tracks employee expenses — **business mileage** (MileIQ, read-only) + **manual
+out-of-pocket** entries (with receipts) — from capture through **reimbursement**, validated
+read-only against a QuickBooks bill-payment. It mirrors the time-tracking shape: an
+**Employee** is the same `app_user` extension (0085), and the one comp figure expenses add —
+the **mileage rate** — joins the payroll-gated comp store. This section grows with the
+migrations (0088 config/comp → 0089 capture/silver → 0090 autotask-write/recon); only the
+**0088** tables are shown below.
+
+```mermaid
+erDiagram
+    QBO_EXPENSE_ACCOUNT ||--o{ EXPENSE_CATEGORY : "hard link (mapped by admin)"
+    APP_USER ||--o| EMPLOYEE_PROFILE : "+ mileiq_user_id mapping (0085)"
+    QBO_EXPENSE_ACCOUNT {
+      uuid id PK
+      text qbo_account_id UK "QuickBooks Account.Id — FK target"
+      text name
+      text account_type "QBO AccountType"
+      boolean active "QBO Active flag"
+      jsonb raw "original QBO payload (ADR-0039)"
+    }
+    EXPENSE_CATEGORY {
+      uuid id PK
+      text key UK "stable code (e.g. meals)"
+      text display_name
+      text qbo_account_id FK "hard link; NULL only until-mapped"
+      numeric hard_cap "per-item cap → hard violation"
+      numeric soft_threshold "per-item nudge → soft violation"
+      boolean billable_default
+      bigint autotask_expense_category_id
+      boolean is_system "true = Mileage (mapping-exempt)"
+      boolean is_active "inactive-until-mapped (CHECK)"
+    }
+    EXPENSE_POLICY {
+      uuid id PK
+      text rule_key UK "e.g. missing_receipt"
+      text severity "hard (block attest) | soft (nudge)"
+      jsonb params "tunable knobs"
+      text itglue_doc_ref "canonical policy doc (#493)"
+      boolean is_active
+    }
+    MILEAGE_RATE {
+      uuid id PK
+      date effective_from UK "system-wide; one rate per date"
+      numeric rate "USD/mile"
+      text source "mileiq_suggested | system_override"
+      uuid created_by_FK "who set it"
+    }
+```
+
+> **Categories are hard-linked to QuickBooks (the SoR).** `qbo_expense_account` is bronze
+> synced **read-only** (the app never writes QuickBooks); an admin maps each QuickBooks
+> account → a clean `expense_category` with caps/threshold/billable-default/Autotask category
+> id/visibility. A category cannot go **active** unmapped (CHECK), except the rate-driven,
+> receipt-exempt **Mileage** system category. The v1 seed ships six until-mapped placeholders
+> + active Mileage, and the eight policy rules (4 hard / 4 soft).
+>
+> **The mileage rate is comp data (ADR-0083 §Security)** — gated exactly like `pay_rate`
+> (0085): web (app-gated `finance`/`admin`) + backend reconciliation **read** only; never on
+> the Entra-synced `app_user`, never pipeline-visible, never employee/agent/client-visible.
+> Unlike `pay_rate` it is **system-wide** (not per-employee) and effective-dated — a drive
+> uses the rate with the greatest `effective_from <=` its drive date. The pipelines get
+> **column-level** SELECT on the new `employee_profile.mileiq_user_id` **mapping** column only
+> (to join a MileIQ drive → an employee), never the rate. The capture/silver tables
+> (`mileiq_drive`, `website_expense_item`, `expense_report`, `expense_item`,
+> `receipt_attachment`) arrive in 0089; the Autotask write-tracking + reconciliation read
+> model in 0090.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
