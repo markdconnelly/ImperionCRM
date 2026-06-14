@@ -15,7 +15,7 @@
 import "server-only";
 import { callService, type ServiceDescriptor } from "@/lib/services/external-client";
 import type { RefreshSource } from "@/lib/integrations/pipeline-refresh";
-import type { TimeReconciliationResult } from "@/types";
+import type { PayrollMatchSuggestion, TimeReconciliationResult } from "@/types";
 
 // Services hosted on the network-isolated backend (ADR-0028) sit behind Easy Auth and
 // declare `audienceEnv` so callService attaches a managed-identity bearer token. The
@@ -184,6 +184,26 @@ export const agentService = {
 export const timeReconciliationService = {
   reconcile: (input: { timesheetId: string; toleranceMinutes?: number }) =>
     callService<TimeReconciliationResult>(services.agent, "/orchestration/time-reconciliation", {
+      method: "POST",
+      body: JSON.stringify(input),
+      timeoutMs: 30_000,
+    }),
+};
+
+/**
+ * Time-tracking Reconciliation #2 — payroll (ADR-0082 §Reconciliation #2; backend BE #105).
+ * The backend computes expected pay (approved hours × effective Pay Rate — the SOLE Pay Rate
+ * read in the system) and matches it against the authoritative QuickBooks Online vendor payment
+ * (employee + period + amount within tolerance; v1 all-1099, gross=net). This seam asks the
+ * backend for the SUGGESTED match for one timesheet; the response is comp-free (only the matched
+ * payment fact, never the rate or expected amount). The CFO confirms it to set the sheet Paid.
+ * Same backend Function App as the orchestrator (`/orchestration/*`), so it shares the agent base
+ * URL + Easy Auth audience. Until BE #105 + the QuickBooks app registration land (Mark-gated), the
+ * call is `not_configured`/`rejected` and the surface degrades to manual confirm (UAT plan).
+ */
+export const payrollReconciliationService = {
+  suggestMatch: (input: { timesheetId: string }) =>
+    callService<PayrollMatchSuggestion>(services.agent, "/orchestration/payroll-reconciliation", {
       method: "POST",
       body: JSON.stringify(input),
       timeoutMs: 30_000,

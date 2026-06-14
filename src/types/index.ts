@@ -249,6 +249,45 @@ export interface TimesheetReviewRow extends TimesheetRow {
 }
 
 /**
+ * A timesheet on the payroll-approval queue (ADR-0082, #466) — every sheet that
+ * has cleared admin correctness (Approved) plus the later payroll states, so the
+ * CFO sees the whole tail. Read from the comp-free `timesheet_payroll_status`
+ * view: approved attendance minutes, lifecycle state, and the matched QuickBooks
+ * payment fact (set by backend Payroll Reconciliation, BE #105). NEVER carries
+ * Pay Rate or expected pay — the comp math lives in the backend alone.
+ */
+export interface PayrollTimesheetRow {
+  id: string;
+  employeeId: string;
+  employeeName: string; // app_user display name (falls back to email)
+  weekStart: string; // yyyy-mm-dd (Monday)
+  weekEnd: string; // yyyy-mm-dd (Sunday)
+  state: TimesheetState;
+  approvedMinutes: number; // attendance minutes on the sheet (no rate applied)
+  payrollApprovedAt: string | null; // ISO; set when the CFO payroll-approves
+  paidAt: string | null; // ISO; set when matched to the QuickBooks payment
+  qbPaymentRef: string | null; // matched QuickBooks payment id (read-only SoR)
+}
+
+/**
+ * The QuickBooks payment match the backend Payroll Reconciliation (BE #105)
+ * suggests for one timesheet (ADR-0082 §Reconciliation #2). The backend is the
+ * sole reader of Pay Rate; this suggestion crosses the boundary comp-free — only
+ * the matched payment fact (employee + period + amount within tolerance). The CFO
+ * confirms the suggestion to set the sheet Paid. `matched` is false (and the refs
+ * null) when no QuickBooks payment lines up or QBO isn't live in this environment.
+ */
+export interface PayrollMatchSuggestion {
+  timesheetId: string;
+  matched: boolean;
+  qbPaymentRef: string | null;
+  /** ISO date of the matched payment, when one was found. */
+  paidAt: string | null;
+  /** Human-readable explanation of the match (or why none was found). */
+  detail: string;
+}
+
+/**
  * The six time-reconciliation Deviations (ADR-0082; backend ADR-0046). The day-level four
  * are derivable from `time_reconciliation_day`; `overlap` + `temporal_orphan` need row-pair
  * logic, so the full set comes from the backend `POST /orchestration/time-reconciliation`.

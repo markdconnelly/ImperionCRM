@@ -88,6 +88,7 @@ import type {
   TimesheetRow,
   TimesheetDetail,
   TimesheetReviewRow,
+  PayrollTimesheetRow,
   EmployeeMappingRow,
   TimeEntryRow,
   ReconciliationDay,
@@ -1862,6 +1863,95 @@ export const postgresRepositories: Repositories = {
                 approved_at = NULL, approved_by = NULL
           WHERE id = $1 AND state IN ('submitted', 'approved')`,
         [id],
+      );
+    },
+
+    async listPayrollTimesheets(): Promise<PayrollTimesheetRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listPayrollTimesheets();
+      try {
+        // Read the comp-free payroll view (0087) joined to the employee name. The view
+        // carries approved attendance minutes, lifecycle state, and the matched QB payment
+        // fact — NO Pay Rate / expected pay (that math lives in the backend alone, ADR-0082).
+        const { rows } = await pool.query<{
+          timesheet_id: string;
+          app_user_id: string;
+          employee_name: string | null;
+          week_start: string;
+          week_end: string;
+          state: string;
+          approved_minutes: string;
+          payroll_approved_at: Date | null;
+          paid_at: Date | null;
+          qb_payment_ref: string | null;
+        }>(
+          `SELECT p.timesheet_id, p.app_user_id,
+                  COALESCE(u.display_name, u.email) AS employee_name,
+                  to_char(p.week_start, 'YYYY-MM-DD') AS week_start,
+                  to_char(p.week_end,   'YYYY-MM-DD') AS week_end,
+                  p.state, p.approved_minutes,
+                  p.payroll_approved_at, p.paid_at, p.qb_payment_ref
+           FROM timesheet_payroll_status p
+           JOIN app_user u ON u.id = p.app_user_id
+           WHERE p.state IN ('approved', 'payroll_approved', 'paid')
+           ORDER BY p.state, p.week_start DESC, employee_name`,
+        );
+        return rows.map((r) => ({
+          id: r.timesheet_id,
+          employeeId: r.app_user_id,
+          employeeName: r.employee_name ?? "—",
+          weekStart: r.week_start,
+          weekEnd: r.week_end,
+          state: r.state as PayrollTimesheetRow["state"],
+          approvedMinutes: Number(r.approved_minutes),
+          payrollApprovedAt: r.payroll_approved_at
+            ? new Date(r.payroll_approved_at).toISOString()
+            : null,
+          paidAt: r.paid_at ? new Date(r.paid_at).toISOString() : null,
+          qbPaymentRef: r.qb_payment_ref,
+        }));
+      } catch {
+        return mockRepositories.crm.listPayrollTimesheets();
+      }
+    },
+
+    async payrollApproveTimesheet(id: string, approvedBy: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.payrollApproveTimesheet(id, approvedBy);
+      // CFO payroll approval: only an Approved sheet → Payroll-Approved; stamp the approver.
+      // Authorizes payment — the app never pays. Idempotent (a non-Approved sheet is untouched).
+      await pool.query(
+        `UPDATE timesheet
+            SET state = 'payroll_approved', payroll_approved_at = now(), payroll_approved_by = $2
+          WHERE id = $1 AND state = 'approved'`,
+        [id, approvedBy],
+      );
+    },
+
+    async unapprovePayrollTimesheet(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.unapprovePayrollTimesheet(id);
+      // CFO undo before payment: Payroll-Approved → Approved; clear the payroll stamps.
+      // A Paid sheet never reverts here (terminal); only payroll_approved moves.
+      await pool.query(
+        `UPDATE timesheet
+            SET state = 'approved', payroll_approved_at = NULL, payroll_approved_by = NULL
+          WHERE id = $1 AND state = 'payroll_approved'`,
+        [id],
+      );
+    },
+
+    async markTimesheetPaid(id: string, qbPaymentRef: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.markTimesheetPaid(id, qbPaymentRef);
+      // Confirm the backend-suggested QuickBooks match: Payroll-Approved → Paid, recording
+      // the matched payment ref. Only a payroll_approved sheet moves; idempotent. This records
+      // the CFO's confirmation of the match — the comp math stays in the backend (ADR-0082).
+      await pool.query(
+        `UPDATE timesheet
+            SET state = 'paid', paid_at = now(), qb_payment_ref = $2
+          WHERE id = $1 AND state = 'payroll_approved'`,
+        [id, qbPaymentRef],
       );
     },
 

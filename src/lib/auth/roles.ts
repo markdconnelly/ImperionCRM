@@ -121,6 +121,17 @@ export function canManageEmployeeMappings(roles: readonly AppRole[] | undefined)
 }
 
 /**
+ * The payroll-approval surface (ADR-0082, #466) is the CFO gate — finance∨admin
+ * (Mark's call: admin is the top tier and holds it implicitly). GUI-side twin of
+ * the `time:payroll-approve` capability the server actions enforce. Distinct from
+ * the admin correctness gate (`canApproveTimesheets`): payroll approval authorizes
+ * payment and confirms the QuickBooks match; it never touches comp data.
+ */
+export function canApprovePayroll(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "finance");
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -150,6 +161,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   board: canSeeAgentPages,
   "time-approvals": canApproveTimesheets,
   "time-mappings": canManageEmployeeMappings,
+  "time-payroll": canApprovePayroll,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

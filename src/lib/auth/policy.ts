@@ -31,6 +31,7 @@ export const CAPABILITIES = [
   "time:write", // own weekly timesheet — enter/attest time (ADR-0082; every employee, own row only)
   "time:approve", // admin correctness approval of a submitted timesheet (ADR-0082; admin-only)
   "time:map", // admin confirm of an employee's Autotask Resource / QuickBooks vendor mapping (ADR-0082; admin-only)
+  "time:payroll-approve", // CFO payroll approval + confirm the QuickBooks-matched Paid state (ADR-0082; finance∨admin)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -59,6 +60,10 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   "time:approve": [],
   // Employee mapping confirm — admin one-time setup (ADR-0082, #468). Admin-only.
   "time:map": [],
+  // The payroll-approval gate (CFO, ADR-0082) — finance∨admin. Payroll-approves an
+  // Approved sheet (authorizes manual payment; the app never pays) and confirms the
+  // backend-suggested QuickBooks match to set Paid. The comp math stays in the backend.
+  "time:payroll-approve": ["finance"],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */

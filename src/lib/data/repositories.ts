@@ -52,6 +52,7 @@ import type {
   TimesheetRow,
   TimesheetDetail,
   TimesheetReviewRow,
+  PayrollTimesheetRow,
   EmployeeMappingRow,
   TimeEntryCategory,
   LeadHookRow,
@@ -372,6 +373,21 @@ export interface CrmRepository {
   /** Send an approved/submitted timesheet back to the employee: state→open, clear the
    *  attest/approve stamps (re-attest required). Keeps the snapshot + Time Ticket row. */
   reopenTimesheet(id: string): Promise<void>;
+
+  // Payroll approval — the CFO gate + Paid surface (ADR-0082, #466)
+  /** The payroll queue: every Approved sheet + the later payroll states (payroll_approved,
+   *  paid) across employees, from the comp-free `timesheet_payroll_status` view. NO Pay Rate. */
+  listPayrollTimesheets(): Promise<PayrollTimesheetRow[]>;
+  /** Payroll-approve an Approved sheet (CFO): state→payroll_approved, stamp the approver.
+   *  Authorizes payment; the app never pays. Idempotent (only an Approved sheet moves). */
+  payrollApproveTimesheet(id: string, approvedBy: string): Promise<void>;
+  /** Revert a payroll-approved sheet back to Approved (CFO undo before payment): clear the
+   *  payroll-approval stamps. Only a payroll_approved (not Paid) sheet moves. */
+  unapprovePayrollTimesheet(id: string): Promise<void>;
+  /** Confirm the QuickBooks-matched payment (CFO): state→paid, stamp paid_at + qb_payment_ref.
+   *  Only a payroll_approved sheet moves; idempotent. The match itself comes from the backend
+   *  Payroll Reconciliation (BE #105) — this records the CFO's confirmation of it. NO comp data. */
+  markTimesheetPaid(id: string, qbPaymentRef: string): Promise<void>;
 
   // Employee external-id mapping — admin one-time setup (ADR-0082, #468)
   /** Every active employee with its Autotask Resource / QuickBooks vendor mapping

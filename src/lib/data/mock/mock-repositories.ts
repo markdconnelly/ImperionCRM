@@ -300,6 +300,18 @@ export const mockRepositories: Repositories = {
     async reopenTimesheet() {
       throw new Error(NO_DB);
     },
+    async listPayrollTimesheets() {
+      return [];
+    },
+    async payrollApproveTimesheet() {
+      throw new Error(NO_DB);
+    },
+    async unapprovePayrollTimesheet() {
+      throw new Error(NO_DB);
+    },
+    async markTimesheetPaid() {
+      throw new Error(NO_DB);
+    },
     async listEmployeeMappings() {
       return [];
     },

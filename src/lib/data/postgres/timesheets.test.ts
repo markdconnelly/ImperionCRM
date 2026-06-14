@@ -345,6 +345,84 @@ describe("reopenTimesheet (send back, ADR-0082)", () => {
   });
 });
 
+describe("listPayrollTimesheets (CFO payroll queue, ADR-0082 #466)", () => {
+  it("reads the comp-free payroll view, filters payroll states, maps the row", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          timesheet_id: "ts-1",
+          app_user_id: "emp-1",
+          employee_name: "Dana Tech",
+          week_start: "2026-06-08",
+          week_end: "2026-06-14",
+          state: "payroll_approved",
+          approved_minutes: "2400",
+          payroll_approved_at: "2026-06-16T10:00:00.000Z",
+          paid_at: null,
+          qb_payment_ref: null,
+        },
+      ],
+    });
+    const rows = await crm.listPayrollTimesheets();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("FROM timesheet_payroll_status p");
+    expect(sql).toContain("JOIN app_user u ON u.id = p.app_user_id");
+    expect(sql).toContain("p.state IN ('approved', 'payroll_approved', 'paid')");
+    // The payroll queue is comp-free — never select pay rate / the comp store.
+    expect(sql).not.toContain("pay_rate");
+    expect(sql).not.toContain("employee_profile");
+    expect(rows[0]).toMatchObject({
+      id: "ts-1",
+      employeeId: "emp-1",
+      employeeName: "Dana Tech",
+      state: "payroll_approved",
+      approvedMinutes: 2400,
+      paidAt: null,
+      qbPaymentRef: null,
+    });
+  });
+});
+
+describe("payrollApproveTimesheet (CFO gate, ADR-0082 #466)", () => {
+  it("moves only an Approved sheet → Payroll-Approved and stamps the approver", async () => {
+    await crm.payrollApproveTimesheet("ts-1", "cfo-1");
+    const sql = query.mock.calls[0][0] as string;
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toContain("state = 'payroll_approved'");
+    expect(sql).toContain("payroll_approved_at = now()");
+    expect(sql).toContain("payroll_approved_by = $2");
+    expect(sql).toContain("state = 'approved'"); // source-state guard
+    expect(sql).not.toContain("pay_rate");
+    expect(params).toEqual(["ts-1", "cfo-1"]);
+  });
+});
+
+describe("unapprovePayrollTimesheet (CFO undo, ADR-0082 #466)", () => {
+  it("reverts Payroll-Approved → Approved and clears the payroll stamps", async () => {
+    await crm.unapprovePayrollTimesheet("ts-1");
+    const sql = query.mock.calls[0][0] as string;
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toContain("state = 'approved'");
+    expect(sql).toContain("payroll_approved_at = NULL");
+    expect(sql).toContain("state = 'payroll_approved'"); // only un-approve before payment
+    expect(params).toEqual(["ts-1"]);
+  });
+});
+
+describe("markTimesheetPaid (confirm QB match, ADR-0082 #466)", () => {
+  it("moves only a Payroll-Approved sheet → Paid and records the payment ref", async () => {
+    await crm.markTimesheetPaid("ts-1", "QB-PMT-99");
+    const sql = query.mock.calls[0][0] as string;
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toContain("state = 'paid'");
+    expect(sql).toContain("paid_at = now()");
+    expect(sql).toContain("qb_payment_ref = $2");
+    expect(sql).toContain("state = 'payroll_approved'"); // source-state guard
+    expect(sql).not.toContain("pay_rate");
+    expect(params).toEqual(["ts-1", "QB-PMT-99"]);
+  });
+});
+
 describe("listEmployeeMappings (admin mapping UI, ADR-0082 #468)", () => {
   it("left-joins the mapping sidecar, coerces the numeric Resource id, derives confirmed", async () => {
     query.mockResolvedValueOnce({
