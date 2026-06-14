@@ -67,6 +67,7 @@ import type {
   ExpensePolicyViolationRow,
   MileiqDriveRow,
   MonthlyCloseRow,
+  AdminMonthlyCloseRow,
   TimeEntryCategory,
   LeadHookRow,
   MarketingSocialReport,
@@ -623,6 +624,11 @@ export interface CrmRepository {
   /** The unified monthly-close rows for an employee, newest month first (the comp-free
    *  `monthly_close` view: time minutes + reimbursable totals + match statuses). */
   listMonthlyClose(employeeId: string): Promise<MonthlyCloseRow[]>;
+  /** The unified Monthly Close feed across ALL employees (ADR-0083 #491) — the
+   *  `monthly_close` view joined to the employee display name, newest month first. The
+   *  single finance surface rolling up both legs (time + reimbursable expense) per
+   *  employee per month. Comp-free — minutes + dollar amounts only, never a rate. */
+  listAllMonthlyClose(): Promise<AdminMonthlyCloseRow[]>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;

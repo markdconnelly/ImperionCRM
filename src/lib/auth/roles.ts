@@ -237,6 +237,9 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   "expense-admin": canAdministerExpenses,
   "expense-categories": canManageExpenseCategories,
   "expense-mileage-rate": canManageMileageRate,
+  // The unified Monthly Close (ADR-0083 #491) is the finance gate — finance∨admin,
+  // same as the payroll/finance-approve surfaces (`canApprovePayroll`).
+  "monthly-close": canApprovePayroll,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

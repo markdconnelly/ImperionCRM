@@ -53,6 +53,10 @@ export const navSecondary: NavItem[] = [
   // Payroll-gated comp setup: the effective-dated SYSTEM mileage rate (finance∨admin, ADR-0083 #490).
   // COMP DATA — gated like Pay Rate; never visible to employee/agent/client roles.
   { key: "expense-mileage-rate", label: "Mileage Rate", icon: "Gauge", href: "/expenses/mileage-rate" },
+  // The unified Monthly Close: one finance task rolling up BOTH legs (time + reimbursable
+  // expense) per employee per month, with QuickBooks read-back status (finance∨admin,
+  // ADR-0083 #491, amends ADR-0082). The app never pays — finance authorizes the manual payment.
+  { key: "monthly-close", label: "Monthly Close", icon: "CalendarRange", href: "/monthly-close" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },

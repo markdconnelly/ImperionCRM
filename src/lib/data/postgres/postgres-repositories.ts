@@ -105,6 +105,7 @@ import type {
   ExpensePolicyViolationRow,
   MileiqDriveRow,
   MonthlyCloseRow,
+  AdminMonthlyCloseRow,
   AdminExpenseRow,
   AdminExpenseReview,
   ExpenseReimbursementMatch,
@@ -3156,6 +3157,61 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listMonthlyClose(employeeId);
+      }
+    },
+
+    async listAllMonthlyClose(): Promise<AdminMonthlyCloseRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAllMonthlyClose();
+      try {
+        // The unified Monthly Close (#491) across ALL employees — the comp-free 0090 view
+        // joined to the employee display name, newest month first. Minutes + dollar amounts
+        // only; expected pay (hours × rate) stays in the backend (the sole comp reader).
+        const { rows } = await pool.query<{
+          app_user_id: string;
+          employee_name: string | null;
+          period_year: number;
+          period_month: number;
+          expense_report_id: string | null;
+          expense_state: string | null;
+          reimbursable_total: string;
+          reimbursement_verdict: string;
+          qb_bill_payment_ref: string | null;
+          approved_time_minutes: string;
+          timesheet_count: string;
+          paid_count: string;
+          expense_obligation_open: boolean | null;
+          time_obligation_open: boolean | null;
+        }>(
+          `SELECT mc.app_user_id,
+                  COALESCE(u.display_name, u.email) AS employee_name,
+                  mc.period_year, mc.period_month, mc.expense_report_id, mc.expense_state,
+                  mc.reimbursable_total, mc.reimbursement_verdict, mc.qb_bill_payment_ref,
+                  mc.approved_time_minutes, mc.timesheet_count, mc.paid_count,
+                  mc.expense_obligation_open, mc.time_obligation_open
+             FROM monthly_close mc
+             JOIN app_user u ON u.id = mc.app_user_id
+            ORDER BY mc.period_year DESC, mc.period_month DESC, employee_name`,
+        );
+        return rows.map((r) => ({
+          appUserId: r.app_user_id,
+          employeeName: r.employee_name ?? "—",
+          periodYear: Number(r.period_year),
+          periodMonth: Number(r.period_month),
+          expenseReportId: r.expense_report_id,
+          expenseState: r.expense_state as AdminMonthlyCloseRow["expenseState"],
+          reimbursableTotal: Number(r.reimbursable_total),
+          reimbursementVerdict:
+            r.reimbursement_verdict as AdminMonthlyCloseRow["reimbursementVerdict"],
+          qbPaymentRef: r.qb_bill_payment_ref,
+          approvedTimeMinutes: Number(r.approved_time_minutes),
+          timesheetCount: Number(r.timesheet_count),
+          paidCount: Number(r.paid_count),
+          expenseObligationOpen: r.expense_obligation_open ?? false,
+          timeObligationOpen: r.time_obligation_open ?? false,
+        }));
+      } catch {
+        return mockRepositories.crm.listAllMonthlyClose();
       }
     },
 
