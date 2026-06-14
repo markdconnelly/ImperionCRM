@@ -138,6 +138,29 @@ No cookie is used (the backend owns the CSRF state, mirroring the per-user OAuth
 Activation = backend app settings `QBO_CLIENT_ID_SECRET` / `QBO_CLIENT_SECRET_SECRET` /
 `QBO_REDIRECT_URI` (+ `QBO_ENVIRONMENT`) and migration 0093 (`qbo` provider enum).
 
+**Connect outcomes (#530).** Both the start action and the callback land on
+`/settings?tab=credentials&qbo=<result>` (with `&qboStatus=<httpStatus>` when the backend
+answered with an HTTP code), and the company-credentials tab renders a specific notice
+instead of the row's bare `error`. Vocabulary + messages live in
+`src/lib/integrations/qbo-connect.ts`:
+
+| `qbo` code | When | Tone |
+| --- | --- | --- |
+| `ok` | token exchanged, row active | success |
+| `start_not_configured` / `stubbed` | backend returned 501 (Intuit app not registered yet) | warning |
+| `denied` | admin cancelled consent at Intuit | warning |
+| `start_rejected` (+`qboStatus`) | `start` got a non-2xx from the backend | error |
+| `exchange_failed` (+`qboStatus`) | callback: backend 502, Intuit refused the code exchange | error |
+| `start_unreachable` | `start` got no usable answer (network/timeout) | error |
+| `start_no_url` | `start` returned 200 but no consent URL | error |
+| `invalid` | Intuit returned without `code`/`realmId`/`state` | error |
+| `forbidden` | caller lacked `settings:write` | error |
+| `error` | anything else | error |
+
+Hard failures (`start_rejected` / `exchange_failed` / `start_unreachable`) are also
+`console.error`'d server-side (App Service console logs) for triage — never with token
+material.
+
 Provider/field definitions: `src/lib/integrations/company-providers.ts`.
 
 ## Lead-capture hooks (ADR-0024)
