@@ -57,6 +57,14 @@ attest **Hard-deviation gate** (over-logged day or same-day overlap) is computed
 that stays in the backend reconciliation process. See `timesheets.test.ts` for the
 SQL-shape + mapping + gate contract.
 
+The **admin approval** methods (ADR-0082) sit on the same tables: `listSubmittedTimesheets`
+is the review queue (Submitted sheets across employees, joined to `app_user` for the name);
+`approveTimesheet` runs a `pool.connect()` transaction — Submitted→Approved then an idempotent
+`INSERT … ON CONFLICT (timesheet_id) DO NOTHING` of the **pending `time_ticket`** row the
+backend Time Ticket writer (BE-1) consumes (the ticket is requested here, written there — the
+front end never holds Autotask creds, ADR-0042); `reopenTimesheet` sends a sheet back to the
+employee (→open, stamps cleared, snapshot + ticket row kept for the re-write).
+
 ## Swapping to Postgres (ADR-0003)
 1. Add a `postgres/` implementation of the same interfaces (querying gold).
 2. In `index.ts`, return it when `process.env.DATABASE_URL` is set.

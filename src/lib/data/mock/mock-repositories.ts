@@ -291,6 +291,15 @@ export const mockRepositories: Repositories = {
     async submitTimesheet() {
       throw new Error(NO_DB);
     },
+    async listSubmittedTimesheets() {
+      return [];
+    },
+    async approveTimesheet() {
+      throw new Error(NO_DB);
+    },
+    async reopenTimesheet() {
+      throw new Error(NO_DB);
+    },
     async listOnboarding() {
       // Acme is instantiated from the standard playbook (ADR-0037): earlier
       // phases mostly checked off so the derived R/Y/G + checklist render.

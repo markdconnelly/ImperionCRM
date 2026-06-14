@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock the pool seam (same harness as delivery-templates.test.ts). These methods
-// read/write via pool.query (no transactions), so only query + getPool are needed.
-const { query, connect, getPool } = vi.hoisted(() => {
+// Mock the pool seam (same harness as delivery-templates.test.ts). Most methods read/
+// write via pool.query; approveTimesheet uses a pool.connect() transaction, so the
+// client query spy is exposed too.
+const { query, connect, clientQuery, release, getPool } = vi.hoisted(() => {
   const query = vi.fn<(sql: string, params?: unknown[]) => Promise<{ rows: unknown[] }>>(
     async () => ({ rows: [] }),
   );
-  const connect = vi.fn(async () => ({ query, release: vi.fn() }));
+  const clientQuery = vi.fn<
+    (sql: string, params?: unknown[]) => Promise<{ rows: unknown[]; rowCount?: number }>
+  >(async () => ({ rows: [], rowCount: 1 }));
+  const release = vi.fn();
+  const connect = vi.fn(async () => ({ query: clientQuery, release }));
   const getPool = vi.fn((): unknown => ({ query, connect }));
-  return { query, connect, getPool };
+  return { query, connect, clientQuery, release, getPool };
 });
 
 vi.mock("@/lib/db/client", () => ({ getPool, isDbConfigured: () => getPool() !== null }));
@@ -22,6 +27,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getPool.mockReturnValue({ query, connect });
   query.mockResolvedValue({ rows: [] });
+  clientQuery.mockResolvedValue({ rows: [], rowCount: 1 });
 });
 
 describe("listTimesheets (ADR-0082)", () => {
@@ -255,5 +261,86 @@ describe("submitTimesheet (attest, ADR-0082)", () => {
     expect(sql).toContain("jsonb_agg(to_jsonb(w)"); // attested snapshot
     expect(sql).toContain("t.state = 'open'"); // self-lock guard
     expect(params).toEqual(["ts-1", "emp-1"]);
+  });
+});
+
+describe("listSubmittedTimesheets (admin queue, ADR-0082)", () => {
+  it("queries only submitted sheets, joins the employee name, maps the row", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "ts-1",
+          app_user_id: "emp-1",
+          employee_name: "Dana Tech",
+          week_start: "2026-06-08",
+          week_end: "2026-06-14",
+          state: "submitted",
+          attested_at: "2026-06-15T10:00:00.000Z",
+          entry_count: "5",
+          total_minutes: "2400",
+        },
+      ],
+    });
+    const rows = await crm.listSubmittedTimesheets();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("t.state = 'submitted'");
+    expect(sql).toContain("JOIN app_user u ON u.id = t.app_user_id");
+    expect(rows[0]).toMatchObject({
+      id: "ts-1",
+      employeeId: "emp-1",
+      employeeName: "Dana Tech",
+      entryCount: 5,
+      totalMinutes: 2400,
+    });
+  });
+});
+
+describe("approveTimesheet (transaction + Time Ticket request, ADR-0082)", () => {
+  it("commits: Submitted→Approved then upserts the pending time_ticket", async () => {
+    const sqls: string[] = [];
+    clientQuery.mockImplementation(async (sql: string) => {
+      sqls.push(sql);
+      return { rows: [], rowCount: 1 };
+    });
+    await crm.approveTimesheet("ts-1", "admin-1");
+    expect(sqls[0]).toBe("BEGIN");
+    expect(sqls.at(-1)).toBe("COMMIT");
+    expect(sqls.some((s) => s.includes("state = 'approved'") && s.includes("approved_by = $2"))).toBe(true);
+    expect(sqls.some((s) => s.includes("INSERT INTO time_ticket") && s.includes("ON CONFLICT (timesheet_id) DO NOTHING"))).toBe(true);
+  });
+
+  it("does NOT create a ticket when the sheet was not in Submitted (rowCount 0)", async () => {
+    const sqls: string[] = [];
+    clientQuery.mockImplementation(async (sql: string) => {
+      sqls.push(sql);
+      return { rows: [], rowCount: sql.includes("UPDATE timesheet") ? 0 : 1 };
+    });
+    await crm.approveTimesheet("ts-1", "admin-1");
+    expect(sqls.some((s) => s.includes("INSERT INTO time_ticket"))).toBe(false);
+    expect(sqls.at(-1)).toBe("COMMIT");
+  });
+
+  it("rolls back on error and releases the client", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("UPDATE timesheet")) throw new Error("boom");
+      return { rows: [], rowCount: 1 };
+    });
+    await expect(crm.approveTimesheet("ts-1", "admin-1")).rejects.toThrow("boom");
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls).toContain("ROLLBACK");
+    expect(release).toHaveBeenCalled();
+  });
+});
+
+describe("reopenTimesheet (send back, ADR-0082)", () => {
+  it("clears attest/approve stamps and guards the source state", async () => {
+    await crm.reopenTimesheet("ts-1");
+    const sql = query.mock.calls[0][0] as string;
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toContain("state = 'open'");
+    expect(sql).toContain("attested_at = NULL");
+    expect(sql).toContain("approved_at = NULL");
+    expect(sql).toContain("state IN ('submitted', 'approved')");
+    expect(params).toEqual(["ts-1"]);
   });
 });
