@@ -2,6 +2,8 @@
 
 Per-integration docs (M365/Graph, Autotask, IT Glue, My IT Process): owners, auth, rate limits, data exchanged, retry, monitoring.
 
+- [`mileiq-api.md`](./mileiq-api.md) — MileIQ External API access model (request-gated, OAuth 2.1 per-user vs Teams-group beta) + open questions before provisioning (#522, ADR-0083).
+
 See `CLAUDE.md` section 8 and the project standards doc for required fields.
 
 > **Back-end & pipeline work the front end now expects:**
