@@ -288,6 +288,16 @@ export interface PayrollMatchSuggestion {
 }
 
 /**
+ * Admin review of one Submitted sheet (ADR-0082 #477): the live detail plus the
+ * employee's immutable **attested original** (`timesheet.attested_snapshot`), so the
+ * approvals surface can diff admin corrections against what was attested. `null` for
+ * sheets attested before snapshots existed / never attested.
+ */
+export interface AdminTimesheetReview extends TimesheetDetail {
+  attestedSnapshot: TimeEntryRow[] | null;
+}
+
+/**
  * The six time-reconciliation Deviations (ADR-0082; backend ADR-0046). The day-level four
  * are derivable from `time_reconciliation_day`; `overlap` + `temporal_orphan` need row-pair
  * logic, so the full set comes from the backend `POST /orchestration/time-reconciliation`.
@@ -527,6 +537,31 @@ export interface SecurityFleetReport {
   defenderOpenBySeverity: CountDatum[]; // open = status not resolved/redirected (#256)
   intune: { compliant: number; total: number }; // intune_managed_devices
   exposuresOpen: number; // credential_exposure not resolved
+}
+
+// ── Reporting BI hub — Time Efficiency section (ADR-0082 / ADR-0062, #467) ───
+
+/**
+ * Time-efficiency rollup for the BI hub. **Utilization is comp-free** — it is
+ * the split of authoritative attendance minutes (silver `time_record`,
+ * kind='attendance') across the billable / internal / admin categories.
+ * **Labor cost is comp-derived and AGGREGATE-ONLY** — Σ(approved hours ×
+ * effective hourly rate) over approved timesheets, never a per-person rate — and
+ * is `null` unless the caller is finance | admin (the cost query does not run
+ * otherwise, so `pay_rate` is never read for other roles). All zero/`null` until
+ * `time_record`, approved timesheets, and `pay_rate` carry rows (build-ahead, #467).
+ */
+export interface TimeEfficiencyReport {
+  utilization: {
+    billableMinutes: number;
+    internalMinutes: number;
+    adminMinutes: number;
+  };
+  laborCost: {
+    approvedHours: number; // costed approved hours (rounded)
+    totalCost: number; // Σ hours × effective hourly rate — aggregate dollars
+    blendedHourlyRate: number | null; // totalCost ÷ approvedHours, null when no hours
+  } | null;
 }
 
 // ── Dashboard cross-domain intelligence strip (ADR-0062, #292) ───────────────

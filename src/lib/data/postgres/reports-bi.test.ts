@@ -235,6 +235,85 @@ describe("Security Fleet BI section (#291 — ADR-0062)", () => {
   });
 });
 
+describe("Time Efficiency BI section (#467 — ADR-0082)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPool.mockReturnValue({ query });
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM time_record"))
+        return { rows: [{ billable: "18240", internal: "6360", admin: "3000" }] };
+      if (sql.includes("FROM timesheet_payroll_status"))
+        return { rows: [{ minutes: "27600", total: "27600" }] };
+      return { rows: [] };
+    });
+  });
+
+  it("maps comp-free utilization minutes and aggregate labor cost when permitted", async () => {
+    const r = await reports.timeEfficiency(true);
+    expect(r.utilization).toEqual({
+      billableMinutes: 18240,
+      internalMinutes: 6360,
+      adminMinutes: 3000,
+    });
+    expect(r.laborCost).toEqual({
+      approvedHours: 460, // 27600 / 60
+      totalCost: 27600,
+      blendedHourlyRate: 60, // 27600 / 460
+    });
+  });
+
+  it("utilization reads attendance only, comp-free — splits by category, never touches pay_rate", async () => {
+    await reports.timeEfficiency(true);
+    const utilSql = query.mock.calls
+      .map((c) => c[0] as string)
+      .find((s) => s.includes("FROM time_record"))!;
+    expect(utilSql).toContain("kind = 'attendance'");
+    expect(utilSql).toContain("FILTER (WHERE category = 'billable')");
+    expect(utilSql).not.toMatch(/pay_rate|employee_profile/);
+  });
+
+  it("withholds labor cost AND never runs the comp query for non-finance/admin callers", async () => {
+    const r = await reports.timeEfficiency(false);
+    expect(r.laborCost).toBeNull();
+    expect(r.utilization.billableMinutes).toBe(18240);
+    const sqls = query.mock.calls.map((c) => c[0] as string);
+    // The pay_rate/cost query must not run at all when the caller isn't gated in.
+    expect(sqls.some((s) => s.includes("pay_rate"))).toBe(false);
+    expect(sqls.some((s) => s.includes("FROM timesheet_payroll_status"))).toBe(false);
+  });
+
+  it("labor cost is aggregate-only: latest effective rate per employee, approved states", async () => {
+    await reports.timeEfficiency(true);
+    const costSql = query.mock.calls
+      .map((c) => c[0] as string)
+      .find((s) => s.includes("FROM timesheet_payroll_status"))!;
+    expect(costSql).toContain("JOIN LATERAL");
+    expect(costSql).toContain("ORDER BY p.effective_from DESC");
+    expect(costSql).toContain("ps.state IN ('approved', 'payroll_approved', 'paid')");
+    // Aggregate only — the projection sums, it never selects a row-level rate.
+    expect(costSql).toContain("sum((ps.approved_minutes / 60.0) * pr.eff_hourly)");
+  });
+
+  it("null blended rate (not divide-by-zero) when there are no approved hours yet", async () => {
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM time_record"))
+        return { rows: [{ billable: "0", internal: "0", admin: "0" }] };
+      if (sql.includes("FROM timesheet_payroll_status"))
+        return { rows: [{ minutes: "0", total: "0" }] };
+      return { rows: [] };
+    });
+    const r = await reports.timeEfficiency(true);
+    expect(r.laborCost).toEqual({ approvedHours: 0, totalCost: 0, blendedHourlyRate: null });
+  });
+
+  it("falls back to the mock when no pool is configured", async () => {
+    getPool.mockReturnValue(null);
+    const r = await reports.timeEfficiency(true);
+    expect(r.utilization.billableMinutes).toBeGreaterThan(0);
+    expect(query).not.toHaveBeenCalled();
+  });
+});
+
 describe("Dashboard intelligence strip (#292 — ADR-0062)", () => {
   beforeEach(() => {
     vi.clearAllMocks();

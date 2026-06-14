@@ -53,6 +53,7 @@ import type {
   TimesheetDetail,
   TimesheetReviewRow,
   PayrollTimesheetRow,
+  AdminTimesheetReview,
   EmployeeMappingRow,
   TimeEntryCategory,
   LeadHookRow,
@@ -60,6 +61,7 @@ import type {
   OnboardingProject,
   SecurityFleetReport,
   ServiceDeskReport,
+  TimeEfficiencyReport,
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
@@ -250,6 +252,24 @@ export interface TimeEntryInput {
   notes: string | null;
 }
 
+/** The editable fields of one attendance block (ADR-0082 #477). The owning sheet/employee
+ *  is never trusted from the caller on a correction — it's taken from the locked timesheet. */
+export interface TimeEntryFields {
+  workDate: string; // yyyy-mm-dd
+  startedAt: string; // ISO timestamp
+  endedAt: string; // ISO timestamp; CHECK ended_at > started_at
+  category: TimeEntryCategory;
+  ancillaryTicketRef: string | null;
+  notes: string | null;
+}
+
+/** One admin correction to a Submitted sheet's entries, audited vs the attested original
+ *  (ADR-0082 #477): add a block, edit one in place, or remove one. */
+export type TimesheetCorrection =
+  | { kind: "add"; entry: TimeEntryFields }
+  | { kind: "update"; entryId: string; entry: TimeEntryFields }
+  | { kind: "delete"; entryId: string };
+
 /** Admin mapping confirm payload (ADR-0082, #468). A blank id clears that mapping. */
 export interface EmployeeMappingInput {
   appUserId: string;
@@ -373,6 +393,19 @@ export interface CrmRepository {
   /** Send an approved/submitted timesheet back to the employee: state→open, clear the
    *  attest/approve stamps (re-attest required). Keeps the snapshot + Time Ticket row. */
   reopenTimesheet(id: string): Promise<void>;
+  /** Admin read of any timesheet by id (NOT employee-scoped) — the live detail plus the
+   *  immutable attested original, for the #477 inline-correction surface. */
+  getTimesheetById(id: string): Promise<AdminTimesheetReview | null>;
+  /** Admin in-place correction of a Submitted sheet's entries (ADR-0082 #477), audited
+   *  vs the attested original: verifies state=submitted under a row lock, applies the
+   *  add/edit/delete (owner taken from the sheet, never the caller), and writes an
+   *  `audit_log` row (who/when/before→after). Returns false (no-op) if not Submitted or
+   *  the target entry doesn't belong to the sheet. Caller gates `time:approve`. */
+  correctSubmittedTimesheet(
+    timesheetId: string,
+    op: TimesheetCorrection,
+    correctedBy: string,
+  ): Promise<boolean>;
 
   // Payroll approval — the CFO gate + Paid surface (ADR-0082, #466)
   /** The payroll queue: every Approved sheet + the later payroll states (payroll_approved,
@@ -707,6 +740,12 @@ export interface ReportsRepository {
   serviceDesk(): Promise<ServiceDeskReport>;
   /** Security Fleet BI-hub section: cross-tenant posture/MFA/Defender/Intune rollup (ADR-0062). */
   securityFleet(): Promise<SecurityFleetReport>;
+  /**
+   * Time Efficiency BI-hub section (ADR-0082, #467): utilization (comp-free) plus
+   * aggregate labor cost. Pass `includeLaborCost=true` ONLY for finance|admin
+   * callers — when false the comp query never runs and `laborCost` is `null`.
+   */
+  timeEfficiency(includeLaborCost: boolean): Promise<TimeEfficiencyReport>;
 }
 
 // ── Communications (ADR-0011) ────────────────────────────────────────────────

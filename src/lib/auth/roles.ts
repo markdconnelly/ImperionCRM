@@ -139,6 +139,18 @@ export function canSeeRevenue(roles: readonly AppRole[] | undefined): boolean {
   return Boolean(roles?.some((r) => r !== "support"));
 }
 
+/**
+ * Labor-cost / pay-derived efficiency analytics (ADR-0082, #467) are comp-sensitive:
+ * the figures are derived from effective-dated `pay_rate`, so they are restricted
+ * to finance | admin and never shown employee/client-facing. GUI-side twin of the
+ * comp gate the repo read enforces (the cost query never runs for other roles).
+ * (Utilization itself is comp-free, but the whole /reporting efficiency section
+ * rides this gate per the issue.)
+ */
+export function canSeeLaborCost(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "finance");
+}
+
 /** Placeholder shown in place of a money value the user may not see. */
 export const REDACTED_MONEY = "—";
 

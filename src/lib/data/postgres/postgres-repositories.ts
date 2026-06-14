@@ -43,6 +43,7 @@ import type {
   ProjectTypeInput,
   DeliveryTemplateInput,
   TimeEntryInput,
+  TimesheetCorrection,
   ProposalEditable,
   ProposalInput,
   QuestionEditable,
@@ -89,6 +90,7 @@ import type {
   TimesheetDetail,
   TimesheetReviewRow,
   PayrollTimesheetRow,
+  AdminTimesheetReview,
   EmployeeMappingRow,
   TimeEntryRow,
   ReconciliationDay,
@@ -127,6 +129,7 @@ import type {
   SalesTaskRow,
   SecurityFleetReport,
   ServiceDeskReport,
+  TimeEfficiencyReport,
   SbrDetail,
   SbrRow,
   SocialIdentityRow,
@@ -205,6 +208,88 @@ function hasHardDeviation(
     }
   }
   return false;
+}
+
+/** The base timesheet columns both timesheet reads fetch before assembling the detail. */
+interface BaseTimesheet {
+  id: string;
+  app_user_id: string;
+  week_start: string;
+  week_end: string;
+  state: string;
+  attested_at: Date | null;
+}
+
+/**
+ * Load a timesheet's entries + per-day reconciliation (ADR-0082) and assemble the shared
+ * `TimesheetDetail` from a base row. Used by both the employee-scoped `getTimesheetForWeek`
+ * and the admin-scoped `getTimesheetById` (#477) so the entry/reconciliation shape stays
+ * identical across surfaces.
+ */
+async function assembleTimesheetDetail(pool: Pool, t: BaseTimesheet): Promise<TimesheetDetail> {
+  const { rows: eRows } = await pool.query<{
+    id: string;
+    work_date: string;
+    started_at: Date;
+    ended_at: Date;
+    minutes: string;
+    category: string;
+    ancillary_ticket_ref: string | null;
+    notes: string | null;
+  }>(
+    `SELECT id, to_char(work_date, 'YYYY-MM-DD') AS work_date,
+            started_at, ended_at,
+            (EXTRACT(EPOCH FROM (ended_at - started_at)) / 60)::int AS minutes,
+            category, ancillary_ticket_ref, notes
+     FROM website_time_entry WHERE timesheet_id = $1
+     ORDER BY started_at`,
+    [t.id],
+  );
+  // Per-day reconciliation for the week (the memory-jogger seed), over the view.
+  const { rows: rRows } = await pool.query<{
+    work_date: string;
+    attended_minutes: string;
+    logged_minutes: string;
+    delta_minutes: string;
+    verdict: string;
+  }>(
+    `SELECT to_char(work_date, 'YYYY-MM-DD') AS work_date,
+            attended_minutes, logged_minutes, delta_minutes, verdict
+     FROM time_reconciliation_day
+     WHERE app_user_id = $1 AND work_date BETWEEN $2 AND $3
+     ORDER BY work_date`,
+    [t.app_user_id, t.week_start, t.week_end],
+  );
+  const entries: TimeEntryRow[] = eRows.map((r) => ({
+    id: r.id,
+    workDate: r.work_date,
+    startedAt: new Date(r.started_at).toISOString(),
+    endedAt: new Date(r.ended_at).toISOString(),
+    minutes: Number(r.minutes),
+    category: r.category as TimeEntryRow["category"],
+    ancillaryTicketRef: r.ancillary_ticket_ref,
+    notes: r.notes,
+  }));
+  const reconciliation: ReconciliationDay[] = rRows.map((r) => ({
+    workDate: r.work_date,
+    attendedMinutes: Number(r.attended_minutes),
+    loggedMinutes: Number(r.logged_minutes),
+    deltaMinutes: Number(r.delta_minutes),
+    verdict: r.verdict as ReconciliationDay["verdict"],
+  }));
+  return {
+    id: t.id,
+    employeeId: t.app_user_id,
+    weekStart: t.week_start,
+    weekEnd: t.week_end,
+    state: t.state as TimesheetRow["state"],
+    entryCount: entries.length,
+    totalMinutes: entries.reduce((s, e) => s + e.minutes, 0),
+    attestedAt: t.attested_at ? new Date(t.attested_at).toISOString() : null,
+    entries,
+    reconciliation,
+    hasHardDeviation: hasHardDeviation(entries, reconciliation),
+  };
 }
 
 function fmtDate(d: Date | null): string | null {
@@ -1629,69 +1714,7 @@ export const postgresRepositories: Repositories = {
       );
       const t = tRows[0];
       if (!t) return null;
-      const { rows: eRows } = await pool.query<{
-        id: string;
-        work_date: string;
-        started_at: Date;
-        ended_at: Date;
-        minutes: string;
-        category: string;
-        ancillary_ticket_ref: string | null;
-        notes: string | null;
-      }>(
-        `SELECT id, to_char(work_date, 'YYYY-MM-DD') AS work_date,
-                started_at, ended_at,
-                (EXTRACT(EPOCH FROM (ended_at - started_at)) / 60)::int AS minutes,
-                category, ancillary_ticket_ref, notes
-         FROM website_time_entry WHERE timesheet_id = $1
-         ORDER BY started_at`,
-        [t.id],
-      );
-      // Per-day reconciliation for the week (the memory-jogger seed), over the view.
-      const { rows: rRows } = await pool.query<{
-        work_date: string;
-        attended_minutes: string;
-        logged_minutes: string;
-        delta_minutes: string;
-        verdict: string;
-      }>(
-        `SELECT to_char(work_date, 'YYYY-MM-DD') AS work_date,
-                attended_minutes, logged_minutes, delta_minutes, verdict
-         FROM time_reconciliation_day
-         WHERE app_user_id = $1 AND work_date BETWEEN $2 AND $3
-         ORDER BY work_date`,
-        [employeeId, t.week_start, t.week_end],
-      );
-      const entries: TimeEntryRow[] = eRows.map((r) => ({
-        id: r.id,
-        workDate: r.work_date,
-        startedAt: new Date(r.started_at).toISOString(),
-        endedAt: new Date(r.ended_at).toISOString(),
-        minutes: Number(r.minutes),
-        category: r.category as TimeEntryRow["category"],
-        ancillaryTicketRef: r.ancillary_ticket_ref,
-        notes: r.notes,
-      }));
-      const reconciliation: ReconciliationDay[] = rRows.map((r) => ({
-        workDate: r.work_date,
-        attendedMinutes: Number(r.attended_minutes),
-        loggedMinutes: Number(r.logged_minutes),
-        deltaMinutes: Number(r.delta_minutes),
-        verdict: r.verdict as ReconciliationDay["verdict"],
-      }));
-      return {
-        id: t.id,
-        employeeId: t.app_user_id,
-        weekStart: t.week_start,
-        weekEnd: t.week_end,
-        state: t.state as TimesheetRow["state"],
-        entryCount: entries.length,
-        totalMinutes: entries.reduce((s, e) => s + e.minutes, 0),
-        attestedAt: t.attested_at ? new Date(t.attested_at).toISOString() : null,
-        entries,
-        reconciliation,
-        hasHardDeviation: hasHardDeviation(entries, reconciliation),
-      };
+      return assembleTimesheetDetail(pool, t);
     },
 
     async ensureTimesheetForWeek(employeeId, weekStart): Promise<string> {
@@ -1856,7 +1879,7 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.reopenTimesheet(id);
       // Back to the employee for correction — re-attest required. Keep the attested
-      // snapshot + any time_ticket row (re-approval re-writes the same external_ref).
+      // snapshot for the audit/diff.
       await pool.query(
         `UPDATE timesheet
             SET state = 'open', attested_at = NULL, attested_by = NULL,
@@ -1864,6 +1887,171 @@ export const postgresRepositories: Repositories = {
           WHERE id = $1 AND state IN ('submitted', 'approved')`,
         [id],
       );
+      // Re-queue an already-documented week so the corrected hours reach Autotask:
+      // reset a WRITTEN time_ticket back to 'pending' but KEEP external_ref, so the
+      // backend writer PATCHes the same ticket on re-approval instead of leaving a
+      // stale summary (no duplicate). Backend issue #103 / ADR-0047; the writer's
+      // ON CONFLICT DO NOTHING insert means this reset, not re-approval, re-queues it.
+      await pool.query(
+        `UPDATE time_ticket
+            SET write_state = 'pending', last_error = NULL
+          WHERE timesheet_id = $1 AND write_state = 'written'`,
+        [id],
+      );
+    },
+
+    async getTimesheetById(id: string): Promise<AdminTimesheetReview | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getTimesheetById(id);
+      const { rows: tRows } = await pool.query<{
+        id: string;
+        app_user_id: string;
+        week_start: string;
+        week_end: string;
+        state: string;
+        attested_at: Date | null;
+        attested_snapshot: Array<Record<string, unknown>> | null;
+      }>(
+        `SELECT id, app_user_id,
+                to_char(week_start, 'YYYY-MM-DD') AS week_start,
+                to_char(week_end,   'YYYY-MM-DD') AS week_end,
+                state, attested_at, attested_snapshot
+         FROM timesheet WHERE id = $1`,
+        [id],
+      );
+      const t = tRows[0];
+      if (!t) return null;
+      const detail = await assembleTimesheetDetail(pool, t);
+      // The attested original (raw website_time_entry rows captured at submit), normalized
+      // to the same TimeEntryRow shape so the #477 diff compares like-for-like. Immutable —
+      // we only ever read it here.
+      const attestedSnapshot: TimeEntryRow[] | null = Array.isArray(t.attested_snapshot)
+        ? t.attested_snapshot.map((s) => {
+            const startedAt = new Date(String(s.started_at)).toISOString();
+            const endedAt = new Date(String(s.ended_at)).toISOString();
+            return {
+              id: String(s.id),
+              workDate: String(s.work_date).slice(0, 10),
+              startedAt,
+              endedAt,
+              minutes: Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 60000),
+              category: s.category as TimeEntryRow["category"],
+              ancillaryTicketRef: (s.ancillary_ticket_ref as string | null) ?? null,
+              notes: (s.notes as string | null) ?? null,
+            };
+          })
+        : null;
+      return { ...detail, attestedSnapshot };
+    },
+
+    async correctSubmittedTimesheet(
+      timesheetId: string,
+      op: TimesheetCorrection,
+      correctedBy: string,
+    ): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.correctSubmittedTimesheet(timesheetId, op, correctedBy);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Lock the sheet and confirm it's still Submitted — corrections are only valid
+        // in that window. The owner (app_user_id) comes from the sheet, never the caller.
+        const { rows: tRows } = await client.query<{ state: string; app_user_id: string }>(
+          `SELECT state, app_user_id FROM timesheet WHERE id = $1 FOR UPDATE`,
+          [timesheetId],
+        );
+        const sheet = tRows[0];
+        if (!sheet || sheet.state !== "submitted") {
+          await client.query("ROLLBACK");
+          return false;
+        }
+
+        // Capture the before-image for edit/delete (must belong to THIS sheet).
+        let before: Record<string, unknown> | null = null;
+        if (op.kind !== "add") {
+          const { rows: eRows } = await client.query<Record<string, unknown>>(
+            `SELECT id, to_char(work_date, 'YYYY-MM-DD') AS work_date, started_at, ended_at,
+                    category, ancillary_ticket_ref, notes
+             FROM website_time_entry WHERE id = $1 AND timesheet_id = $2`,
+            [op.entryId, timesheetId],
+          );
+          if (!eRows[0]) {
+            await client.query("ROLLBACK");
+            return false;
+          }
+          before = eRows[0];
+        }
+
+        let entryId: string | null = op.kind === "add" ? null : op.entryId;
+        let after: Record<string, unknown> | null = null;
+        if (op.kind === "add") {
+          const { rows } = await client.query<{ id: string }>(
+            `INSERT INTO website_time_entry
+               (timesheet_id, app_user_id, work_date, started_at, ended_at, category, ancillary_ticket_ref, notes)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING id`,
+            [
+              timesheetId,
+              sheet.app_user_id,
+              op.entry.workDate,
+              op.entry.startedAt,
+              op.entry.endedAt,
+              op.entry.category,
+              nullIfEmpty(op.entry.ancillaryTicketRef),
+              nullIfEmpty(op.entry.notes),
+            ],
+          );
+          entryId = rows[0].id;
+          after = { ...op.entry };
+        } else if (op.kind === "update") {
+          await client.query(
+            `UPDATE website_time_entry
+                SET work_date = $3, started_at = $4, ended_at = $5, category = $6,
+                    ancillary_ticket_ref = $7, notes = $8
+              WHERE id = $1 AND timesheet_id = $2`,
+            [
+              op.entryId,
+              timesheetId,
+              op.entry.workDate,
+              op.entry.startedAt,
+              op.entry.endedAt,
+              op.entry.category,
+              nullIfEmpty(op.entry.ancillaryTicketRef),
+              nullIfEmpty(op.entry.notes),
+            ],
+          );
+          after = { ...op.entry };
+        } else {
+          await client.query(
+            `DELETE FROM website_time_entry WHERE id = $1 AND timesheet_id = $2`,
+            [op.entryId, timesheetId],
+          );
+        }
+
+        // Audit the correction against the attested original (who/when/before→after).
+        // The attested_snapshot itself is never touched — it stays the immutable baseline.
+        await client.query(
+          `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+           VALUES ($1, 'timesheet.corrected', 'timesheet', $2,
+                   jsonb_build_object('op', $3::text, 'entryId', $4::text,
+                                      'before', $5::jsonb, 'after', $6::jsonb))`,
+          [
+            correctedBy,
+            timesheetId,
+            op.kind,
+            entryId,
+            before ? JSON.stringify(before) : null,
+            after ? JSON.stringify(after) : null,
+          ],
+        );
+        await client.query("COMMIT");
+        return true;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
     },
 
     async listPayrollTimesheets(): Promise<PayrollTimesheetRow[]> {
@@ -2880,6 +3068,65 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return mockRepositories.reports.securityFleet();
+      }
+    },
+
+    async timeEfficiency(includeLaborCost: boolean): Promise<TimeEfficiencyReport> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.timeEfficiency(includeLaborCost);
+      try {
+        // Utilization is COMP-FREE: the split of authoritative attendance minutes
+        // (silver time_record, kind='attendance' — the website source is the source
+        // of truth, ADR-0082) across the billable/internal/admin categories.
+        // Allocation rows (autotask) carry a null category and are excluded.
+        const util = await pool.query<{ billable: string; internal: string; admin: string }>(
+          `SELECT coalesce(sum(minutes) FILTER (WHERE category = 'billable'), 0) AS billable,
+                  coalesce(sum(minutes) FILTER (WHERE category = 'internal'), 0) AS internal,
+                  coalesce(sum(minutes) FILTER (WHERE category = 'admin'),    0) AS admin
+             FROM time_record
+            WHERE kind = 'attendance'`,
+        );
+        const u = util.rows[0];
+        const utilization = {
+          billableMinutes: Number(u.billable),
+          internalMinutes: Number(u.internal),
+          adminMinutes: Number(u.admin),
+        };
+
+        // Labor cost is COMP-DERIVED and finance/admin-only — the query runs ONLY
+        // when the caller is gated in, so pay_rate is never read otherwise. It is
+        // AGGREGATE-ONLY (sum over employees); no per-person rate ever leaves here.
+        // Effective rate = the latest pay_rate effective on/before the week start
+        // (salaried folded to hourly at the 2080-hr convention). Counts corrected,
+        // approved hours (state in approved/payroll_approved/paid).
+        let laborCost: TimeEfficiencyReport["laborCost"] = null;
+        if (includeLaborCost) {
+          const cost = await pool.query<{ minutes: string; total: string }>(
+            `SELECT coalesce(sum(ps.approved_minutes), 0)                       AS minutes,
+                    coalesce(sum((ps.approved_minutes / 60.0) * pr.eff_hourly), 0) AS total
+               FROM timesheet_payroll_status ps
+               JOIN LATERAL (
+                 SELECT CASE WHEN p.rate_kind = 'hourly' THEN p.hourly_rate
+                             ELSE p.salaried_annual / 2080.0 END AS eff_hourly
+                   FROM pay_rate p
+                  WHERE p.app_user_id = ps.app_user_id
+                    AND p.effective_from <= ps.week_start
+                  ORDER BY p.effective_from DESC
+                  LIMIT 1
+               ) pr ON true
+              WHERE ps.state IN ('approved', 'payroll_approved', 'paid')`,
+          );
+          const approvedHours = Math.round(Number(cost.rows[0].minutes) / 60);
+          const totalCost = Math.round(Number(cost.rows[0].total));
+          laborCost = {
+            approvedHours,
+            totalCost,
+            blendedHourlyRate: approvedHours > 0 ? Math.round(totalCost / approvedHours) : null,
+          };
+        }
+        return { utilization, laborCost };
+      } catch {
+        return mockRepositories.reports.timeEfficiency(includeLaborCost);
       }
     },
   },

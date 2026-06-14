@@ -12,10 +12,11 @@ Click **Review** to open it.
 
 ## Reviewing a week
 
-The review panel shows the attested entries day by day (read-only) alongside the
-**Reconciliation** — attended vs same-day Autotask allocation, with the daily
-verdict (Balanced / Under-logged / Over-logged). A residual **Hard deviation**
-warning appears if one slipped through.
+The review panel shows the entries day by day alongside the **Reconciliation** —
+attended vs same-day Autotask allocation, with the daily verdict (Balanced /
+Under-logged / Over-logged). A residual **Hard deviation** warning appears if one
+slipped through. While the week is **Submitted** the entries are editable in place
+(see *Correcting time*); once it leaves Submitted they render read-only.
 
 Two actions:
 
@@ -32,9 +33,29 @@ Two actions:
 
 ## Correcting time
 
-In this version, a week that needs changes is **Reopened** for the employee to
-fix. Direct admin in-place correction — editing entries against the attested
-original with an audited diff — is tracked as a follow-up (issue #477).
+You have two paths for a week that needs changes (ADR-0082, #477):
+
+- **Inline correction** (no reopen) — on a **Submitted** sheet you can **Add**,
+  **Save** (edit), or **Remove** any time entry directly on the review panel. Use
+  this for small admin fixes (a mistyped end time, a wrong category) where sending
+  the week back would be overkill. The sheet **stays Submitted** — you can correct
+  and then **Approve & document** in the same sitting.
+- **Reopen** — for anything substantive the employee should redo. The sheet goes
+  back to Open and the employee must re-enter and re-attest.
+
+### How corrections are audited
+
+The employee's **attested original** is captured the moment they attest and is
+**never modified** by a correction — it is the immutable baseline. Every inline
+edit is recorded as an `audit_log` entry (`timesheet.corrected`) carrying who made
+it, when, and the before→after of the entry. The panel surfaces the diff live:
+
+- a banner appears once the week differs from the attested original;
+- each changed entry is tagged **Added** or **Edited**;
+- entries you removed are listed struck-through and tagged **Removed**.
+
+A **Hard deviation** that the employee somehow attested through can be cleared here
+by correcting the offending entry, then approving — no reopen required.
 
 ## Notes
 
