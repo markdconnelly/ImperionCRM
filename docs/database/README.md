@@ -11,6 +11,7 @@ embedding store, and the agent memory layer (ADR-0003).
 | --- | --- |
 | [**data-model**](data-model.md) | The **ERD** (five diagrams), every entity, the enumerations, and the vector-data design. **Updated on every schema change.** |
 | [data-access-layer](data-access-layer.md) | The repository abstraction the app talks to (ADR-0007) and how mock ↔ Postgres are swapped. |
+| [**semantic-layer/**](semantic-layer/index.md) | **OKF-format semantic layer** over the silver tier — per-concept business meaning, join paths, and source-of-record rules (ADR-0086). *Meaning*, not structure or data; PII-free (live DB answers row-level). Pilot: `time_record`, `expense_item`, `opportunity`. |
 
 ## The staged-enrichment idea
 
