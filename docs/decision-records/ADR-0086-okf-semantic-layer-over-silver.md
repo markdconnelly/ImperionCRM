@@ -122,11 +122,21 @@ ADR-0041 pipeline and on-prem embedding budget — no new provider, no new key.
 
 ### Operational impact
 
-A new doc surface the pipeline must keep synced to migrations (constraint 3); the
-sync mechanism is a follow-up in the pipeline / local-pipeline repos. Until that
-lands, the pilot bundle is hand-authored and carries its `timestamp` as the
-freshness signal. The bundle becomes a required update target on silver-schema
-changes, like the ERD.
+A new doc surface the pipeline must keep synced to migrations (constraint 3). The
+sync is enforced in two tiers: a **CI docs-gate now**, the heavier auto-proposing
+**enrichment agent later** (pipeline / local-pipeline). The bundle is a required
+update target on silver-schema changes, like the ERD, and carries its `timestamp` as
+the freshness signal.
+
+**Enforcement — CI docs-gate (issue #535, shipped).** The `semantic-layer` CI job
+(`scripts/semantic-layer-gate.mjs`) fails any PR whose migrations add/alter/drop a
+silver table that already has a concept file under `tables/` unless that file is
+updated in the same PR (escape hatch: the `semantic-layer-not-affected` label,
+justified in the PR body). This makes constraint 3 mechanical at author time, so the
+bundle cannot silently drift from the schema. New silver entities (no concept file
+yet) are out of scope for the gate — that is the expansion track (#536), caught at
+review. Operator detail: [docs/operations/semantic-layer-gate.md](../operations/semantic-layer-gate.md).
+The cross-repo "agent later" half is LocalPipeline #175.
 
 ## Future considerations
 

@@ -9,7 +9,9 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // src/**: the RBAC + domain unit suites. scripts/**: the semantic-layer
+    // docs-gate (#535) — the gate that guards the OKF bundle is itself tested.
+    include: ["src/**/*.test.ts", "scripts/**/*.test.mjs"],
   },
   resolve: {
     alias: {

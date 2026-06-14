@@ -168,5 +168,7 @@ entity above.
 ---
 
 Expansion of remaining ⏳ concepts is tracked in
-[#536](https://github.com/markdconnelly/ImperionCRM/issues/536); the staleness CI gate in
-[#535](https://github.com/markdconnelly/ImperionCRM/issues/535).
+[#536](https://github.com/markdconnelly/ImperionCRM/issues/536). The staleness CI gate
+([#535](https://github.com/markdconnelly/ImperionCRM/issues/535)) is **live**: a PR
+changing a silver table with a ✅ concept file must update that file in the same PR
+(see [semantic-layer-gate](../../operations/semantic-layer-gate.md)).

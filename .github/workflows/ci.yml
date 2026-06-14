@@ -65,3 +65,29 @@ jobs:
             fi
           done
           exit $missing
+
+  semantic-layer:
+    # OKF semantic-layer docs-gate (ADR-0086, issue #535). A PR whose migrations
+    # change a silver table that already has a concept file under
+    # docs/database/semantic-layer/tables/ must update that file in the same PR,
+    # else fail. Escape hatch: the `semantic-layer-not-affected` label (justify in
+    # the PR body). PR-only — there is no base/label context on push to main.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # need base-branch history to diff the PR
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Gate silver migrations on bundle sync
+        env:
+          # `contains(...)` -> "true"/"false"; the script reads HAS_ESCAPE_HATCH.
+          HAS_ESCAPE_HATCH: ${{ contains(github.event.pull_request.labels.*.name, 'semantic-layer-not-affected') }}
+        run: |
+          git fetch --no-tags origin "$GITHUB_BASE_REF"
+          CHANGED_FILES="$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD)"
+          export CHANGED_FILES
+          echo "Changed files:"; echo "$CHANGED_FILES" | sed 's/^/  /'
+          node scripts/semantic-layer-gate.mjs
