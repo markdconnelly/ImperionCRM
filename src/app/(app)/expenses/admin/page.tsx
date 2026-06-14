@@ -28,6 +28,9 @@ import {
   markReimbursedAction,
   rejectExpenseReportAction,
   reopenExpenseReportAction,
+  addExpenseCorrectionAction,
+  updateExpenseCorrectionAction,
+  deleteExpenseCorrectionAction,
 } from "./actions";
 
 const STATE_TONE: Record<ExpenseReportState, string> = {
@@ -103,6 +106,8 @@ export default async function ExpenseAdminPage({
   // Detail panels — admin review (?review=) and reimbursement confirmation (?match=).
   const reviewing = sp.review && isAdmin ? await crm.getExpenseReportById(sp.review) : null;
   const reviewingName = all.find((r) => r.id === sp.review)?.employeeName ?? "Employee";
+  // Categories back the inline-correction add/edit forms (#488); only needed when reviewing.
+  const categories = reviewing ? await crm.listExpenseCategories() : [];
   const matchRow =
     sp.match && isFinance
       ? all.find((r) => r.id === sp.match && r.state === "finance_approved") ?? null
@@ -307,9 +312,13 @@ export default async function ExpenseAdminPage({
         <ExpenseReview
           employeeName={reviewingName}
           detail={reviewing}
+          categories={categories}
           approveAction={approveExpenseReportAction}
           rejectAction={rejectExpenseReportAction}
           reopenAction={reopenExpenseReportAction}
+          addCorrectionAction={addExpenseCorrectionAction}
+          updateCorrectionAction={updateExpenseCorrectionAction}
+          deleteCorrectionAction={deleteExpenseCorrectionAction}
         />
       )}
       {matchRow && (

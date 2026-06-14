@@ -49,6 +49,7 @@ import type {
   DeliveryInstantiationInput,
   DeliveryTemplateInput,
   ExpenseItemInput,
+  ExpenseCorrection,
   ExpenseCategoryMappingInput,
   ExpenseCategoryAdminRow,
   QboExpenseAccountRow,
@@ -3082,6 +3083,126 @@ export const postgresRepositories: Repositories = {
         );
         await client.query("COMMIT");
         return (rowCount ?? 0) > 0;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async correctSubmittedExpenseReport(
+      reportId: string,
+      op: ExpenseCorrection,
+      correctedBy: string,
+    ): Promise<boolean> {
+      const pool = getPool();
+      if (!pool)
+        return mockRepositories.crm.correctSubmittedExpenseReport(reportId, op, correctedBy);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Lock the report and confirm it's still Submitted — admin corrections are only valid
+        // in that window (mirrors the timesheet #477 rule). The owner (app_user_id) comes from
+        // the report, never the caller. An Open report is the employee's own to edit; an
+        // Approved+ report is past the correction window.
+        const { rows: rRows } = await client.query<{ state: string; app_user_id: string }>(
+          `SELECT state, app_user_id FROM expense_report WHERE id = $1 FOR UPDATE`,
+          [reportId],
+        );
+        const report = rRows[0];
+        if (!report || report.state !== "submitted") {
+          await client.query("ROLLBACK");
+          return false;
+        }
+
+        // Capture the before-image for edit/delete (must be an out-of-pocket item on THIS
+        // report). Mileage lives in mileiq_drive, never website_expense_item, so it is
+        // structurally not correctable here.
+        let before: Record<string, unknown> | null = null;
+        if (op.kind !== "add") {
+          const { rows: iRows } = await client.query<Record<string, unknown>>(
+            `SELECT id, to_char(item_date, 'YYYY-MM-DD') AS item_date, category_id, amount,
+                    merchant, description, reimbursable, billable, autotask_company_id
+             FROM website_expense_item WHERE id = $1 AND expense_report_id = $2`,
+            [op.itemId, reportId],
+          );
+          if (!iRows[0]) {
+            await client.query("ROLLBACK");
+            return false;
+          }
+          before = iRows[0];
+        }
+
+        let itemId: string | null = op.kind === "add" ? null : op.itemId;
+        let after: Record<string, unknown> | null = null;
+        if (op.kind === "add") {
+          const { rows } = await client.query<{ id: string }>(
+            `INSERT INTO website_expense_item
+               (expense_report_id, app_user_id, item_date, category_id, amount, merchant,
+                description, reimbursable, billable, autotask_company_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             RETURNING id`,
+            [
+              reportId,
+              report.app_user_id,
+              op.item.itemDate,
+              op.item.categoryId,
+              op.item.amount,
+              nullIfEmpty(op.item.merchant),
+              nullIfEmpty(op.item.description),
+              op.item.reimbursable,
+              op.item.billable,
+              op.item.autotaskCompanyId,
+            ],
+          );
+          itemId = rows[0].id;
+          after = { ...op.item };
+        } else if (op.kind === "update") {
+          await client.query(
+            `UPDATE website_expense_item
+                SET item_date = $3, category_id = $4, amount = $5, merchant = $6,
+                    description = $7, reimbursable = $8, billable = $9, autotask_company_id = $10
+              WHERE id = $1 AND expense_report_id = $2`,
+            [
+              op.itemId,
+              reportId,
+              op.item.itemDate,
+              op.item.categoryId,
+              op.item.amount,
+              nullIfEmpty(op.item.merchant),
+              nullIfEmpty(op.item.description),
+              op.item.reimbursable,
+              op.item.billable,
+              op.item.autotaskCompanyId,
+            ],
+          );
+          after = { ...op.item };
+        } else {
+          await client.query(
+            `DELETE FROM website_expense_item WHERE id = $1 AND expense_report_id = $2`,
+            [op.itemId, reportId],
+          );
+        }
+
+        // Audit the correction against the attested original (who/when/before→after).
+        // The attested_snapshot itself is never touched — it stays the immutable baseline.
+        await client.query(
+          `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+           VALUES ($1, 'expense.corrected', 'expense_report', $2,
+                   jsonb_build_object('op', $3::text, 'itemId', $4::text,
+                                      'before', $5::jsonb, 'after', $6::jsonb))`,
+          [
+            correctedBy,
+            reportId,
+            op.kind,
+            itemId,
+            before ? JSON.stringify(before) : null,
+            after ? JSON.stringify(after) : null,
+          ],
+        );
+        await client.query("COMMIT");
+        return true;
       } catch (e) {
         await client.query("ROLLBACK");
         throw e;

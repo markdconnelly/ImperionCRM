@@ -399,6 +399,9 @@ export const mockRepositories: Repositories = {
     async deleteExpenseItem() {
       throw new Error(NO_DB);
     },
+    async correctSubmittedExpenseReport() {
+      throw new Error(NO_DB);
+    },
     async listExpenseCategories() {
       return [];
     },

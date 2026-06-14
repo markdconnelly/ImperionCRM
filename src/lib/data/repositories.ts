@@ -326,6 +326,30 @@ export interface ExpenseItemInput {
   receiptId: string | null; // a receipt_attachment id, when uploaded
 }
 
+/**
+ * The editable fields of one out-of-pocket expense item under an admin correction
+ * (ADR-0083 #488). The owning report/employee is NEVER trusted from the caller — it's
+ * taken from the locked Submitted report. Mirrors `TimeEntryFields` (#477). Mileage items
+ * are not correctable here (their $ is backend-derived from MileIQ miles).
+ */
+export interface ExpenseItemFields {
+  itemDate: string; // yyyy-mm-dd
+  categoryId: string | null; // null = uncategorized
+  amount: number; // USD, > 0 (entered out-of-pocket amount)
+  merchant: string | null;
+  description: string | null;
+  reimbursable: boolean; // owed back to the employee
+  billable: boolean; // independent leg — also invoiced to the client
+  autotaskCompanyId: number | null; // the client leg (companyID) when billable
+}
+
+/** One admin correction to a Submitted report's out-of-pocket items, audited vs the
+ *  attested original (ADR-0083 #488): add a line, edit one in place, or remove one. */
+export type ExpenseCorrection =
+  | { kind: "add"; item: ExpenseItemFields }
+  | { kind: "update"; itemId: string; item: ExpenseItemFields }
+  | { kind: "delete"; itemId: string };
+
 /** Admin mapping confirm payload (ADR-0082/0083, #468/#490). A blank id clears that mapping. */
 export interface EmployeeMappingInput {
   appUserId: string;
@@ -641,6 +665,18 @@ export interface CrmRepository {
   /** Delete an out-of-pocket item from the employee's OWN Open report. Returns false if
    *  the item isn't on an Open report owned by `employeeId` (lock + ownership re-check). */
   deleteExpenseItem(id: string, employeeId: string): Promise<boolean>;
+
+  /** ADMIN inline correction of a SUBMITTED report's out-of-pocket items (ADR-0083 #488),
+   *  gated by `expense:approve`. Add / edit-in-place / delete a `website_expense_item`; the
+   *  owning report/employee is taken from the locked report (never the caller). Every op is
+   *  audited vs the employee's immutable attested original (`audit_log`, action
+   *  `expense.corrected`); the report stays Submitted. Returns false if the report isn't
+   *  Submitted or the target item isn't on it (lock re-check). Mileage is not correctable. */
+  correctSubmittedExpenseReport(
+    reportId: string,
+    op: ExpenseCorrection,
+    correctedBy: string,
+  ): Promise<boolean>;
 
   // Expense reference + read models (ADR-0083, #486) — all comp-free (no mileage rate).
   /** The visible, mapped (active) out-of-pocket categories the entry GUI offers, by
