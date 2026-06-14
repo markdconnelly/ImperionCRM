@@ -508,3 +508,101 @@ describe("setMileageRate (comp-gated override, ADR-0083 #490)", () => {
     expect(params).toEqual(["2026-07-01", 0.72, "Q3 bump", "fin-1"]);
   });
 });
+
+describe("correctSubmittedExpenseReport (admin inline correction, ADR-0083 #488)", () => {
+  const fields = {
+    itemDate: "2026-06-11",
+    categoryId: "cat-1",
+    amount: 30.0,
+    merchant: "Cab",
+    description: "  ", // whitespace → null
+    reimbursable: true,
+    billable: false,
+    autotaskCompanyId: null,
+  };
+
+  it("adds a line on a SUBMITTED report and audits it vs the attest", async () => {
+    const calls: { sql: string; params?: unknown[] }[] = [];
+    clientQuery.mockImplementation(async (sql: string, params?: unknown[]) => {
+      calls.push({ sql, params });
+      if (sql.includes("FOR UPDATE"))
+        return { rows: [{ state: "submitted", app_user_id: "emp-1" }], rowCount: 1 };
+      if (sql.includes("INSERT INTO website_expense_item"))
+        return { rows: [{ id: "item-new" }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedExpenseReport(
+      "rep-1",
+      { kind: "add", item: fields },
+      "admin-1",
+    );
+    expect(ok).toBe(true);
+    const insert = calls.find((c) => c.sql.includes("INSERT INTO website_expense_item"))!;
+    // owner comes from the LOCKED report, never the caller
+    expect(insert.params![1]).toBe("emp-1");
+    expect(insert.params![6]).toBeNull(); // blank description nulled
+    const audit = calls.find((c) => c.sql.includes("INSERT INTO audit_log"))!;
+    expect(audit.params![0]).toBe("admin-1"); // actor_user_id ($1)
+    expect(audit.params![1]).toBe("rep-1"); // entity_id = report id ($2)
+    expect(audit.sql).toContain("'expense.corrected'");
+    expect(audit.params![3]).toBe("item-new"); // the new item id is recorded ($4)
+    expect(calls.at(-1)!.sql).toBe("COMMIT");
+  });
+
+  it("captures the before-image on an update for the audit", async () => {
+    const calls: { sql: string; params?: unknown[] }[] = [];
+    clientQuery.mockImplementation(async (sql: string, params?: unknown[]) => {
+      calls.push({ sql, params });
+      if (sql.includes("FOR UPDATE"))
+        return { rows: [{ state: "submitted", app_user_id: "emp-1" }], rowCount: 1 };
+      if (sql.includes("SELECT id") && sql.includes("website_expense_item"))
+        return { rows: [{ id: "item-1", amount: "20.00", merchant: "Old" }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedExpenseReport(
+      "rep-1",
+      { kind: "update", itemId: "item-1", item: fields },
+      "admin-1",
+    );
+    expect(ok).toBe(true);
+    const audit = calls.find((c) => c.sql.includes("INSERT INTO audit_log"))!;
+    // before-image present, after present
+    expect(audit.params![4]).toContain("Old");
+    expect(audit.params![5]).toContain("Cab");
+  });
+
+  it("refuses (false, rolls back) when the report is not Submitted", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE"))
+        return { rows: [{ state: "approved", app_user_id: "emp-1" }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedExpenseReport(
+      "rep-1",
+      { kind: "delete", itemId: "item-1" },
+      "admin-1",
+    );
+    expect(ok).toBe(false);
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls).toContain("ROLLBACK");
+    expect(sqls.some((s) => s.includes("DELETE FROM website_expense_item"))).toBe(false);
+    expect(sqls.some((s) => s.includes("INSERT INTO audit_log"))).toBe(false);
+  });
+
+  it("refuses (false) when the target item isn't on the report (no before-image)", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE"))
+        return { rows: [{ state: "submitted", app_user_id: "emp-1" }], rowCount: 1 };
+      if (sql.includes("SELECT id") && sql.includes("website_expense_item"))
+        return { rows: [], rowCount: 0 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedExpenseReport(
+      "rep-1",
+      { kind: "delete", itemId: "ghost" },
+      "admin-1",
+    );
+    expect(ok).toBe(false);
+    expect(clientQuery.mock.calls.map((c) => c[0] as string)).toContain("ROLLBACK");
+  });
+});

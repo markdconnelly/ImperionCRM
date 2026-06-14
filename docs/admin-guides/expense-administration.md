@@ -32,6 +32,17 @@ open → submitted → approved → finance_approved → reimbursed
    sent back to the employee), or **Reopen**. Approving fires an idempotent Autotask
    ExpenseReport tracking row for the backend writer (BE #108) — re-approval reuses the
    same row.
+
+   **Inline corrections (#488).** Within Review, an admin can correct the report's
+   **out-of-pocket** items in place without bouncing it back: **edit** a line, **delete**
+   one, or **add** a missing line. Each row carries a badge showing whether it was
+   **added** or **edited** versus the employee's attested original, and any line removed
+   since the attest is listed below the table. Every correction is **audited** against the
+   immutable `attested_snapshot` (an `audit_log` row, action `expense.corrected`, recording
+   actor + before→after); the snapshot itself is never modified and the report stays
+   **Submitted** so the admin can still approve/reject afterwards. **Mileage is read-only**
+   here — its dollar amount is backend-derived from MileIQ miles (the comp reader), so it is
+   never hand-edited. Corrections are gated by the same admin `expense:approve` capability.
 2. **Approved** — **finance** clicks **Finance-approve** inline. This authorizes the
    reimbursement; the app never pays.
 3. **Finance-approved** — **finance** opens **Confirm reimbursement** (`?match=`). The
@@ -49,9 +60,9 @@ and sort are preserved across the in-context Review / Confirm panels.
 
 ## Scope notes
 
-- In-place item correction by an admin is the deeper expense entry GUI (#488) — for now
-  an admin who needs a change **Rejects** with a note. Adding/editing items is the
-  employee entry GUI (#487).
+- In-place admin item correction (audited vs the attest) shipped with #488 — see the
+  **Inline corrections** note under Submitted above. The employee-facing entry/correction
+  GUI for their own Open report is separate (#487).
 - QuickBooks payment references are read-only (set by the backend recon); this surface
   only records finance's confirmation of the match.
 
