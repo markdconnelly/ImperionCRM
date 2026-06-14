@@ -157,10 +157,11 @@ serving data.
   **admin-only** (#90, `canSeeAgentPages` — same gate as Settings/ADR-0030), and
   Settings has an **AI tab** surfacing the orchestrator preset / budget cap /
   month-to-date spend card (same card + backend PUT as the AI Agents page).
-- **Data:** PostgreSQL + pgvector; migrations **0001–0087 applied** to prod (verified
-  2026-06-13 via read-only introspection; incl. 0080/0081 DNS+domain, 0082–0084
-  sale→delivery, **0085–0087 time tracking — live**). **0088–0090 (expense) are NOT
-  applied** — Mark-gated (#494). Repo holds files through 0090. Typed repositories
+- **Data:** PostgreSQL + pgvector; migrations **0001–0093 applied** to prod (verified
+  2026-06-14 via read-only introspection; incl. 0080/0081 DNS+domain, 0082–0084
+  sale→delivery, **0085–0087 time tracking — live**, **0088–0090 expense — schema
+  live**, **0092/0093 QuickBooks `Purchase` + connection-provider enum — live**).
+  Repo holds files through 0093. Typed repositories
   with a mock fallback. Entra SSO (certificate client auth) +
   break-glass.
 - **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
