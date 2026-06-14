@@ -30,6 +30,7 @@ export const CAPABILITIES = [
   "agents:operate", // convene the AI board / operate the agent layer (ADR-0050: admin-only, spends model budget)
   "time:write", // own weekly timesheet — enter/attest time (ADR-0082; every employee, own row only)
   "time:approve", // admin correctness approval of a submitted timesheet (ADR-0082; admin-only)
+  "time:map", // admin confirm of an employee's Autotask Resource / QuickBooks vendor mapping (ADR-0082; admin-only)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -56,6 +57,8 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   // all caps implicitly, so the explicit list is empty). NOT the payroll approval
   // (finance∨admin), which is a separate gate on the #466 surface.
   "time:approve": [],
+  // Employee mapping confirm — admin one-time setup (ADR-0082, #468). Admin-only.
+  "time:map": [],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */

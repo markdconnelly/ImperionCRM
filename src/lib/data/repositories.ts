@@ -52,6 +52,7 @@ import type {
   TimesheetRow,
   TimesheetDetail,
   TimesheetReviewRow,
+  EmployeeMappingRow,
   TimeEntryCategory,
   LeadHookRow,
   MarketingSocialReport,
@@ -248,6 +249,13 @@ export interface TimeEntryInput {
   notes: string | null;
 }
 
+/** Admin mapping confirm payload (ADR-0082, #468). A blank id clears that mapping. */
+export interface EmployeeMappingInput {
+  appUserId: string;
+  autotaskResourceId: number | null; // Autotask Resource id (numeric); null clears it
+  quickbooksVendorId: string | null; // QuickBooks vendor/employee id; null clears it
+}
+
 export interface DashboardRepository {
   getKpis(): Promise<Kpi[]>;
   getPipeline(): Promise<PipelineColumn[]>;
@@ -364,6 +372,15 @@ export interface CrmRepository {
   /** Send an approved/submitted timesheet back to the employee: state→open, clear the
    *  attest/approve stamps (re-attest required). Keeps the snapshot + Time Ticket row. */
   reopenTimesheet(id: string): Promise<void>;
+
+  // Employee external-id mapping — admin one-time setup (ADR-0082, #468)
+  /** Every active employee with its Autotask Resource / QuickBooks vendor mapping
+   *  (left-joined `employee_profile`); email is the join key. Mapping cols only —
+   *  no comp data. */
+  listEmployeeMappings(): Promise<EmployeeMappingRow[]>;
+  /** Confirm an employee's mapping (admin): upsert the resolved Autotask Resource /
+   *  QuickBooks vendor ids onto `employee_profile` and stamp who/when. Idempotent. */
+  confirmEmployeeMapping(input: EmployeeMappingInput, confirmedBy: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;

@@ -88,6 +88,7 @@ import type {
   TimesheetRow,
   TimesheetDetail,
   TimesheetReviewRow,
+  EmployeeMappingRow,
   TimeEntryRow,
   ReconciliationDay,
   DeliveryTemplateDetail,
@@ -1861,6 +1862,67 @@ export const postgresRepositories: Repositories = {
                 approved_at = NULL, approved_by = NULL
           WHERE id = $1 AND state IN ('submitted', 'approved')`,
         [id],
+      );
+    },
+
+    async listEmployeeMappings(): Promise<EmployeeMappingRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listEmployeeMappings();
+      try {
+        // Every active employee, left-joined to its mapping sidecar — rows with no
+        // employee_profile yet still appear (unconfirmed) so the admin can confirm
+        // them. Mapping cols + audit only; classification/pay_rate are NOT selected.
+        const { rows } = await pool.query<{
+          app_user_id: string;
+          display_name: string | null;
+          email: string;
+          autotask_resource_id: string | null;
+          quickbooks_vendor_id: string | null;
+          resolved_at: Date | null;
+          confirmed_by_name: string | null;
+        }>(
+          `SELECT u.id AS app_user_id,
+                  u.display_name, u.email,
+                  ep.autotask_resource_id, ep.quickbooks_vendor_id,
+                  ep.mappings_resolved_at AS resolved_at,
+                  COALESCE(cb.display_name, cb.email) AS confirmed_by_name
+           FROM app_user u
+           LEFT JOIN employee_profile ep ON ep.app_user_id = u.id
+           LEFT JOIN app_user cb ON cb.id = ep.mappings_confirmed_by
+           ORDER BY COALESCE(u.display_name, u.email)`,
+        );
+        return rows.map((r) => ({
+          appUserId: r.app_user_id,
+          displayName: r.display_name ?? r.email,
+          email: r.email,
+          autotaskResourceId:
+            r.autotask_resource_id != null ? Number(r.autotask_resource_id) : null,
+          quickbooksVendorId: r.quickbooks_vendor_id,
+          confirmed: r.resolved_at != null,
+          resolvedAt: r.resolved_at ? new Date(r.resolved_at).toISOString() : null,
+          confirmedByName: r.confirmed_by_name,
+        }));
+      } catch {
+        return mockRepositories.crm.listEmployeeMappings();
+      }
+    },
+
+    async confirmEmployeeMapping(input, confirmedBy): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.confirmEmployeeMapping(input, confirmedBy);
+      // Upsert the mapping sidecar (1:1 on app_user_id). classification keeps its
+      // DEFAULT '1099' on insert; this write never touches comp data. Stamp who/when.
+      await pool.query(
+        `INSERT INTO employee_profile
+           (app_user_id, autotask_resource_id, quickbooks_vendor_id,
+            mappings_resolved_at, mappings_confirmed_by)
+         VALUES ($1, $2, $3, now(), $4)
+         ON CONFLICT (app_user_id) DO UPDATE
+           SET autotask_resource_id  = EXCLUDED.autotask_resource_id,
+               quickbooks_vendor_id  = EXCLUDED.quickbooks_vendor_id,
+               mappings_resolved_at  = now(),
+               mappings_confirmed_by = EXCLUDED.mappings_confirmed_by`,
+        [input.appUserId, input.autotaskResourceId, input.quickbooksVendorId, confirmedBy],
       );
     },
 
