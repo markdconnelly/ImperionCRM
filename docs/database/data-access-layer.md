@@ -43,6 +43,20 @@ mirroring `applyOnboardingTemplate`; the `getDeliveryTemplate` read assembles th
 tree client-side from three ordered queries. See `delivery-templates.test.ts` for
 the SQL-shape + mapping contract.
 
+**Timesheet methods (ADR-0082, migrations 0085–0087).** `listTimesheets` /
+`getTimesheetForWeek` / `ensureTimesheetForWeek` / `addTimeEntry` / `updateTimeEntry` /
+`deleteTimeEntry` / `submitTimesheet` back the employee weekly-timesheet vertical.
+`getTimesheetForWeek` assembles the week from three ordered reads (the timesheet row,
+its attendance entries, and the per-day `time_reconciliation_day` rows that seed the
+memory-jogger); minutes are **derived in SQL** (`EXTRACT(EPOCH …)/60`), never stored.
+`ensureTimesheetForWeek` is an idempotent upsert on `UNIQUE (app_user_id, week_start)`.
+`submitTimesheet` is a single atomic statement that transitions **only an Open sheet** →
+Submitted, stamps the attester, and snapshots the entries (`jsonb_agg`) for audit. The
+attest **Hard-deviation gate** (over-logged day or same-day overlap) is computed in
+`hasHardDeviation` over the assembled week. Comp data (0085 `pay_rate`) is NOT read here —
+that stays in the backend reconciliation process. See `timesheets.test.ts` for the
+SQL-shape + mapping + gate contract.
+
 ## Swapping to Postgres (ADR-0003)
 1. Add a `postgres/` implementation of the same interfaces (querying gold).
 2. In `index.ts`, return it when `process.env.DATABASE_URL` is set.

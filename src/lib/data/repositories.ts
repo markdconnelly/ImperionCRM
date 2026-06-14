@@ -49,6 +49,9 @@ import type {
   LeadCaptureEventRow,
   DeliveryTemplateRow,
   DeliveryTemplateDetail,
+  TimesheetRow,
+  TimesheetDetail,
+  TimeEntryCategory,
   LeadHookRow,
   MarketingSocialReport,
   OnboardingProject,
@@ -232,6 +235,18 @@ export interface DeliveryTemplateInput {
   phases: DeliveryTemplatePhaseInput[];
 }
 
+/** A new/edited attendance Time Entry (ADR-0082). Duration is derived from start/end. */
+export interface TimeEntryInput {
+  timesheetId: string;
+  employeeId: string; // the owning app_user (denormalized for query)
+  workDate: string; // yyyy-mm-dd
+  startedAt: string; // ISO timestamp
+  endedAt: string; // ISO timestamp; CHECK ended_at > started_at
+  category: TimeEntryCategory;
+  ancillaryTicketRef: string | null;
+  notes: string | null;
+}
+
 export interface DashboardRepository {
   getKpis(): Promise<Kpi[]>;
   getPipeline(): Promise<PipelineColumn[]>;
@@ -320,6 +335,25 @@ export interface CrmRepository {
   createDeliveryTemplate(input: DeliveryTemplateInput): Promise<string>;
   /** Delete a template (CASCADE drops its phases/tasks); provisioning refs SET NULL. */
   deleteDeliveryTemplate(id: string): Promise<void>;
+
+  // Time tracking — employee weekly timesheets (ADR-0082, migrations 0085–0087)
+  /** An employee's timesheets, most-recent week first (history/list). */
+  listTimesheets(opts: { employeeId: string }): Promise<TimesheetRow[]>;
+  /** The employee's timesheet for a Mon-start week — entries + per-day reconciliation
+   *  (the memory-jogger) — or null if none has been opened yet. */
+  getTimesheetForWeek(employeeId: string, weekStart: string): Promise<TimesheetDetail | null>;
+  /** Get-or-create the employee's Open timesheet for a Mon-start week; returns its id
+   *  (idempotent on the UNIQUE (app_user_id, week_start)). */
+  ensureTimesheetForWeek(employeeId: string, weekStart: string): Promise<string>;
+  /** Add an attendance Time Entry to a timesheet; returns the new entry id. */
+  addTimeEntry(input: TimeEntryInput): Promise<string>;
+  /** Edit a Time Entry (caller gates: own + Open, or admin on Submitted). */
+  updateTimeEntry(id: string, input: TimeEntryInput): Promise<void>;
+  /** Remove a Time Entry. */
+  deleteTimeEntry(id: string): Promise<void>;
+  /** Attest (submit) a timesheet: state→submitted, stamp attested_by/at, snapshot the
+   *  attested entries for audit. Caller enforces the Hard-deviation gate first. */
+  submitTimesheet(id: string, attestedBy: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;

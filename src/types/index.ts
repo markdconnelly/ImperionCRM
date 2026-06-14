@@ -186,6 +186,63 @@ export interface DeliveryTemplateDetail {
   phases: DeliveryTemplatePhase[];
 }
 
+// ── Time tracking (ADR-0082, migrations 0085–0087) ──────────────────────────
+
+/** Timesheet lifecycle (ADR-0082): open→submitted(attest)→approved→payroll_approved→paid. */
+export type TimesheetState =
+  | "open"
+  | "submitted"
+  | "approved"
+  | "payroll_approved"
+  | "paid";
+
+/** Time Entry category (ADR-0082): billable→Ancillary Ticket · internal · admin. */
+export type TimeEntryCategory = "billable" | "internal" | "admin";
+
+/** Daily Reconciliation verdict (ADR-0082, `time_reconciliation_day`). */
+export type ReconciliationVerdict = "balanced" | "under_logged" | "over_logged";
+
+/** A weekly timesheet, list/summary shape. The full week is `TimesheetDetail`. */
+export interface TimesheetRow {
+  id: string;
+  employeeId: string;
+  weekStart: string; // yyyy-mm-dd (Monday)
+  weekEnd: string; // yyyy-mm-dd (Sunday)
+  state: TimesheetState;
+  entryCount: number;
+  totalMinutes: number; // sum of attendance-block minutes (duration derived)
+  attestedAt: string | null; // ISO; set when submitted
+}
+
+/** One attendance Time Entry — a start/end block; duration is DERIVED, never typed. */
+export interface TimeEntryRow {
+  id: string;
+  workDate: string; // yyyy-mm-dd
+  startedAt: string; // ISO timestamp
+  endedAt: string; // ISO timestamp
+  minutes: number; // derived duration (ended_at - started_at)
+  category: TimeEntryCategory;
+  ancillaryTicketRef: string | null; // noted Autotask ticket id (billable)
+  notes: string | null;
+}
+
+/** Per-day Reconciliation: attended (envelope) vs logged (allocation) + verdict. */
+export interface ReconciliationDay {
+  workDate: string; // yyyy-mm-dd
+  attendedMinutes: number;
+  loggedMinutes: number;
+  deltaMinutes: number; // logged − attended
+  verdict: ReconciliationVerdict;
+}
+
+/** The full week: the timesheet + its entries + the memory-jogger reconciliation. */
+export interface TimesheetDetail extends TimesheetRow {
+  entries: TimeEntryRow[];
+  reconciliation: ReconciliationDay[]; // per-day, over the week (seeds the memory-jogger)
+  /** Any over-logged day or same-day overlap — Hard deviations that block attestation. */
+  hasHardDeviation: boolean;
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 
