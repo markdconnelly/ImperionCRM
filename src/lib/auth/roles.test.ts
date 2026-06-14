@@ -4,6 +4,7 @@ import {
   canManageProjects,
   canManageSales,
   canSeeAgentPages,
+  canSeeLaborCost,
   canSeeRevenue,
   canSeeSettings,
   canSeeFeature,
@@ -46,6 +47,16 @@ describe("predicates", () => {
     expect(canSeeRevenue(["admin"])).toBe(true);
     // A mix that includes a non-support role can see revenue.
     expect(canSeeRevenue(["support", "finance"])).toBe(true);
+  });
+
+  test("canSeeLaborCost is finance/admin only (comp-sensitive — ADR-0082, #467)", () => {
+    expect(canSeeLaborCost(["finance"])).toBe(true);
+    expect(canSeeLaborCost(["admin"])).toBe(true);
+    expect(canSeeLaborCost(["support", "finance"])).toBe(true);
+    for (const r of ["sales", "project_manager", "support"] as const) {
+      expect(canSeeLaborCost([r])).toBe(false);
+    }
+    expect(canSeeLaborCost(undefined)).toBe(false);
   });
 
   test("redactMoney blanks for support, passes through otherwise", () => {

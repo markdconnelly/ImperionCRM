@@ -490,6 +490,31 @@ export interface SecurityFleetReport {
   exposuresOpen: number; // credential_exposure not resolved
 }
 
+// ── Reporting BI hub — Time Efficiency section (ADR-0082 / ADR-0062, #467) ───
+
+/**
+ * Time-efficiency rollup for the BI hub. **Utilization is comp-free** — it is
+ * the split of authoritative attendance minutes (silver `time_record`,
+ * kind='attendance') across the billable / internal / admin categories.
+ * **Labor cost is comp-derived and AGGREGATE-ONLY** — Σ(approved hours ×
+ * effective hourly rate) over approved timesheets, never a per-person rate — and
+ * is `null` unless the caller is finance | admin (the cost query does not run
+ * otherwise, so `pay_rate` is never read for other roles). All zero/`null` until
+ * `time_record`, approved timesheets, and `pay_rate` carry rows (build-ahead, #467).
+ */
+export interface TimeEfficiencyReport {
+  utilization: {
+    billableMinutes: number;
+    internalMinutes: number;
+    adminMinutes: number;
+  };
+  laborCost: {
+    approvedHours: number; // costed approved hours (rounded)
+    totalCost: number; // Σ hours × effective hourly rate — aggregate dollars
+    blendedHourlyRate: number | null; // totalCost ÷ approvedHours, null when no hours
+  } | null;
+}
+
 // ── Dashboard cross-domain intelligence strip (ADR-0062, #292) ───────────────
 
 /**

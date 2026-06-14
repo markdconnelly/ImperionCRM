@@ -5,7 +5,7 @@
 | **Repo** | frontend |
 | **Status** | Accepted |
 | **Date** | 2026-06-12 |
-| **Cross-references** | ADR-0021 (reporting read model + Recharts), ADR-0012 (paid vs organic metric homes), ADR-0030 (revenue gate), ADR-0042 (GUI-only boundary), ADR-0051 (posture surfaces), ADR-0059 (Defender↔ticket links), pipeline ADR-0013 (Meta ingestion) |
+| **Cross-references** | ADR-0021 (reporting read model + Recharts), ADR-0012 (paid vs organic metric homes), ADR-0030 (revenue gate), ADR-0042 (GUI-only boundary), ADR-0051 (posture surfaces), ADR-0059 (Defender↔ticket links), pipeline ADR-0013 (Meta ingestion), ADR-0082 (employee time tracking — Time Efficiency section, #467) |
 
 ## Problem
 
@@ -74,6 +74,25 @@ Data-shape constraints verified against prod (2026-06-12):
 
 Shipped as four micro-PRs under epic #288 (#289 marketing/social, #290 service
 desk, #291 security fleet, #292 dashboard strip).
+
+6. A **Time Efficiency** section (`#time-efficiency`, added under ADR-0082 epic
+   #458, issue #467) extends the hub with employee time analytics:
+   - **Utilization** is **comp-free** — the split of authoritative attendance
+     minutes (silver `time_record`, `kind='attendance'`) across the
+     `billable | internal | admin` categories; billable utilization = billable ÷
+     attended. Allocation (Autotask) rows carry a null category and are excluded.
+   - **Labor cost** is **comp-derived** — Σ(approved hours × effective hourly
+     rate) over approved timesheets (`timesheet_payroll_status`, states
+     `approved | payroll_approved | paid`), the rate being the latest `pay_rate`
+     effective on/before the week start (salaried folded to hourly at 2080 hr).
+     It is **AGGREGATE-ONLY** (never a per-person rate) and gated to **finance |
+     admin** by `canSeeLaborCost`: `reports.timeEfficiency(includeLaborCost)`
+     only runs the `pay_rate` query when the caller is gated in — so comp data is
+     never read for other roles, and the whole section is hidden from them.
+   - Build-ahead: all figures are zero/empty until `time_record`, approved
+     timesheets, and `pay_rate` carry rows (depends on seeding + pipeline/backend
+     data flow, ADR-0082). Realization (billable revenue ÷ cost) is deferred — it
+     needs a billed-revenue join not yet modeled.
 
 ### The hub at a glance
 
