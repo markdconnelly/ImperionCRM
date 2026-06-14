@@ -1,12 +1,9 @@
-# ADR-00XX: OKF-format semantic layer over the silver tier
-
-> **Placeholder number.** The real ADR number is claimed at merge (§10.3) — rename
-> the file and fix references in the same rebase. Author against `00XX`.
+# ADR-0086: OKF-format semantic layer over the silver tier
 
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-14 |
 | **Cross-references** | ADR-0041 (vector contract) · ADR-0044 (silver merge pattern) · ADR-0082 (time) · ADR-0083 (expense) · ADR-0080 (opportunity merge) · CLAUDE.md §4 (bronze/silver/gold), §8 (read-only DB MCP / PII) |
 
@@ -39,7 +36,7 @@ parseable by agents from the same file.
 This is a strong fit for our gap because:
 
 - OKF markdown links cross repo boundaries, where the Graphify global graph has
-  **zero cross-repo edges** ([graphify trial verdict] — CLAUDE.md §7). The
+  **zero cross-repo edges** (the Graphify trial verdict — CLAUDE.md §7). The
   semantic layer is exactly the cross-repo knowledge Graphify cannot represent.
 - OKF documents are the right shape to vectorize under the **ADR-0041** contract
   (Voyage `voyage-3-large` @ 1024 dims) and serve as curated RAG context — a

@@ -2,7 +2,7 @@
 type: OKF Bundle
 title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
-resource: ../../decision-records/ADR-00XX-okf-semantic-layer-over-silver.md
+resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
 timestamp: 2026-06-14T00:00:00Z
 ---
@@ -12,7 +12,7 @@ timestamp: 2026-06-14T00:00:00Z
 An [OKF](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing)
 bundle — one markdown file per silver concept — that captures what a silver entity
 **means**, what it **joins to**, and which source is **authoritative**. Standard:
-[ADR-00XX](../../decision-records/ADR-00XX-okf-semantic-layer-over-silver.md).
+[ADR-0086](../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md).
 
 This layer is *meaning*, not *structure* and not *data*:
 
