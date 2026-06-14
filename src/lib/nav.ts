@@ -38,6 +38,8 @@ export const navSecondary: NavItem[] = [
   { key: "timesheets", label: "Timesheets", icon: "Clock", href: "/timesheets" },
   // Admin correctness-approval queue for submitted timesheets (admin-only, ADR-0082).
   { key: "time-approvals", label: "Time Approvals", icon: "ClipboardCheck", href: "/timesheets/approvals" },
+  // Admin one-time setup: employee Autotask Resource / QuickBooks vendor mapping (admin-only, ADR-0082 #468).
+  { key: "time-mappings", label: "Employee Mapping", icon: "Link2", href: "/timesheets/mappings" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },

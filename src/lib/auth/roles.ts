@@ -113,6 +113,14 @@ export function canApproveTimesheets(roles: readonly AppRole[] | undefined): boo
 }
 
 /**
+ * The employee mapping confirm surface (ADR-0082, #468) is admin one-time setup —
+ * admin-only. GUI-side twin of the `time:map` capability the server action enforces.
+ */
+export function canManageEmployeeMappings(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles);
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -141,6 +149,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   agents: canSeeAgentPages,
   board: canSeeAgentPages,
   "time-approvals": canApproveTimesheets,
+  "time-mappings": canManageEmployeeMappings,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

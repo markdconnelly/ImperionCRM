@@ -248,6 +248,26 @@ export interface TimesheetReviewRow extends TimesheetRow {
   employeeName: string; // app_user display name (falls back to email)
 }
 
+/**
+ * An employee's external-id mapping row for the admin mapping confirm UI
+ * (ADR-0082, #468). One row per active `app_user` (left-joined to its
+ * `employee_profile` sidecar): email is the join key across all three systems,
+ * `autotaskResourceId` attributes Autotask Ticket Time Entries, and
+ * `quickbooksVendorId` matches the QuickBooks payment. `confirmed` is true once
+ * an admin has stamped the mapping (mappings_resolved_at set). NEVER carries the
+ * comp classification or pay rate — mapping cols only.
+ */
+export interface EmployeeMappingRow {
+  appUserId: string;
+  displayName: string; // falls back to email
+  email: string; // the consistent join key across app_user / Autotask / QuickBooks
+  autotaskResourceId: number | null; // Autotask Resource id (numeric)
+  quickbooksVendorId: string | null; // QuickBooks Online vendor/employee id (opaque)
+  confirmed: boolean; // mappings_resolved_at is set (an admin has confirmed once)
+  resolvedAt: string | null; // ISO; when the mapping was last confirmed
+  confirmedByName: string | null; // who confirmed it (display name / email)
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 

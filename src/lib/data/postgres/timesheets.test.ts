@@ -344,3 +344,76 @@ describe("reopenTimesheet (send back, ADR-0082)", () => {
     expect(params).toEqual(["ts-1"]);
   });
 });
+
+describe("listEmployeeMappings (admin mapping UI, ADR-0082 #468)", () => {
+  it("left-joins the mapping sidecar, coerces the numeric Resource id, derives confirmed", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          app_user_id: "emp-1",
+          display_name: "Dana Tech",
+          email: "dana@imperion.example",
+          autotask_resource_id: "29384", // numeric comes back as string from pg
+          quickbooks_vendor_id: "QB-77",
+          resolved_at: "2026-06-13T10:00:00.000Z",
+          confirmed_by_name: "Admin One",
+        },
+        {
+          app_user_id: "emp-2",
+          display_name: null, // falls back to email
+          email: "sam@imperion.example",
+          autotask_resource_id: null,
+          quickbooks_vendor_id: null,
+          resolved_at: null,
+          confirmed_by_name: null,
+        },
+      ],
+    });
+    const rows = await crm.listEmployeeMappings();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("FROM app_user u");
+    expect(sql).toContain("LEFT JOIN employee_profile ep ON ep.app_user_id = u.id");
+    // Never select comp data on this surface.
+    expect(sql).not.toContain("classification");
+    expect(sql).not.toContain("pay_rate");
+    expect(rows[0]).toMatchObject({
+      appUserId: "emp-1",
+      displayName: "Dana Tech",
+      autotaskResourceId: 29384,
+      quickbooksVendorId: "QB-77",
+      confirmed: true,
+      confirmedByName: "Admin One",
+    });
+    expect(rows[1]).toMatchObject({
+      appUserId: "emp-2",
+      displayName: "sam@imperion.example", // email fallback
+      autotaskResourceId: null,
+      confirmed: false,
+    });
+  });
+});
+
+describe("confirmEmployeeMapping (admin upsert, ADR-0082 #468)", () => {
+  it("upserts mapping cols + stamps who/when, never touching comp data", async () => {
+    await crm.confirmEmployeeMapping(
+      { appUserId: "emp-1", autotaskResourceId: 29384, quickbooksVendorId: "QB-77" },
+      "admin-1",
+    );
+    const sql = query.mock.calls[0][0] as string;
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toContain("INSERT INTO employee_profile");
+    expect(sql).toContain("ON CONFLICT (app_user_id) DO UPDATE");
+    expect(sql).toContain("mappings_resolved_at  = now()");
+    expect(sql).not.toContain("classification");
+    expect(params).toEqual(["emp-1", 29384, "QB-77", "admin-1"]);
+  });
+
+  it("passes nulls through to clear a mapping", async () => {
+    await crm.confirmEmployeeMapping(
+      { appUserId: "emp-2", autotaskResourceId: null, quickbooksVendorId: null },
+      "admin-1",
+    );
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(params).toEqual(["emp-2", null, null, "admin-1"]);
+  });
+});
