@@ -1587,8 +1587,8 @@ out-of-pocket** entries (with receipts) — from capture through **reimbursement
 read-only against a QuickBooks bill-payment. It mirrors the time-tracking shape: an
 **Employee** is the same `app_user` extension (0085), and the one comp figure expenses add —
 the **mileage rate** — joins the payroll-gated comp store. This section grows with the
-migrations (0088 config/comp → 0089 capture/silver → 0090 autotask-write/recon); only the
-**0088** tables are shown below.
+migrations (0088 config/comp → 0089 capture/silver → 0090 autotask-write/recon); the **0088**
++ **0089** tables are shown below.
 
 ```mermaid
 erDiagram
@@ -1644,10 +1644,83 @@ erDiagram
 > Unlike `pay_rate` it is **system-wide** (not per-employee) and effective-dated — a drive
 > uses the rate with the greatest `effective_from <=` its drive date. The pipelines get
 > **column-level** SELECT on the new `employee_profile.mileiq_user_id` **mapping** column only
-> (to join a MileIQ drive → an employee), never the rate. The capture/silver tables
-> (`mileiq_drive`, `website_expense_item`, `expense_report`, `expense_item`,
-> `receipt_attachment`) arrive in 0089; the Autotask write-tracking + reconciliation read
-> model in 0090.
+> (to join a MileIQ drive → an employee), never the rate.
+
+**Capture, the monthly report & the silver surface (migration 0089).** Two per-source
+bronze feeds normalize into one silver `expense_item` (ADR-0039 discipline, mirroring
+`time_record`): `website_expense_item` (manual out-of-pocket, authoritative) and
+`mileiq_drive` (business-classified drives pulled read-only — authoritative for the **miles**
+fact only). The monthly `expense_report` (one employee, one calendar month) carries the
+lifecycle; receipts live in `receipt_attachment` (blob → Autotask → verified → 90-day delete).
+
+```mermaid
+erDiagram
+    APP_USER ||--o{ EXPENSE_REPORT       : "monthly container"
+    EXPENSE_REPORT ||--o{ WEBSITE_EXPENSE_ITEM : "out-of-pocket entries"
+    APP_USER ||--o{ MILEIQ_DRIVE         : "MileIQ drives (read-only)"
+    EXPENSE_REPORT ||--o{ EXPENSE_ITEM   : "unified silver items"
+    RECEIPT_ATTACHMENT ||--o{ WEBSITE_EXPENSE_ITEM : "receipt"
+    EXPENSE_REPORT {
+      uuid id PK
+      uuid app_user_id FK "CASCADE — the Employee"
+      integer period_year
+      integer period_month "1-12; UNIQUE(employee,year,month)"
+      text state "open|submitted|approved|finance_approved|reimbursed|rejected"
+      jsonb attested_snapshot "attested original, audit"
+      text qb_bill_payment_ref "matched QuickBooks bill-payment"
+    }
+    WEBSITE_EXPENSE_ITEM {
+      uuid id PK
+      uuid expense_report_id FK "CASCADE"
+      date item_date
+      uuid category_id FK "expense_category (0088)"
+      numeric amount "entered (>0)"
+      boolean reimbursable "leg 1 (default true)"
+      boolean billable "leg 2 (default false)"
+      bigint autotask_company_id "client leg when billable"
+      uuid receipt_id FK "receipt_attachment"
+    }
+    MILEIQ_DRIVE {
+      uuid id PK
+      text mileiq_drive_id UK "idempotent upsert"
+      uuid app_user_id_FK "resolved via 0088 MileIQ mapping"
+      date drive_date
+      numeric miles "MileIQ-authoritative fact"
+      numeric suggested_rate "MileIQ snapshot (non-comp)"
+    }
+    EXPENSE_ITEM {
+      uuid id PK
+      uuid expense_report_id FK "CASCADE"
+      text source "website|mileiq (CHECK-paired)"
+      text kind "out_of_pocket|mileage"
+      numeric amount "entered (oop) | derived (mileage)"
+      numeric miles "mileage only"
+      uuid source_ref "bronze row id"
+    }
+    RECEIPT_ATTACHMENT {
+      uuid id PK
+      text blob_path "private storage account"
+      text content_hash "verify-stored integrity"
+      bigint autotask_attachment_id "NULL until pushed"
+      boolean verified_in_autotask "gates blob delete"
+      timestamptz blob_deleted_at "90-day lifecycle"
+    }
+```
+
+> **Source of truth & the comp boundary:** out-of-pocket `amount` is **entered** (>0);
+> mileage `amount` is **derived** (miles × effective Mileage Rate) by the **backend** — the
+> comp reader — never hand-typed, since the pipelines cannot read the comp-gated rate (0088).
+> The bronze `mileiq_drive` carries only the non-comp MileIQ suggested rate/amount snapshot.
+> The cloud pipeline merge writes `expense_item` + upserts the monthly `expense_report`
+> container; `source`↔`kind` is CHECK-paired (website→out_of_pocket, mileiq→mileage), and a
+> second CHECK enforces the kind shape (mileage carries miles; out-of-pocket carries amount,
+> no miles). **Reimbursable and billable are independent legs** — an item can be both. The
+> `expense_item_all` union view exposes the raw per-source bronze facts side by side (parallels
+> `time_entry_bronze_all`). Report state transitions: the web GUI drives
+> open→submitted→approved; the backend stamps `reimbursed` from Reimbursement Reconciliation
+> (the front end never holds Autotask/QuickBooks creds, ADR-0042). **Receipts** are guarded —
+> a receipt not yet `verified_in_autotask` is retained/flagged, never silently deleted. The
+> Autotask write-tracking + reconciliation read model is added by 0090.
 
 ## Vector data (pgvector)
 
