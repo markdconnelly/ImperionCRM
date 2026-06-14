@@ -118,6 +118,60 @@ _Avoid_: sync, matching (unqualified)
 A flagged mismatch surfaced by Reconciliation, of one of six kinds (over-logged, temporal orphan, under-logged gap, attended-nothing-logged, logged-never-attended, overlap). **Hard** deviations (over-logged, overlap) are logical impossibilities that block Attestation until resolved; **Soft** deviations are real-day texture that nudge and may be attested with an explanatory note.
 _Avoid_: error, exception (unqualified), conflict
 
+### Expenses
+
+**Expense Item**:
+One normalized row in the single silver expense table, discriminated by `source` and `kind` (`mileage` | `out_of_pocket`). Carries date, mapped category, amount, merchant/description, a **reimbursable** flag, a **billable** flag (with an optional client `companyID`/project/ticket link), and — for out-of-pocket — a receipt reference. The website-attested value is authoritative; for mileage, MileIQ is authoritative for the **miles** fact only (the amount is miles × the Imperion rate). An employee may have many per report.
+_Avoid_: expense line, receipt (a receipt is the evidence attached to an out-of-pocket item, not the item)
+
+**Expense Report**:
+The **monthly**, per-employee container of Expense Items — the unit that is attested, policy-checked, approved, reimbursed, and documented in Autotask. Required only when the employee incurred ≥1 expense that month; no expenses, no report. Lifecycle: **Open → Submitted → Approved → Finance-Approved → Reimbursed** (with **Rejected → reopen**).
+_Avoid_: expense claim, report (unqualified — the BI hub owns that word), monthly close (that is the finance task, not the container)
+
+**Attestation** (expense):
+The employee's affirmation that a submitted Expense Report's items are true and accurate. Submitting *is* attesting — it moves the report to **Submitted** and **hard-locks the employee out**: only an Admin edits thereafter. Every out-of-pocket item must have a receipt and all **Hard** policy violations must clear before attest (mileage is receipt-exempt). The attested original is preserved for audit.
+_Avoid_: approval (the admin's later act), claim submission
+
+**Approval** (expense):
+The Admin's act of accepting a Submitted Expense Report, optionally after correcting it against the attested original. Moves it to **Approved** and triggers the idempotent Autotask ExpenseReport write. Distinct from Finance Approval.
+_Avoid_: sign-off, attestation (the employee's act)
+
+**Finance Approval** (expense):
+The payment-facing approval — accepting an Approved Expense Report for reimbursement. Held by `canApprovePayroll` (**CFO / `finance` ∨ `admin`**). It does not pay; it authorizes the manual reimbursement outside the app. Moves the report to **Finance-Approved**. The same gate and the same Monthly Close that authorize time payment.
+_Avoid_: payroll approval (that is the time-side term; expenses are not payroll), approval (unqualified)
+
+**Reimbursable** vs **Billable**:
+Two **independent** properties of an Expense Item. **Reimbursable** = the employee paid personally and is owed the money back (the employee leg → a QuickBooks AP bill). **Billable** = the cost is passed through to a client on their invoice (the client leg → Autotask `isBillableToCompany` + `companyID`). An item can be **both** — reimbursed to the employee *and* billed to the client. Default is internal (Imperion), non-billable.
+_Avoid_: chargeable (use billable), expensable (use reimbursable)
+
+**Mileage Rate**:
+The per-mile reimbursement rate, **effective-dated** and configurable, used to compute a mileage item's amount (miles × rate). **Defaults to MileIQ's suggested rate** (captured per drive) and is **overridable on a system basis**. Sensitive comp data: lives in the payroll-role-gated comp store beside Pay Rate, visible only to `canApprovePayroll`, never to the employee, agents, or any client surface.
+_Avoid_: IRS rate (a default source, not the rate), MileIQ rate (that is only the default suggestion)
+
+**MileIQ Drive**:
+One business-classified drive auto-captured by MileIQ and pulled (read-only OAuth) into `mileiq_drive` bronze, normalizing to an `Expense Item(kind=mileage)`. Personal drives never enter. MileIQ is authoritative for the miles fact; the dollar amount is Imperion's (miles × Mileage Rate).
+_Avoid_: trip, mileage entry (unqualified)
+
+**Expense Category**:
+A clean, user-facing category **hard-linked to a QuickBooks chart-of-accounts account** (QuickBooks is the category SoR). An Admin maps each synced QuickBooks account to a category with caps, a soft threshold, a billable-default, an Autotask `expenseCategory` id, and a visibility toggle. A needed-but-absent category is **created in QuickBooks manually** by finance, then synced back and mapped — the app never writes QuickBooks. **Mileage** is a receipt-exempt system category.
+_Avoid_: account (that is the QuickBooks side), expense type
+
+**Expense Policy**:
+The configurable rule set the policy engine evaluates per item, pre-attest, surfaced as a memory-jogger. **Hard** violations (missing receipt, over a category hard-cap, dated outside the month) block attest; **Soft** violations (suspected duplicate, over a soft threshold, billable missing a client link, uncategorized) nudge and may be attested with a note. Each violation links to the canonical **company expense policy in IT Glue** (authored separately as a business document).
+_Avoid_: rule (unqualified), validation
+
+**Reimbursement Reconciliation**:
+The check that the manual reimbursement was done and done correctly: **expected** (an Expense Report's approved reimbursable total) lined up against the **authoritative QuickBooks bill-payment** (read-only). The match — employee + period + amount within tolerance — sets the report **Reimbursed**. Books as a **separate AP bill**, distinct from the payroll wage. Distinct from the time-side Payroll Reconciliation, though both close in the same Monthly Close.
+_Avoid_: payment matching (use the full term), payroll reconciliation (that is the time leg)
+
+**Reimbursed**:
+The terminal Expense Report state, set when Reimbursement Reconciliation matches an Approved report to its authoritative QuickBooks bill-payment. QuickBooks is read **read-only** and is the system of record for the payment fact; Imperion never initiates or records a reimbursement — it only verifies one QuickBooks already holds.
+_Avoid_: paid (that is the time-side terminal state), settled, closed
+
+**Monthly Close**:
+The single monthly finance task that approves and confirms payment for **both** time and expenses per employee: aggregated time total (weekly Timesheets rolled up) + reimbursable expense total, both QuickBooks match statuses, and open obligations (approved-but-not-yet-confirmed-paid). Where the manual payment steps are validated as complete. Its existence makes time **payment** monthly (weekly capture → monthly pay — an ADR-0082 amendment), while time capture stays weekly.
+_Avoid_: month-end (unqualified), payroll run, close (unqualified)
+
 ### Marketing & events
 
 **Event**:

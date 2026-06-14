@@ -157,3 +157,9 @@ mapping (auto-resolved by email, admin-confirmed once). Migrations proposed here
 
 **Resolved 2026-06-13 (Mark):** pulled into **v1** scope (despite the 2026-06-11 cutoff);
 **`admin` is top tier** (no `super_admin`); **QuickBooks Online** (exact amount match).
+
+**Amended 2026-06-13 (ADR-0083):** time **payment** aggregates **monthly** — weekly
+timesheet capture/attest/approve is unchanged, but Payroll Approval and the Paid
+reconciliation now happen in the **unified Monthly Close** (time + expenses) introduced by
+ADR-0083, a single monthly finance task per employee. The weekly Timesheet remains the
+attestation/approval unit; the monthly close is the payment unit.
