@@ -232,7 +232,7 @@
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
     <div class="hs"><div class="n" id="hero-commits">630+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="90"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n"><span data-count="91"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -467,9 +467,24 @@
     </div>
   </article>
 
-  <!-- 10 cross-repo sync -->
-  <article class="chapter" id="sync">
+  <!-- 10 the parallel leap -->
+  <article class="chapter" id="parallel">
     <div class="node reveal">10</div>
+    <div class="ch-eyebrow reveal">The method scales</div>
+    <h2 class="reveal d1">One session became ten</h2>
+    <p class="say reveal d1">The two-and-a-half-hour feature was one session driving one worktree. By that evening, <em>that</em> was the ceiling — not the model. The bottleneck had never been typing speed; it was how many independent changes one architect could keep coherent at once. So before bed, the method itself got an upgrade.</p>
+    <p class="say reveal d2">A short planning chat designed a <b>concurrency contract</b>: every session gets its own git worktree and its own dev port — <span style="font-family:var(--mono);color:var(--cyan-bright)">s01→3001 … s10→3010</span>, ten slots — shared hot files stay out of each other's lane, and the only counters GitHub can't hand out atomically, <b>migration and ADR numbers</b>, are claimed at <em>merge</em> instead of at authoring, so two parallel branches can never collide on the same number (ADR-0084). Ten sessions, one database, no stepped-on toes.</p>
+    <p class="say reveal d3">With the rails laid, ten coordinated sessions ran across all four repos at once. They didn't just polish time tracking — they carried it deeper (CFO payroll approval, the six-deviation reconciliation, a Time Efficiency BI section, inline admin correction) <b>and stood up a whole second feature in the same night</b>: employee <b>expense tracking</b>, end to end — ADR-0083, migrations 0088–0091, capture-to-reimbursement, with the matching backend writer, the bronze→silver merge, and the on-prem bulk pulls all filed alongside it.</p>
+    <p class="say reveal d3">Then the architect went to bed. <b>This morning the night's work was reviewed and refined</b> against the repos' own rules — and the plan for the day is the point: time and expense tracking both go <em>live on real data</em>, migrations applied, before the day is out. Idea to a shipped feature in an evening; one feature to a parallel two-feature build overnight; both on production data by the next sundown — gated, as ever, on the human's deliberate call to flip the switch.</p>
+    <div class="flow-note reveal d2">
+      <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <p><b>The bottleneck stopped being how fast people type and became how fast one person can decide.</b> Parallelism only pays off if the parallel work can't corrupt itself — so the contract that prevents collisions shipped <i>before</i> the ten sessions did.</p>
+    </div>
+  </article>
+
+  <!-- 11 cross-repo sync -->
+  <article class="chapter" id="sync">
+    <div class="node reveal">11</div>
     <div class="ch-eyebrow reveal">Four repos, one mind</div>
     <h2 class="reveal d1">The hard part isn't writing code. It's keeping four repos honest.</h2>
     <p class="say reveal d1">Speed in one repo is easy. The trap in a four-repo system is <b>drift</b>: the database moves in the front end, and three consumers — the backend's processes, the cloud pipeline's merge, the on-prem collectors — silently fall out of step. That's where most distributed builds quietly rot.</p>
@@ -481,16 +496,16 @@
     </div>
   </article>
 
-  <!-- 11 status -->
+  <!-- 12 status -->
   <article class="chapter" id="status">
-    <div class="node reveal">11</div>
+    <div class="node reveal">12</div>
     <div class="ch-eyebrow reveal">Where it is today</div>
     <h2 class="reveal d1">Honest about what's done</h2>
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.11.0</span></div>
-        <p>Running on Azure with Entra SSO. 79 migrations applied; the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, and the Board of Directors. The newest surface is the <b>reporting BI hub</b> — marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard that deep-links into each section. The freshest build is <b>employee time tracking</b> — weekly timesheets, attestation, and an admin approval queue (built and merged the same evening it was requested; its migrations queued behind the human's production-apply gate). All real screens over a typed data layer.</p>
+        <p>Running on Azure with Entra SSO. 87 migrations applied (the schema runs to 0091 in the repo); the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, and the Board of Directors. The newest surface is the <b>reporting BI hub</b> — marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard that deep-links into each section. The two freshest builds are <b>employee time tracking and expense tracking</b> — weekly timesheets, attestation, admin approval, mileage and out-of-pocket capture to reimbursement, with Autotask/QuickBooks reconciliation. Both were built and merged across one evening and a coordinated overnight session-fleet; <b>going live on real data today</b>, the expense migrations applied behind the human's deliberate production gate. All real screens over a typed data layer.</p>
       </div>
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.4.0</span></div>
