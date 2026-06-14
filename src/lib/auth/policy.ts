@@ -28,6 +28,7 @@ export const CAPABILITIES = [
   "catalog:write", // discovery/assessment question + template configuration
   "settings:write", // connections, company credentials, GDAP, poll cadence
   "agents:operate", // convene the AI board / operate the agent layer (ADR-0050: admin-only, spends model budget)
+  "time:write", // own weekly timesheet — enter/attest time (ADR-0082; every employee, own row only)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -46,6 +47,10 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   "catalog:write": [],
   "settings:write": [],
   "agents:operate": [],
+  // Every employee tracks their OWN time (ADR-0082). The capability is open to all
+  // roles; the server action additionally scopes every write to the signed-in
+  // employee's own timesheet, so this grants self-service, not cross-employee edit.
+  "time:write": ["finance", "project_manager", "sales", "support"],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */
