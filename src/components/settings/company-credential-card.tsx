@@ -4,7 +4,10 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { PollFrequency } from "@/components/integrations/poll-frequency";
 import { credentialCardState } from "@/lib/integrations/credential-card-state";
-import type { CompanyProvider } from "@/lib/integrations/company-providers";
+import {
+  providerIsPollable,
+  type CompanyProvider,
+} from "@/lib/integrations/company-providers";
 import type { ConnectionRow } from "@/types";
 
 const STATUS_TONE: Record<string, string> = {
@@ -44,6 +47,9 @@ export function CompanyCredentialCard({
   // A row with a failed/never-completed save must not hide the entry form (#176).
   const { stored, defaultOpen, statusLabel } = credentialCardState(connection);
   const [open, setOpen] = useState(defaultOpen);
+  // Poll cadence + on-demand refresh are only meaningful for polled sources (#531,
+  // ADR-0038 / pollDue()); consent/OAuth providers (QBO, GDAP) have nothing polling them.
+  const pollable = providerIsPollable(provider);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-panel p-4">
@@ -79,7 +85,7 @@ export function CompanyCredentialCard({
         </dl>
       )}
 
-      {configured && (
+      {configured && pollable && (
         <PollFrequency
           connectionId={connection.id}
           value={connection.pollIntervalMinutes}
@@ -87,7 +93,7 @@ export function CompanyCredentialCard({
         />
       )}
 
-      {configured && refreshable && refreshAction && (
+      {configured && pollable && refreshable && refreshAction && (
         <form action={refreshAction}>
           <input type="hidden" name="provider" value={provider.key} />
           <button

@@ -38,6 +38,20 @@ export interface CompanyProvider {
   fields?: CredentialField[];
 }
 
+/**
+ * Whether a poll cadence is meaningful for this provider (ADR-0038 / `pollDue()`).
+ *
+ * Only polled data sources (`kind: "credential"` — Autotask, IT Glue, …) are
+ * scraped on a cadence, so only they get the cadence selector and the on-demand
+ * "Refresh now" control. Consent/OAuth providers (QBO, GDAP — `kind: "consent"`)
+ * have nothing polling them: QBO refreshes on-demand and is bulk-pulled by the
+ * on-prem pipeline, and GDAP is delegated admin consent. Rendering a poll cadence
+ * for them is meaningless, so it is gated out here.
+ */
+export function providerIsPollable(provider: Pick<CompanyProvider, "kind">): boolean {
+  return provider.kind === "credential";
+}
+
 export const COMPANY_PROVIDERS: CompanyProvider[] = [
   {
     key: "gdap",
