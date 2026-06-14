@@ -1580,26 +1580,32 @@ erDiagram
 > completes the ADR-0082 schema; sibling-repo processes (Autotask write, QuickBooks read,
 > bronze→silver merge) build on these tables once the migrations are prod-applied.
 
-**QuickBooks bill-payment fact (migration 0091, #519).** The payroll tail's missing
-input: the **authoritative payment fact**. The on-prem local pipeline bulk-pulls the MSP's
-own QuickBooks Online vendor bill-payments into `qbo_bill_payments` (bronze, LP lossless
-envelope — flat text subset + lossless `raw_payload`, conflict key
-`(tenant_id, source, external_id)` where `external_id` = the QBO `BillPayment.Id`). The
-backend Payroll Reconciliation (BE #105 / recon#2) is its sole reader: it matches expected
-pay (approved hours × effective rate, computed backend-side over the 0085 comp store) to a
-real `total_amount` here to move a timesheet to **Paid**. **Read-only — the app never pays**
-(ADR-0082); `total_amount` is the payment fact, **never logged**, and is NOT comp data.
-Grants mirror the 0086 bronze pattern: `imperion-localpipeline` writes (SELECT/INSERT/UPDATE),
-the backend function reads (SELECT). Field names are modeled from the Intuit Accounting API v3
-and are **unverified against the real company** until the QBO read-only app registration lands
-(LP collector #170/#173 stays deploy-ahead until then); `raw_payload` is lossless, so drift is
-recoverable without a migration.
+**QuickBooks payment fact (migration 0092 `qbo_purchases`, #526, ADR-0085 — supersedes 0091
+`qbo_bill_payments`).** The payroll/reimbursement tail's missing input: the **authoritative
+payment fact**. Imperion's QBO company is **Simple Start**, which has no Accounts Payable, so
+`BillPayment` (0091) is unavailable; the fact re-targets to the **`Purchase`** entity
+(Check/Expense — how Simple Start records 1099 contractor pay and reimbursements). The on-prem
+local pipeline bulk-pulls the MSP's own QuickBooks Online purchases into `qbo_purchases`
+(bronze, LP lossless envelope — flat text subset + lossless `raw_payload`, conflict key
+`(tenant_id, source, external_id)` where `external_id` = the QBO `Purchase.Id`). The backend
+reconciliations read it: Payroll Reconciliation (BE #105 / recon#2, ADR-0082 → **Paid**) and
+expense reimbursement (ADR-0083 → **Reimbursed**) match expected pay/reimbursement (computed
+backend-side over the 0085 comp store) to a real `total_amount` here, filtered to the payee
+(`entity_id` = `employee_profile.qb_vendor_id`, 0085) and the CFO-designated expense
+account(s) (`Line[].AccountBasedExpenseLineDetail.AccountRef`, preserved in `raw_payload`).
+**Read-only — the app never pays** (ADR-0082); `total_amount` is the payment fact, **never
+logged**, and is NOT comp data. Grants mirror the 0086 bronze pattern: `imperion-localpipeline`
+writes (SELECT/INSERT/UPDATE), the backend function reads (SELECT). Field names are modeled
+from the Intuit Accounting API v3 and are **unverified against the real company / sandbox**
+until the QBO read-only app registration lands (LP collector #174, backend #116 stay
+deploy-ahead until then); `raw_payload` is lossless, so drift is recoverable without a
+migration.
 
 ## Diagram — Employee expense tracking (ADR-0083)
 
 Imperion tracks employee expenses — **business mileage** (MileIQ, read-only) + **manual
 out-of-pocket** entries (with receipts) — from capture through **reimbursement**, validated
-read-only against a QuickBooks bill-payment. It mirrors the time-tracking shape: an
+read-only against a QuickBooks payment (`Purchase`, ADR-0085). It mirrors the time-tracking shape: an
 **Employee** is the same `app_user` extension (0085), and the one comp figure expenses add —
 the **mileage rate** — joins the payroll-gated comp store. This section grows with the
 migrations (0088 config/comp → 0089 capture/silver → 0090 autotask-write/recon); all three
@@ -1682,7 +1688,7 @@ erDiagram
       integer period_month "1-12; UNIQUE(employee,year,month)"
       text state "open|submitted|approved|finance_approved|reimbursed|rejected"
       jsonb attested_snapshot "attested original, audit"
-      text qb_bill_payment_ref "matched QuickBooks bill-payment"
+      text qb_bill_payment_ref "matched QuickBooks payment id (Purchase, ADR-0085; column rename deferred)"
     }
     WEBSITE_EXPENSE_ITEM {
       uuid id PK
@@ -1758,7 +1764,7 @@ erDiagram
       uuid id PK
       uuid expense_report_id PK_FK "UNIQUE — one per report"
       numeric expected_reimbursable_total "approved reimbursable total"
-      text qb_bill_payment_ref "matched QuickBooks bill-payment"
+      text qb_bill_payment_ref "matched QuickBooks payment id (Purchase, ADR-0085; column rename deferred)"
       numeric tolerance "configurable match tolerance"
       text verdict "pending|matched|mismatch"
     }
@@ -1781,7 +1787,7 @@ erDiagram
 > **Idempotency is ours, not Autotask's** (backend ADR-0044): `idempotency_key` + `write_state`
 > + stored `external_ref` → re-approval updates the same ExpenseReport. **Reimbursement
 > Reconciliation** is backend-written (the QuickBooks reader): expected reimbursable total vs
-> the authoritative bill-payment within `tolerance` → `matched` sets the report `reimbursed`; a
+> the authoritative QuickBooks payment (`Purchase`, ADR-0085) within `tolerance` → `matched` sets the report `reimbursed`; a
 > `mismatch` blocks auto-reimbursed until a human resolves. This completes the ADR-0083 schema;
 > sibling-repo processes (Autotask write, MileIQ OAuth, QuickBooks read, bronze→silver merge,
 > receipt lifecycle) build on these tables once the migrations (#494) are prod-applied.

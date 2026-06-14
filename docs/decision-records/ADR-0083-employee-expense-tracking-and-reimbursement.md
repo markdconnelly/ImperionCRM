@@ -1,5 +1,11 @@
 # ADR-0083: Employee expense tracking — website-authoritative monthly expense reports, MileIQ mileage, Autotask documentation, QuickBooks reimbursement reconciliation
 
+> **Amended by [ADR-0085](ADR-0085-qbo-payment-fact-purchase-simple-start.md) (2026-06-14):**
+> the QuickBooks reimbursement fact is the **`Purchase`** entity (bronze `qbo_purchases`,
+> migration 0092), not `BillPayment` — Imperion's QBO is **Simple Start** (no Accounts
+> Payable). The reimbursement → **Reimbursed** matching and the `qb_vendor_id` payee link
+> are unchanged.
+
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema + GUI + read-side reconciliation render); backend (Autotask ExpenseReport/attachment write + verify, MileIQ OAuth custody + QuickBooks read + reconciliation process); pipeline (bronze→silver merge); local-pipeline (scheduled MileIQ drive pull + QuickBooks bulk pull + receipt-blob lifecycle) |
