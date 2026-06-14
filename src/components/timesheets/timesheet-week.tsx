@@ -1,8 +1,10 @@
 import { cn } from "@/lib/cn";
 import { weekDays, weekdayName } from "@/lib/week";
+import { DeviationList } from "@/components/timesheets/deviation-list";
 import type {
   ReconciliationDay,
   ReconciliationVerdict,
+  TimeDeviation,
   TimeEntryRow,
   TimesheetState,
 } from "@/types";
@@ -45,6 +47,7 @@ export function TimesheetWeek({
   state,
   entries,
   reconciliation,
+  deviations = [],
   hasHardDeviation,
   addAction,
   deleteAction,
@@ -54,6 +57,8 @@ export function TimesheetWeek({
   state: TimesheetState;
   entries: TimeEntryRow[];
   reconciliation: ReconciliationDay[];
+  /** The backend's full typed deviation list (ADR-0046); empty when the backend is off. */
+  deviations?: TimeDeviation[];
   hasHardDeviation: boolean;
   addAction: FormAction;
   deleteAction: FormAction;
@@ -230,6 +235,8 @@ export function TimesheetWeek({
             );
           })}
         </ul>
+
+        <DeviationList deviations={deviations} />
 
         {hasHardDeviation && editable && (
           <p className="rounded-md border border-red/40 bg-red/10 px-2.5 py-2 text-xs text-red">

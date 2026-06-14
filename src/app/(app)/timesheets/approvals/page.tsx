@@ -3,6 +3,7 @@ import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { ApprovalReview } from "@/components/timesheets/approval-review";
 import { getRepositories } from "@/lib/data";
+import { getTimeDeviations } from "@/lib/timesheets/deviations";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canApproveTimesheets } from "@/lib/auth/roles";
 import { weekLabel } from "@/lib/week";
@@ -51,6 +52,8 @@ export default async function TimeApprovalsPage({
       : null;
   const reviewingName =
     queue.find((q) => q.id === review)?.employeeName ?? "Employee";
+  // Full typed deviations for the reviewed sheet ([] when the backend is off — ADR-0046/0018).
+  const deviations = reviewing ? await getTimeDeviations(reviewing.id) : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -106,6 +109,7 @@ export default async function TimeApprovalsPage({
         <ApprovalReview
           employeeName={reviewingName}
           detail={reviewing}
+          deviations={deviations}
           approveAction={approveTimesheetAction}
           reopenAction={reopenTimesheetAction}
         />
