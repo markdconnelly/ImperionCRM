@@ -370,12 +370,46 @@ export interface TimeReconciliationResult {
 export interface EmployeeMappingRow {
   appUserId: string;
   displayName: string; // falls back to email
-  email: string; // the consistent join key across app_user / Autotask / QuickBooks
+  email: string; // the consistent join key across app_user / Autotask / QuickBooks / MileIQ
   autotaskResourceId: number | null; // Autotask Resource id (numeric)
   quickbooksVendorId: string | null; // QuickBooks Online vendor/employee id (opaque)
+  mileiqUserId: string | null; // MileIQ user id (opaque); attributes a MileIQ drive (ADR-0083, #490)
   confirmed: boolean; // mappings_resolved_at is set (an admin has confirmed once)
   resolvedAt: string | null; // ISO; when the mapping was last confirmed
   confirmedByName: string | null; // who confirmed it (display name / email)
+}
+
+/**
+ * One effective-dated SYSTEM-wide mileage rate (ADR-0083, `mileage_rate`, #490) as the
+ * payroll-gated admin sees it. COMP DATA — gated exactly like pay_rate (#466): this row
+ * surfaces ONLY behind the finance∨admin gate (`expense:finance-approve` /
+ * `canFinanceApproveExpenses`) and is NEVER shown to employee/agent/client roles. A drive
+ * reconciles against the rate in force on its date (greatest effective_from ≤ drive date);
+ * the per-employee mileage $ is DERIVED BY THE BACKEND (the sole comp reader). The entry
+ * GUI never reads this — it shows only miles + MileIQ's own suggested $.
+ */
+export interface MileageRateRow {
+  id: string;
+  effectiveFrom: string; // yyyy-mm-dd; inclusive, one system rate per date (UNIQUE)
+  rate: number; // USD per mile (e.g. 0.7000)
+  source: "mileiq_suggested" | "system_override";
+  note: string | null;
+  createdAt: string; // ISO; when the rate row was written
+  createdByName: string | null; // who set the rate (audit)
+  isCurrent: boolean; // true for the rate in force as of today (the latest effective_from ≤ today)
+}
+
+/**
+ * Admin write payload for a system mileage-rate override (ADR-0083, #490). Appends a new
+ * effective-dated row to the comp-gated `mileage_rate` table (source always
+ * `system_override`); history is preserved for back-period reconciliation. The caller gates
+ * `expense:finance-approve`. The MileIQ-suggested rate is written by the pipeline/backend,
+ * never here.
+ */
+export interface MileageRateInput {
+  effectiveFrom: string; // yyyy-mm-dd
+  rate: number; // USD per mile; must be > 0
+  note: string | null;
 }
 
 // ── Expense tracking (ADR-0083, migrations 0088–0090) ───────────────────────

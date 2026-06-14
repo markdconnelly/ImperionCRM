@@ -448,3 +448,63 @@ describe("updateExpenseCategoryMapping (admin write, ADR-0083 #489)", () => {
     expect(params[8]).toBe(false); // effectiveActive forced false despite isActive:true
   });
 });
+
+describe("listMileageRates (comp-gated read, ADR-0083 #490)", () => {
+  it("orders newest-first, coerces the numeric rate, flags the in-force row", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "mr-2",
+          effective_from: "2026-06-01",
+          rate: "0.7000", // numeric comes back as string from pg
+          source: "system_override",
+          note: "matches IRS rate",
+          created_at: "2026-05-28T00:00:00.000Z",
+          created_by_name: "Fin One",
+          is_current: true,
+        },
+        {
+          id: "mr-1",
+          effective_from: "2026-01-01",
+          rate: "0.6550",
+          source: "mileiq_suggested",
+          note: null,
+          created_at: "2025-12-30T00:00:00.000Z",
+          created_by_name: null,
+          is_current: false,
+        },
+      ],
+    });
+    const rows = await crm.listMileageRates();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("FROM mileage_rate mr");
+    // The in-force row = latest effective_from on or before today.
+    expect(sql).toContain("effective_from <= CURRENT_DATE");
+    expect(sql).toContain("ORDER BY mr.effective_from DESC");
+    expect(rows[0]).toMatchObject({
+      id: "mr-2",
+      effectiveFrom: "2026-06-01",
+      rate: 0.7,
+      source: "system_override",
+      createdByName: "Fin One",
+      isCurrent: true,
+    });
+    expect(rows[1]).toMatchObject({ rate: 0.655, source: "mileiq_suggested", isCurrent: false });
+  });
+});
+
+describe("setMileageRate (comp-gated override, ADR-0083 #490)", () => {
+  it("inserts a system_override row, upserts on effective_from, stamps who set it", async () => {
+    await crm.setMileageRate(
+      { effectiveFrom: "2026-07-01", rate: 0.72, note: "Q3 bump" },
+      "fin-1",
+    );
+    const sql = query.mock.calls[0][0] as string;
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toContain("INSERT INTO mileage_rate");
+    // source is fixed to system_override (MileIQ-suggested rows are written elsewhere).
+    expect(sql).toContain("'system_override'");
+    expect(sql).toContain("ON CONFLICT (effective_from) DO UPDATE");
+    expect(params).toEqual(["2026-07-01", 0.72, "Q3 bump", "fin-1"]);
+  });
+});

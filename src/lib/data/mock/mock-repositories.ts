@@ -327,6 +327,14 @@ export const mockRepositories: Repositories = {
     async confirmEmployeeMapping() {
       throw new Error(NO_DB);
     },
+    // Mileage rate (ADR-0083, #490) — comp data: the read returns empty (no demo rate);
+    // the write needs a database, so it fails honestly rather than pretend to persist.
+    async listMileageRates() {
+      return [];
+    },
+    async setMileageRate() {
+      throw new Error(NO_DB);
+    },
     // Expense tracking (ADR-0083) — reads return empty (no demo reports); writes
     // need a database, so they fail honestly rather than pretend to persist.
     async listExpenseReports() {

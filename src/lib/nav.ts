@@ -50,6 +50,9 @@ export const navSecondary: NavItem[] = [
   // Admin setup: map the synced QuickBooks chart of accounts → clean website expense
   // categories (admin-only, ADR-0083 #489). QuickBooks stays read-only — the app never writes it.
   { key: "expense-categories", label: "Expense Categories", icon: "Tags", href: "/expenses/categories" },
+  // Payroll-gated comp setup: the effective-dated SYSTEM mileage rate (finance∨admin, ADR-0083 #490).
+  // COMP DATA — gated like Pay Rate; never visible to employee/agent/client roles.
+  { key: "expense-mileage-rate", label: "Mileage Rate", icon: "Gauge", href: "/expenses/mileage-rate" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },

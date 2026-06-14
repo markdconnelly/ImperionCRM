@@ -182,6 +182,17 @@ export function canManageExpenseCategories(roles: readonly AppRole[] | undefined
 }
 
 /**
+ * The mileage-rate admin (ADR-0083, #490) is COMP-GATED exactly like Pay Rate — the
+ * effective-dated system mileage rate is comp data (the backend derives each employee's
+ * mileage $ from it), so it is restricted to finance∨admin and NEVER shown to
+ * employee/agent/client roles. GUI-side twin of the `expense:mileage-rate` capability the
+ * server action enforces. Mirrors `canApprovePayroll` / `canFinanceApproveExpenses`.
+ */
+export function canManageMileageRate(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "finance");
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -225,6 +236,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   "time-mappings": canManageEmployeeMappings,
   "expense-admin": canAdministerExpenses,
   "expense-categories": canManageExpenseCategories,
+  "expense-mileage-rate": canManageMileageRate,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */
