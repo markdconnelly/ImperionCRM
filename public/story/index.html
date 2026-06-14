@@ -211,6 +211,7 @@
       <a href="#system">system</a>
       <a href="#architecture">architecture</a>
       <a href="#builders">build</a>
+      <a href="#velocity">velocity</a>
       <a href="#status">status</a>
       <a class="gh" href="https://github.com/markdconnelly" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
@@ -231,7 +232,7 @@
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
     <div class="hs"><div class="n" id="hero-commits">630+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="79"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n"><span data-count="90"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -422,16 +423,74 @@
     </div>
   </article>
 
-  <!-- 09 status -->
-  <article class="chapter" id="status">
+  <!-- 09 velocity -->
+  <article class="chapter" id="velocity">
     <div class="node reveal">09</div>
+    <div class="ch-eyebrow reveal">The velocity</div>
+    <h2 class="reveal d1">A hallway complaint at noon. A shipped feature by night.</h2>
+    <p class="say reveal d1">On <b>13 June 2026</b>, Imperion spent the day at the <em>Mahomet soda festival</em> — a company outing, not a planning meeting. Somewhere between the root beer and the kettle corn, employees mentioned almost in passing that they were still logging their hours <b>by hand</b>. That was the entire brief. No ticket, no spec, no mockup — a complaint over a paper cup.</p>
+    <p class="say reveal d2">By the time the festival wrapped, time tracking was the app's top priority. A short Q&amp;A turned the grumble into a real specification — who attests, who approves, how it reconciles against Autotask and QuickBooks — and the build began that same afternoon. The decision was written down <b>first</b> (ADR-0082, 6:06&nbsp;PM). Then the feature was built end to end, in one continuous evening, while the git clock kept the receipts.</p>
+
+    <!-- evening timeline -->
+    <div class="flow reveal d2">
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <h3>The festival</h3><p>afternoon · <b>"we still do timesheets by hand."</b></p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></div>
+        <h3>ADR-0082</h3><p>6:06 PM · the decision, written first.</p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6a9 3 0 0 0 18 0V5"/><path d="M3 11v6a9 3 0 0 0 18 0v-6"/></svg></div>
+        <h3>Schema</h3><p>6:43–6:53 PM · migrations 0085–0087.</p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode">
+        <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
+        <h3>Data + UI</h3><p>7:06–7:48 PM · weekly entry + attest.</p>
+      </div>
+      <div class="connector"></div>
+      <div class="fnode dest">
+        <div class="icon-badge amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <h3>Merged</h3><p>8:25 PM · admin approval + payroll mapping.</p>
+      </div>
+    </div>
+
+    <p class="say reveal d2">From a paper cup to a complete, user-facing feature — <b>employee profiles with effective-dated pay rates, a bronze→silver timesheet model, a typed data layer, the weekly-entry screen with a memory-jogger and attestation, the admin approval queue, and the Autotask/QuickBooks payroll reconciliation</b> — in roughly <em>two and a half hours of build</em>. Same afternoon the need surfaced. True to the rest of this page, the code is merged and reviewed against the repo's own rules; flipping the production switch — applying the migrations — stays the human's deliberate call.</p>
+
+    <div class="deferred reveal d2">
+      <b>What this would normally cost</b>
+      <span>A four-repo, full-stack feature — data modeling and migrations, a typed data layer, two distinct UIs, and a cross-system payroll-reconciliation contract — is the kind of work a software team schedules <b>across sprints</b>: a PM to write the spec, a DBA for the schema, a backend engineer, a front-end engineer, and the standups to keep them aligned. Here it was scoped, documented, built, and merged <b>before the evening was over</b> — by one architect directing AI agents. The bottleneck stopped being how fast people can type and became how fast a person can decide.</span>
+    </div>
+  </article>
+
+  <!-- 10 cross-repo sync -->
+  <article class="chapter" id="sync">
+    <div class="node reveal">10</div>
+    <div class="ch-eyebrow reveal">Four repos, one mind</div>
+    <h2 class="reveal d1">The hard part isn't writing code. It's keeping four repos honest.</h2>
+    <p class="say reveal d1">Speed in one repo is easy. The trap in a four-repo system is <b>drift</b>: the database moves in the front end, and three consumers — the backend's processes, the cloud pipeline's merge, the on-prem collectors — silently fall out of step. That's where most distributed builds quietly rot.</p>
+    <p class="say reveal d2">It didn't happen here, because the <em>contract lives in the repo, not in anyone's head</em>. Every repo carries a rule file the agent reads first; schema is proposed in <b>one</b> place (the front end owns migrations) and the siblings are declared consumers; one ADR number and one shared vocabulary thread through all four. The agent doesn't have to remember the architecture — it re-reads it every session and is held to it by CI.</p>
+    <p class="say reveal d3">The same time-tracking sprint shows it in motion: migrations 0085–0087 landed in the front end, and in the <b>same push</b> the matching epics and issues were filed across all three siblings — the backend writing idempotent Autotask Time Tickets on approval, the pipeline and on-prem collectors corroborating attendance. Four repos, never disagreeing about what a <span style="font-family:var(--mono);color:var(--cyan-bright)">time_record</span> means.</p>
+    <div class="flow-note reveal d2">
+      <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/><path d="M3 8V3h5"/><path d="M21 16v5h-5"/></svg></div>
+      <p><b>One agent held the whole system at once.</b> What a team coordinates with meetings, the agent coordinates by reading the contract — so a schema change and its three downstream consequences ship as one coherent move, not a week of catch-up.</p>
+    </div>
+  </article>
+
+  <!-- 11 status -->
+  <article class="chapter" id="status">
+    <div class="node reveal">11</div>
     <div class="ch-eyebrow reveal">Where it is today</div>
     <h2 class="reveal d1">Honest about what's done</h2>
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.11.0</span></div>
-        <p>Running on Azure with Entra SSO. 79 migrations applied; the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, and the Board of Directors. The newest surface is the <b>reporting BI hub</b> — marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard that deep-links into each section. All real screens over a typed data layer.</p>
+        <p>Running on Azure with Entra SSO. 79 migrations applied; the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, and the Board of Directors. The newest surface is the <b>reporting BI hub</b> — marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard that deep-links into each section. The freshest build is <b>employee time tracking</b> — weekly timesheets, attestation, and an admin approval queue (built and merged the same evening it was requested; its migrations queued behind the human's production-apply gate). All real screens over a typed data layer.</p>
       </div>
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.4.0</span></div>
