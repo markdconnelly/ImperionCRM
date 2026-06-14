@@ -343,6 +343,17 @@ describe("reopenTimesheet (send back, ADR-0082)", () => {
     expect(sql).toContain("state IN ('submitted', 'approved')");
     expect(params).toEqual(["ts-1"]);
   });
+
+  it("re-queues a written time_ticket back to pending, keeping external_ref (#103/ADR-0047)", async () => {
+    await crm.reopenTimesheet("ts-1");
+    const reset = query.mock.calls.find((c) => String(c[0]).includes("UPDATE time_ticket"));
+    expect(reset).toBeDefined();
+    const sql = reset![0] as string;
+    expect(sql).toContain("write_state = 'pending'");
+    expect(sql).toContain("write_state = 'written'"); // only an already-documented week
+    expect(sql).not.toContain("external_ref"); // external_ref left intact for the PATCH
+    expect(reset![1]).toEqual(["ts-1"]);
+  });
 });
 
 describe("getTimesheetById (admin review read, ADR-0082 #477)", () => {
