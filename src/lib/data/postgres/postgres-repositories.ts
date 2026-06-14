@@ -14,6 +14,11 @@ import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
+import {
+  planInstantiation,
+  projectIdempotencyKey,
+  taskTicketIdempotencyKey,
+} from "@/lib/delivery/instantiate";
 import type {
   AccountDetail,
   AccountInput,
@@ -41,6 +46,7 @@ import type {
   ProjectEditable,
   ProjectInput,
   ProjectTypeInput,
+  DeliveryInstantiationInput,
   DeliveryTemplateInput,
   ExpenseItemInput,
   ExpenseCategoryMappingInput,
@@ -1744,6 +1750,115 @@ export const postgresRepositories: Repositories = {
       if (!pool) return mockRepositories.crm.deleteDeliveryTemplate(id);
       // CASCADE drops phases/tasks; project_provisioning.delivery_template_id SET NULL.
       await pool.query(`DELETE FROM delivery_template WHERE id = $1`, [id]);
+    },
+
+    async instantiateDeliveryTemplate(input: DeliveryInstantiationInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.instantiateDeliveryTemplate(input);
+      // Normalize the start (same guard as applyOnboardingTemplate).
+      const startDate = /^\d{4}-\d{2}-\d{2}$/.test(input.startDate)
+        ? input.startDate
+        : new Date().toISOString().slice(0, 10);
+
+      // Load the template tree first (read).
+      const template = await this.getDeliveryTemplate(input.deliveryTemplateId);
+      if (!template) throw new Error(`Delivery template ${input.deliveryTemplateId} not found.`);
+
+      // The won-opportunity seam. The KQM/Autotask ids the executor needs
+      // (source_kqm_quote_id / autotask_opportunity_id, spike #427) live in the
+      // opportunity BRONZE (0083) — the silver `opportunity` table does NOT yet
+      // carry them; surfacing them is a deferred pipeline merge slice. So here we
+      // only (a) re-validate the chosen opportunity is WON (the board offers only
+      // won ones, but a forged id must not provision off a draft) and (b) link it
+      // as project provenance via project.opportunity_id. The provisioning seam
+      // columns stay NULL until the silver merge lands them — inert exactly as the
+      // contract gate keeps the row inert in prod (#566 notes).
+      let opportunityId: string | null = null;
+      if (input.opportunityId) {
+        const { rows: oppRows } = await pool.query<{ sales_stage: string }>(
+          `SELECT sales_stage FROM opportunity WHERE id = $1`,
+          [input.opportunityId],
+        );
+        if (oppRows[0]?.sales_stage === "won") opportunityId = input.opportunityId;
+        else throw new Error("Provisioning requires a won opportunity.");
+      }
+      const sourceKqmQuoteId: string | null = null;
+      const autotaskOpportunityId: number | null = null;
+
+      // Pure plan: phase/task dates + per-task fire specs (mirrors the onboarding
+      // date math). The transaction below supplies the real row ids for the keys.
+      const plan = planInstantiation(template, startDate);
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        // 1. The native project — same shape as createProject, link the opportunity
+        //    when one was chosen (provenance), not-started lifecycle.
+        const { rows: projRows } = await client.query<{ id: string }>(
+          `INSERT INTO project
+             (account_id, opportunity_id, name, project_type_id, status, started_at, completed_at)
+           VALUES ($1, $2, $3, $4, 'not_started'::project_status, NULL, NULL)
+           RETURNING id`,
+          [input.accountId, opportunityId, input.name, input.projectTypeId],
+        );
+        const projectId = projRows[0].id;
+
+        // 2. Milestones per phase + tasks per template task (mirrors applyOnboardingTemplate
+        //    row shapes: project_milestone start/due, task category 'project').
+        for (const m of plan.milestones) {
+          await client.query(
+            `INSERT INTO project_milestone
+               (project_id, name, ordinal, status, health, start_at, due_at)
+             VALUES ($1, $2, $3, 'not_started', 'amber', $4::date, $5::date)`,
+            [projectId, m.name, m.ordinal, m.startAt, m.dueAt],
+          );
+          for (const t of m.tasks) {
+            const { rows: taskRows } = await client.query<{ id: string }>(
+              `INSERT INTO task (account_id, project_id, title, status, category, due_at)
+               VALUES ($1, $2, $3, 'open', 'project'::task_category, $4::date)
+               RETURNING id`,
+              [input.accountId, projectId, t.title, t.dueAt],
+            );
+            const taskId = taskRows[0].id;
+            // 4. A task_ticket_fire row for each dispatching task. fire_state stays
+            //    'none' (the board schedules later → 'scheduled'); scheduled_for is
+            //    precomputed (task start − lead days) so the board recomputes nothing.
+            if (t.fire) {
+              await client.query(
+                `INSERT INTO task_ticket_fire
+                   (task_id, fire_state, scheduled_for, autotask_queue_id, idempotency_key)
+                 VALUES ($1, 'none', $2::date, $3, $4)`,
+                [taskId, t.fire.scheduledFor, t.fire.ticketQueueId, taskTicketIdempotencyKey(taskId)],
+              );
+            }
+          }
+        }
+
+        // 3. The provisioning row — pending, contract gate 'none' (inert until
+        //    DocuSign sets 'signed', #391-395), template ref + won→Autotask seam.
+        await client.query(
+          `INSERT INTO project_provisioning
+             (project_id, source_kqm_quote_id, autotask_opportunity_id,
+              provision_state, contract_state, idempotency_key, delivery_template_id)
+           VALUES ($1, $2, $3, 'pending', 'none', $4, $5)`,
+          [
+            projectId,
+            sourceKqmQuoteId,
+            autotaskOpportunityId,
+            projectIdempotencyKey(projectId),
+            input.deliveryTemplateId,
+          ],
+        );
+
+        await client.query("COMMIT");
+        return projectId;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
     },
 
     // ── Time tracking (ADR-0082, migrations 0085–0087) ───────────────────────

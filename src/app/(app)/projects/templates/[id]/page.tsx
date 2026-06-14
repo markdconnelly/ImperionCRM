@@ -1,12 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
+import { ProvisionFromTemplateForm } from "@/components/projects/provision-from-template-form";
 import { getRepositories } from "@/lib/data";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canManageProjects } from "@/lib/auth/roles";
+import { provisionFromTemplateAction } from "../actions";
+import type { Option } from "@/lib/data/repositories";
+import type { OpportunityRow, ProjectTypeRow } from "@/types";
 
 /**
  * Read-only view of a delivery-template tree (ADR-0081, #453): phases with their
  * scheduling skeleton and tasks, dispatch-ticket tasks badged. Edit is
- * delete+recreate in v1, so there is no edit form here yet.
+ * delete+recreate in v1, so there is no edit form here yet. `canManageProjects`
+ * users also get the provision-from-template entry point (ADR-0080 §4, #566).
  */
 export default async function DeliveryTemplateDetailPage({
   params,
@@ -15,8 +22,20 @@ export default async function DeliveryTemplateDetailPage({
 }) {
   const { id } = await params;
   const { crm } = getRepositories();
-  const t = await crm.getDeliveryTemplate(id);
+  const [t, roles] = await Promise.all([crm.getDeliveryTemplate(id), getSessionRoles()]);
   if (!t) notFound();
+
+  // The provisioning entry point needs the pickers; load them only when the user
+  // can actually provision (delivery:write). Won opportunities only (the seam).
+  const canProvision = canManageProjects(roles);
+  const [accounts, opportunities, types]: [Option[], OpportunityRow[], ProjectTypeRow[]] =
+    canProvision
+      ? await Promise.all([crm.accountOptions(), crm.listOpportunities(), crm.listProjectTypes()])
+      : [[], [], []];
+  const wonOpportunities = opportunities
+    .filter((o) => o.stage === "won")
+    .map((o) => ({ id: o.id, name: `${o.account} — ${o.name}` }));
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="flex flex-col gap-4">
@@ -31,6 +50,17 @@ export default async function DeliveryTemplateDetailPage({
         <span className="rounded-full bg-panel-2 px-2 py-0.5">{t.projectTypeName ?? "Any type"}</span>
         {!t.isActive && <span className="rounded-full bg-panel-2 px-2 py-0.5">inactive</span>}
       </div>
+
+      {canProvision && (
+        <ProvisionFromTemplateForm
+          template={t}
+          action={provisionFromTemplateAction}
+          accounts={accounts}
+          wonOpportunities={wonOpportunities}
+          types={types}
+          defaultStartDate={today}
+        />
+      )}
 
       {t.phases.map((phase) => (
         <section key={phase.id} className="rounded-xl border border-border bg-panel p-5">

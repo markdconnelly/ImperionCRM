@@ -86,3 +86,34 @@ export async function deleteDeliveryTemplateAction(formData: FormData) {
   await crm.deleteDeliveryTemplate(id);
   revalidatePath("/projects/templates");
 }
+
+/**
+ * Instantiate a delivery template into the native intent plane (ADR-0080 §4,
+ * ADR-0081 §3, #566): create the project + milestones + tasks + provisioning/fire
+ * rows, then redirect to the new project. Gated `delivery:write`, the same gate as
+ * template authoring + project management. No Autotask write here — the backend
+ * executor picks the rows up once the contract gate flips to 'signed' (ADR-0042).
+ */
+export async function provisionFromTemplateAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const deliveryTemplateId = String(formData.get("deliveryTemplateId") ?? "").trim();
+  const accountId = String(formData.get("accountId") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const projectTypeId = String(formData.get("projectTypeId") ?? "").trim();
+  const startDate = String(formData.get("startDate") ?? "").trim();
+  const opportunityRaw = String(formData.get("opportunityId") ?? "").trim();
+  if (!deliveryTemplateId || !accountId || !name || !projectTypeId) {
+    throw new Error("Account, project name, type, and template are required.");
+  }
+  const { crm } = getRepositories();
+  const projectId = await crm.instantiateDeliveryTemplate({
+    deliveryTemplateId,
+    accountId,
+    name,
+    projectTypeId,
+    startDate,
+    opportunityId: opportunityRaw === "" ? null : opportunityRaw,
+  });
+  revalidatePath("/projects");
+  redirect(`/projects/${projectId}`);
+}
