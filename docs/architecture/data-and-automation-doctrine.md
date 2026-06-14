@@ -207,8 +207,10 @@ per batch following the pilot template.
 | **Reference/config** | app_user, connection, agent*, categories, rates, project_type, tenants | H | ⏳ | n/a (config) |
 | **Audit/board** | audit_log, agent_run/message/memory, board_*, feature_* | C / B | n/a | board deliberation |
 
-Pilot IKF concepts live at [docs/database/semantic-layer/](../database/semantic-layer/index.md)
-(`time_record`, `expense_item`, `opportunity`).
+The **maintained, every-object** version of this map — kept next to the concept files and
+expanded as the build progresses — is the
+[master coverage matrix](../database/semantic-layer/coverage-matrix.md). Authored IKF
+concepts live at [docs/database/semantic-layer/](../database/semantic-layer/index.md).
 
 ---
 
