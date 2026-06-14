@@ -327,6 +327,23 @@ export const mockRepositories: Repositories = {
     async confirmEmployeeMapping() {
       throw new Error(NO_DB);
     },
+    // Expense tracking (ADR-0083) — reads return empty (no demo reports); writes
+    // need a database, so they fail honestly rather than pretend to persist.
+    async listExpenseReports() {
+      return [];
+    },
+    async getExpenseReportForPeriod() {
+      return null;
+    },
+    async ensureExpenseReportForPeriod() {
+      throw new Error(NO_DB);
+    },
+    async submitExpenseReport() {
+      throw new Error(NO_DB);
+    },
+    async reopenExpenseReport() {
+      throw new Error(NO_DB);
+    },
     async listOnboarding() {
       // Acme is instantiated from the standard playbook (ADR-0037): earlier
       // phases mostly checked off so the derived R/Y/G + checklist render.

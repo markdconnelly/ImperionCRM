@@ -56,6 +56,8 @@ import type {
   AdminTimesheetReview,
   AdminTimesheetRow,
   EmployeeMappingRow,
+  ExpenseReportRow,
+  ExpenseReportDetail,
   TimeEntryCategory,
   LeadHookRow,
   MarketingSocialReport,
@@ -436,6 +438,26 @@ export interface CrmRepository {
   /** Confirm an employee's mapping (admin): upsert the resolved Autotask Resource /
    *  QuickBooks vendor ids onto `employee_profile` and stamp who/when. Idempotent. */
   confirmEmployeeMapping(input: EmployeeMappingInput, confirmedBy: string): Promise<void>;
+
+  // Expense tracking — employee monthly expense reports (ADR-0083, migrations 0088–0090)
+  /** An employee's expense reports, most-recent month first (history/list). */
+  listExpenseReports(opts: { employeeId: string }): Promise<ExpenseReportRow[]>;
+  /** The employee's report for a calendar month — items + totals — or null if none
+   *  has been opened yet. */
+  getExpenseReportForPeriod(
+    employeeId: string,
+    year: number,
+    month: number,
+  ): Promise<ExpenseReportDetail | null>;
+  /** Get-or-create the employee's Open report for a calendar month; returns its id
+   *  (idempotent on the UNIQUE (app_user_id, period_year, period_month)). */
+  ensureExpenseReportForPeriod(employeeId: string, year: number, month: number): Promise<string>;
+  /** Attest (submit) a report: state→submitted, stamp attested_by/at, snapshot the
+   *  attested items for audit. Caller enforces the hard-policy gate first. */
+  submitExpenseReport(id: string, attestedBy: string): Promise<void>;
+  /** Send a submitted/approved/rejected report back to Open: clear the attest/approve/
+   *  reject stamps (re-attest required). Keeps the snapshot + Autotask tracking row. */
+  reopenExpenseReport(id: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;
