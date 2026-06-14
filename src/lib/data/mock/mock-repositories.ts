@@ -365,6 +365,29 @@ export const mockRepositories: Repositories = {
     async rejectExpenseReport() {
       throw new Error(NO_DB);
     },
+    // Expense item CRUD + reference/read models (ADR-0083, #486): reads return empty
+    // (no demo data); writes need a database, so they fail honestly rather than pretend.
+    async addExpenseItem() {
+      throw new Error(NO_DB);
+    },
+    async updateExpenseItem() {
+      throw new Error(NO_DB);
+    },
+    async deleteExpenseItem() {
+      throw new Error(NO_DB);
+    },
+    async listExpenseCategories() {
+      return [];
+    },
+    async listMileiqDrives() {
+      return [];
+    },
+    async listExpensePolicyViolations() {
+      return [];
+    },
+    async listMonthlyClose() {
+      return [];
+    },
     async listOnboarding() {
       // Acme is instantiated from the standard playbook (ADR-0037): earlier
       // phases mostly checked off so the derived R/Y/G + checklist render.
