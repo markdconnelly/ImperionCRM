@@ -24,6 +24,7 @@ runs in external functions. Everything shares one store: **PostgreSQL + pgvector
 
 | Doc | What it covers |
 | --- | --- |
+| [system-architecture](system-architecture.md) | **The three layers in one place** — Medallion data lake · Model Workspace Protocol agent framework · OKF knowledge layer — and how a fact travels source → bronze → silver → gold → agent → employee. Start here for the whole-system view. |
 | [application-boundary](application-boundary.md) | **What lives in this repo vs. in external functions** — the single most important boundary to understand before changing code. |
 | [customer-lifecycle](customer-lifecycle.md) | The assessment-led GTM motion (audience → lead → discovery → paid assessment → managed services → SBRs) and how it maps to the schema. |
 | [product-requirements](product-requirements.md) | Scope, build phasing, and open questions. |
