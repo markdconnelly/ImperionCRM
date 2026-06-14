@@ -405,6 +405,9 @@ export const mockRepositories: Repositories = {
     async listMonthlyClose() {
       return [];
     },
+    async listAllMonthlyClose() {
+      return [];
+    },
     async listOnboarding() {
       // Acme is instantiated from the standard playbook (ADR-0037): earlier
       // phases mostly checked off so the derived R/Y/G + checklist render.

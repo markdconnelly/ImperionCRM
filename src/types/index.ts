@@ -593,6 +593,19 @@ export interface MonthlyCloseRow {
   timeObligationOpen: boolean;
 }
 
+/**
+ * One employee-month row of the unified Monthly Close finance surface (ADR-0083, #491,
+ * amends ADR-0082) — `MonthlyCloseRow` joined to the employee's display name for the
+ * all-employees finance table. The single monthly finance task: roll up both legs (time
+ * minutes + reimbursable expense total), surface both QuickBooks match statuses, and flag
+ * the open obligations (approved/finance-approved but not yet confirmed paid). Comp-FREE —
+ * expected pay (hours × rate) stays in the backend (the sole comp reader); this carries
+ * minutes + dollar amounts only, never a rate.
+ */
+export interface AdminMonthlyCloseRow extends MonthlyCloseRow {
+  employeeName: string; // app_user display name (falls back to email)
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 

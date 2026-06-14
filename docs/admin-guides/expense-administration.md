@@ -57,6 +57,75 @@ and sort are preserved across the in-context Review / Confirm panels.
 
 ---
 
+# Monthly Close (unified time + expense)
+
+The **Monthly Close** surface (`/monthly-close`, ADR-0083 #491, amends ADR-0082) is the
+single monthly finance task that rolls up **both** legs — time and expense — for every
+employee, one row per employee per month. It reads the comp-free `monthly_close` view (a
+`FULL OUTER JOIN` of the time and expense facts, migration 0090): a month with only time
+or only expense still appears. The detailed per-report lifecycle still lives on
+[Time administration](timesheet-administration.md) and [Expense administration](#expense-administration)
+— Monthly Close is the cross-leg roll-up and the finance action hub on top of them.
+
+## Access
+
+Finance gate — **finance ∨ admin** (`canApprovePayroll`), the same gate as the payroll
+and expense finance-approval surfaces. Anyone else gets an access notice. The surface is
+**comp-free**: it shows approved time **minutes** (as hours) and reimbursable **dollar
+totals** only — never a pay or mileage rate. Expected pay (hours × rate) is computed in
+the backend, the sole reader of the comp store.
+
+## The two legs are independent
+
+| Leg | What it pays | Cadence | QuickBooks fact | Acted on |
+|---|---|---|---|---|
+| **Time** | the wage | weekly timesheet, rolled up by month | `Purchase` (vendor payment) → **Paid** | per weekly sheet in **Time Admin** (deep-linked) |
+| **Expense** | out-of-pocket reimbursement | one monthly report | `Purchase` (reimbursement) → **Reimbursed** | inline here (the report is 1:1 with the row) |
+
+Reimbursement is a **separate AP bill**, distinct from the payroll wage — the two legs
+settle independently, each against its own QuickBooks payment.
+
+## Per-leg status
+
+Each leg shows a derived status badge:
+
+- **Owed** (amber) — an obligation is authorized (finance-approved) but not yet confirmed
+  paid. This is finance's queue.
+- **Pending** — work exists upstream but isn't finance-approved yet.
+- **Exception** (red) — the backend reconciliation found a QuickBooks discrepancy that
+  **blocks** the auto-flip to Paid / Reimbursed. Finance must resolve it.
+- **Settled** (green) — confirmed paid / reimbursed (matched read-back of the QuickBooks
+  payment). The expense leg shows the matched `Purchase` id.
+- **—** — nothing on this leg this month.
+
+## Finance actions
+
+- **Finance-approve expense** — inline, sets an Approved monthly report to Finance
+  approved (authorizes reimbursement; the app never pays).
+- **Confirm reimbursement** — opens the in-context panel to record the QuickBooks
+  `Purchase` match and set the report Reimbursed. When the backend reconciliation has
+  suggested a match it is pre-filled; otherwise finance enters the payment id manually
+  (acceptable for UAT).
+- **Time leg** — the **status** badge deep-links into Time Admin filtered to that
+  employee, where finance payroll-approves and confirms the QuickBooks payment per weekly
+  sheet (Monthly Close does not duplicate the per-week machinery).
+
+## Read-back validation
+
+A leg flips to Paid / Reimbursed only when the backend reconciliation **matches** the
+QuickBooks payment(s). A mismatch surfaces as an **exception** that blocks the auto-flip
+until resolved. The backend match is **dormant until QuickBooks credentials are
+configured** — until then legs stay Owed/Pending and the table shows a "pending" notice
+rather than failing (deploy-ahead).
+
+## Filters & sorting
+
+Filter by employee name, a coarse status bucket (All / Open obligations / Exceptions /
+Settled), and a month range (`from` / `to`). Sort by month, employee, time, or
+reimbursable total (click a column header to toggle direction).
+
+---
+
 # Expense categories (mapping console)
 
 The **Expense Categories** surface (`/expenses/categories`, ADR-0083, #489) is the admin
