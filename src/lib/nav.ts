@@ -36,12 +36,12 @@ export const navSecondary: NavItem[] = [
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   // The employee's own weekly timesheet — enter time + attest (ADR-0082).
   { key: "timesheets", label: "Timesheets", icon: "Clock", href: "/timesheets" },
-  // Admin correctness-approval queue for submitted timesheets (admin-only, ADR-0082).
-  { key: "time-approvals", label: "Time Approvals", icon: "ClipboardCheck", href: "/timesheets/approvals" },
+  // Unified timesheet administration: one all-users lifecycle table (correctness +
+  // payroll) with filters + sorting (admin∨finance, ADR-0082 #539). Absorbs the former
+  // Time Approvals + Payroll Approval queues into one surface.
+  { key: "time-admin", label: "Time Admin", icon: "ClipboardCheck", href: "/timesheets/admin" },
   // Admin one-time setup: employee Autotask Resource / QuickBooks vendor mapping (admin-only, ADR-0082 #468).
   { key: "time-mappings", label: "Employee Mapping", icon: "Link2", href: "/timesheets/mappings" },
-  // CFO payroll-approval queue + Paid surface (finance∨admin, ADR-0082 #466).
-  { key: "time-payroll", label: "Payroll Approval", icon: "BadgeDollarSign", href: "/timesheets/payroll" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },

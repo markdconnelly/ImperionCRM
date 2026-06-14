@@ -1,9 +1,11 @@
 # Payroll Approval — CFO guide
 
-The payroll sign-off gate for employee timesheets (ADR-0082, #466). Surface:
-**Payroll Approval** in the left nav (`/timesheets/payroll`) — **finance or admin
-only** (`time:payroll-approve`; hidden from other roles). This is the step *after*
-the admin correctness approval ([Time Approvals](timesheet-approvals.md)).
+The payroll sign-off gate for employee timesheets (ADR-0082, #466). It now lives inside
+the unified **[Time Administration](timesheet-administration.md)** surface
+(`/timesheets/admin`, #539) — the standalone `/timesheets/payroll` route redirects there.
+This guide describes the **payroll/Paid mechanics**; **finance or admin only**
+(`time:payroll-approve`; hidden from other roles). This is the step *after* the admin
+correctness approval ([Time approvals](timesheet-approvals.md)).
 
 ## The queue
 

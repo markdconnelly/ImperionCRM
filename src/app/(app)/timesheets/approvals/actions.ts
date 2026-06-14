@@ -22,7 +22,7 @@ import type { TimeEntryCategory } from "@/types";
 const CATEGORIES: readonly TimeEntryCategory[] = ["billable", "internal", "admin"];
 
 function revalidateApprovals() {
-  revalidatePath("/timesheets/approvals");
+  revalidatePath("/timesheets/admin");
   revalidatePath("/timesheets");
 }
 
