@@ -1587,8 +1587,8 @@ out-of-pocket** entries (with receipts) — from capture through **reimbursement
 read-only against a QuickBooks bill-payment. It mirrors the time-tracking shape: an
 **Employee** is the same `app_user` extension (0085), and the one comp figure expenses add —
 the **mileage rate** — joins the payroll-gated comp store. This section grows with the
-migrations (0088 config/comp → 0089 capture/silver → 0090 autotask-write/recon); the **0088**
-+ **0089** tables are shown below.
+migrations (0088 config/comp → 0089 capture/silver → 0090 autotask-write/recon); all three
+sets of tables are shown below.
 
 ```mermaid
 erDiagram
@@ -1719,8 +1719,57 @@ erDiagram
 > `time_entry_bronze_all`). Report state transitions: the web GUI drives
 > open→submitted→approved; the backend stamps `reimbursed` from Reimbursement Reconciliation
 > (the front end never holds Autotask/QuickBooks creds, ADR-0042). **Receipts** are guarded —
-> a receipt not yet `verified_in_autotask` is retained/flagged, never silently deleted. The
-> Autotask write-tracking + reconciliation read model is added by 0090.
+> a receipt not yet `verified_in_autotask` is retained/flagged, never silently deleted.
+
+**Autotask write-tracking, policy violations, reimbursement reconciliation & the unified
+monthly close (migration 0090).** Approval writes ONE idempotent Autotask ExpenseReport per
+employee per month; the policy memory-jogger and the reconciliation/close surfaces are
+**derived** (views), so comp data never leaks through the read model. The monthly close unifies
+time + expense (amends ADR-0082).
+
+```mermaid
+erDiagram
+    EXPENSE_REPORT ||--o| AUTOTASK_EXPENSE_REPORT : "1 idempotent Autotask report / month"
+    EXPENSE_REPORT ||--o| EXPENSE_RECONCILIATION  : "reimbursement verdict"
+    AUTOTASK_EXPENSE_REPORT {
+      uuid id PK
+      uuid expense_report_id PK_FK "UNIQUE — one per report"
+      bigint external_ref "Autotask ExpenseReport id; NULL until written"
+      text write_state "pending|writing|written|failed"
+      text idempotency_key "UNIQUE — imperioncrm-expensereport-{id}"
+      boolean attachment_verified "receipts read-back verified"
+    }
+    EXPENSE_RECONCILIATION {
+      uuid id PK
+      uuid expense_report_id PK_FK "UNIQUE — one per report"
+      numeric expected_reimbursable_total "approved reimbursable total"
+      text qb_bill_payment_ref "matched QuickBooks bill-payment"
+      numeric tolerance "configurable match tolerance"
+      text verdict "pending|matched|mismatch"
+    }
+```
+
+> **Derived read models (no stored verdicts where derivable, no comp leakage):**
+> - `expense_policy_violation` — the per-item memory-jogger, a view over `expense_item` +
+>   `expense_category` caps + the active `expense_policy` rules (0088). Seven deterministic
+>   rules (4 hard / 3 soft) UNION'd; a rule fires only while active in `expense_policy`. The
+>   row-pair rule **suspected_duplicate** is detected by the app/backend on top of this base
+>   (like time's six Deviations on `time_reconciliation_day`, 0087). Hard rows block attest.
+> - `monthly_close` — the unified time+expense surface (amends ADR-0082): per employee per
+>   month, rolled-up approved time minutes (timesheets by month of `week_start`) + reimbursable
+>   expense total, both QuickBooks match statuses, and open obligations (approved/finance-
+>   approved but not yet confirmed paid). FULL OUTER JOIN so a time-only or expense-only month
+>   still shows. **Comp-free** (minutes + dollar amounts, never a rate) and role-gated like the
+>   time recon views — expected pay (hours × rate) stays in the backend, the sole reader of the
+>   comp store (0085/0088).
+>
+> **Idempotency is ours, not Autotask's** (backend ADR-0044): `idempotency_key` + `write_state`
+> + stored `external_ref` → re-approval updates the same ExpenseReport. **Reimbursement
+> Reconciliation** is backend-written (the QuickBooks reader): expected reimbursable total vs
+> the authoritative bill-payment within `tolerance` → `matched` sets the report `reimbursed`; a
+> `mismatch` blocks auto-reimbursed until a human resolves. This completes the ADR-0083 schema;
+> sibling-repo processes (Autotask write, MileIQ OAuth, QuickBooks read, bronze→silver merge,
+> receipt lifecycle) build on these tables once the migrations (#494) are prod-applied.
 
 ## Vector data (pgvector)
 
