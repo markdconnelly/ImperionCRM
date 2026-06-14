@@ -22,11 +22,14 @@ import { can } from "@/lib/auth/policy";
 import { DEFAULT_ROLE } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { connectionsService } from "@/lib/services";
-import { isBackendNotConfigured } from "@/lib/services/call-guard";
+import { classifyServiceError } from "@/lib/services/call-guard";
+import { ServiceCallError } from "@/lib/services/external-client";
 
-function settingsRedirect(req: NextRequest, result: string): NextResponse {
+function settingsRedirect(req: NextRequest, result: string, status?: number): NextResponse {
   const url = new URL("/settings", req.nextUrl.origin);
+  url.searchParams.set("tab", "credentials"); // so the company-credentials notice renders (#530)
   url.searchParams.set("qbo", result);
+  if (status) url.searchParams.set("qboStatus", String(status));
   return NextResponse.redirect(url);
 }
 
@@ -52,17 +55,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   let status = "active";
   let result = "ok";
+  let httpStatus: number | undefined;
   try {
     await connectionsService.completeQboConnect({ code, realmId, state });
   } catch (err) {
-    // Backend not wired yet → record pending and degrade; anything else (bad/expired
-    // state, exchange failure) → error. Never surface token material.
-    if (isBackendNotConfigured(err)) {
+    // Backend not wired yet → record pending and degrade; the backend answered non-2xx
+    // (bad/expired state, exchange failure) → exchange_failed; no usable answer → error.
+    // Never surface token material; log the real cause server-side for triage (#530).
+    const kind = classifyServiceError(err);
+    if (kind === "not_configured") {
       status = "pending";
       result = "stubbed";
     } else {
       status = "error";
-      result = "error";
+      result = kind === "rejected" ? "exchange_failed" : "error";
+      if (err instanceof ServiceCallError) httpStatus = err.status;
+      console.error("qbo/callback: completeQboConnect failed:", err);
     }
   }
 
@@ -78,5 +86,5 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
   }
 
-  return settingsRedirect(req, result);
+  return settingsRedirect(req, result, httpStatus);
 }

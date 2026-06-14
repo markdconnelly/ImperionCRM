@@ -33,6 +33,7 @@ import {
   CONNECT_RESULT_NOTICES,
   isConnectResult,
 } from "@/lib/integrations/personal-oauth";
+import { QBO_CONNECT_NOTICES, isQboConnectResult } from "@/lib/integrations/qbo-connect";
 
 /** Human labels for the application roles. */
 const ROLE_LABEL: Record<AppRole, string> = {
@@ -88,6 +89,25 @@ function ConnectNotice({ connect, provider }: { connect?: string; provider?: str
   );
 }
 
+/**
+ * One-shot notice for a QuickBooks company-connect outcome (#530). Both
+ * `connectQuickBooksAction` and `/api/qbo/callback` land on
+ * `/settings?tab=credentials&qbo=<result>` (with optional `&qboStatus=<httpStatus>`);
+ * this renders a specific reason instead of the row's bare "error".
+ */
+function QboConnectNotice({ qbo, status }: { qbo?: string; status?: string }) {
+  if (!qbo || !isQboConnectResult(qbo)) return null;
+  const notice = QBO_CONNECT_NOTICES[qbo];
+  return (
+    <p
+      role="status"
+      className={`rounded-md border bg-panel-2 px-3 py-2 text-sm ${NOTICE_TONE[notice.tone]}`}
+    >
+      {notice.message(status)}
+    </p>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
@@ -100,9 +120,15 @@ function Row({ label, value }: { label: string; value: string }) {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; connect?: string; provider?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    connect?: string;
+    provider?: string;
+    qbo?: string;
+    qboStatus?: string;
+  }>;
 }) {
-  const { tab, connect, provider: connectProvider } = await searchParams;
+  const { tab, connect, provider: connectProvider, qbo, qboStatus } = await searchParams;
   const session = await auth();
   const roles = session?.user?.roles ?? ["support"];
   // Settings is admin-only (ADR-0030). Middleware already redirects, but guard
@@ -250,6 +276,7 @@ export default async function SettingsPage({
           Vault by the backend — only a reference is stored here, never the secret itself.
         </p>
       </div>
+      <QboConnectNotice qbo={qbo} status={qboStatus} />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {COMPANY_PROVIDERS.map((p) => (
           <CompanyCredentialCard

@@ -10,7 +10,9 @@ import { requireCapability } from "@/lib/auth/guard";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
 import { connectionsService, credentialsService, pipelineService } from "@/lib/services";
-import { isBackendNotConfigured } from "@/lib/services/call-guard";
+import { classifyServiceError, isBackendNotConfigured } from "@/lib/services/call-guard";
+import { ServiceCallError } from "@/lib/services/external-client";
+import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
 import {
   isConnectableProvider,
@@ -294,11 +296,29 @@ export async function connectQuickBooksAction(formData: FormData) {
 
   let authorizationUrl: string | null = null;
   let status = "pending";
+  let result: QboConnectResult = "ok";
+  let httpStatus: number | undefined;
   try {
     const res = await connectionsService.startQboConnect();
-    authorizationUrl = res.authorizationUrl;
+    authorizationUrl = res.authorizationUrl ?? null;
+    if (!authorizationUrl) {
+      // 200 but no consent URL — the backend started nothing usable (#530).
+      status = "error";
+      result = "start_no_url";
+    }
   } catch (err) {
-    if (!isBackendNotConfigured(err)) status = "error";
+    const kind = classifyServiceError(err);
+    if (kind === "not_configured") {
+      status = "pending";
+      result = "start_not_configured";
+    } else {
+      status = "error";
+      result = kind === "rejected" ? "start_rejected" : "start_unreachable";
+      if (err instanceof ServiceCallError) httpStatus = err.status;
+      // The connection row's bare "error" isn't enough to triage — log the real
+      // cause server-side (App Service console logs). Never contains token material.
+      console.error("connectQuickBooksAction: QBO connect start failed:", err);
+    }
   }
 
   const { connections } = getRepositories();
@@ -311,6 +331,9 @@ export async function connectQuickBooksAction(formData: FormData) {
   });
   revalidatePath("/settings");
 
-  // redirect() throws — keep it last, outside the try/catch.
+  // redirect() throws — keep redirects last, outside the try/catch.
   if (authorizationUrl) redirect(authorizationUrl);
+  const params = new URLSearchParams({ tab: "credentials", qbo: result });
+  if (httpStatus) params.set("qboStatus", String(httpStatus));
+  redirect(`/settings?${params.toString()}`);
 }
