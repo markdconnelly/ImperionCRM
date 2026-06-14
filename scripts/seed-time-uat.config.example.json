@@ -1,0 +1,23 @@
+{
+  "_comment": "TEMPLATE for scripts/seed-time-uat.mjs (issue #511). Copy to seed-time-uat.config.json (gitignored), fill with REAL TEST Entra users + TEST pay rates, then: node scripts/seed-time-uat.mjs --config scripts/seed-time-uat.config.json --apply. NEVER commit real emails or comp values — TEST users only, no client/employee PII.",
+  "employees": [
+    {
+      "email": "REPLACE_with_test_user_1@example.invalid",
+      "hourlyRate": 0,
+      "effectiveFrom": "2026-01-01",
+      "classification": "1099",
+      "autotaskResourceId": null,
+      "quickbooksVendorId": null,
+      "note": "time-tracking UAT test employee"
+    },
+    {
+      "email": "REPLACE_with_test_user_2@example.invalid",
+      "hourlyRate": 0,
+      "effectiveFrom": "2026-01-01",
+      "classification": "1099",
+      "autotaskResourceId": null,
+      "quickbooksVendorId": null,
+      "note": "time-tracking UAT test employee"
+    }
+  ]
+}
