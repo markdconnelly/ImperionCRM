@@ -270,6 +270,30 @@ export interface PayrollTimesheetRow {
 }
 
 /**
+ * One timesheet on the unified admin lifecycle surface (ADR-0082, #539) — EVERY
+ * sheet across EVERY state and employee, so admins/finance follow the whole
+ * lifecycle (open → submitted → approved → payroll_approved → paid) in one
+ * filterable, sortable table. Combines the review-queue shape (employee name +
+ * attendance) with the payroll-queue shape (approved minutes + the matched payment
+ * fact). Comp-free: NEVER carries Pay Rate or expected pay (that math is backend-only).
+ */
+export interface AdminTimesheetRow {
+  id: string;
+  employeeId: string;
+  employeeName: string; // app_user display name (falls back to email)
+  weekStart: string; // yyyy-mm-dd (Monday)
+  weekEnd: string; // yyyy-mm-dd (Sunday)
+  state: TimesheetState;
+  entryCount: number;
+  attendedMinutes: number; // sum of attendance-block minutes (duration derived)
+  approvedMinutes: number; // approved attendance minutes (0 until Approved)
+  attestedAt: string | null; // ISO; set when submitted
+  payrollApprovedAt: string | null; // ISO; set when the CFO payroll-approves
+  paidAt: string | null; // ISO; set when matched to the QuickBooks payment
+  qbPaymentRef: string | null; // matched QuickBooks payment id (read-only SoR)
+}
+
+/**
  * The QuickBooks payment match the backend Payroll Reconciliation (BE #105)
  * suggests for one timesheet (ADR-0082 §Reconciliation #2). The backend is the
  * sole reader of Pay Rate; this suggestion crosses the boundary comp-free — only

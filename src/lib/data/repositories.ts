@@ -54,6 +54,7 @@ import type {
   TimesheetReviewRow,
   PayrollTimesheetRow,
   AdminTimesheetReview,
+  AdminTimesheetRow,
   EmployeeMappingRow,
   TimeEntryCategory,
   LeadHookRow,
@@ -387,6 +388,11 @@ export interface CrmRepository {
   /** The admin review queue: all Submitted timesheets across employees, oldest-attested
    *  first (with the employee's display name). */
   listSubmittedTimesheets(): Promise<TimesheetReviewRow[]>;
+  /** The unified admin lifecycle feed: EVERY timesheet across EVERY state + employee,
+   *  newest week first (with employee name, attendance, approved minutes, and the
+   *  payroll/payment fields). Comp-free. The admin surface (#539) filters + sorts this
+   *  in memory; the two split queues read narrower projections of the same data. */
+  listAllTimesheets(): Promise<AdminTimesheetRow[]>;
   /** Approve a Submitted timesheet (admin): state→approved, stamp approver, and create the
    *  pending Time Ticket tracking row (idempotent) for the backend writer to pick up. */
   approveTimesheet(id: string, approvedBy: string): Promise<void>;
