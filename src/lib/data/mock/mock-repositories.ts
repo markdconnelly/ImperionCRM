@@ -294,6 +294,9 @@ export const mockRepositories: Repositories = {
     async listSubmittedTimesheets() {
       return [];
     },
+    async listAllTimesheets() {
+      return [];
+    },
     async approveTimesheet() {
       throw new Error(NO_DB);
     },

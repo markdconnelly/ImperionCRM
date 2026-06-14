@@ -91,6 +91,7 @@ import type {
   TimesheetReviewRow,
   PayrollTimesheetRow,
   AdminTimesheetReview,
+  AdminTimesheetRow,
   EmployeeMappingRow,
   TimeEntryRow,
   ReconciliationDay,
@@ -1840,6 +1841,67 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listSubmittedTimesheets();
+      }
+    },
+
+    async listAllTimesheets(): Promise<AdminTimesheetRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAllTimesheets();
+      try {
+        // Unified lifecycle feed (#539): every sheet, every state. Base = the timesheet
+        // table joined to its attendance entries (count + minutes); LEFT JOIN the comp-free
+        // payroll view (0087) for approved minutes + the payment fact (NULL for open/submitted
+        // sheets the view doesn't carry). NO Pay Rate / expected pay — that math is backend-only.
+        const { rows } = await pool.query<{
+          id: string;
+          app_user_id: string;
+          employee_name: string | null;
+          week_start: string;
+          week_end: string;
+          state: string;
+          attested_at: Date | null;
+          entry_count: string;
+          attended_minutes: string;
+          approved_minutes: string | null;
+          payroll_approved_at: Date | null;
+          paid_at: Date | null;
+          qb_payment_ref: string | null;
+        }>(
+          `SELECT t.id, t.app_user_id,
+                  COALESCE(u.display_name, u.email) AS employee_name,
+                  to_char(t.week_start, 'YYYY-MM-DD') AS week_start,
+                  to_char(t.week_end,   'YYYY-MM-DD') AS week_end,
+                  t.state, t.attested_at,
+                  count(w.id) AS entry_count,
+                  COALESCE(SUM(EXTRACT(EPOCH FROM (w.ended_at - w.started_at)) / 60), 0)::int AS attended_minutes,
+                  p.approved_minutes, p.payroll_approved_at, p.paid_at, p.qb_payment_ref
+           FROM timesheet t
+           JOIN app_user u ON u.id = t.app_user_id
+           LEFT JOIN website_time_entry w ON w.timesheet_id = t.id
+           LEFT JOIN timesheet_payroll_status p ON p.timesheet_id = t.id
+           GROUP BY t.id, u.display_name, u.email,
+                    p.approved_minutes, p.payroll_approved_at, p.paid_at, p.qb_payment_ref
+           ORDER BY t.week_start DESC, employee_name`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          employeeId: r.app_user_id,
+          employeeName: r.employee_name ?? "—",
+          weekStart: r.week_start,
+          weekEnd: r.week_end,
+          state: r.state as AdminTimesheetRow["state"],
+          entryCount: Number(r.entry_count),
+          attendedMinutes: Number(r.attended_minutes),
+          approvedMinutes: Number(r.approved_minutes ?? 0),
+          attestedAt: r.attested_at ? new Date(r.attested_at).toISOString() : null,
+          payrollApprovedAt: r.payroll_approved_at
+            ? new Date(r.payroll_approved_at).toISOString()
+            : null,
+          paidAt: r.paid_at ? new Date(r.paid_at).toISOString() : null,
+          qbPaymentRef: r.qb_payment_ref,
+        }));
+      } catch {
+        return mockRepositories.crm.listAllTimesheets();
       }
     },
 
