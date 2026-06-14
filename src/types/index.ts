@@ -378,6 +378,62 @@ export interface EmployeeMappingRow {
   confirmedByName: string | null; // who confirmed it (display name / email)
 }
 
+// ── Expense tracking (ADR-0083, migrations 0088–0090) ───────────────────────
+
+/**
+ * Expense Report lifecycle (ADR-0083): open→submitted(attest)→approved(admin →
+ * Autotask ExpenseReport)→finance_approved(CFO)→reimbursed(matched vs QuickBooks
+ * Purchase). `rejected` is the admin/finance bounce-back. Monthly cadence (one
+ * report per employee per calendar month), unlike the weekly timesheet.
+ */
+export type ExpenseReportState =
+  | "open"
+  | "submitted"
+  | "approved"
+  | "finance_approved"
+  | "reimbursed"
+  | "rejected";
+
+/** Expense item kind (ADR-0083): out-of-pocket (website) · mileage (MileIQ). */
+export type ExpenseItemKind = "out_of_pocket" | "mileage";
+
+/** Expense item bronze source (ADR-0083): manual website entry · MileIQ drive. */
+export type ExpenseItemSource = "website" | "mileiq";
+
+/** A monthly expense report, list/summary shape. The full month is `ExpenseReportDetail`. */
+export interface ExpenseReportRow {
+  id: string;
+  employeeId: string;
+  periodYear: number;
+  periodMonth: number; // 1–12
+  state: ExpenseReportState;
+  itemCount: number;
+  totalAmount: number; // sum of all item amounts (USD)
+  reimbursableAmount: number; // sum of reimbursable item amounts (USD)
+  attestedAt: string | null; // ISO; set when submitted
+}
+
+/** One expense item — out-of-pocket (amount) or mileage (miles × rate, $ derived by backend). */
+export interface ExpenseItemRow {
+  id: string;
+  source: ExpenseItemSource;
+  kind: ExpenseItemKind;
+  itemDate: string; // yyyy-mm-dd
+  categoryName: string | null; // resolved clean category (null for unmapped / mileage system cat)
+  amount: number; // USD (mileage $ is backend-derived; 0 until derived)
+  miles: number | null; // set for mileage, null otherwise
+  reimbursable: boolean;
+  billable: boolean; // independent leg — billable out-of-pocket is also invoiced to the client
+  merchant: string | null;
+  hasReceipt: boolean; // a receipt_attachment is linked
+  notes: string | null;
+}
+
+/** The full month: the report + its items. Mirrors `TimesheetDetail`. */
+export interface ExpenseReportDetail extends ExpenseReportRow {
+  items: ExpenseItemRow[];
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 

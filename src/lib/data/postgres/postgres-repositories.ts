@@ -93,6 +93,9 @@ import type {
   AdminTimesheetReview,
   AdminTimesheetRow,
   EmployeeMappingRow,
+  ExpenseReportRow,
+  ExpenseReportDetail,
+  ExpenseItemRow,
   TimeEntryRow,
   ReconciliationDay,
   DeliveryTemplateDetail,
@@ -290,6 +293,84 @@ async function assembleTimesheetDetail(pool: Pool, t: BaseTimesheet): Promise<Ti
     entries,
     reconciliation,
     hasHardDeviation: hasHardDeviation(entries, reconciliation),
+  };
+}
+
+/** The base `expense_report` columns a detail assembly needs (ADR-0083). */
+interface BaseExpenseReport {
+  id: string;
+  app_user_id: string;
+  period_year: number;
+  period_month: number;
+  state: string;
+  attested_at: Date | null;
+}
+
+/** Map a raw silver `expense_item` (joined to its category) to `ExpenseItemRow`. */
+interface RawExpenseItem {
+  id: string;
+  source: string;
+  kind: string;
+  item_date: string;
+  category_name: string | null;
+  amount: string | null;
+  miles: string | null;
+  reimbursable: boolean;
+  billable: boolean;
+  merchant: string | null;
+  receipt_id: string | null;
+  notes: string | null;
+}
+function mapExpenseItem(r: RawExpenseItem): ExpenseItemRow {
+  return {
+    id: r.id,
+    source: r.source as ExpenseItemRow["source"],
+    kind: r.kind as ExpenseItemRow["kind"],
+    itemDate: r.item_date,
+    categoryName: r.category_name,
+    amount: Number(r.amount ?? 0),
+    miles: r.miles === null ? null : Number(r.miles),
+    reimbursable: r.reimbursable,
+    billable: r.billable,
+    merchant: r.merchant,
+    hasReceipt: r.receipt_id !== null,
+    notes: r.notes,
+  };
+}
+
+/**
+ * Load a report's silver items (ADR-0083) and assemble the shared `ExpenseReportDetail`
+ * from a base row. Used by both the employee-scoped `getExpenseReportForPeriod` and the
+ * admin-scoped `getExpenseReportById`, so the item shape stays identical across surfaces.
+ */
+async function assembleExpenseReportDetail(
+  pool: Pool,
+  r: BaseExpenseReport,
+): Promise<ExpenseReportDetail> {
+  const { rows: iRows } = await pool.query<RawExpenseItem>(
+    `SELECT ei.id, ei.source, ei.kind,
+            to_char(ei.item_date, 'YYYY-MM-DD') AS item_date,
+            c.display_name AS category_name,
+            ei.amount, ei.miles, ei.reimbursable, ei.billable, ei.merchant,
+            ei.receipt_id, ei.notes
+     FROM expense_item ei
+     LEFT JOIN expense_category c ON c.id = ei.category_id
+     WHERE ei.expense_report_id = $1
+     ORDER BY ei.item_date, ei.created_at`,
+    [r.id],
+  );
+  const items = iRows.map(mapExpenseItem);
+  return {
+    id: r.id,
+    employeeId: r.app_user_id,
+    periodYear: Number(r.period_year),
+    periodMonth: Number(r.period_month),
+    state: r.state as ExpenseReportRow["state"],
+    itemCount: items.length,
+    totalAmount: items.reduce((s, i) => s + i.amount, 0),
+    reimbursableAmount: items.reduce((s, i) => s + (i.reimbursable ? i.amount : 0), 0),
+    attestedAt: r.attested_at ? new Date(r.attested_at).toISOString() : null,
+    items,
   };
 }
 
@@ -2263,6 +2344,123 @@ export const postgresRepositories: Repositories = {
                mappings_resolved_at  = now(),
                mappings_confirmed_by = EXCLUDED.mappings_confirmed_by`,
         [input.appUserId, input.autotaskResourceId, input.quickbooksVendorId, confirmedBy],
+      );
+    },
+
+    // Expense tracking — monthly expense reports (ADR-0083, migrations 0088–0090)
+    async listExpenseReports(opts): Promise<ExpenseReportRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listExpenseReports(opts);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          app_user_id: string;
+          period_year: number;
+          period_month: number;
+          state: string;
+          attested_at: Date | null;
+          item_count: string;
+          total_amount: string;
+          reimbursable_amount: string;
+        }>(
+          `SELECT er.id, er.app_user_id, er.period_year, er.period_month,
+                  er.state, er.attested_at,
+                  count(ei.id) AS item_count,
+                  COALESCE(SUM(ei.amount), 0) AS total_amount,
+                  COALESCE(SUM(ei.amount) FILTER (WHERE ei.reimbursable), 0) AS reimbursable_amount
+           FROM expense_report er
+           LEFT JOIN expense_item ei ON ei.expense_report_id = er.id
+           WHERE er.app_user_id = $1
+           GROUP BY er.id
+           ORDER BY er.period_year DESC, er.period_month DESC`,
+          [opts.employeeId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          employeeId: r.app_user_id,
+          periodYear: Number(r.period_year),
+          periodMonth: Number(r.period_month),
+          state: r.state as ExpenseReportRow["state"],
+          itemCount: Number(r.item_count),
+          totalAmount: Number(r.total_amount),
+          reimbursableAmount: Number(r.reimbursable_amount),
+          attestedAt: r.attested_at ? new Date(r.attested_at).toISOString() : null,
+        }));
+      } catch {
+        return mockRepositories.crm.listExpenseReports(opts);
+      }
+    },
+
+    async getExpenseReportForPeriod(employeeId, year, month): Promise<ExpenseReportDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getExpenseReportForPeriod(employeeId, year, month);
+      const { rows } = await pool.query<BaseExpenseReport>(
+        `SELECT id, app_user_id, period_year, period_month, state, attested_at
+         FROM expense_report
+         WHERE app_user_id = $1 AND period_year = $2 AND period_month = $3`,
+        [employeeId, year, month],
+      );
+      const r = rows[0];
+      if (!r) return null;
+      return assembleExpenseReportDetail(pool, r);
+    },
+
+    async ensureExpenseReportForPeriod(employeeId, year, month): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.ensureExpenseReportForPeriod(employeeId, year, month);
+      // Idempotent on UNIQUE (app_user_id, period_year, period_month); the no-op UPDATE
+      // lets us RETURNING the id whether the row was inserted or already existed.
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO expense_report (app_user_id, period_year, period_month)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (app_user_id, period_year, period_month)
+           DO UPDATE SET app_user_id = expense_report.app_user_id
+         RETURNING id`,
+        [employeeId, year, month],
+      );
+      return rows[0].id;
+    },
+
+    async submitExpenseReport(id, attestedBy): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.submitExpenseReport(id, attestedBy);
+      // Open → Submitted; stamp the attester and snapshot the items (in ExpenseItemRow
+      // shape) so admin corrections can be diffed against the attested original.
+      await pool.query(
+        `UPDATE expense_report er
+         SET state = 'submitted', attested_at = now(), attested_by = $2,
+             attested_snapshot = (
+               SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                 'id', ei.id, 'source', ei.source, 'kind', ei.kind,
+                 'itemDate', to_char(ei.item_date, 'YYYY-MM-DD'),
+                 'categoryName', c.display_name,
+                 'amount', ei.amount, 'miles', ei.miles,
+                 'reimbursable', ei.reimbursable, 'billable', ei.billable,
+                 'merchant', ei.merchant, 'hasReceipt', ei.receipt_id IS NOT NULL,
+                 'notes', ei.notes
+               ) ORDER BY ei.item_date, ei.created_at), '[]'::jsonb)
+               FROM expense_item ei
+               LEFT JOIN expense_category c ON c.id = ei.category_id
+               WHERE ei.expense_report_id = er.id
+             )
+         WHERE er.id = $1 AND er.state = 'open'`,
+        [id, attestedBy],
+      );
+    },
+
+    async reopenExpenseReport(id): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.reopenExpenseReport(id);
+      // Back to the employee for correction — re-attest required. Keep the attested snapshot
+      // + Autotask tracking row for the audit/diff.
+      await pool.query(
+        `UPDATE expense_report
+         SET state = 'open', attested_at = NULL, attested_by = NULL,
+             approved_at = NULL, approved_by = NULL,
+             finance_approved_at = NULL, finance_approved_by = NULL,
+             rejected_at = NULL, rejected_by = NULL, rejection_note = NULL
+         WHERE id = $1 AND state IN ('submitted', 'approved', 'finance_approved', 'rejected')`,
+        [id],
       );
     },
 
