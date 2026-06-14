@@ -44,6 +44,9 @@ export const navSecondary: NavItem[] = [
   { key: "time-admin", label: "Time Admin", icon: "ClipboardCheck", href: "/timesheets/admin" },
   // Admin one-time setup: employee Autotask Resource / QuickBooks vendor mapping (admin-only, ADR-0082 #468).
   { key: "time-mappings", label: "Employee Mapping", icon: "Link2", href: "/timesheets/mappings" },
+  // Unified expense administration: one all-users lifecycle table (correctness + finance)
+  // with filters + sorting (admin∨finance, ADR-0083 #548).
+  { key: "expense-admin", label: "Expense Admin", icon: "ReceiptText", href: "/expenses/admin" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
