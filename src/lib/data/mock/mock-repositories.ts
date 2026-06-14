@@ -379,6 +379,15 @@ export const mockRepositories: Repositories = {
     async listExpenseCategories() {
       return [];
     },
+    async listExpenseCategoriesAdmin() {
+      return [];
+    },
+    async listQboExpenseAccounts() {
+      return [];
+    },
+    async updateExpenseCategoryMapping() {
+      throw new Error(NO_DB);
+    },
     async listMileiqDrives() {
       return [];
     },

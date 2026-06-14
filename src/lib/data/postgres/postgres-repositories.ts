@@ -43,6 +43,9 @@ import type {
   ProjectTypeInput,
   DeliveryTemplateInput,
   ExpenseItemInput,
+  ExpenseCategoryMappingInput,
+  ExpenseCategoryAdminRow,
+  QboExpenseAccountRow,
   TimeEntryInput,
   TimesheetCorrection,
   ProposalEditable,
@@ -2826,6 +2829,139 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.crm.listExpenseCategories();
       }
+    },
+
+    // Category-mapping admin console (ADR-0083, #489) — reads the QuickBooks chart of
+    // accounts + the full category config; writes the hard link + config. Comp-free.
+    async listExpenseCategoriesAdmin(): Promise<ExpenseCategoryAdminRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listExpenseCategoriesAdmin();
+      try {
+        // EVERY category (placeholders, hidden, inactive, the system Mileage row), joined
+        // to its QuickBooks account (for the display name) + the mapper (audit). The full
+        // config — caps/Autotask id/visibility — unlike the entry-GUI subset. Comp-free.
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          display_name: string;
+          qbo_account_id: string | null;
+          qbo_account_name: string | null;
+          hard_cap: string | null;
+          soft_threshold: string | null;
+          billable_default: boolean;
+          autotask_expense_category_id: string | null;
+          is_system: boolean;
+          is_user_visible: boolean;
+          is_active: boolean;
+          mapped_by_name: string | null;
+        }>(
+          `SELECT ec.id, ec.key, ec.display_name, ec.qbo_account_id,
+                  qa.name AS qbo_account_name,
+                  ec.hard_cap, ec.soft_threshold, ec.billable_default,
+                  ec.autotask_expense_category_id,
+                  ec.is_system, ec.is_user_visible, ec.is_active,
+                  COALESCE(mb.display_name, mb.email) AS mapped_by_name
+             FROM expense_category ec
+             LEFT JOIN qbo_expense_account qa ON qa.qbo_account_id = ec.qbo_account_id
+             LEFT JOIN app_user mb            ON mb.id = ec.mapped_by
+            ORDER BY ec.is_system DESC, ec.display_name`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          key: r.key,
+          displayName: r.display_name,
+          qboAccountId: r.qbo_account_id,
+          qboAccountName: r.qbo_account_name,
+          hardCap: r.hard_cap === null ? null : Number(r.hard_cap),
+          softThreshold: r.soft_threshold === null ? null : Number(r.soft_threshold),
+          billableDefault: r.billable_default,
+          autotaskExpenseCategoryId:
+            r.autotask_expense_category_id === null
+              ? null
+              : Number(r.autotask_expense_category_id),
+          isSystem: r.is_system,
+          isUserVisible: r.is_user_visible,
+          isActive: r.is_active,
+          mappedByName: r.mapped_by_name,
+        }));
+      } catch {
+        return mockRepositories.crm.listExpenseCategoriesAdmin();
+      }
+    },
+
+    async listQboExpenseAccounts(): Promise<QboExpenseAccountRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listQboExpenseAccounts();
+      try {
+        // The synced QuickBooks chart of accounts (read-only bronze), each annotated with
+        // the category key already hard-linked to it. Empty until LP #168 runs the pull.
+        const { rows } = await pool.query<{
+          qbo_account_id: string;
+          name: string;
+          fully_qualified_name: string | null;
+          account_type: string | null;
+          active: boolean;
+          mapped_to_key: string | null;
+        }>(
+          `SELECT qa.qbo_account_id, qa.name, qa.fully_qualified_name,
+                  qa.account_type, qa.active, ec.key AS mapped_to_key
+             FROM qbo_expense_account qa
+             LEFT JOIN expense_category ec ON ec.qbo_account_id = qa.qbo_account_id
+            ORDER BY qa.name`,
+        );
+        return rows.map((r) => ({
+          qboAccountId: r.qbo_account_id,
+          name: r.name,
+          fullyQualifiedName: r.fully_qualified_name,
+          accountType: r.account_type,
+          active: r.active,
+          mappedToKey: r.mapped_to_key,
+        }));
+      } catch {
+        return mockRepositories.crm.listQboExpenseAccounts();
+      }
+    },
+
+    async updateExpenseCategoryMapping(
+      input: ExpenseCategoryMappingInput,
+      mappedBy: string,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool)
+        return mockRepositories.crm.updateExpenseCategoryMapping(input, mappedBy);
+      // A non-system category may only go active once it carries a QuickBooks link
+      // (the DB CHECK `expense_category_active_requires_map` enforces this too — we
+      // force it here so the write never trips the constraint). The system Mileage row
+      // is rate-driven + mapping-exempt: its QuickBooks link is never touched here
+      // (guard via `is_system = false`), but its caps/visibility can still be set.
+      const effectiveActive = input.qboAccountId === null ? false : input.isActive;
+      await pool.query(
+        `UPDATE expense_category
+            SET display_name                 = $2,
+                qbo_account_id               = CASE WHEN is_system THEN qbo_account_id ELSE $3 END,
+                hard_cap                     = $4,
+                soft_threshold               = $5,
+                billable_default             = $6,
+                autotask_expense_category_id = $7,
+                is_user_visible              = $8,
+                is_active                    = CASE WHEN is_system THEN is_active
+                                                    WHEN $3 IS NULL THEN false
+                                                    ELSE $9 END,
+                mapped_by                    = $10
+          WHERE id = $1`,
+        [
+          input.id,
+          input.displayName,
+          input.qboAccountId,
+          input.hardCap,
+          input.softThreshold,
+          input.billableDefault,
+          input.autotaskExpenseCategoryId,
+          input.isUserVisible,
+          effectiveActive,
+          mappedBy,
+        ],
+      );
     },
 
     async listMileiqDrives(employeeId, year, month): Promise<MileiqDriveRow[]> {

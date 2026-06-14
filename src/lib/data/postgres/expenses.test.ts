@@ -323,3 +323,128 @@ describe("listMonthlyClose (comp-free read model, ADR-0083 #486)", () => {
     });
   });
 });
+
+describe("listExpenseCategoriesAdmin (mapping console, ADR-0083 #489)", () => {
+  it("reads EVERY category with full config + QuickBooks join, comp-free", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "cat-mileage",
+          key: "mileage",
+          display_name: "Mileage",
+          qbo_account_id: null,
+          qbo_account_name: null,
+          hard_cap: null,
+          soft_threshold: null,
+          billable_default: false,
+          autotask_expense_category_id: null,
+          is_system: true,
+          is_user_visible: true,
+          is_active: true,
+          mapped_by_name: null,
+        },
+        {
+          id: "cat-meals",
+          key: "meals",
+          display_name: "Meals",
+          qbo_account_id: "QB-77",
+          qbo_account_name: "Meals & Entertainment",
+          hard_cap: "75.00",
+          soft_threshold: "40.00",
+          billable_default: false,
+          autotask_expense_category_id: "12",
+          is_system: false,
+          is_user_visible: true,
+          is_active: true,
+          mapped_by_name: "Admin User",
+        },
+      ],
+    });
+    const rows = await crm.listExpenseCategoriesAdmin();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("FROM expense_category");
+    expect(sql).toContain("LEFT JOIN qbo_expense_account");
+    // The mapping surface carries the full config (unlike the entry-GUI subset) but stays comp-free.
+    expect(sql).not.toContain("mileage_rate");
+    expect(sql).not.toContain("pay_rate");
+    expect(rows[0]).toMatchObject({ key: "mileage", isSystem: true, qboAccountId: null });
+    expect(rows[1]).toMatchObject({
+      key: "meals",
+      qboAccountId: "QB-77",
+      qboAccountName: "Meals & Entertainment",
+      hardCap: 75,
+      softThreshold: 40,
+      autotaskExpenseCategoryId: 12,
+      mappedByName: "Admin User",
+    });
+  });
+});
+
+describe("listQboExpenseAccounts (synced read-only chart of accounts, ADR-0083 #489)", () => {
+  it("reads the QuickBooks bronze + the category key already mapped to each account", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          qbo_account_id: "QB-77",
+          name: "Meals & Entertainment",
+          fully_qualified_name: "Expenses:Meals & Entertainment",
+          account_type: "Expense",
+          active: true,
+          mapped_to_key: "meals",
+        },
+        {
+          qbo_account_id: "QB-90",
+          name: "Office Supplies",
+          fully_qualified_name: null,
+          account_type: "Expense",
+          active: false,
+          mapped_to_key: null,
+        },
+      ],
+    });
+    const rows = await crm.listQboExpenseAccounts();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("FROM qbo_expense_account");
+    expect(sql).toContain("LEFT JOIN expense_category");
+    expect(rows[0]).toMatchObject({ qboAccountId: "QB-77", mappedToKey: "meals", active: true });
+    expect(rows[1]).toMatchObject({ qboAccountId: "QB-90", mappedToKey: null, active: false });
+  });
+});
+
+describe("updateExpenseCategoryMapping (admin write, ADR-0083 #489)", () => {
+  const base = {
+    id: "cat-meals",
+    displayName: "Meals",
+    qboAccountId: "QB-77",
+    hardCap: 75,
+    softThreshold: 40,
+    billableDefault: false,
+    autotaskExpenseCategoryId: 12,
+    isUserVisible: true,
+    isActive: true,
+  };
+
+  it("updates the row, stamps mapped_by, and guards the system link + active CHECK in SQL", async () => {
+    await crm.updateExpenseCategoryMapping(base, "admin-1");
+    const sql = query.mock.calls[0][0] as string;
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toContain("UPDATE expense_category");
+    // System Mileage row's QuickBooks link is mapping-exempt (never overwritten here).
+    expect(sql).toContain("CASE WHEN is_system THEN qbo_account_id ELSE $3 END");
+    // A non-system row cannot go active while unmapped (mirrors the DB CHECK).
+    expect(sql).toContain("WHEN $3 IS NULL THEN false");
+    expect(params[0]).toBe("cat-meals");
+    expect(params[2]).toBe("QB-77");
+    expect(params[9]).toBe("admin-1"); // mapped_by stamped last
+  });
+
+  it("forces inactive when a category is left unmapped (qboAccountId null)", async () => {
+    await crm.updateExpenseCategoryMapping(
+      { ...base, qboAccountId: null, isActive: true },
+      "admin-1",
+    );
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(params[2]).toBeNull(); // qboAccountId
+    expect(params[8]).toBe(false); // effectiveActive forced false despite isActive:true
+  });
+});

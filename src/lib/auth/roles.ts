@@ -171,6 +171,17 @@ export function canAdministerExpenses(roles: readonly AppRole[] | undefined): bo
 }
 
 /**
+ * The expense category-mapping console (ADR-0083, #489) is admin one-time/maintenance
+ * setup — admin-only. GUI-side twin of the `expense:category-map` capability the server
+ * action enforces. Maps the read-only synced QuickBooks chart of accounts onto clean
+ * website-facing categories (caps / billable default / Autotask id / visibility); the app
+ * never writes QuickBooks. Mirrors `canManageEmployeeMappings`.
+ */
+export function canManageExpenseCategories(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles);
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -213,6 +224,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   "time-admin": canAdministerTimesheets,
   "time-mappings": canManageEmployeeMappings,
   "expense-admin": canAdministerExpenses,
+  "expense-categories": canManageExpenseCategories,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

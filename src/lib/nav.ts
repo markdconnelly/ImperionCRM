@@ -47,6 +47,9 @@ export const navSecondary: NavItem[] = [
   // Unified expense administration: one all-users lifecycle table (correctness + finance)
   // with filters + sorting (admin∨finance, ADR-0083 #548).
   { key: "expense-admin", label: "Expense Admin", icon: "ReceiptText", href: "/expenses/admin" },
+  // Admin setup: map the synced QuickBooks chart of accounts → clean website expense
+  // categories (admin-only, ADR-0083 #489). QuickBooks stays read-only — the app never writes it.
+  { key: "expense-categories", label: "Expense Categories", icon: "Tags", href: "/expenses/categories" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
