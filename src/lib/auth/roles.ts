@@ -104,6 +104,15 @@ export function canManageCampaigns(roles: readonly AppRole[] | undefined): boole
 }
 
 /**
+ * The timesheet correctness-approval surface (ADR-0082) is admin-only — the
+ * GUI-side twin of the `time:approve` capability the server actions enforce.
+ * (Payroll approval — finance∨admin — is a separate gate on the #466 surface.)
+ */
+export function canApproveTimesheets(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles);
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -131,6 +140,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   security: canSeeSettings,
   agents: canSeeAgentPages,
   board: canSeeAgentPages,
+  "time-approvals": canApproveTimesheets,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

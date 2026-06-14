@@ -36,6 +36,8 @@ export const navSecondary: NavItem[] = [
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   // The employee's own weekly timesheet — enter time + attest (ADR-0082).
   { key: "timesheets", label: "Timesheets", icon: "Clock", href: "/timesheets" },
+  // Admin correctness-approval queue for submitted timesheets (admin-only, ADR-0082).
+  { key: "time-approvals", label: "Time Approvals", icon: "ClipboardCheck", href: "/timesheets/approvals" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
