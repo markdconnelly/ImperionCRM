@@ -1580,6 +1580,21 @@ erDiagram
 > completes the ADR-0082 schema; sibling-repo processes (Autotask write, QuickBooks read,
 > bronze→silver merge) build on these tables once the migrations are prod-applied.
 
+**QuickBooks bill-payment fact (migration 0091, #519).** The payroll tail's missing
+input: the **authoritative payment fact**. The on-prem local pipeline bulk-pulls the MSP's
+own QuickBooks Online vendor bill-payments into `qbo_bill_payments` (bronze, LP lossless
+envelope — flat text subset + lossless `raw_payload`, conflict key
+`(tenant_id, source, external_id)` where `external_id` = the QBO `BillPayment.Id`). The
+backend Payroll Reconciliation (BE #105 / recon#2) is its sole reader: it matches expected
+pay (approved hours × effective rate, computed backend-side over the 0085 comp store) to a
+real `total_amount` here to move a timesheet to **Paid**. **Read-only — the app never pays**
+(ADR-0082); `total_amount` is the payment fact, **never logged**, and is NOT comp data.
+Grants mirror the 0086 bronze pattern: `imperion-localpipeline` writes (SELECT/INSERT/UPDATE),
+the backend function reads (SELECT). Field names are modeled from the Intuit Accounting API v3
+and are **unverified against the real company** until the QBO read-only app registration lands
+(LP collector #170/#173 stays deploy-ahead until then); `raw_payload` is lossless, so drift is
+recoverable without a migration.
+
 ## Diagram — Employee expense tracking (ADR-0083)
 
 Imperion tracks employee expenses — **business mileage** (MileIQ, read-only) + **manual
