@@ -142,6 +142,35 @@ export function canAdministerTimesheets(roles: readonly AppRole[] | undefined): 
 }
 
 /**
+ * The expense correctness-approval gate (ADR-0083) is admin-only — the GUI-side
+ * twin of the `expense:approve` capability the server actions enforce. Mirrors
+ * `canApproveTimesheets`. (Finance approval — finance∨admin — is a separate gate.)
+ */
+export function canApproveExpenses(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles);
+}
+
+/**
+ * The expense finance-approval gate (ADR-0083) is the CFO gate — finance∨admin.
+ * GUI-side twin of `expense:finance-approve`. Finance-approves an Approved report
+ * (authorizes reimbursement; the app never pays) and confirms the QuickBooks match
+ * to set Reimbursed; it never touches comp data. Mirrors `canApprovePayroll`.
+ */
+export function canFinanceApproveExpenses(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "finance");
+}
+
+/**
+ * The unified expense administration surface (ADR-0083, #548) — the single all-users
+ * lifecycle table (mirrors the timesheet #539 surface). Visible to anyone who can act
+ * on either gate (admin OR finance); individual row actions stay gated by
+ * `canApproveExpenses` / `canFinanceApproveExpenses`.
+ */
+export function canAdministerExpenses(roles: readonly AppRole[] | undefined): boolean {
+  return canApproveExpenses(roles) || canFinanceApproveExpenses(roles);
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -183,6 +212,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   board: canSeeAgentPages,
   "time-admin": canAdministerTimesheets,
   "time-mappings": canManageEmployeeMappings,
+  "expense-admin": canAdministerExpenses,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

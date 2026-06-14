@@ -10,7 +10,13 @@ import { CAPABILITIES, type Capability, can } from "@/lib/auth/policy";
  */
 // time:write + expense:write are self-service (own timesheet/report) — every role holds them.
 const EXPECTED: Record<Exclude<AppRole, "admin">, Capability[]> = {
-  finance: ["contracts:write", "time:write", "time:payroll-approve", "expense:write"],
+  finance: [
+    "contracts:write",
+    "time:write",
+    "time:payroll-approve",
+    "expense:write",
+    "expense:finance-approve",
+  ],
   sales: ["crm:write", "sales:write", "tickets:write", "comms:write", "time:write", "expense:write"],
   project_manager: ["crm:write", "delivery:write", "tickets:write", "time:write", "expense:write"],
   support: ["tickets:write", "comms:write", "time:write", "expense:write"],
