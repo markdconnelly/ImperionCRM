@@ -87,6 +87,7 @@ import type {
   DeliveryTemplateRow,
   TimesheetRow,
   TimesheetDetail,
+  TimesheetReviewRow,
   TimeEntryRow,
   ReconciliationDay,
   DeliveryTemplateDetail,
@@ -1769,6 +1770,97 @@ export const postgresRepositories: Repositories = {
                 )
           WHERE t.id = $1 AND t.state = 'open'`,
         [id, attestedBy],
+      );
+    },
+
+    async listSubmittedTimesheets(): Promise<TimesheetReviewRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listSubmittedTimesheets();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          app_user_id: string;
+          employee_name: string | null;
+          week_start: string;
+          week_end: string;
+          state: string;
+          attested_at: Date | null;
+          entry_count: string;
+          total_minutes: string;
+        }>(
+          `SELECT t.id, t.app_user_id,
+                  COALESCE(u.display_name, u.email) AS employee_name,
+                  to_char(t.week_start, 'YYYY-MM-DD') AS week_start,
+                  to_char(t.week_end,   'YYYY-MM-DD') AS week_end,
+                  t.state, t.attested_at,
+                  count(w.id) AS entry_count,
+                  COALESCE(SUM(EXTRACT(EPOCH FROM (w.ended_at - w.started_at)) / 60), 0)::int AS total_minutes
+           FROM timesheet t
+           JOIN app_user u ON u.id = t.app_user_id
+           LEFT JOIN website_time_entry w ON w.timesheet_id = t.id
+           WHERE t.state = 'submitted'
+           GROUP BY t.id, u.display_name, u.email
+           ORDER BY t.attested_at NULLS LAST, week_start`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          employeeId: r.app_user_id,
+          employeeName: r.employee_name ?? "—",
+          weekStart: r.week_start,
+          weekEnd: r.week_end,
+          state: r.state as TimesheetRow["state"],
+          entryCount: Number(r.entry_count),
+          totalMinutes: Number(r.total_minutes),
+          attestedAt: r.attested_at ? new Date(r.attested_at).toISOString() : null,
+        }));
+      } catch {
+        return mockRepositories.crm.listSubmittedTimesheets();
+      }
+    },
+
+    async approveTimesheet(id: string, approvedBy: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.approveTimesheet(id, approvedBy);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Only a Submitted sheet → Approved; stamp the admin approver.
+        const { rowCount } = await client.query(
+          `UPDATE timesheet SET state = 'approved', approved_at = now(), approved_by = $2
+           WHERE id = $1 AND state = 'submitted'`,
+          [id, approvedBy],
+        );
+        // Create the pending Time Ticket tracking row the backend writer consumes
+        // (idempotent on the timesheet — re-approval reuses the same row/external_ref).
+        if (rowCount && rowCount > 0) {
+          await client.query(
+            `INSERT INTO time_ticket (timesheet_id, app_user_id, week_start, idempotency_key)
+             SELECT t.id, t.app_user_id, t.week_start, 'imperioncrm-timeticket-' || t.id
+             FROM timesheet t WHERE t.id = $1
+             ON CONFLICT (timesheet_id) DO NOTHING`,
+            [id],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async reopenTimesheet(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.reopenTimesheet(id);
+      // Back to the employee for correction — re-attest required. Keep the attested
+      // snapshot + any time_ticket row (re-approval re-writes the same external_ref).
+      await pool.query(
+        `UPDATE timesheet
+            SET state = 'open', attested_at = NULL, attested_by = NULL,
+                approved_at = NULL, approved_by = NULL
+          WHERE id = $1 AND state IN ('submitted', 'approved')`,
+        [id],
       );
     },
 

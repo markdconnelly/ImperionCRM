@@ -51,6 +51,7 @@ import type {
   DeliveryTemplateDetail,
   TimesheetRow,
   TimesheetDetail,
+  TimesheetReviewRow,
   TimeEntryCategory,
   LeadHookRow,
   MarketingSocialReport,
@@ -354,6 +355,15 @@ export interface CrmRepository {
   /** Attest (submit) a timesheet: state→submitted, stamp attested_by/at, snapshot the
    *  attested entries for audit. Caller enforces the Hard-deviation gate first. */
   submitTimesheet(id: string, attestedBy: string): Promise<void>;
+  /** The admin review queue: all Submitted timesheets across employees, oldest-attested
+   *  first (with the employee's display name). */
+  listSubmittedTimesheets(): Promise<TimesheetReviewRow[]>;
+  /** Approve a Submitted timesheet (admin): state→approved, stamp approver, and create the
+   *  pending Time Ticket tracking row (idempotent) for the backend writer to pick up. */
+  approveTimesheet(id: string, approvedBy: string): Promise<void>;
+  /** Send an approved/submitted timesheet back to the employee: state→open, clear the
+   *  attest/approve stamps (re-attest required). Keeps the snapshot + Time Ticket row. */
+  reopenTimesheet(id: string): Promise<void>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;

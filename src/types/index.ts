@@ -243,6 +243,11 @@ export interface TimesheetDetail extends TimesheetRow {
   hasHardDeviation: boolean;
 }
 
+/** A Submitted timesheet in the admin review queue (ADR-0082) — adds the employee name. */
+export interface TimesheetReviewRow extends TimesheetRow {
+  employeeName: string; // app_user display name (falls back to email)
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 
