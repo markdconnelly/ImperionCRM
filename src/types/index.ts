@@ -249,6 +249,16 @@ export interface TimesheetReviewRow extends TimesheetRow {
 }
 
 /**
+ * Admin review of one Submitted sheet (ADR-0082 #477): the live detail plus the
+ * employee's immutable **attested original** (`timesheet.attested_snapshot`), so the
+ * approvals surface can diff admin corrections against what was attested. `null` for
+ * sheets attested before snapshots existed / never attested.
+ */
+export interface AdminTimesheetReview extends TimesheetDetail {
+  attestedSnapshot: TimeEntryRow[] | null;
+}
+
+/**
  * The six time-reconciliation Deviations (ADR-0082; backend ADR-0046). The day-level four
  * are derivable from `time_reconciliation_day`; `overlap` + `temporal_orphan` need row-pair
  * logic, so the full set comes from the backend `POST /orchestration/time-reconciliation`.

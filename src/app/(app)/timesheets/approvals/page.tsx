@@ -7,20 +7,24 @@ import { getTimeDeviations } from "@/lib/timesheets/deviations";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canApproveTimesheets } from "@/lib/auth/roles";
 import { weekLabel } from "@/lib/week";
-import { approveTimesheetAction, reopenTimesheetAction } from "./actions";
+import {
+  approveTimesheetAction,
+  reopenTimesheetAction,
+  addCorrectionAction,
+  updateCorrectionAction,
+  deleteCorrectionAction,
+} from "./actions";
 
 function fmtMinutes(min: number): string {
   const h = Math.floor(min / 60);
   return `${h}h ${min % 60}m`;
 }
 
-const ISO = /^\d{4}-\d{2}-\d{2}$/;
-
 /**
  * Time Approvals (ADR-0082, #465) — the admin correctness gate. Lists every
  * Submitted timesheet across employees; selecting one (`?review=<id>&emp=&week=`)
- * opens its read-only review with Approve / Reopen. Admin-only (`time:approve`);
- * approving requests the backend Time Ticket write. Inline correction is #477.
+ * opens its review with Approve / Reopen and inline correction (#477). Admin-only
+ * (`time:approve`); approving requests the backend Time Ticket write.
  */
 export default async function TimeApprovalsPage({
   searchParams,
@@ -40,16 +44,13 @@ export default async function TimeApprovalsPage({
     );
   }
 
-  const { review, emp, week } = await searchParams;
+  const { review } = await searchParams;
   const { crm } = getRepositories();
   const queue = await crm.listSubmittedTimesheets();
 
-  // The selected sheet's detail (reuse the employee-scoped read via the queue row's
-  // emp+week, so no extra read method is needed). Only valid for a Submitted sheet.
-  const reviewing =
-    review && emp && week && ISO.test(week)
-      ? await crm.getTimesheetForWeek(emp, week)
-      : null;
+  // The selected sheet's detail + the immutable attested original, read by id (admin
+  // scope, #477). emp/week still drive the queue's Review links below.
+  const reviewing = review ? await crm.getTimesheetById(review) : null;
   const reviewingName =
     queue.find((q) => q.id === review)?.employeeName ?? "Employee";
   // Full typed deviations for the reviewed sheet ([] when the backend is off — ADR-0046/0018).
@@ -112,6 +113,9 @@ export default async function TimeApprovalsPage({
           deviations={deviations}
           approveAction={approveTimesheetAction}
           reopenAction={reopenTimesheetAction}
+          addCorrectionAction={addCorrectionAction}
+          updateCorrectionAction={updateCorrectionAction}
+          deleteCorrectionAction={deleteCorrectionAction}
         />
       )}
     </div>
