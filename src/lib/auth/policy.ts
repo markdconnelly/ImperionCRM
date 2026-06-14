@@ -29,6 +29,7 @@ export const CAPABILITIES = [
   "settings:write", // connections, company credentials, GDAP, poll cadence
   "agents:operate", // convene the AI board / operate the agent layer (ADR-0050: admin-only, spends model budget)
   "time:write", // own weekly timesheet — enter/attest time (ADR-0082; every employee, own row only)
+  "time:approve", // admin correctness approval of a submitted timesheet (ADR-0082; admin-only)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -51,6 +52,10 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   // roles; the server action additionally scopes every write to the signed-in
   // employee's own timesheet, so this grants self-service, not cross-employee edit.
   "time:write": ["finance", "project_manager", "sales", "support"],
+  // The admin correctness gate before payroll (ADR-0082) — admin-only (admin holds
+  // all caps implicitly, so the explicit list is empty). NOT the payroll approval
+  // (finance∨admin), which is a separate gate on the #466 surface.
+  "time:approve": [],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */
