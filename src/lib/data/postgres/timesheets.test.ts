@@ -345,6 +345,226 @@ describe("reopenTimesheet (send back, ADR-0082)", () => {
   });
 });
 
+describe("getTimesheetById (admin review read, ADR-0082 #477)", () => {
+  it("returns null when no sheet matches the id", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    const result = await crm.getTimesheetById("ts-x");
+    expect(query.mock.calls[0][0] as string).toContain("attested_snapshot");
+    expect(query.mock.calls[0][1]).toEqual(["ts-x"]);
+    expect(result).toBeNull();
+  });
+
+  it("assembles the detail and normalizes the attested snapshot to TimeEntryRow shape", async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "ts-1",
+            app_user_id: "emp-1",
+            week_start: "2026-06-08",
+            week_end: "2026-06-14",
+            state: "submitted",
+            attested_at: "2026-06-15T10:00:00.000Z",
+            attested_snapshot: [
+              {
+                id: "e-1",
+                work_date: "2026-06-08",
+                started_at: "2026-06-08T09:00:00+00:00",
+                ended_at: "2026-06-08T12:00:00+00:00",
+                category: "billable",
+                ancillary_ticket_ref: "T1",
+                notes: null,
+              },
+            ],
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "e-1",
+            work_date: "2026-06-08",
+            started_at: "2026-06-08T09:00:00.000Z",
+            ended_at: "2026-06-08T12:30:00.000Z", // admin already extended it 30m
+            minutes: "210",
+            category: "billable",
+            ancillary_ticket_ref: "T1",
+            notes: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] }); // no reconciliation rows
+    const result = await crm.getTimesheetById("ts-1");
+    expect(result).not.toBeNull();
+    expect(result!.state).toBe("submitted");
+    expect(result!.entries[0].minutes).toBe(210);
+    expect(result!.attestedSnapshot).toHaveLength(1);
+    // Snapshot preserves the ORIGINAL 180m (09:00–12:00), independent of the live entry.
+    expect(result!.attestedSnapshot![0]).toMatchObject({
+      id: "e-1",
+      workDate: "2026-06-08",
+      minutes: 180,
+      category: "billable",
+      ancillaryTicketRef: "T1",
+    });
+  });
+
+  it("tolerates a null snapshot (sheet attested before snapshots existed)", async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "ts-1",
+            app_user_id: "emp-1",
+            week_start: "2026-06-08",
+            week_end: "2026-06-14",
+            state: "submitted",
+            attested_at: null,
+            attested_snapshot: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    const result = await crm.getTimesheetById("ts-1");
+    expect(result!.attestedSnapshot).toBeNull();
+  });
+});
+
+describe("correctSubmittedTimesheet (admin inline correction, ADR-0082 #477)", () => {
+  it("refuses (false, rolls back) when the sheet is not Submitted", async () => {
+    const sqls: string[] = [];
+    clientQuery.mockImplementation(async (sql: string) => {
+      sqls.push(sql);
+      if (sql.includes("FOR UPDATE")) return { rows: [{ state: "approved", app_user_id: "emp-1" }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedTimesheet(
+      "ts-1",
+      { kind: "delete", entryId: "e-1" },
+      "admin-1",
+    );
+    expect(ok).toBe(false);
+    expect(sqls).toContain("ROLLBACK");
+    expect(sqls.some((s) => s.includes("audit_log"))).toBe(false);
+    expect(release).toHaveBeenCalled();
+  });
+
+  it("add: inserts with the OWNER from the sheet (not the caller) and audits before→after", async () => {
+    const calls: { sql: string; params?: unknown[] }[] = [];
+    clientQuery.mockImplementation(async (sql: string, params?: unknown[]) => {
+      calls.push({ sql, params });
+      if (sql.includes("FOR UPDATE")) return { rows: [{ state: "submitted", app_user_id: "emp-OWNER" }], rowCount: 1 };
+      if (sql.includes("INSERT INTO website_time_entry")) return { rows: [{ id: "e-new" }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedTimesheet(
+      "ts-1",
+      {
+        kind: "add",
+        entry: {
+          workDate: "2026-06-08",
+          startedAt: "2026-06-08T09:00:00.000Z",
+          endedAt: "2026-06-08T10:00:00.000Z",
+          category: "internal",
+          ancillaryTicketRef: null,
+          notes: "  ", // blank → null
+        },
+      },
+      "admin-1",
+    );
+    expect(ok).toBe(true);
+    const insert = calls.find((c) => c.sql.includes("INSERT INTO website_time_entry"))!;
+    expect(insert.params![1]).toBe("emp-OWNER"); // app_user_id from the locked sheet
+    expect(insert.params![7]).toBeNull(); // blank notes nulled
+    const audit = calls.find((c) => c.sql.includes("audit_log"))!;
+    expect(audit.sql).toContain("'timesheet.corrected'");
+    expect(audit.params![0]).toBe("admin-1"); // actor_user_id
+    expect(audit.params![2]).toBe("add"); // op
+    expect(audit.params![3]).toBe("e-new"); // entryId
+    expect(calls.at(-1)!.sql).toBe("COMMIT");
+  });
+
+  it("update: captures the before-image, scopes to the sheet, audits before+after", async () => {
+    const calls: { sql: string; params?: unknown[] }[] = [];
+    clientQuery.mockImplementation(async (sql: string, params?: unknown[]) => {
+      calls.push({ sql, params });
+      if (sql.includes("FOR UPDATE")) return { rows: [{ state: "submitted", app_user_id: "emp-1" }], rowCount: 1 };
+      if (sql.includes("SELECT id") && sql.includes("website_time_entry"))
+        return { rows: [{ id: "e-1", work_date: "2026-06-08", category: "billable" }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedTimesheet(
+      "ts-1",
+      {
+        kind: "update",
+        entryId: "e-1",
+        entry: {
+          workDate: "2026-06-08",
+          startedAt: "2026-06-08T09:00:00.000Z",
+          endedAt: "2026-06-08T11:00:00.000Z",
+          category: "internal",
+          ancillaryTicketRef: null,
+          notes: null,
+        },
+      },
+      "admin-1",
+    );
+    expect(ok).toBe(true);
+    const update = calls.find((c) => c.sql.includes("UPDATE website_time_entry"))!;
+    expect(update.sql).toContain("WHERE id = $1 AND timesheet_id = $2");
+    const audit = calls.find((c) => c.sql.includes("audit_log"))!;
+    expect(audit.params![2]).toBe("update");
+    expect(audit.params![4]).not.toBeNull(); // before image captured
+    expect(audit.params![5]).not.toBeNull(); // after present
+  });
+
+  it("update/delete: refuses (false) when the target entry is not on this sheet", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE")) return { rows: [{ state: "submitted", app_user_id: "emp-1" }], rowCount: 1 };
+      if (sql.includes("SELECT id") && sql.includes("website_time_entry")) return { rows: [], rowCount: 0 };
+      return { rows: [], rowCount: 1 };
+    });
+    const ok = await crm.correctSubmittedTimesheet(
+      "ts-1",
+      { kind: "delete", entryId: "not-mine" },
+      "admin-1",
+    );
+    expect(ok).toBe(false);
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls).toContain("ROLLBACK");
+    expect(sqls.some((s) => s.includes("DELETE FROM website_time_entry"))).toBe(false);
+  });
+
+  it("rolls back and releases on a write error", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FOR UPDATE")) return { rows: [{ state: "submitted", app_user_id: "emp-1" }], rowCount: 1 };
+      if (sql.includes("INSERT INTO website_time_entry")) throw new Error("boom");
+      return { rows: [], rowCount: 1 };
+    });
+    await expect(
+      crm.correctSubmittedTimesheet(
+        "ts-1",
+        {
+          kind: "add",
+          entry: {
+            workDate: "2026-06-08",
+            startedAt: "2026-06-08T09:00:00.000Z",
+            endedAt: "2026-06-08T10:00:00.000Z",
+            category: "admin",
+            ancillaryTicketRef: null,
+            notes: null,
+          },
+        },
+        "admin-1",
+      ),
+    ).rejects.toThrow("boom");
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls).toContain("ROLLBACK");
+    expect(release).toHaveBeenCalled();
+  });
+});
+
 describe("listEmployeeMappings (admin mapping UI, ADR-0082 #468)", () => {
   it("left-joins the mapping sidecar, coerces the numeric Resource id, derives confirmed", async () => {
     query.mockResolvedValueOnce({
