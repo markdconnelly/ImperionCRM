@@ -1,6 +1,7 @@
 import { cn } from "@/lib/cn";
 import { weekDays, weekdayName, weekLabel } from "@/lib/week";
-import type { ReconciliationVerdict, TimesheetDetail } from "@/types";
+import { DeviationList } from "@/components/timesheets/deviation-list";
+import type { ReconciliationVerdict, TimeDeviation, TimesheetDetail } from "@/types";
 
 function fmtMinutes(min: number): string {
   const h = Math.floor(min / 60);
@@ -27,11 +28,14 @@ type FormAction = (formData: FormData) => void | Promise<void>;
 export function ApprovalReview({
   employeeName,
   detail,
+  deviations = [],
   approveAction,
   reopenAction,
 }: {
   employeeName: string;
   detail: TimesheetDetail;
+  /** The backend's full typed deviation list (ADR-0046); empty when the backend is off. */
+  deviations?: TimeDeviation[];
   approveAction: FormAction;
   reopenAction: FormAction;
 }) {
@@ -84,6 +88,8 @@ export function ApprovalReview({
           employee to correct.
         </p>
       )}
+
+      <DeviationList deviations={deviations} />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {days.map((day) => {

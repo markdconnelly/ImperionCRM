@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { TimesheetWeek } from "@/components/timesheets/timesheet-week";
 import { getRepositories } from "@/lib/data";
+import { getTimeDeviations } from "@/lib/timesheets/deviations";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 import { addDays, mondayOf, weekLabel } from "@/lib/week";
 import type { ReconciliationDay, TimeEntryRow, TimesheetState } from "@/types";
@@ -63,6 +64,9 @@ export default async function TimesheetsPage({
   const entries: TimeEntryRow[] = sheet?.entries ?? [];
   const reconciliation: ReconciliationDay[] = sheet?.reconciliation ?? [];
   const totalMinutes = sheet?.totalMinutes ?? 0;
+  // The backend's full typed deviations (overlap/orphan the view can't express); [] when
+  // the backend is unconfigured, so the memory-jogger renders as before (ADR-0046/0018).
+  const deviations = sheet ? await getTimeDeviations(sheet.id) : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -100,6 +104,7 @@ export default async function TimesheetsPage({
         state={state}
         entries={entries}
         reconciliation={reconciliation}
+        deviations={deviations}
         hasHardDeviation={sheet?.hasHardDeviation ?? false}
         addAction={addTimeEntryAction}
         deleteAction={deleteTimeEntryAction}

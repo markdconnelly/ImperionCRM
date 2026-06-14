@@ -15,6 +15,7 @@
 import "server-only";
 import { callService, type ServiceDescriptor } from "@/lib/services/external-client";
 import type { RefreshSource } from "@/lib/integrations/pipeline-refresh";
+import type { TimeReconciliationResult } from "@/types";
 
 // Services hosted on the network-isolated backend (ADR-0028) sit behind Easy Auth and
 // declare `audienceEnv` so callService attaches a managed-identity bearer token. The
@@ -170,6 +171,22 @@ export const agentService = {
     callService<AgentSettingsWire>(services.agent, "/agent/settings", {
       method: "PUT",
       body: JSON.stringify(input),
+    }),
+};
+
+/**
+ * Time-tracking Reconciliation #1 (ADR-0082; backend ADR-0046). Computes the six typed
+ * deviations over silver `time_record` for one timesheet — the full set the day-level
+ * `time_reconciliation_day` view can't express (overlap, temporal orphan). Runs on the same
+ * backend Function App as the orchestrator (`/orchestration/*`), so it shares the agent base
+ * URL + Easy Auth audience. Pure read; caller-gated; no comp data crosses the boundary.
+ */
+export const timeReconciliationService = {
+  reconcile: (input: { timesheetId: string; toleranceMinutes?: number }) =>
+    callService<TimeReconciliationResult>(services.agent, "/orchestration/time-reconciliation", {
+      method: "POST",
+      body: JSON.stringify(input),
+      timeoutMs: 30_000,
     }),
 };
 

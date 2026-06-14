@@ -249,6 +249,43 @@ export interface TimesheetReviewRow extends TimesheetRow {
 }
 
 /**
+ * The six time-reconciliation Deviations (ADR-0082; backend ADR-0046). The day-level four
+ * are derivable from `time_reconciliation_day`; `overlap` + `temporal_orphan` need row-pair
+ * logic, so the full set comes from the backend `POST /orchestration/time-reconciliation`.
+ */
+export type TimeDeviationType =
+  | "over_logged"
+  | "overlap"
+  | "temporal_orphan"
+  | "under_logged_gap"
+  | "attended_nothing_logged"
+  | "logged_never_attended";
+
+/** Hard deviations block attestation; soft ones are attestable with a note (ADR-0082). */
+export type TimeDeviationSeverity = "hard" | "soft";
+
+export interface TimeDeviation {
+  workDate: string; // yyyy-mm-dd
+  type: TimeDeviationType;
+  severity: TimeDeviationSeverity;
+  attendedMinutes: number;
+  loggedMinutes: number;
+  detail: string; // human-readable explanation
+}
+
+/** Backend reconciliation result (backend ADR-0046 wire shape). */
+export interface TimeReconciliationResult {
+  timesheetId: string;
+  appUserId: string;
+  weekStart: string;
+  weekEnd: string;
+  toleranceMinutes: number;
+  deviations: TimeDeviation[];
+  hardCount: number;
+  softCount: number;
+}
+
+/**
  * An employee's external-id mapping row for the admin mapping confirm UI
  * (ADR-0082, #468). One row per active `app_user` (left-joined to its
  * `employee_profile` sidecar): email is the join key across all three systems,
