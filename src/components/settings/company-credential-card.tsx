@@ -101,7 +101,7 @@ export function CompanyCredentialCard({
         </form>
       )}
 
-      {/* GDAP — admin-consent flow, no secret fields */}
+      {/* Consent / OAuth-connect flow (GDAP admin consent, QuickBooks OAuth) — no secret fields */}
       {provider.kind === "consent" ? (
         <form action={gdapAction} className="flex items-center gap-3">
           <input type="hidden" name="provider" value={provider.key} />
@@ -109,8 +109,14 @@ export function CompanyCredentialCard({
             type="submit"
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:border-accent hover:text-text"
           >
-            <Icon name="ShieldCheck" size={14} />
-            {configured ? "Re-grant admin consent" : "Grant admin consent"}
+            <Icon name={provider.key === "qbo" ? "Plug" : "ShieldCheck"} size={14} />
+            {provider.key === "qbo"
+              ? configured
+                ? "Reconnect QuickBooks"
+                : "Connect QuickBooks"
+              : configured
+                ? "Re-grant admin consent"
+                : "Grant admin consent"}
           </button>
         </form>
       ) : stored && !open ? (

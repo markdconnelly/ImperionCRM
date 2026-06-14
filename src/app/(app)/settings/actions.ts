@@ -277,3 +277,40 @@ export async function grantGdapAction(formData: FormData) {
   // redirect() throws — keep it last, outside the try/catch.
   if (consentUrl) redirect(consentUrl);
 }
+
+/**
+ * Begin the company-wide QuickBooks Online connect flow (#117/#528). Unlike GDAP this
+ * needs no cookie: the backend parks a one-time CSRF `state` in Key Vault and embeds it
+ * in the Intuit consent URL, then validates it on the callback (same posture as the
+ * per-user OAuth flow). We record a pending `qbo` company row, then redirect the admin to
+ * Intuit. When the backend isn't configured yet the row is recorded and we stay put
+ * (graceful degradation — the card shows the pending/not-configured state).
+ */
+export async function connectQuickBooksAction(formData: FormData) {
+  await requireCapability("settings:write");
+  const providerKey = String(formData.get("provider") ?? "");
+  const provider = COMPANY_PROVIDERS.find((p) => p.key === providerKey);
+  if (!provider || provider.key !== "qbo") return;
+
+  let authorizationUrl: string | null = null;
+  let status = "pending";
+  try {
+    const res = await connectionsService.startQboConnect();
+    authorizationUrl = res.authorizationUrl;
+  } catch (err) {
+    if (!isBackendNotConfigured(err)) status = "error";
+  }
+
+  const { connections } = getRepositories();
+  await connections.saveCompanyCredential({
+    provider: provider.key,
+    displayName: `Imperion ${provider.label}`,
+    scopes: provider.scopes,
+    keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
+    status,
+  });
+  revalidatePath("/settings");
+
+  // redirect() throws — keep it last, outside the try/catch.
+  if (authorizationUrl) redirect(authorizationUrl);
+}

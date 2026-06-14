@@ -467,6 +467,24 @@ export const connectionsService = {
       `/connections/${encodeURIComponent(provider)}/disconnect`,
       { method: "POST", body: JSON.stringify(input) },
     ),
+  /**
+   * Begin the company-wide QuickBooks Online connect flow (#117). Company-scoped — no
+   * userId; the backend parks a one-time CSRF state in Key Vault and returns the Intuit
+   * consent URL (with that state embedded).
+   */
+  startQboConnect: () =>
+    callService<{ authorizationUrl: string; state: string }>(
+      services.integration,
+      "/connections/qbo/start",
+      { method: "POST", body: JSON.stringify({}) },
+    ),
+  /** Forward Intuit's redirect (code + realmId + state) for the one-time exchange. */
+  completeQboConnect: (input: { code: string; realmId: string; state: string }) =>
+    callService<{ configured: boolean; environment: string; status: string }>(
+      services.integration,
+      "/connections/qbo/callback",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
 };
 
 /**
