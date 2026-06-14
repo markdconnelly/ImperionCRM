@@ -268,6 +268,29 @@ export const mockRepositories: Repositories = {
     async deleteDeliveryTemplate() {
       throw new Error(NO_DB);
     },
+    // Time tracking (ADR-0082) — reads return empty (no demo timesheets); writes
+    // need a database, so they fail honestly rather than pretend to persist.
+    async listTimesheets() {
+      return [];
+    },
+    async getTimesheetForWeek() {
+      return null;
+    },
+    async ensureTimesheetForWeek() {
+      throw new Error(NO_DB);
+    },
+    async addTimeEntry() {
+      throw new Error(NO_DB);
+    },
+    async updateTimeEntry() {
+      throw new Error(NO_DB);
+    },
+    async deleteTimeEntry() {
+      throw new Error(NO_DB);
+    },
+    async submitTimesheet() {
+      throw new Error(NO_DB);
+    },
     async listOnboarding() {
       // Acme is instantiated from the standard playbook (ADR-0037): earlier
       // phases mostly checked off so the derived R/Y/G + checklist render.

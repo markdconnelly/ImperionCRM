@@ -42,6 +42,7 @@ import type {
   ProjectInput,
   ProjectTypeInput,
   DeliveryTemplateInput,
+  TimeEntryInput,
   ProposalEditable,
   ProposalInput,
   QuestionEditable,
@@ -84,6 +85,10 @@ import type {
   CountDatum,
   CurrentConsentRow,
   DeliveryTemplateRow,
+  TimesheetRow,
+  TimesheetDetail,
+  TimeEntryRow,
+  ReconciliationDay,
   DeliveryTemplateDetail,
   DirectoryGroupRow,
   DiscoveryCallDetail,
@@ -173,6 +178,30 @@ function deriveHealth(
 function nullIfEmpty(v: string | null | undefined): string | null {
   const s = (v ?? "").trim();
   return s === "" ? null : s;
+}
+
+/**
+ * Hard deviations block attestation (ADR-0082): an over-logged day (logged > attended
+ * + tolerance, from the reconciliation view) OR two attendance blocks that overlap on
+ * the same day. Soft deviations are attestable with a note and do NOT block.
+ */
+function hasHardDeviation(
+  entries: TimeEntryRow[],
+  reconciliation: ReconciliationDay[],
+): boolean {
+  if (reconciliation.some((d) => d.verdict === "over_logged")) return true;
+  const byDay = new Map<string, TimeEntryRow[]>();
+  for (const e of entries) {
+    (byDay.get(e.workDate) ?? byDay.set(e.workDate, []).get(e.workDate)!).push(e);
+  }
+  for (const dayEntries of byDay.values()) {
+    const sorted = [...dayEntries].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+    for (let i = 1; i < sorted.length; i++) {
+      // Overlap: this block starts before the previous one ends.
+      if (sorted[i].startedAt < sorted[i - 1].endedAt) return true;
+    }
+  }
+  return false;
 }
 
 function fmtDate(d: Date | null): string | null {
@@ -1532,6 +1561,215 @@ export const postgresRepositories: Repositories = {
       if (!pool) return mockRepositories.crm.deleteDeliveryTemplate(id);
       // CASCADE drops phases/tasks; project_provisioning.delivery_template_id SET NULL.
       await pool.query(`DELETE FROM delivery_template WHERE id = $1`, [id]);
+    },
+
+    // ── Time tracking (ADR-0082, migrations 0085–0087) ───────────────────────
+    async listTimesheets(opts): Promise<TimesheetRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listTimesheets(opts);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          app_user_id: string;
+          week_start: string;
+          week_end: string;
+          state: string;
+          attested_at: Date | null;
+          entry_count: string;
+          total_minutes: string;
+        }>(
+          `SELECT t.id, t.app_user_id,
+                  to_char(t.week_start, 'YYYY-MM-DD') AS week_start,
+                  to_char(t.week_end,   'YYYY-MM-DD') AS week_end,
+                  t.state, t.attested_at,
+                  count(w.id) AS entry_count,
+                  COALESCE(SUM(EXTRACT(EPOCH FROM (w.ended_at - w.started_at)) / 60), 0)::int AS total_minutes
+           FROM timesheet t
+           LEFT JOIN website_time_entry w ON w.timesheet_id = t.id
+           WHERE t.app_user_id = $1
+           GROUP BY t.id
+           ORDER BY t.week_start DESC`,
+          [opts.employeeId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          employeeId: r.app_user_id,
+          weekStart: r.week_start,
+          weekEnd: r.week_end,
+          state: r.state as TimesheetRow["state"],
+          entryCount: Number(r.entry_count),
+          totalMinutes: Number(r.total_minutes),
+          attestedAt: r.attested_at ? new Date(r.attested_at).toISOString() : null,
+        }));
+      } catch {
+        return mockRepositories.crm.listTimesheets(opts);
+      }
+    },
+
+    async getTimesheetForWeek(employeeId, weekStart): Promise<TimesheetDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getTimesheetForWeek(employeeId, weekStart);
+      const { rows: tRows } = await pool.query<{
+        id: string;
+        app_user_id: string;
+        week_start: string;
+        week_end: string;
+        state: string;
+        attested_at: Date | null;
+      }>(
+        `SELECT id, app_user_id,
+                to_char(week_start, 'YYYY-MM-DD') AS week_start,
+                to_char(week_end,   'YYYY-MM-DD') AS week_end,
+                state, attested_at
+         FROM timesheet WHERE app_user_id = $1 AND week_start = $2`,
+        [employeeId, weekStart],
+      );
+      const t = tRows[0];
+      if (!t) return null;
+      const { rows: eRows } = await pool.query<{
+        id: string;
+        work_date: string;
+        started_at: Date;
+        ended_at: Date;
+        minutes: string;
+        category: string;
+        ancillary_ticket_ref: string | null;
+        notes: string | null;
+      }>(
+        `SELECT id, to_char(work_date, 'YYYY-MM-DD') AS work_date,
+                started_at, ended_at,
+                (EXTRACT(EPOCH FROM (ended_at - started_at)) / 60)::int AS minutes,
+                category, ancillary_ticket_ref, notes
+         FROM website_time_entry WHERE timesheet_id = $1
+         ORDER BY started_at`,
+        [t.id],
+      );
+      // Per-day reconciliation for the week (the memory-jogger seed), over the view.
+      const { rows: rRows } = await pool.query<{
+        work_date: string;
+        attended_minutes: string;
+        logged_minutes: string;
+        delta_minutes: string;
+        verdict: string;
+      }>(
+        `SELECT to_char(work_date, 'YYYY-MM-DD') AS work_date,
+                attended_minutes, logged_minutes, delta_minutes, verdict
+         FROM time_reconciliation_day
+         WHERE app_user_id = $1 AND work_date BETWEEN $2 AND $3
+         ORDER BY work_date`,
+        [employeeId, t.week_start, t.week_end],
+      );
+      const entries: TimeEntryRow[] = eRows.map((r) => ({
+        id: r.id,
+        workDate: r.work_date,
+        startedAt: new Date(r.started_at).toISOString(),
+        endedAt: new Date(r.ended_at).toISOString(),
+        minutes: Number(r.minutes),
+        category: r.category as TimeEntryRow["category"],
+        ancillaryTicketRef: r.ancillary_ticket_ref,
+        notes: r.notes,
+      }));
+      const reconciliation: ReconciliationDay[] = rRows.map((r) => ({
+        workDate: r.work_date,
+        attendedMinutes: Number(r.attended_minutes),
+        loggedMinutes: Number(r.logged_minutes),
+        deltaMinutes: Number(r.delta_minutes),
+        verdict: r.verdict as ReconciliationDay["verdict"],
+      }));
+      return {
+        id: t.id,
+        employeeId: t.app_user_id,
+        weekStart: t.week_start,
+        weekEnd: t.week_end,
+        state: t.state as TimesheetRow["state"],
+        entryCount: entries.length,
+        totalMinutes: entries.reduce((s, e) => s + e.minutes, 0),
+        attestedAt: t.attested_at ? new Date(t.attested_at).toISOString() : null,
+        entries,
+        reconciliation,
+        hasHardDeviation: hasHardDeviation(entries, reconciliation),
+      };
+    },
+
+    async ensureTimesheetForWeek(employeeId, weekStart): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.ensureTimesheetForWeek(employeeId, weekStart);
+      // Idempotent on UNIQUE (app_user_id, week_start); the no-op UPDATE lets us
+      // RETURNING the id whether the row was inserted or already existed.
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO timesheet (app_user_id, week_start, week_end)
+         VALUES ($1, $2, $2::date + 6)
+         ON CONFLICT (app_user_id, week_start)
+           DO UPDATE SET week_end = timesheet.week_end
+         RETURNING id`,
+        [employeeId, weekStart],
+      );
+      return rows[0].id;
+    },
+
+    async addTimeEntry(input: TimeEntryInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.addTimeEntry(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO website_time_entry
+           (timesheet_id, app_user_id, work_date, started_at, ended_at, category, ancillary_ticket_ref, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id`,
+        [
+          input.timesheetId,
+          input.employeeId,
+          input.workDate,
+          input.startedAt,
+          input.endedAt,
+          input.category,
+          nullIfEmpty(input.ancillaryTicketRef),
+          nullIfEmpty(input.notes),
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateTimeEntry(id: string, input: TimeEntryInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateTimeEntry(id, input);
+      await pool.query(
+        `UPDATE website_time_entry
+            SET work_date = $2, started_at = $3, ended_at = $4, category = $5,
+                ancillary_ticket_ref = $6, notes = $7
+          WHERE id = $1`,
+        [
+          id,
+          input.workDate,
+          input.startedAt,
+          input.endedAt,
+          input.category,
+          nullIfEmpty(input.ancillaryTicketRef),
+          nullIfEmpty(input.notes),
+        ],
+      );
+    },
+
+    async deleteTimeEntry(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteTimeEntry(id);
+      await pool.query(`DELETE FROM website_time_entry WHERE id = $1`, [id]);
+    },
+
+    async submitTimesheet(id: string, attestedBy: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.submitTimesheet(id, attestedBy);
+      // Attest: only an Open sheet → Submitted; snapshot the attested entries for
+      // audit (preserved even when an admin later corrects). Atomic single statement.
+      await pool.query(
+        `UPDATE timesheet t
+            SET state = 'submitted', attested_at = now(), attested_by = $2,
+                attested_snapshot = (
+                  SELECT COALESCE(jsonb_agg(to_jsonb(w) ORDER BY w.started_at), '[]'::jsonb)
+                  FROM website_time_entry w WHERE w.timesheet_id = t.id
+                )
+          WHERE t.id = $1 AND t.state = 'open'`,
+        [id, attestedBy],
+      );
     },
 
     async listOnboarding(): Promise<OnboardingProject[]> {
