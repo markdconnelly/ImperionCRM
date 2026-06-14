@@ -36,6 +36,8 @@ export const navSecondary: NavItem[] = [
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
   // The employee's own weekly timesheet — enter time + attest (ADR-0082).
   { key: "timesheets", label: "Timesheets", icon: "Clock", href: "/timesheets" },
+  // The employee's own monthly expense reports — log + attest (ADR-0083, #547).
+  { key: "expenses", label: "Expenses", icon: "Receipt", href: "/expenses" },
   // Unified timesheet administration: one all-users lifecycle table (correctness +
   // payroll) with filters + sorting (admin∨finance, ADR-0082 #539). Absorbs the former
   // Time Approvals + Payroll Approval queues into one surface.

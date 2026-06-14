@@ -8,12 +8,12 @@ import { CAPABILITIES, type Capability, can } from "@/lib/auth/policy";
  * `policy.ts`'s own matrix — so a regression in the policy is caught by a diff
  * against intent, not by re-reading the same source. `admin` holds everything.
  */
-// time:write is self-service (own timesheet, ADR-0082) — held by every role.
+// time:write + expense:write are self-service (own timesheet/report) — every role holds them.
 const EXPECTED: Record<Exclude<AppRole, "admin">, Capability[]> = {
-  finance: ["contracts:write", "time:write", "time:payroll-approve"],
-  sales: ["crm:write", "sales:write", "tickets:write", "comms:write", "time:write"],
-  project_manager: ["crm:write", "delivery:write", "tickets:write", "time:write"],
-  support: ["tickets:write", "comms:write", "time:write"],
+  finance: ["contracts:write", "time:write", "time:payroll-approve", "expense:write"],
+  sales: ["crm:write", "sales:write", "tickets:write", "comms:write", "time:write", "expense:write"],
+  project_manager: ["crm:write", "delivery:write", "tickets:write", "time:write", "expense:write"],
+  support: ["tickets:write", "comms:write", "time:write", "expense:write"],
 };
 
 describe("RBAC capability matrix", () => {
