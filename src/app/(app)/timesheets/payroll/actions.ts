@@ -18,7 +18,7 @@ import { str } from "@/lib/form-data";
  */
 
 function revalidatePayroll() {
-  revalidatePath("/timesheets/payroll");
+  revalidatePath("/timesheets/admin");
   revalidatePath("/timesheets");
 }
 

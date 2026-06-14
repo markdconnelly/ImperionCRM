@@ -132,6 +132,16 @@ export function canApprovePayroll(roles: readonly AppRole[] | undefined): boolea
 }
 
 /**
+ * The unified timesheet administration surface (ADR-0082, #539) — the single
+ * all-users lifecycle table that absorbs the correctness (#465) and payroll (#466)
+ * queues. Visible to anyone who can act on either gate (admin OR finance); the
+ * individual row actions remain gated by `canApproveTimesheets` / `canApprovePayroll`.
+ */
+export function canAdministerTimesheets(roles: readonly AppRole[] | undefined): boolean {
+  return canApproveTimesheets(roles) || canApprovePayroll(roles);
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -171,9 +181,8 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   security: canSeeSettings,
   agents: canSeeAgentPages,
   board: canSeeAgentPages,
-  "time-approvals": canApproveTimesheets,
+  "time-admin": canAdministerTimesheets,
   "time-mappings": canManageEmployeeMappings,
-  "time-payroll": canApprovePayroll,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

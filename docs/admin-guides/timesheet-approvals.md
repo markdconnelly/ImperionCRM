@@ -1,8 +1,10 @@
 # Time Approvals — admin guide
 
-The admin correctness gate for employee timesheets (ADR-0082). Surface:
-**Time Approvals** in the left nav (`/timesheets/approvals`) — **admin-only**
-(`time:approve`; hidden from non-admins).
+The admin correctness gate for employee timesheets (ADR-0082). It now lives inside the
+unified **[Time Administration](timesheet-administration.md)** surface
+(`/timesheets/admin`, #539) — the standalone `/timesheets/approvals` route redirects
+there. This guide describes the **review/approve mechanics**; **admin-only**
+(`time:approve`; the row actions are hidden from non-admins).
 
 ## The queue
 
