@@ -147,6 +147,17 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     ],
   },
   {
+    key: "qbo",
+    label: "QuickBooks Online",
+    icon: "DollarSign",
+    kind: "consent",
+    description:
+      "Imperion's own QuickBooks Online company (read-only) — the authoritative payment " +
+      "fact for time + expense reconciliation (ADR-0085). Connect once via Intuit OAuth; " +
+      "there is no key to paste and the app never writes to QuickBooks.",
+    scopes: ["com.intuit.quickbooks.accounting"],
+  },
+  {
     key: "darkwebid",
     label: "Dark Web ID",
     icon: "ShieldAlert",

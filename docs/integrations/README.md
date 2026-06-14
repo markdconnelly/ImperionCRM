@@ -109,6 +109,7 @@ without error.
 | Provider (`connection_provider`) | Kind | Fields collected |
 |---|---|---|
 | `gdap` | Admin consent | none — "Grant admin consent" (Microsoft GDAP for Imperion) |
+| `qbo` | OAuth connect | none — "Connect QuickBooks" (Intuit OAuth; see below) |
 | `autotask` | Credential | API user, API secret*, API integration (tracking) code* |
 | `itglue` | Credential | API key*, region (US/EU/AU) |
 | `myitprocess` | Credential | API key* |
@@ -116,6 +117,26 @@ without error.
 | `televy` | Credential | API key* — assessment reporting |
 
 \* write-only secret — stored in Key Vault, never returned to the client.
+
+### QuickBooks Online connect (`qbo`, OAuth — #528 / backend #117, ADR-0048/0085)
+
+Read-only connection to Imperion's **own** QBO company — the authoritative payment fact for
+time + expense reconciliation. `kind: "consent"`, but unlike GDAP it is a full OAuth
+authorization-code flow handled by the backend (the app never writes to QuickBooks):
+
+1. **Connect QuickBooks** → `connectQuickBooksAction` → `connectionsService.startQboConnect()`
+   → backend `POST /connections/qbo/start` parks a one-time CSRF `state` in Key Vault and
+   returns the Intuit consent URL → the admin is redirected to Intuit.
+2. Intuit redirects back to **`/api/qbo/callback`** (= `QBO_REDIRECT_URI`) with
+   `code`+`realmId`+`state`. The route (session + `settings:write`) forwards them to backend
+   `POST /connections/qbo/callback`, which validates the state, exchanges the code, and writes
+   the token set to `conn-company-qbo`. The `qbo` company row flips to `active`.
+3. The backend then refreshes the access token on-demand forever; a dead refresh token is
+   recovered by an admin **Reconnect** (re-run the flow) — there are no customers to prompt.
+
+No cookie is used (the backend owns the CSRF state, mirroring the per-user OAuth flow).
+Activation = backend app settings `QBO_CLIENT_ID_SECRET` / `QBO_CLIENT_SECRET_SECRET` /
+`QBO_REDIRECT_URI` (+ `QBO_ENVIRONMENT`) and migration 0093 (`qbo` provider enum).
 
 Provider/field definitions: `src/lib/integrations/company-providers.ts`.
 

@@ -16,6 +16,7 @@ import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { getRepositories } from "@/lib/data";
 import {
   connectAction,
+  connectQuickBooksAction,
   disconnectAction,
   grantGdapAction,
   refreshNowAction,
@@ -256,7 +257,7 @@ export default async function SettingsPage({
             provider={p}
             connection={companyByProvider.get(p.key) ?? null}
             saveAction={saveCredentialAction}
-            gdapAction={grantGdapAction}
+            gdapAction={p.key === "qbo" ? connectQuickBooksAction : grantGdapAction}
             disconnectAction={disconnectAction}
             pollAction={setPollIntervalAction}
             refreshAction={refreshNowAction}
