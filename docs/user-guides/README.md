@@ -26,6 +26,9 @@ right (scoped to your Entra permissions).
   Not started / In progress / Blocked / Complete; the drop saves the status.
 - [Delivery templates](delivery-templates.md): author the reusable provisioning
   playbooks a won opportunity is provisioned from (ADR-0081).
+- [Delivery board](delivery-board.md): see + steer provisioned delivery projects —
+  per-task ticket-fire state, schedule / fire-now controls, the contract gate, and
+  the Autotask drill-in (ADR-0080 §4/§7).
 
 ## Walkthroughs to write
 

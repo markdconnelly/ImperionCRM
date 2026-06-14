@@ -118,6 +118,8 @@ import type {
   TimeEntryRow,
   ReconciliationDay,
   DeliveryTemplateDetail,
+  DeliveryBoardProject,
+  TaskFireState,
   DirectoryGroupRow,
   DiscoveryCallDetail,
   DiscoveryCallRow,
@@ -1859,6 +1861,104 @@ export const postgresRepositories: Repositories = {
       } finally {
         client.release();
       }
+    },
+
+    async listProvisionedProjects(): Promise<DeliveryBoardProject[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProvisionedProjects();
+      try {
+        // One read: provisioning ⋈ project ⋈ account ⋈ template, plus every
+        // dispatching task's fire sidecar. We join task_ticket_fire (only
+        // dispatching tasks have a row) so the board shows exactly the steerable
+        // tasks; a project with no dispatching task still appears (LEFT JOIN).
+        const { rows } = await pool.query<{
+          project_id: string;
+          name: string;
+          account: string;
+          provision_state: string;
+          contract_state: string;
+          autotask_project_id: string | null;
+          template_name: string | null;
+          proj_last_error: string | null;
+          provisioned_created_at: Date;
+          task_id: string | null;
+          task_title: string | null;
+          task_due_at: Date | null;
+          fire_state: string | null;
+          scheduled_for: Date | null;
+          autotask_queue_id: string | null;
+          autotask_ticket_id: string | null;
+          task_last_error: string | null;
+        }>(
+          `SELECT pp.project_id, pr.name, a.name AS account,
+                  pp.provision_state, pp.contract_state,
+                  pp.autotask_project_id, dt.name AS template_name,
+                  pp.last_error AS proj_last_error, pp.created_at AS provisioned_created_at,
+                  t.id AS task_id, t.title AS task_title, t.due_at AS task_due_at,
+                  ttf.fire_state, ttf.scheduled_for, ttf.autotask_queue_id,
+                  ttf.autotask_ticket_id, ttf.last_error AS task_last_error
+           FROM project_provisioning pp
+           JOIN project pr ON pr.id = pp.project_id
+           JOIN account a ON a.id = pr.account_id
+           LEFT JOIN delivery_template dt ON dt.id = pp.delivery_template_id
+           LEFT JOIN task_ticket_fire ttf ON ttf.task_id IN (
+             SELECT id FROM task WHERE project_id = pp.project_id
+           )
+           LEFT JOIN task t ON t.id = ttf.task_id
+           ORDER BY pp.created_at DESC, pr.name, t.due_at NULLS LAST`,
+        );
+        // Fold the flat join into one entry per project with its tasks.
+        const byProject = new Map<string, DeliveryBoardProject>();
+        for (const r of rows) {
+          let proj = byProject.get(r.project_id);
+          if (!proj) {
+            proj = {
+              projectId: r.project_id,
+              name: r.name,
+              account: r.account,
+              provisionState: r.provision_state,
+              contractState: r.contract_state,
+              autotaskProjectId: r.autotask_project_id == null ? null : Number(r.autotask_project_id),
+              deliveryTemplateName: r.template_name,
+              lastError: r.proj_last_error,
+              tasks: [],
+            };
+            byProject.set(r.project_id, proj);
+          }
+          if (r.task_id) {
+            proj.tasks.push({
+              taskId: r.task_id,
+              title: r.task_title ?? "",
+              dueAt: fmtDate(r.task_due_at),
+              fire: {
+                fireState: (r.fire_state ?? "none") as TaskFireState,
+                scheduledFor: fmtDateTime(r.scheduled_for),
+                autotaskQueueId: r.autotask_queue_id == null ? null : Number(r.autotask_queue_id),
+                autotaskTicketId: r.autotask_ticket_id == null ? null : Number(r.autotask_ticket_id),
+                lastError: r.task_last_error,
+              },
+            });
+          }
+        }
+        return [...byProject.values()];
+      } catch {
+        return mockRepositories.crm.listProvisionedProjects();
+      }
+    },
+
+    async scheduleTaskFire(taskId: string, scheduledFor: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.scheduleTaskFire(taskId, scheduledFor);
+      // The ONLY mutation the web makes to a fire row (ADR-0042): set the intent.
+      // Guarded in SQL — a 'fired' row is never re-scheduled (idempotent retry of
+      // 'failed' is allowed). The executor reads 'scheduled' rows whose window has
+      // arrived; "fire now" is this with scheduled_for = now.
+      await pool.query(
+        `UPDATE task_ticket_fire
+            SET fire_state = 'scheduled', scheduled_for = $2::timestamptz
+          WHERE task_id = $1 AND fire_state <> 'fired'`,
+        [taskId, scheduledFor],
+      );
     },
 
     // ── Time tracking (ADR-0082, migrations 0085–0087) ───────────────────────

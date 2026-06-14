@@ -217,6 +217,47 @@ export interface TaskTicketFireRow {
   idempotencyKey: string; // 'imperioncrm-taskticket-{taskId}'
 }
 
+/** A task's ticket fire lifecycle (ADR-0080 §4/§7): none→scheduled→fired; failed on executor error. */
+export type TaskFireState = "none" | "scheduled" | "fired" | "failed";
+
+/**
+ * The delivery board's per-task read shape (ADR-0080 §4/§7, #568) — a native
+ * task plus its `task_ticket_fire` sidecar (null when the task doesn't dispatch
+ * a ticket). The board reads it, schedules a fire (none→scheduled), and surfaces
+ * the typed ticket id + last_error the executor stamps.
+ */
+export interface DeliveryBoardTask {
+  taskId: string;
+  title: string;
+  dueAt: string | null; // task due date (yyyy-mm-dd)
+  /** The fire sidecar, or null for a non-dispatching task. */
+  fire: {
+    fireState: TaskFireState;
+    scheduledFor: string | null; // JIT fire datetime; null = manual-only
+    autotaskQueueId: number | null; // queue the ticket lands on (env config)
+    autotaskTicketId: number | null; // the Autotask Ticket once fired (else null)
+    lastError: string | null; // executor error when fireState='failed'
+  } | null;
+}
+
+/**
+ * The delivery board's per-project read shape (ADR-0080 §4/§7, #568) — a
+ * provisioned project (its `project_provisioning` state + contract gate) with
+ * its dispatching tasks' fire-state. Read-only over the intent plane #566 wrote;
+ * the board steers firing by writing intent only (ADR-0042).
+ */
+export interface DeliveryBoardProject {
+  projectId: string;
+  name: string;
+  account: string;
+  provisionState: string; // pending|creating|created|failed
+  contractState: string; // none|sent|signed — executor refuses until 'signed'
+  autotaskProjectId: number | null; // the Autotask Project once created (else null)
+  deliveryTemplateName: string | null; // the template this was instantiated from
+  lastError: string | null; // executor provisioning error (when provision_state='failed')
+  tasks: DeliveryBoardTask[];
+}
+
 // ── Time tracking (ADR-0082, migrations 0085–0087) ──────────────────────────
 
 /** Timesheet lifecycle (ADR-0082): open→submitted(attest)→approved→payroll_approved→paid. */

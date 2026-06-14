@@ -274,6 +274,15 @@ export const mockRepositories: Repositories = {
       // pretend to persist (mirrors createProject / createDeliveryTemplate).
       throw new Error(NO_DB);
     },
+    // Delivery board (#568) — no demo provisioned projects, so the read returns
+    // empty (the board renders its empty state); the fire-intent write needs a
+    // database, so it fails honestly rather than pretend to persist.
+    async listProvisionedProjects() {
+      return [];
+    },
+    async scheduleTaskFire() {
+      throw new Error(NO_DB);
+    },
     // Time tracking (ADR-0082) — reads return empty (no demo timesheets); writes
     // need a database, so they fail honestly rather than pretend to persist.
     async listTimesheets() {

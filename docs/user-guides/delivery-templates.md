@@ -51,4 +51,7 @@ A delivery project is **not provisioned to Autotask until its contract is signed
 (hard gate, ADR-0081 §3 — via DocuSign, #318). Until DocuSign is wired the gate is
 inert and the provision control stays blocked with an "awaiting contract" state.
 
+Once a template is instantiated, steer the resulting delivery from the
+[Delivery board](delivery-board.md).
+
 See also [Project board](project-board.md) and [Task board](task-board.md).

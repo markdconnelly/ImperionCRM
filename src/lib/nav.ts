@@ -79,6 +79,9 @@ export const navTertiary: NavItem[] = [
 //    remains as the org-wide ledger but is unlinked)
 //  - knowledge / workflows / questions: moved under Settings → Tools & configuration
 export const navHidden: NavItem[] = [
+  // The delivery board (ADR-0080 §4/§7) — reached from the project board header;
+  // listed here so the top bar resolves its title (nested under /projects).
+  { key: "delivery", label: "Delivery board", icon: "PackageCheck", href: "/projects/delivery" },
   { key: "security", label: "Security", icon: "ShieldCheck", href: "/security" },
   { key: "leads", label: "Leads", icon: "UserPlus", href: "/leads" },
   { key: "consent", label: "Consent", icon: "FileCheck", href: "/consent" },
