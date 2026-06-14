@@ -34,6 +34,8 @@ export const navSecondary: NavItem[] = [
   // The Sales Queue read model (ADR-0052 §6) — a rep's open sales tasks + meetings.
   { key: "sales-activity", label: "Sales Activity", icon: "Activity", href: "/sales-activity" },
   { key: "tasks", label: "Tasks", icon: "ListChecks", href: "/tasks" },
+  // The employee's own weekly timesheet — enter time + attest (ADR-0082).
+  { key: "timesheets", label: "Timesheets", icon: "Clock", href: "/timesheets" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
