@@ -110,6 +110,15 @@
   .repos-note{margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--muted-2)}
   @media(max-width:640px){.repos{grid-template-columns:1fr}}
 
+  /* frontier / pioneering standards */
+  .frontier{margin-top:28px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .frontier .repo{display:flex;flex-direction:column}
+  .frontier .repo p{flex:1}
+  .frontier .role{color:var(--muted-2);font-size:12.5px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+  .frontier .deepdive{margin-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--cyan-bright);display:flex;align-items:center;gap:6px}
+  .st-ai{color:var(--ink);background:var(--indigo)}
+  @media(max-width:880px){.frontier{grid-template-columns:1fr}}
+
   /* medallion flow */
   .flow{margin-top:28px;display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
   .fnode{flex:1 1 0;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 15px;text-align:center}
@@ -212,6 +221,7 @@
       <a href="#architecture">architecture</a>
       <a href="#builders">build</a>
       <a href="#velocity">velocity</a>
+      <a href="#frontier">frontier</a>
       <a href="#status">status</a>
       <a class="gh" href="https://github.com/markdconnelly" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
@@ -523,6 +533,38 @@
     <div class="deferred reveal d2">
       <b>Switches not yet flipped</b>
       <span>Meta (Facebook/Instagram) ingestion is already live in production — posts, DMs, and lead forms flowing into the timeline. The remaining gaps are activation gates, not missing code: M365 ingestion and Graph subscriptions wait on activation settings, Teams reads on Microsoft's protected-API approval, real email sends on DNS verification of the sending domain, and the on-prem collectors on the server bringup. Every gated path says so honestly — nothing fakes success.</span>
+    </div>
+  </article>
+
+  <!-- 13 frontier / pioneering standards -->
+  <article class="chapter" id="frontier">
+    <div class="node reveal">13</div>
+    <div class="ch-eyebrow reveal">Betting on the frontier</div>
+    <h2 class="reveal d1">Pioneering by default — three open standards, three layers</h2>
+    <p class="say reveal d1">The point of this project was never just to ship fast; it was to <em>find the edge of what's possible</em>. So at each layer of the platform — data, AI, and now knowledge — Imperion adopted an emerging open standard early, before it was the safe consensus choice. Three layers, three bets, all in the open and auditable.</p>
+    <div class="frontier reveal d2">
+      <a class="repo" href="https://learn.microsoft.com/en-us/azure/databricks/lakehouse/medallion" target="_blank" rel="noopener noreferrer">
+        <div class="top"><span class="name">Medallion Lakehouse</span><span class="chip-status st-built">From day one</span></div>
+        <div class="role">The data layer</div>
+        <p>A spider's web of sources — M365, Autotask, IT Glue, Meta, Plaud and more — folded through <b>bronze</b> (raw, lossless) → <b>silver</b> (validated, unified) → <b>gold</b> (AI-ready), so quality climbs at every hop and the raw truth is never lost. The pattern Imperion was built on from the first commit.</p>
+        <div class="deepdive">Microsoft · Databricks &nbsp;→&nbsp; deep dive ↗</div>
+      </a>
+      <a class="repo" href="https://arxiv.org/abs/2603.16021" target="_blank" rel="noopener noreferrer">
+        <div class="top"><span class="name">Model Workspace Protocol</span><span class="chip-status st-ai">The AI layer</span></div>
+        <div class="role">The orchestrator</div>
+        <p>Agentic orchestration <em>as a filesystem</em>: numbered stage folders and plain-markdown context files let one orchestrator do what usually takes a fleet of agents — exactly the shape of Imperion's <span style="font-family:var(--mono);color:var(--cyan-bright)">icm/</span> workspaces. Version-controlled, human-reviewable at every stage.</p>
+        <div class="deepdive">Van Clief &amp; McDermott · arXiv 2603.16021 &nbsp;→&nbsp; deep dive ↗</div>
+      </a>
+      <a class="repo" href="https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing" target="_blank" rel="noopener noreferrer">
+        <div class="top"><span class="name">Open Knowledge Format</span><span class="chip-status st-dev">Today</span></div>
+        <div class="role">Knowledge artifacts</div>
+        <p>A vendor-neutral spec — <b>markdown + YAML frontmatter</b> — for the knowledge artifacts agents read and maintain. Schemas, metric definitions, runbooks and dossiers become portable, living documents instead of locked-in catalog rows. The standard we're adopting now as the gold layer turns into defined knowledge.</p>
+        <div class="deepdive">Google Cloud &nbsp;→&nbsp; deep dive ↗</div>
+      </a>
+    </div>
+    <div class="flow-note reveal d2">
+      <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+      <p><b>The through-line is the same as the rest of this page.</b> Bet on the frontier — but keep every bet open, standard, and auditable, so being early is an advantage instead of a liability.</p>
     </div>
   </article>
 
