@@ -350,3 +350,7 @@ MSP business workflows are ICM workspaces under `icm/` (factory, ADR-0061), exec
 ### Skills plugin (canon)
 
 Cross-repo agent skills live in `plugins/imperion-skills/` in this repo, served as the in-repo `imperion` marketplace (ADR-0060). One skill per micro-PR; an ADR that supersedes what a skill teaches updates the skill in the same PR. See `docs/agents/skills.md`.
+
+### Semantic layer (OKF canon)
+
+The curated *meaning* of the silver tier is the OKF bundle at `docs/database/semantic-layer/` (ADR-0086): one concept file per silver entity + `coverage-matrix.md` (every object → implementation archetype → IKF status → acting ICM workflow) + `index.md`, framed by `docs/architecture/data-and-automation-doctrine.md` (the eight archetypes). **This repo owns the bundle** (it owns the schema), so it is also where siblings propose updates. **Rule:** any PR that changes a silver entity's shape, source-of-record/authority, or join paths updates the matching concept file (at least its `timestamp`) **and** the `coverage-matrix.md` row in the SAME PR; a new silver entity gets a new concept file + a matrix row. PII-free, no secrets, no code knowledge (ADR-0086 conformance). Staleness is owned by pipeline ops — docs-gate CI (#535) now, the on-prem enrichment agent (LocalPipeline #175) later. The system-level CLAUDE.md §11 carries the binding cross-repo contract.
