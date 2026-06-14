@@ -97,6 +97,7 @@ import type {
   AdminTimesheetReview,
   AdminTimesheetRow,
   EmployeeMappingRow,
+  MileageRateRow,
   ExpenseReportRow,
   ExpenseReportDetail,
   ExpenseItemRow,
@@ -2310,12 +2311,13 @@ export const postgresRepositories: Repositories = {
           email: string;
           autotask_resource_id: string | null;
           quickbooks_vendor_id: string | null;
+          mileiq_user_id: string | null;
           resolved_at: Date | null;
           confirmed_by_name: string | null;
         }>(
           `SELECT u.id AS app_user_id,
                   u.display_name, u.email,
-                  ep.autotask_resource_id, ep.quickbooks_vendor_id,
+                  ep.autotask_resource_id, ep.quickbooks_vendor_id, ep.mileiq_user_id,
                   ep.mappings_resolved_at AS resolved_at,
                   COALESCE(cb.display_name, cb.email) AS confirmed_by_name
            FROM app_user u
@@ -2330,6 +2332,7 @@ export const postgresRepositories: Repositories = {
           autotaskResourceId:
             r.autotask_resource_id != null ? Number(r.autotask_resource_id) : null,
           quickbooksVendorId: r.quickbooks_vendor_id,
+          mileiqUserId: r.mileiq_user_id,
           confirmed: r.resolved_at != null,
           resolvedAt: r.resolved_at ? new Date(r.resolved_at).toISOString() : null,
           confirmedByName: r.confirmed_by_name,
@@ -2346,15 +2349,87 @@ export const postgresRepositories: Repositories = {
       // DEFAULT '1099' on insert; this write never touches comp data. Stamp who/when.
       await pool.query(
         `INSERT INTO employee_profile
-           (app_user_id, autotask_resource_id, quickbooks_vendor_id,
+           (app_user_id, autotask_resource_id, quickbooks_vendor_id, mileiq_user_id,
             mappings_resolved_at, mappings_confirmed_by)
-         VALUES ($1, $2, $3, now(), $4)
+         VALUES ($1, $2, $3, $4, now(), $5)
          ON CONFLICT (app_user_id) DO UPDATE
            SET autotask_resource_id  = EXCLUDED.autotask_resource_id,
                quickbooks_vendor_id  = EXCLUDED.quickbooks_vendor_id,
+               mileiq_user_id        = EXCLUDED.mileiq_user_id,
                mappings_resolved_at  = now(),
                mappings_confirmed_by = EXCLUDED.mappings_confirmed_by`,
-        [input.appUserId, input.autotaskResourceId, input.quickbooksVendorId, confirmedBy],
+        [
+          input.appUserId,
+          input.autotaskResourceId,
+          input.quickbooksVendorId,
+          input.mileiqUserId,
+          confirmedBy,
+        ],
+      );
+    },
+
+    // Mileage rate — effective-dated SYSTEM-wide comp figure (ADR-0083, #490). COMP DATA:
+    // gated exactly like pay_rate; the caller (the payroll-gated mileage-rate admin) holds
+    // `expense:finance-approve`. The per-employee mileage $ is derived by the backend.
+    async listMileageRates(): Promise<MileageRateRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listMileageRates();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          effective_from: string;
+          rate: string;
+          source: string;
+          note: string | null;
+          created_at: Date;
+          created_by_name: string | null;
+          is_current: boolean;
+        }>(
+          // The "current" rate is the latest effective_from on or before today — the one a
+          // drive dated today reconciles against. Flag exactly that row for the admin.
+          `SELECT mr.id,
+                  to_char(mr.effective_from, 'YYYY-MM-DD') AS effective_from,
+                  mr.rate, mr.source, mr.note, mr.created_at,
+                  COALESCE(cb.display_name, cb.email) AS created_by_name,
+                  (mr.effective_from = (
+                     SELECT max(effective_from) FROM mileage_rate
+                      WHERE effective_from <= CURRENT_DATE
+                  )) AS is_current
+             FROM mileage_rate mr
+             LEFT JOIN app_user cb ON cb.id = mr.created_by
+            ORDER BY mr.effective_from DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          effectiveFrom: r.effective_from,
+          rate: Number(r.rate),
+          source: r.source as MileageRateRow["source"],
+          note: r.note,
+          createdAt: new Date(r.created_at).toISOString(),
+          createdByName: r.created_by_name,
+          isCurrent: r.is_current === true,
+        }));
+      } catch {
+        return mockRepositories.crm.listMileageRates();
+      }
+    },
+
+    async setMileageRate(input, createdBy): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setMileageRate(input, createdBy);
+      // Append a system-override rate. source is fixed to 'system_override' (the MileIQ
+      // suggested rate is written elsewhere). Upsert on the UNIQUE effective_from so
+      // re-setting the same date overwrites rather than failing.
+      await pool.query(
+        `INSERT INTO mileage_rate (effective_from, rate, source, note, created_by)
+         VALUES ($1, $2, 'system_override', $3, $4)
+         ON CONFLICT (effective_from) DO UPDATE
+           SET rate       = EXCLUDED.rate,
+               source     = 'system_override',
+               note       = EXCLUDED.note,
+               created_by = EXCLUDED.created_by,
+               created_at = now()`,
+        [input.effectiveFrom, input.rate, input.note, createdBy],
       );
     },
 

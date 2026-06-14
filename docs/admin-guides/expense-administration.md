@@ -113,3 +113,56 @@ here.
   and shows which category (if any) each is already mapped to; it never edits them.
 - The mileage rate is comp data and lives behind a separate payroll-gated surface (#490);
   it is never read or shown here.
+
+---
+
+# Mileage rate (payroll-gated comp admin)
+
+The **Mileage Rate** surface (`/expenses/mileage-rate`, ADR-0083, #490) sets the
+effective-dated, **system-wide** mileage reimbursement rate (`mileage_rate`). It is the
+expense analog of the **Pay Rate** comp store and is gated **identically**.
+
+## Access — comp-gated, exactly like Pay Rate
+
+Visible to **finance or admin** only (`canManageMileageRate`). The override action enforces
+the `expense:mileage-rate` capability server-side (finance∨admin — fail-closed). The rate is
+**comp data**: it is **never** visible to employee, agent, or client roles. The employee
+entry GUI never reads the rate — employees see only their miles and MileIQ's own suggested
+dollar figure. The per-employee mileage **amount is derived by the backend** (the sole comp
+reader): for each drive it multiplies the miles by the rate **in force on the drive date**.
+
+## Setting a rate
+
+The rate is **effective-dated**, so amounts always recompute against the rate that applied
+on a drive's date:
+
+- The **Rate in force today** card shows the rate a drive dated today reconciles against
+  (the latest effective date on or before today).
+- The **MileIQ suggested rate** card shows MileIQ's own suggestion when the integration is
+  connected (a `mileiq_suggested` row written by the pipeline). Until MileIQ creds land
+  (#495) it degrades to "not yet available" — set the rate manually instead.
+- **Set a system override** appends a new effective-dated row (source `system_override`).
+  Setting the same effective date again overwrites it. History is preserved so back-period
+  reconciliation uses the correct historical rate.
+
+## Scope notes
+
+- The app never derives a per-employee dollar amount on this surface — it only stores the
+  system rate. The dollar math is the backend's (ADR-0083).
+- This surface is the **only** place the mileage rate is read or written in the front end;
+  no broadly-granted read model or view exposes it.
+
+---
+
+# Employee mapping — MileIQ identity (extends #468)
+
+The **Employee Mapping** surface (`/timesheets/mappings`, ADR-0082/0083, #468/#490) — admin
+one-time setup — now carries a **MileIQ user id** column alongside the Autotask Resource and
+QuickBooks vendor ids. Email is the consistent join key across all four systems
+(app_user ↔ Autotask Resource ↔ QuickBooks vendor ↔ **MileIQ user**); the MileIQ id lets the
+MileIQ drive pull / silver merge attribute a drive to the right employee.
+
+The column is a **mapping** column, not comp — it lives on `employee_profile` beside the
+other ids and is the only MileIQ field the pipelines may read; the mileage **rate** stays on
+the separate payroll-gated surface above. Automatic email-based resolution from MileIQ (like
+Autotask / QuickBooks) is a backend enhancement; until it lands the admin enters the id here.

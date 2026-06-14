@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   canManageCampaigns,
+  canManageMileageRate,
   canManageProjects,
   canManageSales,
   canSeeAgentPages,
@@ -119,5 +120,18 @@ describe("predicates", () => {
         expect(canSeeFeature(key, [r])).toBe(false);
       }
     }
+  });
+
+  test("mileage rate is comp-gated to finance∨admin only (ADR-0083 #490)", () => {
+    // Mirrors Pay Rate's comp gate — finance and admin only, never employee-tier roles.
+    expect(canManageMileageRate(["admin"])).toBe(true);
+    expect(canManageMileageRate(["finance"])).toBe(true);
+    for (const r of ["sales", "project_manager", "support"] as const) {
+      expect(canManageMileageRate([r])).toBe(false);
+    }
+    expect(canManageMileageRate(undefined)).toBe(false);
+    // The nav guard hides the surface for the same roles.
+    expect(canSeeFeature("expense-mileage-rate", ["finance"])).toBe(true);
+    expect(canSeeFeature("expense-mileage-rate", ["support"])).toBe(false);
   });
 });

@@ -5,12 +5,13 @@ import { canManageEmployeeMappings } from "@/lib/auth/roles";
 import { confirmMappingAction } from "./actions";
 
 /**
- * Employee Mapping (ADR-0082, #468) — admin one-time setup. Lists every employee
- * with its Autotask Resource / QuickBooks vendor mapping; the admin confirms the
- * resolved ids per row. Email is the consistent join key across all three systems
- * (shown read-only). Admin-only (`time:map`). The Autotask/QuickBooks list pull +
- * email auto-match is a backend enhancement — until it lands, the admin enters the
- * resolved ids here. Mapping cols only — this surface never touches comp data.
+ * Employee Mapping (ADR-0082/0083, #468/#490) — admin one-time setup. Lists every
+ * employee with its Autotask Resource / QuickBooks vendor / MileIQ user mapping; the
+ * admin confirms the resolved ids per row. Email is the consistent join key across all
+ * four systems (shown read-only). Admin-only (`time:map`). The Autotask/QuickBooks/MileIQ
+ * list pull + email auto-match is a backend enhancement — until it lands, the admin enters
+ * the resolved ids here. Mapping cols only — this surface never touches comp data (the
+ * mileage RATE is a separate payroll-gated surface, #490).
  */
 export default async function EmployeeMappingPage() {
   const roles = await getSessionRoles();
@@ -38,11 +39,12 @@ export default async function EmployeeMappingPage() {
       />
 
       <div className="rounded-lg border border-border bg-panel p-4 text-xs text-dim">
-        Email is the join key across the CRM, Autotask, and QuickBooks Online. Enter the
-        employee&apos;s Autotask <span className="text-text">Resource id</span> (attributes
-        Ticket Time Entries) and QuickBooks <span className="text-text">vendor id</span>
-        (matches payment), then Confirm. Automatic email-based resolution from Autotask /
-        QuickBooks arrives with the backend integration.
+        Email is the join key across the CRM, Autotask, QuickBooks Online, and MileIQ.
+        Enter the employee&apos;s Autotask <span className="text-text">Resource id</span>
+        (attributes Ticket Time Entries), QuickBooks <span className="text-text">vendor id</span>
+        (matches payment), and MileIQ <span className="text-text">user id</span> (attributes
+        mileage drives), then Confirm. Automatic email-based resolution from Autotask /
+        QuickBooks / MileIQ arrives with the backend integration.
       </div>
 
       {rows.length === 0 ? (
@@ -58,6 +60,7 @@ export default async function EmployeeMappingPage() {
                 <th className="px-4 py-2 font-medium">Email (join key)</th>
                 <th className="px-4 py-2 font-medium">Autotask Resource</th>
                 <th className="px-4 py-2 font-medium">QuickBooks vendor</th>
+                <th className="px-4 py-2 font-medium">MileIQ user</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2" />
               </tr>
@@ -67,7 +70,7 @@ export default async function EmployeeMappingPage() {
                 <tr key={r.appUserId} className="bg-panel align-middle">
                   <td className="px-4 py-2 text-text">{r.displayName}</td>
                   <td className="px-4 py-2 text-dim">{r.email}</td>
-                  <td className="px-4 py-2" colSpan={4}>
+                  <td className="px-4 py-2" colSpan={5}>
                     <form
                       action={confirmMappingAction}
                       className="flex flex-wrap items-center gap-2"
@@ -85,6 +88,13 @@ export default async function EmployeeMappingPage() {
                         name="quickbooksVendorId"
                         defaultValue={r.quickbooksVendorId ?? ""}
                         placeholder="Vendor id"
+                        className="w-40 rounded-md border border-border bg-panel-2 px-2 py-1 text-text outline-none focus:border-accent"
+                      />
+                      <input
+                        type="text"
+                        name="mileiqUserId"
+                        defaultValue={r.mileiqUserId ?? ""}
+                        placeholder="MileIQ user id"
                         className="w-40 rounded-md border border-border bg-panel-2 px-2 py-1 text-text outline-none focus:border-accent"
                       />
                       <span

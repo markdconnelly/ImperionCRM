@@ -16,6 +16,7 @@ const EXPECTED: Record<Exclude<AppRole, "admin">, Capability[]> = {
     "time:payroll-approve",
     "expense:write",
     "expense:finance-approve",
+    "expense:mileage-rate",
   ],
   sales: ["crm:write", "sales:write", "tickets:write", "comms:write", "time:write", "expense:write"],
   project_manager: ["crm:write", "delivery:write", "tickets:write", "time:write", "expense:write"],

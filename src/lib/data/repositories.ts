@@ -56,6 +56,8 @@ import type {
   AdminTimesheetReview,
   AdminTimesheetRow,
   EmployeeMappingRow,
+  MileageRateRow,
+  MileageRateInput,
   ExpenseReportRow,
   ExpenseReportDetail,
   AdminExpenseRow,
@@ -301,11 +303,12 @@ export interface ExpenseItemInput {
   receiptId: string | null; // a receipt_attachment id, when uploaded
 }
 
-/** Admin mapping confirm payload (ADR-0082, #468). A blank id clears that mapping. */
+/** Admin mapping confirm payload (ADR-0082/0083, #468/#490). A blank id clears that mapping. */
 export interface EmployeeMappingInput {
   appUserId: string;
   autotaskResourceId: number | null; // Autotask Resource id (numeric); null clears it
   quickbooksVendorId: string | null; // QuickBooks vendor/employee id; null clears it
+  mileiqUserId: string | null; // MileIQ user id; null clears it (ADR-0083, #490)
 }
 
 /**
@@ -520,8 +523,22 @@ export interface CrmRepository {
    *  no comp data. */
   listEmployeeMappings(): Promise<EmployeeMappingRow[]>;
   /** Confirm an employee's mapping (admin): upsert the resolved Autotask Resource /
-   *  QuickBooks vendor ids onto `employee_profile` and stamp who/when. Idempotent. */
+   *  QuickBooks vendor / MileIQ user ids onto `employee_profile` and stamp who/when.
+   *  Idempotent. Mapping cols + audit only — never comp data. */
   confirmEmployeeMapping(input: EmployeeMappingInput, confirmedBy: string): Promise<void>;
+
+  // Mileage rate — the effective-dated SYSTEM-wide comp figure (ADR-0083, #490).
+  // COMP DATA: gated exactly like pay_rate — these methods run ONLY behind the
+  // finance∨admin gate (`expense:finance-approve`); the per-employee mileage $ is
+  // derived by the backend (the sole comp reader), never on a broadly-granted surface.
+  /** Every system mileage rate, newest effective date first, with who set it; the row in
+   *  force as of today is flagged `isCurrent`. COMP DATA — caller gates finance∨admin. */
+  listMileageRates(): Promise<MileageRateRow[]>;
+  /** Append a system-override mileage rate effective on a date (ADR-0083, #490): insert a
+   *  `mileage_rate` row (source='system_override') stamped with who set it, upserting on the
+   *  UNIQUE effective_from so re-setting the same date overwrites. COMP DATA — caller gates
+   *  finance∨admin. The app never derives the per-employee amount here. */
+  setMileageRate(input: MileageRateInput, createdBy: string): Promise<void>;
 
   // Expense tracking — employee monthly expense reports (ADR-0083, migrations 0088–0090)
   /** An employee's expense reports, most-recent month first (history/list). */

@@ -664,6 +664,7 @@ describe("listEmployeeMappings (admin mapping UI, ADR-0082 #468)", () => {
           email: "dana@imperion.example",
           autotask_resource_id: "29384", // numeric comes back as string from pg
           quickbooks_vendor_id: "QB-77",
+          mileiq_user_id: "MQ-501",
           resolved_at: "2026-06-13T10:00:00.000Z",
           confirmed_by_name: "Admin One",
         },
@@ -673,6 +674,7 @@ describe("listEmployeeMappings (admin mapping UI, ADR-0082 #468)", () => {
           email: "sam@imperion.example",
           autotask_resource_id: null,
           quickbooks_vendor_id: null,
+          mileiq_user_id: null,
           resolved_at: null,
           confirmed_by_name: null,
         },
@@ -682,14 +684,18 @@ describe("listEmployeeMappings (admin mapping UI, ADR-0082 #468)", () => {
     const sql = query.mock.calls[0][0] as string;
     expect(sql).toContain("FROM app_user u");
     expect(sql).toContain("LEFT JOIN employee_profile ep ON ep.app_user_id = u.id");
-    // Never select comp data on this surface.
+    // The MileIQ mapping column is selected (ADR-0083 #490) — a mapping col, not comp.
+    expect(sql).toContain("ep.mileiq_user_id");
+    // Never select comp data on this surface (mileage RATE is a separate gated surface).
     expect(sql).not.toContain("classification");
     expect(sql).not.toContain("pay_rate");
+    expect(sql).not.toContain("mileage_rate");
     expect(rows[0]).toMatchObject({
       appUserId: "emp-1",
       displayName: "Dana Tech",
       autotaskResourceId: 29384,
       quickbooksVendorId: "QB-77",
+      mileiqUserId: "MQ-501",
       confirmed: true,
       confirmedByName: "Admin One",
     });
@@ -697,32 +703,40 @@ describe("listEmployeeMappings (admin mapping UI, ADR-0082 #468)", () => {
       appUserId: "emp-2",
       displayName: "sam@imperion.example", // email fallback
       autotaskResourceId: null,
+      mileiqUserId: null,
       confirmed: false,
     });
   });
 });
 
-describe("confirmEmployeeMapping (admin upsert, ADR-0082 #468)", () => {
-  it("upserts mapping cols + stamps who/when, never touching comp data", async () => {
+describe("confirmEmployeeMapping (admin upsert, ADR-0082/0083 #468/#490)", () => {
+  it("upserts mapping cols (incl. MileIQ) + stamps who/when, never touching comp data", async () => {
     await crm.confirmEmployeeMapping(
-      { appUserId: "emp-1", autotaskResourceId: 29384, quickbooksVendorId: "QB-77" },
+      {
+        appUserId: "emp-1",
+        autotaskResourceId: 29384,
+        quickbooksVendorId: "QB-77",
+        mileiqUserId: "MQ-501",
+      },
       "admin-1",
     );
     const sql = query.mock.calls[0][0] as string;
     const params = query.mock.calls[0][1] as unknown[];
     expect(sql).toContain("INSERT INTO employee_profile");
     expect(sql).toContain("ON CONFLICT (app_user_id) DO UPDATE");
+    expect(sql).toContain("mileiq_user_id        = EXCLUDED.mileiq_user_id");
     expect(sql).toContain("mappings_resolved_at  = now()");
     expect(sql).not.toContain("classification");
-    expect(params).toEqual(["emp-1", 29384, "QB-77", "admin-1"]);
+    expect(sql).not.toContain("pay_rate");
+    expect(params).toEqual(["emp-1", 29384, "QB-77", "MQ-501", "admin-1"]);
   });
 
   it("passes nulls through to clear a mapping", async () => {
     await crm.confirmEmployeeMapping(
-      { appUserId: "emp-2", autotaskResourceId: null, quickbooksVendorId: null },
+      { appUserId: "emp-2", autotaskResourceId: null, quickbooksVendorId: null, mileiqUserId: null },
       "admin-1",
     );
     const params = query.mock.calls[0][1] as unknown[];
-    expect(params).toEqual(["emp-2", null, null, "admin-1"]);
+    expect(params).toEqual(["emp-2", null, null, null, "admin-1"]);
   });
 });

@@ -36,6 +36,7 @@ export const CAPABILITIES = [
   "expense:approve", // admin correctness approval of a submitted report (ADR-0083; admin-only)
   "expense:finance-approve", // CFO finance approval + confirm the QuickBooks-matched Reimbursed state (ADR-0083; finance∨admin)
   "expense:category-map", // admin maps the synced QuickBooks chart of accounts → clean website categories (ADR-0083; admin-only)
+  "expense:mileage-rate", // set the effective-dated system mileage rate — COMP DATA, gated like Pay Rate (ADR-0083; finance∨admin)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -84,6 +85,11 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   // synced QuickBooks chart of accounts → clean website categories; never writes QuickBooks.
   // Mirrors time:map (the employee-mapping admin setup).
   "expense:category-map": [],
+  // The mileage-rate gate (ADR-0083, #490) — COMP DATA, gated EXACTLY like Pay Rate
+  // (the payroll comp gate): finance∨admin. The effective-dated system mileage rate is
+  // comp-sensitive (the backend derives each employee's mileage $ from it), so it is never
+  // visible to employee/agent/client roles. Mirrors time:payroll-approve / expense:finance-approve.
+  "expense:mileage-rate": ["finance"],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */
