@@ -136,6 +136,10 @@ instead of buried in prompts. They compose — data flows up the lake, OKF descr
 the workspace-shaped orchestrator consumes it — but they evolve independently, each under
 its own ADRs.
 
+For the **per-object implementation taxonomy** — the eight archetypes every data object
+falls into and a master object → archetype → IKF → ICM map — see
+[data-and-automation-doctrine](data-and-automation-doctrine.md).
+
 ## Governing decisions (single source of truth)
 
 Data lake: [ADR-0039](../decision-records/ADR-0039-per-source-bronze-tables.md) ·
