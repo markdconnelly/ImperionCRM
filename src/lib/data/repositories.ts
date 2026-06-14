@@ -308,6 +308,62 @@ export interface EmployeeMappingInput {
   quickbooksVendorId: string | null; // QuickBooks vendor/employee id; null clears it
 }
 
+/**
+ * One synced QuickBooks chart-of-accounts row (ADR-0083, `qbo_expense_account`) — the
+ * category system of record, read-only. The local-pipeline QuickBooks bulk pull (LP #168)
+ * populates it; the app NEVER writes QuickBooks. The admin maps each to a clean
+ * website-facing `expense_category`. `mappedToKey` is the category key already linked to
+ * this account (null = unmapped), so the console can show what is/isn't yet mapped.
+ */
+export interface QboExpenseAccountRow {
+  qboAccountId: string; // QuickBooks Account.Id — the stable natural key + FK target
+  name: string;
+  fullyQualifiedName: string | null; // QBO "Parent:Child" display path
+  accountType: string | null;
+  active: boolean; // QBO Active flag
+  mappedToKey: string | null; // expense_category.key already hard-linked here, or null
+}
+
+/**
+ * One website-facing Expense Category as the mapping admin sees it (ADR-0083, #489) — the
+ * FULL config row, unlike the comp-free `ExpenseCategoryRow` the entry GUI consumes. Carries
+ * the QuickBooks hard link, caps/threshold, billable default, the Autotask category id,
+ * visibility, system/active flags, and the audit of who last mapped it. Comp-free.
+ */
+export interface ExpenseCategoryAdminRow {
+  id: string;
+  key: string;
+  displayName: string;
+  qboAccountId: string | null; // hard link to qbo_expense_account; null = until-mapped placeholder
+  qboAccountName: string | null; // resolved QBO account display name (read convenience)
+  hardCap: number | null;
+  softThreshold: number | null;
+  billableDefault: boolean;
+  autotaskExpenseCategoryId: number | null;
+  isSystem: boolean; // Mileage — rate-driven, receipt-exempt, mapping-exempt
+  isUserVisible: boolean;
+  isActive: boolean; // inactive-until-mapped (CHECK); active requires a QBO link (or system)
+  mappedByName: string | null; // who last mapped/configured it (audit)
+}
+
+/**
+ * Admin category-mapping write payload (ADR-0083, #489). The admin maps a clean category
+ * onto a QuickBooks account and sets its config. A non-system category goes active only
+ * when `qboAccountId` is set (the DB CHECK also enforces the hard link). The app NEVER
+ * writes QuickBooks — `qboAccountId` must reference an already-synced account.
+ */
+export interface ExpenseCategoryMappingInput {
+  id: string;
+  displayName: string;
+  qboAccountId: string | null; // null clears the link (forces inactive on a non-system row)
+  hardCap: number | null;
+  softThreshold: number | null;
+  billableDefault: boolean;
+  autotaskExpenseCategoryId: number | null;
+  isUserVisible: boolean;
+  isActive: boolean; // requested active state; ignored (forced false) when unmapped & non-system
+}
+
 export interface DashboardRepository {
   getKpis(): Promise<Kpi[]>;
   getPipeline(): Promise<PipelineColumn[]>;
@@ -528,6 +584,19 @@ export interface CrmRepository {
   /** The visible, mapped (active) out-of-pocket categories the entry GUI offers, by
    *  display name. Excludes the rate-driven system Mileage category. */
   listExpenseCategories(): Promise<ExpenseCategoryRow[]>;
+  /** ADMIN view: EVERY expense category (incl. until-mapped placeholders, hidden, inactive,
+   *  and the system Mileage row) with its full config + QuickBooks link, for the mapping
+   *  console (#489). Comp-free. Distinct from `listExpenseCategories` (entry-GUI subset). */
+  listExpenseCategoriesAdmin(): Promise<ExpenseCategoryAdminRow[]>;
+  /** ADMIN view: the synced QuickBooks chart-of-accounts (read-only `qbo_expense_account`)
+   *  the mapping console offers as link targets, each annotated with the category key
+   *  already mapped to it (#489). Empty until the local-pipeline QuickBooks pull runs (LP #168). */
+  listQboExpenseAccounts(): Promise<QboExpenseAccountRow[]>;
+  /** ADMIN write: map/configure one expense category (#489) — set its QuickBooks link,
+   *  caps/threshold, billable default, Autotask category id, visibility, active state, and
+   *  stamp who mapped it. Forces inactive when a non-system category is left unmapped (the
+   *  DB CHECK also enforces it). NEVER writes QuickBooks. Refuses to edit the system row's link. */
+  updateExpenseCategoryMapping(input: ExpenseCategoryMappingInput, mappedBy: string): Promise<void>;
   /** The employee's business-classified MileIQ drives for a calendar month (read-only
    *  mileage feed). Comp-free — miles + MileIQ's own suggested $, never the rate. */
   listMileiqDrives(employeeId: string, year: number, month: number): Promise<MileiqDriveRow[]>;
