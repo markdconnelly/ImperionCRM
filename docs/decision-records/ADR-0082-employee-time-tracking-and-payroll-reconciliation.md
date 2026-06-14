@@ -1,5 +1,10 @@
 # ADR-0082: Employee time tracking — website-authoritative timesheets, Autotask documentation, QuickBooks payment reconciliation
 
+> **Amended by [ADR-0085](ADR-0085-qbo-payment-fact-purchase-simple-start.md) (2026-06-14):**
+> the QuickBooks payment fact for Reconciliation #2 is the **`Purchase`** entity (bronze
+> `qbo_purchases`, migration 0092), not `BillPayment` — Imperion's QBO is **Simple Start**
+> (no Accounts Payable). Matching logic and the `qb_vendor_id` payee link are unchanged.
+
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema + GUI + read-side reconciliation render); backend (Autotask Time Ticket write + QuickBooks read + reconciliation process); pipeline (bronze→silver merge); local-pipeline (scheduled Autotask TimeEntry + QuickBooks bulk pull) |
