@@ -344,6 +344,27 @@ export const mockRepositories: Repositories = {
     async reopenExpenseReport() {
       throw new Error(NO_DB);
     },
+    async listAllExpenseReports() {
+      return [];
+    },
+    async getExpenseReportById() {
+      return null;
+    },
+    async getExpenseReimbursementMatch() {
+      return null;
+    },
+    async approveExpenseReport() {
+      throw new Error(NO_DB);
+    },
+    async financeApproveExpenseReport() {
+      throw new Error(NO_DB);
+    },
+    async markExpenseReportReimbursed() {
+      throw new Error(NO_DB);
+    },
+    async rejectExpenseReport() {
+      throw new Error(NO_DB);
+    },
     async listOnboarding() {
       // Acme is instantiated from the standard playbook (ADR-0037): earlier
       // phases mostly checked off so the derived R/Y/G + checklist render.

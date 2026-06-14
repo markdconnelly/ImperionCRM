@@ -434,6 +434,60 @@ export interface ExpenseReportDetail extends ExpenseReportRow {
   items: ExpenseItemRow[];
 }
 
+/** Reimbursement reconciliation verdict (ADR-0083, `expense_reconciliation`). */
+export type ExpenseReconciliationVerdict = "pending" | "matched" | "mismatch";
+
+/**
+ * One report on the unified admin lifecycle surface (ADR-0083, mirrors #539) —
+ * EVERY report across EVERY state and employee, so admins/finance follow the whole
+ * lifecycle (open → submitted → approved → finance_approved → reimbursed) in one
+ * filterable, sortable table. Comp-free: NEVER carries pay/comp data — the mileage
+ * rate and reimbursement math live in the backend alone (the sole comp reader).
+ */
+export interface AdminExpenseRow {
+  id: string;
+  employeeId: string;
+  employeeName: string; // app_user display name (falls back to email)
+  periodYear: number;
+  periodMonth: number; // 1–12
+  state: ExpenseReportState;
+  itemCount: number;
+  totalAmount: number; // sum of all item amounts (USD)
+  reimbursableAmount: number; // sum of reimbursable item amounts (USD)
+  attestedAt: string | null; // ISO; set when submitted
+  financeApprovedAt: string | null; // ISO; set when finance-approved
+  reimbursedAt: string | null; // ISO; set when matched to the QuickBooks payment
+  qbPaymentRef: string | null; // matched QuickBooks Purchase id (read-only SoR)
+}
+
+/**
+ * The QuickBooks payment match the backend Reimbursement Reconciliation (BE #111)
+ * suggests for one report (ADR-0083). Comp-free — only the matched payment fact
+ * (employee + month + amount within tolerance), read from `expense_reconciliation`.
+ * `matched` is false (refs null) when no QuickBooks Purchase lines up, the recon
+ * hasn't run, or QBO isn't live in this environment.
+ */
+export interface ExpenseReimbursementMatch {
+  expenseReportId: string;
+  matched: boolean;
+  qbPaymentRef: string | null;
+  reimbursedAt: string | null; // ISO date of the matched payment, when found
+  expectedReimbursableTotal: number | null; // recon's expected total (USD)
+  qbPaymentAmount: number | null; // matched QuickBooks payment amount (USD)
+  verdict: ExpenseReconciliationVerdict;
+  detail: string; // human-readable explanation of the match (or why none)
+}
+
+/**
+ * Admin review of one report (ADR-0083, mirrors #477): the live detail plus the
+ * employee's immutable **attested original** (`expense_report.attested_snapshot`),
+ * so the admin surface can diff corrections against what was attested. `null` for
+ * reports attested before snapshots existed / never attested.
+ */
+export interface AdminExpenseReview extends ExpenseReportDetail {
+  attestedSnapshot: ExpenseItemRow[] | null;
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 
