@@ -268,6 +268,12 @@ export const mockRepositories: Repositories = {
     async deleteDeliveryTemplate() {
       throw new Error(NO_DB);
     },
+    async instantiateDeliveryTemplate() {
+      // Instantiation writes a project + milestones/tasks + provisioning/fire rows
+      // in one transaction — it needs a database, so it fails honestly rather than
+      // pretend to persist (mirrors createProject / createDeliveryTemplate).
+      throw new Error(NO_DB);
+    },
     // Time tracking (ADR-0082) — reads return empty (no demo timesheets); writes
     // need a database, so they fail honestly rather than pretend to persist.
     async listTimesheets() {

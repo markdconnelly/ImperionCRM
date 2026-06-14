@@ -186,6 +186,37 @@ export interface DeliveryTemplateDetail {
   phases: DeliveryTemplatePhase[];
 }
 
+/**
+ * A project_provisioning row (ADR-0080 §4, migration 0082 + 0084 gate) — the 1:1
+ * binding of a native delivery project to its Autotask Project, owning the
+ * provisioning idempotency + the hard contract gate. Read-shape; the executor
+ * advances provision_state and stamps the Autotask ids.
+ */
+export interface ProjectProvisioningRow {
+  projectId: string;
+  sourceKqmQuoteId: string | null; // the won KQM quote that triggered provisioning
+  autotaskOpportunityId: number | null; // the won→Autotask seam the quote carried
+  autotaskProjectId: number | null; // the Autotask Project once created (else null)
+  provisionState: string; // pending|creating|created|failed
+  contractState: string; // none|sent|signed — executor refuses until 'signed'
+  idempotencyKey: string; // 'imperioncrm-project-{projectId}'
+  deliveryTemplateId: string | null; // the template this was instantiated from
+}
+
+/**
+ * A task_ticket_fire row (ADR-0080 §4/§7, migration 0082) — per-task JIT
+ * project-queue ticket fire-state, 1:1 with a dispatching task. Read-shape; the
+ * board schedules (none→scheduled) and the executor fires (→fired).
+ */
+export interface TaskTicketFireRow {
+  taskId: string;
+  fireState: string; // none|scheduled|fired|failed
+  scheduledFor: string | null; // JIT fire date (task start − lead days); null = manual-only
+  autotaskQueueId: number | null; // the queue the ticket lands on (env config)
+  autotaskTicketId: number | null; // the Autotask Ticket once fired (else null)
+  idempotencyKey: string; // 'imperioncrm-taskticket-{taskId}'
+}
+
 // ── Time tracking (ADR-0082, migrations 0085–0087) ──────────────────────────
 
 /** Timesheet lifecycle (ADR-0082): open→submitted(attest)→approved→payroll_approved→paid. */

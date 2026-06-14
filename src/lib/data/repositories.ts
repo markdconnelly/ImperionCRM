@@ -253,6 +253,27 @@ export interface DeliveryTemplateInput {
   phases: DeliveryTemplatePhaseInput[];
 }
 
+/**
+ * Instantiate a delivery template into the native intent plane (ADR-0080 §4,
+ * ADR-0081 §3, #566). In one transaction this creates the native project (+ a
+ * milestone per phase, a task per template task), a `project_provisioning` row
+ * (pending, contract gate 'none'), and a `task_ticket_fire` row for each
+ * dispatching task — the work the backend executor then picks up.
+ */
+export interface DeliveryInstantiationInput {
+  accountId: string;
+  /** New project name. */
+  name: string;
+  /** FK into project_type (table, not enum — ADR-0052). */
+  projectTypeId: string;
+  /** The delivery template whose phase/task tree is instantiated. */
+  deliveryTemplateId: string;
+  /** Project start date (yyyy-mm-dd) — the anchor for all phase/task date math. */
+  startDate: string;
+  /** The won opportunity that triggered this, or null. Seeds the won→Autotask seam. */
+  opportunityId: string | null;
+}
+
 /** A new/edited attendance Time Entry (ADR-0082). Duration is derived from start/end. */
 export interface TimeEntryInput {
   timesheetId: string;
@@ -456,6 +477,13 @@ export interface CrmRepository {
   createDeliveryTemplate(input: DeliveryTemplateInput): Promise<string>;
   /** Delete a template (CASCADE drops its phases/tasks); provisioning refs SET NULL. */
   deleteDeliveryTemplate(id: string): Promise<void>;
+  /**
+   * Instantiate a delivery template into the native intent plane (ADR-0080 §4,
+   * #566): create the project + milestones + tasks, the `project_provisioning`
+   * row (pending, contract gate 'none'), and a `task_ticket_fire` row per
+   * dispatching task — all in one transaction. Returns the new project id.
+   */
+  instantiateDeliveryTemplate(input: DeliveryInstantiationInput): Promise<string>;
 
   // Time tracking — employee weekly timesheets (ADR-0082, migrations 0085–0087)
   /** An employee's timesheets, most-recent week first (history/list). */
