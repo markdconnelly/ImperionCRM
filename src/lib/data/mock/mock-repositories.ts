@@ -911,6 +911,20 @@ export const mockRepositories: Repositories = {
         exposuresOpen: 6,
       };
     },
+    async timeEfficiency(includeLaborCost: boolean) {
+      // Utilization is comp-free; labor cost is aggregate-only and withheld unless
+      // the caller is gated in (finance|admin) — mirrors the postgres comp gate.
+      return {
+        utilization: {
+          billableMinutes: 18_240, // 304h
+          internalMinutes: 6_360, // 106h
+          adminMinutes: 3_000, // 50h
+        },
+        laborCost: includeLaborCost
+          ? { approvedHours: 460, totalCost: 27_600, blendedHourlyRate: 60 }
+          : null,
+      };
+    },
   },
   knowledge: {
     async search(query) {

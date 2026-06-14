@@ -128,6 +128,7 @@ import type {
   SalesTaskRow,
   SecurityFleetReport,
   ServiceDeskReport,
+  TimeEfficiencyReport,
   SbrDetail,
   SbrRow,
   SocialIdentityRow,
@@ -2977,6 +2978,65 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return mockRepositories.reports.securityFleet();
+      }
+    },
+
+    async timeEfficiency(includeLaborCost: boolean): Promise<TimeEfficiencyReport> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.timeEfficiency(includeLaborCost);
+      try {
+        // Utilization is COMP-FREE: the split of authoritative attendance minutes
+        // (silver time_record, kind='attendance' — the website source is the source
+        // of truth, ADR-0082) across the billable/internal/admin categories.
+        // Allocation rows (autotask) carry a null category and are excluded.
+        const util = await pool.query<{ billable: string; internal: string; admin: string }>(
+          `SELECT coalesce(sum(minutes) FILTER (WHERE category = 'billable'), 0) AS billable,
+                  coalesce(sum(minutes) FILTER (WHERE category = 'internal'), 0) AS internal,
+                  coalesce(sum(minutes) FILTER (WHERE category = 'admin'),    0) AS admin
+             FROM time_record
+            WHERE kind = 'attendance'`,
+        );
+        const u = util.rows[0];
+        const utilization = {
+          billableMinutes: Number(u.billable),
+          internalMinutes: Number(u.internal),
+          adminMinutes: Number(u.admin),
+        };
+
+        // Labor cost is COMP-DERIVED and finance/admin-only — the query runs ONLY
+        // when the caller is gated in, so pay_rate is never read otherwise. It is
+        // AGGREGATE-ONLY (sum over employees); no per-person rate ever leaves here.
+        // Effective rate = the latest pay_rate effective on/before the week start
+        // (salaried folded to hourly at the 2080-hr convention). Counts corrected,
+        // approved hours (state in approved/payroll_approved/paid).
+        let laborCost: TimeEfficiencyReport["laborCost"] = null;
+        if (includeLaborCost) {
+          const cost = await pool.query<{ minutes: string; total: string }>(
+            `SELECT coalesce(sum(ps.approved_minutes), 0)                       AS minutes,
+                    coalesce(sum((ps.approved_minutes / 60.0) * pr.eff_hourly), 0) AS total
+               FROM timesheet_payroll_status ps
+               JOIN LATERAL (
+                 SELECT CASE WHEN p.rate_kind = 'hourly' THEN p.hourly_rate
+                             ELSE p.salaried_annual / 2080.0 END AS eff_hourly
+                   FROM pay_rate p
+                  WHERE p.app_user_id = ps.app_user_id
+                    AND p.effective_from <= ps.week_start
+                  ORDER BY p.effective_from DESC
+                  LIMIT 1
+               ) pr ON true
+              WHERE ps.state IN ('approved', 'payroll_approved', 'paid')`,
+          );
+          const approvedHours = Math.round(Number(cost.rows[0].minutes) / 60);
+          const totalCost = Math.round(Number(cost.rows[0].total));
+          laborCost = {
+            approvedHours,
+            totalCost,
+            blendedHourlyRate: approvedHours > 0 ? Math.round(totalCost / approvedHours) : null,
+          };
+        }
+        return { utilization, laborCost };
+      } catch {
+        return mockRepositories.reports.timeEfficiency(includeLaborCost);
       }
     },
   },

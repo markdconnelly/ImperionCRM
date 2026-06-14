@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
-import { canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
+import { canSeeLaborCost, canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
 import { StagePipelineChart, StatusBarChart } from "@/components/reporting/report-charts";
 
 function ChartCard({
@@ -80,6 +80,18 @@ export default async function ReportingPage() {
   const showRevenue = canSeeRevenue(roles);
   const money = (v: string) => (showRevenue ? v : REDACTED_MONEY);
   const pipelineData = showRevenue ? pipeline : pipeline.map((s) => ({ ...s, mrr: 0 }));
+
+  // Time Efficiency (ADR-0082, #467) is comp-sensitive — the whole section, and the
+  // labor-cost query inside it, is finance/admin-only. The comp query never runs for
+  // other roles (includeLaborCost gates it server-side), and the section isn't fetched.
+  const showLaborCost = canSeeLaborCost(roles);
+  const timeEff = showLaborCost ? await reports.timeEfficiency(true) : null;
+  const utilAttendedMin = timeEff
+    ? timeEff.utilization.billableMinutes +
+      timeEff.utilization.internalMinutes +
+      timeEff.utilization.adminMinutes
+    : 0;
+  const fmtHours = (min: number) => `${fmtCount.format(Math.round(min / 60))}h`;
 
   const cards = [
     { label: "Active MRR", value: money(summary.activeMrr) },
@@ -358,6 +370,74 @@ export default async function ReportingPage() {
           )}
         </ChartCard>
       </div>
+
+      {/* Time Efficiency — comp-sensitive, finance/admin only (ADR-0082, #467). */}
+      {timeEff && (
+        <>
+          <SectionHeading
+            id="time-efficiency"
+            title="Time Efficiency"
+            hint="utilization & labor cost — finance/admin only"
+          />
+
+          {utilAttendedMin > 0 ? (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatTile
+                label="Billable utilization"
+                value={`${Math.round((timeEff.utilization.billableMinutes / utilAttendedMin) * 100)}%`}
+                hint="billable ÷ attended hours"
+              />
+              <StatTile
+                label="Billable hours"
+                value={fmtHours(timeEff.utilization.billableMinutes)}
+                hint="client-billable attendance"
+              />
+              <StatTile
+                label="Internal hours"
+                value={fmtHours(timeEff.utilization.internalMinutes)}
+                hint="internal work"
+              />
+              <StatTile
+                label="Admin hours"
+                value={fmtHours(timeEff.utilization.adminMinutes)}
+                hint="administrative overhead"
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border bg-panel p-4">
+              <p className="py-6 text-center text-sm text-dim">
+                No attendance recorded yet — utilization populates once time entries flow
+                (build-ahead, #467).
+              </p>
+            </div>
+          )}
+
+          {/* Labor cost is aggregate-only — never a per-person pay rate (ADR-0082). */}
+          {timeEff.laborCost && (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              <StatTile
+                label="Labor cost (approved)"
+                value={`$${fmtCount.format(timeEff.laborCost.totalCost)}`}
+                hint="Σ approved hours × effective rate — aggregate"
+              />
+              <StatTile
+                label="Approved hours"
+                value={fmtHours(timeEff.laborCost.approvedHours * 60)}
+                hint="corrected & approved timesheets"
+              />
+              <StatTile
+                label="Blended rate"
+                value={
+                  timeEff.laborCost.blendedHourlyRate != null
+                    ? `$${fmtCount.format(timeEff.laborCost.blendedHourlyRate)}/h`
+                    : "—"
+                }
+                hint="aggregate — not a per-person rate"
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

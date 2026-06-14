@@ -60,6 +60,7 @@ import type {
   OnboardingProject,
   SecurityFleetReport,
   ServiceDeskReport,
+  TimeEfficiencyReport,
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
@@ -723,6 +724,12 @@ export interface ReportsRepository {
   serviceDesk(): Promise<ServiceDeskReport>;
   /** Security Fleet BI-hub section: cross-tenant posture/MFA/Defender/Intune rollup (ADR-0062). */
   securityFleet(): Promise<SecurityFleetReport>;
+  /**
+   * Time Efficiency BI-hub section (ADR-0082, #467): utilization (comp-free) plus
+   * aggregate labor cost. Pass `includeLaborCost=true` ONLY for finance|admin
+   * callers — when false the comp query never runs and `laborCost` is `null`.
+   */
+  timeEfficiency(includeLaborCost: boolean): Promise<TimeEfficiencyReport>;
 }
 
 // ── Communications (ADR-0011) ────────────────────────────────────────────────
