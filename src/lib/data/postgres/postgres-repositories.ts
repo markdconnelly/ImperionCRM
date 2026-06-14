@@ -1855,12 +1855,23 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.reopenTimesheet(id);
       // Back to the employee for correction — re-attest required. Keep the attested
-      // snapshot + any time_ticket row (re-approval re-writes the same external_ref).
+      // snapshot for the audit/diff.
       await pool.query(
         `UPDATE timesheet
             SET state = 'open', attested_at = NULL, attested_by = NULL,
                 approved_at = NULL, approved_by = NULL
           WHERE id = $1 AND state IN ('submitted', 'approved')`,
+        [id],
+      );
+      // Re-queue an already-documented week so the corrected hours reach Autotask:
+      // reset a WRITTEN time_ticket back to 'pending' but KEEP external_ref, so the
+      // backend writer PATCHes the same ticket on re-approval instead of leaving a
+      // stale summary (no duplicate). Backend issue #103 / ADR-0047; the writer's
+      // ON CONFLICT DO NOTHING insert means this reset, not re-approval, re-queues it.
+      await pool.query(
+        `UPDATE time_ticket
+            SET write_state = 'pending', last_error = NULL
+          WHERE timesheet_id = $1 AND write_state = 'written'`,
         [id],
       );
     },
