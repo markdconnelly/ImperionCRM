@@ -488,6 +488,77 @@ export interface AdminExpenseReview extends ExpenseReportDetail {
   attestedSnapshot: ExpenseItemRow[] | null;
 }
 
+/**
+ * A visible, mapped expense category the entry GUI offers (ADR-0083, `expense_category`).
+ * Reads only the website-facing fields + the per-category caps the policy engine uses;
+ * NEVER the QuickBooks/Autotask ids (those are mapping/admin concerns, #489). The
+ * system Mileage category is excluded — it is rate-driven and not hand-entered.
+ */
+export interface ExpenseCategoryRow {
+  id: string;
+  key: string; // stable code (e.g. 'meals')
+  displayName: string;
+  billableDefault: boolean; // pre-checks the billable leg in the entry GUI
+  hardCap: number | null; // per-item hard cap (over → hard violation); null = none
+  softThreshold: number | null; // per-item nudge; null = none
+}
+
+/**
+ * One business-classified MileIQ drive for an employee's month (ADR-0083,
+ * `mileiq_drive`) — the read-only mileage feed the report shows alongside its silver
+ * items. Comp-free: carries the MILES fact + MileIQ's own suggested $ snapshot, NOT
+ * the Imperion mileage rate (that is backend-derived; the FE never reads the rate).
+ */
+export interface MileiqDriveRow {
+  id: string;
+  driveDate: string; // yyyy-mm-dd
+  miles: number;
+  origin: string | null;
+  destination: string | null;
+  suggestedAmount: number | null; // MileIQ's own suggested $ (non-comp snapshot); null until known
+  matched: boolean; // resolved to this employee (app_user) yet
+}
+
+/**
+ * One derived policy violation on an expense item (ADR-0083, `expense_policy_violation`
+ * view), surfaced pre-attest as the memory-jogger. `hard` rows block attest; `soft`
+ * rows nudge. The row-pair `suspected_duplicate` rule is layered on top by the app —
+ * the view only carries the deterministic per-item rules.
+ */
+export interface ExpensePolicyViolationRow {
+  expenseItemId: string;
+  expenseReportId: string;
+  ruleKey: string; // e.g. 'missing_receipt'
+  severity: "hard" | "soft";
+  detail: string; // human-readable explanation
+}
+
+/**
+ * One employee-month row of the unified monthly close (ADR-0083, `monthly_close` view,
+ * amends ADR-0082): rolled-up approved time minutes + reimbursable expense total, both
+ * QuickBooks match statuses, and the open-obligation flags. Comp-FREE — expected pay
+ * (hours × rate) stays in the backend (the sole comp reader); this carries minutes +
+ * dollar amounts only, never a rate.
+ */
+export interface MonthlyCloseRow {
+  appUserId: string;
+  periodYear: number;
+  periodMonth: number; // 1–12
+  // expense side
+  expenseReportId: string | null;
+  expenseState: ExpenseReportState | null;
+  reimbursableTotal: number; // USD
+  reimbursementVerdict: ExpenseReconciliationVerdict;
+  qbPaymentRef: string | null; // matched QuickBooks Purchase id (read-only SoR)
+  // time side
+  approvedTimeMinutes: number;
+  timesheetCount: number;
+  paidCount: number;
+  // open obligations (approved/finance-approved but not yet confirmed paid)
+  expenseObligationOpen: boolean;
+  timeObligationOpen: boolean;
+}
+
 /** Task category — the one task object serves sales + project/onboarding (ADR-0034). */
 export type TaskCategory = "sales" | "project" | "onboarding" | "general";
 

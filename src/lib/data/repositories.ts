@@ -61,6 +61,10 @@ import type {
   AdminExpenseRow,
   AdminExpenseReview,
   ExpenseReimbursementMatch,
+  ExpenseCategoryRow,
+  ExpensePolicyViolationRow,
+  MileiqDriveRow,
+  MonthlyCloseRow,
   TimeEntryCategory,
   LeadHookRow,
   MarketingSocialReport,
@@ -276,6 +280,27 @@ export type TimesheetCorrection =
   | { kind: "update"; entryId: string; entry: TimeEntryFields }
   | { kind: "delete"; entryId: string };
 
+/**
+ * A new/edited out-of-pocket expense item (ADR-0083, #486). Written to the
+ * `website_expense_item` bronze (the only item kind the employee hand-enters; mileage
+ * comes from MileIQ). `employeeId` is the OWNER taken from the session — never trusted
+ * from the form. The owning report's Open lock is re-checked server-side on every write.
+ * Mileage items are NOT created here (their $ is backend-derived from MileIQ miles).
+ */
+export interface ExpenseItemInput {
+  expenseReportId: string;
+  employeeId: string; // the owning app_user (from session; re-verified server-side)
+  itemDate: string; // yyyy-mm-dd
+  categoryId: string | null; // null = uncategorized (soft policy nudge)
+  amount: number; // USD, > 0 (entered out-of-pocket amount)
+  merchant: string | null;
+  description: string | null;
+  reimbursable: boolean; // owed back to the employee (default true)
+  billable: boolean; // independent leg — also invoiced to the client
+  autotaskCompanyId: number | null; // the client leg (companyID) when billable
+  receiptId: string | null; // a receipt_attachment id, when uploaded
+}
+
 /** Admin mapping confirm payload (ADR-0082, #468). A blank id clears that mapping. */
 export interface EmployeeMappingInput {
   appUserId: string;
@@ -484,6 +509,34 @@ export interface CrmRepository {
   /** Reject a submitted/approved report (admin/finance): state→rejected, stamp the
    *  rejecter + note. The employee reopens to correct and re-attest. */
   rejectExpenseReport(id: string, rejectedBy: string, note: string): Promise<void>;
+
+  // Expense ITEM CRUD — out-of-pocket entries (ADR-0083, #486). Self-scoped: the
+  // employee id is the session owner, never the form; every write re-checks that the
+  // owning report is Open AND owned by that employee server-side. Writes target the
+  // website_expense_item bronze (the only hand-entered kind; mileage is MileIQ-sourced).
+  /** Add an out-of-pocket item to the employee's OWN Open report; returns the new id,
+   *  or null if the report isn't Open or isn't owned by `employeeId` (lock re-check). */
+  addExpenseItem(input: ExpenseItemInput): Promise<string | null>;
+  /** Edit an out-of-pocket item on the employee's OWN Open report. Returns false if the
+   *  item isn't on an Open report owned by `employeeId` (lock + ownership re-check). */
+  updateExpenseItem(id: string, input: ExpenseItemInput): Promise<boolean>;
+  /** Delete an out-of-pocket item from the employee's OWN Open report. Returns false if
+   *  the item isn't on an Open report owned by `employeeId` (lock + ownership re-check). */
+  deleteExpenseItem(id: string, employeeId: string): Promise<boolean>;
+
+  // Expense reference + read models (ADR-0083, #486) — all comp-free (no mileage rate).
+  /** The visible, mapped (active) out-of-pocket categories the entry GUI offers, by
+   *  display name. Excludes the rate-driven system Mileage category. */
+  listExpenseCategories(): Promise<ExpenseCategoryRow[]>;
+  /** The employee's business-classified MileIQ drives for a calendar month (read-only
+   *  mileage feed). Comp-free — miles + MileIQ's own suggested $, never the rate. */
+  listMileiqDrives(employeeId: string, year: number, month: number): Promise<MileiqDriveRow[]>;
+  /** The derived per-item policy violations for one report (the `expense_policy_violation`
+   *  view) — the pre-attest memory-jogger. Hard rows block attest. */
+  listExpensePolicyViolations(expenseReportId: string): Promise<ExpensePolicyViolationRow[]>;
+  /** The unified monthly-close rows for an employee, newest month first (the comp-free
+   *  `monthly_close` view: time minutes + reimbursable totals + match statuses). */
+  listMonthlyClose(employeeId: string): Promise<MonthlyCloseRow[]>;
 
   // Project types — user-creatable from the project board (ADR-0052 §1)
   listProjectTypes(): Promise<ProjectTypeRow[]>;

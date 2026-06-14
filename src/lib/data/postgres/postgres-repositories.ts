@@ -42,6 +42,7 @@ import type {
   ProjectInput,
   ProjectTypeInput,
   DeliveryTemplateInput,
+  ExpenseItemInput,
   TimeEntryInput,
   TimesheetCorrection,
   ProposalEditable,
@@ -96,6 +97,10 @@ import type {
   ExpenseReportRow,
   ExpenseReportDetail,
   ExpenseItemRow,
+  ExpenseCategoryRow,
+  ExpensePolicyViolationRow,
+  MileiqDriveRow,
+  MonthlyCloseRow,
   AdminExpenseRow,
   AdminExpenseReview,
   ExpenseReimbursementMatch,
@@ -2654,6 +2659,293 @@ export const postgresRepositories: Repositories = {
          WHERE id = $1 AND state IN ('submitted', 'approved', 'finance_approved')`,
         [id, rejectedBy, nullIfEmpty(note)],
       );
+    },
+
+    async addExpenseItem(input: ExpenseItemInput): Promise<string | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.addExpenseItem(input);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Lock the report and re-check it is Open AND owned by the session employee — the
+        // server-side gate (never trust the form): an attested report is locked, and an
+        // employee can only add to their OWN report. Out-of-pocket goes to the bronze.
+        const { rows: rep } = await client.query<{ state: string }>(
+          `SELECT state FROM expense_report
+            WHERE id = $1 AND app_user_id = $2 FOR UPDATE`,
+          [input.expenseReportId, input.employeeId],
+        );
+        if (!rep[0] || rep[0].state !== "open") {
+          await client.query("ROLLBACK");
+          return null;
+        }
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO website_expense_item
+             (expense_report_id, app_user_id, item_date, category_id, amount, merchant,
+              description, reimbursable, billable, autotask_company_id, receipt_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           RETURNING id`,
+          [
+            input.expenseReportId,
+            input.employeeId,
+            input.itemDate,
+            input.categoryId,
+            input.amount,
+            nullIfEmpty(input.merchant),
+            nullIfEmpty(input.description),
+            input.reimbursable,
+            input.billable,
+            input.autotaskCompanyId,
+            input.receiptId,
+          ],
+        );
+        await client.query("COMMIT");
+        return rows[0].id;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async updateExpenseItem(id: string, input: ExpenseItemInput): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateExpenseItem(id, input);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Lock the owning report and re-check Open + owned by the session employee. Scope
+        // the UPDATE to the item id + report id + owner so a forged report/owner can't
+        // touch another employee's item.
+        const { rows: rep } = await client.query<{ state: string }>(
+          `SELECT state FROM expense_report
+            WHERE id = $1 AND app_user_id = $2 FOR UPDATE`,
+          [input.expenseReportId, input.employeeId],
+        );
+        if (!rep[0] || rep[0].state !== "open") {
+          await client.query("ROLLBACK");
+          return false;
+        }
+        const { rowCount } = await client.query(
+          `UPDATE website_expense_item
+              SET item_date = $4, category_id = $5, amount = $6, merchant = $7,
+                  description = $8, reimbursable = $9, billable = $10,
+                  autotask_company_id = $11, receipt_id = $12
+            WHERE id = $1 AND expense_report_id = $2 AND app_user_id = $3`,
+          [
+            id,
+            input.expenseReportId,
+            input.employeeId,
+            input.itemDate,
+            input.categoryId,
+            input.amount,
+            nullIfEmpty(input.merchant),
+            nullIfEmpty(input.description),
+            input.reimbursable,
+            input.billable,
+            input.autotaskCompanyId,
+            input.receiptId,
+          ],
+        );
+        if (!rowCount) {
+          await client.query("ROLLBACK");
+          return false;
+        }
+        await client.query("COMMIT");
+        return true;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteExpenseItem(id: string, employeeId: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteExpenseItem(id, employeeId);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Resolve + lock the item's report; only delete when it is Open and owned by the
+        // session employee. The join enforces ownership without trusting any form input.
+        const { rows: rep } = await client.query<{ state: string }>(
+          `SELECT er.state
+             FROM website_expense_item wi
+             JOIN expense_report er ON er.id = wi.expense_report_id
+            WHERE wi.id = $1 AND wi.app_user_id = $2
+            FOR UPDATE OF er`,
+          [id, employeeId],
+        );
+        if (!rep[0] || rep[0].state !== "open") {
+          await client.query("ROLLBACK");
+          return false;
+        }
+        const { rowCount } = await client.query(
+          `DELETE FROM website_expense_item WHERE id = $1 AND app_user_id = $2`,
+          [id, employeeId],
+        );
+        await client.query("COMMIT");
+        return (rowCount ?? 0) > 0;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async listExpenseCategories(): Promise<ExpenseCategoryRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listExpenseCategories();
+      try {
+        // The visible, mapped (active), hand-enterable categories — exclude the rate-driven
+        // system Mileage category. NEVER select the QuickBooks/Autotask ids (mapping concern).
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          display_name: string;
+          billable_default: boolean;
+          hard_cap: string | null;
+          soft_threshold: string | null;
+        }>(
+          `SELECT id, key, display_name, billable_default, hard_cap, soft_threshold
+             FROM expense_category
+            WHERE is_active AND is_user_visible AND NOT is_system
+            ORDER BY display_name`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          key: r.key,
+          displayName: r.display_name,
+          billableDefault: r.billable_default,
+          hardCap: r.hard_cap === null ? null : Number(r.hard_cap),
+          softThreshold: r.soft_threshold === null ? null : Number(r.soft_threshold),
+        }));
+      } catch {
+        return mockRepositories.crm.listExpenseCategories();
+      }
+    },
+
+    async listMileiqDrives(employeeId, year, month): Promise<MileiqDriveRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listMileiqDrives(employeeId, year, month);
+      try {
+        // Read-only mileage feed for the month. Comp-free: miles + MileIQ's own suggested
+        // $ snapshot, NEVER the Imperion mileage rate (that is backend-derived).
+        const { rows } = await pool.query<{
+          id: string;
+          drive_date: string;
+          miles: string;
+          origin: string | null;
+          destination: string | null;
+          suggested_amount: string | null;
+          matched_at: Date | null;
+        }>(
+          `SELECT id, to_char(drive_date, 'YYYY-MM-DD') AS drive_date, miles, origin,
+                  destination, suggested_amount, matched_at
+             FROM mileiq_drive
+            WHERE app_user_id = $1
+              AND EXTRACT(YEAR  FROM drive_date)::int = $2
+              AND EXTRACT(MONTH FROM drive_date)::int = $3
+            ORDER BY drive_date`,
+          [employeeId, year, month],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          driveDate: r.drive_date,
+          miles: Number(r.miles),
+          origin: r.origin,
+          destination: r.destination,
+          suggestedAmount: r.suggested_amount === null ? null : Number(r.suggested_amount),
+          matched: r.matched_at !== null,
+        }));
+      } catch {
+        return mockRepositories.crm.listMileiqDrives(employeeId, year, month);
+      }
+    },
+
+    async listExpensePolicyViolations(expenseReportId): Promise<ExpensePolicyViolationRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listExpensePolicyViolations(expenseReportId);
+      try {
+        // The derived per-item violation read model (the 0090 view) for one report — the
+        // pre-attest memory-jogger. Hard rows block attest (the app layers suspected_duplicate).
+        const { rows } = await pool.query<{
+          expense_item_id: string;
+          expense_report_id: string;
+          rule_key: string;
+          severity: string;
+          detail: string;
+        }>(
+          `SELECT expense_item_id, expense_report_id, rule_key, severity, detail
+             FROM expense_policy_violation
+            WHERE expense_report_id = $1
+            ORDER BY severity, rule_key`,
+          [expenseReportId],
+        );
+        return rows.map((r) => ({
+          expenseItemId: r.expense_item_id,
+          expenseReportId: r.expense_report_id,
+          ruleKey: r.rule_key,
+          severity: r.severity as ExpensePolicyViolationRow["severity"],
+          detail: r.detail,
+        }));
+      } catch {
+        return mockRepositories.crm.listExpensePolicyViolations(expenseReportId);
+      }
+    },
+
+    async listMonthlyClose(employeeId): Promise<MonthlyCloseRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listMonthlyClose(employeeId);
+      try {
+        // The unified time+expense close (the comp-free 0090 view) for one employee, newest
+        // month first. Minutes + dollar amounts only — expected pay stays in the backend.
+        const { rows } = await pool.query<{
+          app_user_id: string;
+          period_year: number;
+          period_month: number;
+          expense_report_id: string | null;
+          expense_state: string | null;
+          reimbursable_total: string;
+          reimbursement_verdict: string;
+          qb_bill_payment_ref: string | null;
+          approved_time_minutes: string;
+          timesheet_count: string;
+          paid_count: string;
+          expense_obligation_open: boolean | null;
+          time_obligation_open: boolean | null;
+        }>(
+          `SELECT app_user_id, period_year, period_month, expense_report_id, expense_state,
+                  reimbursable_total, reimbursement_verdict, qb_bill_payment_ref,
+                  approved_time_minutes, timesheet_count, paid_count,
+                  expense_obligation_open, time_obligation_open
+             FROM monthly_close
+            WHERE app_user_id = $1
+            ORDER BY period_year DESC, period_month DESC`,
+          [employeeId],
+        );
+        return rows.map((r) => ({
+          appUserId: r.app_user_id,
+          periodYear: Number(r.period_year),
+          periodMonth: Number(r.period_month),
+          expenseReportId: r.expense_report_id,
+          expenseState: r.expense_state as MonthlyCloseRow["expenseState"],
+          reimbursableTotal: Number(r.reimbursable_total),
+          reimbursementVerdict:
+            r.reimbursement_verdict as MonthlyCloseRow["reimbursementVerdict"],
+          qbPaymentRef: r.qb_bill_payment_ref,
+          approvedTimeMinutes: Number(r.approved_time_minutes),
+          timesheetCount: Number(r.timesheet_count),
+          paidCount: Number(r.paid_count),
+          expenseObligationOpen: r.expense_obligation_open ?? false,
+          timeObligationOpen: r.time_obligation_open ?? false,
+        }));
+      } catch {
+        return mockRepositories.crm.listMonthlyClose(employeeId);
+      }
     },
 
     async listOnboarding(): Promise<OnboardingProject[]> {
