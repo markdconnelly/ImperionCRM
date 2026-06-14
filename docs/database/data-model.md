@@ -1578,7 +1578,7 @@ erDiagram
 > + stored `external_ref` → re-approval updates the same ticket. The ticket **links** Ancillary
 > Tickets, never re-creates their TimeEntries, so summing Autotask never double-counts. This
 > completes the ADR-0082 schema; sibling-repo processes (Autotask write, QuickBooks read,
-> bronze→silver merge) build on these tables once the migrations are prod-applied.
+> bronze→silver merge) build on these tables — **prod-applied 2026-06-13 (0085–0087)**.
 
 **QuickBooks payment fact (migration 0092 `qbo_purchases`, #526, ADR-0085 — supersedes 0091
 `qbo_bill_payments`).** The payroll/reimbursement tail's missing input: the **authoritative
@@ -1790,7 +1790,7 @@ erDiagram
 > the authoritative QuickBooks payment (`Purchase`, ADR-0085) within `tolerance` → `matched` sets the report `reimbursed`; a
 > `mismatch` blocks auto-reimbursed until a human resolves. This completes the ADR-0083 schema;
 > sibling-repo processes (Autotask write, MileIQ OAuth, QuickBooks read, bronze→silver merge,
-> receipt lifecycle) build on these tables once the migrations (#494) are prod-applied.
+> receipt lifecycle) build on these tables — **prod-applied 2026-06-14 (0088–0090, #494)**.
 
 ## Vector data (pgvector)
 
