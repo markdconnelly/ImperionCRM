@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/icon";
 import { getRepositories } from "@/lib/data";
 import { listSensitivityCsaForAccount } from "@/lib/security/sensitivity-csa";
 import { SensitivityCsaCard } from "@/components/accounts/sensitivity-csa-card";
+import { DnsDomainRows } from "@/components/accounts/dns-posture-card";
 import { refreshPostureAction, snapshotPostureAction } from "../../actions";
 
 // Per-customer security posture overview (#93, ADR-0051). Everything here is a
@@ -76,7 +77,7 @@ export default async function AccountPosturePage({
 }) {
   const { id } = await params;
   const { crm, security } = getRepositories();
-  const [account, tenants, policies, controls, exposures, sensitivityCsa] =
+  const [account, tenants, policies, controls, exposures, sensitivityCsa, dnsDomains] =
     await Promise.all([
       crm.getAccount(id),
       security.listTenantPostureForAccount(id),
@@ -84,6 +85,7 @@ export default async function AccountPosturePage({
       security.listSecureScoreControlsForAccount(id),
       security.listCredentialExposuresForAccount(id),
       listSensitivityCsaForAccount(id),
+      security.listDnsDomainsForAccount(id),
     ]);
   if (!account) notFound();
 
@@ -334,6 +336,22 @@ export default async function AccountPosturePage({
           <SensitivityCsaCard data={sensitivityCsa} />
         </>
       )}
+
+      <Section
+        title="DNS posture"
+        icon="Globe"
+        hint="Per-domain governance verdict and record-level classification vs the approved golden baseline (ADR-0063). Managed = hosted in Azure, write-proven, and NS-delegated; tracked-but-uncaptured domains await the next on-prem merge."
+      >
+        {dnsDomains.length === 0 ? (
+          <p className="text-sm text-dim">
+            No domains tracked for this company yet. DNS posture is keyed by the company&apos;s
+            tracked domain list; once domains are added (and the on-prem merge captures them),
+            per-domain verdicts and drift appear here.
+          </p>
+        ) : (
+          <DnsDomainRows domains={dnsDomains} />
+        )}
+      </Section>
 
       <Section
         title="Credential exposures"

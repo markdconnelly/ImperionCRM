@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/icon";
 import { Timeline } from "@/components/comms/timeline";
 import { SourceRecords } from "@/components/comms/source-records";
 import { SharePointSites } from "@/components/accounts/sharepoint-sites";
+import { DnsPostureCard } from "@/components/accounts/dns-posture-card";
 import { IntegrationHealth } from "@/components/comms/integration-health";
 import { getRepositories } from "@/lib/data";
 import { computeImperionScore } from "@/lib/security/imperion-score";
@@ -85,6 +86,7 @@ export default async function AccountDetailPage({
     defenderIncidents,
     mfa,
     sharePointSites,
+    dnsDomains,
   ] = await Promise.all([
     crm.getAccount(id),
     comms.listInteractionsByAccount(id),
@@ -94,6 +96,7 @@ export default async function AccountDetailPage({
     security.countDefenderIncidentsForAccount(id),
     security.countMfaRegistrationForAccount(id),
     security.listSharePointSitesForAccount(id),
+    security.listDnsDomainsForAccount(id),
   ]);
   if (!account) notFound();
 
@@ -249,6 +252,21 @@ export default async function AccountDetailPage({
                 Full posture view →
               </Link>
             </div>
+          </Section>
+        )}
+
+        {/* DNS posture card (#309, ADR-0063 account amendment) — governance
+            verdict, tracked-domain count, last captured. Account-keyed (not
+            tenant-mapped), so it shows whenever the company tracks any domain;
+            renders nothing when none are tracked. */}
+        {dnsDomains.length > 0 && (
+          <Section
+            title="DNS posture"
+            icon="Globe"
+            hint="Domain governance verdict vs the golden baseline (ADR-0063) — managed = hosted in Azure, write-proven, and NS-delegated. Drill into per-domain record drift on the posture view."
+            className="lg:col-span-3"
+          >
+            <DnsPostureCard accountId={id} domains={dnsDomains} />
           </Section>
         )}
 
