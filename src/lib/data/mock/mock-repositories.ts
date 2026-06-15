@@ -278,6 +278,16 @@ export const mockRepositories: Repositories = {
     async setTaskSprint() {
       throw new Error(NO_DB);
     },
+    // Baselines / planned-vs-actual (ADR-0069 D6, #351) — reads empty, capture throws.
+    async listProjectBaselines() {
+      return [];
+    },
+    async captureProjectBaseline() {
+      throw new Error(NO_DB);
+    },
+    async getProjectSlippage() {
+      return null;
+    },
     async getTaskChildren(parentId: string) {
       return { parentId, children: [], total: 0, done: 0 };
     },
