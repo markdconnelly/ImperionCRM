@@ -207,6 +207,7 @@ import type {
   ConversationDetail,
   ConversationSegmentRow,
   ConversationInsightRow,
+  EsignEnvelopeRow,
   ProjectSlippage,
   TaskHierarchy,
   TaskDependencies,
@@ -1859,6 +1860,49 @@ export const postgresRepositories: Repositories = {
       } catch (err) {
         if (isSchemaLagError(err)) return null;
         return mockRepositories.crm.getConversation(id);
+      }
+    },
+
+    async listEsignEnvelopesForProposal(proposalId: string): Promise<EsignEnvelopeRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listEsignEnvelopesForProposal(proposalId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          proposal_id: string;
+          contract_id: string | null;
+          provider: string;
+          external_ref: string | null;
+          status: EsignEnvelopeRow["status"];
+          recipients: Array<Record<string, unknown>> | null;
+          signed_pdf_uri: string | null;
+          sent_at: Date | null;
+          completed_at: Date | null;
+          created_at: Date;
+        }>(
+          `SELECT id, proposal_id, contract_id, provider, external_ref, status,
+                  recipients, signed_pdf_uri, sent_at, completed_at, created_at
+             FROM esign_envelope WHERE proposal_id = $1
+            ORDER BY created_at DESC`,
+          [proposalId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          proposalId: r.proposal_id,
+          contractId: r.contract_id,
+          provider: r.provider,
+          externalRef: r.external_ref,
+          status: r.status,
+          recipients: Array.isArray(r.recipients) ? r.recipients : [],
+          hasSignedPdf: r.signed_pdf_uri != null,
+          sentAt: fmtDateTime(r.sent_at),
+          completedAt: fmtDateTime(r.completed_at),
+          createdAt: fmtDateTime(r.created_at) ?? "",
+        }));
+      } catch (err) {
+        // esign_envelope (0113) may not be prod-applied yet → empty list, not a 500.
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listEsignEnvelopesForProposal(proposalId);
       }
     },
 

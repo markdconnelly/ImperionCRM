@@ -103,6 +103,7 @@ import type {
   TaskRecurrenceInput,
   ConversationRow,
   ConversationDetail,
+  EsignEnvelopeRow,
   TaskTimeEntryRow,
   ProjectTimeRollup,
   ProjectBaselineRow,
@@ -747,6 +748,13 @@ export interface CrmRepository {
    * Turns come back in time order; insights grouped by kind.
    */
   getConversation(id: string): Promise<ConversationDetail | null>;
+
+  // E-signature envelopes (ADR-0071, #391) — read-only on the front end; the send +
+  // DocuSign Connect webhook status upsert are backend/pipeline processes (ADR-0042),
+  // dormant until DocuSign JWT consent lands (#318/#392). The status surface (#395)
+  // consumes these.
+  /** A proposal's e-sign envelopes, newest-created first. */
+  listEsignEnvelopesForProposal(proposalId: string): Promise<EsignEnvelopeRow[]>;
 
   // Subtasks / task hierarchy (ADR-0065 B1, #335)
   /** A task's child tasks, ordered by ordinal then title, with the n/m rollup. */

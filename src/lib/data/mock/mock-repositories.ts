@@ -309,6 +309,10 @@ export const mockRepositories: Repositories = {
     async getConversation() {
       return null;
     },
+    // E-signature envelopes (ADR-0071, #391) — read-only, no rows without a DB.
+    async listEsignEnvelopesForProposal() {
+      return [];
+    },
     async getTaskChildren(parentId: string) {
       return { parentId, children: [], total: 0, done: 0 };
     },
