@@ -1852,6 +1852,46 @@ export interface WorkAttachment {
   createdAt: string;
 }
 
+// ── PM collaboration — notifications (ADR-0064 A3, #332) ─────────────────────
+
+/**
+ * The notification trigger set (ADR-0064 A3). Mirrors the migration CHECK:
+ *  - assigned   — you were added as primary/assignee on a work object
+ *  - mentioned  — you were @mentioned in a comment
+ *  - commented  — a comment was posted on something you watch
+ *  - due_soon   — a work item you own/watch is due soon (backend-scheduled)
+ *  - overdue    — a work item you own/watch is past due (backend-scheduled)
+ *  - blocked    — a work item you own/watch became blocked
+ */
+export type NotificationKind =
+  | "assigned"
+  | "mentioned"
+  | "commented"
+  | "due_soon"
+  | "overdue"
+  | "blocked";
+
+/**
+ * One in-app notification to the signed-in employee (ADR-0064 A3, #332). The bell
+ * reads these directly (ADR-0042); the outbound email/Teams fan-out is a backend
+ * process (no provider key in the FE). `payload` is pre-rendered render context
+ * (title + actor name) carrying NO client PII — recipients are employees.
+ * `parentType`/`parentId` drive the deep-link to the work object.
+ */
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  parentType: WorkParentType;
+  parentId: string;
+  /** Who triggered it (resolved display name); null for system events (e.g. due_soon). */
+  actor: string | null;
+  /** Short human title for the row, e.g. "Ada assigned you a task". */
+  title: string;
+  /** Whether the recipient has read it (read_at IS NOT NULL). */
+  read: boolean;
+  createdAt: string;
+}
+
 // ── PM task structure — tags / labels (ADR-0065 B6, #340) ────────────────────
 
 /** Work objects a tag can be applied to (polymorphic, ADR-0065 B6). */

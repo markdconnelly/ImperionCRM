@@ -119,6 +119,8 @@ import type {
   WorkActivityEntry,
   MentionableUser,
   WorkAttachment,
+  Notification,
+  NotificationKind,
   TagParentType,
   Tag,
   AppliedTag,
@@ -1628,6 +1630,69 @@ export interface AttachmentRepository {
   removeAttachment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean>;
 }
 
+/**
+ * A work event to fan out as notifications (ADR-0064 A3, #332). The recipients are
+ * passed separately to {@link NotificationRepository.dispatch}; this carries the
+ * shared event context written onto every recipient's row.
+ */
+export interface NotificationInput {
+  kind: NotificationKind;
+  parentType: WorkParentType;
+  parentId: string;
+  /** Who triggered it (app_user.id), or null for a system event (e.g. due_soon). */
+  actorUserId: string | null;
+  /** Pre-rendered render context (title + actor name) — no client PII. */
+  payload: Record<string, unknown>;
+}
+
+/**
+ * Notifications repository (ADR-0064 A3, #332): the in-app notification centre
+ * (the bell) over the `notification` table. The bell reads here directly
+ * (ADR-0042 — DB reads for rendering are fine); the OUTBOUND fan-out to
+ * email/Teams via Power Automate and the scheduled due-soon/overdue evaluation
+ * are BACKEND processes (the FE holds no provider key). `dispatch` is called from
+ * the existing in-transaction work-event paths (assignment / mention / comment) to
+ * fan a notification out to the recipients (watchers/assignees), honouring an
+ * explicit in-app mute in `notification_pref`.
+ */
+export interface NotificationRepository {
+  /**
+   * A user's notifications, newest-first, paginated (the bell list). `unreadOnly`
+   * trims to the unread set. `recipientUserId` is the resolved app_user id.
+   */
+  listForUser(
+    recipientUserId: string,
+    opts?: { unreadOnly?: boolean; limit?: number },
+  ): Promise<Notification[]>;
+  /** Unread count for the bell badge. */
+  unreadCount(recipientUserId: string): Promise<number>;
+  /** Mark one notification read (scoped to the recipient). Returns true if updated. */
+  markRead(id: string, recipientUserId: string): Promise<boolean>;
+  /** Mark every unread notification read for a user (the "mark all read" action). */
+  markAllRead(recipientUserId: string): Promise<void>;
+  /**
+   * Fan a work event out to its recipients. `recipientUserIds` are the people on
+   * the object (watchers/assignees/mentioned); the actor is skipped (never notify
+   * yourself) and an in-app-muted kind (notification_pref enabled=false) is
+   * suppressed. Idempotency is the caller's concern (one call per event). Safe to
+   * call inside a transaction via the optional `client`.
+   */
+  dispatch(
+    input: NotificationInput,
+    recipientUserIds: string[],
+    client?: Queryable,
+  ): Promise<void>;
+}
+
+/**
+ * A minimal query surface so {@link NotificationRepository.dispatch} can run on
+ * either the pool or a pooled client inside a transaction (the assignment /
+ * comment paths dispatch inside their own BEGIN/COMMIT).
+ */
+export type Queryable = {
+  query: <T>(sql: string, params?: unknown[]) => Promise<{ rows: T[] }>;
+};
+
 /** A tag to apply to (or remove from) a work object. */
 export interface TagApplicationInput {
   tagId: string;
@@ -1693,5 +1758,6 @@ export interface Repositories {
   security: SecurityRepository;
   work: WorkRepository;
   attachments: AttachmentRepository;
+  notifications: NotificationRepository;
   tags: TagsRepository;
 }

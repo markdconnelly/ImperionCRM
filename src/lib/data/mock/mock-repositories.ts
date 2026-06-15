@@ -33,6 +33,7 @@ import type {
   Repositories,
   WorkCommentInput,
   WorkAttachmentInput,
+  NotificationInput,
   TagApplicationInput,
 } from "@/lib/data/repositories";
 import type {
@@ -44,6 +45,7 @@ import type {
   WorkActivityEntry,
   WorkParentType,
   MentionableUser,
+  Notification,
   Tag,
   AppliedTag,
   TagParentType,
@@ -61,6 +63,10 @@ let mockCommentSeq = 0;
 /** In-memory attachment store so the attachment UI works in mock mode (ADR-0064 A4). */
 const mockAttachments: WorkAttachment[] = [];
 let mockAttachmentSeq = 0;
+
+/** In-memory notification store so the bell works in mock mode (ADR-0064 A3, #332). */
+const mockNotifications: Notification[] = [];
+let mockNotificationSeq = 0;
 
 /** A fixed mentionable roster so the @mention typeahead works in mock mode (A2, #331). */
 const mockMentionableUsers: MentionableUser[] = [
@@ -1346,6 +1352,54 @@ export const mockRepositories: Repositories = {
       if (i === -1) return false;
       mockAttachments.splice(i, 1);
       return true;
+    },
+  },
+
+  // ── Notifications — the in-app bell (ADR-0064 A3, #332) ─────────────────────
+  notifications: {
+    async listForUser(
+      recipientUserId: string,
+      opts?: { unreadOnly?: boolean; limit?: number },
+    ): Promise<Notification[]> {
+      const limit = opts?.limit ?? 30;
+      // The mock store has no recipient column (single-viewer mock) — return the
+      // seeded/dispatched rows so the bell renders. unreadOnly trims to unread.
+      void recipientUserId;
+      return mockNotifications
+        .filter((n) => (opts?.unreadOnly ? !n.read : true))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, limit);
+    },
+    async unreadCount(): Promise<number> {
+      return mockNotifications.filter((n) => !n.read).length;
+    },
+    async markRead(id: string): Promise<boolean> {
+      const row = mockNotifications.find((n) => n.id === id);
+      if (!row || row.read) return false;
+      row.read = true;
+      return true;
+    },
+    async markAllRead(): Promise<void> {
+      for (const n of mockNotifications) n.read = true;
+    },
+    async dispatch(input: NotificationInput, recipientUserIds: string[]): Promise<void> {
+      // Never notify the actor; dedupe the recipient set. The mock store has no
+      // recipient column (single-viewer), so it pushes one row per recipient.
+      const recipients = Array.from(new Set(recipientUserIds)).filter(
+        (uid) => uid && uid !== input.actorUserId,
+      );
+      for (let i = 0; i < recipients.length; i++) {
+        mockNotifications.push({
+          id: `mock-notification-${++mockNotificationSeq}`,
+          kind: input.kind,
+          parentType: input.parentType,
+          parentId: input.parentId,
+          actor: (input.payload.actor as string | undefined) ?? null,
+          title: (input.payload.title as string | undefined) ?? input.kind,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
     },
   },
 
