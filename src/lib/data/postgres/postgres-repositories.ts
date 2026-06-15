@@ -2411,7 +2411,7 @@ export const postgresRepositories: Repositories = {
       await pool.query(`DELETE FROM project_type WHERE id = $1 AND NOT is_protected`, [id]);
     },
 
-    // ── Configurable statuses (ADR-0065 B5, #339, migration 0105) ──────────────
+    // ── Configurable statuses (ADR-0065 B5, #339, migration 0104) ──────────────
     async listStatusDefs(
       context: string,
       projectTypeId?: string | null,

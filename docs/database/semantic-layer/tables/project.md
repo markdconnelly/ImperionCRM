@@ -4,7 +4,7 @@ title: project
 description: Delivery/onboarding workstream for an account — website system of record; one board across all project types.
 resource: ../../../decision-records/ADR-0020-delivery-project-model.md
 tags: [silver, delivery, project]
-timestamp: 2026-06-15T14:00:00Z
+timestamp: 2026-06-15T14:30:00Z
 ---
 
 # project
