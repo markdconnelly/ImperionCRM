@@ -17,6 +17,10 @@ function task(over: Partial<TaskRow> & { id: string }): TaskRow {
     projectId: null,
     childCount: 0,
     childDoneCount: 0,
+    startAt: null,
+    estimate: null,
+    estimateUnit: null,
+    loggedMinutes: 0,
     ...over,
   };
 }
