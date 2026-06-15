@@ -241,8 +241,8 @@
   <div class="hero-stats reveal in d3">
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
-    <div class="hs"><div class="n" id="hero-commits">630+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="91"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n" id="hero-commits">800+</div><div class="l">commits</div></div>
+    <div class="hs"><div class="n"><span data-count="116"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -293,25 +293,25 @@
         <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.11.0</span></div>
         <div class="role">Front end · the GUI</div>
         <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration, plus the reporting BI hub that reads the whole gold layer.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 278 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 404 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
         <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.4.0</span></div>
         <div class="role">Backend · every process</div>
         <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the AI Board of Directors, OAuth token custody, consent-gated sends, M365 mail/calendar ingestion, and per-process cost metering.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 86 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 102 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Pipeline" rel="noopener">
         <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.5.0</span></div>
         <div class="role">Cloud · live data</div>
         <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, a source-schema registry that fails loudly on drift, and the bronze→silver merge.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 80 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 89 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment" rel="noopener">
         <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-built">Built · v0.8.0</span></div>
         <div class="role">On-prem · heavy lifting</div>
         <p>PowerShell 7 scheduled tasks on a home server. Collectors for ten+ sources, the medallion transforms, and all vectorization — 460+ tests green, awaiting server bringup.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 193 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 213 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
       </a>
     </div>
     <p class="repos-note reveal d2">Each repo reads and writes the same Postgres — but only the front end owns migrations.</p>
@@ -485,16 +485,30 @@
     <p class="say reveal d1">The two-and-a-half-hour feature was one session driving one worktree. By that evening, <em>that</em> was the ceiling — not the model. The bottleneck had never been typing speed; it was how many independent changes one architect could keep coherent at once. So before bed, the method itself got an upgrade.</p>
     <p class="say reveal d2">A short planning chat designed a <b>concurrency contract</b>: every session gets its own git worktree and its own dev port — <span style="font-family:var(--mono);color:var(--cyan-bright)">s01→3001 … s10→3010</span>, ten slots — shared hot files stay out of each other's lane, and the only counters GitHub can't hand out atomically, <b>migration and ADR numbers</b>, are claimed at <em>merge</em> instead of at authoring, so two parallel branches can never collide on the same number (ADR-0084). Ten sessions, one database, no stepped-on toes.</p>
     <p class="say reveal d3">With the rails laid, ten coordinated sessions ran across all four repos at once. They didn't just polish time tracking — they carried it deeper (CFO payroll approval, the six-deviation reconciliation, a Time Efficiency BI section, inline admin correction) <b>and stood up a whole second feature in the same night</b>: employee <b>expense tracking</b>, end to end — ADR-0083, migrations 0088–0091, capture-to-reimbursement, with the matching backend writer, the bronze→silver merge, and the on-prem bulk pulls all filed alongside it.</p>
-    <p class="say reveal d3">Then the architect went to bed. <b>This morning the night's work was reviewed and refined</b> against the repos' own rules — and the plan for the day is the point: time and expense tracking both go <em>live on real data</em>, migrations applied, before the day is out. Idea to a shipped feature in an evening; one feature to a parallel two-feature build overnight; both on production data by the next sundown — gated, as ever, on the human's deliberate call to flip the switch.</p>
+    <p class="say reveal d3">Then the architect closed the laptop and went to bed — and the method had one more thing left to prove. Idea to a shipped feature in an evening, then one feature to a parallel two-feature build overnight, was the curve so far. The next question was sharper: could the whole thing be left <em>entirely alone</em>?</p>
     <div class="flow-note reveal d2">
       <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
       <p><b>The bottleneck stopped being how fast people type and became how fast one person can decide.</b> Parallelism only pays off if the parallel work can't corrupt itself — so the contract that prevents collisions shipped <i>before</i> the ten sessions did.</p>
     </div>
   </article>
 
-  <!-- 11 cross-repo sync -->
-  <article class="chapter" id="sync">
+  <!-- 11 the unattended day -->
+  <article class="chapter" id="afk">
     <div class="node reveal">11</div>
+    <div class="ch-eyebrow reveal">Planning is what makes AFK safe</div>
+    <h2 class="reveal d1">He watched UFC 250, slept, and worked his day job. The robots didn't.</h2>
+    <p class="say reveal d1">The parallel leap proved the method could <em>fan out</em>. The real test was whether it could run <b>unattended</b> — not one supervised evening at the keyboard, but a full day of the architect simply living his life. So that became the experiment. The fight card was on, then it was bedtime, then it was a full day at the actual MSP job. For most of a day, <b>no one was watching the build.</b></p>
+    <p class="say reveal d2">It didn't slow down. In that <b>~24-hour window</b>, governed sessions across all four repos opened, reviewed, and squash-merged <b>roughly sixty pull requests</b> — and none of it was filler. A near-complete <b>project-management suite</b> arrived in one stretch: sprints and backlog carry-over, baselines and planned-vs-actual, gantt / calendar / timeline views, task dependencies and subtasks, multiple assignees and watchers, @mentions, admin-definable custom fields, OKRs with rollup, workload and capacity planning, recurring tasks, form-to-task intake, kanban rich cards, and an in-app notification bell. Beside it, five more verticals broke ground — <b>lead scoring, customer journeys, opportunity forecasting, e-signature, and conversational intelligence</b> — plus DNS and security-posture drains, and the employee <b>expense</b> data-loop closed from capture to reimbursement.</p>
+    <p class="say reveal d3">None of it needed a human in the loop, because <em>the loop is the repo</em>. Every unit of work was an issue → a worktree → a branch → a reviewed micro-PR, judged against rules the agents re-read at the start of every session. And you can watch the plan defend itself in the git history: when two parallel branches reached for the same migration number, the concurrency contract caught the collision <b>at merge</b> and renumbered automatically — <span style="font-family:var(--mono);color:var(--cyan-bright)">custom-fields 0102→0103</span>, a <span style="font-family:var(--mono);color:var(--cyan-bright)">0104↔0105</span> cascade untangled, the freed gap back-filled — with no one awake to referee it. That is the entire thesis: the planning was paid <em>up front</em>, so the building could happen <em>while the lights were off</em>.</p>
+    <div class="flow-note reveal d2">
+      <div class="icon-badge" style="background:var(--indigo);color:var(--ink)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+      <p><b>Unsupervised isn't ungoverned.</b> The agents could be left completely alone precisely because the constraints weren't in anyone's head — they were committed to the repo: rule files, ADRs, a collision-proof numbering contract, and CI that fails closed. Plan once, then go watch the fight. Flipping anything to production data is still the only thing that waits for a human.</p>
+    </div>
+  </article>
+
+  <!-- 12 cross-repo sync -->
+  <article class="chapter" id="sync">
+    <div class="node reveal">12</div>
     <div class="ch-eyebrow reveal">Four repos, one mind</div>
     <h2 class="reveal d1">The hard part isn't writing code. It's keeping four repos honest.</h2>
     <p class="say reveal d1">Speed in one repo is easy. The trap in a four-repo system is <b>drift</b>: the database moves in the front end, and three consumers — the backend's processes, the cloud pipeline's merge, the on-prem collectors — silently fall out of step. That's where most distributed builds quietly rot.</p>
@@ -506,16 +520,16 @@
     </div>
   </article>
 
-  <!-- 12 status -->
+  <!-- 13 status -->
   <article class="chapter" id="status">
-    <div class="node reveal">12</div>
+    <div class="node reveal">13</div>
     <div class="ch-eyebrow reveal">Where it is today</div>
     <h2 class="reveal d1">Honest about what's done</h2>
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.11.0</span></div>
-        <p>Running on Azure with Entra SSO. 87 migrations applied (the schema runs to 0091 in the repo); the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, and the Board of Directors. The newest surface is the <b>reporting BI hub</b> — marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard that deep-links into each section. The two freshest builds are <b>employee time tracking and expense tracking</b> — weekly timesheets, attestation, admin approval, mileage and out-of-pocket capture to reimbursement, with Autotask/QuickBooks reconciliation. Both were built and merged across one evening and a coordinated overnight session-fleet; time tracking is <b>live on real data</b>, expense tracking staged behind the human's deliberate production-apply gate. All real screens over a typed data layer.</p>
+        <p>Running on Azure with Entra SSO. The schema runs to <b>0116</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard). The newest wave is a near-complete <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — landing beside <b>lead scoring, customer journeys, opportunity forecasting, e-signature, and conversational intelligence</b>. <b>Employee time and expense tracking are both now live on real data</b> — weekly timesheets, mileage and out-of-pocket capture through to reimbursement, with Autotask/QuickBooks reconciliation. All real screens over a typed data layer.</p>
       </div>
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.4.0</span></div>
@@ -527,7 +541,7 @@
       </div>
       <div class="lrow">
         <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-built">Built · v0.8.0</span></div>
-        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, and Plaud; the knowledge-composer spine; all vectorization. 460+ tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
+        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 460+ tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
       </div>
     </div>
     <div class="deferred reveal d2">
@@ -536,9 +550,9 @@
     </div>
   </article>
 
-  <!-- 13 frontier / pioneering standards -->
+  <!-- 14 frontier / pioneering standards -->
   <article class="chapter" id="frontier">
-    <div class="node reveal">13</div>
+    <div class="node reveal">14</div>
     <div class="ch-eyebrow reveal">Betting on the frontier</div>
     <h2 class="reveal d1">Pioneering by default — three open standards, three layers</h2>
     <p class="say reveal d1">The point of this project was never just to ship fast; it was to <em>find the edge of what's possible</em>. So at each layer of the platform — data, AI, and now knowledge — Imperion adopted an emerging open standard early, before it was the safe consensus choice. Three layers, three bets, all in the open and auditable.</p>
