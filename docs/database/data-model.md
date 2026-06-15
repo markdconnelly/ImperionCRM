@@ -2291,6 +2291,41 @@ DocuSign holds **signer PII + signed documents** (a security-review item at buil
 ADR-0071); `recipients`, the signed PDF, and the certificate are sensitive +
 client-identifying — kept out of docs/issues (this schema stores only blob pointers).
 
+## Revenue forecasting (ADR-0072, migration 0114)
+
+The forecasting vertical (epic #316) makes the pipeline forecastable. Migration
+**0114** adds three forecast fields to `opportunity` and two new tables — the
+schema heavy lane; the forecast surface (#383) and the nightly snapshot job (#382,
+backend/pipeline) build on it. This front end (ADR-0042) only **reads** (the
+`listOpportunityForecast` / `listQuotas` read model); the per-owner/period roll-up is
+a runtime computation in `lib/forecast.ts`, not stored.
+
+- **`opportunity` forecast fields** — `expected_close_date` (forecasted close,
+  distinct from the actual `closed_at`), `win_probability` (0..1, defaulted **per
+  `sales_stage`** in the app read model, owner-overridable; NULL = use the stage
+  default), `forecast_category` (`commit` | `best_case` | `pipeline` | `omitted` —
+  the owner's explicit call, **independent of stage**, ADR-0072 decision 2; NULL =
+  not yet categorised). `deal_value` is `amount_mrr` in v1, quote-derived post-CPQ
+  (ADR-0067).
+- **`quota`** — a revenue target per `(owner_user_id | team, period)`; exactly one of
+  owner/team set (`quota_owner_xor_team`). Attainment = closed-won in period ÷
+  `amount` (computed at read, ADR-0072 decision 4).
+- **`forecast_snapshot`** — a nightly point-in-time capture per owner/period of the
+  weighted + categorised totals + closed-won + quota (ADR-0072 decision 5), for the
+  forecast-over-time trend and forecast-accuracy. Written by the snapshot job (#382);
+  idempotent per `(captured_on, owner|team, period)` via two partial-UNIQUE indexes.
+
+ADR-0072 decision 3 shows **two** numbers side by side: **weighted** (Σ open
+`deal_value` × `win_probability` — pipeline health) and **categorised** (commit /
+best_case / pipeline bands — finance), with closed-won as the realised floor.
+`opportunity`, `quota`, and `forecast_snapshot` are **silver entities**, each with an
+OKF concept file
+([`opportunity`](semantic-layer/tables/opportunity.md) ·
+[`quota`](semantic-layer/tables/quota.md) ·
+[`forecast_snapshot`](semantic-layer/tables/forecast_snapshot.md)). Revenue + quota
+are RBAC-gated server-side (ADR-0030 — `canSeeRevenue`); the tables hold no client
+PII (deal-level identity stays on `opportunity`).
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —

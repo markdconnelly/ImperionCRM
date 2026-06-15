@@ -224,6 +224,15 @@ export const mockRepositories: Repositories = {
     async setOpportunityStage() {
       throw new Error(NO_DB);
     },
+    // Forecasting (ADR-0072, #381) — read model. No-DB / schema-lag fallback is
+    // empty (the forecast fields + quota/snapshot tables are 0114; the forecast
+    // surface is #383). Honest empty, like listTasks.
+    async listOpportunityForecast() {
+      return [];
+    },
+    async listQuotas() {
+      return [];
+    },
     async listTasks() {
       return [];
     },

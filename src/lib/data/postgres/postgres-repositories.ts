@@ -29,6 +29,8 @@ import {
   displayPercent as goalDisplayPercent,
 } from "@/lib/goals";
 import { parseRRule, nextOccurrence } from "@/lib/recurrence";
+import { effectiveWinProbability, weightedValue } from "@/lib/forecast";
+import type { ForecastCategory } from "@/types";
 import type {
   AccountDetail,
   AccountInput,
@@ -175,6 +177,8 @@ import type {
   OnboardingStep,
   SecurityPosture,
   OpportunityRow,
+  OpportunityForecastRow,
+  QuotaRow,
   PipelineColumn,
   PipelineStage,
   PortfolioRow,
@@ -1164,6 +1168,89 @@ export const postgresRepositories: Repositories = {
         `UPDATE opportunity SET sales_stage = $2::opportunity_sales_stage WHERE id = $1`,
         [id, stage],
       );
+    },
+
+    async listOpportunityForecast(): Promise<OpportunityForecastRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listOpportunityForecast();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          account: string;
+          stage: string;
+          deal_value: string;
+          expected_close_date: string | null;
+          win_probability: string | null;
+          forecast_category: ForecastCategory | null;
+        }>(
+          // Forecast read model (ADR-0072): the raw forecast fields per opportunity.
+          // deal_value is amount_mrr in v1 (quote-derived post-CPQ, ADR-0067); the
+          // effective probability + weighted value are computed in lib/forecast.ts.
+          `SELECT o.id, o.name, a.name AS account, o.sales_stage AS stage,
+                  coalesce(o.amount_mrr, 0) AS deal_value,
+                  to_char(o.expected_close_date, 'YYYY-MM-DD') AS expected_close_date,
+                  o.win_probability, o.forecast_category
+           FROM opportunity o
+           JOIN account a ON a.id = o.account_id
+           ORDER BY a.name, o.name`,
+        );
+        return rows.map((row) => {
+          const dealValue = Number(row.deal_value) || 0;
+          const probability = effectiveWinProbability(
+            row.stage,
+            row.win_probability == null ? null : Number(row.win_probability),
+          );
+          return {
+            id: row.id,
+            name: row.name,
+            account: row.account,
+            stage: row.stage,
+            dealValue,
+            expectedCloseDate: row.expected_close_date,
+            winProbability: probability,
+            forecastCategory: row.forecast_category,
+            weighted: weightedValue(dealValue, probability),
+          };
+        });
+      } catch {
+        return mockRepositories.crm.listOpportunityForecast();
+      }
+    },
+
+    async listQuotas(): Promise<QuotaRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listQuotas();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          owner_user_id: string | null;
+          owner_name: string | null;
+          team: string | null;
+          period_start: string;
+          period_end: string;
+          amount: string;
+        }>(
+          `SELECT q.id, q.owner_user_id, u.display_name AS owner_name, q.team,
+                  to_char(q.period_start, 'YYYY-MM-DD') AS period_start,
+                  to_char(q.period_end, 'YYYY-MM-DD') AS period_end,
+                  q.amount
+           FROM quota q
+           LEFT JOIN app_user u ON u.id = q.owner_user_id
+           ORDER BY q.period_start DESC, q.period_end DESC`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          ownerUserId: row.owner_user_id,
+          ownerName: row.owner_name,
+          team: row.team,
+          periodStart: row.period_start,
+          periodEnd: row.period_end,
+          amount: Number(row.amount) || 0,
+        }));
+      } catch {
+        return mockRepositories.crm.listQuotas();
+      }
     },
 
     async listTasks(): Promise<TaskRow[]> {

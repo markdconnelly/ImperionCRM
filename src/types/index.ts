@@ -54,6 +54,51 @@ export interface OpportunityRow {
   mrr: string;
 }
 
+/** The owner's explicit forecast call, independent of stage (ADR-0072 decision 2). */
+export type ForecastCategory = "commit" | "best_case" | "pipeline" | "omitted";
+
+/**
+ * An opportunity with its forecast fields resolved for roll-up (ADR-0072, #381).
+ * `winProbability` is the EFFECTIVE probability (owner override or per-stage
+ * default, via lib/forecast.ts); `dealValue` is monthly MRR in v1 (quote-derived
+ * post-CPQ, ADR-0067). `forecastCategory` is the RAW stored call (NULL = not yet
+ * categorised). Money is unredacted — the caller applies canSeeRevenue (ADR-0030).
+ */
+export interface OpportunityForecastRow {
+  id: string;
+  name: string;
+  account: string;
+  stage: string; // sales_stage label
+  dealValue: number; // monthly MRR (v1)
+  expectedCloseDate: string | null; // yyyy-mm-dd
+  winProbability: number; // effective, 0..1
+  forecastCategory: ForecastCategory | null;
+  weighted: number; // dealValue × winProbability
+}
+
+/** A revenue target for an owner or team over a period (ADR-0072 decision 4). */
+export interface QuotaRow {
+  id: string;
+  ownerUserId: string | null;
+  ownerName: string | null;
+  team: string | null;
+  periodStart: string; // yyyy-mm-dd
+  periodEnd: string; // yyyy-mm-dd
+  amount: number;
+}
+
+/** Period roll-up of a forecast (ADR-0072 decisions 3 + 4) — see lib/forecast.ts. */
+export interface ForecastSummary {
+  weighted: number; // Σ open deal_value × win_probability
+  commitTotal: number;
+  bestCaseTotal: number;
+  pipelineTotal: number;
+  closedWon: number; // realised floor in the period
+  quota: number | null;
+  attainment: number | null; // closedWon / quota
+  openCount: number;
+}
+
 /** A row in the Contacts list. */
 export interface ContactRow {
   id: string;

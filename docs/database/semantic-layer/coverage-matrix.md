@@ -38,7 +38,9 @@ object · **H** reference/config/identity.
 
 | Object | Archetype | IKF | Acting ICM workflow |
 |---|---|---|---|
-| [opportunity](tables/opportunity.md) | A | ✅ | sale→delivery |
+| [opportunity](tables/opportunity.md) | A | ✅ | sale→delivery; forecasting |
+| [quota](tables/quota.md) | B | ✅ | forecasting (attainment) |
+| [forecast_snapshot](tables/forecast_snapshot.md) | C | ✅ | forecasting (nightly trend/accuracy) |
 | [proposal](tables/proposal.md) | B | ✅ | proposal-draft |
 | [esign_envelope](tables/esign_envelope.md) | B (DocuSign SoR) | ✅ | e-signature (sale→delivery, DocuSign-gated) |
 | [assessment](tables/assessment.md) | B | ✅ | assessment delivery |

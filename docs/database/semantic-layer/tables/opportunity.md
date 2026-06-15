@@ -3,8 +3,8 @@ type: Silver Table
 title: opportunity
 description: Merged silver opportunity from three bronze sources (KQM quote header, Autotask, website manual); the object the app uses.
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
-tags: [silver, sales, opportunity, kqm, autotask]
-timestamp: 2026-06-14T00:00:00Z
+tags: [silver, sales, opportunity, kqm, autotask, forecast]
+timestamp: 2026-06-15T22:00:00Z
 ---
 
 # opportunity
@@ -40,10 +40,30 @@ the shared join keys:
 | `autotask_opportunity_id` | kqm/autotask | **cross-source join key** |
 | `account_external_ref` | kqm (`autotask_organization_id`) | → account |
 
+## Forecasting fields (ADR-0072, migration 0114)
+
+The deal is the unit forecasting reasons over. Three website-owned forecast fields
+sit on `opportunity` alongside the merged source fields:
+
+| Column | Notes |
+|---|---|
+| `expected_close_date` | the **forecasted** close — what period a deal forecasts into. Distinct from `closed_at`, the **actual** close set on won/lost. |
+| `win_probability` | 0..1. Defaulted **per `sales_stage`** in the app read model (`lib/forecast.ts`; NULL = use the stage default), owner-overridable. Weighted forecast = Σ(`deal_value` × `win_probability`). |
+| `forecast_category` | the owner's explicit `commit` \| `best_case` \| `pipeline` \| `omitted` call — **independent of `sales_stage`** (a late-stage deal can be best-case, an early deal omitted). NULL = not yet categorised; `omitted` = excluded from the forecast. |
+
+`deal_value` is `amount_mrr` in v1 and becomes quote-derived post-CPQ (ADR-0067).
+The per-owner/period roll-up (weighted + categorised bands + closed-won + quota
+attainment) is the **runtime computation** in `lib/forecast.ts`, not stored on the
+row; point-in-time history lives in [`forecast_snapshot`](forecast_snapshot.md), and
+targets in [`quota`](quota.md). Revenue + quota are RBAC-gated (ADR-0030 —
+`canSeeRevenue`).
+
 ## Joins
 
 - `autotask_opportunity_id` is the merge/join key across the three sources.
 - `account_external_ref` → the silver account.
+- `owner_user_id` → `app_user`: the deal owner — the axis quota and forecast
+  roll-ups group by (ADR-0072).
 - Downstream: the merged opportunity feeds the sale→delivery executor (ADR-0044)
   — client setup, provisioning, and ticket-fire, DocuSign-gated and idempotent.
 

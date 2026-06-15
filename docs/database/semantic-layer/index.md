@@ -38,6 +38,8 @@ subset; remaining entities are tracked for expansion
 | [`contact`](tables/contact.md) | merge | website > autotask > itglue > m365 > apollo | ADR-0039 |
 | [`device`](tables/device.md) | merge | website > itglue > m365 | ADR-0039 |
 | [`opportunity`](tables/opportunity.md) | merge | website > autotask > KQM | ADR-0080 |
+| [`quota`](tables/quota.md) | single-SoR | website system of record | ADR-0072 |
+| [`forecast_snapshot`](tables/forecast_snapshot.md) | derived ledger | website (nightly snapshot job) | ADR-0072 |
 | [`credential_exposure`](tables/credential_exposure.md) | merge | Dark Web ID (email+domain match) | ADR-0040 |
 | [`proposal`](tables/proposal.md) | single-SoR | website system of record | ADR-0019 |
 | [`esign_envelope`](tables/esign_envelope.md) | single-SoR | DocuSign (external SoR for status) | ADR-0071 |
