@@ -2027,7 +2027,7 @@ every mutation requires `delivery:write`; `color` is clamped to the design-token
 palette so a caller can't inject a raw hex. These are **app-native tables, not
 silver tier** — no semantic-layer concept file applies.
 
-## Custom fields — admin-definable fields on tasks/projects (ADR-0065 B4, migration 0102)
+## Custom fields — admin-definable fields on tasks/projects (ADR-0065 B4, migration 0103)
 
 PM task-structure B4 adds **admin-definable custom fields** on work objects
 (task / project), optionally **scoped to one `project_type`**, so an admin can add
