@@ -74,6 +74,7 @@ import type {
   TicketFilterOptions,
   WorkflowInput,
   WorkflowStepInput,
+  WorkCommentInput,
 } from "@/lib/data/repositories";
 import type {
   Account,
@@ -179,6 +180,9 @@ import type {
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
+  WorkParentType,
+  WorkComment,
+  WorkActivityEntry,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -7758,7 +7762,190 @@ export const postgresRepositories: Repositories = {
       }
     },
   },
+
+  // ── Work collaboration: comments + activity feed (ADR-0064 A1, migration 0094) ──
+  work: {
+    async listComments(parentType: WorkParentType, parentId: string): Promise<WorkComment[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.work.listComments(parentType, parentId);
+      try {
+        const { rows } = await pool.query<{
+          id: string; parent_type: string; parent_id: string;
+          author_user_id: string | null; author: string | null;
+          body: string; edited_at: string | null; created_at: string;
+        }>(
+          `SELECT c.id, c.parent_type, c.parent_id::text AS parent_id,
+                  c.author_user_id::text AS author_user_id, u.display_name AS author,
+                  c.body, c.edited_at::text AS edited_at, c.created_at::text AS created_at
+             FROM work_comment c
+             LEFT JOIN app_user u ON u.id = c.author_user_id
+            WHERE c.parent_type = $1 AND c.parent_id = $2::uuid AND c.deleted_at IS NULL
+            ORDER BY c.created_at ASC`,
+          [parentType, parentId],
+        );
+        return rows.map(mapWorkComment);
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // schema not applied yet (#330)
+        return mockRepositories.work.listComments(parentType, parentId);
+      }
+    },
+
+    async listActivity(
+      parentType: WorkParentType,
+      parentId: string,
+      opts?: { commentsOnly?: boolean; limit?: number; offset?: number },
+    ): Promise<WorkActivityEntry[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.work.listActivity(parentType, parentId, opts);
+      const limit = Math.min(Math.max(opts?.limit ?? 50, 1), 200);
+      const offset = Math.max(opts?.offset ?? 0, 0);
+      try {
+        // The feed is the view (comments ∪ audit events). app_user is joined for the
+        // actor display name; commentsOnly drops the 'event' rows (A1 filter).
+        const { rows } = await pool.query<{
+          id: string; kind: "comment" | "event"; parent_type: string; parent_id: string;
+          actor_user_id: string | null; actor: string | null;
+          body: string | null; action: string | null; detail: unknown;
+          edited_at: string | null; occurred_at: string;
+        }>(
+          `SELECT f.id, f.kind, f.parent_type, f.parent_id::text AS parent_id,
+                  f.actor_user_id::text AS actor_user_id, u.display_name AS actor,
+                  f.body, f.action, f.detail,
+                  f.edited_at::text AS edited_at, f.occurred_at::text AS occurred_at
+             FROM work_activity_feed f
+             LEFT JOIN app_user u ON u.id = f.actor_user_id
+            WHERE f.parent_type = $1 AND f.parent_id = $2::uuid
+              AND ($3::boolean IS FALSE OR f.kind = 'comment')
+            ORDER BY f.occurred_at DESC
+            LIMIT $4 OFFSET $5`,
+          [parentType, parentId, opts?.commentsOnly ?? false, limit, offset],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          kind: r.kind,
+          parentType: r.parent_type as WorkParentType,
+          parentId: r.parent_id,
+          actorUserId: r.actor_user_id,
+          actor: r.actor,
+          body: r.body,
+          action: r.action,
+          detail: (r.detail as Record<string, unknown> | null) ?? null,
+          editedAt: r.edited_at,
+          occurredAt: r.occurred_at,
+        }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // schema not applied yet (#330)
+        return mockRepositories.work.listActivity(parentType, parentId, opts);
+      }
+    },
+
+    async addComment(input: WorkCommentInput): Promise<WorkComment> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.work.addComment(input);
+      const { rows } = await pool.query<{
+        id: string; parent_type: string; parent_id: string;
+        author_user_id: string | null; author: string | null;
+        body: string; edited_at: string | null; created_at: string;
+      }>(
+        `WITH ins AS (
+           INSERT INTO work_comment (parent_type, parent_id, author_user_id, body)
+           VALUES ($1, $2::uuid, $3::uuid, $4)
+           RETURNING *
+         )
+         SELECT ins.id, ins.parent_type, ins.parent_id::text AS parent_id,
+                ins.author_user_id::text AS author_user_id, u.display_name AS author,
+                ins.body, ins.edited_at::text AS edited_at, ins.created_at::text AS created_at
+           FROM ins LEFT JOIN app_user u ON u.id = ins.author_user_id`,
+        [input.parentType, input.parentId, input.authorUserId, input.body],
+      );
+      return mapWorkComment(rows[0]);
+    },
+
+    async editComment(
+      id: string,
+      body: string,
+      editorUserId: string | null,
+      asAdmin: boolean,
+    ): Promise<WorkComment | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.work.editComment(id, body, editorUserId, asAdmin);
+      // Author-scoped unless admin; deleted comments can't be edited.
+      const { rows } = await pool.query<{
+        id: string; parent_type: string; parent_id: string;
+        author_user_id: string | null; author: string | null;
+        body: string; edited_at: string | null; created_at: string;
+      }>(
+        `WITH upd AS (
+           UPDATE work_comment
+              SET body = $2, edited_at = now()
+            WHERE id = $1::uuid AND deleted_at IS NULL
+              AND ($4::boolean IS TRUE OR author_user_id = $3::uuid)
+           RETURNING *
+         )
+         SELECT upd.id, upd.parent_type, upd.parent_id::text AS parent_id,
+                upd.author_user_id::text AS author_user_id, u.display_name AS author,
+                upd.body, upd.edited_at::text AS edited_at, upd.created_at::text AS created_at
+           FROM upd LEFT JOIN app_user u ON u.id = upd.author_user_id`,
+        [id, body, editorUserId, asAdmin],
+      );
+      return rows[0] ? mapWorkComment(rows[0]) : null;
+    },
+
+    async deleteComment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.work.deleteComment(id, actorUserId, asAdmin);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Soft-delete (author-scoped unless admin); retains the row for audit (NFR-2).
+        const { rows } = await client.query<{ parent_type: string; parent_id: string }>(
+          `UPDATE work_comment
+              SET deleted_at = now()
+            WHERE id = $1::uuid AND deleted_at IS NULL
+              AND ($3::boolean IS TRUE OR author_user_id = $2::uuid)
+          RETURNING parent_type, parent_id::text AS parent_id`,
+          [id, actorUserId, asAdmin],
+        );
+        if (rows.length === 0) {
+          await client.query("ROLLBACK");
+          return false;
+        }
+        // Acceptance: a delete leaves an audit record in the activity feed.
+        await client.query(
+          `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+           VALUES ($1::uuid, 'comment.deleted', $2, $3::uuid,
+                   jsonb_build_object('commentId', $4::text))`,
+          [actorUserId, rows[0].parent_type, rows[0].parent_id, id],
+        );
+        await client.query("COMMIT");
+        return true;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+  },
 };
+
+/** Map a work_comment DB row (snake_case) onto the {@link WorkComment} type. */
+function mapWorkComment(r: {
+  id: string; parent_type: string; parent_id: string;
+  author_user_id: string | null; author: string | null;
+  body: string; edited_at: string | null; created_at: string;
+}): WorkComment {
+  return {
+    id: r.id,
+    parentType: r.parent_type as WorkParentType,
+    parentId: r.parent_id,
+    authorUserId: r.author_user_id,
+    author: r.author,
+    body: r.body,
+    editedAt: r.edited_at,
+    createdAt: r.created_at,
+  };
+}
 
 // ── Row mappers shared across methods ────────────────────────────────────────
 

@@ -107,6 +107,9 @@ import type {
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
+  WorkParentType,
+  WorkComment,
+  WorkActivityEntry,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -1410,6 +1413,53 @@ export interface SecurityRepository {
   listDnsDomainsForAccount(accountId: string): Promise<DnsDomainRollup[]>;
 }
 
+/** A new comment on a work object (task/project/milestone). */
+export interface WorkCommentInput {
+  parentType: WorkParentType;
+  parentId: string;
+  authorUserId: string | null;
+  body: string;
+}
+
+/**
+ * Work collaboration repository (ADR-0064 A1): polymorphic comments + the
+ * unified activity feed (comments interleaved with audit_log events) over any
+ * work object. Authorization is enforced in the calling server action
+ * (`delivery:write`); the repo trusts the resolved author id it is handed.
+ */
+export interface WorkRepository {
+  /** Live (non-deleted) comments on one work object, oldest-first for thread display. */
+  listComments(parentType: WorkParentType, parentId: string): Promise<WorkComment[]>;
+  /**
+   * The activity feed for one work object — comments + audit events interleaved,
+   * newest-first, paginated. `commentsOnly` filters out system events (A1 filter).
+   */
+  listActivity(
+    parentType: WorkParentType,
+    parentId: string,
+    opts?: { commentsOnly?: boolean; limit?: number; offset?: number },
+  ): Promise<WorkActivityEntry[]>;
+  /** Post a comment; returns the created row. */
+  addComment(input: WorkCommentInput): Promise<WorkComment>;
+  /**
+   * Edit a comment's body in place (sets edited_at). Scoped to the author unless
+   * `asAdmin` (ADR-0064: edit own, admins any). Returns the updated row, or null
+   * if not found / not permitted.
+   */
+  editComment(
+    id: string,
+    body: string,
+    editorUserId: string | null,
+    asAdmin: boolean,
+  ): Promise<WorkComment | null>;
+  /**
+   * Soft-delete a comment (sets deleted_at) and write an audit_log record so the
+   * feed retains the deletion (ADR-0064 NFR-2 / acceptance). Scoped to the author
+   * unless `asAdmin`. Returns true if a row was deleted.
+   */
+  deleteComment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -1427,4 +1477,5 @@ export interface Repositories {
   workflows: WorkflowsRepository;
   knowledge: KnowledgeRepository;
   security: SecurityRepository;
+  work: WorkRepository;
 }

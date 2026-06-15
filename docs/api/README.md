@@ -47,6 +47,7 @@ endpoints the app calls.
 | Route | Purpose | Security |
 | --- | --- | --- |
 | `GET /api/connections/{provider}/callback` | OAuth provider redirect target — forwards `code`+`state` to the backend server-side, then bounces to Settings with a `connect=<result>` notice | Session + `settings:write` (ADR-0045); CSRF/replay via the backend's one-time state; no token material transits the web app |
+| `GET /api/work/{parentType}/{parentId}/activity` | Work object activity feed (ADR-0064 A1, #330) — `?comments=1` comments-only, `?limit`/`?offset` paginate; returns `{ entries }` newest-first (comments ∪ audit events). Read-only; soft-deleted comment bodies never surface | Session (middleware-gated); read-only — no write capability needed |
 
 Governing decisions:
 [ADR-0018 GUI-only frontend](../decision-records/ADR-0018-gui-only-frontend-external-functions.md) ·

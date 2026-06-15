@@ -29,12 +29,23 @@ import {
   userConnections,
   workflows,
 } from "@/lib/mock-data";
-import type { Repositories } from "@/lib/data/repositories";
-import type { Health, OnboardingMilestone, OnboardingStep } from "@/types";
+import type { Repositories, WorkCommentInput } from "@/lib/data/repositories";
+import type {
+  Health,
+  OnboardingMilestone,
+  OnboardingStep,
+  WorkComment,
+  WorkActivityEntry,
+  WorkParentType,
+} from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 
 const NO_DB =
   "Editing requires a configured database. Set the database connection to enable manual changes.";
+
+/** In-memory comment store so the comment/feed UI works in mock mode (ADR-0064 A1). */
+const mockComments: WorkComment[] = [];
+let mockCommentSeq = 0;
 
 /** Lifecycle stages mock contacts are spread across (ADR-0031). */
 const MOCK_STAGES = ["audience", "lead", "prospect", "client"] as const;
@@ -1128,6 +1139,68 @@ export const mockRepositories: Repositories = {
     async listSharePointSitesForAccount() {
       // No DB → no site inventory; the section renders nothing (empty list).
       return [];
+    },
+  },
+
+  // ── Work collaboration: comments + activity feed (ADR-0064 A1) ──────────────
+  work: {
+    async listComments(parentType: WorkParentType, parentId: string) {
+      return mockComments
+        .filter((c) => c.parentType === parentType && c.parentId === parentId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    },
+    async listActivity(
+      parentType: WorkParentType,
+      parentId: string,
+      opts?: { commentsOnly?: boolean; limit?: number; offset?: number },
+    ): Promise<WorkActivityEntry[]> {
+      // Mock has no audit_log fixture → the feed is comments-only here.
+      const offset = opts?.offset ?? 0;
+      const limit = opts?.limit ?? 50;
+      return mockComments
+        .filter((c) => c.parentType === parentType && c.parentId === parentId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(offset, offset + limit)
+        .map((c) => ({
+          id: c.id,
+          kind: "comment" as const,
+          parentType: c.parentType,
+          parentId: c.parentId,
+          actorUserId: c.authorUserId,
+          actor: c.author,
+          body: c.body,
+          action: null,
+          detail: null,
+          editedAt: c.editedAt,
+          occurredAt: c.createdAt,
+        }));
+    },
+    async addComment(input: WorkCommentInput): Promise<WorkComment> {
+      const row: WorkComment = {
+        id: `mock-comment-${++mockCommentSeq}`,
+        parentType: input.parentType,
+        parentId: input.parentId,
+        authorUserId: input.authorUserId,
+        author: "You",
+        body: input.body,
+        editedAt: null,
+        createdAt: new Date().toISOString(),
+      };
+      mockComments.push(row);
+      return row;
+    },
+    async editComment(id: string, body: string): Promise<WorkComment | null> {
+      const row = mockComments.find((c) => c.id === id);
+      if (!row) return null;
+      row.body = body;
+      row.editedAt = new Date().toISOString();
+      return row;
+    },
+    async deleteComment(id: string): Promise<boolean> {
+      const i = mockComments.findIndex((c) => c.id === id);
+      if (i === -1) return false;
+      mockComments.splice(i, 1);
+      return true;
     },
   },
 };

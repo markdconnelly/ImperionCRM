@@ -1624,3 +1624,40 @@ export interface EnrollmentRow {
   currentStep: number;
   enrolledAt: string | null;
 }
+
+// ── PM collaboration — comments & activity feed (ADR-0064 A1) ─────────────────
+
+/** The work objects a comment / activity feed can hang off (polymorphic, ADR-0064). */
+export type WorkParentType = "task" | "project" | "milestone";
+
+/** A single markdown comment on a work object. */
+export interface WorkComment {
+  id: string;
+  parentType: WorkParentType;
+  parentId: string;
+  authorUserId: string | null;
+  author: string | null; // resolved display name (app_user), null if the user was removed
+  body: string; // markdown
+  editedAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * One entry in a work object's activity feed (ADR-0064 A1) — either a live
+ * comment or an audit_log system event, discriminated by `kind`. Read
+ * newest-first; `comment` rows carry `body`/`actor`, `event` rows carry
+ * `action`/`detail`.
+ */
+export interface WorkActivityEntry {
+  id: string;
+  kind: "comment" | "event";
+  parentType: WorkParentType;
+  parentId: string;
+  actorUserId: string | null;
+  actor: string | null; // resolved display name, null when unknown/removed
+  body: string | null; // comment markdown (kind === "comment")
+  action: string | null; // audit action, e.g. "project.updated" (kind === "event")
+  detail: Record<string, unknown> | null; // audit detail jsonb (kind === "event")
+  editedAt: string | null;
+  occurredAt: string;
+}
