@@ -1,6 +1,6 @@
--- 0104 task time tracking, estimates, start_at + user capacity
+-- 0105 task time tracking, estimates, start_at + user capacity
 -- (ADR-0069 D1 time-tracking / D2 capacity, ADR-0065/0066 start_at; issues #346, #580)
--- Migration number 0104 claimed at merge (concurrency contract §10.3). Single
+-- Migration number 0105 claimed at merge (concurrency contract §10.3). Single
 -- migration for the Wave 13 fan-out (one migration-author per wave).
 --
 -- Bundles four additive, independent pieces of operational schema:
