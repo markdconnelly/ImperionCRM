@@ -1,6 +1,4 @@
--- 9001 task dependencies / blocks-blocked-by (ADR-0065 B2, issue #336)
--- PLACEHOLDER NUMBER — the orchestrator renumbers this to the next free slot at
--- merge (concurrency contract §10.3; main is at 0097); do not treat 9001 as final.
+-- 0098 task dependencies / blocks-blocked-by (ADR-0065 B2, issue #336)
 --
 -- PM task structure B2 (ADR-0065): directed dependency links between tasks. A
 -- predecessor BLOCKS a successor (equivalently, the successor is BLOCKED-BY the

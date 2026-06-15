@@ -195,7 +195,7 @@ erDiagram
       uuid parent_id "polymorphic — no FK"
     }
     TASK_DEPENDENCY {
-      uuid predecessor_id FK "CASCADE — the blocking task (9001, ADR-0065 B2)"
+      uuid predecessor_id FK "CASCADE — the blocking task (0098, ADR-0065 B2)"
       uuid successor_id FK "CASCADE — the blocked task"
       text type "blocks (finish-to-start) — CHECK"
     }
@@ -1013,7 +1013,7 @@ erDiagram
 > out-of-scope rules engine). `onboarding_step` **coexists** (B1-F4 decision: coexist);
 > unifying steps as a task `kind` is a tracked follow-up.
 
-> **Task dependencies (ADR-0065 B2, #336, migration 9001).** Directed blocks /
+> **Task dependencies (ADR-0065 B2, #336, migration 0098).** Directed blocks /
 > blocked-by links live in a `TASK_DEPENDENCY` join table —
 > `{ predecessor_id, successor_id, type }`, where `predecessor_id` **blocks**
 > `successor_id`. Both ends are real FKs to `task(id)` (ON DELETE CASCADE — deleting
