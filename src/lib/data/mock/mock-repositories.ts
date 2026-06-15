@@ -235,6 +235,14 @@ export const mockRepositories: Repositories = {
     async listQuotas() {
       return [];
     },
+    // Lead scoring (ADR-0073 decision 5, #401) — read model over 0116 lead_score.
+    // Honest empty when there is no DB (scores are written by the backend/LP pass).
+    async listLeadScores() {
+      return [];
+    },
+    async listLeadScoresForContact() {
+      return [];
+    },
     async listTasks() {
       return [];
     },

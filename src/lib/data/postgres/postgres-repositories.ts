@@ -30,6 +30,7 @@ import {
 } from "@/lib/goals";
 import { parseRRule, nextOccurrence } from "@/lib/recurrence";
 import { effectiveWinProbability, weightedValue } from "@/lib/forecast";
+import { leadScoreBand } from "@/lib/lead-score";
 import { parseJourneyDefinition, summariseJourney } from "@/lib/journey";
 import type { ForecastCategory } from "@/types";
 import type {
@@ -180,6 +181,9 @@ import type {
   OpportunityRow,
   OpportunityForecastRow,
   QuotaRow,
+  LeadScoreRow,
+  LeadScoreKind,
+  LeadScoreComponent,
   PipelineColumn,
   PipelineStage,
   PortfolioRow,
@@ -558,6 +562,31 @@ function mapTaskListRow(row: TaskListSqlRow): TaskRow {
     estimate: row.estimate,
     estimateUnit: row.estimate_unit,
     loggedMinutes: Number(row.logged_minutes),
+  };
+}
+
+/** Map a lead_score row joined to its contact onto LeadScoreRow (ADR-0073, #401). */
+function mapLeadScoreRow(row: {
+  id: string;
+  contact_id: string;
+  contact_name: string;
+  account: string | null;
+  kind: LeadScoreKind;
+  score: string;
+  breakdown: LeadScoreComponent[] | null;
+  computed_at: string;
+}): LeadScoreRow {
+  const score = Number(row.score) || 0;
+  return {
+    id: row.id,
+    contactId: row.contact_id,
+    contactName: row.contact_name,
+    account: row.account,
+    kind: row.kind,
+    score,
+    band: leadScoreBand(score),
+    breakdown: Array.isArray(row.breakdown) ? row.breakdown : [],
+    computedAt: row.computed_at,
   };
 }
 
@@ -1253,6 +1282,68 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listQuotas();
+      }
+    },
+
+    async listLeadScores(kind: LeadScoreKind = "rule"): Promise<LeadScoreRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listLeadScores(kind);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          contact_id: string;
+          contact_name: string;
+          account: string | null;
+          kind: LeadScoreKind;
+          score: string;
+          breakdown: LeadScoreComponent[] | null;
+          computed_at: string;
+        }>(
+          // Lead-score read model (ADR-0073, #401): the stored score per contact,
+          // ranked high→low for routing/list use. The band is derived in the app.
+          `SELECT ls.id, ls.contact_id, c.full_name AS contact_name,
+                  a.name AS account, ls.kind, ls.score, ls.breakdown,
+                  ls.computed_at
+           FROM lead_score ls
+           JOIN contact c ON c.id = ls.contact_id
+           LEFT JOIN account a ON a.id = c.account_id
+           WHERE ls.kind = $1
+           ORDER BY ls.score DESC, c.full_name`,
+          [kind],
+        );
+        return rows.map(mapLeadScoreRow);
+      } catch {
+        return mockRepositories.crm.listLeadScores(kind);
+      }
+    },
+
+    async listLeadScoresForContact(contactId: string): Promise<LeadScoreRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listLeadScoresForContact(contactId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          contact_id: string;
+          contact_name: string;
+          account: string | null;
+          kind: LeadScoreKind;
+          score: string;
+          breakdown: LeadScoreComponent[] | null;
+          computed_at: string;
+        }>(
+          `SELECT ls.id, ls.contact_id, c.full_name AS contact_name,
+                  a.name AS account, ls.kind, ls.score, ls.breakdown,
+                  ls.computed_at
+           FROM lead_score ls
+           JOIN contact c ON c.id = ls.contact_id
+           LEFT JOIN account a ON a.id = c.account_id
+           WHERE ls.contact_id = $1
+           ORDER BY ls.score DESC`,
+          [contactId],
+        );
+        return rows.map(mapLeadScoreRow);
+      } catch {
+        return mockRepositories.crm.listLeadScoresForContact(contactId);
       }
     },
 

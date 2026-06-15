@@ -2361,6 +2361,37 @@ manual send. No new silver entity is minted (a journey IS a `workflow`), so the
 [`workflow`](semantic-layer/tables/workflow.md) OKF concept + coverage-matrix row are
 updated in place; journey config is internal (no client PII).
 
+## Lead scoring — a shared rule-based signal (ADR-0073 decision 5, migration 0116, #401)
+
+The scoring slice of the marketing-automation vertical (epic #319). A journey can route
+on engagement (0115), but there was no single shared signal of how hot a contact is.
+ADR-0073 decision 5 settles it: ship a **rule-based** score first — deterministic,
+explainable, editable — and leave a **predicted** score (an LP model over engagement
+history, #402) as a later slice that **coexists**, never silently replacing the rule
+score. Migration **0116** adds one new silver table, **`lead_score`**:
+
+- One **current** row per `(contact, kind)` — `kind` is `rule` (this slice) or
+  `predicted` (#402), so a contact carries both at once and neither overwrites the
+  other. `UNIQUE(contact_id, kind)` makes the writer's upsert idempotent (re-scoring
+  UPDATEs in place rather than appending history).
+- **`score`** numeric 0..100 (CHECK); the band (cold / warm / hot) is derived in the app
+  (`lib/lead-score.ts`), not stored.
+- **`breakdown`** jsonb — the per-rule contributions (fit + weighted engagement, each
+  `label` / `points` / `group`) that sum to the score. This is what makes the rule score
+  **explainable**: the UI shows WHY and an editor can tune the weights (held in
+  `LEAD_SCORE_RULES`).
+
+WHO writes it: the score is a **process** output (ADR-0042) — the backend / local-pipeline
+scoring pass computes the rule from the [`contact`](semantic-layer/tables/contact.md) fit
+fields + the [`interaction`](semantic-layer/tables/interaction.md) engagement timeline and
+UPSERTs the row; the front end only **reads** it (`listLeadScores` / `listLeadScoresForContact`).
+The pure rule computation (`computeRuleLeadScore`) ships alongside so the surface can
+preview a score and the backend reuses the same weights it persists. `lead_score` is a
+derived silver signal → new OKF concept
+[`lead_score`](semantic-layer/tables/lead_score.md) + coverage-matrix (Demand generation)
++ index rows. No new client PII (the score references the contact by id). The score is a
+shared signal for routing (ADR-0024), journeys (ADR-0073), and forecasting (#316).
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
