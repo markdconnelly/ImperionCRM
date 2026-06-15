@@ -17,6 +17,8 @@ function parse(formData: FormData): TaskInput {
     category: strOr(formData, "category", "general"),
     dueAt: strOrNull(formData, "dueAt"),
     projectId: strOrNull(formData, "projectId"),
+    // Subtask parent (ADR-0065 B1, #335) — null/absent = top-level task.
+    parentTaskId: strOrNull(formData, "parentTaskId"),
   };
 }
 
@@ -84,6 +86,52 @@ export async function moveTaskCategoryAction(id: string, category: string) {
   const { crm } = getRepositories();
   await crm.setTaskCategory(taskId, category);
   revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Add a child task under a parent (ADR-0065 B1, #335). A subtask inherits the
+ * parent's account/project so it lives in the same context; only a title (and
+ * optional due date) are collected inline. category defaults to the parent's so
+ * board grouping stays coherent. Same `delivery:write` audited path as create.
+ */
+export async function addSubtaskAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const parentId = String(formData.get("parentTaskId") ?? "").trim();
+  const title = str(formData, "title");
+  if (!parentId || !title) return;
+  const { crm } = getRepositories();
+  const parent = await crm.getTask(parentId);
+  if (!parent) return;
+  await crm.createTask({
+    accountId: parent.accountId,
+    title,
+    detail: null,
+    status: "open",
+    category: parent.category,
+    dueAt: strOrNull(formData, "dueAt"),
+    projectId: parent.projectId,
+    parentTaskId: parentId,
+  });
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${parentId}/edit`);
+  revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Re-parent a task — promote to top-level (parentTaskId empty) or demote under a
+ * new parent (ADR-0065 B1-F3, #335). The data layer rejects self/descendant
+ * cycles; a refused reparent is a silent no-op (the UI re-renders unchanged).
+ */
+export async function reparentTaskAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const newParentId = strOrNull(formData, "parentTaskId");
+  const { crm } = getRepositories();
+  await crm.reparentTask(id, newParentId);
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}/edit`);
   revalidatePath("/projects/[id]", "page");
 }
 

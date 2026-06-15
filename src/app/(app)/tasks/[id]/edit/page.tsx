@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { TaskForm } from "@/components/tasks/task-form";
-import { updateTaskAction, createTaskTicketAction } from "../../actions";
+import { TaskSubtasks } from "@/components/tasks/task-subtasks";
+import {
+  updateTaskAction,
+  createTaskTicketAction,
+  addSubtaskAction,
+  reparentTaskAction,
+} from "../../actions";
 import { getRepositories } from "@/lib/data";
 
 const TICKET_NOTICES: Record<string, string> = {
@@ -23,7 +29,11 @@ export default async function EditTaskPage({
   const { id } = await params;
   const { ticket } = await searchParams;
   const { crm, engagements } = getRepositories();
-  const [task, accounts] = await Promise.all([crm.getTask(id), crm.accountOptions()]);
+  const [task, accounts, hierarchy] = await Promise.all([
+    crm.getTask(id),
+    crm.accountOptions(),
+    crm.getTaskChildren(id),
+  ]);
   if (!task) notFound();
 
   // Ticket history (#98): the synced silver ticket row carries the live
@@ -50,6 +60,14 @@ export default async function EditTaskPage({
       )}
 
       <TaskForm action={updateTaskAction} task={task} accounts={accounts} />
+
+      <TaskSubtasks
+        taskId={task.id}
+        parentTaskId={task.parentTaskId}
+        hierarchy={hierarchy}
+        addSubtaskAction={addSubtaskAction}
+        reparentTaskAction={reparentTaskAction}
+      />
 
       <section className="max-w-lg rounded-xl border border-border bg-panel p-5">
         <h3 className="font-display text-sm font-semibold tracking-tight">Autotask ticket</h3>
