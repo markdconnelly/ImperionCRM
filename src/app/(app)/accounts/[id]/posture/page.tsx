@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { getRepositories } from "@/lib/data";
+import { listSensitivityCsaForAccount } from "@/lib/security/sensitivity-csa";
+import { SensitivityCsaCard } from "@/components/accounts/sensitivity-csa-card";
 import { refreshPostureAction, snapshotPostureAction } from "../../actions";
 
 // Per-customer security posture overview (#93, ADR-0051). Everything here is a
@@ -74,13 +76,15 @@ export default async function AccountPosturePage({
 }) {
   const { id } = await params;
   const { crm, security } = getRepositories();
-  const [account, tenants, policies, controls, exposures] = await Promise.all([
-    crm.getAccount(id),
-    security.listTenantPostureForAccount(id),
-    security.listPosturePoliciesForAccount(id),
-    security.listSecureScoreControlsForAccount(id),
-    security.listCredentialExposuresForAccount(id),
-  ]);
+  const [account, tenants, policies, controls, exposures, sensitivityCsa] =
+    await Promise.all([
+      crm.getAccount(id),
+      security.listTenantPostureForAccount(id),
+      security.listPosturePoliciesForAccount(id),
+      security.listSecureScoreControlsForAccount(id),
+      security.listCredentialExposuresForAccount(id),
+      listSensitivityCsaForAccount(id),
+    ]);
   if (!account) notFound();
 
   const tenantLabel = new Map(
@@ -326,6 +330,8 @@ export default async function AccountPosturePage({
               </div>
             )}
           </Section>
+
+          <SensitivityCsaCard data={sensitivityCsa} />
         </>
       )}
 

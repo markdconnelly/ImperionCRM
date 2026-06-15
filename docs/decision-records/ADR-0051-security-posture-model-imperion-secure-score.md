@@ -107,3 +107,32 @@ Grants: on-prem pipeline role writes posture_policy / tenant_posture / posture_s
 - The on-prem repo gains a posture merge + quarterly snapshot job; the cloud pipeline gains a single-account posture refresh in its on-demand path.
 - Business Review creation gains a snapshot side-effect.
 - Adding a pillar = new Score Model version + ADR note, never a rewrite of history.
+
+## Addendum (#259, 2026-06-14): information-protection surface — sensitivity labels + custom security attributes
+
+Mark's per-source review (2026-06-12) asked for **M365 sensitivity labels** and **Entra custom
+security attributes** surfaced on the company posture page — *concisely*, and with the custom
+attributes **benchmarked against the MSP standard set** (the golden-baseline pattern of §3, the
+same shape as the secure-score control golden list).
+
+- **Read surface only (this PR, #259).** `src/lib/security/sensitivity-csa.ts` joins two future
+  bronze feeds — `m365_sensitivity_labels` and `entra_custom_security_attributes` — through
+  `account_tenant` (the same ADR-0051 tenant scoping every posture read uses) and routes through
+  the optional-enrichment seam (#301/#302): a not-yet-migrated table → **empty result, not a
+  blanked page**. This reader does **not** go through the shared repository barrel; it is a
+  self-contained server-only read keyed off `getPool()`, so it adds nothing to the data-layer
+  interface.
+- **Benchmark.** `benchmarkCustomAttributes()` is a pure function comparing observed attribute
+  definitions (by name, case-insensitive, set-agnostic) against the MSP standard set
+  `STANDARD_CSA_SET` (`DataClassification`, `OwnerTeam`, `Environment`, `Confidentiality`) — a
+  small, slow-moving policy constant held in code, not the DB. It yields present/missing + a 0–1
+  coverage fraction, surfaced as a single "% of standard" read with present/absent chips.
+- **Concise card.** `SensitivityCsaCard` renders active label names as inline chips and the
+  benchmark as standard-attribute chips — no exhaustive per-tenant table. It lives in the
+  tenants-mapped branch of the posture page, below the secure-score controls.
+- **Bronze ownership.** The two bronze tables follow the 0080 DNS-posture envelope (flat text
+  columns, `tenant_id/source/external_id/collected_at/raw_payload/content_hash`, PK). Their
+  **migration is NOT authored here** — the on-prem collector lane (LocalPipeline #141) owns the
+  DDL + the collector; the front-end migration to land that bronze is tracked by follow-up
+  issue #575. Until both land, every account renders the honest "absent" state. No silver entity
+  shape/authority/join changes, so the semantic-layer gate is not engaged.
