@@ -282,6 +282,58 @@ export const mockRepositories: Repositories = {
     async listPortfolio() {
       return [];
     },
+    async listGoals() {
+      // Demo goals (ADR-0069 D3, #348) so the goals view renders without a DB. One
+      // rollup goal with two linked projects (one done, one quarter-done → weighted
+      // rollup), one manual goal. Percents mirror lib/goals.ts.
+      return [
+        {
+          id: "mock-goal-onboard",
+          name: "Onboard 8 new clients this quarter",
+          owner: "Grace Hopper",
+          period: "Q3 2026",
+          target: 8,
+          current: 3,
+          progressMode: "rollup" as const,
+          notes: null,
+          manualPercent: 38,
+          rolledUpPercent: 63,
+          displayPercent: 63,
+          links: [
+            {
+              projectId: "mock-proj-acme",
+              name: "Acme onboarding",
+              account: "Acme Corp",
+              status: "complete",
+              weight: 1,
+              percentComplete: 100,
+            },
+            {
+              projectId: "mock-proj-globex",
+              name: "Globex onboarding",
+              account: "Globex",
+              status: "in_progress",
+              weight: 1,
+              percentComplete: 25,
+            },
+          ],
+        },
+        {
+          id: "mock-goal-csat",
+          name: "Lift CSAT to 95%",
+          owner: "Ada Lovelace",
+          period: "FY26 H2",
+          target: 95,
+          current: 88,
+          progressMode: "manual" as const,
+          notes: "Tracked manually off the survey dashboard.",
+          manualPercent: 93,
+          rolledUpPercent: null,
+          displayPercent: 93,
+          links: [],
+        },
+      ];
+    },
     async getProject() {
       return null;
     },

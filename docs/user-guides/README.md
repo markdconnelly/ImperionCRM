@@ -36,6 +36,9 @@ right (scoped to your Entra permissions).
 - [Portfolio rollup](portfolio-rollup.md): every project on one screen with its
   rolled-up health + next milestone; filter by account/owner/type/health and
   export to CSV (ADR-0069 D5).
+- [Goals & OKRs](goals-okrs.md): measurable objectives above projects with progress
+  rolled up (weighted) from their linked projects' completion, or set manually
+  (ADR-0069 D3).
 - [Company security posture](security-posture.md): read a company's posture —
   per-tenant secure score, policy classification, **DNS governance** (per-domain
   verdict + record drift, ADR-0063), and credential exposures.

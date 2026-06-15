@@ -42,6 +42,7 @@ import type {
   EventRegistrationRow,
   EventRow,
   ExternalIdentityRow,
+  GoalRow,
   IntelStrip,
   InteractionRow,
   KnowledgeHit,
@@ -603,6 +604,14 @@ export interface CrmRepository {
    * `project_milestone` — no new table.
    */
   listPortfolio(): Promise<PortfolioRow[]>;
+  /**
+   * Goals / OKRs above projects with their rolled-up progress (ADR-0069 D3, #348).
+   * Each goal carries its linked contributing projects (`goal_link` ⋈ `project` ⋈
+   * its `project_milestone` completion) and the weighted-average rollup percent
+   * derived from them (`lib/goals.ts`). Pure read model — the rollup is computed,
+   * never stored. Backs the read-only goals list.
+   */
+  listGoals(): Promise<GoalRow[]>;
   getProject(id: string): Promise<ProjectEditable | null>;
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;

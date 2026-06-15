@@ -105,6 +105,14 @@ export default async function ProjectsPage({
         )}
         {canWrite && (
           <Link
+            href="/projects/goals"
+            className="text-sm text-dim transition-colors hover:text-text"
+          >
+            Goals →
+          </Link>
+        )}
+        {canWrite && (
+          <Link
             href="/projects/new"
             className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
           >
