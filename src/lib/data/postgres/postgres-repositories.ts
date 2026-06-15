@@ -14,6 +14,7 @@ import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
+import { resolveMentions } from "@/lib/mentions";
 import {
   planInstantiation,
   projectIdempotencyKey,
@@ -185,6 +186,8 @@ import type {
   WorkParentType,
   WorkComment,
   WorkActivityEntry,
+  CommentMention,
+  MentionableUser,
   TagParentType,
   Tag,
   AppliedTag,
@@ -7889,8 +7892,34 @@ export const postgresRepositories: Repositories = {
     },
   },
 
-  // ── Work collaboration: comments + activity feed (ADR-0064 A1, migration 0094) ──
+  // ── Work collaboration: comments + activity feed (ADR-0064 A1, migration 0094;
+  //    @mentions A2, migration 9001 [placeholder], #331) ─────────────────────────
   work: {
+    async listMentionableUsers(): Promise<MentionableUser[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.work.listMentionableUsers();
+      try {
+        // Candidate set for the typeahead: every app_user with a usable email
+        // (the handle = lowercased local-part). Ordered for a stable typeahead.
+        const { rows } = await pool.query<{ id: string; display_name: string | null; email: string }>(
+          `SELECT id::text AS id, display_name, email
+             FROM app_user
+            WHERE email IS NOT NULL AND position('@' in email) > 1
+            ORDER BY lower(coalesce(display_name, email))`,
+        );
+        return rows
+          .map((r) => ({
+            id: r.id,
+            displayName: r.display_name ?? r.email.split("@")[0],
+            handle: r.email.split("@")[0].toLowerCase(),
+          }))
+          .filter((u) => /^[a-z0-9._-]+$/.test(u.handle));
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.work.listMentionableUsers();
+      }
+    },
+
     async listComments(parentType: WorkParentType, parentId: string): Promise<WorkComment[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.work.listComments(parentType, parentId);
@@ -7909,7 +7938,8 @@ export const postgresRepositories: Repositories = {
             ORDER BY c.created_at ASC`,
           [parentType, parentId],
         );
-        return rows.map(mapWorkComment);
+        const mentions = await loadMentions(pool, rows.map((r) => r.id));
+        return rows.map((r) => mapWorkComment(r, mentions.get(r.id) ?? []));
       } catch (err) {
         if (isSchemaLagError(err)) return []; // schema not applied yet (#330)
         return mockRepositories.work.listComments(parentType, parentId);
@@ -7946,6 +7976,9 @@ export const postgresRepositories: Repositories = {
             LIMIT $4 OFFSET $5`,
           [parentType, parentId, opts?.commentsOnly ?? false, limit, offset],
         );
+        // Mentions hang off comment rows only; batch-load by the comment ids.
+        const commentIds = rows.filter((r) => r.kind === "comment").map((r) => r.id);
+        const mentions = await loadMentions(pool, commentIds);
         return rows.map((r) => ({
           id: r.id,
           kind: r.kind,
@@ -7958,6 +7991,7 @@ export const postgresRepositories: Repositories = {
           detail: (r.detail as Record<string, unknown> | null) ?? null,
           editedAt: r.edited_at,
           occurredAt: r.occurred_at,
+          mentions: r.kind === "comment" ? mentions.get(r.id) ?? [] : [],
         }));
       } catch (err) {
         if (isSchemaLagError(err)) return []; // schema not applied yet (#330)
@@ -7968,23 +8002,36 @@ export const postgresRepositories: Repositories = {
     async addComment(input: WorkCommentInput): Promise<WorkComment> {
       const pool = getPool();
       if (!pool) return mockRepositories.work.addComment(input);
-      const { rows } = await pool.query<{
-        id: string; parent_type: string; parent_id: string;
-        author_user_id: string | null; author: string | null;
-        body: string; edited_at: string | null; created_at: string;
-      }>(
-        `WITH ins AS (
-           INSERT INTO work_comment (parent_type, parent_id, author_user_id, body)
-           VALUES ($1, $2::uuid, $3::uuid, $4)
-           RETURNING *
-         )
-         SELECT ins.id, ins.parent_type, ins.parent_id::text AS parent_id,
-                ins.author_user_id::text AS author_user_id, u.display_name AS author,
-                ins.body, ins.edited_at::text AS edited_at, ins.created_at::text AS created_at
-           FROM ins LEFT JOIN app_user u ON u.id = ins.author_user_id`,
-        [input.parentType, input.parentId, input.authorUserId, input.body],
-      );
-      return mapWorkComment(rows[0]);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows } = await client.query<CommentDbRow>(
+          `WITH ins AS (
+             INSERT INTO work_comment (parent_type, parent_id, author_user_id, body)
+             VALUES ($1, $2::uuid, $3::uuid, $4)
+             RETURNING *
+           )
+           SELECT ins.id, ins.parent_type, ins.parent_id::text AS parent_id,
+                  ins.author_user_id::text AS author_user_id, u.display_name AS author,
+                  ins.body, ins.edited_at::text AS edited_at, ins.created_at::text AS created_at
+             FROM ins LEFT JOIN app_user u ON u.id = ins.author_user_id`,
+          [input.parentType, input.parentId, input.authorUserId, input.body],
+        );
+        const row = rows[0];
+        // Parse @mentions, persist the links, and emit a notification event each
+        // (ADR-0064 A2) — all in the comment's transaction so a comment never
+        // half-mentions.
+        const mentions = await persistMentions(
+          client, row.id, input.body, input.parentType, input.parentId, input.authorUserId,
+        );
+        await client.query("COMMIT");
+        return mapWorkComment(row, mentions);
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
     },
 
     async editComment(
@@ -7995,26 +8042,43 @@ export const postgresRepositories: Repositories = {
     ): Promise<WorkComment | null> {
       const pool = getPool();
       if (!pool) return mockRepositories.work.editComment(id, body, editorUserId, asAdmin);
-      // Author-scoped unless admin; deleted comments can't be edited.
-      const { rows } = await pool.query<{
-        id: string; parent_type: string; parent_id: string;
-        author_user_id: string | null; author: string | null;
-        body: string; edited_at: string | null; created_at: string;
-      }>(
-        `WITH upd AS (
-           UPDATE work_comment
-              SET body = $2, edited_at = now()
-            WHERE id = $1::uuid AND deleted_at IS NULL
-              AND ($4::boolean IS TRUE OR author_user_id = $3::uuid)
-           RETURNING *
-         )
-         SELECT upd.id, upd.parent_type, upd.parent_id::text AS parent_id,
-                upd.author_user_id::text AS author_user_id, u.display_name AS author,
-                upd.body, upd.edited_at::text AS edited_at, upd.created_at::text AS created_at
-           FROM upd LEFT JOIN app_user u ON u.id = upd.author_user_id`,
-        [id, body, editorUserId, asAdmin],
-      );
-      return rows[0] ? mapWorkComment(rows[0]) : null;
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Author-scoped unless admin; deleted comments can't be edited.
+        const { rows } = await client.query<CommentDbRow>(
+          `WITH upd AS (
+             UPDATE work_comment
+                SET body = $2, edited_at = now()
+              WHERE id = $1::uuid AND deleted_at IS NULL
+                AND ($4::boolean IS TRUE OR author_user_id = $3::uuid)
+             RETURNING *
+           )
+           SELECT upd.id, upd.parent_type, upd.parent_id::text AS parent_id,
+                  upd.author_user_id::text AS author_user_id, u.display_name AS author,
+                  upd.body, upd.edited_at::text AS edited_at, upd.created_at::text AS created_at
+             FROM upd LEFT JOIN app_user u ON u.id = upd.author_user_id`,
+          [id, body, editorUserId, asAdmin],
+        );
+        const row = rows[0];
+        if (!row) {
+          await client.query("ROLLBACK");
+          return null;
+        }
+        // Re-parse the edited body and reconcile the mention links: drop any whose
+        // user is no longer mentioned, then upsert the current set (idempotent on
+        // the unique constraint). A newly-added mention emits a notification event.
+        const mentions = await reconcileMentions(
+          client, row.id, body, row.parent_type as WorkParentType, row.parent_id, editorUserId,
+        );
+        await client.query("COMMIT");
+        return mapWorkComment(row, mentions);
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
     },
 
     async deleteComment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean> {
@@ -8243,12 +8307,15 @@ export const postgresRepositories: Repositories = {
   },
 };
 
-/** Map a work_comment DB row (snake_case) onto the {@link WorkComment} type. */
-function mapWorkComment(r: {
+/** The selected shape of a work_comment row (snake_case) across the work repo. */
+interface CommentDbRow {
   id: string; parent_type: string; parent_id: string;
   author_user_id: string | null; author: string | null;
   body: string; edited_at: string | null; created_at: string;
-}): WorkComment {
+}
+
+/** Map a work_comment DB row (snake_case) onto the {@link WorkComment} type. */
+function mapWorkComment(r: CommentDbRow, mentions: CommentMention[] = []): WorkComment {
   return {
     id: r.id,
     parentType: r.parent_type as WorkParentType,
@@ -8258,7 +8325,151 @@ function mapWorkComment(r: {
     body: r.body,
     editedAt: r.edited_at,
     createdAt: r.created_at,
+    mentions,
   };
+}
+
+// ── @mention persistence helpers (ADR-0064 A2, migration 9001 [placeholder], #331) ──
+// A minimal client surface so these helpers work with both a Pool and a pooled
+// client (the add/edit paths run inside a transaction).
+type Queryable = { query: <T>(sql: string, params?: unknown[]) => Promise<{ rows: T[] }> };
+
+/**
+ * Batch-load resolved mentions for a set of comment ids → Map(commentId →
+ * mentions[]). Returns an empty map when 9001 isn't applied yet (schema lag) so
+ * comments still render (A1 stays functional without A2's table).
+ */
+async function loadMentions(
+  pool: Pool,
+  commentIds: string[],
+): Promise<Map<string, CommentMention[]>> {
+  const out = new Map<string, CommentMention[]>();
+  if (commentIds.length === 0) return out;
+  try {
+    const { rows } = await pool.query<{
+      comment_id: string; mention_user_id: string | null;
+      display_name: string | null; email: string | null;
+    }>(
+      `SELECT cm.comment_id::text AS comment_id,
+              cm.mention_user_id::text AS mention_user_id,
+              u.display_name, u.email
+         FROM comment_mention cm
+         LEFT JOIN app_user u ON u.id = cm.mention_user_id
+        WHERE cm.comment_id = ANY($1::uuid[])
+        ORDER BY cm.created_at ASC`,
+      [commentIds],
+    );
+    for (const r of rows) {
+      const list = out.get(r.comment_id) ?? [];
+      list.push({
+        userId: r.mention_user_id,
+        handle: r.email ? r.email.split("@")[0].toLowerCase() : "",
+        displayName: r.display_name,
+      });
+      out.set(r.comment_id, list);
+    }
+  } catch (err) {
+    if (isSchemaLagError(err)) return out; // 9001 not applied — degrade to no mentions
+    throw err;
+  }
+  return out;
+}
+
+/** The mentionable candidate set, read on the same client (used inside a txn). */
+async function mentionCandidates(client: Queryable): Promise<MentionableUser[]> {
+  const { rows } = await client.query<{ id: string; display_name: string | null; email: string }>(
+    `SELECT id::text AS id, display_name, email
+       FROM app_user
+      WHERE email IS NOT NULL AND position('@' in email) > 1`,
+  );
+  return rows
+    .map((r) => ({
+      id: r.id,
+      displayName: r.display_name ?? r.email.split("@")[0],
+      handle: r.email.split("@")[0].toLowerCase(),
+    }))
+    .filter((u) => /^[a-z0-9._-]+$/.test(u.handle));
+}
+
+/**
+ * Insert the mention links for a freshly-created comment and emit a
+ * `comment.mentioned` audit event per mention (the A2 notification). Skips a
+ * self-mention notification (don't notify yourself). Returns the resolved
+ * mentions for the response.
+ */
+async function persistMentions(
+  client: Queryable,
+  commentId: string,
+  body: string,
+  parentType: WorkParentType,
+  parentId: string,
+  actorUserId: string | null,
+): Promise<CommentMention[]> {
+  const resolved = resolveMentions(body, await mentionCandidates(client));
+  for (const u of resolved) {
+    await client.query(
+      `INSERT INTO comment_mention (comment_id, mention_user_id)
+       VALUES ($1::uuid, $2::uuid)
+       ON CONFLICT (comment_id, mention_user_id) DO NOTHING`,
+      [commentId, u.id],
+    );
+    if (u.id !== actorUserId) {
+      await client.query(
+        `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+         VALUES ($1::uuid, 'comment.mentioned', $2, $3::uuid,
+                 jsonb_build_object('commentId', $4::text, 'mentionedUserId', $5::text))`,
+        [actorUserId, parentType, parentId, commentId, u.id],
+      );
+    }
+  }
+  return resolved.map((u) => ({ userId: u.id, handle: u.handle, displayName: u.displayName }));
+}
+
+/**
+ * Reconcile mention links after an edit: delete links no longer present in the
+ * body, then upsert the current set, emitting a notification only for newly-added
+ * mentions. Returns the resolved current mentions.
+ */
+async function reconcileMentions(
+  client: Queryable,
+  commentId: string,
+  body: string,
+  parentType: WorkParentType,
+  parentId: string,
+  actorUserId: string | null,
+): Promise<CommentMention[]> {
+  const resolved = resolveMentions(body, await mentionCandidates(client));
+  const wantedIds = resolved.map((u) => u.id);
+  // Which links already exist (so we only notify on NEW ones).
+  const { rows: existing } = await client.query<{ mention_user_id: string | null }>(
+    `SELECT mention_user_id::text AS mention_user_id FROM comment_mention WHERE comment_id = $1::uuid`,
+    [commentId],
+  );
+  const existingIds = new Set(existing.map((e) => e.mention_user_id));
+  // Drop links whose user is no longer mentioned.
+  await client.query(
+    `DELETE FROM comment_mention
+      WHERE comment_id = $1::uuid
+        AND ($2::uuid[] = '{}' OR mention_user_id <> ALL($2::uuid[]))`,
+    [commentId, wantedIds],
+  );
+  for (const u of resolved) {
+    await client.query(
+      `INSERT INTO comment_mention (comment_id, mention_user_id)
+       VALUES ($1::uuid, $2::uuid)
+       ON CONFLICT (comment_id, mention_user_id) DO NOTHING`,
+      [commentId, u.id],
+    );
+    if (!existingIds.has(u.id) && u.id !== actorUserId) {
+      await client.query(
+        `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+         VALUES ($1::uuid, 'comment.mentioned', $2, $3::uuid,
+                 jsonb_build_object('commentId', $4::text, 'mentionedUserId', $5::text))`,
+        [actorUserId, parentType, parentId, commentId, u.id],
+      );
+    }
+  }
+  return resolved.map((u) => ({ userId: u.id, handle: u.handle, displayName: u.displayName }));
 }
 
 // ── Row mappers shared across methods ────────────────────────────────────────

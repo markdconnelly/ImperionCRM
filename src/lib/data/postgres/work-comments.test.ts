@@ -53,6 +53,7 @@ describe("work comments + activity feed (ADR-0064 A1, #330)", () => {
     expect(rows[0]).toEqual({
       id: "c1", parentType: "project", parentId: "p1", authorUserId: "u1",
       author: "Ada", body: "first", editedAt: null, createdAt: "2026-06-14T00:00:00Z",
+      mentions: [],
     });
   });
 
@@ -73,36 +74,106 @@ describe("work comments + activity feed (ADR-0064 A1, #330)", () => {
     expect(params[4]).toBe(0); // offset floored
   });
 
-  it("addComment inserts and returns the mapped row with the author name", async () => {
+  it("listMentionableUsers reads app_user and derives @handles from the email local-part", async () => {
     query.mockResolvedValueOnce({
       rows: [
-        {
-          id: "c9", parent_type: "task", parent_id: "t1", author_user_id: "u2",
-          author: "Grace", body: "looks good", edited_at: null, created_at: "2026-06-14T01:00:00Z",
-        },
+        { id: "u1", display_name: "Ada Lovelace", email: "Ada@imperion.com" },
+        { id: "u2", display_name: null, email: "grace@imperion.com" },
+        { id: "u3", display_name: "Bad Handle", email: "has space@x.io" },
       ],
     });
+    const out = await work.listMentionableUsers();
+    const [sql] = query.mock.calls[0] as unknown as [string];
+    expect(sql).toContain("FROM app_user");
+    expect(out).toEqual([
+      { id: "u1", displayName: "Ada Lovelace", handle: "ada" },
+      { id: "u2", displayName: "grace", handle: "grace" }, // falls back to local-part
+    ]); // the malformed handle is dropped
+  });
+
+  it("addComment inserts in a txn, persists resolved mentions + a notification, and returns them", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "c9", parent_type: "task", parent_id: "t1", author_user_id: "u2",
+            author: "Grace", body: "looks good @ada", edited_at: null, created_at: "2026-06-14T01:00:00Z",
+          },
+        ],
+      }) // INSERT work_comment
+      .mockResolvedValueOnce({ rows: [{ id: "u1", display_name: "Ada", email: "ada@x.io" }] }) // candidates
+      .mockResolvedValueOnce({ rows: [] }) // INSERT comment_mention
+      .mockResolvedValueOnce({ rows: [] }) // INSERT audit_log comment.mentioned
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
     const row = await work.addComment({
-      parentType: "task", parentId: "t1", authorUserId: "u2", body: "looks good",
+      parentType: "task", parentId: "t1", authorUserId: "u2", body: "looks good @ada",
     });
-    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
-    expect(sql).toContain("INSERT INTO work_comment");
-    expect(params).toEqual(["task", "t1", "u2", "looks good"]);
+    const sqls = clientQuery.mock.calls.map((c) => String(c[0]));
+    expect(sqls[0]).toContain("BEGIN");
+    expect(sqls[1]).toContain("INSERT INTO work_comment");
+    expect(sqls[3]).toContain("INSERT INTO comment_mention");
+    expect(sqls[4]).toContain("'comment.mentioned'"); // notification event emitted
+    expect(sqls[sqls.length - 1]).toContain("COMMIT");
     expect(row).toMatchObject({ id: "c9", author: "Grace", parentType: "task" });
+    expect(row.mentions).toEqual([{ userId: "u1", handle: "ada", displayName: "Ada" }]);
   });
 
-  it("editComment is author-scoped unless admin (the WHERE carries the predicate)", async () => {
-    await work.editComment("c1", "edited body", "u1", false);
-    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
-    expect(sql).toContain("SET body = $2, edited_at = now()");
-    expect(sql).toContain("($4::boolean IS TRUE OR author_user_id = $3::uuid)");
-    expect(sql).toContain("deleted_at IS NULL"); // can't edit a deleted comment
-    expect(params).toEqual(["c1", "edited body", "u1", false]);
+  it("addComment does NOT notify a self-mention", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "c9", parent_type: "task", parent_id: "t1", author_user_id: "u1",
+            author: "Ada", body: "note to @ada", edited_at: null, created_at: "2026-06-14T01:00:00Z",
+          },
+        ],
+      }) // INSERT work_comment
+      .mockResolvedValueOnce({ rows: [{ id: "u1", display_name: "Ada", email: "ada@x.io" }] }) // candidates
+      .mockResolvedValueOnce({ rows: [] }) // INSERT comment_mention
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT (no audit insert)
+    await work.addComment({
+      parentType: "task", parentId: "t1", authorUserId: "u1", body: "note to @ada",
+    });
+    const sqls = clientQuery.mock.calls.map((c) => String(c[0]));
+    expect(sqls.some((s) => s.includes("comment.mentioned"))).toBe(false);
   });
 
-  it("editComment returns null when no row matched (not author / not found)", async () => {
-    query.mockResolvedValueOnce({ rows: [] });
+  it("editComment is author-scoped unless admin and reconciles mentions in a txn", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "c1", parent_type: "project", parent_id: "p1", author_user_id: "u1",
+            author: "Ada", body: "edited @grace", edited_at: "2026-06-14T02:00:00Z",
+            created_at: "2026-06-14T00:00:00Z",
+          },
+        ],
+      }) // UPDATE work_comment
+      .mockResolvedValueOnce({ rows: [{ id: "u2", display_name: "Grace", email: "grace@x.io" }] }) // candidates
+      .mockResolvedValueOnce({ rows: [] }) // existing mentions
+      .mockResolvedValueOnce({ rows: [] }) // DELETE stale links
+      .mockResolvedValueOnce({ rows: [] }) // INSERT comment_mention
+      .mockResolvedValueOnce({ rows: [] }) // INSERT audit_log
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+    const row = await work.editComment("c1", "edited @grace", "u1", false);
+    const sqls = clientQuery.mock.calls.map((c) => String(c[0]));
+    expect(sqls[1]).toContain("SET body = $2, edited_at = now()");
+    expect(sqls[1]).toContain("($4::boolean IS TRUE OR author_user_id = $3::uuid)");
+    expect(sqls[1]).toContain("deleted_at IS NULL"); // can't edit a deleted comment
+    expect(sqls.some((s) => s.includes("DELETE FROM comment_mention"))).toBe(true);
+    expect(row?.mentions).toEqual([{ userId: "u2", handle: "grace", displayName: "Grace" }]);
+  });
+
+  it("editComment returns null + rolls back when no row matched (not author / not found)", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }); // UPDATE matched nothing
     expect(await work.editComment("c1", "x", "intruder", false)).toBeNull();
+    const sqls = clientQuery.mock.calls.map((c) => String(c[0]));
+    expect(sqls[sqls.length - 1]).toContain("ROLLBACK");
   });
 
   it("deleteComment soft-deletes, writes an audit_log record, and commits", async () => {

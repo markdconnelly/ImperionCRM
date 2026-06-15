@@ -1840,9 +1840,31 @@ outweighs losing a parent FK for an internal tool).
 Authorization: posting/editing/deleting requires `delivery:write`; edit/delete are
 author-scoped in SQL unless the caller is an admin (ADR-0064: own, or any if admin).
 Comment bodies are stored raw and rendered as **plain text** (never HTML) so a body
-cannot inject script. Mentions (A2), notifications (A3) and attachments (A4) are
-separate ADR-0064 follow-ups, not in this slice (#330). These are **app-native
-tables, not silver tier** — no semantic-layer concept file applies.
+cannot inject script. Notifications (A3) and attachments (A4) are separate ADR-0064
+follow-ups. These are **app-native tables, not silver tier** — no semantic-layer
+concept file applies.
+
+### @mentions (ADR-0064 A2, migration 9001 [placeholder — renumber at merge], #331)
+
+A comment body may **@mention** a user as `@handle`, where the handle is the
+lowercased local-part of the user's email (`ada@imperion.com` → `@ada`). On save,
+the body is parsed, each handle resolved against `app_user`, and a link persisted:
+
+- **`comment_mention`** — `{ id, comment_id → work_comment (ON DELETE CASCADE),
+  mention_user_id → app_user (ON DELETE SET NULL), created_at }`, **UNIQUE
+  `(comment_id, mention_user_id)`** so re-parsing an edited body is idempotent.
+  Indexes: `(mention_user_id, created_at DESC)` for the "mentions of me" inbox read
+  and `(comment_id)` for per-comment resolution. A mention **is a resolvable ref**
+  (the A2 acceptance) — the UI renders it as a chip, the parser is in
+  `src/lib/mentions.ts` (pure, tested).
+- **Notification:** each *new* mention emits a `comment.mentioned` `audit_log`
+  event (`detail = { commentId, mentionedUserId }`) — a self-mention does not
+  notify. The event flows through `work_activity_feed` already, so it is durable;
+  the dedicated A3 notification inbox and B3 watcher auto-subscribe will consume
+  `comment_mention` / this event when they land (forward-compatible, no schema
+  churn). Edits **reconcile**: links no longer present are dropped, new ones added.
+
+App-native, not silver tier — no semantic-layer concept file applies.
 
 ## Tags / labels — global vocabulary + polymorphic application (ADR-0065 B6, migration 0096)
 
