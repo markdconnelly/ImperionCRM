@@ -7763,7 +7763,7 @@ export const postgresRepositories: Repositories = {
     },
   },
 
-  // ── Work collaboration: comments + activity feed (ADR-0064 A1, migration 9001) ──
+  // ── Work collaboration: comments + activity feed (ADR-0064 A1, migration 0094) ──
   work: {
     async listComments(parentType: WorkParentType, parentId: string): Promise<WorkComment[]> {
       const pool = getPool();

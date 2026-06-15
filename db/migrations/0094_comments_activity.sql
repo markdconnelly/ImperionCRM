@@ -1,4 +1,4 @@
--- 9001 (PLACEHOLDER — orchestrator renumbers at merge, system CLAUDE.md §10.3):
+-- 0094 comments & activity feed (ADR-0064 A1)
 -- PM collaboration A1 — polymorphic comments + activity feed on task/project/
 -- milestone (ADR-0064, issue #330). First slice of ADR-0064; mentions (A2),
 -- notifications (A3) and attachments (A4) are separate issues/migrations.

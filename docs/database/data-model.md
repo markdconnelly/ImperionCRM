@@ -1792,7 +1792,7 @@ erDiagram
 > sibling-repo processes (Autotask write, MileIQ OAuth, QuickBooks read, bronze→silver merge,
 > receipt lifecycle) build on these tables — **prod-applied 2026-06-14 (0088–0090, #494)**.
 
-## Work collaboration — comments & activity feed (ADR-0064 A1, migration 9001)
+## Work collaboration — comments & activity feed (ADR-0064 A1, migration 0094)
 
 PM collaboration adds a **polymorphic** comment surface reused across every work
 object instead of per-entity comment tables (ADR-0064 chose this; the reuse
