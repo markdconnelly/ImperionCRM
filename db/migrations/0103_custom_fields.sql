@@ -1,4 +1,4 @@
--- 0102 custom fields (ADR-0065 B4, issue #338)
+-- 0103 custom fields (ADR-0065 B4, issue #338)
 --
 -- PM task-structure B4 (ADR-0065): ADMIN-DEFINABLE custom fields on work objects
 -- (tasks / projects), optionally SCOPED to a single project_type, so an admin can
