@@ -51,6 +51,15 @@ Build an in-app view layer, prioritised within the theme:
   dependent shifts.
 - **Multi-view toggle (C4, v2)** — one dataset switchable List/Board/Calendar/Timeline
   without navigation; per-user saved filters/sort/group; shared/saved views later.
+  **Shipped (#344):** the toggle + filter preservation are URL-state — switching
+  List/Board/Calendar carries category/group/swimlane/tag along, so a view switch
+  keeps the active filter set (the C4 acceptance). Per-user saved views are **named
+  snapshots of that query string, persisted in localStorage** — this lane carries
+  **no migration**, so saved views are client-side and private to the browser (cap
+  20). Timeline is part of the toggle only once C3 lands (it needs `task.start_at`).
+  **Shared/team saved views** need a server-side view object (a column/table) and
+  stay a follow-up under *Future considerations*. Helpers: `src/lib/task-views.ts`
+  (pure, tested); UI: `src/components/tasks/task-saved-views.tsx`.
 - **Agile reporting (C5, later)** — burndown/velocity/cumulative-flow; depends on
   estimates (ADR-0069 D1) and sprints (D4); deferred with them.
 

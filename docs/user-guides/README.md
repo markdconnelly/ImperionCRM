@@ -24,6 +24,8 @@ right (scoped to your Entra permissions).
   Open / In progress / Done; the drop saves the status.
 - [Task calendar — the month view](task-calendar.md): see tasks on a month grid
   by due date; drag a task to another day to reschedule it.
+- [Task saved views](task-saved-views.md): switch List / Board / Calendar with
+  your filters intact, and name + recall a filter set as a per-user saved view.
 - [Project board — the kanban view](project-board.md): drag projects across
   Not started / In progress / Blocked / Complete; the drop saves the status.
 - [Delivery templates](delivery-templates.md): author the reusable provisioning
