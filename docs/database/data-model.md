@@ -1374,6 +1374,44 @@ JOINs `dns_domain` so a tracked-but-not-yet-captured domain still surfaces (null
 through the optional-enrichment seam (#301). **Apply 0081 to prod before the read PR
 merges.**
 
+### Security-posture bronze drain — sensitivity labels, custom security attributes, EasyDMARC (migration 0106, #575/#581)
+
+Three already-shipped collectors/readers get their front-end-owned bronze tables in one
+migration (≤1 FE migration-author per wave, §10.3). All-text local-pipeline envelope
+(0080 contract: flat text columns, true types + lossless original in `raw_payload`), PK
+`(tenant_id, source, external_id)`, `content_hash` for change detection; bronze stays
+permissive (no CHECK):
+
+`m365_sensitivity_labels` — Microsoft Purview / M365 sensitivity labels per mapped tenant.
+`external_id` = the Purview label id; `priority` (lower = more sensitive) and `is_active`
+are text. Read account-scoped via `account_tenant` by the #259 surface
+(`src/lib/security/sensitivity-csa.ts`). Collector = local #141.
+
+`entra_custom_security_attributes` — Entra CSA **definitions** (`attribute_set` + `name`)
+per mapped tenant; `external_id` = `<attribute_set>|<name>`. The #259 card benchmarks
+observed names against the MSP `STANDARD_CSA_SET`. Definitions only — assignments are out
+of scope until a collector needs them. Collector = local #141.
+
+`easydmarc_domains` — **new source**: per-domain email-authentication posture
+(DMARC/SPF/DKIM/BIMI status + `setup_status`, `dmarc_policy`, `organization_ref`).
+`external_id` = the domain. Field names are best-effort from EasyDMARC docs (no live key
+yet) — `raw_payload` is lossless so casing/name drift is recoverable without a migration.
+The DMARC aggregate-report (RUA) table is deferred (#581) until a live key exists; a silver
+posture entity will get an OKF concept file at the silver-merge, not here. Collector =
+local #122 (gated on this + the EasyDMARC API key, Mark-gated).
+
+Writer: `imperion-localpipeline` (idempotent upsert, never DELETE). Cloud pipeline,
+backend, and web read. The #259 sensitivity/CSA card and the EasyDMARC surface light up
+automatically once 0106 is applied (schema-lag-tolerant readers, #301/#302). **Apply 0106
+to prod for the feeds to populate.**
+
+> **Already-satisfied siblings (closed, no migration this wave):** `mileiq_drive` (#590)
+> and `qbo_expense_account` (#592) were requested as bronze-drain tables but already exist
+> and are prod-applied — `qbo_expense_account` in **0088** (typed bronze, `qbo_account_id`
+> natural key) and `mileiq_drive` in **0089** (typed bronze, `mileiq_drive_id` natural key).
+> Both ship the expense-tracking ADR-0083 set; the existing column contracts satisfy the
+> requests, so #590/#592 were closed rather than re-authored.
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.
