@@ -254,6 +254,51 @@ export interface DeliveryTemplateDetail {
 }
 
 /**
+ * A project template — a reusable, admin-editable project playbook (ADR-0070 E1,
+ * migration 0109, #352). Generalises the hard-coded onboarding playbook. This is
+ * the list/picker summary; the full tree is `ProjectTemplateDetail`. Distinct from
+ * `DeliveryTemplateRow` (ADR-0081), which is the sale→delivery provisioning playbook.
+ */
+export interface ProjectTemplateRow {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  projectTypeId: string | null; // optional binding (picker filter); null = any type
+  projectTypeName: string | null; // resolved display name, or null
+  isProtected: boolean; // a seeded built-in (the onboarding playbook) — cannot be deleted
+  milestoneCount: number;
+  itemCount: number; // steps + tasks beneath the milestones
+}
+
+/**
+ * One node of a project template's tree (ADR-0070 E1). A milestone is top-level
+ * (`parentId` null) and becomes a `project_milestone`; a step/task is nested under
+ * a milestone (`parentId` set) and becomes a `task` at instantiation.
+ */
+export interface TemplateItem {
+  id: string;
+  parentId: string | null; // owning milestone for a step/task; null for a milestone
+  kind: "milestone" | "step" | "task";
+  ordinal: number;
+  title: string; // milestone name or step/task title (from payload)
+  offsetDays: number; // days from project start
+  durationDays: number;
+}
+
+/** The full project-template tree (template → milestones → steps/tasks). */
+export interface ProjectTemplateDetail {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  projectTypeId: string | null;
+  projectTypeName: string | null;
+  isProtected: boolean;
+  items: TemplateItem[]; // flat, ordered; group by parentId to rebuild the tree
+}
+
+/**
  * A project_provisioning row (ADR-0080 §4, migration 0082 + 0084 gate) — the 1:1
  * binding of a native delivery project to its Autotask Project, owning the
  * provisioning idempotency + the hard contract gate. Read-shape; the executor

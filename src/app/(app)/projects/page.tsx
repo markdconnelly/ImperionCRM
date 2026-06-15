@@ -105,6 +105,12 @@ export default async function ProjectsPage({
         >
           Delivery templates →
         </Link>
+        <Link
+          href="/project-templates"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Project templates →
+        </Link>
         {canWrite && (
           <Link
             href="/projects/workload"

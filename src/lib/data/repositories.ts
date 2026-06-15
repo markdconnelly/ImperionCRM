@@ -50,6 +50,8 @@ import type {
   LeadCaptureEventRow,
   DeliveryTemplateRow,
   DeliveryTemplateDetail,
+  ProjectTemplateRow,
+  ProjectTemplateDetail,
   DeliveryBoardProject,
   TimesheetRow,
   TimesheetDetail,
@@ -354,6 +356,50 @@ export interface DeliveryInstantiationInput {
   startDate: string;
   /** The won opportunity that triggered this, or null. Seeds the won→Autotask seam. */
   opportunityId: string | null;
+}
+
+/** A step/task beneath a project-template milestone (ADR-0070 E1). */
+export interface ProjectTemplateChildInput {
+  kind: "step" | "task";
+  title: string;
+  offsetDays: number;
+  durationDays: number;
+}
+
+/** A milestone within a project-template payload — becomes a project_milestone. */
+export interface ProjectTemplateMilestoneInput {
+  name: string;
+  offsetDays: number;
+  durationDays: number;
+  items: ProjectTemplateChildInput[];
+}
+
+/** Fields for creating a project template + its full milestone/item tree (ADR-0070 E1, #352). */
+export interface ProjectTemplateInput {
+  key: string; // stable machine key, slugified from the name
+  name: string;
+  description: string | null;
+  projectTypeId: string | null; // optional binding; null = any type
+  milestones: ProjectTemplateMilestoneInput[];
+}
+
+/**
+ * Instantiate a project template (ADR-0070 E1, #352): in one transaction create the
+ * native project + a milestone per template milestone + a task per step/task,
+ * SNAPSHOTTING the template (later template edits never retro-mutate this project).
+ * The seeded protected onboarding template delegates to applyOnboardingTemplate.
+ * Returns the new project id.
+ */
+export interface ProjectTemplateInstantiationInput {
+  accountId: string;
+  /** New project name. */
+  name: string;
+  /** FK into project_type (table, not enum — ADR-0052). */
+  projectTypeId: string;
+  /** The project template whose milestone/item tree is snapshotted. */
+  projectTemplateId: string;
+  /** Project start date (yyyy-mm-dd) — the anchor for all milestone/task date math. */
+  startDate: string;
 }
 
 /** A new/edited attendance Time Entry (ADR-0082). Duration is derived from start/end. */
@@ -770,6 +816,23 @@ export interface CrmRepository {
    * dispatching task — all in one transaction. Returns the new project id.
    */
   instantiateDeliveryTemplate(input: DeliveryInstantiationInput): Promise<string>;
+
+  // Project templates — admin-editable project playbooks (ADR-0070 E1, migration 0109)
+  /** Authoring/picker list. `projectTypeId` filters to templates bound to that type (or unbound). */
+  listProjectTemplates(opts?: { projectTypeId?: string }): Promise<ProjectTemplateRow[]>;
+  /** The full template tree (milestones + steps/tasks), or null if not found. */
+  getProjectTemplate(id: string): Promise<ProjectTemplateDetail | null>;
+  /** Create a template + its whole milestone/item tree in one transaction; returns the id. */
+  createProjectTemplate(input: ProjectTemplateInput): Promise<string>;
+  /** Delete a template (CASCADE drops its items). Refuses a protected (seeded) template. */
+  deleteProjectTemplate(id: string): Promise<void>;
+  /**
+   * Instantiate a project template (ADR-0070 E1, #352): create the project + a
+   * milestone per template milestone + a task per step/task, snapshotting the
+   * template, in one transaction. The protected onboarding template delegates to
+   * applyOnboardingTemplate (no behaviour change). Returns the new project id.
+   */
+  instantiateProjectTemplate(input: ProjectTemplateInstantiationInput): Promise<string>;
   /**
    * The delivery board read model (ADR-0080 §4/§7, #568): every provisioned
    * project (`project_provisioning ⋈ project ⋈ account`) with its dispatching
