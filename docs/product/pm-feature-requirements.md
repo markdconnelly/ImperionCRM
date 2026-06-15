@@ -148,7 +148,7 @@ content_type, size_bytes, uploaded_by, created_at, deleted_at }`.
 
 ## B1. Subtasks / hierarchy
 
-**Status: SHIPPED** (#335, migration 9001, ADR-0065 B1). `task.parent_task_id` self-FK +
+**Status: SHIPPED** (#335, migration 0095, ADR-0065 B1). `task.parent_task_id` self-FK +
 `task.ordinal`; list shows top-level tasks with the n/m rollup; the task edit page hosts
 the subtask panel (add child inline, promote/demote, navigable depth); reparent rejects
 cycles in the data layer; auto-complete is manual. B1-F4 resolved = **coexist** with

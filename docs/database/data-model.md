@@ -154,7 +154,7 @@ erDiagram
       uuid account_id FK
       uuid owner_user_id FK
       uuid project_id FK "SET NULL — one task model (0058, ADR-0052)"
-      uuid parent_task_id FK "CASCADE — subtask hierarchy (9001, ADR-0065 B1)"
+      uuid parent_task_id FK "CASCADE — subtask hierarchy (0095, ADR-0065 B1)"
       text title
       text status
       text category "sales|project|onboarding|general"
@@ -983,7 +983,7 @@ erDiagram
 > steps re-derives the phase R/Y/G. Ad-hoc PM work still uses `TASK` (category
 > project/onboarding); the playbook checklist does not.
 
-> **Subtasks / task hierarchy (ADR-0065 B1, #335, migration 9001).** A `TASK` carries a
+> **Subtasks / task hierarchy (ADR-0065 B1, #335, migration 0095).** A `TASK` carries a
 > nullable self-FK `parent_task_id` (ON DELETE CASCADE — a parent's subtree dies with it)
 > plus a sibling `ordinal`. One level is required; arbitrary depth is allowed (no DB depth
 > cap). The task list shows top-level tasks only, with an **n/m children-done rollup** read

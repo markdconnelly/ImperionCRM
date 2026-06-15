@@ -1,6 +1,6 @@
--- 9001 task hierarchy / subtasks (ADR-0065 B1, issue #335)
+-- 0095 task hierarchy / subtasks (ADR-0065 B1, issue #335)
 -- PLACEHOLDER NUMBER — the orchestrator renumbers this to the next free slot at
--- merge (concurrency contract §10.3); do not treat 9001 as final.
+-- merge (concurrency contract §10.3); do not treat 0095 as final.
 --
 -- PM task structure B1 (ADR-0065): a task can have child tasks. Adds a nullable
 -- self-FK `parent_task_id` plus a sibling `ordinal` for ordering. One level is
