@@ -54,6 +54,7 @@ subset; remaining entities are tracked for expansion
 | [`contract`](tables/contract.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`interaction`](tables/interaction.md) | single-SoR | per-source / per-channel | ADR-0011 |
 | [`meeting`](tables/meeting.md) | single-SoR | per-platform (1:1 with interaction) | ADR-0011 |
+| [`conversation`](tables/conversation.md) | single-SoR (+ gold) | app SoR; source supplies the capture (ACS/Teams/upload) | ADR-0068 |
 | [`campaign`](tables/campaign.md) | single-SoR | website system of record | ADR-0053 |
 | [`workflow`](tables/workflow.md) | single-SoR | website system of record | ADR-0027 |
 | [`timesheet`](tables/timesheet.md) | single-SoR | website system of record | ADR-0082 |
