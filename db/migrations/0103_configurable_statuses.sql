@@ -1,4 +1,4 @@
--- 0102 configurable statuses per project type (ADR-0065 B5, issue #339)
+-- 0103 configurable statuses per project type (ADR-0065 B5, issue #339)
 --
 -- PM task structure B5 (ADR-0065): today's status values are hard-coded — `task.status`
 -- is a free `text` column (open|in_progress|done, 0007) and `project.status` is the

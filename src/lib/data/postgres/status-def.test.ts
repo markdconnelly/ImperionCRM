@@ -65,7 +65,7 @@ describe("configurable statuses (ADR-0065 B5, #339)", () => {
   it("falls back to the mock default sets when no pool is configured", async () => {
     getPool.mockReturnValue(null);
     const out = await mockRepositories.crm.listStatusDefs("project");
-    // The seeded global project set (0102) — blocked rolls up as in_progress.
+    // The seeded global project set (0103) — blocked rolls up as in_progress.
     expect(out.map((s) => s.key)).toEqual(["not_started", "in_progress", "blocked", "complete"]);
     expect(out.find((s) => s.key === "blocked")?.category).toBe("in_progress");
     expect(out.find((s) => s.key === "complete")?.category).toBe("done");
