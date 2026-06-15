@@ -2029,9 +2029,6 @@ silver tier** — no semantic-layer concept file applies.
 
 ## Custom fields — admin-definable fields on tasks/projects (ADR-0065 B4, migration 0102)
 
-> Migration `0102` is the merge-assigned number; this slice was authored against the
-> `9001_custom_fields.sql` placeholder (concurrency contract §10.3).
-
 PM task-structure B4 adds **admin-definable custom fields** on work objects
 (task / project), optionally **scoped to one `project_type`**, so an admin can add
 (e.g.) a "Risk level" single-select that appears **only on Implementation projects**

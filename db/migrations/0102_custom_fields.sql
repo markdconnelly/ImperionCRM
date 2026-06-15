@@ -1,7 +1,4 @@
--- 9001 custom fields (ADR-0065 B4, issue #338)
--- PLACEHOLDER NUMBER — the orchestrator renumbers this to the next free slot at
--- merge (concurrency contract §10.3); prod schema is at 0101, so this becomes
--- 0102. Do NOT treat 9001 as final.
+-- 0102 custom fields (ADR-0065 B4, issue #338)
 --
 -- PM task-structure B4 (ADR-0065): ADMIN-DEFINABLE custom fields on work objects
 -- (tasks / projects), optionally SCOPED to a single project_type, so an admin can
