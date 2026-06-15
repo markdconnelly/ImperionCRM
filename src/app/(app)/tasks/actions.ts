@@ -89,6 +89,31 @@ export async function moveTaskCategoryAction(id: string, category: string) {
   revalidatePath("/projects/[id]", "page");
 }
 
+/** A bare ISO calendar date, `yyyy-mm-dd`. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Reschedule a task to a new due date by dragging it onto a calendar day
+ * (#342, ADR-0066 C2). Drag persists through the same `delivery:write`-guarded,
+ * audited mutation path as the edit form (ADR-0066: "drag to reschedule
+ * (audited)"); a due-only write avoids reparsing the whole TaskInput. The new
+ * date must be a bare ISO `yyyy-mm-dd` (the calendar day cell) — a malformed or
+ * absent value is a silent no-op so a hand-crafted call can't corrupt the column.
+ * No redirect — the calendar stays put and the client refreshes in place.
+ * TODO(#438): emit an activity-feed event once the ADR-0064 A1 feed lands.
+ */
+export async function moveTaskDueAction(id: string, dueAt: string) {
+  await requireCapability("delivery:write");
+  const taskId = id.trim();
+  if (!taskId) return;
+  const due = dueAt.trim();
+  if (!ISO_DATE.test(due)) return;
+  const { crm } = getRepositories();
+  await crm.setTaskDue(taskId, due);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
 /**
  * Add a child task under a parent (ADR-0065 B1, #335). A subtask inherits the
  * parent's account/project so it lives in the same context; only a title (and

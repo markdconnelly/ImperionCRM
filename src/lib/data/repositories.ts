@@ -493,6 +493,12 @@ export interface CrmRepository {
   setTaskStatus(id: string, status: string): Promise<void>;
   /** Set a task's category (kanban group-by=category drop; idempotent). */
   setTaskCategory(id: string, category: string): Promise<void>;
+  /**
+   * Set a task's due date (calendar drag-to-reschedule, ADR-0066 C2). `dueAt` is
+   * an ISO `yyyy-mm-dd` string, or null to clear. Idempotent; no migration —
+   * writes the existing `task.due_at` column (0007).
+   */
+  setTaskDue(id: string, dueAt: string | null): Promise<void>;
 
   // Proposals (full CRUD) — attach to an opportunity (ADR-0019)
   listProposals(): Promise<ProposalRow[]>;
