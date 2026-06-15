@@ -1653,6 +1653,13 @@ export interface EnrollmentRow {
 /** The work objects a comment / activity feed can hang off (polymorphic, ADR-0064). */
 export type WorkParentType = "task" | "project" | "milestone";
 
+/** A resolved @mention on a comment (ADR-0064 A2, #331). */
+export interface CommentMention {
+  userId: string | null; // app_user.id, null if the user was later removed
+  handle: string; // the @handle as resolved (email local-part)
+  displayName: string | null; // resolved display name for rendering the link
+}
+
 /** A single markdown comment on a work object. */
 export interface WorkComment {
   id: string;
@@ -1663,6 +1670,8 @@ export interface WorkComment {
   body: string; // markdown
   editedAt: string | null;
   createdAt: string;
+  /** Resolved @mentions on this comment (ADR-0064 A2, #331); [] when none. */
+  mentions: CommentMention[];
 }
 
 /**
@@ -1683,6 +1692,16 @@ export interface WorkActivityEntry {
   detail: Record<string, unknown> | null; // audit detail jsonb (kind === "event")
   editedAt: string | null;
   occurredAt: string;
+  /** Resolved @mentions (kind === "comment"; ADR-0064 A2, #331); [] otherwise. */
+  mentions: CommentMention[];
+}
+
+/** A user that can be @mentioned in a comment — the typeahead row (ADR-0064 A2, #331). */
+export interface MentionableUser {
+  id: string;
+  displayName: string;
+  /** Lowercased email local-part, the text after `@` in a mention. */
+  handle: string;
 }
 
 // ── PM task structure — tags / labels (ADR-0065 B6, #340) ────────────────────

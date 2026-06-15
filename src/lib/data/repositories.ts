@@ -111,6 +111,7 @@ import type {
   WorkParentType,
   WorkComment,
   WorkActivityEntry,
+  MentionableUser,
   TagParentType,
   Tag,
   AppliedTag,
@@ -1458,12 +1459,21 @@ export interface WorkRepository {
     parentId: string,
     opts?: { commentsOnly?: boolean; limit?: number; offset?: number },
   ): Promise<WorkActivityEntry[]>;
-  /** Post a comment; returns the created row. */
+  /** Users that can be @mentioned (ADR-0064 A2): the typeahead candidate set. */
+  listMentionableUsers(): Promise<MentionableUser[]>;
+  /**
+   * Post a comment; returns the created row. @mentions in the body (ADR-0064 A2,
+   * #331) are parsed, persisted to comment_mention, and a `comment.mentioned`
+   * audit event is emitted per mention (the notification surface) — all inside
+   * the insert's transaction. The returned row carries the resolved `mentions`.
+   */
   addComment(input: WorkCommentInput): Promise<WorkComment>;
   /**
    * Edit a comment's body in place (sets edited_at). Scoped to the author unless
-   * `asAdmin` (ADR-0064: edit own, admins any). Returns the updated row, or null
-   * if not found / not permitted.
+   * `asAdmin` (ADR-0064: edit own, admins any). Re-parses @mentions and reconciles
+   * comment_mention (adds new, drops removed; idempotent on the unique constraint).
+   * Returns the updated row with its resolved `mentions`, or null if not found /
+   * not permitted.
    */
   editComment(
     id: string,

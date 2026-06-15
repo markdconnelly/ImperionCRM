@@ -41,11 +41,13 @@ import type {
   WorkComment,
   WorkActivityEntry,
   WorkParentType,
+  MentionableUser,
   Tag,
   AppliedTag,
   TagParentType,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
+import { resolveMentions } from "@/lib/mentions";
 
 const NO_DB =
   "Editing requires a configured database. Set the database connection to enable manual changes.";
@@ -53,6 +55,13 @@ const NO_DB =
 /** In-memory comment store so the comment/feed UI works in mock mode (ADR-0064 A1). */
 const mockComments: WorkComment[] = [];
 let mockCommentSeq = 0;
+
+/** A fixed mentionable roster so the @mention typeahead works in mock mode (A2, #331). */
+const mockMentionableUsers: MentionableUser[] = [
+  { id: "mock-user-ada", displayName: "Ada Lovelace", handle: "ada" },
+  { id: "mock-user-grace", displayName: "Grace Hopper", handle: "grace" },
+  { id: "mock-user-alan", displayName: "Alan Turing", handle: "alan" },
+];
 
 /** In-memory tag vocabulary + applications so the tags UI works in mock mode (ADR-0065 B6). */
 interface MockTag {
@@ -1180,6 +1189,9 @@ export const mockRepositories: Repositories = {
 
   // ── Work collaboration: comments + activity feed (ADR-0064 A1) ──────────────
   work: {
+    async listMentionableUsers(): Promise<MentionableUser[]> {
+      return [...mockMentionableUsers];
+    },
     async listComments(parentType: WorkParentType, parentId: string) {
       return mockComments
         .filter((c) => c.parentType === parentType && c.parentId === parentId)
@@ -1209,6 +1221,7 @@ export const mockRepositories: Repositories = {
           detail: null,
           editedAt: c.editedAt,
           occurredAt: c.createdAt,
+          mentions: c.mentions,
         }));
     },
     async addComment(input: WorkCommentInput): Promise<WorkComment> {
@@ -1221,6 +1234,9 @@ export const mockRepositories: Repositories = {
         body: input.body,
         editedAt: null,
         createdAt: new Date().toISOString(),
+        mentions: resolveMentions(input.body, mockMentionableUsers).map((u) => ({
+          userId: u.id, handle: u.handle, displayName: u.displayName,
+        })),
       };
       mockComments.push(row);
       return row;
@@ -1230,6 +1246,9 @@ export const mockRepositories: Repositories = {
       if (!row) return null;
       row.body = body;
       row.editedAt = new Date().toISOString();
+      row.mentions = resolveMentions(body, mockMentionableUsers).map((u) => ({
+        userId: u.id, handle: u.handle, displayName: u.displayName,
+      }));
       return row;
     },
     async deleteComment(id: string): Promise<boolean> {

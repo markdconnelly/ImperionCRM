@@ -3,12 +3,10 @@ import { getSessionRoles } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/roles";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 import { auth } from "@/auth";
-import { TextArea } from "@/components/ui/form";
-import {
-  addCommentAction,
-  deleteCommentAction,
-} from "@/app/(app)/projects/[id]/comment-actions";
-import type { WorkParentType } from "@/types";
+import { deleteCommentAction } from "@/app/(app)/projects/[id]/comment-actions";
+import { CommentComposer } from "@/components/work/comment-composer";
+import { segmentBody, type MentionableUser } from "@/lib/mentions";
+import type { CommentMention, WorkParentType } from "@/types";
 
 /**
  * Comments + unified activity feed for a work object (ADR-0064 A1, #330).
@@ -21,8 +19,11 @@ import type { WorkParentType } from "@/types";
  * as plain text (`whitespace-pre-wrap`) — never as HTML — so a malicious body
  * cannot inject script (NFR-3 / unified-security-standard.md).
  *
- * Mentions (A2), notifications (A3) and attachments (A4) are separate ADR-0064
- * issues and are intentionally out of this slice.
+ * @mentions (A2, #331) are live: the composer offers an `@` typeahead over the
+ * mentionable roster and saved comments render each resolved mention as an
+ * accent chip. Notifications (A3) and attachments (A4) remain separate ADR-0064
+ * issues; a mention currently emits a durable `comment.mentioned` audit event
+ * (which surfaces here) that the future A3 inbox will consume.
  */
 export async function ActivityFeed({
   parentType,
@@ -41,10 +42,11 @@ export async function ActivityFeed({
   basePath: string;
 }) {
   const { work } = getRepositories();
-  const [entries, roles, session] = await Promise.all([
+  const [entries, roles, session, mentionable] = await Promise.all([
     work.listActivity(parentType, parentId, { commentsOnly, limit: 100 }),
     getSessionRoles(),
     auth(),
+    canComment ? work.listMentionableUsers() : Promise.resolve([]),
   ]);
   const admin = isAdmin(roles);
   const myUserId = await resolveAppUserIdByEmail(session?.user?.email ?? "");
@@ -65,27 +67,7 @@ export async function ActivityFeed({
       </div>
 
       {canComment && (
-        <form
-          action={addCommentAction}
-          className="flex flex-col gap-2 rounded-lg border border-border bg-panel px-4 py-3"
-        >
-          <input type="hidden" name="parentType" value={parentType} />
-          <input type="hidden" name="parentId" value={parentId} />
-          <TextArea
-            name="body"
-            rows={2}
-            placeholder="Add a comment… (markdown, @mentions coming soon)"
-            required
-          />
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
-            >
-              Comment
-            </button>
-          </div>
-        </form>
+        <CommentComposer parentType={parentType} parentId={parentId} users={mentionable} />
       )}
 
       {entries.length === 0 ? (
@@ -114,7 +96,7 @@ export async function ActivityFeed({
                 </span>
               </div>
               {e.kind === "comment" ? (
-                <p className="mt-1 whitespace-pre-wrap text-sm text-text">{e.body}</p>
+                <CommentBody body={e.body ?? ""} mentions={e.mentions} />
               ) : (
                 <p className="mt-1 text-sm text-dim">{describeEvent(e.action, e.detail)}</p>
               )}
@@ -139,6 +121,39 @@ export async function ActivityFeed({
   );
 }
 
+/**
+ * Render a comment body with its resolved @mentions highlighted (ADR-0064 A2).
+ * Segments by the mention handles actually persisted for this comment, so an
+ * `@token` that resolves to no user stays literal text. Each segment is rendered
+ * as a React text node / element — never `dangerouslySetInnerHTML` — so the body
+ * cannot inject markup (NFR-3 / unified-security-standard.md). The wrapper keeps
+ * `whitespace-pre-wrap` so newlines and spacing are preserved as before.
+ */
+function CommentBody({ body, mentions }: { body: string; mentions: CommentMention[] }) {
+  // segmentBody resolves against handle → so feed only the mentions on THIS comment.
+  const users: MentionableUser[] = mentions
+    .filter((m) => m.handle)
+    .map((m) => ({ id: m.userId ?? m.handle, displayName: m.displayName ?? m.handle, handle: m.handle }));
+  const segments = segmentBody(body, users);
+  return (
+    <p className="mt-1 whitespace-pre-wrap text-sm text-text">
+      {segments.map((s, i) =>
+        s.kind === "mention" ? (
+          <span
+            key={i}
+            className="rounded bg-accent/15 px-1 font-medium text-accent"
+            title={s.user.displayName}
+          >
+            @{s.user.displayName}
+          </span>
+        ) : (
+          <span key={i}>{s.text}</span>
+        ),
+      )}
+    </p>
+  );
+}
+
 function FilterTab({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
     <a
@@ -157,6 +172,7 @@ function FilterTab({ href, label, active }: { href: string; label: string; activ
 /** Human-readable one-liner for an audit event in the feed. */
 function describeEvent(action: string | null, detail: Record<string, unknown> | null): string {
   if (action === "comment.deleted") return "deleted a comment";
+  if (action === "comment.mentioned") return "mentioned a teammate in a comment";
   const verb = action?.replace(/_/g, " ") ?? "system event";
   if (detail && typeof detail === "object" && Object.keys(detail).length > 0) {
     return `${verb}`;
