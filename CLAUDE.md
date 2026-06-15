@@ -157,13 +157,11 @@ serving data.
   **admin-only** (#90, `canSeeAgentPages` — same gate as Settings/ADR-0030), and
   Settings has an **AI tab** surfacing the orchestrator preset / budget cap /
   month-to-date spend card (same card + backend PUT as the AI Agents page).
-- **Data:** PostgreSQL + pgvector; migrations **0001–0093 applied** to prod (verified
-  2026-06-14 via read-only introspection; incl. 0080/0081 DNS+domain, 0082–0084
-  sale→delivery, **0085–0087 time tracking — live**, **0088–0090 expense — schema
-  live**, **0092/0093 QuickBooks `Purchase` + connection-provider enum — live**).
-  Repo holds files through 0093. Typed repositories
-  with a mock fallback. Entra SSO (certificate client auth) +
-  break-glass.
+- **Data:** PostgreSQL + pgvector; migrations **0001–0101 applied** to prod
+  (latest: Waves 8/9 work-management set 0094–0101 — comments/activity, task
+  hierarchy, work tags, mentions, dependencies, assignees/watchers, attachments,
+  notifications). Repo holds files through 0101. Typed repositories with a mock
+  fallback. Entra SSO (certificate client auth) + break-glass.
 - **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
 - **Per-connection poll cadence (ADR-0038, migration 0035):** `connection.poll_interval_minutes`
   (0 = manual/paused) with an auto-saving cadence selector on the Settings cards; the pipeline
