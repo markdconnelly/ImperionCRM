@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import type { TaskRow } from "@/types";
+import { TaskTagEditor } from "@/components/tags/task-tag-editor";
+import type { AppliedTag, Tag, TaskRow } from "@/types";
 
 const statusTone: Record<string, string> = {
   open: "text-amber",
@@ -18,10 +19,23 @@ const CATEGORY_LABEL: Record<string, string> = {
 export function TasksTable({
   tasks,
   deleteAction,
+  tagsByTask = {},
+  vocabulary = [],
+  applyTagAction,
+  applyExistingTagAction,
+  removeTagAction,
 }: {
   tasks: TaskRow[];
   deleteAction: (formData: FormData) => void | Promise<void>;
+  /** parentId → applied tag chips (ADR-0065 B6, #340). */
+  tagsByTask?: Record<string, AppliedTag[]>;
+  /** Whole tag vocabulary for the "apply existing" picker. */
+  vocabulary?: Tag[];
+  applyTagAction?: (formData: FormData) => void | Promise<void>;
+  applyExistingTagAction?: (formData: FormData) => void | Promise<void>;
+  removeTagAction?: (formData: FormData) => void | Promise<void>;
 }) {
+  const tagsEnabled = Boolean(applyTagAction && applyExistingTagAction && removeTagAction);
   return (
     <div className="rounded-lg border border-border bg-panel">
       <div className="overflow-x-auto">
@@ -30,6 +44,7 @@ export function TasksTable({
             <tr className="text-left text-xs text-dim">
               <th className="px-4 py-2 font-medium">Task</th>
               <th className="px-4 py-2 font-medium">Category</th>
+              {tagsEnabled && <th className="px-4 py-2 font-medium">Tags</th>}
               <th className="px-4 py-2 font-medium">Account</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Due</th>
@@ -61,6 +76,19 @@ export function TasksTable({
                     {CATEGORY_LABEL[t.category] ?? t.category}
                   </span>
                 </td>
+                {tagsEnabled && (
+                  <td className="px-4 py-3">
+                    <TaskTagEditor
+                      parentType="task"
+                      parentId={t.id}
+                      applied={tagsByTask[t.id] ?? []}
+                      vocabulary={vocabulary}
+                      applyAction={applyTagAction!}
+                      applyExistingAction={applyExistingTagAction!}
+                      removeAction={removeTagAction!}
+                    />
+                  </td>
+                )}
                 <td className="px-4 py-3 text-dim">{t.account ?? "—"}</td>
                 <td className={cn("px-4 py-3", statusTone[t.status] ?? "text-dim")}>
                   {t.status.replace(/_/g, " ")}
@@ -86,7 +114,7 @@ export function TasksTable({
             ))}
             {tasks.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-dim">
+                <td colSpan={tagsEnabled ? 7 : 6} className="px-4 py-8 text-center text-dim">
                   No tasks yet. Create one to get started.
                 </td>
               </tr>

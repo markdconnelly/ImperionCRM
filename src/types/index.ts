@@ -1684,3 +1684,28 @@ export interface WorkActivityEntry {
   editedAt: string | null;
   occurredAt: string;
 }
+
+// ── PM task structure — tags / labels (ADR-0065 B6, #340) ────────────────────
+
+/** Work objects a tag can be applied to (polymorphic, ADR-0065 B6). */
+export type TagParentType = "task" | "project";
+
+/**
+ * A tag in the global vocabulary (ADR-0065 B6). `color` is a design-token name
+ * (accent | green | amber | red | slate | …) the UI resolves against the palette,
+ * never a raw hex. `usageCount` is the number of work objects carrying it
+ * (present on the vocabulary read; 0 = unused).
+ */
+export interface Tag {
+  id: string;
+  label: string;
+  color: string;
+  usageCount: number;
+}
+
+/** A tag applied to a work object, as shown on its chips (ADR-0065 B6, #340). */
+export interface AppliedTag {
+  id: string;
+  label: string;
+  color: string;
+}

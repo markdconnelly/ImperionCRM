@@ -183,6 +183,18 @@ erDiagram
       vector embedding
       text model
     }
+    TAG {
+      uuid id PK
+      text label "unique on lower(label) — global vocab (0096, ADR-0065 B6)"
+      text color "design-token name, not hex"
+      uuid created_by FK "SET NULL"
+    }
+    WORK_TAG {
+      uuid tag_id FK "CASCADE — application of a tag"
+      text parent_type "task|project (CHECK)"
+      uuid parent_id "polymorphic — no FK"
+    }
+    TAG ||--o{ WORK_TAG : "applied via"
 ```
 
 ### Sale→delivery orchestration tracking (ADR-0080, migration 0082)
@@ -1831,6 +1843,32 @@ Comment bodies are stored raw and rendered as **plain text** (never HTML) so a b
 cannot inject script. Mentions (A2), notifications (A3) and attachments (A4) are
 separate ADR-0064 follow-ups, not in this slice (#330). These are **app-native
 tables, not silver tier** — no semantic-layer concept file applies.
+
+## Tags / labels — global vocabulary + polymorphic application (ADR-0065 B6, migration 0096)
+
+PM task-structure B6 adds **free-form, colour-coded tags** with a **global
+vocabulary**, applied to work objects (task / project) across the system — distinct
+from `task.category` (the fixed sales|project|onboarding|general lane). A user tags
+work "urgent" anywhere and then filters any view by that tag (the B6 acceptance).
+Same polymorphic shape ADR-0064 chose for `work_comment`.
+
+- **`tag`** — the global vocabulary: `{ id, label, color (design-token name, not
+  hex), created_by → app_user, created_at }`. A unique index on `lower(label)`
+  enforces one label globally (case-insensitive), so "Urgent" and "urgent" are one
+  tag.
+- **`work_tag`** — the polymorphic join: `{ tag_id → tag (ON DELETE CASCADE),
+  parent_type (task|project, CHECK), parent_id, created_at }` with **PK
+  `(tag_id, parent_type, parent_id)`** so a tagging is idempotent. No DB-level FK on
+  `parent_id` (polymorphic, ADR-0064 tradeoff); a covering index
+  `(parent_type, parent_id)` serves the per-object chip read and the
+  "all work carrying tag X" filter.
+
+**Rename** is an `UPDATE tag.label`. **Merge** (fold tag B into A) repoints B's
+`work_tag` rows onto A — skipping rows that would collide on the PK — then deletes
+B, in one transaction. Deleting a tag cascades its applications. Authorization:
+every mutation requires `delivery:write`; `color` is clamped to the design-token
+palette so a caller can't inject a raw hex. These are **app-native tables, not
+silver tier** — no semantic-layer concept file applies.
 
 ## Vector data (pgvector)
 

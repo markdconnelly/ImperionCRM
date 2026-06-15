@@ -4,7 +4,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { TasksBoard, type TaskGroupBy, type TaskSwimBy } from "@/components/tasks/tasks-board";
 import { getRepositories } from "@/lib/data";
+import { TagChip } from "@/components/tags/tag-chip";
 import { deleteTaskAction, moveTaskAction, moveTaskCategoryAction } from "./actions";
+import {
+  applyTagAction,
+  applyExistingTagAction,
+  removeTagAction,
+} from "./tag-actions";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -30,13 +36,14 @@ const SWIMS = [
   { key: "category", label: "Category" },
 ] as const;
 
-/** Preserve the active category / group / swimlane when switching view. */
-function href(category: string, view: string, group: string, swim: string) {
+/** Preserve the active category / group / swimlane / tag when switching view. */
+function href(category: string, view: string, group: string, swim: string, tag: string) {
   const qs = new URLSearchParams();
   if (category !== "all") qs.set("category", category);
   if (view !== "list") qs.set("view", view);
   if (group !== "status") qs.set("group", group);
   if (swim !== "none") qs.set("swim", swim);
+  if (tag) qs.set("tag", tag);
   const s = qs.toString();
   return s ? `/tasks?${s}` : "/tasks";
 }
@@ -44,18 +51,39 @@ function href(category: string, view: string, group: string, swim: string) {
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; view?: string; group?: string; swim?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    view?: string;
+    group?: string;
+    swim?: string;
+    tag?: string;
+  }>;
 }) {
-  const { category, view, group, swim } = await searchParams;
+  const { category, view, group, swim, tag } = await searchParams;
   const active = category ?? "all";
   const activeView = view === "board" ? "board" : "list";
   const activeGroup: TaskGroupBy = group === "category" ? "category" : "status";
   // A swimlane that duplicates the active column group-by is meaningless — drop it.
   const activeSwim: TaskSwimBy =
     (swim === "account" || swim === "category") && swim !== activeGroup ? swim : "none";
-  const { crm } = getRepositories();
+  const { crm, tags } = getRepositories();
   const all = await crm.listTasks();
-  const tasks = active === "all" ? all : all.filter((t) => t.category === active);
+  const byCategory = active === "all" ? all : all.filter((t) => t.category === active);
+
+  // Tags (ADR-0065 B6, #340): the vocabulary for pickers + a parentId→chips map for
+  // the visible tasks. The `?tag=` filter narrows to tasks carrying that tag (the
+  // B6 acceptance: filter all "urgent" work).
+  const [vocabulary, tagsByTask] = await Promise.all([
+    tags.listTags(),
+    tags.listTagsForMany(
+      "task",
+      byCategory.map((t) => t.id),
+    ),
+  ]);
+  const activeTag = tag && vocabulary.some((v) => v.id === tag) ? tag : "";
+  const tasks = activeTag
+    ? byCategory.filter((t) => (tagsByTask[t.id] ?? []).some((x) => x.id === activeTag))
+    : byCategory;
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,7 +101,7 @@ export default async function TasksPage({
           {FILTERS.map((f) => (
             <Link
               key={f.key}
-              href={href(f.key, activeView, activeGroup, activeSwim)}
+              href={href(f.key, activeView, activeGroup, activeSwim, activeTag)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm transition-colors",
                 active === f.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -91,7 +119,7 @@ export default async function TasksPage({
               {GROUPS.map((g) => (
                 <Link
                   key={g.key}
-                  href={href(active, activeView, g.key, activeSwim)}
+                  href={href(active, activeView, g.key, activeSwim, activeTag)}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-sm transition-colors",
                     activeGroup === g.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -109,7 +137,7 @@ export default async function TasksPage({
               {SWIMS.filter((s) => s.key !== activeGroup).map((s) => (
                 <Link
                   key={s.key}
-                  href={href(active, activeView, activeGroup, s.key)}
+                  href={href(active, activeView, activeGroup, s.key, activeTag)}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-sm transition-colors",
                     activeSwim === s.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -125,7 +153,7 @@ export default async function TasksPage({
             {VIEWS.map((v) => (
               <Link
                 key={v.key}
-                href={href(active, v.key, activeGroup, activeSwim)}
+                href={href(active, v.key, activeGroup, activeSwim, activeTag)}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm transition-colors",
                   activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -138,6 +166,37 @@ export default async function TasksPage({
         </div>
       </div>
 
+      {/* Tag filter strip (ADR-0065 B6, #340): click a tag to show only tasks
+          carrying it across every category/project; click again to clear. */}
+      {vocabulary.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-dim">Tags</span>
+          {vocabulary.map((v) => {
+            const selected = activeTag === v.id;
+            return (
+              <Link
+                key={v.id}
+                href={href(active, activeView, activeGroup, activeSwim, selected ? "" : v.id)}
+                className={cn(
+                  "rounded-full transition-opacity",
+                  selected ? "ring-2 ring-text/50" : "opacity-70 hover:opacity-100",
+                )}
+              >
+                <TagChip tag={v} />
+              </Link>
+            );
+          })}
+          {activeTag && (
+            <Link
+              href={href(active, activeView, activeGroup, activeSwim, "")}
+              className="ml-1 text-xs text-dim hover:text-text"
+            >
+              Clear
+            </Link>
+          )}
+        </div>
+      )}
+
       {activeView === "board" ? (
         <TasksBoard
           tasks={tasks}
@@ -147,7 +206,15 @@ export default async function TasksPage({
           moveCategoryAction={moveTaskCategoryAction}
         />
       ) : (
-        <TasksTable tasks={tasks} deleteAction={deleteTaskAction} />
+        <TasksTable
+          tasks={tasks}
+          deleteAction={deleteTaskAction}
+          tagsByTask={tagsByTask}
+          vocabulary={vocabulary}
+          applyTagAction={applyTagAction}
+          applyExistingTagAction={applyExistingTagAction}
+          removeTagAction={removeTagAction}
+        />
       )}
     </div>
   );
