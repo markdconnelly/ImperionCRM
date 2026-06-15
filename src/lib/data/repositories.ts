@@ -81,6 +81,8 @@ import type {
   TimeEfficiencyReport,
   SecurityPosture,
   OpportunityRow,
+  OpportunityForecastRow,
+  QuotaRow,
   PipelineColumn,
   PortfolioRow,
   ProjectRow,
@@ -648,6 +650,12 @@ export interface CrmRepository {
   listOpportunities(): Promise<OpportunityRow[]>;
   /** Move an opportunity to a different sales stage (pipeline board). */
   setOpportunityStage(id: string, stage: string): Promise<void>;
+
+  // Forecasting (ADR-0072, #381) — read model over the 0114 forecast fields.
+  /** Opportunities with forecast fields resolved (effective probability + weighted). */
+  listOpportunityForecast(): Promise<OpportunityForecastRow[]>;
+  /** Revenue quotas per owner / team / period. */
+  listQuotas(): Promise<QuotaRow[]>;
 
   // Tasks (full CRUD)
   listTasks(): Promise<TaskRow[]>;
