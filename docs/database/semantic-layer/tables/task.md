@@ -4,7 +4,7 @@ title: task
 description: Single unified task model across sales/project/onboarding/general — website system of record.
 resource: ../../../decision-records/ADR-0052-project-board-tasks-meetings-sales-activity.md
 tags: [silver, delivery, task]
-timestamp: 2026-06-14T20:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # task
@@ -30,7 +30,8 @@ separate write-back sidecar (`task_ticket_fire`) — idempotent, backend-execute
 | `id` | uuid | PK |
 | `category` | enum | sales / project / onboarding / general |
 | `title` / `detail` | text | |
-| `status` | text | |
+| `status` | text | legacy label (open/in_progress/done); authoritative during the compatibility window |
+| `status_def_id` | uuid | FK → `status_def` (configurable status, ADR-0065 B5); nullable, backfilled from `status` |
 | `account_id` | uuid | FK → `account` (nullable) |
 | `opportunity_id` | uuid | FK → `opportunity` (nullable) |
 | `project_id` | uuid | FK → `project` (SET NULL) |
@@ -48,6 +49,11 @@ separate write-back sidecar (`task_ticket_fire`) — idempotent, backend-execute
   `count(*) FILTER (status='done')` over its children. Arbitrary depth allowed; the list
   view filters to top-level (`parent_task_id IS NULL`).
 - `task_ticket_fire` (the write-back sidecar → Autotask ticket queue).
+- `status_def_id` → `status_def` (configurable status, ADR-0065 B5): the admin-definable
+  status set per project type. `status_def.category` (todo/in_progress/done) is the
+  reporting partition — rollups key off **category, not the label**. The legacy `status`
+  text column stays authoritative during the compatibility window; the FK is backfilled
+  from it via the seeded global default set (no data loss).
 
 ## Notes
 

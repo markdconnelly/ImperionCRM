@@ -244,6 +244,26 @@ export interface ProjectTypeInput {
   description: string | null;
 }
 
+/**
+ * A configurable status (ADR-0065 B5, #339) from `status_def`. `category`
+ * (todo|in_progress|done) is the reporting partition — rollups key off it, never
+ * `label`. A global row has `projectTypeId === null`; a typed row scopes the set
+ * to one project type. `wipLimit` (ADR-0066 C1) is the optional per-status board
+ * cap (null = no limit). The default seeded sets reproduce the legacy enums.
+ */
+export interface StatusDefRow {
+  id: string;
+  scope: string; // 'global' | 'project_type'
+  projectTypeId: string | null;
+  context: string; // 'task' | 'project'
+  key: string;
+  label: string;
+  color: string | null;
+  category: string; // 'todo' | 'in_progress' | 'done'
+  ordinal: number;
+  wipLimit: number | null;
+}
+
 /** A {id,name} option for select dropdowns (e.g. picking an account). */
 export interface Option {
   id: string;
@@ -852,6 +872,19 @@ export interface CrmRepository {
   createProjectType(input: ProjectTypeInput): Promise<void>;
   /** Refuses protected types; deleting a type in use fails on the RESTRICT FK. */
   deleteProjectType(id: string): Promise<void>;
+
+  /**
+   * Configurable status sets (ADR-0065 B5, #339) from `status_def`. Returns the
+   * resolved set for a context ('task' | 'project'): the project-type-scoped
+   * statuses when `projectTypeId` is given and that type defines its own set,
+   * otherwise the seeded global defaults — ordered by `ordinal`. This is the
+   * core read the board-column and reporting follow-ups build on; the legacy
+   * string status path is unaffected until those land.
+   */
+  listStatusDefs(
+    context: string,
+    projectTypeId?: string | null,
+  ): Promise<StatusDefRow[]>;
 
   // Onboarding dashboard — projects with their R/Y/G milestones + checklist (ADR-0034/0037)
   listOnboarding(): Promise<OnboardingProject[]>;

@@ -55,6 +55,7 @@ import type {
   ProjectEditable,
   ProjectInput,
   ProjectTypeInput,
+  StatusDefRow,
   DeliveryInstantiationInput,
   DeliveryTemplateInput,
   ExpenseItemInput,
@@ -2268,6 +2269,64 @@ export const postgresRepositories: Repositories = {
       // Protected types (Onboarding) are never deletable; a type in use fails
       // on the RESTRICT FK (ADR-0052 §1).
       await pool.query(`DELETE FROM project_type WHERE id = $1 AND NOT is_protected`, [id]);
+    },
+
+    // ── Configurable statuses (ADR-0065 B5, #339, migration 9001) ──────────────
+    async listStatusDefs(
+      context: string,
+      projectTypeId?: string | null,
+    ): Promise<StatusDefRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listStatusDefs(context, projectTypeId);
+      try {
+        // Resolve the effective set: prefer the project-type-scoped statuses when
+        // that type defines its own for this context, else fall back to the seeded
+        // global defaults. One round-trip — the typed set wins per the partial
+        // unique indexes, and EXISTS gates the fallback so we never mix scopes.
+        const { rows } = await pool.query<{
+          id: string;
+          scope: string;
+          project_type_id: string | null;
+          context: string;
+          key: string;
+          label: string;
+          color: string | null;
+          category: string;
+          ordinal: number;
+          wip_limit: number | null;
+        }>(
+          `SELECT id, scope, project_type_id, context, key, label, color,
+                  category, ordinal, wip_limit
+             FROM status_def
+            WHERE context = $1
+              AND (
+                ($2::uuid IS NOT NULL
+                   AND scope = 'project_type' AND project_type_id = $2::uuid)
+                OR (scope = 'global'
+                   AND NOT EXISTS (
+                     SELECT 1 FROM status_def s2
+                      WHERE s2.context = $1
+                        AND s2.scope = 'project_type'
+                        AND s2.project_type_id = $2::uuid))
+              )
+            ORDER BY ordinal, label`,
+          [context, projectTypeId ?? null],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          scope: r.scope,
+          projectTypeId: r.project_type_id,
+          context: r.context,
+          key: r.key,
+          label: r.label,
+          color: r.color,
+          category: r.category,
+          ordinal: r.ordinal,
+          wipLimit: r.wip_limit,
+        }));
+      } catch {
+        return mockRepositories.crm.listStatusDefs(context, projectTypeId);
+      }
     },
 
     // ── Delivery templates (ADR-0081, migration 0084) ──────────────────────────

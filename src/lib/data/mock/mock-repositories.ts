@@ -428,6 +428,45 @@ export const mockRepositories: Repositories = {
     async deleteProjectType() {
       throw new Error(NO_DB);
     },
+    // Configurable statuses (ADR-0065 B5, #339) — the seeded global default sets
+    // (migration 9001) so the board renders in mock mode. Mock has no per-type
+    // sets, so projectTypeId is ignored and the defaults are always returned.
+    async listStatusDefs(context: string) {
+      const sets: Record<
+        string,
+        Array<{
+          key: string;
+          label: string;
+          color: string;
+          category: string;
+          ordinal: number;
+        }>
+      > = {
+        task: [
+          { key: "open", label: "Open", color: "#8A93A6", category: "todo", ordinal: 0 },
+          { key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1 },
+          { key: "done", label: "Done", color: "#3FBF8F", category: "done", ordinal: 2 },
+        ],
+        project: [
+          { key: "not_started", label: "Not Started", color: "#8A93A6", category: "todo", ordinal: 0 },
+          { key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1 },
+          { key: "blocked", label: "Blocked", color: "#E2615A", category: "in_progress", ordinal: 2 },
+          { key: "complete", label: "Complete", color: "#3FBF8F", category: "done", ordinal: 3 },
+        ],
+      };
+      return (sets[context] ?? []).map((s) => ({
+        id: `sd-${context}-${s.key}`,
+        scope: "global",
+        projectTypeId: null,
+        context,
+        key: s.key,
+        label: s.label,
+        color: s.color,
+        category: s.category,
+        ordinal: s.ordinal,
+        wipLimit: null,
+      }));
+    },
     // Delivery templates (ADR-0081) — one seed so the manager/picker render in mock mode.
     async listDeliveryTemplates(opts?: { activeOnly?: boolean; projectTypeId?: string }) {
       const all = [
