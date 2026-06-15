@@ -32,7 +32,7 @@ object · **H** reference/config/identity.
 | [device](tables/device.md) | A | ✅ | asset/security context |
 | external_identity | H | ⏳ | identity resolution |
 | contact_social_identity | B | ⏳ | enrichment |
-| contact_enrichment | B | ⏳ | enrichment (lawful-basis gated) |
+| contact_enrichment | B | ⏳ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
 
 ## Sales
 
