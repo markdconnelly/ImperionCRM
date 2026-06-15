@@ -153,6 +153,7 @@ import type {
   QuestionRow,
   QuestionTemplateRow,
   MarketingSocialReport,
+  ProjectTaskDependencyEdge,
   ReportSummary,
   RevenueSplit,
   SalesTaskRow,
@@ -1551,6 +1552,29 @@ export const postgresRepositories: Repositories = {
         throw err;
       } finally {
         client.release();
+      }
+    },
+
+    async listProjectTaskDependencies(projectId: string): Promise<ProjectTaskDependencyEdge[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProjectTaskDependencies(projectId);
+      try {
+        // `blocks` edges whose BOTH endpoints belong to the project — the
+        // connectors the timeline draws (ADR-0066 C3, #343). Joining both ends to
+        // `task` and filtering project_id on each keeps cross-project edges out.
+        const { rows } = await pool.query<{ predecessor_id: string; successor_id: string }>(
+          `SELECT d.predecessor_id, d.successor_id
+             FROM task_dependency d
+             JOIN task p ON p.id = d.predecessor_id
+             JOIN task s ON s.id = d.successor_id
+            WHERE d.type = 'blocks'
+              AND p.project_id = $1
+              AND s.project_id = $1`,
+          [projectId],
+        );
+        return rows.map((r) => ({ predecessorId: r.predecessor_id, successorId: r.successor_id }));
+      } catch {
+        return mockRepositories.crm.listProjectTaskDependencies(projectId);
       }
     },
 

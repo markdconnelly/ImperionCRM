@@ -270,12 +270,21 @@ sales/project/onboarding/general partition.)
 
 - C3-F1 (COULD) Timeline with bars per task/milestone (start→due), dependency
   connectors (B2), and milestone diamonds.
+  **v1 shipped (#343):** project detail page renders a Timeline section laying
+  each task on a horizontal time axis by due date, with `blocks` dependency edges
+  (B2/#336) drawn as connectors (dashed + red when out-of-order). Pure layout in
+  `src/lib/timeline.ts` (`layoutTimeline`), rendered by
+  `src/components/projects/project-timeline.tsx`; project edges read via
+  `Repositories.listProjectTaskDependencies`.
 - C3-F2 (COULD) Drag to reschedule/resize; dependent items shift (suggest, don't
-  force) on change.
-- C3-F3 (COULD) Critical-path highlight.
+  force) on change. *(Not in #343 — rescheduling lives on the Tasks calendar, C2/#342.)*
+- C3-F3 (COULD) Critical-path highlight. *(Deferred.)*
 - C3-F4 (SHOULD, if built) Requires a **start date** field on tasks (add
-  `task.start_at`).
-- AC: A project's milestones render as a timeline; a blocked-by link draws a connector.
+  `task.start_at`). **Not yet added — tracked in #580.** Until it lands the
+  timeline renders point markers anchored on `due_at`, not start→due bars; the
+  layout math is already span-ready (widen `TimelineTask` with `startAt` when
+  the column exists). No migration in the #343 lane (one-migration-per-wave rule).
+- AC: A project's milestones render as a timeline; a blocked-by link draws a connector. ✅ (#343)
 
 ## C4. Multiple views per dataset
 

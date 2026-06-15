@@ -781,6 +781,18 @@ export interface WorkAssignments {
 }
 
 /**
+ * A single predecessor → successor dependency edge between two tasks of one
+ * project (ADR-0066 C3, #343). The timeline view reads these to draw connectors;
+ * both ends are tasks of the same project (edges touching tasks outside the
+ * project are not returned). Pure read model over `task_dependency` — no new
+ * table.
+ */
+export interface ProjectTaskDependencyEdge {
+  predecessorId: string;
+  successorId: string;
+}
+
+/**
  * A row in the Sales Queue (ADR-0052 §6) — an open `category='sales'` task with
  * its owner and deal context. Pure read model; no new tables.
  */
