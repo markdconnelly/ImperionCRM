@@ -51,9 +51,36 @@ export function TaskForm({
         </Select>
       </Field>
 
-      <Field label="Due date">
-        <TextInput type="date" name="dueAt" defaultValue={task?.dueAt ?? ""} />
-      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Start date">
+          <TextInput type="date" name="startAt" defaultValue={task?.startAt ?? ""} />
+        </Field>
+        <Field label="Due date">
+          <TextInput type="date" name="dueAt" defaultValue={task?.dueAt ?? ""} />
+        </Field>
+      </div>
+
+      {/* Estimate + unit (ADR-0069 D1, #346). Unit is free-text, configurable per
+          project type (hours | points | …); defaults to hours so the project rollup
+          can convert it to a time remaining. */}
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Estimate">
+          <TextInput
+            type="number"
+            name="estimate"
+            min="0"
+            step="0.25"
+            placeholder="e.g. 4"
+            defaultValue={task?.estimate ?? ""}
+          />
+        </Field>
+        <Field label="Estimate unit">
+          <Select name="estimateUnit" defaultValue={task?.estimateUnit ?? "hours"}>
+            <option value="hours">Hours</option>
+            <option value="points">Points</option>
+          </Select>
+        </Field>
+      </div>
 
       <Field label="Detail">
         <TextArea name="detail" rows={3} defaultValue={task?.detail ?? ""} />

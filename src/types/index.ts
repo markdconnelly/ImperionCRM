@@ -761,6 +761,44 @@ export interface TaskRow {
    * 0/0 = a leaf task. Present on the list read so a row can show its rollup. */
   childCount: number;
   childDoneCount: number;
+  /** Task start date (#580): yyyy-mm-dd or null. The other end of the span the
+   * calendar week view + timeline bars draw from start_at → due_at. */
+  startAt: string | null;
+  /** Per-task effort estimate (ADR-0069 D1, #346): numeric-as-string or null. */
+  estimate: string | null;
+  /** Unit the estimate is in (ADR-0069 D1, #346): 'hours' | 'points' | … or null. */
+  estimateUnit: string | null;
+  /** Sum of logged minutes across this task's time_entry rows (#346); 0 when none. */
+  loggedMinutes: number;
+}
+
+/**
+ * One logged block of work against a task (ADR-0069 D1, #346). Named
+ * `TaskTimeEntryRow` to stay distinct from the timesheet `TimeEntryRow` (silver
+ * `time_record`, ADR-0082) — this is the lightweight per-task `time_entry` table.
+ */
+export interface TaskTimeEntryRow {
+  id: string;
+  taskId: string;
+  userId: string;
+  user: string | null; // logger display name (or email fallback)
+  minutes: number; // logged duration
+  startedAt: string | null; // when the work happened (yyyy-mm-dd) or null
+  note: string | null;
+  billable: boolean;
+  createdAt: string | null;
+}
+
+/**
+ * A project's time rollup (ADR-0069 D1 acceptance, #346): summed logged minutes
+ * and summed task estimate across the project's tasks, so the UI can show
+ * logged-vs-estimate remaining at the project level. estimateMinutes is null when
+ * no task carries an hours-based estimate (rollup only sums 'hours'-unit estimates
+ * into minutes; points don't convert to time).
+ */
+export interface ProjectTimeRollup {
+  loggedMinutes: number;
+  estimateMinutes: number | null;
 }
 
 /** A single child task under a parent (ADR-0065 B1, #335). */

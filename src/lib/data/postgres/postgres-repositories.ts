@@ -80,6 +80,7 @@ import type {
   SpawnTicketInput,
   TaskEditable,
   TaskInput,
+  TaskTimeLogInput,
   TicketFilter,
   TicketFilterOptions,
   WorkflowInput,
@@ -134,6 +135,8 @@ import type {
   AdminExpenseReview,
   ExpenseReimbursementMatch,
   TimeEntryRow,
+  TaskTimeEntryRow,
+  ProjectTimeRollup,
   ReconciliationDay,
   DeliveryTemplateDetail,
   DeliveryBoardProject,
@@ -1046,6 +1049,10 @@ export const postgresRepositories: Repositories = {
           status: string;
           category: TaskCategory;
           due_at: Date | null;
+          start_at: Date | null;
+          estimate: string | null;
+          estimate_unit: string | null;
+          logged_minutes: string;
           account: string | null;
           project_id: string | null;
           child_count: string;
@@ -1053,9 +1060,11 @@ export const postgresRepositories: Repositories = {
         }>(
           // Top-level tasks only (parent_task_id IS NULL); subtasks surface under
           // their parent via getTaskChildren. The lateral counts the n/m rollup
-          // (ADR-0065 B1, #335).
-          `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account,
-                  t.project_id, c.child_count, c.child_done_count
+          // (ADR-0065 B1, #335); the second lateral sums logged minutes (#346).
+          `SELECT t.id, t.title, t.status, t.category, t.due_at, t.start_at,
+                  t.estimate, t.estimate_unit, a.name AS account,
+                  t.project_id, c.child_count, c.child_done_count,
+                  COALESCE(te.logged_minutes, 0) AS logged_minutes
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
            LEFT JOIN LATERAL (
@@ -1063,6 +1072,10 @@ export const postgresRepositories: Repositories = {
                     count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
              FROM task ch WHERE ch.parent_task_id = t.id
            ) c ON true
+           LEFT JOIN LATERAL (
+             SELECT sum(minutes) AS logged_minutes
+             FROM time_entry WHERE task_id = t.id
+           ) te ON true
            WHERE t.parent_task_id IS NULL
            ORDER BY t.due_at NULLS LAST, t.title`,
         );
@@ -1076,6 +1089,10 @@ export const postgresRepositories: Repositories = {
           projectId: row.project_id,
           childCount: Number(row.child_count),
           childDoneCount: Number(row.child_done_count),
+          startAt: fmtDate(row.start_at),
+          estimate: row.estimate,
+          estimateUnit: row.estimate_unit,
+          loggedMinutes: Number(row.logged_minutes),
         }));
       } catch {
         return mockRepositories.crm.listTasks();
@@ -1092,15 +1109,21 @@ export const postgresRepositories: Repositories = {
           status: string;
           category: TaskCategory;
           due_at: Date | null;
+          start_at: Date | null;
+          estimate: string | null;
+          estimate_unit: string | null;
+          logged_minutes: string;
           account: string | null;
           project_id: string | null;
           child_count: string;
           child_done_count: string;
         }>(
           // Top-level tasks for the project; subtasks surface under their parent
-          // (ADR-0065 B1, #335).
-          `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account,
-                  t.project_id, c.child_count, c.child_done_count
+          // (ADR-0065 B1, #335). The second lateral sums logged minutes (#346).
+          `SELECT t.id, t.title, t.status, t.category, t.due_at, t.start_at,
+                  t.estimate, t.estimate_unit, a.name AS account,
+                  t.project_id, c.child_count, c.child_done_count,
+                  COALESCE(te.logged_minutes, 0) AS logged_minutes
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
            LEFT JOIN LATERAL (
@@ -1108,6 +1131,10 @@ export const postgresRepositories: Repositories = {
                     count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
              FROM task ch WHERE ch.parent_task_id = t.id
            ) c ON true
+           LEFT JOIN LATERAL (
+             SELECT sum(minutes) AS logged_minutes
+             FROM time_entry WHERE task_id = t.id
+           ) te ON true
            WHERE t.project_id = $1 AND t.parent_task_id IS NULL
            ORDER BY t.due_at NULLS LAST, t.title`,
           [projectId],
@@ -1122,6 +1149,10 @@ export const postgresRepositories: Repositories = {
           projectId: row.project_id,
           childCount: Number(row.child_count),
           childDoneCount: Number(row.child_done_count),
+          startAt: fmtDate(row.start_at),
+          estimate: row.estimate,
+          estimateUnit: row.estimate_unit,
+          loggedMinutes: Number(row.logged_minutes),
         }));
       } catch {
         return mockRepositories.crm.listProjectTasks(projectId);
@@ -1140,12 +1171,15 @@ export const postgresRepositories: Repositories = {
           status: string;
           category: string;
           due_at: Date | null;
+          start_at: Date | null;
+          estimate: string | null;
+          estimate_unit: string | null;
           project_id: string | null;
           parent_task_id: string | null;
           autotask_ticket_ref: string | null;
         }>(
-          `SELECT id, account_id, title, detail, status, category, due_at, project_id,
-                  parent_task_id, autotask_ticket_ref
+          `SELECT id, account_id, title, detail, status, category, due_at, start_at,
+                  estimate, estimate_unit, project_id, parent_task_id, autotask_ticket_ref
            FROM task WHERE id = $1`,
           [id],
         );
@@ -1159,6 +1193,9 @@ export const postgresRepositories: Repositories = {
           status: r.status,
           category: r.category,
           dueAt: fmtDate(r.due_at),
+          startAt: fmtDate(r.start_at),
+          estimate: r.estimate,
+          estimateUnit: r.estimate_unit,
           projectId: r.project_id,
           parentTaskId: r.parent_task_id,
           autotaskTicketRef: r.autotask_ticket_ref,
@@ -1174,11 +1211,12 @@ export const postgresRepositories: Repositories = {
       await pool.query(
         // A subtask inherits its order at the end of its parent's children
         // (COALESCE(max+1,0)); top-level creates default to ordinal 0 (ADR-0065 B1).
-        `INSERT INTO task (account_id, title, detail, status, category, due_at, project_id,
-                           parent_task_id, ordinal)
-         VALUES ($1, $2, $3, $4, $5::task_category, $6::timestamptz, $7, $8,
-                 CASE WHEN $8::uuid IS NULL THEN 0
-                      ELSE COALESCE((SELECT max(ordinal) + 1 FROM task WHERE parent_task_id = $8::uuid), 0)
+        `INSERT INTO task (account_id, title, detail, status, category, due_at, start_at,
+                           estimate, estimate_unit, project_id, parent_task_id, ordinal)
+         VALUES ($1, $2, $3, $4, $5::task_category, $6::timestamptz, $7::date,
+                 $8::numeric, $9, $10, $11,
+                 CASE WHEN $11::uuid IS NULL THEN 0
+                      ELSE COALESCE((SELECT max(ordinal) + 1 FROM task WHERE parent_task_id = $11::uuid), 0)
                  END)`,
         [
           nullIfEmpty(input.accountId),
@@ -1187,6 +1225,9 @@ export const postgresRepositories: Repositories = {
           input.status,
           input.category,
           nullIfEmpty(input.dueAt),
+          nullIfEmpty(input.startAt ?? null),
+          nullIfEmpty(input.estimate ?? null),
+          nullIfEmpty(input.estimateUnit ?? null),
           nullIfEmpty(input.projectId),
           nullIfEmpty(input.parentTaskId ?? null),
         ],
@@ -1201,8 +1242,9 @@ export const postgresRepositories: Repositories = {
       await pool.query(
         `UPDATE task
          SET account_id = $1, title = $2, detail = $3, status = $4,
-             category = $5::task_category, due_at = $6::timestamptz, project_id = $7
-         WHERE id = $8`,
+             category = $5::task_category, due_at = $6::timestamptz, start_at = $7::date,
+             estimate = $8::numeric, estimate_unit = $9, project_id = $10
+         WHERE id = $11`,
         [
           nullIfEmpty(input.accountId),
           input.title,
@@ -1210,6 +1252,9 @@ export const postgresRepositories: Repositories = {
           input.status,
           input.category,
           nullIfEmpty(input.dueAt),
+          nullIfEmpty(input.startAt ?? null),
+          nullIfEmpty(input.estimate ?? null),
+          nullIfEmpty(input.estimateUnit ?? null),
           nullIfEmpty(input.projectId),
           id,
         ],
@@ -1221,6 +1266,101 @@ export const postgresRepositories: Repositories = {
       if (!pool) return mockRepositories.crm.deleteTask(id);
       // ON DELETE CASCADE on parent_task_id removes the subtree with the parent.
       await pool.query(`DELETE FROM task WHERE id = $1`, [id]);
+    },
+
+    // ── Time tracking (ADR-0069 D1, #346) ────────────────────────────────────
+    async listTaskTimeEntries(taskId: string): Promise<TaskTimeEntryRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listTaskTimeEntries(taskId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          task_id: string;
+          user_id: string;
+          user_name: string | null;
+          minutes: number;
+          started_at: Date | null;
+          note: string | null;
+          billable: boolean;
+          created_at: Date | null;
+        }>(
+          // Newest-first; the logger's display name (email local-part fallback).
+          `SELECT te.id, te.task_id, te.user_id,
+                  COALESCE(u.display_name, split_part(u.email, '@', 1)) AS user_name,
+                  te.minutes, te.started_at, te.note, te.billable, te.created_at
+           FROM time_entry te
+           LEFT JOIN app_user u ON u.id = te.user_id
+           WHERE te.task_id = $1
+           ORDER BY te.created_at DESC`,
+          [taskId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          taskId: r.task_id,
+          userId: r.user_id,
+          user: r.user_name,
+          minutes: Number(r.minutes),
+          startedAt: fmtDate(r.started_at),
+          note: r.note,
+          billable: r.billable,
+          createdAt: fmtDateTime(r.created_at),
+        }));
+      } catch {
+        return mockRepositories.crm.listTaskTimeEntries(taskId);
+      }
+    },
+
+    async logTime(input: TaskTimeLogInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.logTime(input);
+      // user_id NOT NULL in the schema — a null resolved user (e.g. session not
+      // mirrored) is a no-op rather than a constraint error (degrade gracefully).
+      if (!input.userId) return;
+      await pool.query(
+        `INSERT INTO time_entry (task_id, user_id, minutes, started_at, note, billable)
+         VALUES ($1, $2, $3, $4::timestamptz, $5, $6)`,
+        [
+          input.taskId,
+          input.userId,
+          input.minutes,
+          nullIfEmpty(input.startedAt),
+          nullIfEmpty(input.note),
+          input.billable,
+        ],
+      );
+    },
+
+    async getProjectTimeRollup(projectId: string): Promise<ProjectTimeRollup> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getProjectTimeRollup(projectId);
+      try {
+        const { rows } = await pool.query<{
+          logged_minutes: string;
+          estimate_minutes: string | null;
+        }>(
+          // Logged minutes summed across the project's tasks (the acceptance
+          // rollup). Estimate-as-minutes only sums tasks whose unit is 'hours'
+          // (×60); points-based estimates don't convert to time, so they're left
+          // out of the time remaining.
+          `SELECT COALESCE(sum(te.logged_minutes), 0) AS logged_minutes,
+                  sum(CASE WHEN lower(t.estimate_unit) = 'hours' AND t.estimate IS NOT NULL
+                           THEN t.estimate * 60 END) AS estimate_minutes
+           FROM task t
+           LEFT JOIN LATERAL (
+             SELECT sum(minutes) AS logged_minutes
+             FROM time_entry WHERE task_id = t.id
+           ) te ON true
+           WHERE t.project_id = $1`,
+          [projectId],
+        );
+        const r = rows[0];
+        return {
+          loggedMinutes: Number(r?.logged_minutes ?? 0),
+          estimateMinutes: r?.estimate_minutes != null ? Number(r.estimate_minutes) : null,
+        };
+      } catch {
+        return mockRepositories.crm.getProjectTimeRollup(projectId);
+      }
     },
 
     async getTaskChildren(parentId: string): Promise<TaskHierarchy> {

@@ -4,6 +4,7 @@ import { TaskForm } from "@/components/tasks/task-form";
 import { TaskSubtasks } from "@/components/tasks/task-subtasks";
 import { TaskDependencies } from "@/components/tasks/task-dependencies";
 import { TaskAssignees } from "@/components/tasks/task-assignees";
+import { TaskTimeLog } from "@/components/tasks/task-time-log";
 import { Attachments } from "@/components/work/attachments";
 import {
   updateTaskAction,
@@ -88,6 +89,9 @@ export default async function EditTaskPage({
         setPrimaryAction={setTaskPrimaryAction}
         setWatchAction={setTaskWatchAction}
       />
+
+      {/* Time tracking (ADR-0069 D1, #346): log time + logged-vs-estimate rollup. */}
+      <TaskTimeLog task={task} />
 
       <TaskSubtasks
         taskId={task.id}

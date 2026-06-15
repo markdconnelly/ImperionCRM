@@ -8,6 +8,7 @@ import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageProjects } from "@/lib/auth/roles";
 import { cn } from "@/lib/cn";
+import { fmtMinutes } from "@/lib/timesheets/overview";
 import { ActivityFeed } from "@/components/work/activity-feed";
 import { Attachments } from "@/components/work/attachments";
 import { createProjectMeetingAction, createProjectTaskAction } from "../actions";
@@ -35,15 +36,17 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const { feed } = await searchParams;
   const { crm, comms } = getRepositories();
-  const [roles, project, rows, projectTasks, blockedTasks, taskDeps, meetings] = await Promise.all([
-    getSessionRoles(),
-    crm.getProject(id),
-    crm.listProjects(),
-    crm.listProjectTasks(id),
-    crm.listBlockedProjectTasks(id),
-    crm.listProjectTaskDependencies(id),
-    comms.listInteractions({ kind: "meeting", projectId: id, limit: 50 }),
-  ]);
+  const [roles, project, rows, projectTasks, blockedTasks, taskDeps, meetings, timeRollup] =
+    await Promise.all([
+      getSessionRoles(),
+      crm.getProject(id),
+      crm.listProjects(),
+      crm.listProjectTasks(id),
+      crm.listBlockedProjectTasks(id),
+      crm.listProjectTaskDependencies(id),
+      comms.listInteractions({ kind: "meeting", projectId: id, limit: 50 }),
+      crm.getProjectTimeRollup(id),
+    ]);
   if (!project) notFound();
   const row = rows.find((r) => r.id === id);
   const openTasks = projectTasks.filter((t) => t.status !== "done").length;
@@ -133,6 +136,33 @@ export default async function ProjectDetailPage({
           <p className="mt-0.5 text-sm text-dim">
             This project&apos;s slice of the shared task object (one task model, ADR-0052).
           </p>
+          {/* Time rollup (ADR-0069 D1 acceptance, #346): summed logged minutes
+              across the project's tasks vs the summed hours-based estimate. */}
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            <div>
+              <span className="text-dim">Logged </span>
+              <span className="text-text">{fmtMinutes(timeRollup.loggedMinutes)}</span>
+            </div>
+            {timeRollup.estimateMinutes != null && (
+              <>
+                <div>
+                  <span className="text-dim">Estimate </span>
+                  <span className="text-text">{fmtMinutes(timeRollup.estimateMinutes)}</span>
+                </div>
+                <div>
+                  <span className="text-dim">Remaining </span>
+                  {(() => {
+                    const rem = timeRollup.estimateMinutes - timeRollup.loggedMinutes;
+                    return (
+                      <span className={rem < 0 ? "text-red" : "text-green"}>
+                        {rem < 0 ? `-${fmtMinutes(-rem)}` : fmtMinutes(rem)}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         {canWrite && (
           <form
@@ -144,7 +174,17 @@ export default async function ProjectDetailPage({
             <div className="min-w-48 flex-1">
               <TextInput name="title" placeholder="New project task…" required />
             </div>
-            <TextInput type="date" name="dueAt" />
+            <TextInput type="date" name="startAt" title="Start date" />
+            <TextInput type="date" name="dueAt" title="Due date" />
+            <TextInput
+              type="number"
+              name="estimate"
+              min="0"
+              step="0.25"
+              placeholder="Est. hrs"
+              className="w-24"
+              title="Estimate (hours)"
+            />
             <button
               type="submit"
               className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:text-text"

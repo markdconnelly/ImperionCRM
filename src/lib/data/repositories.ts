@@ -97,6 +97,8 @@ import type {
   TaskRow,
   TaskHierarchy,
   TaskDependencies,
+  TaskTimeEntryRow,
+  ProjectTimeRollup,
   WorkAssignments,
   WorkRole,
   WorkloadRow,
@@ -168,12 +170,32 @@ export interface TaskInput {
   /** Subtask parent (ADR-0065 B1, #335): the task this hangs under, or null for
    * a top-level task. Optional on the wire — omitting it means "top-level". */
   parentTaskId?: string | null;
+  /** Task start date (#580): yyyy-mm-dd or null — the other end of the span. */
+  startAt: string | null;
+  /** Per-task effort estimate (ADR-0069 D1, #346): numeric-as-string or null. */
+  estimate: string | null;
+  /** Unit the estimate is in (ADR-0069 D1, #346): 'hours' | 'points' | … or null. */
+  estimateUnit: string | null;
 }
 export interface TaskEditable extends TaskInput {
   id: string;
   /** Autotask ticket ref set by the on-demand push (backend #19, ADR-0052 §7).
    * Read-only here — the backend writes it server-side, never the form. */
   autotaskTicketRef: string | null;
+}
+
+/**
+ * Fields for logging time against a task (ADR-0069 D1, #346). Named
+ * `TaskTimeLogInput` to stay distinct from the timesheet `TimeEntryInput`
+ * (silver `time_record`, ADR-0082) — this writes the per-task `time_entry` table.
+ */
+export interface TaskTimeLogInput {
+  taskId: string;
+  userId: string | null; // resolved server-side from the session; null in mock
+  minutes: number; // logged duration (the UI converts hours+minutes)
+  startedAt: string | null; // yyyy-mm-dd or null
+  note: string | null;
+  billable: boolean;
 }
 
 /**
@@ -506,6 +528,18 @@ export interface CrmRepository {
   createTask(input: TaskInput): Promise<void>;
   updateTask(id: string, input: TaskInput): Promise<void>;
   deleteTask(id: string): Promise<void>;
+
+  // Time tracking (ADR-0069 D1, #346)
+  /** Time logged against one task, newest-first, with logger display name. */
+  listTaskTimeEntries(taskId: string): Promise<TaskTimeEntryRow[]>;
+  /** Log a block of time against a task; the caller resolves & supplies the user. */
+  logTime(input: TaskTimeLogInput): Promise<void>;
+  /**
+   * Project time rollup (#346 acceptance): summed logged minutes across the
+   * project's tasks + summed hours-unit estimate (as minutes), so the project view
+   * can show logged-vs-estimate remaining.
+   */
+  getProjectTimeRollup(projectId: string): Promise<ProjectTimeRollup>;
 
   // Subtasks / task hierarchy (ADR-0065 B1, #335)
   /** A task's child tasks, ordered by ordinal then title, with the n/m rollup. */

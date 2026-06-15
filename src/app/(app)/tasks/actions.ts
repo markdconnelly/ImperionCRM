@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { ticketsService } from "@/lib/services";
-import { str, strOr, strOrNull } from "@/lib/form-data";
+import { str, strOr, strOrNull, intOr, checkbox } from "@/lib/form-data";
 import { auth } from "@/auth";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 import type { TaskInput } from "@/lib/data/repositories";
@@ -21,6 +21,11 @@ function parse(formData: FormData): TaskInput {
     projectId: strOrNull(formData, "projectId"),
     // Subtask parent (ADR-0065 B1, #335) — null/absent = top-level task.
     parentTaskId: strOrNull(formData, "parentTaskId"),
+    // Start date (#580) + estimate (ADR-0069 D1, #346). estimateUnit only carries
+    // when an estimate is given (a bare unit on an empty estimate is meaningless).
+    startAt: strOrNull(formData, "startAt"),
+    estimate: strOrNull(formData, "estimate"),
+    estimateUnit: strOrNull(formData, "estimate") ? strOrNull(formData, "estimateUnit") : null,
   };
 }
 
@@ -109,6 +114,39 @@ async function emitTaskStatusEvent(
   });
 }
 
+/**
+ * Log time against a task (ADR-0069 D1, #346). The UI collects hours + minutes;
+ * we fold them into a single positive `minutes` int (the schema's unit of record).
+ * The logger is the signed-in employee, resolved email → app_user server-side
+ * (never the form) — an unresolved user is a silent no-op (the data layer also
+ * guards). A zero/empty duration is rejected before the write. Same
+ * `delivery:write` audited path as the rest of task mutation.
+ */
+export async function logTimeAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const taskId = str(formData, "taskId");
+  if (!taskId) return;
+  const hours = intOr(formData, "hours", 0);
+  const minutesPart = intOr(formData, "minutes", 0);
+  const total = Math.max(0, hours) * 60 + Math.max(0, minutesPart);
+  if (total <= 0) return; // nothing to log
+  const session = await auth();
+  const userId = await resolveAppUserIdByEmail(session?.user?.email ?? "");
+  if (!userId) return;
+  const { crm } = getRepositories();
+  await crm.logTime({
+    taskId,
+    userId,
+    minutes: total,
+    startedAt: strOrNull(formData, "startedAt"),
+    note: strOrNull(formData, "note"),
+    billable: checkbox(formData, "billable"),
+  });
+  revalidatePath(`/tasks/${taskId}/edit`);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
 /** Group-by=category lanes = the task category enum (ADR-0034, ADR-0066 C1-F2). */
 const BOARD_CATEGORIES = ["sales", "project", "onboarding", "general"] as const;
 
@@ -175,6 +213,10 @@ export async function addSubtaskAction(formData: FormData) {
     dueAt: strOrNull(formData, "dueAt"),
     projectId: parent.projectId,
     parentTaskId: parentId,
+    // A quick-add subtask carries no start/estimate; the edit form can add them.
+    startAt: null,
+    estimate: null,
+    estimateUnit: null,
   });
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${parentId}/edit`);

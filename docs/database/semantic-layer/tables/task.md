@@ -39,7 +39,17 @@ separate write-back sidecar (`task_ticket_fire`) — idempotent, backend-execute
 | `ordinal` | integer | sibling order under a parent (ADR-0065 B1) |
 | `owner_user_id` | uuid | FK → `app_user` |
 | `due_at` | timestamptz | |
+| `start_at` | date | task span start; calendar week view + timeline bars (ADR-0065/0066, #580) |
+| `estimate` | numeric | per-task effort estimate, nullable (ADR-0069 D1, #346) |
+| `estimate_unit` | text | unit of `estimate` (`hours`/`points`), configurable per project type (ADR-0069 D1, #346) |
 | `autotask_ticket_ref` | text | set by the ticket-fire sidecar |
+
+Logged time lives in the app-native `time_entry` table (one row per logged block:
+`task_id`, `user_id`, `minutes`, `started_at?`, `note`, `billable`; ADR-0069 D1, #346) —
+no concept file of its own (app-native operational state). Logged-vs-estimate remaining is
+computed in the read layer (summed `minutes` vs `estimate`), never stored. Per-employee
+weekly capacity lives in the app-native `user_capacity` table (`user_id`, `weekly_hours`;
+ADR-0069 D2) — likewise no concept file.
 
 ## Joins
 
