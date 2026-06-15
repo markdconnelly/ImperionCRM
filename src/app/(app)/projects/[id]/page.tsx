@@ -9,6 +9,7 @@ import { getSessionRoles } from "@/lib/auth/session";
 import { canManageProjects } from "@/lib/auth/roles";
 import { cn } from "@/lib/cn";
 import { ActivityFeed } from "@/components/work/activity-feed";
+import { Attachments } from "@/components/work/attachments";
 import { createProjectMeetingAction, createProjectTaskAction } from "../actions";
 import { deleteTaskAction } from "../../tasks/actions";
 
@@ -234,6 +235,8 @@ export default async function ProjectDetailPage({
           </ul>
         )}
       </section>
+
+      <Attachments parentType="project" parentId={id} canManage={canWrite} />
 
       <ActivityFeed
         parentType="project"

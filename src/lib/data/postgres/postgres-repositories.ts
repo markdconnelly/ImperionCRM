@@ -76,6 +76,7 @@ import type {
   WorkflowInput,
   WorkflowStepInput,
   WorkCommentInput,
+  WorkAttachmentInput,
   TagApplicationInput,
 } from "@/lib/data/repositories";
 import type {
@@ -191,6 +192,7 @@ import type {
   WorkflowRow,
   WorkParentType,
   WorkComment,
+  WorkAttachment,
   WorkActivityEntry,
   CommentMention,
   MentionableUser,
@@ -8444,6 +8446,95 @@ export const postgresRepositories: Repositories = {
     },
   },
 
+  // ── Attachments (ADR-0064 A4, #333) ────────────────────────────────────────
+  attachments: {
+    async listAttachments(parentType: WorkParentType, parentId: string): Promise<WorkAttachment[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.attachments.listAttachments(parentType, parentId);
+      try {
+        const { rows } = await pool.query<AttachmentDbRow>(
+          `SELECT a.id, a.parent_type, a.parent_id::text AS parent_id,
+                  a.storage_ref, a.filename, a.content_type, a.size_bytes::text AS size_bytes,
+                  a.uploaded_by::text AS uploaded_by, u.display_name AS uploaded_by_name,
+                  a.created_at::text AS created_at
+             FROM work_attachment a
+             LEFT JOIN app_user u ON u.id = a.uploaded_by
+            WHERE a.parent_type = $1 AND a.parent_id = $2::uuid AND a.deleted_at IS NULL
+            ORDER BY a.created_at DESC`,
+          [parentType, parentId],
+        );
+        return rows.map(mapWorkAttachment);
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // schema not applied yet (#333)
+        return mockRepositories.attachments.listAttachments(parentType, parentId);
+      }
+    },
+
+    async addAttachment(input: WorkAttachmentInput): Promise<WorkAttachment> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.attachments.addAttachment(input);
+      const { rows } = await pool.query<AttachmentDbRow>(
+        `WITH ins AS (
+           INSERT INTO work_attachment
+             (parent_type, parent_id, storage_ref, filename, content_type, size_bytes, uploaded_by)
+           VALUES ($1, $2::uuid, $3, $4, $5, $6, $7::uuid)
+           RETURNING *
+         )
+         SELECT ins.id, ins.parent_type, ins.parent_id::text AS parent_id,
+                ins.storage_ref, ins.filename, ins.content_type, ins.size_bytes::text AS size_bytes,
+                ins.uploaded_by::text AS uploaded_by, u.display_name AS uploaded_by_name,
+                ins.created_at::text AS created_at
+           FROM ins LEFT JOIN app_user u ON u.id = ins.uploaded_by`,
+        [
+          input.parentType, input.parentId, input.storageRef, input.filename,
+          input.contentType, input.sizeBytes, input.uploadedByUserId,
+        ],
+      );
+      return mapWorkAttachment(rows[0]);
+    },
+
+    async removeAttachment(
+      id: string,
+      actorUserId: string | null,
+      asAdmin: boolean,
+    ): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.attachments.removeAttachment(id, actorUserId, asAdmin);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Soft-delete (uploader-scoped unless admin); retains the row for audit (NFR-2).
+        const { rows } = await client.query<{ parent_type: string; parent_id: string; filename: string }>(
+          `UPDATE work_attachment
+              SET deleted_at = now()
+            WHERE id = $1::uuid AND deleted_at IS NULL
+              AND ($3::boolean IS TRUE OR uploaded_by = $2::uuid)
+          RETURNING parent_type, parent_id::text AS parent_id, filename`,
+          [id, actorUserId, asAdmin],
+        );
+        if (rows.length === 0) {
+          await client.query("ROLLBACK");
+          return false;
+        }
+        // Acceptance: removal is audited + emits an activity event (the feed view
+        // surfaces audit_log events for the same object).
+        await client.query(
+          `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+           VALUES ($1::uuid, 'attachment.removed', $2, $3::uuid,
+                   jsonb_build_object('attachmentId', $4::text, 'filename', $5::text))`,
+          [actorUserId, rows[0].parent_type, rows[0].parent_id, id, rows[0].filename],
+        );
+        await client.query("COMMIT");
+        return true;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+  },
+
   // ── Tags / labels (ADR-0065 B6, #340) ──────────────────────────────────────
   tags: {
     async listTags(): Promise<Tag[]> {
@@ -8652,6 +8743,29 @@ function mapWorkComment(r: CommentDbRow, mentions: CommentMention[] = []): WorkC
     editedAt: r.edited_at,
     createdAt: r.created_at,
     mentions,
+  };
+}
+
+/** The selected shape of a work_attachment row (snake_case), ADR-0064 A4. */
+interface AttachmentDbRow {
+  id: string; parent_type: string; parent_id: string;
+  storage_ref: string; filename: string; content_type: string; size_bytes: string;
+  uploaded_by: string | null; uploaded_by_name: string | null; created_at: string;
+}
+
+/** Map a work_attachment DB row (snake_case) onto the {@link WorkAttachment} type. */
+function mapWorkAttachment(r: AttachmentDbRow): WorkAttachment {
+  return {
+    id: r.id,
+    parentType: r.parent_type as WorkParentType,
+    parentId: r.parent_id,
+    storageRef: r.storage_ref,
+    filename: r.filename,
+    contentType: r.content_type,
+    sizeBytes: Number(r.size_bytes),
+    uploadedByUserId: r.uploaded_by,
+    uploadedBy: r.uploaded_by_name,
+    createdAt: r.created_at,
   };
 }
 

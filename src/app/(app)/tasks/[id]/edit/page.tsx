@@ -4,6 +4,7 @@ import { TaskForm } from "@/components/tasks/task-form";
 import { TaskSubtasks } from "@/components/tasks/task-subtasks";
 import { TaskDependencies } from "@/components/tasks/task-dependencies";
 import { TaskAssignees } from "@/components/tasks/task-assignees";
+import { Attachments } from "@/components/work/attachments";
 import {
   updateTaskAction,
   createTaskTicketAction,
@@ -17,6 +18,8 @@ import {
 } from "../../actions";
 import { getRepositories } from "@/lib/data";
 import { auth } from "@/auth";
+import { getSessionRoles } from "@/lib/auth/session";
+import { canManageProjects } from "@/lib/auth/roles";
 
 const TICKET_NOTICES: Record<string, string> = {
   filed: "Autotask ticket created — the ref is stored on the task and the next sync links it.",
@@ -39,6 +42,8 @@ export default async function EditTaskPage({
   const { crm, engagements } = getRepositories();
   const session = await auth();
   const viewerEmail = session?.user?.email ?? null;
+  const roles = await getSessionRoles();
+  const canManage = canManageProjects(roles);
   const [task, accounts, hierarchy, deps, taskOptions, assignments, users] = await Promise.all([
     crm.getTask(id),
     crm.accountOptions(),
@@ -150,6 +155,10 @@ export default async function EditTaskPage({
           </form>
         )}
       </section>
+
+      <div className="max-w-lg">
+        <Attachments parentType="task" parentId={task.id} canManage={canManage} />
+      </div>
     </div>
   );
 }

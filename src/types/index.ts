@@ -1781,6 +1781,31 @@ export interface MentionableUser {
   handle: string;
 }
 
+// ── PM collaboration — file attachments (ADR-0064 A4, #333) ──────────────────
+
+/**
+ * A file attached to a work object (task/project/milestone), ADR-0064 A4.
+ *
+ * The file BYTES live in Azure Blob; this is metadata only. `storageRef` is the
+ * opaque blob key the backend mints a short-lived per-request SAS against — never
+ * a public URL and never a SAS token at rest (ADR-0064 security impact). The GUI
+ * never holds storage credentials (ADR-0042); download/upload route through the
+ * backend.
+ */
+export interface WorkAttachment {
+  id: string;
+  parentType: WorkParentType;
+  parentId: string;
+  /** Opaque Azure Blob key; the backend resolves it to a short-lived SAS on download. */
+  storageRef: string;
+  filename: string;
+  contentType: string; // MIME type — drives inline image preview + the server-side allowlist
+  sizeBytes: number;
+  uploadedByUserId: string | null;
+  uploadedBy: string | null; // resolved display name (app_user), null if the user was removed
+  createdAt: string;
+}
+
 // ── PM task structure — tags / labels (ADR-0065 B6, #340) ────────────────────
 
 /** Work objects a tag can be applied to (polymorphic, ADR-0065 B6). */

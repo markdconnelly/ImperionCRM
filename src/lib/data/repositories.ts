@@ -116,6 +116,7 @@ import type {
   WorkComment,
   WorkActivityEntry,
   MentionableUser,
+  WorkAttachment,
   TagParentType,
   Tag,
   AppliedTag,
@@ -1572,6 +1573,44 @@ export interface WorkRepository {
   deleteComment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean>;
 }
 
+/**
+ * Metadata for a file the backend has already placed in Azure Blob (ADR-0064 A4).
+ * The GUI never touches blob storage (ADR-0042): the upload-to-blob + the type
+ * allowlist / size cap / AV-scan hook are backend processes. This is what the GUI
+ * records once the backend hands back the opaque `storageRef`.
+ */
+export interface WorkAttachmentInput {
+  parentType: WorkParentType;
+  parentId: string;
+  storageRef: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedByUserId: string | null;
+}
+
+/**
+ * Work attachments repository (ADR-0064 A4, #333): polymorphic file-attachment
+ * metadata over any work object. File bytes live in Azure Blob — this stores only
+ * metadata + the opaque `storage_ref` the backend mints short-lived per-request
+ * SAS against (no public URL, no SAS at rest). Authorization is enforced in the
+ * calling server action (`delivery:write`); removal is author/admin-scoped in SQL
+ * and writes an `attachment.removed` audit event so the activity feed retains it.
+ */
+export interface AttachmentRepository {
+  /** Live (non-deleted) attachments on one work object, newest-first for the list. */
+  listAttachments(parentType: WorkParentType, parentId: string): Promise<WorkAttachment[]>;
+  /** Record an attachment the backend has placed in blob; returns the created row. */
+  addAttachment(input: WorkAttachmentInput): Promise<WorkAttachment>;
+  /**
+   * Soft-delete an attachment (sets deleted_at) and write an `attachment.removed`
+   * audit_log record so the feed retains the removal (acceptance: removal audited +
+   * emits an activity event). Scoped to the uploader unless `asAdmin`. Returns true
+   * if a row was removed.
+   */
+  removeAttachment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean>;
+}
+
 /** A tag to apply to (or remove from) a work object. */
 export interface TagApplicationInput {
   tagId: string;
@@ -1636,5 +1675,6 @@ export interface Repositories {
   knowledge: KnowledgeRepository;
   security: SecurityRepository;
   work: WorkRepository;
+  attachments: AttachmentRepository;
   tags: TagsRepository;
 }

@@ -32,6 +32,7 @@ import {
 import type {
   Repositories,
   WorkCommentInput,
+  WorkAttachmentInput,
   TagApplicationInput,
 } from "@/lib/data/repositories";
 import type {
@@ -39,6 +40,7 @@ import type {
   OnboardingMilestone,
   OnboardingStep,
   WorkComment,
+  WorkAttachment,
   WorkActivityEntry,
   WorkParentType,
   MentionableUser,
@@ -55,6 +57,10 @@ const NO_DB =
 /** In-memory comment store so the comment/feed UI works in mock mode (ADR-0064 A1). */
 const mockComments: WorkComment[] = [];
 let mockCommentSeq = 0;
+
+/** In-memory attachment store so the attachment UI works in mock mode (ADR-0064 A4). */
+const mockAttachments: WorkAttachment[] = [];
+let mockAttachmentSeq = 0;
 
 /** A fixed mentionable roster so the @mention typeahead works in mock mode (A2, #331). */
 const mockMentionableUsers: MentionableUser[] = [
@@ -1295,6 +1301,37 @@ export const mockRepositories: Repositories = {
       const i = mockComments.findIndex((c) => c.id === id);
       if (i === -1) return false;
       mockComments.splice(i, 1);
+      return true;
+    },
+  },
+
+  // ── Attachments (ADR-0064 A4, #333) ────────────────────────────────────────
+  attachments: {
+    async listAttachments(parentType: WorkParentType, parentId: string): Promise<WorkAttachment[]> {
+      return mockAttachments
+        .filter((a) => a.parentType === parentType && a.parentId === parentId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    async addAttachment(input: WorkAttachmentInput): Promise<WorkAttachment> {
+      const row: WorkAttachment = {
+        id: `mock-attachment-${++mockAttachmentSeq}`,
+        parentType: input.parentType,
+        parentId: input.parentId,
+        storageRef: input.storageRef,
+        filename: input.filename,
+        contentType: input.contentType,
+        sizeBytes: input.sizeBytes,
+        uploadedByUserId: input.uploadedByUserId,
+        uploadedBy: "You",
+        createdAt: new Date().toISOString(),
+      };
+      mockAttachments.push(row);
+      return row;
+    },
+    async removeAttachment(id: string): Promise<boolean> {
+      const i = mockAttachments.findIndex((a) => a.id === id);
+      if (i === -1) return false;
+      mockAttachments.splice(i, 1);
       return true;
     },
   },
