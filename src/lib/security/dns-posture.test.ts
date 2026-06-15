@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DnsDomainRollup } from "@/types";
 import {
+  recordStatusBadgeClass,
   summarizeDnsPosture,
   verdictBadgeClass,
   verdictLabel,
@@ -34,6 +35,15 @@ describe("DNS verdict badge mapping (#309, ADR-0063)", () => {
     expect(verdictLabel("in-azure-readonly")).toBe("In Azure (read-only)");
     expect(verdictLabel("not-in-azure")).toBe("Not in Azure");
     expect(verdictLabel(null)).toBe("Tracked");
+  });
+});
+
+describe("record-level drift status badge (#576, ADR-0063 §3)", () => {
+  it("colors missing red, drift/ungoverned amber, compliant green", () => {
+    expect(recordStatusBadgeClass("missing")).toContain("text-red");
+    expect(recordStatusBadgeClass("drift")).toContain("text-amber");
+    expect(recordStatusBadgeClass("ungoverned")).toContain("text-amber");
+    expect(recordStatusBadgeClass("compliant")).toContain("text-green");
   });
 });
 

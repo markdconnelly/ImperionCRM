@@ -1322,6 +1322,25 @@ export interface DnsDomainRollup {
   lastCapturedAt: string | null;
 }
 
+/** Per-record DNS classification — the four-state status mirrors the policy-drift / golden-state model (ADR-0063 §3). */
+export type DnsRecordStatus = "compliant" | "drift" | "ungoverned" | "missing";
+
+/**
+ * One DNS record's drift detail (ADR-0063 §3, follow-up #576). The record-level read full-outer-joins the
+ * current public-plane `dns_records` capture against the approved `dns_golden` baseline per
+ * (domain, record_type, name) — the same classification the on-prem `Get-ImperionDnsDrift` merge applies,
+ * computed read-only for the GUI. `observedValue` is what the domain resolves to now; `goldenValue` is the
+ * approved baseline. `missing` → `observedValue` null; `ungoverned` → `goldenValue` null.
+ */
+export interface DnsRecordDrift {
+  domain: string;
+  recordType: string;
+  name: string;
+  status: DnsRecordStatus;
+  observedValue: string | null;
+  goldenValue: string | null;
+}
+
 /** One Microsoft secure-score control profile (bronze, for the #93 drill-down). */
 export interface SecureScoreControl {
   tenantId: string;

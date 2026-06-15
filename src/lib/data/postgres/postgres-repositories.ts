@@ -193,6 +193,7 @@ import type {
   TenantPostureRollup,
   PosturePolicyRow,
   DnsDomainRollup,
+  DnsRecordDrift,
   SecureScoreControl,
   CredentialExposureRow,
   DefenderIncidentCounts,
@@ -8484,6 +8485,88 @@ export const postgresRepositories: Repositories = {
       } catch (err) {
         if (isSchemaLagError(err)) return []; // optional enrichment (#301)
         return mockRepositories.security.listDnsDomainsForAccount(accountId);
+      }
+    },
+
+    async listDnsRecordDriftForAccount(accountId): Promise<DnsRecordDrift[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listDnsRecordDriftForAccount(accountId);
+      try {
+        // Record-level drift (#576, ADR-0063 §3): full-outer-join the current public-plane
+        // capture (dns_records) against the approved baseline (dns_golden.golden_records,
+        // unnested) per (domain, record_type, name), classified with the SAME four-state
+        // semantics as the on-prem Get-ImperionDnsDrift merge — computed read-only here so
+        // the GUI can list the individual records that differ vs golden. Scoped to the
+        // account's tracked domains (account_domain) and keyed on account_id for isolation;
+        // 'compliant' records are omitted (the list is the drift worklist, not the full zone).
+        const { rows } = await pool.query<{
+          domain: string; record_type: string; name: string; status: string;
+          observed_value: string | null; golden_value: string | null;
+        }>(
+          `WITH governed AS (
+             SELECT ad.domain, ad.account_id
+               FROM account_domain ad
+              WHERE ad.account_id = $1::uuid
+           ),
+           golden_record AS (
+             SELECT g.account_id, g.domain,
+                    gr->>'record_type' AS record_type,
+                    gr->>'name'        AS name,
+                    gr->>'value'       AS value
+               FROM dns_golden g
+               CROSS JOIN LATERAL jsonb_array_elements(g.golden_records) AS gr
+              WHERE g.account_id = $1::uuid
+           ),
+           captured_record AS (
+             SELECT r.account_id, r.domain, r.record_type, r.name, r.value
+               FROM dns_records r
+              WHERE r.plane = 'public' AND r.account_id = $1::uuid
+           )
+           SELECT gov.domain,
+                  COALESCE(g.record_type, c.record_type) AS record_type,
+                  COALESCE(g.name, c.name)               AS name,
+                  CASE
+                      WHEN g.name IS NULL THEN 'ungoverned'
+                      WHEN c.name IS NULL THEN 'missing'
+                      WHEN c.value = g.value THEN 'compliant'
+                      ELSE 'drift'
+                  END AS status,
+                  c.value AS observed_value,
+                  g.value AS golden_value
+             FROM governed gov
+             LEFT JOIN golden_record g ON g.domain = gov.domain
+             FULL OUTER JOIN captured_record c
+                    ON c.domain = COALESCE(g.domain, gov.domain)
+                   AND c.record_type = g.record_type
+                   AND c.name = g.name
+            WHERE COALESCE(g.domain, c.domain) IN (SELECT domain FROM governed)
+              AND (CASE
+                       WHEN g.name IS NULL THEN 'ungoverned'
+                       WHEN c.name IS NULL THEN 'missing'
+                       WHEN c.value = g.value THEN 'compliant'
+                       ELSE 'drift'
+                   END) <> 'compliant'
+            ORDER BY array_position(ARRAY['missing','drift','ungoverned'],
+                       (CASE
+                            WHEN g.name IS NULL THEN 'ungoverned'
+                            WHEN c.name IS NULL THEN 'missing'
+                            WHEN c.value = g.value THEN 'compliant'
+                            ELSE 'drift'
+                        END)),
+                     gov.domain, record_type, name`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          domain: r.domain,
+          recordType: r.record_type,
+          name: r.name,
+          status: r.status as DnsRecordDrift["status"],
+          observedValue: r.observed_value,
+          goldenValue: r.golden_value,
+        }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // optional enrichment (#301)
+        return mockRepositories.security.listDnsRecordDriftForAccount(accountId);
       }
     },
   },

@@ -1,20 +1,22 @@
 import Link from "next/link";
-import type { DnsDomainRollup } from "@/types";
+import type { DnsDomainRollup, DnsRecordDrift } from "@/types";
 import {
+  recordStatusBadgeClass,
   summarizeDnsPosture,
   verdictBadgeClass,
   verdictLabel,
 } from "@/lib/security/dns-posture";
 
 // DNS posture surfaces for the Company 360 (#309, epic #306, ADR-0063 account
-// amendment). Both read the account-keyed `listDnsDomainsForAccount` rollup
-// (#334) — which degrades to an empty list on schema lag — so neither ever
-// fails the page; an account with no tracked domains renders nothing.
+// amendment). All are account-keyed reads that degrade to an empty list on
+// schema lag — so none ever fails the page; an account with no tracked domains
+// (or no captures) renders nothing.
 //
-// Record-level drift: the shipped rollup carries per-domain drift/missing
-// COUNTS only (no dns_record read exists yet), so the per-domain rows mirror
-// the policy-family classification badges as counts. A true record-level drift
-// list is a follow-up (#576) once a record-level read lands.
+// Two grains: the per-domain rows (`DnsDomainRows`) show drift as classification
+// COUNTS from the `dns_domain` rollup, and the record-level drift list
+// (`DnsRecordDriftList`, #576) shows the INDIVIDUAL records that differ vs the
+// approved golden baseline — observed vs golden per record, classified with the
+// same four-state semantics as the on-prem Get-ImperionDnsDrift merge.
 
 /** Posture timestamps render as dates — time of day adds nothing at-a-glance. */
 function fmtDate(value: string | null): string {
@@ -129,5 +131,78 @@ export function DnsDomainRows({ domains }: { domains: DnsDomainRollup[] }) {
         })}
       </tbody>
     </table>
+  );
+}
+
+function RecordStatusBadge({ status }: { status: DnsRecordDrift["status"] }) {
+  return (
+    <span
+      className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${recordStatusBadgeClass(
+        status,
+      )}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+/**
+ * Record-level DNS drift list for `/accounts/[id]/posture` (#576, ADR-0063 §3) — the
+ * individual records that differ from the approved golden baseline, grouped by domain.
+ * Each row shows record type · name · classification, plus observed vs golden value:
+ * `drift` shows both, `missing` shows golden only (no longer resolves), `ungoverned`
+ * shows observed only (no baseline approved). Compliant records are omitted — this is
+ * the remediation worklist. The read already sorts missing → drift → ungoverned.
+ */
+export function DnsRecordDriftList({ records }: { records: DnsRecordDrift[] }) {
+  const byDomain = new Map<string, DnsRecordDrift[]>();
+  for (const r of records) {
+    const list = byDomain.get(r.domain) ?? [];
+    list.push(r);
+    byDomain.set(r.domain, list);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {[...byDomain.entries()].map(([domain, rows]) => (
+        <div key={domain}>
+          <h4 className="mb-1.5 text-xs font-semibold text-dim">
+            {domain} · {rows.length} record{rows.length === 1 ? "" : "s"}
+          </h4>
+          <table className="w-full text-sm">
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={`${r.recordType}:${r.name}:${r.status}`}
+                  className="border-t border-border/60 align-top"
+                >
+                  <td className="py-1.5 pr-3 whitespace-nowrap">
+                    <span className="text-text">{r.recordType}</span>
+                  </td>
+                  <td className="py-1.5 pr-3 break-all text-dim">{r.name}</td>
+                  <td className="py-1.5 pr-3">
+                    <RecordStatusBadge status={r.status} />
+                  </td>
+                  <td className="py-1.5 pr-3">
+                    <div className="flex flex-col gap-0.5 text-[11px]">
+                      {r.observedValue !== null && (
+                        <span className="break-all text-dim">
+                          <span className="text-text">observed</span> {r.observedValue}
+                        </span>
+                      )}
+                      {r.goldenValue !== null && (
+                        <span className="break-all text-dim">
+                          <span className="text-text">golden</span> {r.goldenValue}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
   );
 }

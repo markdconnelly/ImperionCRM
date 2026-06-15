@@ -49,11 +49,19 @@ Tenant Mapping.
   **counts** (compliant / drift / ungoverned / missing) mirroring the
   policy-family badges, plus the domain's DNS score and capture date. A
   tracked-but-uncaptured domain reads *awaiting first capture*.
+- **Record-level drift list** (#576) — below the per-domain rows, the individual
+  records that differ from the approved golden baseline, grouped by domain and
+  sorted missing → drift → ungoverned. Each entry shows the record type, name,
+  classification badge, and the **observed vs golden** value: *drift* shows both,
+  *missing* shows the golden value (no longer resolves), *ungoverned* shows the
+  observed value (no baseline approved). Compliant records are omitted — this is
+  the remediation worklist. It only appears once a capture exists.
 
-> **Record-level drilldown is counts-only today.** The shipped account-keyed
-> rollup (#334) carries per-domain drift/missing *counts*, not individual
-> records. A true record-by-record drift list is a follow-up that needs a
-> record-level read — see issue #576.
+This is a read over existing tables — `dns_records` (the public-plane capture)
+full-outer-joined to the approved `dns_golden` baseline per
+(domain, record type, name), classified with the same four-state semantics as the
+on-prem `Get-ImperionDnsDrift` merge. No new schema; like every DNS read it
+degrades to empty on schema lag rather than failing the page.
 
 ## Permissions
 
