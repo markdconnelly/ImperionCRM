@@ -35,8 +35,15 @@ export async function createTaskAction(formData: FormData) {
 export async function updateTaskAction(formData: FormData) {
   await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");
-  const { crm } = getRepositories();
-  await crm.updateTask(id, parse(formData));
+  const { crm, work } = getRepositories();
+  const input = parse(formData);
+  // Snapshot the prior status so an edit-form status change also lands on the
+  // activity feed (#438), mirroring the kanban drag path.
+  const before = await crm.getTask(id);
+  await crm.updateTask(id, input);
+  if (before && before.status !== input.status) {
+    await emitTaskStatusEvent(work, id, before.status, input.status);
+  }
   revalidatePath("/tasks");
   revalidatePath("/projects/[id]", "page");
   redirect("/tasks");
@@ -60,17 +67,46 @@ const BOARD_STATUSES = ["open", "in_progress", "done"] as const;
  * form (ADR-0066: "drag actions go through the same audited mutation path"); a
  * status-only write avoids reparsing the whole TaskInput. No redirect — the
  * board stays put and the client refreshes in place.
- * TODO(#438): emit an activity-feed event once the ADR-0064 A1 feed lands.
+ *
+ * Emits a `task.status_changed` activity event (ADR-0064 A1, #438) onto the
+ * task's feed on a real X→Y move — `setTaskStatus` returns the previous status,
+ * so a no-op same-status drag records nothing. The event is best-effort and
+ * never fails the move (the data layer swallows feed-write errors).
  */
 export async function moveTaskAction(id: string, status: string) {
   await requireCapability("delivery:write");
   const taskId = id.trim();
   if (!taskId) return;
   if (!(BOARD_STATUSES as readonly string[]).includes(status)) return;
-  const { crm } = getRepositories();
-  await crm.setTaskStatus(taskId, status);
+  const { crm, work } = getRepositories();
+  const prevStatus = await crm.setTaskStatus(taskId, status);
+  if (prevStatus !== null && prevStatus !== status) {
+    await emitTaskStatusEvent(work, taskId, prevStatus, status);
+  }
   revalidatePath("/tasks");
   revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Record a `task.status_changed` event on the task's activity feed (#438). The
+ * actor is resolved from the session email → app_user; an unresolved user still
+ * records a system-authored event (the move is the audit-worthy fact).
+ */
+async function emitTaskStatusEvent(
+  work: ReturnType<typeof getRepositories>["work"],
+  taskId: string,
+  from: string,
+  to: string,
+) {
+  const session = await auth();
+  const actorUserId = await resolveAppUserIdByEmail(session?.user?.email ?? "");
+  await work.emitWorkEvent({
+    parentType: "task",
+    parentId: taskId,
+    actorUserId,
+    action: "task.status_changed",
+    detail: { from, to },
+  });
 }
 
 /** Group-by=category lanes = the task category enum (ADR-0034, ADR-0066 C1-F2). */
