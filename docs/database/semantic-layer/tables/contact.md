@@ -4,7 +4,7 @@ title: contact
 description: Unified person — one row per individual, merged from five bronze sources by precedence; the CRM 360 subject.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, contact, merge]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # contact
@@ -45,8 +45,17 @@ pre-linked (resurrection guard — the merge never creates a contact from one).
 - `account_id` → `account`; `campaign_id` → `campaign`.
 - Related: `consent_event` (the send gate), `contact_enrichment` (dossier facts +
   lawful basis), `contact_social_identity`, `credential_exposure`, `interaction`.
+- **Entra directory-group enrichment** (Pipeline #93): the contact's Entra group
+  membership is folded onto `contact_enrichment` as a `directory_groups` fact. Path:
+  `m365_group_members.member_external_id = m365_contacts.external_ref` (the Entra user
+  object id) → silver `contact` via `m365_contacts.contact_id`; the group name resolves
+  through `m365_groups (tenant_id, external_id = group_external_id)`. Bronze feed:
+  `m365_groups` / `m365_group_members` (migration 0079; front-end #257). The fact carries
+  `source = 'm365_directory'` (its own idempotency key) and `lawful_basis =
+  'legitimate_interest'`.
 
 ## Notes
 
 Contacts are personal data (`pii = true` by definition). Name/email/phone and dossier
-values are PII — never inline row-level values; resolve against the live read-only DB.
+values — including `directory_groups` group names — are PII; never inline row-level
+values, resolve against the live read-only DB.
