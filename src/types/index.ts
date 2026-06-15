@@ -690,6 +690,29 @@ export interface TaskRow {
   due: string | null; // formatted due date
   account: string | null; // account name
   projectId: string | null; // owning project (one task model, ADR-0052)
+  /** Subtasks (ADR-0065 B1, #335): how many direct children, and how many done.
+   * 0/0 = a leaf task. Present on the list read so a row can show its rollup. */
+  childCount: number;
+  childDoneCount: number;
+}
+
+/** A single child task under a parent (ADR-0065 B1, #335). */
+export interface TaskSubtaskRow {
+  id: string;
+  title: string;
+  status: string; // open|in_progress|done
+  due: string | null; // formatted due date
+  ordinal: number; // sibling order within the parent
+  childCount: number; // its own children (depth allowed) — 0 = leaf
+  childDoneCount: number;
+}
+
+/** A parent task's children plus the n/m completion rollup (ADR-0065 B1, #335). */
+export interface TaskHierarchy {
+  parentId: string;
+  children: TaskSubtaskRow[];
+  total: number; // = children.length
+  done: number; // children with status='done'
 }
 
 /**

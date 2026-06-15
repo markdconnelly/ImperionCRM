@@ -165,6 +165,7 @@ import type {
   StageValueDatum,
   TaskCategory,
   TaskRow,
+  TaskHierarchy,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -1008,11 +1009,22 @@ export const postgresRepositories: Repositories = {
           due_at: Date | null;
           account: string | null;
           project_id: string | null;
+          child_count: string;
+          child_done_count: string;
         }>(
+          // Top-level tasks only (parent_task_id IS NULL); subtasks surface under
+          // their parent via getTaskChildren. The lateral counts the n/m rollup
+          // (ADR-0065 B1, #335).
           `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account,
-                  t.project_id
+                  t.project_id, c.child_count, c.child_done_count
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
+           LEFT JOIN LATERAL (
+             SELECT count(*) AS child_count,
+                    count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
+             FROM task ch WHERE ch.parent_task_id = t.id
+           ) c ON true
+           WHERE t.parent_task_id IS NULL
            ORDER BY t.due_at NULLS LAST, t.title`,
         );
         return rows.map((row) => ({
@@ -1023,6 +1035,8 @@ export const postgresRepositories: Repositories = {
           due: fmtDate(row.due_at),
           account: row.account,
           projectId: row.project_id,
+          childCount: Number(row.child_count),
+          childDoneCount: Number(row.child_done_count),
         }));
       } catch {
         return mockRepositories.crm.listTasks();
@@ -1041,12 +1055,21 @@ export const postgresRepositories: Repositories = {
           due_at: Date | null;
           account: string | null;
           project_id: string | null;
+          child_count: string;
+          child_done_count: string;
         }>(
+          // Top-level tasks for the project; subtasks surface under their parent
+          // (ADR-0065 B1, #335).
           `SELECT t.id, t.title, t.status, t.category, t.due_at, a.name AS account,
-                  t.project_id
+                  t.project_id, c.child_count, c.child_done_count
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
-           WHERE t.project_id = $1
+           LEFT JOIN LATERAL (
+             SELECT count(*) AS child_count,
+                    count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
+             FROM task ch WHERE ch.parent_task_id = t.id
+           ) c ON true
+           WHERE t.project_id = $1 AND t.parent_task_id IS NULL
            ORDER BY t.due_at NULLS LAST, t.title`,
           [projectId],
         );
@@ -1058,6 +1081,8 @@ export const postgresRepositories: Repositories = {
           due: fmtDate(row.due_at),
           account: row.account,
           projectId: row.project_id,
+          childCount: Number(row.child_count),
+          childDoneCount: Number(row.child_done_count),
         }));
       } catch {
         return mockRepositories.crm.listProjectTasks(projectId);
@@ -1077,10 +1102,11 @@ export const postgresRepositories: Repositories = {
           category: string;
           due_at: Date | null;
           project_id: string | null;
+          parent_task_id: string | null;
           autotask_ticket_ref: string | null;
         }>(
           `SELECT id, account_id, title, detail, status, category, due_at, project_id,
-                  autotask_ticket_ref
+                  parent_task_id, autotask_ticket_ref
            FROM task WHERE id = $1`,
           [id],
         );
@@ -1095,6 +1121,7 @@ export const postgresRepositories: Repositories = {
           category: r.category,
           dueAt: fmtDate(r.due_at),
           projectId: r.project_id,
+          parentTaskId: r.parent_task_id,
           autotaskTicketRef: r.autotask_ticket_ref,
         };
       } catch {
@@ -1106,8 +1133,14 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.createTask(input);
       await pool.query(
-        `INSERT INTO task (account_id, title, detail, status, category, due_at, project_id)
-         VALUES ($1, $2, $3, $4, $5::task_category, $6::timestamptz, $7)`,
+        // A subtask inherits its order at the end of its parent's children
+        // (COALESCE(max+1,0)); top-level creates default to ordinal 0 (ADR-0065 B1).
+        `INSERT INTO task (account_id, title, detail, status, category, due_at, project_id,
+                           parent_task_id, ordinal)
+         VALUES ($1, $2, $3, $4, $5::task_category, $6::timestamptz, $7, $8,
+                 CASE WHEN $8::uuid IS NULL THEN 0
+                      ELSE COALESCE((SELECT max(ordinal) + 1 FROM task WHERE parent_task_id = $8::uuid), 0)
+                 END)`,
         [
           nullIfEmpty(input.accountId),
           input.title,
@@ -1116,6 +1149,7 @@ export const postgresRepositories: Repositories = {
           input.category,
           nullIfEmpty(input.dueAt),
           nullIfEmpty(input.projectId),
+          nullIfEmpty(input.parentTaskId ?? null),
         ],
       );
     },
@@ -1123,6 +1157,8 @@ export const postgresRepositories: Repositories = {
     async updateTask(id: string, input: TaskInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.updateTask(id, input);
+      // parent_task_id is intentionally NOT updated here — re-parenting goes
+      // through reparentTask (which enforces the cycle guard, ADR-0065 B1).
       await pool.query(
         `UPDATE task
          SET account_id = $1, title = $2, detail = $3, status = $4,
@@ -1144,7 +1180,93 @@ export const postgresRepositories: Repositories = {
     async deleteTask(id: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteTask(id);
+      // ON DELETE CASCADE on parent_task_id removes the subtree with the parent.
       await pool.query(`DELETE FROM task WHERE id = $1`, [id]);
+    },
+
+    async getTaskChildren(parentId: string): Promise<TaskHierarchy> {
+      const empty: TaskHierarchy = { parentId, children: [], total: 0, done: 0 };
+      const pool = getPool();
+      if (!pool) return empty;
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          title: string;
+          status: string;
+          due_at: Date | null;
+          ordinal: number;
+          child_count: string;
+          child_done_count: string;
+        }>(
+          `SELECT t.id, t.title, t.status, t.due_at, t.ordinal,
+                  c.child_count, c.child_done_count
+           FROM task t
+           LEFT JOIN LATERAL (
+             SELECT count(*) AS child_count,
+                    count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
+             FROM task ch WHERE ch.parent_task_id = t.id
+           ) c ON true
+           WHERE t.parent_task_id = $1
+           ORDER BY t.ordinal, t.title`,
+          [parentId],
+        );
+        const children = rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          status: row.status,
+          due: fmtDate(row.due_at),
+          ordinal: row.ordinal,
+          childCount: Number(row.child_count),
+          childDoneCount: Number(row.child_done_count),
+        }));
+        return {
+          parentId,
+          children,
+          total: children.length,
+          done: children.filter((c) => c.status === "done").length,
+        };
+      } catch {
+        return empty;
+      }
+    },
+
+    async reparentTask(id: string, newParentId: string | null): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.reparentTask(id, newParentId);
+      // A task can never be its own ancestor (would orphan the subtree behind a
+      // cycle). Promote to top-level (null) is always safe; otherwise walk the
+      // ancestor chain of the prospective parent and reject if `id` appears.
+      if (newParentId) {
+        if (newParentId === id) return false;
+        const { rows } = await pool.query<{ cycles: boolean }>(
+          `WITH RECURSIVE ancestors AS (
+             SELECT id, parent_task_id FROM task WHERE id = $2
+             UNION ALL
+             SELECT t.id, t.parent_task_id FROM task t
+             JOIN ancestors a ON t.id = a.parent_task_id
+           )
+           SELECT bool_or(id = $1) AS cycles FROM ancestors`,
+          [id, newParentId],
+        );
+        if (rows[0]?.cycles) return false;
+      }
+      // New parent → append at the end of its children; promote to top-level → 0.
+      await pool.query(
+        `UPDATE task
+         SET parent_task_id = $2,
+             ordinal = CASE WHEN $2::uuid IS NULL THEN 0
+                            ELSE COALESCE((SELECT max(ordinal) + 1 FROM task WHERE parent_task_id = $2::uuid AND id <> $1), 0)
+                       END
+         WHERE id = $1`,
+        [id, newParentId],
+      );
+      return true;
+    },
+
+    async setTaskOrdinal(id: string, ordinal: number): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskOrdinal(id, ordinal);
+      await pool.query(`UPDATE task SET ordinal = $2 WHERE id = $1`, [id, ordinal]);
     },
 
     async listSalesTasks(): Promise<SalesTaskRow[]> {

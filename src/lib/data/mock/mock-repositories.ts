@@ -144,6 +144,15 @@ export const mockRepositories: Repositories = {
     async deleteTask() {
       throw new Error(NO_DB);
     },
+    async getTaskChildren(parentId: string) {
+      return { parentId, children: [], total: 0, done: 0 };
+    },
+    async reparentTask() {
+      throw new Error(NO_DB);
+    },
+    async setTaskOrdinal() {
+      throw new Error(NO_DB);
+    },
     async listSalesTasks() {
       return [];
     },

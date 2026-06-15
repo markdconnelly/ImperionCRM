@@ -154,9 +154,11 @@ erDiagram
       uuid account_id FK
       uuid owner_user_id FK
       uuid project_id FK "SET NULL — one task model (0058, ADR-0052)"
+      uuid parent_task_id FK "CASCADE — subtask hierarchy (9001, ADR-0065 B1)"
       text title
       text status
       text category "sales|project|onboarding|general"
+      integer ordinal "sibling order under a parent (ADR-0065 B1)"
       text autotask_ticket_ref "on-demand push, unique (backend #19)"
       timestamptz due_at
     }
@@ -980,6 +982,17 @@ erDiagram
 > it: each phase → a `PROJECT_MILESTONE`, each step → an `ONBOARDING_STEP`. Checking off
 > steps re-derives the phase R/Y/G. Ad-hoc PM work still uses `TASK` (category
 > project/onboarding); the playbook checklist does not.
+
+> **Subtasks / task hierarchy (ADR-0065 B1, #335, migration 9001).** A `TASK` carries a
+> nullable self-FK `parent_task_id` (ON DELETE CASCADE — a parent's subtree dies with it)
+> plus a sibling `ordinal`. One level is required; arbitrary depth is allowed (no DB depth
+> cap). The task list shows top-level tasks only, with an **n/m children-done rollup** read
+> per row; subtasks surface under their parent on the task edit page (add child inline,
+> promote/demote). Re-parenting rejects self/descendant **cycles in the data layer**
+> (recursive ancestor walk), never via a DB trigger. Auto-complete-on-children is **manual
+> in v1** — the rollup flags "all done" but never forces the parent done (auto only via the
+> out-of-scope rules engine). `onboarding_step` **coexists** (B1-F4 decision: coexist);
+> unifying steps as a task `kind` is a tracked follow-up.
 
 > **Easy mode (ADR-0052 §3/§4, #101, migration 0067).** A step with a `deploy_key`
 > renders the Deploy button and auto-creates ONE linked project task when the template

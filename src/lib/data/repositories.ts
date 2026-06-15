@@ -92,6 +92,7 @@ import type {
   SocialIdentityRow,
   StageValueDatum,
   TaskRow,
+  TaskHierarchy,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -145,6 +146,9 @@ export interface TaskInput {
   category: string; // sales|project|onboarding|general (ADR-0034)
   dueAt: string | null; // yyyy-mm-dd or null
   projectId: string | null; // owning project (one task model, ADR-0052)
+  /** Subtask parent (ADR-0065 B1, #335): the task this hangs under, or null for
+   * a top-level task. Optional on the wire — omitting it means "top-level". */
+  parentTaskId?: string | null;
 }
 export interface TaskEditable extends TaskInput {
   id: string;
@@ -463,6 +467,18 @@ export interface CrmRepository {
   createTask(input: TaskInput): Promise<void>;
   updateTask(id: string, input: TaskInput): Promise<void>;
   deleteTask(id: string): Promise<void>;
+
+  // Subtasks / task hierarchy (ADR-0065 B1, #335)
+  /** A task's child tasks, ordered by ordinal then title, with the n/m rollup. */
+  getTaskChildren(parentId: string): Promise<TaskHierarchy>;
+  /**
+   * Re-parent a task (promote/demote). `newParentId` = null promotes to
+   * top-level. Rejects self/descendant cycles server-side and returns false; on
+   * success returns true.
+   */
+  reparentTask(id: string, newParentId: string | null): Promise<boolean>;
+  /** Set a child task's sibling ordinal (reorder within a parent). */
+  setTaskOrdinal(id: string, ordinal: number): Promise<void>;
 
   // Sales Activity (ADR-0052 §6) — the Sales Queue read model + its two writes
   /** Open `category='sales'` tasks with owner + deal context (the Sales Queue). */

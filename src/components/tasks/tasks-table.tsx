@@ -39,7 +39,23 @@ export function TasksTable({
           <tbody>
             {tasks.map((t) => (
               <tr key={t.id} className="border-t border-border hover:bg-panel-2">
-                <td className="px-4 py-3 font-medium">{t.title}</td>
+                <td className="px-4 py-3 font-medium">
+                  <span>{t.title}</span>
+                  {/* Subtask rollup (ADR-0065 B1, #335): n/m children done. */}
+                  {t.childCount > 0 && (
+                    <span
+                      title={`${t.childDoneCount} of ${t.childCount} subtasks done`}
+                      className={cn(
+                        "ml-2 rounded-full border px-1.5 py-0.5 align-middle text-[10px]",
+                        t.childDoneCount === t.childCount
+                          ? "border-green/40 text-green"
+                          : "border-border text-dim",
+                      )}
+                    >
+                      {t.childDoneCount}/{t.childCount}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <span className="rounded-full bg-panel-2 px-2 py-0.5 text-[11px] text-dim">
                     {CATEGORY_LABEL[t.category] ?? t.category}
