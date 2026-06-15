@@ -93,6 +93,7 @@ import type {
   StageValueDatum,
   TaskRow,
   TaskHierarchy,
+  TaskDependencies,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -484,6 +485,29 @@ export interface CrmRepository {
   /** Set a child task's sibling ordinal (reorder within a parent). */
   setTaskOrdinal(id: string, ordinal: number): Promise<void>;
 
+  // Task dependencies — blocks / blocked-by (ADR-0065 B2, #336)
+  /**
+   * A task's full dependency picture: its predecessors (what blocks it), its
+   * successors (what it blocks), and the derived `blocked` flag (any predecessor
+   * not yet done). Soft in v1 — surfaced as a warning, never a hard block.
+   */
+  getTaskDependencies(taskId: string): Promise<TaskDependencies>;
+  /**
+   * Link `predecessorId` BLOCKS `successorId`. Rejects self-links and any link
+   * that would close a dependency cycle (recursive predecessor walk), returning
+   * false; a successful (idempotent) link returns true.
+   */
+  addTaskDependency(predecessorId: string, successorId: string): Promise<boolean>;
+  /** Remove a dependency edge. Returns true if a link was removed. */
+  removeTaskDependency(predecessorId: string, successorId: string): Promise<boolean>;
+  /**
+   * Open (not-done) tasks in a project that have at least one unmet blocker — a
+   * predecessor that isn't done yet (ADR-0065 B2, #336). Backs the "closing a
+   * project surfaces unmet blockers" acceptance: the project view warns before
+   * close. {id, name=title} per blocked task, title-sorted.
+   */
+  listBlockedProjectTasks(projectId: string): Promise<Option[]>;
+
   // Sales Activity (ADR-0052 §6) — the Sales Queue read model + its two writes
   /** Open `category='sales'` tasks with owner + deal context (the Sales Queue). */
   listSalesTasks(): Promise<SalesTaskRow[]>;
@@ -768,6 +792,13 @@ export interface CrmRepository {
 
   /** Account options for select dropdowns. */
   accountOptions(): Promise<Option[]>;
+
+  /**
+   * Task options ({id, title}) for the dependency picker (ADR-0065 B2, #336),
+   * title-sorted. `excludeId` drops that task from the list so a task can't be
+   * offered to depend on itself.
+   */
+  taskOptions(excludeId?: string): Promise<Option[]>;
 
   /** Opportunity options ("Account — Opportunity") for select dropdowns. */
   opportunityOptions(): Promise<Option[]>;

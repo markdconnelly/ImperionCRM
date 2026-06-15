@@ -716,6 +716,40 @@ export interface TaskHierarchy {
 }
 
 /**
+ * The kind of a task dependency link (ADR-0065 B2, #336). v1 ships only `blocks`
+ * (finish-to-start): the predecessor must finish before the successor. The type is
+ * an enum-style string so later kinds widen additively, never a new shape.
+ */
+export type TaskDependencyType = "blocks";
+
+/**
+ * One end of a dependency link as shown on a task (ADR-0065 B2, #336) — the OTHER
+ * task in the edge plus enough of its state to flag an unmet blocker. On the
+ * "blocked by" list this is the predecessor; on the "blocks" list, the successor.
+ */
+export interface TaskDependencyRow {
+  /** The id of the task at the other end of the edge. */
+  taskId: string;
+  title: string;
+  status: string; // open|in_progress|done — drives the unmet-blocker flag
+  type: TaskDependencyType;
+}
+
+/**
+ * A task's full dependency picture (ADR-0065 B2, #336): what blocks it
+ * (predecessors) and what it blocks (successors), plus the derived flag the UI and
+ * the close-project surface use. `blocked` is true when ANY predecessor is not yet
+ * done — the soft v1 signal (warned, never hard-blocked).
+ */
+export interface TaskDependencies {
+  taskId: string;
+  blockedBy: TaskDependencyRow[]; // predecessors — what must finish first
+  blocks: TaskDependencyRow[]; // successors — what waits on this task
+  /** True when at least one predecessor has status !== 'done' (unmet blocker). */
+  blocked: boolean;
+}
+
+/**
  * A row in the Sales Queue (ADR-0052 §6) — an open `category='sales'` task with
  * its owner and deal context. Pure read model; no new tables.
  */

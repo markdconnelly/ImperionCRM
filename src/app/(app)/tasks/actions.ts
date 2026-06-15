@@ -161,6 +161,49 @@ export async function reparentTaskAction(formData: FormData) {
 }
 
 /**
+ * Add a dependency edge to a task (ADR-0065 B2, #336). `direction` says which side
+ * the edited task sits on: `blocked-by` → the picked task BLOCKS this one (picked =
+ * predecessor, this = successor); `blocks` → this task BLOCKS the picked one. The
+ * data layer rejects self-links and cycles, so a refused add is a silent no-op (the
+ * page re-renders unchanged). Same `delivery:write` audited path as the edit form.
+ */
+export async function addTaskDependencyAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const taskId = String(formData.get("taskId") ?? "").trim();
+  const otherId = strOrNull(formData, "otherTaskId");
+  const direction = String(formData.get("direction") ?? "").trim();
+  if (!taskId || !otherId) return;
+  const { crm } = getRepositories();
+  // Map the edited task + picked task onto the directed (predecessor, successor) edge.
+  const [predecessorId, successorId] =
+    direction === "blocks" ? [taskId, otherId] : [otherId, taskId];
+  await crm.addTaskDependency(predecessorId, successorId);
+  revalidatePath(`/tasks/${taskId}/edit`);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Remove a dependency edge from a task (ADR-0065 B2, #336). `direction` resolves
+ * the same predecessor/successor mapping as the add action. Idempotent — removing a
+ * gone edge is a harmless no-op.
+ */
+export async function removeTaskDependencyAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const taskId = String(formData.get("taskId") ?? "").trim();
+  const otherId = strOrNull(formData, "otherTaskId");
+  const direction = String(formData.get("direction") ?? "").trim();
+  if (!taskId || !otherId) return;
+  const { crm } = getRepositories();
+  const [predecessorId, successorId] =
+    direction === "blocks" ? [taskId, otherId] : [otherId, taskId];
+  await crm.removeTaskDependency(predecessorId, successorId);
+  revalidatePath(`/tasks/${taskId}/edit`);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
+/**
  * On-demand Autotask push (#98, ADR-0052 §7): create this task's Autotask
  * ticket via the backend's idempotent ticket API (backend #19). The queue is
  * the task category (resolved through the backend's AUTOTASK_QUEUE_IDS map);

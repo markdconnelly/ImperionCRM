@@ -2,11 +2,14 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { TaskForm } from "@/components/tasks/task-form";
 import { TaskSubtasks } from "@/components/tasks/task-subtasks";
+import { TaskDependencies } from "@/components/tasks/task-dependencies";
 import {
   updateTaskAction,
   createTaskTicketAction,
   addSubtaskAction,
   reparentTaskAction,
+  addTaskDependencyAction,
+  removeTaskDependencyAction,
 } from "../../actions";
 import { getRepositories } from "@/lib/data";
 
@@ -29,10 +32,12 @@ export default async function EditTaskPage({
   const { id } = await params;
   const { ticket } = await searchParams;
   const { crm, engagements } = getRepositories();
-  const [task, accounts, hierarchy] = await Promise.all([
+  const [task, accounts, hierarchy, deps, taskOptions] = await Promise.all([
     crm.getTask(id),
     crm.accountOptions(),
     crm.getTaskChildren(id),
+    crm.getTaskDependencies(id),
+    crm.taskOptions(id),
   ]);
   if (!task) notFound();
 
@@ -67,6 +72,14 @@ export default async function EditTaskPage({
         hierarchy={hierarchy}
         addSubtaskAction={addSubtaskAction}
         reparentTaskAction={reparentTaskAction}
+      />
+
+      <TaskDependencies
+        taskId={task.id}
+        deps={deps}
+        options={taskOptions}
+        addAction={addTaskDependencyAction}
+        removeAction={removeTaskDependencyAction}
       />
 
       <section className="max-w-lg rounded-xl border border-border bg-panel p-5">
