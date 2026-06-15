@@ -429,7 +429,7 @@ export const mockRepositories: Repositories = {
       throw new Error(NO_DB);
     },
     // Configurable statuses (ADR-0065 B5, #339) — the seeded global default sets
-    // (migration 9001) so the board renders in mock mode. Mock has no per-type
+    // (migration 0102) so the board renders in mock mode. Mock has no per-type
     // sets, so projectTypeId is ignored and the defaults are always returned.
     async listStatusDefs(context: string) {
       const sets: Record<
