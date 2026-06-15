@@ -131,6 +131,8 @@ import type {
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
+  JourneyRow,
+  JourneyDetail,
   WorkParentType,
   WorkComment,
   WorkActivityEntry,
@@ -1858,6 +1860,11 @@ export interface WorkflowsRepository {
   /** Enroll a contact in a workflow (e.g. a not-fit discovery → nurture). */
   enroll(workflowId: string, contactId: string, accountId: string | null): Promise<void>;
   exitEnrollment(enrollmentId: string): Promise<void>;
+  // ── Marketing journeys (ADR-0073, #397) — read-only over the same substrate ──
+  /** Journeys = workflow rows with kind='journey'; steps live in workflow.definition. */
+  listJourneys(): Promise<JourneyRow[]>;
+  /** One journey with its parsed definition (lib/journey.ts). null if not a journey. */
+  getJourney(id: string): Promise<JourneyDetail | null>;
 }
 
 // ── Knowledge search & security posture ──────────────────────────────────────

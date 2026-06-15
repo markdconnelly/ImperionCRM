@@ -2144,6 +2144,88 @@ export interface EnrollmentRow {
   enrolledAt: string | null;
 }
 
+// ── Marketing journeys (ADR-0073, #397) ──────────────────────────────────────
+// A journey is a SINGLE object on the existing workflow substrate: a `workflow`
+// row (kind='journey') whose `definition` jsonb holds the ordered steps, A/B
+// variants, and source segments. No journey_step/journey_enrollment tables — these
+// types describe the SHAPE of that one jsonb object (parsed in lib/journey.ts).
+
+/** The five journey step kinds (ADR-0073 decision 1). */
+export type JourneyStepKind = "send" | "wait" | "branch" | "score" | "exit";
+
+/** Branch step engagement predicates (ADR-0073 decision 3) — read off the timeline. */
+export type JourneyBranchCondition =
+  | "opened"
+  | "clicked"
+  | "replied"
+  | "bounced"
+  | "no_action";
+
+/** One A/B variant of a send step (ADR-0073 decision 4). Assignment is sticky per enrollee. */
+export interface JourneyVariant {
+  key: string;
+  ratio: number; // relative split weight (normalised at assignment)
+  templateId: string | null; // composer template for this variant
+  label: string | null;
+}
+
+/** One step in a journey's embedded definition. Fields are kind-specific. */
+export interface JourneyStep {
+  key: string; // stable identifier referenced by branches + the enrollment cursor
+  kind: JourneyStepKind;
+  label: string | null;
+  next: string | null; // linear next step key (send/wait/score); null = falls through / ends
+  // send
+  templateId: string | null; // composer template (gated send, ADR-0058)
+  channel: string | null; // email | sms
+  variants: JourneyVariant[]; // A/B on a send step (empty = single variant)
+  // wait
+  waitHours: number | null;
+  // branch
+  condition: JourneyBranchCondition | null;
+  ifTrue: string | null; // next step key when the predicate holds
+  ifFalse: string | null; // next step key otherwise
+  // score
+  scoreDelta: number | null; // lead-score delta (rule-based, ADR-0073 decision 5)
+}
+
+/** The journey as a single object — `workflow.definition` parsed (ADR-0073). */
+export interface JourneyDefinition {
+  steps: JourneyStep[];
+  entryStepKey: string | null; // where enrollment begins; defaults to the first step
+  sourceSegmentIds: string[]; // segments a journey enrolls from (#420; data until then)
+}
+
+/** Derived counts for the journey list / header (computed, not stored). */
+export interface JourneySummary {
+  stepCount: number;
+  sendCount: number;
+  branchCount: number;
+  hasAbTest: boolean;
+  sourceSegmentCount: number;
+}
+
+/** A row in the Journeys list. */
+export interface JourneyRow {
+  id: string;
+  name: string;
+  status: string; // active|paused|archived
+  stepCount: number;
+  sendCount: number;
+  hasAbTest: boolean;
+  activeEnrollments: number;
+}
+
+/** A journey with its parsed definition + derived summary. */
+export interface JourneyDetail {
+  id: string;
+  name: string;
+  status: string;
+  definition: JourneyDefinition;
+  summary: JourneySummary;
+  activeEnrollments: number;
+}
+
 // ── PM collaboration — comments & activity feed (ADR-0064 A1) ─────────────────
 
 /** The work objects a comment / activity feed can hang off (polymorphic, ADR-0064). */

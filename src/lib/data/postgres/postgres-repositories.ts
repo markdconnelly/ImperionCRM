@@ -30,6 +30,7 @@ import {
 } from "@/lib/goals";
 import { parseRRule, nextOccurrence } from "@/lib/recurrence";
 import { effectiveWinProbability, weightedValue } from "@/lib/forecast";
+import { parseJourneyDefinition, summariseJourney } from "@/lib/journey";
 import type { ForecastCategory } from "@/types";
 import type {
   AccountDetail,
@@ -239,6 +240,8 @@ import type {
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
+  JourneyRow,
+  JourneyDetail,
   WorkParentType,
   WorkComment,
   WorkAttachment,
@@ -9563,6 +9566,79 @@ export const postgresRepositories: Repositories = {
         `UPDATE workflow_enrollment SET status = 'exited', completed_at = now() WHERE id = $1`,
         [enrollmentId],
       );
+    },
+
+    // ── Marketing journeys (ADR-0073, #397) — read-only over workflow kind='journey'.
+    // Steps live in workflow.definition (jsonb); we parse + summarise via lib/journey.ts.
+    async listJourneys(): Promise<JourneyRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.listJourneys();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          status: string;
+          definition: unknown | null;
+          active_enrollments: string;
+        }>(
+          `SELECT w.id, w.name, w.status, w.definition,
+                  COUNT(DISTINCT e.id) FILTER (WHERE e.status = 'active') AS active_enrollments
+           FROM workflow w
+           LEFT JOIN workflow_enrollment e ON e.workflow_id = w.id
+           WHERE w.kind = 'journey'
+           GROUP BY w.id ORDER BY w.created_at DESC`,
+        );
+        return rows.map((r) => {
+          const def = parseJourneyDefinition(r.definition);
+          const summary = summariseJourney(def);
+          return {
+            id: r.id,
+            name: r.name,
+            status: r.status,
+            stepCount: summary.stepCount,
+            sendCount: summary.sendCount,
+            hasAbTest: summary.hasAbTest,
+            activeEnrollments: Number(r.active_enrollments),
+          };
+        });
+      } catch {
+        return mockRepositories.workflows.listJourneys();
+      }
+    },
+
+    async getJourney(id: string): Promise<JourneyDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.getJourney(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          status: string;
+          definition: unknown | null;
+          active_enrollments: string;
+        }>(
+          `SELECT w.id, w.name, w.status, w.definition,
+                  COUNT(DISTINCT e.id) FILTER (WHERE e.status = 'active') AS active_enrollments
+           FROM workflow w
+           LEFT JOIN workflow_enrollment e ON e.workflow_id = w.id
+           WHERE w.id = $1 AND w.kind = 'journey'
+           GROUP BY w.id`,
+          [id],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        const definition = parseJourneyDefinition(r.definition);
+        return {
+          id: r.id,
+          name: r.name,
+          status: r.status,
+          definition,
+          summary: summariseJourney(definition),
+          activeEnrollments: Number(r.active_enrollments),
+        };
+      } catch {
+        return mockRepositories.workflows.getJourney(id);
+      }
     },
   },
 

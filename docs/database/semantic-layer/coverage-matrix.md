@@ -94,6 +94,7 @@ object · **H** reference/config/identity.
 |---|---|---|---|
 | [campaign](tables/campaign.md) | B | ✅ | lead-response / nurture |
 | [workflow](tables/workflow.md) → step/enrollment | B | ✅ | nurture executor |
+| [workflow](tables/workflow.md) kind=journey (definition jsonb) | B | ✅ | journey runner (ADR-0073, #398) |
 | ad, campaign_metric, campaign_send | B | ⏳ | campaign ops |
 | audience, audience_member | B | ⏳ | segmentation |
 | event, event_registration, lead_hook, lead_capture_event | B | ⏳ | lead-response |

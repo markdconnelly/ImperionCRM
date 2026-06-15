@@ -2326,6 +2326,41 @@ OKF concept file
 are RBAC-gated server-side (ADR-0030 — `canSeeRevenue`); the tables hold no client
 PII (deal-level identity stays on `opportunity`).
 
+## Marketing journeys — a single object on the workflow engine (ADR-0073, migration 0115, #397)
+
+The marketing-automation vertical (epic #319) adds automation **depth** — multi-step
+nurture cadences, A/B sends, and engagement-branching journeys — on top of the
+one-shot campaign sends (ADR-0053). The key call (ADR-0073 decision 1, **ratified by
+Mark**): do NOT build a second engine. A **journey is a single object on the existing
+`workflow` substrate** — a `workflow` row whose embedded config holds the steps;
+enrollment reuses `workflow_enrollment` (one ACTIVE per `(workflow, contact)`,
+idempotent). There are deliberately **no `journey_step` / `journey_enrollment` /
+`journey_step_variant` child tables**. Migration **0115** is therefore three additive
+changes on existing tables:
+
+- **`workflow_kind` gains `journey`** — marks a `workflow` row as a marketing journey
+  (vs the legacy `nurture` / `pre_discovery` / `re_engagement` sequences, which keep
+  their ordered steps in child `workflow_step` rows).
+- **`workflow.definition`** (new jsonb, nullable) — the journey as one object: the
+  ordered steps (`send` / `wait` / `branch` / `score` / `exit`), the A/B variant config
+  on send steps, and the source segment refs it enrolls from (the `segment` table is a
+  later build, #420 — refs are held as data, forward-compatible). The shape is validated
+  in the app (`lib/journey.ts` — `parseJourneyDefinition` / `validateJourneyDefinition`),
+  not by the DB: one object to author, version, and reason about.
+- **`workflow_enrollment` gains two journey-only columns** — `variant_assignments`
+  (jsonb, sticky A/B per enrollee — `{ stepKey: variantKey }`) and `current_step_key`
+  (text, the branch-aware runtime cursor; the legacy linear `current_step_ordinal`
+  cannot address a branching journey).
+
+This is the **schema heavy lane**; the journey **builder** (#399) and the backend
+**journey runner** that executes gated sends on ICM (#398, ADR-0061) build on it. This
+front end (ADR-0042) only READS — it ships a read model (`listJourneys` / `getJourney`
+over the parsed `definition`) and a read-only `/journeys` viewer. A journey send is **not
+a gate bypass** (ADR-0058/0055): it crosses the same approval gate + autonomy dial as a
+manual send. No new silver entity is minted (a journey IS a `workflow`), so the
+[`workflow`](semantic-layer/tables/workflow.md) OKF concept + coverage-matrix row are
+updated in place; journey config is internal (no client PII).
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —

@@ -28,7 +28,9 @@ import {
   pipeline,
   userConnections,
   workflows,
+  journeys,
 } from "@/lib/mock-data";
+import { summariseJourney } from "@/lib/journey";
 import type {
   Repositories,
   WorkCommentInput,
@@ -1364,6 +1366,32 @@ export const mockRepositories: Repositories = {
     },
     async exitEnrollment() {
       throw new Error(NO_DB);
+    },
+    async listJourneys() {
+      return journeys.map((j) => {
+        const s = summariseJourney(j.definition);
+        return {
+          id: j.id,
+          name: j.name,
+          status: j.status,
+          stepCount: s.stepCount,
+          sendCount: s.sendCount,
+          hasAbTest: s.hasAbTest,
+          activeEnrollments: j.activeEnrollments,
+        };
+      });
+    },
+    async getJourney(id: string) {
+      const j = journeys.find((x) => x.id === id);
+      if (!j) return null;
+      return {
+        id: j.id,
+        name: j.name,
+        status: j.status,
+        definition: j.definition,
+        summary: summariseJourney(j.definition),
+        activeEnrollments: j.activeEnrollments,
+      };
     },
   },
   reports: {
