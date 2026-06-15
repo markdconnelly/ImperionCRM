@@ -163,6 +163,66 @@ export interface LeadScoreRow {
 }
 
 /**
+ * Chat-session lifecycle (ADR-0074 §4, #403). bot → live → an end state. A
+ * gold-grounded bot answers first; it either deflects (resolved, no ticket),
+ * escalates (creates an Autotask ticket), or the session is closed.
+ */
+export type ChatSessionStatus =
+  | "bot"
+  | "live"
+  | "deflected"
+  | "escalated"
+  | "closed";
+
+/** The inbound surface a chat session arrived on (ADR-0074 §6 — unified routing). */
+export type ChatSessionChannel =
+  | "web_chat"
+  | "social"
+  | "email"
+  | "sms"
+  | "voice"
+  | "other";
+
+/** How a session deflected: the user self-served, or the bot resolved it. */
+export type ChatDeflectionKind = "self_served" | "bot_resolved";
+
+/**
+ * A pre-ticket live-chat / bot session read from the Imperion-native `chat_session`
+ * (ADR-0074 §5, #403) — joined to its (nullable) account/contact. The ONLY native
+ * service-desk store: deflection telemetry + a conversation Autotask never sees.
+ * WRITTEN by the backend chat process (ADR-0042); the front end reads it.
+ */
+export interface ChatSessionRow {
+  id: string;
+  accountId: string | null;
+  account: string | null;
+  contactId: string | null;
+  contactName: string | null;
+  status: ChatSessionStatus;
+  channel: ChatSessionChannel;
+  deflected: boolean;
+  deflectionKind: ChatDeflectionKind | null;
+  escalatedTicketRef: string | null;
+  hadTicket: boolean;
+  transcriptUri: string | null;
+  summary: string | null;
+  startedAt: string; // ISO
+  closedAt: string | null; // ISO
+}
+
+/**
+ * Aggregate chatbot-deflection telemetry over a window (ADR-0074 §4, BI hub
+ * ADR-0062). Derived purely from `ChatSessionRow[]` — see `lib/chat-session.ts`.
+ */
+export interface ChatDeflectionSummary {
+  total: number;
+  deflected: number;
+  escalated: number;
+  /** deflected / total, 0..1 (0 when total = 0). */
+  deflectionRate: number;
+}
+
+/**
  * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
  * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
  * client. Distinct from the enrichment lifecycle_status.

@@ -85,6 +85,7 @@ import type {
   QuotaRow,
   LeadScoreRow,
   LeadScoreKind,
+  ChatSessionRow,
   PipelineColumn,
   PortfolioRow,
   ProjectRow,
@@ -666,6 +667,14 @@ export interface CrmRepository {
   listLeadScores(kind?: LeadScoreKind): Promise<LeadScoreRow[]>;
   /** A single contact's scores (rule + any predicted), highest first. */
   listLeadScoresForContact(contactId: string): Promise<LeadScoreRow[]>;
+
+  // Chat sessions (ADR-0074 §5, #403) — read model over the 0117 chat_session table.
+  // Imperion-native pre-ticket / bot conversations + deflection telemetry. WRITTEN by
+  // the backend chat process (ADR-0042); the front end only reads.
+  /** Recent chat sessions (most-recent first), capped; for routing / BI-hub reads. */
+  listChatSessions(limit?: number): Promise<ChatSessionRow[]>;
+  /** A single contact's chat-session history, most-recent first. */
+  listChatSessionsForContact(contactId: string): Promise<ChatSessionRow[]>;
 
   // Tasks (full CRUD)
   listTasks(): Promise<TaskRow[]>;

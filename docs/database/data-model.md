@@ -2392,6 +2392,67 @@ derived silver signal → new OKF concept
 + index rows. No new client PII (the score references the contact by id). The score is a
 shared signal for routing (ADR-0024), journeys (ADR-0073), and forecasting (#316).
 
+## Service desk — native chat session + deflection telemetry (ADR-0074 §5, migration 0117, #403)
+
+ADR-0074 settles the service-desk-depth boundary: **Autotask is the ticket system of
+record**; Imperion documents back via the Autotask API and reads its own write-backs
+natively through the existing pull (`autotask_tickets` bronze → silver `ticket`). So
+Imperion keeps a **native** table ONLY for data that is *not* ticket-resident and has
+nowhere to round-trip to. ADR-0074 §5 names exactly two such things — a **pre-ticket chat
+session** and **deflection telemetry** — and migration **0117** adds them as one silver
+table, **`chat_session`** (archetype B, born silver, app SoR):
+
+- Lifecycle **`status`** — `bot` → `live` → `deflected | escalated | closed`. A
+  gold-grounded bot (ADR-0041) answers first; the session either **deflects** (resolved,
+  no ticket) or **escalates** (creates an Autotask ticket and hands over the transcript).
+- **Deflection telemetry** (ADR-0074 §4 — the chatbot-deflection-rate source for the BI
+  hub, ADR-0062) lives as columns on the row: `deflected` bool, `deflection_kind`
+  (`self_served` | `bot_resolved`), and a denormalized `had_ticket`. A CHECK enforces
+  deflected XOR escalated.
+- **`channel`** — the inbound surface (web_chat / social / email / …), so the unified
+  routing view (ADR-0074 §6, coordinated with ICM service-desk #280) can fold chat into
+  one queue without a second router.
+- **`account_id` / `contact_id`** — nullable FKs, **ON DELETE SET NULL**: a pre-ticket
+  session is often anonymous, and deleting the party must not destroy the telemetry.
+- **`escalated_ticket_ref`** text — the Autotask ticket id once escalated (text, no FK
+  into silver `ticket`: Autotask owns the id and the pull may lag — read-after-write).
+- **`transcript_uri`** — the transcript is held **by reference** in governed blob (it may
+  carry PII), never inlined; `summary` is an optional short timeline/routing card line.
+
+Deliberately **NOT** in this migration (ADR-0074): no `sla_state` SoR (SLA breach is a
+read-model projection over silver `ticket`, refreshed by the pipeline) and no standalone
+CSAT store (CSAT writes back to the Autotask ticket and round-trips into bronze→silver).
+
+WHO writes it: a **process** (ADR-0042 / ADR-0074 §7) — the **backend** chat process
+creates/updates the session and stamps the deflection outcome; the front end only
+**reads** it (`listChatSessions` / `listChatSessionsForContact`, with a pure deflection
+roll-up `summarizeDeflection` in `lib/chat-session.ts`). The chat-console surface is a
+later slice (#407 / #404). `chat_session` is a native silver entity → new OKF concept
+[`chat_session`](semantic-layer/tables/chat_session.md) + coverage-matrix (Engagement /
+service) + index rows. The transcript PII stays out of the row (blob by reference).
+
+```mermaid
+erDiagram
+    ACCOUNT ||--o{ CHAT_SESSION : "nullable (SET NULL)"
+    CONTACT ||--o{ CHAT_SESSION : "nullable (SET NULL)"
+    CHAT_SESSION {
+      uuid id PK
+      uuid account_id FK "nullable — anonymous pre-ticket"
+      uuid contact_id FK "nullable — anonymous pre-ticket"
+      text status "bot|live|deflected|escalated|closed"
+      text channel "web_chat|social|email|sms|voice|other"
+      boolean deflected "resolved without a ticket"
+      text deflection_kind "self_served|bot_resolved (null unless deflected)"
+      text escalated_ticket_ref "Autotask ticket id — no FK (Autotask owns it)"
+      boolean had_ticket "BI-hub split flag"
+      text transcript_uri "governed blob, by reference (PII)"
+      text summary
+      timestamptz started_at
+      timestamptz closed_at
+      timestamptz created_at
+    }
+```
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
