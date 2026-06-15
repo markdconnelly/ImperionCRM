@@ -168,6 +168,8 @@ import type {
   TaskCategory,
   TaskRow,
   TaskHierarchy,
+  TaskDependencies,
+  TaskDependencyRow,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -1274,6 +1276,123 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.setTaskOrdinal(id, ordinal);
       await pool.query(`UPDATE task SET ordinal = $2 WHERE id = $1`, [id, ordinal]);
+    },
+
+    async getTaskDependencies(taskId: string): Promise<TaskDependencies> {
+      const empty: TaskDependencies = { taskId, blockedBy: [], blocks: [], blocked: false };
+      const pool = getPool();
+      if (!pool) return empty;
+      try {
+        // Predecessors (what blocks this task): edges where this is the successor.
+        // Successors (what this task blocks): edges where this is the predecessor.
+        // One query each, joining task for the title/status the unmet-blocker flag
+        // and the warning copy need.
+        const [pre, suc] = await Promise.all([
+          pool.query<{ task_id: string; title: string; status: string; type: string }>(
+            `SELECT t.id AS task_id, t.title, t.status, d.type
+               FROM task_dependency d
+               JOIN task t ON t.id = d.predecessor_id
+              WHERE d.successor_id = $1
+              ORDER BY t.title`,
+            [taskId],
+          ),
+          pool.query<{ task_id: string; title: string; status: string; type: string }>(
+            `SELECT t.id AS task_id, t.title, t.status, d.type
+               FROM task_dependency d
+               JOIN task t ON t.id = d.successor_id
+              WHERE d.predecessor_id = $1
+              ORDER BY t.title`,
+            [taskId],
+          ),
+        ]);
+        const toRow = (r: { task_id: string; title: string; status: string; type: string }): TaskDependencyRow => ({
+          taskId: r.task_id,
+          title: r.title,
+          status: r.status,
+          type: "blocks",
+        });
+        const blockedBy = pre.rows.map(toRow);
+        return {
+          taskId,
+          blockedBy,
+          blocks: suc.rows.map(toRow),
+          // Soft v1 flag: any predecessor not yet done is an unmet blocker.
+          blocked: blockedBy.some((b) => b.status !== "done"),
+        };
+      } catch {
+        return empty;
+      }
+    },
+
+    async addTaskDependency(predecessorId: string, successorId: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.addTaskDependency(predecessorId, successorId);
+      // A task can never block itself, and a link must not close a cycle (ADR-0065
+      // B2: circular-dependency detection required). Adding "predecessor BLOCKS
+      // successor" closes a loop iff `successor` already reaches `predecessor` by
+      // following the existing blocks-edges forward. So walk the successor chain
+      // DOWN from the prospective successor (predecessor_id = node → its successors)
+      // and refuse if `predecessor` is reachable — mirrors the subtask ancestor
+      // walk in reparentTask, in the forward direction.
+      if (predecessorId === successorId) return false;
+      const { rows } = await pool.query<{ cycles: boolean }>(
+        `WITH RECURSIVE reachable AS (
+           SELECT successor_id FROM task_dependency WHERE predecessor_id = $2
+           UNION ALL
+           SELECT d.successor_id
+             FROM task_dependency d
+             JOIN reachable r ON d.predecessor_id = r.successor_id
+         )
+         SELECT bool_or(successor_id = $1) AS cycles FROM reachable`,
+        [predecessorId, successorId],
+      );
+      if (rows[0]?.cycles) return false;
+      // Idempotent: re-linking the same directed pair is a no-op (PK collision).
+      await pool.query(
+        `INSERT INTO task_dependency (predecessor_id, successor_id, type)
+         VALUES ($1, $2, 'blocks')
+         ON CONFLICT (predecessor_id, successor_id, type) DO NOTHING`,
+        [predecessorId, successorId],
+      );
+      return true;
+    },
+
+    async removeTaskDependency(predecessorId: string, successorId: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.removeTaskDependency(predecessorId, successorId);
+      const { rowCount } = await pool.query(
+        `DELETE FROM task_dependency
+          WHERE predecessor_id = $1 AND successor_id = $2 AND type = 'blocks'`,
+        [predecessorId, successorId],
+      );
+      return (rowCount ?? 0) > 0;
+    },
+
+    async listBlockedProjectTasks(projectId: string): Promise<Option[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listBlockedProjectTasks(projectId);
+      try {
+        // Open project tasks (the successor) that have a predecessor still not done.
+        // EXISTS over task_dependency joined to the predecessor task; the soft v1
+        // unmet-blocker signal for the close-project warning (ADR-0065 B2).
+        const { rows } = await pool.query<{ id: string; name: string }>(
+          `SELECT s.id, s.title AS name
+             FROM task s
+            WHERE s.project_id = $1
+              AND s.status <> 'done'
+              AND EXISTS (
+                SELECT 1 FROM task_dependency d
+                  JOIN task p ON p.id = d.predecessor_id
+                 WHERE d.successor_id = s.id
+                   AND p.status <> 'done'
+              )
+            ORDER BY s.title`,
+          [projectId],
+        );
+        return rows.map((r) => ({ id: r.id, name: r.name }));
+      } catch {
+        return mockRepositories.crm.listBlockedProjectTasks(projectId);
+      }
     },
 
     async listSalesTasks(): Promise<SalesTaskRow[]> {
@@ -4109,6 +4228,22 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ id: r.id, name: r.name }));
       } catch {
         return mockRepositories.crm.accountOptions();
+      }
+    },
+
+    async taskOptions(excludeId?: string): Promise<Option[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.taskOptions(excludeId);
+      try {
+        const { rows } = await pool.query<{ id: string; name: string }>(
+          `SELECT id, title AS name FROM task
+            WHERE ($1::uuid IS NULL OR id <> $1::uuid)
+            ORDER BY title`,
+          [excludeId ?? null],
+        );
+        return rows.map((r) => ({ id: r.id, name: r.name }));
+      } catch {
+        return mockRepositories.crm.taskOptions(excludeId);
       }
     },
 

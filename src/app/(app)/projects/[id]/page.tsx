@@ -33,11 +33,12 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const { feed } = await searchParams;
   const { crm, comms } = getRepositories();
-  const [roles, project, rows, projectTasks, meetings] = await Promise.all([
+  const [roles, project, rows, projectTasks, blockedTasks, meetings] = await Promise.all([
     getSessionRoles(),
     crm.getProject(id),
     crm.listProjects(),
     crm.listProjectTasks(id),
+    crm.listBlockedProjectTasks(id),
     comms.listInteractions({ kind: "meeting", projectId: id, limit: 50 }),
   ]);
   if (!project) notFound();
@@ -66,6 +67,33 @@ export default async function ProjectDetailPage({
           </Link>
         )}
       </PageHeader>
+
+      {/* Unmet-blocker warning (ADR-0065 B2, #336): open tasks here whose
+          predecessors aren't done. Soft signal — surfaced before close, not a hard
+          block. */}
+      {blockedTasks.length > 0 && (
+        <div className="rounded-xl border border-amber/40 bg-amber/10 p-4 text-sm text-amber">
+          <p className="font-medium">
+            {blockedTasks.length} task{blockedTasks.length === 1 ? "" : "s"} blocked by an unmet
+            dependency
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {blockedTasks.map((t) => (
+              <li key={t.id}>
+                <Link
+                  href={`/tasks/${t.id}/edit`}
+                  className="rounded-md border border-amber/40 px-2 py-0.5 text-xs hover:underline"
+                >
+                  {t.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-amber/80">
+            Closing the project before these clear is allowed but discouraged (ADR-0065 B2).
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-panel p-5 text-sm sm:grid-cols-4">
         <div>

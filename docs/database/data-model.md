@@ -194,7 +194,14 @@ erDiagram
       text parent_type "task|project (CHECK)"
       uuid parent_id "polymorphic — no FK"
     }
-    TAG ||--o{ WORK_TAG : "applied via"
+    TASK_DEPENDENCY {
+      uuid predecessor_id FK "CASCADE — the blocking task (9001, ADR-0065 B2)"
+      uuid successor_id FK "CASCADE — the blocked task"
+      text type "blocks (finish-to-start) — CHECK"
+    }
+    TAG  ||--o{ WORK_TAG        : "applied via"
+    TASK ||--o{ TASK_DEPENDENCY : "blocks (predecessor)"
+    TASK ||--o{ TASK_DEPENDENCY : "blocked by (successor)"
 ```
 
 ### Sale→delivery orchestration tracking (ADR-0080, migration 0082)
@@ -1005,6 +1012,23 @@ erDiagram
 > in v1** — the rollup flags "all done" but never forces the parent done (auto only via the
 > out-of-scope rules engine). `onboarding_step` **coexists** (B1-F4 decision: coexist);
 > unifying steps as a task `kind` is a tracked follow-up.
+
+> **Task dependencies (ADR-0065 B2, #336, migration 9001).** Directed blocks /
+> blocked-by links live in a `TASK_DEPENDENCY` join table —
+> `{ predecessor_id, successor_id, type }`, where `predecessor_id` **blocks**
+> `successor_id`. Both ends are real FKs to `task(id)` (ON DELETE CASCADE — deleting
+> either endpoint removes the edge); the PK on `(predecessor_id, successor_id, type)`
+> makes a link idempotent. `type` ships only `'blocks'` (finish-to-start) in v1, a
+> CHECK-bounded enum-style column so later kinds widen additively. v1 is **soft**: a
+> task is **flagged** BLOCKED when any predecessor isn't done, and the project view
+> warns on unmet blockers before close — it is never hard-blocked (no trigger stops a
+> close). Two structural guards live in the schema (no self-link CHECK, unique
+> directed pair); full **cycle prevention** is enforced in the **data layer** — a
+> recursive walk forward from the prospective successor refuses any link that would
+> close a loop, mirroring the subtask ancestor walk (B1). Dependencies surface on the
+> task edit page (add/remove, both directions navigable so "A blocks B shows on
+> both") and as an unmet-blocker banner on the project detail page. The on-timeline
+> connector render (C3) is a tracked follow-up, not this change.
 
 > **Easy mode (ADR-0052 §3/§4, #101, migration 0067).** A step with a `deploy_key`
 > renders the Deploy button and auto-creates ONE linked project task when the template

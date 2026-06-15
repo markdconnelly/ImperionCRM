@@ -189,6 +189,18 @@ export const mockRepositories: Repositories = {
     async setTaskOrdinal() {
       throw new Error(NO_DB);
     },
+    async getTaskDependencies(taskId: string) {
+      return { taskId, blockedBy: [], blocks: [], blocked: false };
+    },
+    async addTaskDependency() {
+      throw new Error(NO_DB);
+    },
+    async removeTaskDependency() {
+      throw new Error(NO_DB);
+    },
+    async listBlockedProjectTasks() {
+      return [];
+    },
     async listSalesTasks() {
       return [];
     },
@@ -564,6 +576,9 @@ export const mockRepositories: Repositories = {
     },
     async accountOptions() {
       return accounts.map((a) => ({ id: a.id, name: a.name }));
+    },
+    async taskOptions() {
+      return [];
     },
     async opportunityOptions() {
       return opportunities.map((o) => ({ id: o.id, name: `${o.account} — ${o.name}` }));
