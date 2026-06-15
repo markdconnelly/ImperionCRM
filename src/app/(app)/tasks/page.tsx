@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { TasksBoard, type TaskGroupBy, type TaskSwimBy } from "@/components/tasks/tasks-board";
 import { TasksCalendar } from "@/components/tasks/tasks-calendar";
+import { TaskSavedViews } from "@/components/tasks/task-saved-views";
 import { parseMonth } from "@/lib/calendar";
 import { getRepositories } from "@/lib/data";
 import { TagChip } from "@/components/tags/tag-chip";
@@ -107,6 +108,14 @@ export default async function TasksPage({
     ? byCategory.filter((t) => (tagsByTask[t.id] ?? []).some((x) => x.id === activeTag))
     : byCategory;
 
+  // Saved views (ADR-0066 C4, #344): the current canonical query string the
+  // user is looking at, derived from the SAME `href()` builder the toggle uses
+  // so a "save" snapshot round-trips exactly. Empty string = default List view.
+  const currentQuery = href(active, activeView, activeGroup, activeSwim, activeTag, activeMonth).replace(
+    /^\/tasks\??/,
+    "",
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="Tasks" description={`${tasks.length} tasks across sales and delivery`}>
@@ -194,6 +203,12 @@ export default async function TasksPage({
           </div>
         </div>
       </div>
+
+      {/* Saved views (ADR-0066 C4, #344): per-user named snapshots of the full
+          filter/view query string, persisted client-side (no migration). The
+          view toggle already preserves the active filter set across List/Board/
+          Calendar via the URL — this lets the user name and recall a filter set. */}
+      <TaskSavedViews currentQuery={currentQuery} />
 
       {/* Tag filter strip (ADR-0065 B6, #340): click a tag to show only tasks
           carrying it across every category/project; click again to clear. */}
