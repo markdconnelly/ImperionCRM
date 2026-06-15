@@ -1,9 +1,4 @@
--- 9001 in-app notifications + per-trigger channel prefs (ADR-0064 A3, issue #332)
---
--- PLACEHOLDER NUMBER. The highest migration on main is 0100; the orchestrator
--- claims the real number (expected 0101) at MERGE per the concurrency contract
--- (system CLAUDE.md §10.3) — author against 9001, rename last. Do not reserve a
--- real number on this branch.
+-- 0101 in-app notifications + per-trigger channel prefs (ADR-0064 A3, issue #332)
 --
 -- PM collaboration A3 (ADR-0064): an in-app notification centre (the bell) plus
 -- the recipient store the BACKEND fans out from. Recipients are the people on the
