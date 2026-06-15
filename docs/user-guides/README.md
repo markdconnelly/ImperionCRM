@@ -33,6 +33,9 @@ right (scoped to your Entra permissions).
 - [Delivery board](delivery-board.md): see + steer provisioned delivery projects —
   per-task ticket-fire state, schedule / fire-now controls, the contract gate, and
   the Autotask drill-in (ADR-0080 §4/§7).
+- [Portfolio rollup](portfolio-rollup.md): every project on one screen with its
+  rolled-up health + next milestone; filter by account/owner/type/health and
+  export to CSV (ADR-0069 D5).
 - [Company security posture](security-posture.md): read a company's posture —
   per-tenant secure score, policy classification, **DNS governance** (per-domain
   verdict + record drift, ADR-0063), and credential exposures.

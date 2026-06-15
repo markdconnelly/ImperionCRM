@@ -20,6 +20,8 @@ import {
   projectIdempotencyKey,
   taskTicketIdempotencyKey,
 } from "@/lib/delivery/instantiate";
+import { nextMilestone, rollupHealth } from "@/lib/portfolio";
+import type { PortfolioMilestone } from "@/lib/portfolio";
 import type {
   AccountDetail,
   AccountInput,
@@ -148,6 +150,7 @@ import type {
   OpportunityRow,
   PipelineColumn,
   PipelineStage,
+  PortfolioRow,
   ProjectRow,
   ProjectTypeRow,
   ProposalRow,
@@ -1819,6 +1822,87 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listProjects();
+      }
+    },
+
+    async listPortfolio(): Promise<PortfolioRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listPortfolio();
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        // One row per project (canonical join, mirrors listProjects).
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          account: string;
+          type: string;
+          type_key: string;
+          owner: string | null;
+          status: string;
+          target_live_date: Date | null;
+        }>(
+          `SELECT pr.id, pr.name, a.name AS account,
+                  pt.name AS type, pt.key AS type_key,
+                  coalesce(u.display_name, u.email) AS owner,
+                  pr.status, pr.target_live_date
+           FROM project pr
+           JOIN account a ON a.id = pr.account_id
+           JOIN project_type pt ON pt.id = pr.project_type_id
+           LEFT JOIN app_user u ON u.id = pr.owner_user_id
+           ORDER BY pr.target_live_date NULLS LAST, a.name`,
+        );
+        // All milestones, grouped per project for the health rollup + next milestone.
+        const { rows: ms } = await pool.query<{
+          project_id: string;
+          name: string;
+          status: string;
+          health: Health;
+          ordinal: number;
+          due_at: Date | null;
+        }>(
+          `SELECT project_id, name, status::text AS status, health::text AS health,
+                  ordinal, due_at
+           FROM project_milestone
+           ORDER BY ordinal, name`,
+        );
+        const byProject = new Map<string, PortfolioMilestone[]>();
+        for (const m of ms) {
+          const list = byProject.get(m.project_id) ?? [];
+          list.push({
+            status: m.status,
+            // A past-due, not-yet-complete milestone reads red regardless of its
+            // stored health — same intent as the onboarding deriveHealth fallback.
+            health:
+              m.status !== "complete" && fmtDate(m.due_at) && fmtDate(m.due_at)! < today
+                ? "red"
+                : m.health,
+            ordinal: m.ordinal,
+            name: m.name,
+            due: fmtDate(m.due_at),
+          });
+          byProject.set(m.project_id, list);
+        }
+        return rows.map((row) => {
+          const milestones = byProject.get(row.id) ?? [];
+          const next = nextMilestone(milestones);
+          return {
+            id: row.id,
+            name: row.name,
+            account: row.account,
+            type: row.type,
+            typeKey: row.type_key,
+            owner: row.owner,
+            status: row.status,
+            targetLive: fmtDate(row.target_live_date),
+            health: rollupHealth(milestones),
+            milestoneTotal: milestones.length,
+            milestoneDone: milestones.filter((m) => m.status === "complete").length,
+            nextMilestone: next?.name ?? null,
+            nextMilestoneDue: next?.due ?? null,
+          };
+        });
+      } catch {
+        return mockRepositories.crm.listPortfolio();
       }
     },
 

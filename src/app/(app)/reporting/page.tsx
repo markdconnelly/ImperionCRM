@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -115,7 +116,14 @@ export default async function ReportingPage() {
       <PageHeader
         title="Reporting"
         description="The business-intelligence hub: sales, marketing & social, service desk, and security in one place."
-      />
+      >
+        <Link
+          href="/reporting/portfolio"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Portfolio rollup →
+        </Link>
+      </PageHeader>
 
       <SectionHeading id="sales" title="Sales" hint="pipeline, conversion, delivery" />
 

@@ -350,13 +350,16 @@ assignments + estimates.
 **Data model.** `sprint{ id, name, project_id?, starts_at, ends_at, status }`;
 `task.sprint_id`.
 
-## D5. Portfolio rollup
+## D5. Portfolio rollup — SHIPPED (#350)
 
 - D5-F1 (COULD) Cross-project view rolling up status/health/owner/target-date across
-  all projects (or a selected set), beyond today's per-type grouping.
-- D5-F2 (COULD) Filter by account, owner, type, health; export.
+  all projects (or a selected set), beyond today's per-type grouping. — **shipped**:
+  `/reporting/portfolio`, a pure read model over `project` + `project_milestone`
+  (health = worst milestone, next milestone = earliest incomplete).
+- D5-F2 (COULD) Filter by account, owner, type, health; export. — **shipped**:
+  client-side facet filters (+ active-only) and CSV export of the filtered view.
 - AC: A portfolio view lists every active project with health and next milestone in
-  one screen.
+  one screen. — **met**. See [user guide](../user-guides/portfolio-rollup.md).
 
 ## D6. Baselines / forecast-vs-actual
 

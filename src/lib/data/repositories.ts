@@ -79,6 +79,7 @@ import type {
   SecurityPosture,
   OpportunityRow,
   PipelineColumn,
+  PortfolioRow,
   ProjectRow,
   ProjectTypeRow,
   ProposalRow,
@@ -580,6 +581,12 @@ export interface CrmRepository {
 
   // Delivery projects (full CRUD) — typed via the project_type table (ADR-0020/0052)
   listProjects(): Promise<ProjectRow[]>;
+  /**
+   * Cross-project portfolio rollup (ADR-0069 D5, #350): every project with its
+   * milestone health rollup + next milestone. Pure read model over `project` +
+   * `project_milestone` — no new table.
+   */
+  listPortfolio(): Promise<PortfolioRow[]>;
   getProject(id: string): Promise<ProjectEditable | null>;
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;
