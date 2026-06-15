@@ -802,6 +802,47 @@ export interface ProjectTimeRollup {
 }
 
 /**
+ * One captured project baseline (ADR-0069 D6, #351) as shown in the history list.
+ * `plannedTargetLive` / `taskCount` are read straight off the frozen
+ * `planned_dates` snapshot so a row renders without re-reading the live project.
+ */
+export interface ProjectBaselineRow {
+  id: string;
+  capturedAt: string; // formatted snapshot timestamp
+  plannedTargetLive: string | null; // target go-live frozen at capture, or null
+  taskCount: number; // tasks captured in the snapshot
+}
+
+/**
+ * Planned-vs-actual slippage for a project measured against its LATEST baseline
+ * (ADR-0069 D6, #351). The #351 acceptance lives in `slippageDays`: when the
+ * project is complete, it is `actual − plannedTargetLive` in whole days (+late,
+ * −early). For an in-flight project `slippageDays` is null (nothing finished to
+ * measure); the surface compares the planned date to today for a soft "running
+ * late" hint. `tasks` is the per-task plan-vs-current-due comparison built from
+ * the frozen snapshot joined to the live tasks.
+ */
+export interface ProjectSlippage {
+  baselineId: string;
+  capturedAt: string; // when the baseline was taken
+  plannedTargetLive: string | null; // planned go-live from the snapshot
+  actual: string | null; // project completed_at date, null while in-flight
+  isComplete: boolean;
+  slippageDays: number | null; // actual − planned (whole days) when complete; else null
+  tasks: TaskSlippageRow[];
+}
+
+/** One task's planned-vs-actual due-date comparison within a baseline (#351). */
+export interface TaskSlippageRow {
+  id: string;
+  title: string;
+  plannedDue: string | null; // due date frozen in the baseline
+  currentDue: string | null; // the task's current due date (null if it has none)
+  slippageDays: number | null; // currentDue − plannedDue (whole days), null if either missing
+  exists: boolean; // false = the snapshotted task was since deleted
+}
+
+/**
  * A sprint / backlog container (ADR-0069 D4, #349) as shown in the list. Carries
  * the task rollup (`taskCount` / `doneCount`) computed on the read so a row can
  * show its progress without a second query. `project` is the owning project's

@@ -169,6 +169,23 @@ export async function createProjectTaskAction(formData: FormData) {
   revalidatePath("/tasks");
 }
 
+// ── Baselines / planned-vs-actual (ADR-0069 D6, #351) ───────────────────────
+
+/**
+ * Capture a project baseline: freeze its current target go-live + task due dates
+ * into an immutable snapshot (#351). Re-baselining after a scope change is
+ * allowed — slippage is always measured against the latest. Same
+ * `delivery:write`-audited path; no redirect, the detail page re-renders.
+ */
+export async function captureProjectBaselineAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  if (!projectId) return;
+  const { crm } = getRepositories();
+  await crm.captureProjectBaseline(projectId);
+  revalidatePath("/projects/[id]", "page");
+}
+
 // ── Project meetings (ADR-0052 §5, #97) ──────────────────────────────────────
 
 /**

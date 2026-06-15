@@ -47,6 +47,7 @@ erDiagram
     OPPORTUNITY ||--o{ TASK : "sales work"
     PROJECT ||--o{ SPRINT : "iterations (NULL=cross-project, 0107, ADR-0069 D4)"
     SPRINT ||--o{ TASK : "committed work (NULL=backlog)"
+    PROJECT ||--o{ PROJECT_BASELINE : "planned-vs-actual snapshots (0108, ADR-0069 D6)"
     INTERACTION ||--o| INTERACTION_EMBEDDING : "gold"
 
     ACCOUNT {
@@ -174,6 +175,12 @@ erDiagram
       date starts_at
       date ends_at
       text status "planned|active|completed"
+    }
+    PROJECT_BASELINE {
+      uuid id PK
+      uuid project_id FK "CASCADE — write-once snapshot (0108, ADR-0069 D6)"
+      timestamptz captured_at
+      jsonb planned_dates "frozen target go-live + task due dates"
     }
     INTERACTION {
       uuid id PK

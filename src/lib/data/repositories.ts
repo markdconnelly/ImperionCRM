@@ -99,6 +99,8 @@ import type {
   TaskDependencies,
   TaskTimeEntryRow,
   ProjectTimeRollup,
+  ProjectBaselineRow,
+  ProjectSlippage,
   SprintRow,
   WorkAssignments,
   WorkRole,
@@ -577,6 +579,22 @@ export interface CrmRepository {
   listBacklogTasks(): Promise<TaskRow[]>;
   /** Commit a task to a sprint, or null to return it to the backlog (#349). */
   setTaskSprint(taskId: string, sprintId: string | null): Promise<void>;
+
+  // Baselines / planned-vs-actual (ADR-0069 D6, #351)
+  /** A project's baselines, newest-first (the first is the one slippage uses). */
+  listProjectBaselines(projectId: string): Promise<ProjectBaselineRow[]>;
+  /**
+   * Capture a baseline: freeze the project's current target go-live + its tasks'
+   * due dates into an immutable `planned_dates` snapshot. Re-baselining after a
+   * scope change is allowed (the latest wins for slippage).
+   */
+  captureProjectBaseline(projectId: string): Promise<void>;
+  /**
+   * Planned-vs-actual slippage vs the LATEST baseline (#351 acceptance). Null when
+   * the project has no baseline yet. When the project is complete, `slippageDays`
+   * is actual-completion − planned go-live in whole days; otherwise null.
+   */
+  getProjectSlippage(projectId: string): Promise<ProjectSlippage | null>;
 
   // Subtasks / task hierarchy (ADR-0065 B1, #335)
   /** A task's child tasks, ordered by ordinal then title, with the n/m rollup. */

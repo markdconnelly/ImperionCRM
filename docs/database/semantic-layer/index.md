@@ -45,6 +45,7 @@ subset; remaining entities are tracked for expansion
 | [`project`](tables/project.md) | single-SoR | website system of record | ADR-0020 |
 | [`task`](tables/task.md) | single-SoR | website system of record | ADR-0052 |
 | [`sprint`](tables/sprint.md) | single-SoR | website system of record | ADR-0069 |
+| [`project_baseline`](tables/project_baseline.md) | single-SoR | website system of record | ADR-0069 |
 | [`delivery_template`](tables/delivery_template.md) | single-SoR | website system of record | ADR-0081 |
 | [`discovery_call`](tables/discovery_call.md) | single-SoR | website system of record | ADR-0023 |
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |

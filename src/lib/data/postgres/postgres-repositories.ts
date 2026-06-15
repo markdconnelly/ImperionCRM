@@ -190,6 +190,8 @@ import type {
   TaskCategory,
   TaskRow,
   SprintRow,
+  ProjectBaselineRow,
+  ProjectSlippage,
   TaskHierarchy,
   TaskDependencies,
   TaskDependencyRow,
@@ -448,6 +450,27 @@ async function assembleExpenseReportDetail(
 
 function fmtDate(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 10) : null;
+}
+
+/**
+ * Whole days from one `yyyy-mm-dd` date to another (`to − from`); positive = `to`
+ * is later. Both parsed as UTC midnight so the diff is exact day-count, DST-safe.
+ * Used for planned-vs-actual slippage (ADR-0069 D6, #351). Returns null if either
+ * date is missing.
+ */
+function daysBetween(fromYmd: string | null, toYmd: string | null): number | null {
+  if (!fromYmd || !toYmd) return null;
+  const a = Date.parse(`${fromYmd}T00:00:00Z`);
+  const b = Date.parse(`${toYmd}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / 86_400_000);
+}
+
+/** Frozen plan stored in project_baseline.planned_dates (ADR-0069 D6, #351). */
+interface PlannedDatesSnapshot {
+  targetLiveDate: string | null;
+  status: string;
+  tasks: { id: string; title: string; dueAt: string | null }[];
 }
 
 /** "yyyy-mm-dd hh:mm" for timeline entries. */
@@ -1413,6 +1436,126 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.setTaskSprint(taskId, sprintId);
       await pool.query(`UPDATE task SET sprint_id = $2 WHERE id = $1`, [taskId, sprintId]);
+    },
+
+    // ── Baselines / planned-vs-actual (ADR-0069 D6, #351) ──────────────────────
+    async listProjectBaselines(projectId: string): Promise<ProjectBaselineRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProjectBaselines(projectId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          captured_at: Date;
+          planned_dates: PlannedDatesSnapshot;
+        }>(
+          `SELECT id, captured_at, planned_dates
+           FROM project_baseline WHERE project_id = $1
+           ORDER BY captured_at DESC`,
+          [projectId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          capturedAt: fmtDateTime(r.captured_at) ?? "",
+          plannedTargetLive: r.planned_dates?.targetLiveDate ?? null,
+          taskCount: Array.isArray(r.planned_dates?.tasks) ? r.planned_dates.tasks.length : 0,
+        }));
+      } catch {
+        return [];
+      }
+    },
+
+    async captureProjectBaseline(projectId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.captureProjectBaseline(projectId);
+      // Freeze the project's current target go-live + every task's due date into
+      // an immutable planned_dates snapshot, in one statement (no read-then-write
+      // race). to_char(null) → SQL null, mapped to JS null.
+      await pool.query(
+        `INSERT INTO project_baseline (project_id, planned_dates)
+         SELECT p.id,
+                jsonb_build_object(
+                  'targetLiveDate', to_char(p.target_live_date, 'YYYY-MM-DD'),
+                  'status', p.status::text,
+                  'tasks', COALESCE((
+                    SELECT jsonb_agg(jsonb_build_object(
+                             'id', t.id,
+                             'title', t.title,
+                             'dueAt', to_char(t.due_at, 'YYYY-MM-DD'))
+                           ORDER BY t.due_at NULLS LAST, t.title)
+                    FROM task t WHERE t.project_id = p.id
+                  ), '[]'::jsonb)
+                )
+         FROM project p WHERE p.id = $1`,
+        [projectId],
+      );
+    },
+
+    async getProjectSlippage(projectId: string): Promise<ProjectSlippage | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getProjectSlippage(projectId);
+      try {
+        // Latest baseline + the project's live completion state.
+        const { rows } = await pool.query<{
+          id: string;
+          captured_at: Date;
+          planned_dates: PlannedDatesSnapshot;
+          status: string;
+          completed_at: Date | null;
+        }>(
+          `SELECT b.id, b.captured_at, b.planned_dates, p.status, p.completed_at
+           FROM project_baseline b
+           JOIN project p ON p.id = b.project_id
+           WHERE b.project_id = $1
+           ORDER BY b.captured_at DESC
+           LIMIT 1`,
+          [projectId],
+        );
+        const r = rows[0];
+        if (!r) return null;
+
+        const plannedTasks = Array.isArray(r.planned_dates?.tasks) ? r.planned_dates.tasks : [];
+        const plannedTargetLive = r.planned_dates?.targetLiveDate ?? null;
+        const isComplete = r.status === "complete";
+        const actual = isComplete ? fmtDate(r.completed_at) : null;
+        // The #351 acceptance: a completed project shows actual − planned in days.
+        const slippageDays = isComplete ? daysBetween(plannedTargetLive, actual) : null;
+
+        // Per-task: join the frozen plan to the tasks' current due dates.
+        const ids = plannedTasks.map((t) => t.id);
+        const curMap = new Map<string, string | null>();
+        if (ids.length > 0) {
+          const cur = await pool.query<{ id: string; due_at: Date | null }>(
+            `SELECT id, due_at FROM task WHERE id = ANY($1::uuid[])`,
+            [ids],
+          );
+          for (const c of cur.rows) curMap.set(c.id, fmtDate(c.due_at));
+        }
+        const tasks = plannedTasks.map((t) => {
+          const exists = curMap.has(t.id);
+          const currentDue = exists ? (curMap.get(t.id) ?? null) : null;
+          const plannedDue = t.dueAt ?? null;
+          return {
+            id: t.id,
+            title: t.title,
+            plannedDue,
+            currentDue,
+            slippageDays: exists ? daysBetween(plannedDue, currentDue) : null,
+            exists,
+          };
+        });
+
+        return {
+          baselineId: r.id,
+          capturedAt: fmtDateTime(r.captured_at) ?? "",
+          plannedTargetLive,
+          actual,
+          isComplete,
+          slippageDays,
+          tasks,
+        };
+      } catch {
+        return null;
+      }
     },
 
     async getTask(id: string): Promise<TaskEditable | null> {

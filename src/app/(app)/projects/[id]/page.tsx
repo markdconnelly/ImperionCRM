@@ -11,7 +11,11 @@ import { cn } from "@/lib/cn";
 import { fmtMinutes } from "@/lib/timesheets/overview";
 import { ActivityFeed } from "@/components/work/activity-feed";
 import { Attachments } from "@/components/work/attachments";
-import { createProjectMeetingAction, createProjectTaskAction } from "../actions";
+import {
+  captureProjectBaselineAction,
+  createProjectMeetingAction,
+  createProjectTaskAction,
+} from "../actions";
 import { deleteTaskAction } from "../../tasks/actions";
 
 const statusTone: Record<string, string> = {
@@ -20,6 +24,21 @@ const statusTone: Record<string, string> = {
   blocked: "text-red",
   complete: "text-green",
 };
+
+/** Whole days from one yyyy-mm-dd to another (to − from); positive = to is later. */
+function daysBetween(fromYmd: string | null, toYmd: string | null): number | null {
+  if (!fromYmd || !toYmd) return null;
+  const a = Date.parse(`${fromYmd}T00:00:00Z`);
+  const b = Date.parse(`${toYmd}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / 86_400_000);
+}
+
+/** "+14d late" / "12d early" / "on time" label for a signed day delta. */
+function slipLabel(days: number): string {
+  if (days === 0) return "on time";
+  return days > 0 ? `+${days}d late` : `${-days}d early`;
+}
 
 /**
  * One project, tracked separately (ADR-0052): its facts, status, and its own
@@ -36,17 +55,29 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const { feed } = await searchParams;
   const { crm, comms } = getRepositories();
-  const [roles, project, rows, projectTasks, blockedTasks, taskDeps, meetings, timeRollup] =
-    await Promise.all([
-      getSessionRoles(),
-      crm.getProject(id),
-      crm.listProjects(),
-      crm.listProjectTasks(id),
-      crm.listBlockedProjectTasks(id),
-      crm.listProjectTaskDependencies(id),
-      comms.listInteractions({ kind: "meeting", projectId: id, limit: 50 }),
-      crm.getProjectTimeRollup(id),
-    ]);
+  const [
+    roles,
+    project,
+    rows,
+    projectTasks,
+    blockedTasks,
+    taskDeps,
+    meetings,
+    timeRollup,
+    baselines,
+    slippage,
+  ] = await Promise.all([
+    getSessionRoles(),
+    crm.getProject(id),
+    crm.listProjects(),
+    crm.listProjectTasks(id),
+    crm.listBlockedProjectTasks(id),
+    crm.listProjectTaskDependencies(id),
+    comms.listInteractions({ kind: "meeting", projectId: id, limit: 50 }),
+    crm.getProjectTimeRollup(id),
+    crm.listProjectBaselines(id),
+    crm.getProjectSlippage(id),
+  ]);
   if (!project) notFound();
   const row = rows.find((r) => r.id === id);
   const openTasks = projectTasks.filter((t) => t.status !== "done").length;
@@ -214,6 +245,168 @@ export default async function ProjectDetailPage({
           }))}
           edges={taskDeps}
         />
+      </section>
+
+      {/* Baselines / planned-vs-actual (ADR-0069 D6, #351): capture the plan at a
+          point in time, then measure slippage against it on completion. */}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display text-base font-semibold tracking-tight">
+              Baseline — planned vs actual
+            </h3>
+            <p className="mt-0.5 text-sm text-dim">
+              Freeze the target go-live and task due dates as a baseline (ADR-0069 D6); a project
+              that finishes late shows the slippage against the plan it committed to.
+            </p>
+          </div>
+          {canWrite && (
+            <form action={captureProjectBaselineAction}>
+              <input type="hidden" name="projectId" value={id} />
+              <button
+                type="submit"
+                className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:text-text"
+              >
+                {baselines.length > 0 ? "Re-baseline" : "Capture baseline"}
+              </button>
+            </form>
+          )}
+        </div>
+
+        {!slippage ? (
+          <p className="rounded-lg border border-border bg-panel px-4 py-3 text-sm text-dim">
+            No baseline captured yet — capture one to track planned-vs-actual slippage.
+          </p>
+        ) : (
+          <>
+            {/* Project-level slippage summary vs the latest baseline. */}
+            <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-panel p-5 text-sm sm:grid-cols-4">
+              <div>
+                <p className="text-xs text-dim">Planned go-live</p>
+                <p className="mt-1 font-medium">{slippage.plannedTargetLive ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-dim">{slippage.isComplete ? "Completed" : "Status"}</p>
+                <p className="mt-1 font-medium">
+                  {slippage.isComplete ? (slippage.actual ?? "—") : "in flight"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-dim">Slippage</p>
+                {slippage.slippageDays != null ? (
+                  <p
+                    className={cn(
+                      "mt-1 font-medium",
+                      slippage.slippageDays > 0
+                        ? "text-red"
+                        : slippage.slippageDays < 0
+                          ? "text-green"
+                          : "text-text",
+                    )}
+                  >
+                    {slipLabel(slippage.slippageDays)}
+                  </p>
+                ) : (
+                  (() => {
+                    // In flight: no finalized slippage. Soft "running late" hint when
+                    // today is already past the planned go-live.
+                    const today = new Date().toISOString().slice(0, 10);
+                    const over = daysBetween(slippage.plannedTargetLive, today);
+                    return over != null && over > 0 ? (
+                      <p className="mt-1 font-medium text-amber">{over}d past plan</p>
+                    ) : (
+                      <p className="mt-1 font-medium text-dim">—</p>
+                    );
+                  })()
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-dim">Baseline taken</p>
+                <p className="mt-1 font-medium">{slippage.capturedAt}</p>
+              </div>
+            </div>
+
+            {/* Per-task planned-vs-current due comparison (only dated tasks). */}
+            {(() => {
+              const dated = slippage.tasks.filter((t) => t.plannedDue || t.currentDue);
+              if (dated.length === 0) return null;
+              return (
+                <div className="overflow-hidden rounded-xl border border-border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-panel-2 text-left text-xs text-dim">
+                        <th className="px-4 py-2 font-medium">Task</th>
+                        <th className="px-4 py-2 font-medium">Planned due</th>
+                        <th className="px-4 py-2 font-medium">Current due</th>
+                        <th className="px-4 py-2 font-medium">Slippage</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dated.map((t) => (
+                        <tr key={t.id} className="border-b border-border last:border-0">
+                          <td className="px-4 py-2">
+                            {t.exists ? (
+                              <Link
+                                href={`/tasks/${t.id}/edit`}
+                                className="text-text hover:text-accent"
+                              >
+                                {t.title}
+                              </Link>
+                            ) : (
+                              <span className="text-dim line-through">{t.title}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-dim">{t.plannedDue ?? "—"}</td>
+                          <td className="px-4 py-2 text-dim">
+                            {t.exists ? (t.currentDue ?? "—") : "deleted"}
+                          </td>
+                          <td className="px-4 py-2">
+                            {t.slippageDays != null ? (
+                              <span
+                                className={cn(
+                                  t.slippageDays > 0
+                                    ? "text-red"
+                                    : t.slippageDays < 0
+                                      ? "text-green"
+                                      : "text-dim",
+                                )}
+                              >
+                                {slipLabel(t.slippageDays)}
+                              </span>
+                            ) : (
+                              <span className="text-dim">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+
+            {/* Baseline history (latest is the one slippage uses). */}
+            {baselines.length > 1 && (
+              <details className="rounded-lg border border-border bg-panel px-4 py-2.5 text-sm">
+                <summary className="cursor-pointer text-dim">
+                  {baselines.length} baselines captured
+                </summary>
+                <ul className="mt-2 flex flex-col gap-1">
+                  {baselines.map((b, i) => (
+                    <li key={b.id} className="flex flex-wrap gap-x-3 text-xs text-dim">
+                      <span className="text-text">{b.capturedAt}</span>
+                      {i === 0 && <span className="text-accent">latest</span>}
+                      <span>go-live {b.plannedTargetLive ?? "—"}</span>
+                      <span>
+                        {b.taskCount} task{b.taskCount === 1 ? "" : "s"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">
