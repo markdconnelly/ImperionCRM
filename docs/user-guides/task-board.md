@@ -22,6 +22,20 @@ flowchart LR
 - The board honours the **category filter** — pick a category and the board
   shows only that category, exactly like the list.
 
+### Richer cards (#439)
+
+Beyond the basics, a card surfaces what the list read already carries — no extra
+fetch:
+
+- **Subtask progress** — a task with subtasks (ADR-0065 B1) shows an `done/total`
+  pill in the top-right; it turns **green** when every subtask is done.
+- **Tags** — the task's colour-coded tag chips (ADR-0065 B6) appear under the
+  category/account line, the same chips the list view and tag filter show.
+
+**Assignee avatars** and **comment / attachment counts** are not on the card yet:
+the board's list read does not carry them in bulk, and adding that is a read-side
+follow-up (no schema change) — see *Not yet on the board*.
+
 ## Grouping (#443)
 
 The **Group** switch (board view only) changes what the columns represent:
@@ -74,10 +88,13 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Richer cards** (assignee avatars, tags, subtask progress,
-  comment/attachment counts) — #439, blocked on ADR-0064/0065 data.
-  (Group-by shipped #443, WIP limits #445, swimlanes #447; the projects board
-  in #441 — see [Project board](project-board.md).)
+- **Assignee avatars + comment / attachment counts on cards** — the rest of the
+  C1-F4 rich-card set. The data exists (ADR-0064 comments, ADR-0065 B3
+  assignees) but is read per-object, not in the bulk list path the board uses;
+  surfacing it needs a bulk read (no schema change). Filed as the #439 F4
+  follow-up. (Subtask progress + tags shipped in #439; group-by #443, WIP limits
+  #445, swimlanes #447; the projects board in #441 — see
+  [Project board](project-board.md).)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.
 
 For sales tasks specifically, see [Sales Activity](sales-activity.md).

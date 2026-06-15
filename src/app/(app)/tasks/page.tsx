@@ -246,6 +246,7 @@ export default async function TasksPage({
           tasks={tasks}
           groupBy={activeGroup}
           swimBy={activeSwim}
+          tagsByTask={tagsByTask}
           moveStatusAction={moveTaskAction}
           moveCategoryAction={moveTaskCategoryAction}
         />

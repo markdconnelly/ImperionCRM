@@ -22,10 +22,19 @@ flowchart LR
 
 - Each column shows its project count.
 - A card shows the project **name** (a link to the project), its **type** chip,
-  the **account**, and the **target go-live date** when set.
+  the **account**, the **owner** when set, the **tag chips** (#439), and the
+  **target go-live date** when set.
 - The Board spans **all project types at once** — it is a single status view, not
   the per-type sections of the List. Switch to **List** for the type-grouped view
   and the project-type manager.
+
+### Richer cards (#439)
+
+A project card surfaces the **owner** line and the project's colour-coded **tag
+chips** (ADR-0065 B6) — the same tags applied on the project detail page, read in
+one bulk query for the visible board (no extra per-card fetch). Projects have no
+subtask rollup. **Assignee avatars** and **comment / attachment counts** are the
+deferred remainder — see *Not yet on the board*.
 
 ## Grouping (#443)
 
@@ -79,7 +88,9 @@ There is no separate "save"; the drop *is* the save.
 
 Tracked as follow-ups, deferred per ADR-0066 (SHOULD/COULD) or pending data:
 
-- **Richer cards** (assignee avatars, tags, subtask progress,
-  comment/attachment counts) — #439, blocked on ADR-0064/0065 data.
-  (Group-by shipped #443, WIP limits #445, swimlanes #447.)
+- **Assignee avatars + comment / attachment counts on cards** — the rest of the
+  C1-F4 rich-card set; the data exists but is read per-object, not in the board's
+  bulk list path. Surfacing it needs a bulk read (no schema change), filed as the
+  #439 F4 follow-up. (Owner + tags shipped in #439; group-by #443, WIP limits
+  #445, swimlanes #447.)
 - **Activity-feed event on a move** — #438, lands with the ADR-0064 feed.
