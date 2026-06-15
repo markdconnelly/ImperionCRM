@@ -36,6 +36,8 @@ import type {
   WorkAttachmentInput,
   NotificationInput,
   TagApplicationInput,
+  CustomFieldDefInput,
+  CustomFieldValueInput,
 } from "@/lib/data/repositories";
 import type {
   Health,
@@ -50,6 +52,9 @@ import type {
   Tag,
   AppliedTag,
   TagParentType,
+  CustomFieldDef,
+  CustomFieldValue,
+  CustomFieldParentType,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { resolveMentions } from "@/lib/mentions";
@@ -94,6 +99,50 @@ let mockTagSeq = 0;
 /** Count work objects carrying a tag (mock usage rollup). */
 function mockTagUsage(tagId: string): number {
   return mockTagApplications.filter((a) => a.tagId === tagId).length;
+}
+
+/** In-memory custom-field defs + values so the custom-fields UI works in mock mode (ADR-0065 B4, #338). */
+interface MockFieldDef {
+  id: string;
+  scope: CustomFieldParentType;
+  projectTypeId: string | null;
+  projectTypeName: string | null;
+  key: string;
+  label: string;
+  fieldType: CustomFieldDef["fieldType"];
+  options: string[];
+  required: boolean;
+  ordinal: number;
+}
+interface MockFieldValue {
+  fieldId: string;
+  parentType: CustomFieldParentType;
+  parentId: string;
+  value: CustomFieldValue["value"];
+}
+const mockFieldDefs: MockFieldDef[] = [];
+const mockFieldValues: MockFieldValue[] = [];
+let mockFieldSeq = 0;
+
+/** Sort field defs the way both the admin list and the per-form read present them. */
+function sortFieldDefs(a: MockFieldDef, b: MockFieldDef): number {
+  return a.scope.localeCompare(b.scope) || a.ordinal - b.ordinal || a.label.localeCompare(b.label);
+}
+
+/** Project a mock def onto the {@link CustomFieldDef} shape. */
+function toFieldDef(d: MockFieldDef): CustomFieldDef {
+  return {
+    id: d.id,
+    scope: d.scope,
+    projectTypeId: d.projectTypeId,
+    projectTypeName: d.projectTypeName,
+    key: d.key,
+    label: d.label,
+    fieldType: d.fieldType,
+    options: [...d.options],
+    required: d.required,
+    ordinal: d.ordinal,
+  };
 }
 
 /** Lifecycle stages mock contacts are spread across (ADR-0031). */
@@ -1505,4 +1554,117 @@ export const mockRepositories: Repositories = {
       return true;
     },
   },
+
+  // ── Custom fields (ADR-0065 B4, #338) ──────────────────────────────────────
+  customFields: {
+    async listFieldDefs(): Promise<CustomFieldDef[]> {
+      return [...mockFieldDefs].sort(sortFieldDefs).map(toFieldDef);
+    },
+    async listFieldDefsFor(
+      scope: CustomFieldParentType,
+      projectTypeId: string | null,
+    ): Promise<CustomFieldDef[]> {
+      // A form sees the scope's global fields (projectTypeId null) plus, for a
+      // project of a known type, that type's fields.
+      return mockFieldDefs
+        .filter(
+          (d) =>
+            d.scope === scope &&
+            (d.projectTypeId === null ||
+              (projectTypeId !== null && d.projectTypeId === projectTypeId)),
+        )
+        .sort(sortFieldDefs)
+        .map(toFieldDef);
+    },
+    async createFieldDef(input: CustomFieldDefInput): Promise<CustomFieldDef> {
+      const row: MockFieldDef = {
+        id: `mock-field-${++mockFieldSeq}`,
+        scope: input.scope,
+        projectTypeId: input.scope === "project" ? input.projectTypeId : null,
+        projectTypeName: null, // mock has no project_type catalog to resolve against
+        key: input.key.trim(),
+        label: input.label.trim(),
+        fieldType: input.fieldType,
+        options: isSelect(input.fieldType) ? [...input.options] : [],
+        required: input.required,
+        ordinal: input.ordinal,
+      };
+      mockFieldDefs.push(row);
+      return toFieldDef(row);
+    },
+    async updateFieldDef(
+      id: string,
+      input: CustomFieldDefInput,
+    ): Promise<CustomFieldDef | null> {
+      const row = mockFieldDefs.find((d) => d.id === id);
+      if (!row) return null;
+      row.scope = input.scope;
+      row.projectTypeId = input.scope === "project" ? input.projectTypeId : null;
+      row.key = input.key.trim();
+      row.label = input.label.trim();
+      row.fieldType = input.fieldType;
+      row.options = isSelect(input.fieldType) ? [...input.options] : [];
+      row.required = input.required;
+      row.ordinal = input.ordinal;
+      return toFieldDef(row);
+    },
+    async deleteFieldDef(id: string): Promise<boolean> {
+      const i = mockFieldDefs.findIndex((d) => d.id === id);
+      if (i === -1) return false;
+      for (let j = mockFieldValues.length - 1; j >= 0; j--) {
+        if (mockFieldValues[j].fieldId === id) mockFieldValues.splice(j, 1);
+      }
+      mockFieldDefs.splice(i, 1);
+      return true;
+    },
+    async listValuesFor(
+      parentType: CustomFieldParentType,
+      parentId: string,
+      projectTypeId: string | null,
+    ): Promise<CustomFieldValue[]> {
+      const defs = await this.listFieldDefsFor(parentType, projectTypeId);
+      return defs.map((d) => {
+        const v = mockFieldValues.find(
+          (x) => x.fieldId === d.id && x.parentType === parentType && x.parentId === parentId,
+        );
+        return {
+          fieldId: d.id,
+          key: d.key,
+          label: d.label,
+          fieldType: d.fieldType,
+          options: d.options,
+          required: d.required,
+          value: v ? v.value : null,
+        };
+      });
+    },
+    async setValue(input: CustomFieldValueInput): Promise<void> {
+      const i = mockFieldValues.findIndex(
+        (x) =>
+          x.fieldId === input.fieldId &&
+          x.parentType === input.parentType &&
+          x.parentId === input.parentId,
+      );
+      // A null/empty value clears the field (mirrors the DELETE in postgres).
+      if (input.value === null || (Array.isArray(input.value) && input.value.length === 0)) {
+        if (i !== -1) mockFieldValues.splice(i, 1);
+        return;
+      }
+      if (i === -1) {
+        mockFieldValues.push({
+          fieldId: input.fieldId,
+          parentType: input.parentType,
+          parentId: input.parentId,
+          value: input.value,
+        });
+      } else {
+        mockFieldValues[i].value = input.value;
+      }
+    },
+  },
 };
+
+/** A select-type field carries an options list; the others store []. */
+function isSelect(t: CustomFieldDef["fieldType"]): boolean {
+  return t === "single_select" || t === "multi_select";
+}

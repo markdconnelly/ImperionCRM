@@ -1916,3 +1916,60 @@ export interface AppliedTag {
   label: string;
   color: string;
 }
+
+// ── PM task structure — custom fields (ADR-0065 B4, #338) ────────────────────
+
+/** Work objects a custom field can be defined on (polymorphic, ADR-0065 B4). */
+export type CustomFieldParentType = "task" | "project";
+
+/**
+ * The custom-field input kinds (ADR-0065 B4 / B4-F1). Mirrors the migration CHECK.
+ * `single_select`/`multi_select` use the definition's `options`; `user` stores an
+ * app_user id; `currency` stores a numeric amount (the org currency, ADR-out-of-scope
+ * multi-currency).
+ */
+export type CustomFieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "single_select"
+  | "multi_select"
+  | "checkbox"
+  | "user"
+  | "currency";
+
+/**
+ * An admin-defined custom field (ADR-0065 B4, #338). `scope` is the work-object
+ * kind it attaches to; `projectTypeId` narrows a project-scoped field to one
+ * project_type (null = every project / every task of the scope). `options` is the
+ * choice list for the select types ([] otherwise); `required` is the B4-F3 flag.
+ * `key` is a stable machine handle reporting can address the field by.
+ */
+export interface CustomFieldDef {
+  id: string;
+  scope: CustomFieldParentType;
+  projectTypeId: string | null;
+  /** Resolved project_type name when scoped, null for a global field — for the admin list. */
+  projectTypeName: string | null;
+  key: string;
+  label: string;
+  fieldType: CustomFieldType;
+  options: string[];
+  required: boolean;
+  ordinal: number;
+}
+
+/**
+ * A custom field's value on one work object (ADR-0065 B4). `value` is the decoded
+ * jsonb keyed by the definition's `fieldType` (string | number | boolean | string[]
+ * | null). The definition fields are denormalised on so the renderer needs one read.
+ */
+export interface CustomFieldValue {
+  fieldId: string;
+  key: string;
+  label: string;
+  fieldType: CustomFieldType;
+  options: string[];
+  required: boolean;
+  value: string | number | boolean | string[] | null;
+}
