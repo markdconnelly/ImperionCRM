@@ -80,6 +80,7 @@ import type {
   SpawnTicketInput,
   TaskEditable,
   TaskInput,
+  SprintInput,
   TaskTimeLogInput,
   TicketFilter,
   TicketFilterOptions,
@@ -188,6 +189,7 @@ import type {
   StageValueDatum,
   TaskCategory,
   TaskRow,
+  SprintRow,
   TaskHierarchy,
   TaskDependencies,
   TaskDependencyRow,
@@ -451,6 +453,88 @@ function fmtDate(d: Date | null): string | null {
 /** "yyyy-mm-dd hh:mm" for timeline entries. */
 function fmtDateTime(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 16).replace("T", " ") : null;
+}
+
+/**
+ * Shared task-list SELECT (ADR-0066 C1 board reads) — the same columns + n/m
+ * subtask rollup (ADR-0065 B1) + logged-minutes sum (#346) that `listTasks` /
+ * `listProjectTasks` build, factored out so the sprint board (#349) reads tasks
+ * identically. Callers append their own `WHERE … ORDER BY …`. No trailing clause.
+ */
+const TASK_LIST_SELECT = `SELECT t.id, t.title, t.status, t.category, t.due_at, t.start_at,
+                  t.estimate, t.estimate_unit, a.name AS account,
+                  t.project_id, c.child_count, c.child_done_count,
+                  COALESCE(te.logged_minutes, 0) AS logged_minutes
+           FROM task t
+           LEFT JOIN account a ON a.id = t.account_id
+           LEFT JOIN LATERAL (
+             SELECT count(*) AS child_count,
+                    count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
+             FROM task ch WHERE ch.parent_task_id = t.id
+           ) c ON true
+           LEFT JOIN LATERAL (
+             SELECT sum(minutes) AS logged_minutes
+             FROM time_entry WHERE task_id = t.id
+           ) te ON true`;
+
+type TaskListSqlRow = {
+  id: string;
+  title: string;
+  status: string;
+  category: TaskCategory;
+  due_at: Date | null;
+  start_at: Date | null;
+  estimate: string | null;
+  estimate_unit: string | null;
+  logged_minutes: string;
+  account: string | null;
+  project_id: string | null;
+  child_count: string;
+  child_done_count: string;
+};
+
+/** Map a TASK_LIST_SELECT row onto the shared TaskRow shape. */
+function mapTaskListRow(row: TaskListSqlRow): TaskRow {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status,
+    category: row.category,
+    due: fmtDate(row.due_at),
+    account: row.account,
+    projectId: row.project_id,
+    childCount: Number(row.child_count),
+    childDoneCount: Number(row.child_done_count),
+    startAt: fmtDate(row.start_at),
+    estimate: row.estimate,
+    estimateUnit: row.estimate_unit,
+    loggedMinutes: Number(row.logged_minutes),
+  };
+}
+
+/** Map a sprint list/detail row (with its task rollup) onto SprintRow (#349). */
+function mapSprintRow(row: {
+  id: string;
+  name: string;
+  project_id: string | null;
+  project: string | null;
+  starts_at: Date | null;
+  ends_at: Date | null;
+  status: string;
+  task_count: string;
+  done_count: string;
+}): SprintRow {
+  return {
+    id: row.id,
+    name: row.name,
+    projectId: row.project_id,
+    project: row.project,
+    startsAt: fmtDate(row.starts_at),
+    endsAt: fmtDate(row.ends_at),
+    status: row.status,
+    taskCount: Number(row.task_count),
+    doneCount: Number(row.done_count),
+  };
 }
 
 const ONBOARDING_LIFECYCLE = ["onboarding", "implementation", "operational_readiness"];
@@ -1158,6 +1242,177 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.crm.listProjectTasks(projectId);
       }
+    },
+
+    // ── Sprints / backlog (ADR-0069 D4, #349) ──────────────────────────────────
+    async listSprints(): Promise<SprintRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listSprints();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          project_id: string | null;
+          project: string | null;
+          starts_at: Date | null;
+          ends_at: Date | null;
+          status: string;
+          task_count: string;
+          done_count: string;
+        }>(
+          // Each sprint + its owning project name + the committed-task rollup
+          // (count + done) via a lateral, so a list row shows progress in one read.
+          `SELECT s.id, s.name, s.project_id, p.name AS project,
+                  s.starts_at, s.ends_at, s.status,
+                  c.task_count, c.done_count
+             FROM sprint s
+             LEFT JOIN project p ON p.id = s.project_id
+             LEFT JOIN LATERAL (
+               SELECT count(*) AS task_count,
+                      count(*) FILTER (WHERE t.status = 'done') AS done_count
+                 FROM task t WHERE t.sprint_id = s.id
+             ) c ON true
+            ORDER BY s.created_at DESC`,
+        );
+        return rows.map(mapSprintRow);
+      } catch (err) {
+        // sprint (0107) may not be prod-applied yet → empty, not a 500.
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listSprints();
+      }
+    },
+
+    async getSprint(id: string): Promise<SprintRow | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getSprint(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          project_id: string | null;
+          project: string | null;
+          starts_at: Date | null;
+          ends_at: Date | null;
+          status: string;
+          task_count: string;
+          done_count: string;
+        }>(
+          `SELECT s.id, s.name, s.project_id, p.name AS project,
+                  s.starts_at, s.ends_at, s.status,
+                  c.task_count, c.done_count
+             FROM sprint s
+             LEFT JOIN project p ON p.id = s.project_id
+             LEFT JOIN LATERAL (
+               SELECT count(*) AS task_count,
+                      count(*) FILTER (WHERE t.status = 'done') AS done_count
+                 FROM task t WHERE t.sprint_id = s.id
+             ) c ON true
+            WHERE s.id = $1`,
+          [id],
+        );
+        return rows[0] ? mapSprintRow(rows[0]) : null;
+      } catch (err) {
+        if (isSchemaLagError(err)) return null;
+        return mockRepositories.crm.getSprint(id);
+      }
+    },
+
+    async createSprint(input: SprintInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createSprint(input);
+      await pool.query(
+        `INSERT INTO sprint (name, project_id, starts_at, ends_at, status)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [input.name, input.projectId, input.startsAt, input.endsAt, input.status],
+      );
+    },
+
+    async updateSprint(id: string, input: SprintInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateSprint(id, input);
+      await pool.query(
+        `UPDATE sprint
+            SET name = $2, project_id = $3, starts_at = $4, ends_at = $5, status = $6
+          WHERE id = $1`,
+        [id, input.name, input.projectId, input.startsAt, input.endsAt, input.status],
+      );
+    },
+
+    async closeSprint(id: string): Promise<number> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.closeSprint(id);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Carry-over (#349 acceptance): the sprint's still-open tasks move to the
+        // next planned sprint in the SAME scope (same project_id, NULL-safe),
+        // earliest-starting; or to the backlog (sprint_id = NULL) when none exists.
+        const { rowCount } = await client.query(
+          `UPDATE task
+              SET sprint_id = (
+                SELECT ns.id FROM sprint ns
+                 WHERE ns.status = 'planned'
+                   AND ns.id <> $1
+                   AND ns.project_id IS NOT DISTINCT FROM
+                       (SELECT project_id FROM sprint WHERE id = $1)
+                 ORDER BY ns.starts_at NULLS LAST, ns.created_at
+                 LIMIT 1
+              )
+            WHERE sprint_id = $1 AND status <> 'done'`,
+          [id],
+        );
+        await client.query(
+          `UPDATE sprint SET status = 'completed' WHERE id = $1`,
+          [id],
+        );
+        await client.query("COMMIT");
+        return rowCount ?? 0;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+
+    async listSprintTasks(sprintId: string): Promise<TaskRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listSprintTasks(sprintId);
+      try {
+        const { rows } = await pool.query<TaskListSqlRow>(
+          `${TASK_LIST_SELECT}
+            WHERE t.sprint_id = $1 AND t.parent_task_id IS NULL
+            ORDER BY t.due_at NULLS LAST, t.title`,
+          [sprintId],
+        );
+        return rows.map(mapTaskListRow);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listSprintTasks(sprintId);
+      }
+    },
+
+    async listBacklogTasks(): Promise<TaskRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listBacklogTasks();
+      try {
+        const { rows } = await pool.query<TaskListSqlRow>(
+          `${TASK_LIST_SELECT}
+            WHERE t.sprint_id IS NULL AND t.parent_task_id IS NULL
+              AND t.status <> 'done'
+            ORDER BY t.due_at NULLS LAST, t.title`,
+        );
+        return rows.map(mapTaskListRow);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listBacklogTasks();
+      }
+    },
+
+    async setTaskSprint(taskId: string, sprintId: string | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskSprint(taskId, sprintId);
+      await pool.query(`UPDATE task SET sprint_id = $2 WHERE id = $1`, [taskId, sprintId]);
     },
 
     async getTask(id: string): Promise<TaskEditable | null> {

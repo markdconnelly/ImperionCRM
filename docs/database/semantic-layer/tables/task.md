@@ -4,7 +4,7 @@ title: task
 description: Single unified task model across sales/project/onboarding/general — website system of record.
 resource: ../../../decision-records/ADR-0052-project-board-tasks-meetings-sales-activity.md
 tags: [silver, delivery, task]
-timestamp: 2026-06-15T14:30:00Z
+timestamp: 2026-06-15T18:00:00Z
 ---
 
 # task
@@ -36,6 +36,7 @@ separate write-back sidecar (`task_ticket_fire`) — idempotent, backend-execute
 | `opportunity_id` | uuid | FK → `opportunity` (nullable) |
 | `project_id` | uuid | FK → `project` (SET NULL) |
 | `parent_task_id` | uuid | self-FK → `task` (ON DELETE CASCADE); subtask hierarchy (ADR-0065 B1) |
+| `sprint_id` | uuid | FK → `sprint` (ON DELETE SET NULL); committed sprint, NULL = backlog (ADR-0069 D4, #349) |
 | `ordinal` | integer | sibling order under a parent (ADR-0065 B1) |
 | `owner_user_id` | uuid | FK → `app_user` |
 | `due_at` | timestamptz | |
@@ -54,6 +55,10 @@ ADR-0069 D2) — likewise no concept file.
 ## Joins
 
 - `account_id` → `account`; `opportunity_id` → `opportunity`; `project_id` → `project`.
+- `sprint_id` → `sprint` (ADR-0069 D4, #349): the iteration a task is committed to. A
+  sprint's board is `task WHERE sprint_id = :sprint`; the backlog is `sprint_id IS NULL`.
+  ON DELETE SET NULL — removing a sprint returns its tasks to the backlog. Closing a sprint
+  reassigns its still-open tasks to the next planned sprint in scope (carry-over).
 - `parent_task_id` → `task` (self-join): subtask hierarchy (ADR-0065 B1). Children read by
   `parent_task_id = :id` ordered by `ordinal`; the parent's n/m rollup is `count(*)` and
   `count(*) FILTER (status='done')` over its children. Arbitrary depth allowed; the list

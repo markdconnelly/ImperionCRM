@@ -50,6 +50,7 @@ object · **H** reference/config/identity.
 | [project](tables/project.md) | B | ✅ | provisioning |
 | [delivery_template](tables/delivery_template.md) | B | ✅ | provisioning (instantiation) |
 | [task](tables/task.md) | B | ✅ | service-desk / onboarding |
+| [sprint](tables/sprint.md) | B | ✅ | provisioning / delivery (iteration planning) |
 | project_provisioning | D | ⏳ | provisioning executor (autonomy-dialed) |
 | task_ticket_fire | D | ⏳ | JIT ticket-fire executor |
 | project_milestone, delivery_template_phase/_task, onboarding_step, meeting_action_item | B | ⏳ | provisioning / onboarding |

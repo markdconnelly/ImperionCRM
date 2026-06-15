@@ -44,6 +44,7 @@ subset; remaining entities are tracked for expansion
 | [`assessment_artifact`](tables/assessment_artifact.md) | single-SoR | per-source evidence (under parent assessment) | ADR-0023 |
 | [`project`](tables/project.md) | single-SoR | website system of record | ADR-0020 |
 | [`task`](tables/task.md) | single-SoR | website system of record | ADR-0052 |
+| [`sprint`](tables/sprint.md) | single-SoR | website system of record | ADR-0069 |
 | [`delivery_template`](tables/delivery_template.md) | single-SoR | website system of record | ADR-0081 |
 | [`discovery_call`](tables/discovery_call.md) | single-SoR | website system of record | ADR-0023 |
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |

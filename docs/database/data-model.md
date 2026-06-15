@@ -45,6 +45,8 @@ erDiagram
     PROJECT ||--o| HANDOFF : "completes"
     PROJECT ||--o{ TASK : "delivery work"
     OPPORTUNITY ||--o{ TASK : "sales work"
+    PROJECT ||--o{ SPRINT : "iterations (NULL=cross-project, 0107, ADR-0069 D4)"
+    SPRINT ||--o{ TASK : "committed work (NULL=backlog)"
     INTERACTION ||--o| INTERACTION_EMBEDDING : "gold"
 
     ACCOUNT {
@@ -156,6 +158,7 @@ erDiagram
       uuid owner_user_id FK
       uuid project_id FK "SET NULL — one task model (0058, ADR-0052)"
       uuid parent_task_id FK "CASCADE — subtask hierarchy (0095, ADR-0065 B1)"
+      uuid sprint_id FK "SET NULL — committed sprint, NULL=backlog (0107, ADR-0069 D4)"
       text title
       text status "legacy label open|in_progress|done"
       uuid status_def_id FK "SET NULL — configurable status (0104, ADR-0065 B5)"
@@ -163,6 +166,14 @@ erDiagram
       integer ordinal "sibling order under a parent (ADR-0065 B1)"
       text autotask_ticket_ref "on-demand push, unique (backend #19)"
       timestamptz due_at
+    }
+    SPRINT {
+      uuid id PK
+      uuid project_id FK "CASCADE — NULL=cross-project (0107, ADR-0069 D4)"
+      text name
+      date starts_at
+      date ends_at
+      text status "planned|active|completed"
     }
     INTERACTION {
       uuid id PK

@@ -99,6 +99,7 @@ import type {
   TaskDependencies,
   TaskTimeEntryRow,
   ProjectTimeRollup,
+  SprintRow,
   WorkAssignments,
   WorkRole,
   WorkloadRow,
@@ -183,6 +184,15 @@ export interface TaskEditable extends TaskInput {
   /** Autotask ticket ref set by the on-demand push (backend #19, ADR-0052 §7).
    * Read-only here — the backend writes it server-side, never the form. */
   autotaskTicketRef: string | null;
+}
+
+/** Editable sprint fields (ADR-0069 D4, #349). */
+export interface SprintInput {
+  name: string;
+  projectId: string | null; // owning project, or null = cross-project sprint
+  startsAt: string | null; // yyyy-mm-dd or null
+  endsAt: string | null; // yyyy-mm-dd or null
+  status: string; // planned|active|completed
 }
 
 /**
@@ -541,6 +551,32 @@ export interface CrmRepository {
    * can show logged-vs-estimate remaining.
    */
   getProjectTimeRollup(projectId: string): Promise<ProjectTimeRollup>;
+
+  // Sprints / backlog (ADR-0069 D4, #349)
+  /** All sprints, newest-first, each with its committed-task rollup. */
+  listSprints(): Promise<SprintRow[]>;
+  /** One sprint with its rollup, or null if absent. */
+  getSprint(id: string): Promise<SprintRow | null>;
+  /** Create a sprint; returns nothing (the list reloads). */
+  createSprint(input: SprintInput): Promise<void>;
+  /** Update a sprint's fields (name/scope/window/status). */
+  updateSprint(id: string, input: SprintInput): Promise<void>;
+  /**
+   * Close a sprint (#349 acceptance: "closing it moves open items forward").
+   * Sets status='completed' and carries its still-open (not-done) tasks forward —
+   * to the next planned sprint in the same scope if one exists, else to the
+   * backlog (sprint_id = NULL). Returns the number of tasks carried over.
+   */
+  closeSprint(id: string): Promise<number>;
+  /** A sprint's committed tasks (top-level), for its board (#349). */
+  listSprintTasks(sprintId: string): Promise<TaskRow[]>;
+  /**
+   * Backlog tasks (sprint_id IS NULL) available to add to a sprint — open,
+   * top-level, title-sorted. Backs the "add to sprint" picker (#349).
+   */
+  listBacklogTasks(): Promise<TaskRow[]>;
+  /** Commit a task to a sprint, or null to return it to the backlog (#349). */
+  setTaskSprint(taskId: string, sprintId: string | null): Promise<void>;
 
   // Subtasks / task hierarchy (ADR-0065 B1, #335)
   /** A task's child tasks, ordered by ordinal then title, with the n/m rollup. */
