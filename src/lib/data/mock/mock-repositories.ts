@@ -262,6 +262,9 @@ export const mockRepositories: Repositories = {
     async listProjects() {
       return [];
     },
+    async listPortfolio() {
+      return [];
+    },
     async getProject() {
       return null;
     },

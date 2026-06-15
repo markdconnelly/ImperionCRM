@@ -121,6 +121,31 @@ export interface ProjectRow {
   targetLive: string | null; // formatted target go-live date
 }
 
+/**
+ * One project in the cross-project portfolio rollup (ADR-0069 D5, #350). A pure
+ * read model over `project` + its `project_milestone` rollup — no new tables.
+ * Health is the worst milestone health (red > amber > green, mirroring the
+ * onboarding dashboard); `nextMilestone*` is the earliest not-yet-complete
+ * milestone by ordinal. Projects with no milestones report `health: null` and a
+ * null next milestone — the portfolio still lists them (every active project on
+ * one screen).
+ */
+export interface PortfolioRow {
+  id: string;
+  name: string;
+  account: string; // account name
+  type: string; // project_type display name
+  typeKey: string; // project_type stable key, e.g. 'onboarding'
+  owner: string | null; // owning app_user display name
+  status: string; // project_status label
+  targetLive: string | null; // formatted target go-live date
+  health: Health | null; // worst-of milestone health; null when no milestones
+  milestoneTotal: number; // milestones on the project
+  milestoneDone: number; // milestones with status='complete'
+  nextMilestone: string | null; // earliest incomplete milestone name, or null
+  nextMilestoneDue: string | null; // that milestone's formatted due date, or null
+}
+
 /** A project type — a row in the project_type table, not an enum (ADR-0052). */
 export interface ProjectTypeRow {
   id: string;
