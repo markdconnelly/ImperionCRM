@@ -146,6 +146,48 @@ export interface PortfolioRow {
   nextMilestoneDue: string | null; // that milestone's formatted due date, or null
 }
 
+/**
+ * One linked contributing project on a goal (ADR-0069 D3, #348). A project's
+ * percent-complete is its milestone completion (`milestoneDone / milestoneTotal`),
+ * or 100 when the project is `complete` with no milestones, 0 otherwise. `weight`
+ * is the link's share in the goal's weighted rollup.
+ */
+export interface GoalLinkedProject {
+  projectId: string;
+  name: string;
+  account: string; // account name
+  status: string; // project_status label
+  weight: number; // goal_link.weight
+  percentComplete: number; // 0–100, the project's own completion
+}
+
+/**
+ * A goal / OKR above projects (ADR-0069 D3, #348) with its rolled-up progress.
+ * Progress is EITHER the manually-set `current/target` percent (mode 'manual') OR
+ * rolled up from the linked projects' completion (mode 'rollup'): the
+ * weight-weighted average of each `GoalLinkedProject.percentComplete`. A rollup
+ * goal with no linked projects reports `rolledUpPercent: null` and falls back to
+ * the manual percent so the row still renders. Pure read model — the rollup is
+ * derived, never stored (the migration stores only `current`).
+ */
+export interface GoalRow {
+  id: string;
+  name: string;
+  owner: string | null; // owning app_user display name
+  period: string | null; // free-text cadence label, e.g. 'Q3 2026'
+  target: number; // numeric key-result target
+  current: number; // manual progress figure
+  progressMode: "manual" | "rollup";
+  notes: string | null;
+  /** Manual progress as a percent of target (current/target × 100, clamped 0–100). */
+  manualPercent: number;
+  /** Weighted rollup percent from linked projects, or null when none are linked. */
+  rolledUpPercent: number | null;
+  /** The percent shown: rolledUpPercent when mode='rollup' and links exist, else manualPercent. */
+  displayPercent: number;
+  links: GoalLinkedProject[]; // contributing projects (may be empty)
+}
+
 /** A project type — a row in the project_type table, not an enum (ADR-0052). */
 export interface ProjectTypeRow {
   id: string;

@@ -22,6 +22,12 @@ import {
 } from "@/lib/delivery/instantiate";
 import { nextMilestone, rollupHealth } from "@/lib/portfolio";
 import type { PortfolioMilestone } from "@/lib/portfolio";
+import {
+  projectPercentComplete,
+  manualPercent as goalManualPercent,
+  rolledUpPercent as goalRolledUpPercent,
+  displayPercent as goalDisplayPercent,
+} from "@/lib/goals";
 import type {
   AccountDetail,
   AccountInput,
@@ -153,6 +159,8 @@ import type {
   PipelineColumn,
   PipelineStage,
   PortfolioRow,
+  GoalRow,
+  GoalLinkedProject,
   ProjectRow,
   ProjectTypeRow,
   ProposalRow,
@@ -1983,6 +1991,102 @@ export const postgresRepositories: Repositories = {
         });
       } catch {
         return mockRepositories.crm.listPortfolio();
+      }
+    },
+
+    async listGoals(): Promise<GoalRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listGoals();
+      try {
+        // 1. The goals themselves + owner display name.
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          owner: string | null;
+          period: string | null;
+          target: string;
+          current: string;
+          progress_mode: "manual" | "rollup";
+          notes: string | null;
+        }>(
+          `SELECT g.id, g.name,
+                  coalesce(u.display_name, u.email) AS owner,
+                  g.period, g.target, g.current, g.progress_mode, g.notes
+             FROM goal g
+             LEFT JOIN app_user u ON u.id = g.owner_user_id
+            ORDER BY g.created_at DESC, g.name`,
+        );
+        // 2. Linked PROJECTS with their milestone completion (the rollup inputs,
+        //    ADR-0069 D3). Only project links roll up today (the AC is project
+        //    rollup); task links can join later via the same `goal_link` table.
+        const { rows: links } = await pool.query<{
+          goal_id: string;
+          project_id: string;
+          name: string;
+          account: string;
+          status: string;
+          weight: string;
+          milestone_total: string;
+          milestone_done: string;
+        }>(
+          `SELECT gl.goal_id, pr.id AS project_id, pr.name, a.name AS account,
+                  pr.status, gl.weight,
+                  count(pm.id)                                          AS milestone_total,
+                  count(pm.id) FILTER (WHERE pm.status = 'complete')    AS milestone_done
+             FROM goal_link gl
+             JOIN project pr ON pr.id = gl.parent_id AND gl.parent_type = 'project'
+             JOIN account a  ON a.id = pr.account_id
+             LEFT JOIN project_milestone pm ON pm.project_id = pr.id
+            GROUP BY gl.goal_id, pr.id, pr.name, a.name, pr.status, gl.weight`,
+        );
+        const byGoal = new Map<string, GoalLinkedProject[]>();
+        for (const l of links) {
+          const list = byGoal.get(l.goal_id) ?? [];
+          list.push({
+            projectId: l.project_id,
+            name: l.name,
+            account: l.account,
+            status: l.status,
+            weight: Number(l.weight),
+            percentComplete: projectPercentComplete({
+              status: l.status,
+              milestoneTotal: Number(l.milestone_total),
+              milestoneDone: Number(l.milestone_done),
+            }),
+          });
+          byGoal.set(l.goal_id, list);
+        }
+        return rows.map((g) => {
+          const goalLinks = (byGoal.get(g.id) ?? []).sort((a, b) =>
+            a.name.localeCompare(b.name),
+          );
+          const target = Number(g.target);
+          const current = Number(g.current);
+          const manual = goalManualPercent(current, target);
+          const rolledUp = goalRolledUpPercent(goalLinks);
+          return {
+            id: g.id,
+            name: g.name,
+            owner: g.owner,
+            period: g.period,
+            target,
+            current,
+            progressMode: g.progress_mode,
+            notes: g.notes,
+            manualPercent: manual,
+            rolledUpPercent: rolledUp,
+            displayPercent: goalDisplayPercent({
+              progressMode: g.progress_mode,
+              manual,
+              rolledUp,
+            }),
+            links: goalLinks,
+          };
+        });
+      } catch (err) {
+        // goal/goal_link (0102) may not be prod-applied yet → empty, not a 500.
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listGoals();
       }
     },
 
