@@ -8,7 +8,9 @@
 >
 > Decision provenance: backend ADR-0035 (public endpoints + Entra-only identity),
 > backend ADR-0034 + front-end ADR-0041 (AI stack), local-pipeline ADR-0002/0003
-> (certificate + short-lived DB tokens), front-end ADR-0014 (consent ledger).
+> (certificate + short-lived DB tokens), front-end ADR-0014 (consent ledger),
+> pipeline ADR-0018 (per-client admin-consented onboarding app as the only Graph
+> access model — supersedes the retired GDAP-primary model of pipeline ADR-0002/0007).
 
 ---
 
@@ -35,7 +37,7 @@ flowchart TB
         LP["Local pipeline (PowerShell)<br/>cert SP: imperion-localpipeline"]
     end
     subgraph EXT["External"]
-        SRC["Autotask · IT Glue · M365/GDAP · Apollo ·<br/>Dark Web ID · Telivy · KQM · DocuSign"]
+        SRC["Autotask · IT Glue · M365 (per-client app) · Apollo ·<br/>Dark Web ID · Telivy · KQM · DocuSign"]
         AI["Anthropic Claude · Voyage AI"]
     end
     EMP -->|OIDC + session cookie| WEB
@@ -119,8 +121,9 @@ flowchart TB
 
 - **Schema is single-sourced** in the front-end repo (`db/migrations`, ADR-0017); every
   other repo is a consumer. Migrations run with an Entra token, never a password.
-- **Webhook receivers fail closed** (signature mismatch → reject); **GDAP-gated ingestion
-  fails closed** when a relationship is not active.
+- **Webhook receivers fail closed** (signature mismatch → reject); **per-client M365
+  ingestion fails closed** when a tenant is not in the onboarding-app registry (pipeline
+  ADR-0018 — admin-consented per-client app, the only Graph access model; GDAP retired).
 - **Idempotency by content hash** everywhere data lands (bronze upserts, embeddings) —
   replays are safe and re-billing is impossible.
 - **CI/CD deploys via OIDC federated credentials** — no publish-profile or deployment
