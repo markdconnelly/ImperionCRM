@@ -931,6 +931,64 @@ export interface TaskRecurrenceInput {
   countRemaining: number | null;
 }
 
+/**
+ * One conversational-intelligence record (ADR-0068, #375) as shown in a 360 list —
+ * a captured ACS call, Teams meeting, or manual upload. The read shape; the write
+ * side (capture/transcribe/analyze) is a backend process (ADR-0042), DORMANT until
+ * ACS/Speech creds land (#66/#21). `hasTranscript` is derived from a non-null
+ * transcript artifact pointer (the transcript blob itself is not loaded into a list).
+ */
+export interface ConversationRow {
+  id: string;
+  source: "acs" | "teams" | "upload";
+  status: "captured" | "transcribed" | "analyzed" | "purged";
+  startedAt: string | null; // formatted, or null for an un-started upload
+  durationSeconds: number | null;
+  contactId: string | null;
+  opportunityId: string | null;
+  hasTranscript: boolean;
+}
+
+/** One diarized turn of a conversation (ADR-0068) — the embedding unit (ADR-0041). */
+export interface ConversationSegmentRow {
+  id: string;
+  speaker: string | null;
+  startMs: number | null;
+  endMs: number | null;
+  text: string;
+}
+
+/**
+ * One AI-derived insight about a conversation (ADR-0068, ADR-0043). `payload` is the
+ * kind-specific jsonb (e.g. action_item items, sentiment score) carried opaquely to
+ * the surface; `model` names the Claude tier that produced it.
+ */
+export interface ConversationInsightRow {
+  id: string;
+  kind: "summary" | "action_item" | "sentiment" | "objection" | "risk";
+  payload: Record<string, unknown>;
+  model: string | null;
+  createdAt: string; // formatted
+}
+
+/**
+ * A single conversation with its diarized turns + AI insights (ADR-0068, #375) — the
+ * drill-down the 360 panel (#379) renders. `retentionExpiresAt` surfaces the purge
+ * window (ADR-0068 decision 5); `consentBasisId` names the consent-ledger basis the
+ * transcription rested on (ADR-0014), or null if not yet established.
+ */
+export interface ConversationDetail extends ConversationRow {
+  accountId: string | null;
+  endedAt: string | null;
+  externalRef: string | null;
+  audioArtifactUri: string | null;
+  transcriptArtifactUri: string | null;
+  consentBasisId: string | null;
+  retentionExpiresAt: string | null;
+  segments: ConversationSegmentRow[];
+  insights: ConversationInsightRow[];
+}
+
 /** A single child task under a parent (ADR-0065 B1, #335). */
 export interface TaskSubtaskRow {
   id: string;

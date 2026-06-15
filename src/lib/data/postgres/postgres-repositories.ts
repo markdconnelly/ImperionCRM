@@ -203,6 +203,10 @@ import type {
   TaskRow,
   SprintRow,
   ProjectBaselineRow,
+  ConversationRow,
+  ConversationDetail,
+  ConversationSegmentRow,
+  ConversationInsightRow,
   ProjectSlippage,
   TaskHierarchy,
   TaskDependencies,
@@ -1722,6 +1726,139 @@ export const postgresRepositories: Repositories = {
         throw err;
       } finally {
         client.release();
+      }
+    },
+
+    // ── Conversational intelligence (ADR-0068, #375) — read-only ─────────────────
+    async listConversationsForAccount(accountId: string): Promise<ConversationRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listConversationsForAccount(accountId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          source: ConversationRow["source"];
+          status: ConversationRow["status"];
+          started_at: Date | null;
+          duration_seconds: number | null;
+          contact_id: string | null;
+          opportunity_id: string | null;
+          transcript_artifact_uri: string | null;
+        }>(
+          `SELECT id, source, status, started_at, duration_seconds,
+                  contact_id, opportunity_id, transcript_artifact_uri
+             FROM conversation WHERE account_id = $1
+            ORDER BY started_at DESC NULLS LAST, created_at DESC`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          source: r.source,
+          status: r.status,
+          startedAt: fmtDateTime(r.started_at),
+          durationSeconds: r.duration_seconds,
+          contactId: r.contact_id,
+          opportunityId: r.opportunity_id,
+          hasTranscript: r.transcript_artifact_uri != null,
+        }));
+      } catch (err) {
+        // conversation (0112) may not be prod-applied yet → empty list, not a 500.
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listConversationsForAccount(accountId);
+      }
+    },
+
+    async getConversation(id: string): Promise<ConversationDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getConversation(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string | null;
+          contact_id: string | null;
+          opportunity_id: string | null;
+          source: ConversationRow["source"];
+          status: ConversationRow["status"];
+          external_ref: string | null;
+          audio_artifact_uri: string | null;
+          transcript_artifact_uri: string | null;
+          started_at: Date | null;
+          ended_at: Date | null;
+          duration_seconds: number | null;
+          consent_basis_id: string | null;
+          retention_expires_at: Date | null;
+        }>(
+          `SELECT id, account_id, contact_id, opportunity_id, source, status,
+                  external_ref, audio_artifact_uri, transcript_artifact_uri,
+                  started_at, ended_at, duration_seconds, consent_basis_id,
+                  retention_expires_at
+             FROM conversation WHERE id = $1`,
+          [id],
+        );
+        const c = rows[0];
+        if (!c) return null;
+
+        const seg = await pool.query<{
+          id: string;
+          speaker: string | null;
+          start_ms: number | null;
+          end_ms: number | null;
+          text: string;
+        }>(
+          `SELECT id, speaker, start_ms, end_ms, text
+             FROM conversation_segment WHERE conversation_id = $1
+            ORDER BY start_ms NULLS LAST, created_at`,
+          [id],
+        );
+        const ins = await pool.query<{
+          id: string;
+          kind: ConversationInsightRow["kind"];
+          payload: Record<string, unknown> | null;
+          model: string | null;
+          created_at: Date;
+        }>(
+          `SELECT id, kind, payload, model, created_at
+             FROM conversation_insight WHERE conversation_id = $1
+            ORDER BY kind, created_at`,
+          [id],
+        );
+
+        const segments: ConversationSegmentRow[] = seg.rows.map((s) => ({
+          id: s.id,
+          speaker: s.speaker,
+          startMs: s.start_ms,
+          endMs: s.end_ms,
+          text: s.text,
+        }));
+        const insights: ConversationInsightRow[] = ins.rows.map((i) => ({
+          id: i.id,
+          kind: i.kind,
+          payload: i.payload ?? {},
+          model: i.model,
+          createdAt: fmtDateTime(i.created_at) ?? "",
+        }));
+
+        return {
+          id: c.id,
+          accountId: c.account_id,
+          contactId: c.contact_id,
+          opportunityId: c.opportunity_id,
+          source: c.source,
+          status: c.status,
+          externalRef: c.external_ref,
+          audioArtifactUri: c.audio_artifact_uri,
+          transcriptArtifactUri: c.transcript_artifact_uri,
+          startedAt: fmtDateTime(c.started_at),
+          endedAt: fmtDateTime(c.ended_at),
+          durationSeconds: c.duration_seconds,
+          consentBasisId: c.consent_basis_id,
+          retentionExpiresAt: fmtDateTime(c.retention_expires_at),
+          hasTranscript: c.transcript_artifact_uri != null,
+          segments,
+          insights,
+        };
+      } catch (err) {
+        if (isSchemaLagError(err)) return null;
+        return mockRepositories.crm.getConversation(id);
       }
     },
 

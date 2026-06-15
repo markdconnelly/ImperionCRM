@@ -101,6 +101,8 @@ import type {
   TaskDependencies,
   TaskRecurrenceRow,
   TaskRecurrenceInput,
+  ConversationRow,
+  ConversationDetail,
   TaskTimeEntryRow,
   ProjectTimeRollup,
   ProjectBaselineRow,
@@ -734,6 +736,17 @@ export interface CrmRepository {
    *    deletes the series if that spawn was the last one. Returns the new task id.
    */
   advanceTaskRecurrence(taskId: string): Promise<string | null>;
+
+  // Conversational intelligence (ADR-0068, #375) — read-only on the front end; the
+  // capture/transcribe/analyze write path is a backend process (ADR-0042), dormant
+  // until ACS/Speech creds land (#66/#21). The 360 panel (#379) consumes these.
+  /** An account's conversations, newest-started first (the 360 panel list). */
+  listConversationsForAccount(accountId: string): Promise<ConversationRow[]>;
+  /**
+   * One conversation with its diarized turns + AI insights, or null if absent.
+   * Turns come back in time order; insights grouped by kind.
+   */
+  getConversation(id: string): Promise<ConversationDetail | null>;
 
   // Subtasks / task hierarchy (ADR-0065 B1, #335)
   /** A task's child tasks, ordered by ordinal then title, with the n/m rollup. */

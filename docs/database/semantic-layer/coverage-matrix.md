@@ -75,6 +75,8 @@ object · **H** reference/config/identity.
 |---|---|---|---|
 | [interaction](tables/interaction.md) | B (+ gold) | ✅ | every workflow's research stage |
 | [meeting](tables/meeting.md) | B | ✅ | meeting follow-up |
+| [conversation](tables/conversation.md) | B (+ gold) | ✅ | conversational intelligence (transcribe→analyze→embed) |
+| conversation_segment (embedding unit), conversation_insight (AI output) | B / G | ⏳ | conversational intelligence; risk/objection → forecasting |
 
 ## Consent / enrichment / exposure
 

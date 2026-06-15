@@ -2218,6 +2218,45 @@ concept). v1 maps to the task's base fields + routing defaults; assignee/custom-
 field mapping and an in-place form editor (v1 = delete+recreate) are documented
 follow-ups.
 
+## Conversational intelligence — call/meeting capture → transcribe → analyze (ADR-0068, migration 0112, #375)
+
+The voice channel of the customer 360 (ADR-0068, epic #315). A captured conversation —
+an ACS call, a Teams meeting, or a manual upload — is transcribed (Azure Speech,
+diarized), analyzed (Claude — ADR-0043), and its transcript turns embedded for search
+(Voyage @1024 — ADR-0041). The backend orchestrates and holds the credentials
+(ADR-0042); this front end only **reads** (`listConversationsForAccount` /
+`getConversation`). Real transcription/analysis is **DORMANT** until ACS/Speech creds
+land (#66/#21) — the schema ships now so the 360 panel (#379) and the backend
+orchestrator (#376/#377) build against it. A conversation is a *derived artifact*, not a
+polled source, so there is **no bronze-per-source table** (ADR-0068 decision 3).
+
+- **`conversation`** (silver) — one call/meeting/upload: `{ id, account_id? → account
+  (SET NULL), contact_id? → contact (SET NULL), opportunity_id? → opportunity (SET NULL),
+  source (CHECK acs|teams|upload), external_ref? (the source id; `(source, external_ref)`
+  UNIQUE where present = dedupe), audio_artifact_uri?, transcript_artifact_uri?,
+  started_at?, ended_at?, duration_seconds? (≥0), consent_basis_id? → consent_event
+  (SET NULL), retention_expires_at?, status (CHECK captured|transcribed|analyzed|purged),
+  created_at, updated_at }`. Raw audio + full transcript are **referenced blobs**, not
+  stored inline.
+- **`conversation_segment`** — one diarized turn, the **embedding unit** (ADR-0041):
+  `{ id, conversation_id → conversation (CASCADE), speaker?, start_ms?, end_ms?, text,
+  created_at }`. Vectorized in `_LocalPipelineEnrichment`, not here.
+- **`conversation_insight`** — one AI output (ADR-0043): `{ id, conversation_id →
+  conversation (CASCADE), kind (CHECK summary|action_item|sentiment|objection|risk),
+  payload (jsonb, kind-specific), model?, created_at }`. `risk`/`objection` feed
+  forecasting (#316); a summary lands on the interaction timeline (ADR-0011).
+
+**Consent + retention are first-class** (ADR-0068 decision 5): no transcription without a
+`consent_basis_id` in the ledger (ADR-0014) — enforced by the **backend orchestrator**,
+not a NOT NULL (capture can precede the check). On/after `retention_expires_at` a backend
+purge job removes transcript + segments and sets `status = purged`; insights are
+optionally retained in aggregate. `conversation` is a **silver entity** on the timeline,
+so it carries an OKF concept file
+([`semantic-layer/tables/conversation.md`](semantic-layer/tables/conversation.md));
+`conversation_segment`/`conversation_insight` are tracked ⏳ in the coverage matrix.
+Transcript/segment/insight TEXT is sensitive client conversation content — kept out of
+docs/issues.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —

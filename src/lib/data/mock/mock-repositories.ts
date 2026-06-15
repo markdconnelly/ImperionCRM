@@ -302,6 +302,13 @@ export const mockRepositories: Repositories = {
     async advanceTaskRecurrence() {
       return null;
     },
+    // Conversational intelligence (ADR-0068, #375) — read-only, no rows without a DB.
+    async listConversationsForAccount() {
+      return [];
+    },
+    async getConversation() {
+      return null;
+    },
     async getTaskChildren(parentId: string) {
       return { parentId, children: [], total: 0, done: 0 };
     },
