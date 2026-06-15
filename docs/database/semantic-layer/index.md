@@ -41,13 +41,16 @@ subset; remaining entities are tracked for expansion
 | [`credential_exposure`](tables/credential_exposure.md) | merge | Dark Web ID (email+domain match) | ADR-0040 |
 | [`proposal`](tables/proposal.md) | single-SoR | website system of record | ADR-0019 |
 | [`assessment`](tables/assessment.md) | single-SoR | website system of record | ADR-0022 |
+| [`assessment_artifact`](tables/assessment_artifact.md) | single-SoR | per-source evidence (under parent assessment) | ADR-0023 |
 | [`project`](tables/project.md) | single-SoR | website system of record | ADR-0020 |
 | [`task`](tables/task.md) | single-SoR | website system of record | ADR-0052 |
 | [`delivery_template`](tables/delivery_template.md) | single-SoR | website system of record | ADR-0081 |
 | [`discovery_call`](tables/discovery_call.md) | single-SoR | website system of record | ADR-0023 |
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |
 | [`ticket`](tables/ticket.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
+| [`contract`](tables/contract.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`interaction`](tables/interaction.md) | single-SoR | per-source / per-channel | ADR-0011 |
+| [`meeting`](tables/meeting.md) | single-SoR | per-platform (1:1 with interaction) | ADR-0011 |
 | [`campaign`](tables/campaign.md) | single-SoR | website system of record | ADR-0053 |
 | [`workflow`](tables/workflow.md) | single-SoR | website system of record | ADR-0027 |
 | [`timesheet`](tables/timesheet.md) | single-SoR | website system of record | ADR-0082 |

@@ -41,7 +41,7 @@ object · **H** reference/config/identity.
 | [opportunity](tables/opportunity.md) | A | ✅ | sale→delivery |
 | [proposal](tables/proposal.md) | B | ✅ | proposal-draft |
 | [assessment](tables/assessment.md) | B | ✅ | assessment delivery |
-| assessment_artifact | B | ⏳ | assessment evidence |
+| [assessment_artifact](tables/assessment_artifact.md) | B | ✅ | assessment evidence |
 
 ## Delivery / PM
 
@@ -64,14 +64,14 @@ object · **H** reference/config/identity.
 | [ticket](tables/ticket.md) | B (Autotask SoR) | ✅ | service-desk |
 | sbr_dimension_score, sbr_ticket | B | ⏳ | SBR-prep |
 | question_template, question, engagement_answer | B | ⏳ | discovery / assessment capture |
-| contract | B | ⏳ | sale→delivery (DocuSign-gated) |
+| [contract](tables/contract.md) | B | ✅ | sale→delivery (DocuSign-gated) |
 
 ## Communications
 
 | Object | Archetype | IKF | Acting ICM workflow |
 |---|---|---|---|
 | [interaction](tables/interaction.md) | B (+ gold) | ✅ | every workflow's research stage |
-| meeting | B | ⏳ | meeting follow-up |
+| [meeting](tables/meeting.md) | B | ✅ | meeting follow-up |
 
 ## Consent / enrichment / exposure
 
