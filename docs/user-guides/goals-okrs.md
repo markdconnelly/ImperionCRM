@@ -52,8 +52,8 @@ A **pure read model** over the new `goal` and `goal_link` tables plus the existi
 `src/lib/goals.test.ts`); the read is `crm.listGoals()`; the screen is
 `src/app/(app)/projects/goals/`. `goal_link` is **polymorphic**
 (`parent_type/parent_id`) so projects roll up today and tasks can join the same
-mechanism later. Schema: migration `9001_goals_okrs.sql` (placeholder number,
-renumbered at merge). These are PM application tables, not silver entities, so the
+mechanism later. Schema: migration `0102_goals_okrs.sql`. These are PM application
+tables, not silver entities, so the
 OKF semantic-layer gate does not apply.
 
 ## Not yet on goals

@@ -2084,7 +2084,7 @@ export const postgresRepositories: Repositories = {
           };
         });
       } catch (err) {
-        // goal/goal_link (9001) may not be prod-applied yet → empty, not a 500.
+        // goal/goal_link (0102) may not be prod-applied yet → empty, not a 500.
         if (isSchemaLagError(err)) return [];
         return mockRepositories.crm.listGoals();
       }

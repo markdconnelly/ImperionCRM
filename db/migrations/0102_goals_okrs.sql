@@ -1,6 +1,4 @@
--- 9001 goals / OKRs above projects (ADR-0069 D3, issue #348)
--- PLACEHOLDER NUMBER — the orchestrator renumbers this to the next free slot at
--- merge (concurrency contract §10.3; prod is at 0101). Do NOT treat 9001 as final.
+-- 0102 goals / OKRs above projects (ADR-0069 D3, issue #348)
 --
 -- A goal/OKR is a measurable objective that sits ABOVE projects (ADR-0069 D3): it
 -- has an owner, a period, and a numeric target/current. Contributing work is linked

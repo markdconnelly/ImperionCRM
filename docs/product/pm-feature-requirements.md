@@ -362,8 +362,7 @@ migration; the `user_capacity` table and `task.estimate` are D1, #346.**
   [user guide](../user-guides/goals-okrs.md).
 
 **Data model.** `goal{ id, name, owner_user_id, period, target, current, progress_mode,
-notes }` + `goal_link{ goal_id, parent_type, parent_id, weight }` (migration 9001
-placeholder — renumbered at merge).
+notes }` + `goal_link{ goal_id, parent_type, parent_id, weight }` (migration 0102).
 
 **Deferred (tracked on #348):** authoring goals + managing their links from the GUI,
 and rolling up linked *tasks* (the schema already allows `parent_type='task'`; only
