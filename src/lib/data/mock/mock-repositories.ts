@@ -1334,6 +1334,10 @@ export const mockRepositories: Repositories = {
     async listDnsDomainsForAccount() {
       return [];
     },
+    async listDnsRecordDriftForAccount() {
+      // No DB → no DNS captures; the record-level drift list renders nothing.
+      return [];
+    },
     async listSecureScoreControlsForAccount() {
       return [];
     },

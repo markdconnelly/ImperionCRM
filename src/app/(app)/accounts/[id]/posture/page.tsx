@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui/icon";
 import { getRepositories } from "@/lib/data";
 import { listSensitivityCsaForAccount } from "@/lib/security/sensitivity-csa";
 import { SensitivityCsaCard } from "@/components/accounts/sensitivity-csa-card";
-import { DnsDomainRows } from "@/components/accounts/dns-posture-card";
+import { DnsDomainRows, DnsRecordDriftList } from "@/components/accounts/dns-posture-card";
 import { refreshPostureAction, snapshotPostureAction } from "../../actions";
 
 // Per-customer security posture overview (#93, ADR-0051). Everything here is a
@@ -77,16 +77,25 @@ export default async function AccountPosturePage({
 }) {
   const { id } = await params;
   const { crm, security } = getRepositories();
-  const [account, tenants, policies, controls, exposures, sensitivityCsa, dnsDomains] =
-    await Promise.all([
-      crm.getAccount(id),
-      security.listTenantPostureForAccount(id),
-      security.listPosturePoliciesForAccount(id),
-      security.listSecureScoreControlsForAccount(id),
-      security.listCredentialExposuresForAccount(id),
-      listSensitivityCsaForAccount(id),
-      security.listDnsDomainsForAccount(id),
-    ]);
+  const [
+    account,
+    tenants,
+    policies,
+    controls,
+    exposures,
+    sensitivityCsa,
+    dnsDomains,
+    dnsRecordDrift,
+  ] = await Promise.all([
+    crm.getAccount(id),
+    security.listTenantPostureForAccount(id),
+    security.listPosturePoliciesForAccount(id),
+    security.listSecureScoreControlsForAccount(id),
+    security.listCredentialExposuresForAccount(id),
+    listSensitivityCsaForAccount(id),
+    security.listDnsDomainsForAccount(id),
+    security.listDnsRecordDriftForAccount(id),
+  ]);
   if (!account) notFound();
 
   const tenantLabel = new Map(
@@ -349,7 +358,19 @@ export default async function AccountPosturePage({
             per-domain verdicts and drift appear here.
           </p>
         ) : (
-          <DnsDomainRows domains={dnsDomains} />
+          <div className="flex flex-col gap-4">
+            <DnsDomainRows domains={dnsDomains} />
+            {dnsRecordDrift.length > 0 && (
+              <div className="border-t border-border/60 pt-3">
+                <h4 className="mb-0.5 text-xs font-semibold text-text">Record-level drift</h4>
+                <p className="mb-3 text-[11px] text-dim">
+                  The individual records that differ from the approved golden baseline —
+                  missing and drift first. Compliant records are omitted.
+                </p>
+                <DnsRecordDriftList records={dnsRecordDrift} />
+              </div>
+            )}
+          </div>
         )}
       </Section>
 

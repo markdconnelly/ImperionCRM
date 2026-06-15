@@ -236,11 +236,46 @@ describe("Account-scoped posture reads (#93 — ADR-0051)", () => {
     expect(params).toEqual(["acc-1"]);
   });
 
+  it("record-level drift classifies observed vs golden and omits compliant (#576, ADR-0063 §3)", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          domain: "contoso.com", record_type: "TXT", name: "_dmarc.contoso.com",
+          status: "missing", observed_value: null, golden_value: "v=DMARC1; p=reject",
+        },
+        {
+          domain: "contoso.com", record_type: "TXT", name: "contoso.com",
+          status: "drift", observed_value: "v=spf1 ~all", golden_value: "v=spf1 -all",
+        },
+        {
+          domain: "contoso.com", record_type: "A", name: "extra.contoso.com",
+          status: "ungoverned", observed_value: "203.0.113.9", golden_value: null,
+        },
+      ],
+    });
+    const rows = await security.listDnsRecordDriftForAccount("acc-1");
+    expect(rows[0]).toEqual({
+      domain: "contoso.com", recordType: "TXT", name: "_dmarc.contoso.com",
+      status: "missing", observedValue: null, goldenValue: "v=DMARC1; p=reject",
+    });
+    expect(rows[2]).toEqual({
+      domain: "contoso.com", recordType: "A", name: "extra.contoso.com",
+      status: "ungoverned", observedValue: "203.0.113.9", goldenValue: null,
+    });
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("FROM account_domain ad");
+    expect(sql).toContain("jsonb_array_elements(g.golden_records)");
+    expect(sql).toContain("FULL OUTER JOIN captured_record c");
+    expect(sql).toContain("<> 'compliant'"); // the worklist excludes compliant records
+    expect(params).toEqual(["acc-1"]);
+  });
+
   it("falls back to the mock (empty lists) when no pool is configured", async () => {
     getPool.mockReturnValue(null);
     await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listPosturePoliciesForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listDnsDomainsForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listDnsRecordDriftForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listSecureScoreControlsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listCredentialExposuresForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.countDefenderIncidentsForAccount("acc-1")).resolves.toEqual({
@@ -276,6 +311,7 @@ describe("Optional enrichment degrades on schema lag, fails closed otherwise (#3
     await expect(security.listTenantPostureForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listPosturePoliciesForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listDnsDomainsForAccount("acc-1")).resolves.toEqual([]);
+    await expect(security.listDnsRecordDriftForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listSecureScoreControlsForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listCredentialExposuresForAccount("acc-1")).resolves.toEqual([]);
     await expect(security.listSharePointSitesForAccount("acc-1")).resolves.toEqual([]);

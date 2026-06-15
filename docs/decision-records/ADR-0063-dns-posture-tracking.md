@@ -121,7 +121,7 @@ Domain inventory is derived from existing `account_tenant` Customer Tenant verif
 
 ## Consequences
 
-- Epic #306; slices: #307 (this ADR), #308 (migration 0080 + reads), #309 (GUI), local-pipeline #155 (ARM zone collector + write probe), #156 (public-resolve collector), #157 (golden/drift merge).
+- Epic #306; slices: #307 (this ADR), #308 (migration 0080 + reads), #309 (GUI, per-domain count rows), #576 (record-level drift list — `dns_records` × `dns_golden` classified read-only on the posture page, no migration), local-pipeline #155 (ARM zone collector + write probe), #156 (public-resolve collector), #157 (golden/drift merge).
 - The on-prem pipeline gains two collectors and a golden/drift merge; the cloud pipeline gains a single-domain on-demand DNS refresh in its existing on-demand path.
 - CONTEXT.md gains DNS vocabulary (DNS Zone, DNS Record Snapshot, DNS Golden State, DNS Governance Verdict, DNS Posture Pillar).
 

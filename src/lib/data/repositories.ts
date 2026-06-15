@@ -104,6 +104,7 @@ import type {
   TenantPostureRollup,
   PosturePolicyRow,
   DnsDomainRollup,
+  DnsRecordDrift,
   SecureScoreControl,
   CredentialExposureRow,
   DefenderIncidentCounts,
@@ -1551,6 +1552,8 @@ export interface SecurityRepository {
   listSharePointSitesForAccount(accountId: string): Promise<SharePointSiteRow[]>;
   /** Per-domain DNS posture rollup over the account's mapped tenants (#308, ADR-0063 — verdict + drift counts). */
   listDnsDomainsForAccount(accountId: string): Promise<DnsDomainRollup[]>;
+  /** Record-level DNS drift detail for the account's tracked domains (#576, ADR-0063 §3 — observed vs golden, classified). */
+  listDnsRecordDriftForAccount(accountId: string): Promise<DnsRecordDrift[]>;
 }
 
 /** A new comment on a work object (task/project/milestone). */

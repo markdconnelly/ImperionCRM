@@ -13,7 +13,24 @@
  * EXISTING columns only; no record-level DNS read exists yet (that is a
  * follow-up — see the card's note), so drift surfaces as per-domain counts.
  */
-import type { DnsDomainRollup } from "@/types";
+import type { DnsDomainRollup, DnsRecordStatus } from "@/types";
+
+/**
+ * Per-record classification badge color (ADR-0063 §3) — same severity read as the policy
+ * classification badges: drift/ungoverned are amber (governable, needs attention), missing is
+ * red (golden record no longer resolves), compliant is green (shown only if ever surfaced).
+ */
+export function recordStatusBadgeClass(status: DnsRecordStatus): string {
+  switch (status) {
+    case "missing":
+      return "bg-red/10 text-red";
+    case "drift":
+    case "ungoverned":
+      return "bg-amber/10 text-amber";
+    default:
+      return "bg-green/10 text-green";
+  }
+}
 
 export type DnsVerdict = NonNullable<DnsDomainRollup["verdict"]>;
 
