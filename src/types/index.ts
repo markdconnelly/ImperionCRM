@@ -989,6 +989,28 @@ export interface ConversationDetail extends ConversationRow {
   insights: ConversationInsightRow[];
 }
 
+/**
+ * One DocuSign e-signature envelope against a proposal (ADR-0071, #391) — the read
+ * shape the proposal/contract status surface (#395) renders. The write side (send +
+ * Connect webhook status upsert) is a backend/pipeline process (ADR-0042), DORMANT
+ * until DocuSign JWT consent lands (#318/#392). `recipients` is carried opaquely (the
+ * signer order/role/status jsonb); `hasSignedPdf` is derived from a non-null signed-PDF
+ * pointer (the PDF blob itself is never loaded onto the row).
+ */
+export interface EsignEnvelopeRow {
+  id: string;
+  proposalId: string;
+  contractId: string | null;
+  provider: string;
+  externalRef: string | null;
+  status: "created" | "sent" | "delivered" | "completed" | "declined" | "voided";
+  recipients: Array<Record<string, unknown>>;
+  hasSignedPdf: boolean;
+  sentAt: string | null; // formatted
+  completedAt: string | null;
+  createdAt: string;
+}
+
 /** A single child task under a parent (ADR-0065 B1, #335). */
 export interface TaskSubtaskRow {
   id: string;

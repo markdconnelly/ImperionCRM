@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-15T01:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -40,6 +40,7 @@ subset; remaining entities are tracked for expansion
 | [`opportunity`](tables/opportunity.md) | merge | website > autotask > KQM | ADR-0080 |
 | [`credential_exposure`](tables/credential_exposure.md) | merge | Dark Web ID (email+domain match) | ADR-0040 |
 | [`proposal`](tables/proposal.md) | single-SoR | website system of record | ADR-0019 |
+| [`esign_envelope`](tables/esign_envelope.md) | single-SoR | DocuSign (external SoR for status) | ADR-0071 |
 | [`assessment`](tables/assessment.md) | single-SoR | website system of record | ADR-0022 |
 | [`assessment_artifact`](tables/assessment_artifact.md) | single-SoR | per-source evidence (under parent assessment) | ADR-0023 |
 | [`project`](tables/project.md) | single-SoR | website system of record | ADR-0020 |

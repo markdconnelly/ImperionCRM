@@ -4,7 +4,7 @@ title: contract
 description: Managed-services contract — Autotask is the external system of record, fetched to silver; the commercial frame a delivery hangs off.
 resource: ../../../decision-records/ADR-0044-silver-contracts-tickets.md
 tags: [silver, service, contract, autotask]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-15T01:00:00Z
 ---
 
 # contract
@@ -40,12 +40,15 @@ operational contract record, not the signing ceremony.
 | `description` | text | |
 | `source` | text | `autotask` (default) |
 | `external_ref` | text | Autotask id; unique with `source` |
+| `esign_status` | text? | e-sign mirror (ADR-0071): set when the contract is created from a signed proposal; NULL = not e-sign-originated. Autotask still owns `status`. |
 
 ## Joins
 
 - `account_id` → `account`.
 - Operationally related (not FK-enforced): `ticket` (work billed against the contract),
   `project` (delivery the contract funds), `opportunity` (the sale that produced it).
+- `esign_envelope.contract_id` → this contract (ADR-0071): the envelope whose completion
+  produced it. `esign_status` mirrors that envelope's status for fast read.
 
 ## Notes
 

@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-15T01:00:00Z
 ---
 
 # Master coverage matrix
@@ -40,6 +40,7 @@ object · **H** reference/config/identity.
 |---|---|---|---|
 | [opportunity](tables/opportunity.md) | A | ✅ | sale→delivery |
 | [proposal](tables/proposal.md) | B | ✅ | proposal-draft |
+| [esign_envelope](tables/esign_envelope.md) | B (DocuSign SoR) | ✅ | e-signature (sale→delivery, DocuSign-gated) |
 | [assessment](tables/assessment.md) | B | ✅ | assessment delivery |
 | [assessment_artifact](tables/assessment_artifact.md) | B | ✅ | assessment evidence |
 

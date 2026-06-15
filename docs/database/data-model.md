@@ -2257,6 +2257,40 @@ so it carries an OKF concept file
 Transcript/segment/insight TEXT is sensitive client conversation content — kept out of
 docs/issues.
 
+## E-signature — DocuSign envelope (ADR-0071, migration 0113, #391)
+
+The signature event for a proposal, made first-class (ADR-0071, epic #318). A proposal
+(ADR-0019) is the signable artifact; today there is no path from a proposal to a
+signature. **DocuSign** is the chosen provider: the backend mints a JWT token from Key
+Vault and sends the envelope (it holds the credentials — ADR-0034/0042, front end never
+holds a provider key); the pipeline receives DocuSign **Connect** webhooks, verifies the
+HMAC, and upserts status by `(provider, external_ref)` (ADR-0012). This front end only
+**reads** (`listEsignEnvelopesForProposal`). Send + webhook are **DORMANT** until DocuSign
+JWT consent lands (#318/#392) — the schema ships now so the status surface (#395) and the
+backend send (#392/#393) / pipeline webhook (#394) build against it.
+
+- **`esign_envelope`** (silver) — one DocuSign envelope per send attempt: `{ id,
+  proposal_id → proposal (CASCADE), contract_id? → contract (SET NULL — created from the
+  signed proposal, ADR-0044), provider (default 'docusign'; abstraction kept open),
+  external_ref? (DocuSign envelope_id; `(provider, external_ref)` UNIQUE where present =
+  idempotent webhook upsert), status (CHECK created|sent|delivered|completed|declined|
+  voided), recipients (jsonb — signer order/role/status, signer PII), signed_pdf_uri?,
+  certificate_uri? (referenced blobs set on completed — Postgres holds the pointer, not
+  the PDF), sent_at?, delivered_at?, completed_at?, declined_at?, voided_at?, created_at,
+  updated_at }`.
+- **`proposal` / `contract`** each gain a nullable **`esign_status`** column — a
+  denormalized mirror of the active envelope's status for fast list render. The envelope
+  is the source of record; ADR-0019 still owns the proposal lifecycle enum
+  (`proposal.status`) and Autotask owns `contract.status`, separately. The
+  `completed → signed → create contract` coupling is a backend process (ADR-0071
+  decision 4), not in this migration.
+
+`esign_envelope` is a **silver entity**, so it carries an OKF concept file
+([`semantic-layer/tables/esign_envelope.md`](semantic-layer/tables/esign_envelope.md)).
+DocuSign holds **signer PII + signed documents** (a security-review item at build,
+ADR-0071); `recipients`, the signed PDF, and the certificate are sensitive +
+client-identifying — kept out of docs/issues (this schema stores only blob pointers).
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
