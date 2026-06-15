@@ -1,7 +1,4 @@
--- 9001 file attachments on work objects (ADR-0064 A4, issue #333)
--- PLACEHOLDER NUMBER — the orchestrator claims the real next free migration
--- number (expected 0100) at MERGE time per CLAUDE.md §10.3. Do NOT treat 9001
--- as final; rename + fix references just before squash-merge.
+-- 0100 file attachments on work objects (ADR-0064 A4, issue #333)
 --
 -- PM collaboration A4 (ADR-0064): upload/list/remove file attachments on a work
 -- object (task/project/milestone). This is the LAST of the four ADR-0064 slices —

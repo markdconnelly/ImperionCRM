@@ -1916,12 +1916,10 @@ the body is parsed, each handle resolved against `app_user`, and a link persiste
 
 App-native, not silver tier — no semantic-layer concept file applies.
 
-### File attachments (ADR-0064 A4, migration 9001 → 0100 at merge, #333)
+### File attachments (ADR-0064 A4, migration 0100, #333)
 
 The fourth ADR-0064 slice adds **file attachments** on a work object — the same
-**polymorphic** shape as `work_comment`/`work_tag`/`work_assignment`. The
-migration number is a **placeholder (`9001`)** in the branch; the orchestrator
-claims the real next free number (expected `0100`) at merge (CLAUDE.md §10.3).
+**polymorphic** shape as `work_comment`/`work_tag`/`work_assignment`.
 
 - **`work_attachment`** — `{ id, parent_type (task|project|milestone, CHECK),
   parent_id, storage_ref, filename, content_type, size_bytes (CHECK ≥ 0),
