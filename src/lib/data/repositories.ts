@@ -94,6 +94,8 @@ import type {
   TaskRow,
   TaskHierarchy,
   TaskDependencies,
+  WorkAssignments,
+  WorkRole,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -507,6 +509,42 @@ export interface CrmRepository {
    * close. {id, name=title} per blocked task, title-sorted.
    */
   listBlockedProjectTasks(projectId: string): Promise<Option[]>;
+
+  // Assignees & watchers — people on a work object (ADR-0065 B3, #337)
+  /**
+   * Everyone attached to a work object plus the viewer's own watch state
+   * (ADR-0065 B3, #337). `viewerEmail` resolves the signed-in user so the watch
+   * toggle renders without a second query; null = no viewer (treated as not
+   * watching). Primary is the single owner; assignees are additional workers;
+   * watchers are followers.
+   */
+  getWorkAssignments(
+    parentType: string,
+    parentId: string,
+    viewerEmail: string | null,
+  ): Promise<WorkAssignments>;
+  /**
+   * Set the full assignee set for a work object (the multi-select save). Replaces
+   * every `assignee` row with `userIds`, never touching the `primary` row or any
+   * `watcher` rows. Idempotent. A user already the primary is skipped (they are
+   * already on the object as its owner).
+   */
+  setTaskAssignees(taskId: string, userIds: string[]): Promise<void>;
+  /**
+   * Add or remove the viewer as a `watcher` (the watch/unwatch toggle, ADR-0065
+   * B3). `watch=true` upserts a watcher row (no-op if the user already holds any
+   * role); `watch=false` removes ONLY a watcher row (never the primary/assignee).
+   * Idempotent. `userId` is the resolved app_user id.
+   */
+  setTaskWatch(taskId: string, userId: string, watch: boolean): Promise<void>;
+  /**
+   * Promote a user to `primary` on a task — the single owner that drives rollups
+   * and RBAC (ADR-0065 B3). Mirrors the change onto `task.owner_user_id` so the
+   * legacy reads (Sales Queue, owner FK) stay in lockstep. The previous primary is
+   * demoted to `assignee` (kept on the object), and the new primary is upserted.
+   * `role` is fixed to 'primary' — the param documents intent at the call site.
+   */
+  setTaskPrimary(taskId: string, userId: string, role: Extract<WorkRole, "primary">): Promise<void>;
 
   // Sales Activity (ADR-0052 §6) — the Sales Queue read model + its two writes
   /** Open `category='sales'` tasks with owner + deal context (the Sales Queue). */

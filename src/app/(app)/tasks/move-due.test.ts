@@ -20,6 +20,10 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 vi.mock("@/lib/services", () => ({ ticketsService: { createTicket: vi.fn() } }));
+// actions.ts now imports @/auth for the watch action (#337); stub it so this suite
+// (which doesn't exercise that path) doesn't drag in next-auth's runtime.
+vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/data/app-user", () => ({ resolveAppUserIdByEmail: vi.fn() }));
 vi.mock("@/lib/data", () => ({
   getRepositories: () => ({ crm: { setTaskDue: h.setTaskDue } }),
 }));

@@ -170,6 +170,9 @@ import type {
   TaskHierarchy,
   TaskDependencies,
   TaskDependencyRow,
+  WorkAssignments,
+  WorkAssignmentRow,
+  WorkRole,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -1392,6 +1395,162 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ id: r.id, name: r.name }));
       } catch {
         return mockRepositories.crm.listBlockedProjectTasks(projectId);
+      }
+    },
+
+    // ── Assignees & watchers (ADR-0065 B3, #337) ──────────────────────────────
+    async getWorkAssignments(
+      parentType: string,
+      parentId: string,
+      viewerEmail: string | null,
+    ): Promise<WorkAssignments> {
+      const empty: WorkAssignments = {
+        parentType,
+        parentId,
+        primary: null,
+        assignees: [],
+        watchers: [],
+        viewerWatching: false,
+      };
+      const pool = getPool();
+      if (!pool) return empty;
+      try {
+        const { rows } = await pool.query<{
+          user_id: string;
+          name: string;
+          role: WorkRole;
+          email: string | null;
+        }>(
+          `SELECT wa.user_id, coalesce(u.display_name, u.email) AS name,
+                  wa.role, u.email
+             FROM work_assignment wa
+             JOIN app_user u ON u.id = wa.user_id
+            WHERE wa.parent_type = $1 AND wa.parent_id = $2
+            ORDER BY (wa.role = 'primary') DESC, name`,
+          [parentType, parentId],
+        );
+        const lcViewer = viewerEmail?.toLowerCase() ?? null;
+        let primary: WorkAssignmentRow | null = null;
+        const assignees: WorkAssignmentRow[] = [];
+        const watchers: WorkAssignmentRow[] = [];
+        let viewerWatching = false;
+        for (const r of rows) {
+          const row: WorkAssignmentRow = { userId: r.user_id, name: r.name, role: r.role };
+          if (r.role === "primary") primary = row;
+          else if (r.role === "assignee") assignees.push(row);
+          else watchers.push(row);
+          if (lcViewer && r.email && r.email.toLowerCase() === lcViewer) viewerWatching = true;
+        }
+        return { parentType, parentId, primary, assignees, watchers, viewerWatching };
+      } catch {
+        return empty;
+      }
+    },
+
+    async setTaskAssignees(taskId: string, userIds: string[]): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskAssignees(taskId, userIds);
+      // De-dup the requested set; the primary is excluded (they're already on the
+      // object as owner) and never demoted by an assignee save.
+      const wanted = Array.from(new Set(userIds.filter(Boolean)));
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Drop every assignee row that is no longer wanted (leaves primary/watcher
+        // rows untouched).
+        await client.query(
+          `DELETE FROM work_assignment
+            WHERE parent_type = 'task' AND parent_id = $1 AND role = 'assignee'
+              AND ($2::uuid[] = '{}' OR user_id <> ALL($2::uuid[]))`,
+          [taskId, wanted],
+        );
+        // Upsert each wanted user as an assignee — unless they are the primary
+        // (skip; a primary already owns the object). A user currently a watcher is
+        // promoted to assignee via the role update on conflict.
+        for (const uid of wanted) {
+          await client.query(
+            `INSERT INTO work_assignment (parent_type, parent_id, user_id, role)
+             SELECT 'task', $1, $2, 'assignee'
+              WHERE NOT EXISTS (
+                SELECT 1 FROM work_assignment
+                 WHERE parent_type = 'task' AND parent_id = $1
+                   AND user_id = $2 AND role = 'primary'
+              )
+             ON CONFLICT (parent_type, parent_id, user_id)
+               DO UPDATE SET role = 'assignee'
+               WHERE work_assignment.role <> 'primary'`,
+            [taskId, uid],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+
+    async setTaskWatch(taskId: string, userId: string, watch: boolean): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskWatch(taskId, userId, watch);
+      if (watch) {
+        // Add a watcher row only if the user holds no row yet — a primary/assignee
+        // already sees the item, so watching is a no-op for them (DO NOTHING).
+        await pool.query(
+          `INSERT INTO work_assignment (parent_type, parent_id, user_id, role)
+           VALUES ('task', $1, $2, 'watcher')
+           ON CONFLICT (parent_type, parent_id, user_id) DO NOTHING`,
+          [taskId, userId],
+        );
+      } else {
+        // Unwatch removes ONLY a watcher row — never the primary owner or an
+        // assignee (those are unfollowed by reassignment, not by the toggle).
+        await pool.query(
+          `DELETE FROM work_assignment
+            WHERE parent_type = 'task' AND parent_id = $1
+              AND user_id = $2 AND role = 'watcher'`,
+          [taskId, userId],
+        );
+      }
+    },
+
+    async setTaskPrimary(
+      taskId: string,
+      userId: string,
+      _role: Extract<WorkRole, "primary">,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskPrimary(taskId, userId, _role);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Demote any current primary (other than the new one) to assignee — they
+        // stay on the object, just not the owner. The partial unique index allows
+        // only one primary, so this must happen before promoting the new one.
+        await client.query(
+          `UPDATE work_assignment SET role = 'assignee'
+            WHERE parent_type = 'task' AND parent_id = $1
+              AND role = 'primary' AND user_id <> $2`,
+          [taskId, userId],
+        );
+        // Upsert the new primary (promotes an existing assignee/watcher row).
+        await client.query(
+          `INSERT INTO work_assignment (parent_type, parent_id, user_id, role)
+           VALUES ('task', $1, $2, 'primary')
+           ON CONFLICT (parent_type, parent_id, user_id)
+             DO UPDATE SET role = 'primary'`,
+          [taskId, userId],
+        );
+        // Keep the legacy owner FK in lockstep — the Sales Queue, rollups and RBAC
+        // still read task.owner_user_id (acceptance: "primary still drives reporting").
+        await client.query(`UPDATE task SET owner_user_id = $2 WHERE id = $1`, [taskId, userId]);
+        await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
       }
     },
 
