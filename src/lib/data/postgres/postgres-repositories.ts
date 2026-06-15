@@ -61,6 +61,12 @@ import type {
   DeliveryTemplateInput,
   ProjectTemplateInput,
   ProjectTemplateInstantiationInput,
+  IntakeFormInput,
+  IntakeFormField,
+  IntakeFormRow,
+  IntakeFormDetail,
+  IntakeSubmissionRow,
+  IntakeSubmitResult,
   ExpenseItemInput,
   ExpenseCorrection,
   ExpenseCategoryMappingInput,
@@ -3641,6 +3647,237 @@ export const postgresRepositories: Repositories = {
       } finally {
         client.release();
       }
+    },
+
+    // ── Intake forms (ADR-0070 E3, migration 0111, #354) ───────────────────────
+    async listIntakeForms(): Promise<IntakeFormRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listIntakeForms();
+      const { rows } = await pool.query<{
+        id: string;
+        key: string;
+        name: string;
+        description: string | null;
+        default_project_name: string | null;
+        default_category: string;
+        is_active: boolean;
+        field_count: string;
+        submission_count: string;
+      }>(
+        `SELECT f.id, f.key, f.name, f.description,
+                p.name AS default_project_name, f.default_category, f.is_active,
+                jsonb_array_length(f.fields) AS field_count,
+                (SELECT count(*) FROM intake_submission s WHERE s.form_id = f.id) AS submission_count
+         FROM intake_form f
+         LEFT JOIN project p ON p.id = f.default_project_id
+         ORDER BY f.is_active DESC, f.name`,
+      );
+      return rows.map((r) => ({
+        id: r.id,
+        key: r.key,
+        name: r.name,
+        description: r.description,
+        defaultProjectName: r.default_project_name,
+        defaultCategory: r.default_category,
+        isActive: r.is_active,
+        fieldCount: Number(r.field_count),
+        submissionCount: Number(r.submission_count),
+      }));
+    },
+
+    async getIntakeForm(id: string): Promise<IntakeFormDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getIntakeForm(id);
+      const { rows } = await pool.query<{
+        id: string;
+        key: string;
+        name: string;
+        description: string | null;
+        fields: IntakeFormField[];
+        default_project_id: string | null;
+        default_account_id: string | null;
+        default_owner_user_id: string | null;
+        default_category: string;
+        is_active: boolean;
+        default_project_name: string | null;
+        default_account_name: string | null;
+        default_owner_name: string | null;
+      }>(
+        `SELECT f.id, f.key, f.name, f.description, f.fields,
+                f.default_project_id, f.default_account_id, f.default_owner_user_id,
+                f.default_category, f.is_active,
+                p.name AS default_project_name, a.name AS default_account_name,
+                u.display_name AS default_owner_name
+         FROM intake_form f
+         LEFT JOIN project p ON p.id = f.default_project_id
+         LEFT JOIN account a ON a.id = f.default_account_id
+         LEFT JOIN app_user u ON u.id = f.default_owner_user_id
+         WHERE f.id = $1`,
+        [id],
+      );
+      const f = rows[0];
+      if (!f) return null;
+      return {
+        id: f.id,
+        key: f.key,
+        name: f.name,
+        description: f.description,
+        fields: Array.isArray(f.fields) ? f.fields : [],
+        defaultProjectId: f.default_project_id,
+        defaultAccountId: f.default_account_id,
+        defaultOwnerUserId: f.default_owner_user_id,
+        defaultCategory: f.default_category,
+        isActive: f.is_active,
+        defaultProjectName: f.default_project_name,
+        defaultAccountName: f.default_account_name,
+        defaultOwnerName: f.default_owner_name,
+      };
+    },
+
+    async createIntakeForm(input: IntakeFormInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createIntakeForm(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO intake_form
+           (key, name, description, fields, default_project_id, default_account_id,
+            default_owner_user_id, default_category, is_active)
+         VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9)
+         RETURNING id`,
+        [
+          input.key,
+          input.name,
+          nullIfEmpty(input.description),
+          JSON.stringify(input.fields ?? []),
+          nullIfEmpty(input.defaultProjectId),
+          nullIfEmpty(input.defaultAccountId),
+          nullIfEmpty(input.defaultOwnerUserId),
+          input.defaultCategory,
+          input.isActive,
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async deleteIntakeForm(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteIntakeForm(id);
+      // CASCADE drops intake_submission rows.
+      await pool.query(`DELETE FROM intake_form WHERE id = $1`, [id]);
+    },
+
+    async submitIntakeForm(
+      formId: string,
+      payload: Record<string, string>,
+      submittedBy: string | null,
+    ): Promise<IntakeSubmitResult> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.submitIntakeForm(formId, payload, submittedBy);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Authoritative defaults + field maps come from the row, never the caller.
+        const { rows: fRows } = await client.query<{
+          name: string;
+          fields: IntakeFormField[];
+          default_project_id: string | null;
+          default_account_id: string | null;
+          default_owner_user_id: string | null;
+          default_category: string;
+        }>(
+          `SELECT name, fields, default_project_id, default_account_id,
+                  default_owner_user_id, default_category
+           FROM intake_form WHERE id = $1`,
+          [formId],
+        );
+        const form = fRows[0];
+        if (!form) throw new Error(`Intake form ${formId} not found.`);
+
+        // Map each answered field onto a task field per its mapsTo (ADR-0070 E3).
+        const fields = Array.isArray(form.fields) ? form.fields : [];
+        let title = "";
+        const detailParts: string[] = [];
+        let dueAt: string | null = null;
+        for (const fld of fields) {
+          const v = String(payload[fld.key] ?? "").trim();
+          if (!v) continue;
+          switch (fld.mapsTo) {
+            case "title":
+              if (!title) title = v;
+              break;
+            case "detail":
+              detailParts.push(v);
+              break;
+            case "note":
+              detailParts.push(`${fld.label}: ${v}`);
+              break;
+            case "due_at":
+              if (!dueAt && /^\d{4}-\d{2}-\d{2}$/.test(v)) dueAt = v;
+              break;
+          }
+        }
+        // A task needs a title; fall back to the form name when none is mapped/filled.
+        if (!title) title = form.name;
+        const detail = detailParts.length ? detailParts.join("\n\n") : null;
+
+        const { rows: tRows } = await client.query<{ id: string }>(
+          `INSERT INTO task
+             (account_id, title, detail, status, category, due_at, project_id, owner_user_id, ordinal)
+           VALUES ($1, $2, $3, 'open', $4::task_category, $5::timestamptz, $6, $7, 0)
+           RETURNING id`,
+          [
+            form.default_account_id,
+            title,
+            detail,
+            form.default_category,
+            dueAt,
+            form.default_project_id,
+            form.default_owner_user_id,
+          ],
+        );
+        const taskId = tRows[0].id;
+
+        const { rows: sRows } = await client.query<{ id: string }>(
+          `INSERT INTO intake_submission (form_id, payload, created_task_id, submitted_by)
+           VALUES ($1, $2::jsonb, $3, $4)
+           RETURNING id`,
+          [formId, JSON.stringify(payload ?? {}), taskId, nullIfEmpty(submittedBy)],
+        );
+        await client.query("COMMIT");
+        return { taskId, submissionId: sRows[0].id };
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async listIntakeSubmissions(formId: string): Promise<IntakeSubmissionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listIntakeSubmissions(formId);
+      const { rows } = await pool.query<{
+        id: string;
+        created_at: Date | null;
+        created_task_id: string | null;
+        task_title: string | null;
+        submitted_by_name: string | null;
+      }>(
+        `SELECT s.id, s.created_at, s.created_task_id,
+                t.title AS task_title, u.display_name AS submitted_by_name
+         FROM intake_submission s
+         LEFT JOIN task t ON t.id = s.created_task_id
+         LEFT JOIN app_user u ON u.id = s.submitted_by
+         WHERE s.form_id = $1
+         ORDER BY s.created_at DESC`,
+        [formId],
+      );
+      return rows.map((r) => ({
+        id: r.id,
+        createdAt: r.created_at ? r.created_at.toISOString() : null,
+        createdTaskId: r.created_task_id,
+        taskTitle: r.task_title,
+        submittedBy: r.submitted_by_name,
+      }));
     },
 
     async listProvisionedProjects(): Promise<DeliveryBoardProject[]> {
