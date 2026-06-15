@@ -84,6 +84,17 @@ export function canManageProjects(roles: readonly AppRole[] | undefined): boolea
 }
 
 /**
+ * Per-user weekly-capacity admin (ADR-0069 D2, #591) — setting each user's
+ * `user_capacity.weekly_hours` (the workload view's per-user over-allocation
+ * threshold) is delivery management: admin | project_manager. GUI-side twin of the
+ * `delivery:capacity` capability the server action enforces. Mirrors
+ * `canManageProjects` (same gate as the workload view itself); not comp data.
+ */
+export function canManageCapacity(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "project_manager");
+}
+
+/**
  * Sales-activity writes — creating/completing sales tasks from the Sales
  * Activity page — belong to sales: admin | sales (ADR-0052 §8). GUI-side twin
  * of the `sales:write` capability the server actions enforce (ADR-0045);
@@ -237,6 +248,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   "expense-admin": canAdministerExpenses,
   "expense-categories": canManageExpenseCategories,
   "expense-mileage-rate": canManageMileageRate,
+  capacity: canManageCapacity,
   // The unified Monthly Close (ADR-0083 #491) is the finance gate — finance∨admin,
   // same as the payroll/finance-approve surfaces (`canApprovePayroll`).
   "monthly-close": canApprovePayroll,

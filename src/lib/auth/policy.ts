@@ -37,6 +37,7 @@ export const CAPABILITIES = [
   "expense:finance-approve", // CFO finance approval + confirm the QuickBooks-matched Reimbursed state (ADR-0083; finance∨admin)
   "expense:category-map", // admin maps the synced QuickBooks chart of accounts → clean website categories (ADR-0083; admin-only)
   "expense:mileage-rate", // set the effective-dated system mileage rate — COMP DATA, gated like Pay Rate (ADR-0083; finance∨admin)
+  "delivery:capacity", // set per-user weekly capacity hours for the workload view (ADR-0069 D2, #591; admin∨project_manager)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -90,6 +91,11 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   // comp-sensitive (the backend derives each employee's mileage $ from it), so it is never
   // visible to employee/agent/client roles. Mirrors time:payroll-approve / expense:finance-approve.
   "expense:mileage-rate": ["finance"],
+  // Per-user weekly-capacity admin (ADR-0069 D2, #591) — delivery management sets the
+  // `user_capacity.weekly_hours` the workload view classifies summed estimated load
+  // against. Same gate as project-board writes (`delivery:write`): admin∨project_manager.
+  // NOT comp data (hours of capacity, not pay), so it does not ride the finance gate.
+  "delivery:capacity": ["project_manager"],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */

@@ -195,6 +195,7 @@ import type {
   WorkAssignmentRow,
   WorkRole,
   WorkloadRow,
+  UserCapacity,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -1737,25 +1738,34 @@ export const postgresRepositories: Repositories = {
       }
     },
 
-    async listWorkload(): Promise<WorkloadRow[]> {
+    async listWorkload(range?: { from: string; to: string }): Promise<WorkloadRow[]> {
       const pool = getPool();
-      if (!pool) return mockRepositories.crm.listWorkload();
+      if (!pool) return mockRepositories.crm.listWorkload(range);
       try {
-        // Per-user open-task load (ADR-0069 D2, #347). Join `work_assignment` to
-        // not-done tasks so a person counts whether they are the primary owner or
-        // an additional assignee; watchers do NOT count as load (they only follow).
-        // due_at is timestamptz — bucket against now()/now()+7d in SQL so the
-        // horizon is server-evaluated and timezone-correct. No `task.estimate` yet
-        // (D1, #346) → counts, not hours.
+        // Per-user HOURS load (ADR-0069 D1/D2, #591). Join `work_assignment` to
+        // not-done tasks so a person counts whether they are the primary owner or an
+        // additional assignee; watchers do NOT count (they only follow). `estimated_hours`
+        // sums `task.estimate` where the unit is hours (the #346/#580 heavy lane authored
+        // estimate + estimate_unit). `weekly_hours` is the user's `user_capacity` row
+        // (LEFT JOIN — null when unset). due_at is timestamptz — bucket due-soon/overdue
+        // in SQL so the horizon is server-evaluated and timezone-correct. When `range` is
+        // given, scope load to tasks due in [from, to) (D2-F1 over a date range): tasks
+        // with no due date stay in (open work without a date still counts as load).
         const { rows } = await pool.query<{
           user_id: string;
           name: string;
+          estimated_hours: string;
+          weekly_hours: string | null;
           open_tasks: string;
           due_soon: string;
           overdue: string;
         }>(
           `SELECT u.id::text AS user_id,
                   coalesce(u.display_name, split_part(u.email, '@', 1)) AS name,
+                  coalesce(sum(t.estimate) FILTER (
+                    WHERE t.estimate IS NOT NULL AND t.estimate_unit = 'hours'
+                  ), 0)                                                 AS estimated_hours,
+                  uc.weekly_hours                                       AS weekly_hours,
                   count(*)                                              AS open_tasks,
                   count(*) FILTER (
                     WHERE t.due_at IS NOT NULL
@@ -1766,26 +1776,76 @@ export const postgresRepositories: Repositories = {
                     WHERE t.due_at IS NOT NULL AND t.due_at < now()
                   )                                                     AS overdue
              FROM work_assignment wa
-             JOIN app_user u ON u.id = wa.user_id
-             JOIN task t      ON t.id = wa.parent_id
+             JOIN app_user u       ON u.id = wa.user_id
+             JOIN task t           ON t.id = wa.parent_id
+             LEFT JOIN user_capacity uc ON uc.user_id = u.id
             WHERE wa.parent_type = 'task'
               AND wa.role IN ('primary', 'assignee')
               AND t.status <> 'done'
-            GROUP BY u.id, name
-            ORDER BY open_tasks DESC, name`,
+              AND ($1::date IS NULL OR t.due_at IS NULL OR
+                   (t.due_at >= $1::date AND t.due_at < ($2::date + interval '1 day')))
+            GROUP BY u.id, name, uc.weekly_hours
+            ORDER BY estimated_hours DESC, name`,
+          [range?.from ?? null, range?.to ?? null],
         );
         return rows.map((r) => ({
           userId: r.user_id,
           name: r.name,
+          estimatedHours: Number(r.estimated_hours),
+          weeklyHours: r.weekly_hours == null ? null : Number(r.weekly_hours),
           openTasks: Number(r.open_tasks),
           dueSoon: Number(r.due_soon),
           overdue: Number(r.overdue),
         }));
       } catch (err) {
-        // work_assignment (0099) may not be prod-applied yet → empty, not a 500.
+        // work_assignment / user_capacity / task.estimate may not be prod-applied
+        // yet (the #346/#580 migration lands this wave) → empty, not a 500.
         if (isSchemaLagError(err)) return [];
-        return mockRepositories.crm.listWorkload();
+        return mockRepositories.crm.listWorkload(range);
       }
+    },
+
+    // #591 user_capacity — per-user weekly-hours capacity (ADR-0069 D2)
+    async listUserCapacity(): Promise<UserCapacity[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listUserCapacity();
+      try {
+        const { rows } = await pool.query<{
+          user_id: string;
+          name: string;
+          weekly_hours: string | null;
+        }>(
+          `SELECT u.id::text AS user_id,
+                  coalesce(u.display_name, split_part(u.email, '@', 1)) AS name,
+                  uc.weekly_hours AS weekly_hours
+             FROM app_user u
+             LEFT JOIN user_capacity uc ON uc.user_id = u.id
+            ORDER BY name`,
+        );
+        return rows.map((r) => ({
+          userId: r.user_id,
+          name: r.name,
+          weeklyHours: r.weekly_hours == null ? null : Number(r.weekly_hours),
+        }));
+      } catch (err) {
+        // user_capacity (the #346/#580 migration) may not be prod-applied yet.
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listUserCapacity();
+      }
+    },
+
+    async setUserCapacity(userId: string, weeklyHours: number | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setUserCapacity(userId, weeklyHours);
+      // Upsert the user's weekly capacity; null clears it. UNIQUE(user_id) on
+      // user_capacity makes ON CONFLICT a clean overwrite.
+      await pool.query(
+        `INSERT INTO user_capacity (user_id, weekly_hours)
+         VALUES ($1, $2)
+         ON CONFLICT (user_id) DO UPDATE
+           SET weekly_hours = EXCLUDED.weekly_hours`,
+        [userId, weeklyHours],
+      );
     },
 
     async listProjectTaskDependencies(projectId: string): Promise<ProjectTaskDependencyEdge[]> {

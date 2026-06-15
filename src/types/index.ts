@@ -899,23 +899,42 @@ export interface ProjectTaskDependencyEdge {
 
 /**
  * One person's open-task load for the workload / capacity view (ADR-0069 D2,
- * #347). Pure read model over `work_assignment` + `task` — there is no
- * `user_capacity` table or `task.estimate` column yet (both are D1, #346), so
- * "load" is measured in OPEN TASK COUNTS, not estimated hours:
- *  - `openTasks`  — not-done tasks the user is attached to (primary or assignee).
- *  - `dueSoon`    — of those, the ones due within the next 7 days (a horizon
- *                   proxy for pressure until estimates land).
- *  - `overdue`    — of those, the ones whose due date is already past.
- * Over-allocation is classified by a task-count threshold (see `lib/workload.ts`)
- * as an honest stand-in for true hours-vs-capacity until D1 ships estimates +
- * `user_capacity.weekly_hours`. No new table; no writes.
+ * #591). Read model over `work_assignment` + `task`, now HOURS-based: load is the
+ * SUM of estimated hours (`task.estimate` where `estimate_unit = 'hours'`) over
+ * the open tasks the user is attached to, classified against that user's own
+ * `user_capacity.weekly_hours` (the #346/#580 heavy lane authored the table +
+ * column this wave). Counts are kept for context.
+ *  - `estimatedHours` — Σ `task.estimate` (hours-unit) over the user's open tasks
+ *                       whose due date falls in the scoped range (D2-F1 "over a
+ *                       date range"). The bar/verdict driver.
+ *  - `weeklyHours`    — the user's `user_capacity.weekly_hours` (the per-user
+ *                       over-allocation threshold). `null` when no capacity row.
+ *  - `openTasks`      — not-done tasks the user is attached to (primary/assignee),
+ *                       in range — kept as a secondary count.
+ *  - `dueSoon`        — of those, due within the next 7 days.
+ *  - `overdue`        — of those, already past due.
  */
 export interface WorkloadRow {
   userId: string;
   name: string; // display name (or email local-part fallback)
+  estimatedHours: number;
+  weeklyHours: number | null;
   openTasks: number;
   dueSoon: number;
   overdue: number;
+}
+
+/**
+ * A user's weekly capacity (#591) — one row of the `user_capacity` table
+ * (`{ user_id, weekly_hours }`, authored by the #346/#580 heavy lane this wave).
+ * `weekly_hours` is the per-user over-allocation threshold the workload view
+ * classifies summed estimated load against. The admin weekly-hours surface
+ * (`/projects/capacity`) reads + writes these.
+ */
+export interface UserCapacity {
+  userId: string;
+  name: string; // display name (or email local-part fallback)
+  weeklyHours: number | null; // null = no capacity row set yet
 }
 
 /**

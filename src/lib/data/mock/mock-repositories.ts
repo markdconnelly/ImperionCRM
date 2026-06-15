@@ -297,14 +297,29 @@ export const mockRepositories: Repositories = {
       return [];
     },
     async listWorkload() {
-      // Mock load (ADR-0069 D2, #347) so the workload view renders without a DB.
-      // Counts, not hours — estimates/`user_capacity` are D1 (#346). Ada is over-
-      // allocated, Grace near, Alan idle.
+      // Mock load (ADR-0069 D1/D2, #591) so the workload view renders without a DB.
+      // HOURS vs each user's weekly capacity (the #346/#580 heavy lane authors the
+      // table this wave). Ada is over (44h vs 40 cap), Grace near (34h vs 40), Alan
+      // idle, Edsger has no capacity set yet (weeklyHours null → ok).
       return [
-        { userId: "mock-user-ada", name: "Ada Lovelace", openTasks: 9, dueSoon: 4, overdue: 2 },
-        { userId: "mock-user-grace", name: "Grace Hopper", openTasks: 5, dueSoon: 2, overdue: 0 },
-        { userId: "mock-user-alan", name: "Alan Turing", openTasks: 1, dueSoon: 0, overdue: 0 },
+        { userId: "mock-user-ada", name: "Ada Lovelace", estimatedHours: 44, weeklyHours: 40, openTasks: 9, dueSoon: 4, overdue: 2 },
+        { userId: "mock-user-grace", name: "Grace Hopper", estimatedHours: 34, weeklyHours: 40, openTasks: 5, dueSoon: 2, overdue: 0 },
+        { userId: "mock-user-alan", name: "Alan Turing", estimatedHours: 6, weeklyHours: 40, openTasks: 1, dueSoon: 0, overdue: 0 },
+        { userId: "mock-user-edsger", name: "Edsger Dijkstra", estimatedHours: 12, weeklyHours: null, openTasks: 2, dueSoon: 1, overdue: 0 },
       ];
+    },
+    // #591 user_capacity — per-user weekly-hours capacity (ADR-0069 D2). Read returns
+    // a demo roster so the admin surface renders without a DB; write fails honestly.
+    async listUserCapacity() {
+      return [
+        { userId: "mock-user-ada", name: "Ada Lovelace", weeklyHours: 40 },
+        { userId: "mock-user-grace", name: "Grace Hopper", weeklyHours: 40 },
+        { userId: "mock-user-alan", name: "Alan Turing", weeklyHours: 40 },
+        { userId: "mock-user-edsger", name: "Edsger Dijkstra", weeklyHours: null },
+      ];
+    },
+    async setUserCapacity() {
+      throw new Error(NO_DB);
     },
     async listSalesTasks() {
       return [];

@@ -85,6 +85,9 @@ export const navHidden: NavItem[] = [
   // Workload / capacity view (ADR-0069 D2, #347) — reached from the project board
   // header; listed here so the top bar resolves its title (nested under /projects).
   { key: "workload", label: "Workload & capacity", icon: "Gauge", href: "/projects/workload" },
+  // Weekly-capacity admin (ADR-0069 D2, #591) — reached from the workload header;
+  // listed here so the top bar resolves its title (nested under /projects).
+  { key: "capacity", label: "Weekly capacity", icon: "Gauge", href: "/projects/capacity" },
   { key: "security", label: "Security", icon: "ShieldCheck", href: "/security" },
   { key: "leads", label: "Leads", icon: "UserPlus", href: "/leads" },
   { key: "consent", label: "Consent", icon: "FileCheck", href: "/consent" },
