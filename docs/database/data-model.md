@@ -1916,6 +1916,38 @@ the body is parsed, each handle resolved against `app_user`, and a link persiste
 
 App-native, not silver tier — no semantic-layer concept file applies.
 
+### File attachments (ADR-0064 A4, migration 9001 → 0100 at merge, #333)
+
+The fourth ADR-0064 slice adds **file attachments** on a work object — the same
+**polymorphic** shape as `work_comment`/`work_tag`/`work_assignment`. The
+migration number is a **placeholder (`9001`)** in the branch; the orchestrator
+claims the real next free number (expected `0100`) at merge (CLAUDE.md §10.3).
+
+- **`work_attachment`** — `{ id, parent_type (task|project|milestone, CHECK),
+  parent_id, storage_ref, filename, content_type, size_bytes (CHECK ≥ 0),
+  uploaded_by → app_user (ON DELETE SET NULL), deleted_at, created_at }`. No
+  DB-level FK on the parent (polymorphic, same tradeoff). The covering index
+  `(parent_type, parent_id, created_at DESC)` serves the per-object list.
+  Attachments **soft-delete** (`deleted_at`) so the activity trail is retained
+  (NFR-2).
+- **Storage contract.** The file **bytes live in Azure Blob, not Postgres** — this
+  table holds only metadata + an opaque `storage_ref` (the blob key the **backend**
+  mints a short-lived per-request **SAS** against; **no public URL, no SAS at
+  rest**). The GUI is storage-credential-free (ADR-0042): the upload-to-blob, the
+  authoritative **type allowlist + size cap**, and the **AV-scan hook** are backend
+  processes. Until that backend path lands, the GUI records metadata against a
+  `pending:` `storage_ref` and degrades gracefully (the house pattern) — the first
+  enforcement line (allowlist + cap) is in `src/lib/attachments.ts` (pure, tested),
+  applied in the upload server action.
+- **Removal is audited.** A remove soft-deletes (uploader-scoped unless admin) and
+  writes an `attachment.removed` `audit_log` event (`detail = { attachmentId,
+  filename }`) — so it surfaces in `work_activity_feed` with no view change (the A4
+  acceptance: removal audited + emits an activity event).
+
+App-native, not silver tier — no semantic-layer concept file applies (the gate
+does not flag a new polymorphic collaboration table, see
+`docs/operations/semantic-layer-gate.md`).
+
 ## Tags / labels — global vocabulary + polymorphic application (ADR-0065 B6, migration 0096)
 
 PM task-structure B6 adds **free-form, colour-coded tags** with a **global
