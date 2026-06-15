@@ -122,7 +122,8 @@ erDiagram
       uuid project_type_id FK "table, not enum (0058, ADR-0052)"
       uuid owner_user_id FK
       text name
-      text status "enum not_started|in_progress|blocked|complete"
+      text status "legacy enum not_started|in_progress|blocked|complete"
+      uuid status_def_id FK "SET NULL — configurable status (0104, ADR-0065 B5)"
       date target_live_date
       text notes
       timestamptz started_at
@@ -156,7 +157,8 @@ erDiagram
       uuid project_id FK "SET NULL — one task model (0058, ADR-0052)"
       uuid parent_task_id FK "CASCADE — subtask hierarchy (0095, ADR-0065 B1)"
       text title
-      text status
+      text status "legacy label open|in_progress|done"
+      uuid status_def_id FK "SET NULL — configurable status (0104, ADR-0065 B5)"
       text category "sales|project|onboarding|general"
       integer ordinal "sibling order under a parent (ADR-0065 B1)"
       text autotask_ticket_ref "on-demand push, unique (backend #19)"
@@ -182,6 +184,18 @@ erDiagram
       uuid interaction_id FK
       vector embedding
       text model
+    }
+    STATUS_DEF {
+      uuid id PK
+      text scope "global|project_type (0104, ADR-0065 B5)"
+      uuid project_type_id FK "CASCADE — null for global sets"
+      text context "task|project"
+      text key "stable machine key; unique per (context,scope,type)"
+      text label
+      text color
+      text category "todo|in_progress|done — the reporting partition"
+      integer ordinal "board column order"
+      integer wip_limit "optional per-status cap (ADR-0066 C1); null = none"
     }
     TAG {
       uuid id PK
@@ -209,6 +223,9 @@ erDiagram
     TASK ||--o{ TASK_DEPENDENCY   : "blocks (predecessor)"
     TASK ||--o{ TASK_DEPENDENCY   : "blocked by (successor)"
     APP_USER ||--o{ WORK_ASSIGNMENT : "assigned/watches via"
+    PROJECT_TYPE ||--o{ STATUS_DEF : "scopes status set (0104, ADR-0065 B5)"
+    STATUS_DEF ||--o{ TASK         : "configurable status"
+    STATUS_DEF ||--o{ PROJECT      : "configurable status"
 ```
 
 ### Multiple assignees & watchers (ADR-0065 B3, migration 0099, #337)

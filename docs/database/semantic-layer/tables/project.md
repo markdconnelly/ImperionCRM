@@ -4,7 +4,7 @@ title: project
 description: Delivery/onboarding workstream for an account — website system of record; one board across all project types.
 resource: ../../../decision-records/ADR-0020-delivery-project-model.md
 tags: [silver, delivery, project]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # project
@@ -31,7 +31,8 @@ user-creatable. Provenance links record what spawned the project (`source_assess
 | `opportunity_id` | uuid | FK → `opportunity` (nullable) |
 | `project_type_id` | uuid | FK → `project_type` |
 | `name` | text | |
-| `status` | enum | delivery lifecycle |
+| `status` | enum | legacy delivery lifecycle (`project_status`); authoritative during the compatibility window |
+| `status_def_id` | uuid | FK → `status_def` (configurable status, ADR-0065 B5); nullable, backfilled from `status` |
 | `owner_user_id` | uuid | FK → `app_user` |
 | `target_live_date` | date | |
 | `source_assessment_id` / `source_sbr_id` | uuid | what spawned it |
@@ -42,6 +43,11 @@ user-creatable. Provenance links record what spawned the project (`source_assess
 - `account_id` → `account`; `opportunity_id` → `opportunity`.
 - Children: `project_milestone`, `task` (`task.project_id`), `onboarding_step`, and the
   `project_provisioning` write-back sidecar (→ Autotask Project+Tasks).
+- `status_def_id` → `status_def` (configurable status, ADR-0065 B5): admin-definable
+  status set, optionally scoped per `project_type`. Reporting rolls up off
+  `status_def.category` (todo/in_progress/done), **not the label**. The legacy
+  `project_status` enum column stays authoritative during the compatibility window; the
+  FK is backfilled from it via the seeded global default set (no data loss).
 
 ## Notes
 
