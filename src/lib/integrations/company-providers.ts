@@ -36,6 +36,14 @@ export interface CompanyProvider {
   scopes: string[];
   /** Present for kind "credential". */
   fields?: CredentialField[];
+  /**
+   * A send-capable credential: its token grants OUTBOUND action (e.g. Meta DM
+   * replies — pipeline #89 / PR #113), not just read/ingest. Entering it is a
+   * Mark-approved security event. Flagged so the UI can mark it accordingly and so
+   * it is never treated as a routine, pollable ingest source (it has nothing
+   * polling it — the cadence selector would be meaningless).
+   */
+  sendCapable?: boolean;
 }
 
 /**
@@ -46,10 +54,14 @@ export interface CompanyProvider {
  * "Refresh now" control. Consent/OAuth providers (QBO, GDAP — `kind: "consent"`)
  * have nothing polling them: QBO refreshes on-demand and is bulk-pulled by the
  * on-prem pipeline, and GDAP is delegated admin consent. Rendering a poll cadence
- * for them is meaningless, so it is gated out here.
+ * for them is meaningless, so it is gated out here. A `sendCapable` credential
+ * (Meta DM token) is likewise not an ingest source — nothing polls it — so it is
+ * excluded too.
  */
-export function providerIsPollable(provider: Pick<CompanyProvider, "kind">): boolean {
-  return provider.kind === "credential";
+export function providerIsPollable(
+  provider: Pick<CompanyProvider, "kind" | "sendCapable">,
+): boolean {
+  return provider.kind === "credential" && provider.sendCapable !== true;
 }
 
 export const COMPANY_PROVIDERS: CompanyProvider[] = [
@@ -182,6 +194,41 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     scopes: ["compromises:read"],
     fields: [
       { name: "apiKey", label: "API key", secret: true, type: "password", required: true },
+    ],
+  },
+  {
+    key: "meta",
+    label: "Meta (Facebook / Instagram)",
+    icon: "MessageCircle",
+    kind: "credential",
+    // Send-capable: the Page token authorizes OUTBOUND DM replies, so the cloud
+    // pipeline stays dormant/fail-closed until this secret exists (pipeline #89 / PR #113).
+    sendCapable: true,
+    description:
+      "Meta (Facebook / Instagram) Page messaging — long-lived Page access token used to send " +
+      "Facebook & Instagram DM replies. SEND-CAPABLE: entering it is a Mark-approved security " +
+      "event (Meta App Review / Advanced Access for the messaging permissions must be granted " +
+      "first). Stored as the Key Vault secret conn-company-meta; the pipeline stays dormant " +
+      "until it exists.",
+    scopes: ["pages_messaging", "instagram_manage_messages"],
+    fields: [
+      {
+        name: "pageAccessToken",
+        label: "Page access token",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "Long-lived Facebook Page token granting pages_messaging / instagram_manage_messages.",
+      },
+      {
+        name: "pageId",
+        label: "Facebook Page ID",
+        secret: false,
+        type: "text",
+        required: true,
+        placeholder: "1234567890",
+        help: "The Facebook Page id the Instagram account is linked to.",
+      },
     ],
   },
 ];
