@@ -178,6 +178,7 @@ import type {
   WorkAssignments,
   WorkAssignmentRow,
   WorkRole,
+  WorkloadRow,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -1557,6 +1558,57 @@ export const postgresRepositories: Repositories = {
         throw err;
       } finally {
         client.release();
+      }
+    },
+
+    async listWorkload(): Promise<WorkloadRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listWorkload();
+      try {
+        // Per-user open-task load (ADR-0069 D2, #347). Join `work_assignment` to
+        // not-done tasks so a person counts whether they are the primary owner or
+        // an additional assignee; watchers do NOT count as load (they only follow).
+        // due_at is timestamptz — bucket against now()/now()+7d in SQL so the
+        // horizon is server-evaluated and timezone-correct. No `task.estimate` yet
+        // (D1, #346) → counts, not hours.
+        const { rows } = await pool.query<{
+          user_id: string;
+          name: string;
+          open_tasks: string;
+          due_soon: string;
+          overdue: string;
+        }>(
+          `SELECT u.id::text AS user_id,
+                  coalesce(u.display_name, split_part(u.email, '@', 1)) AS name,
+                  count(*)                                              AS open_tasks,
+                  count(*) FILTER (
+                    WHERE t.due_at IS NOT NULL
+                      AND t.due_at >= now()
+                      AND t.due_at < now() + interval '7 days'
+                  )                                                     AS due_soon,
+                  count(*) FILTER (
+                    WHERE t.due_at IS NOT NULL AND t.due_at < now()
+                  )                                                     AS overdue
+             FROM work_assignment wa
+             JOIN app_user u ON u.id = wa.user_id
+             JOIN task t      ON t.id = wa.parent_id
+            WHERE wa.parent_type = 'task'
+              AND wa.role IN ('primary', 'assignee')
+              AND t.status <> 'done'
+            GROUP BY u.id, name
+            ORDER BY open_tasks DESC, name`,
+        );
+        return rows.map((r) => ({
+          userId: r.user_id,
+          name: r.name,
+          openTasks: Number(r.open_tasks),
+          dueSoon: Number(r.due_soon),
+          overdue: Number(r.overdue),
+        }));
+      } catch (err) {
+        // work_assignment (0099) may not be prod-applied yet → empty, not a 500.
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listWorkload();
       }
     },
 

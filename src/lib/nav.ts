@@ -82,6 +82,9 @@ export const navHidden: NavItem[] = [
   // The delivery board (ADR-0080 §4/§7) — reached from the project board header;
   // listed here so the top bar resolves its title (nested under /projects).
   { key: "delivery", label: "Delivery board", icon: "PackageCheck", href: "/projects/delivery" },
+  // Workload / capacity view (ADR-0069 D2, #347) — reached from the project board
+  // header; listed here so the top bar resolves its title (nested under /projects).
+  { key: "workload", label: "Workload & capacity", icon: "Gauge", href: "/projects/workload" },
   { key: "security", label: "Security", icon: "ShieldCheck", href: "/security" },
   { key: "leads", label: "Leads", icon: "UserPlus", href: "/leads" },
   { key: "consent", label: "Consent", icon: "FileCheck", href: "/consent" },
