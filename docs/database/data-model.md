@@ -2150,6 +2150,41 @@ concept file applies. The admin definition surface is `/custom-fields` (linked f
 Settings → Tools & configuration). The per-object value read/write on the task/project
 detail and the reporting filter integration are tracked as a follow-up to #338.
 
+## Recurring tasks — series schedule + spawn-on-completion (ADR-0070 E2, migration 0110, #353)
+
+PM templates/recurrence E2 lets a task recur on a schedule. The GUI defines the
+schedule; the app **materialises** the next occurrence when the task is completed.
+
+- **`task_recurrence`** — one row per recurring **series**: `{ id, task_id → task
+  (ON DELETE CASCADE, **UNIQUE** = one live series per task), rule (RRULE subset),
+  next_run_at (date — the next occurrence's due date), ends_at? (series end date),
+  count_remaining? (CHECK ≥ 0 — how many MORE occurrences to spawn; NULL =
+  unbounded), created_at, updated_at }`. `rule` is an RFC-5545 **subset** —
+  `FREQ=DAILY|WEEKLY|MONTHLY;INTERVAL=n` — authored by the GUI and parsed by
+  [`src/lib/recurrence.ts`](../../src/lib/recurrence.ts) (no RRULE engine in the DB;
+  next-date math is DST-safe UTC arithmetic, with end-of-month clamping for MONTHLY).
+
+The series row is **attached to the task that currently holds it** (the UNIQUE
+`task_id`). On completion (`moveTaskAction` / edit-form status→done →
+`advanceTaskRecurrence`, a single transaction): the source task is cloned into the
+next instance (status reset to `open`, `due_at = next_run_at`, preserving any
+start→due span), the series row is **re-pointed** at the freshly-spawned task,
+`next_run_at` advances one period, and `count_remaining` decrements. The series is
+deleted once exhausted (`count_remaining` hits 0, or `next_run_at` passes
+`ends_at`) — that is "ending the series stops generation". Re-pointing on each spawn
+is the **idempotency guard**: completing an already-done task no longer owns the
+series, so it can never double-spawn.
+
+v1 ships daily/weekly/monthly + interval + end-by-date/count and edits the whole
+series; richer RRULE (BYDAY/BYMONTHDAY) and edit-this-vs-edit-series for a single
+spawned instance are documented follow-ups. A **scheduled backend catch-up job**
+(generate due occurrences for tasks left un-completed past `next_run_at`) is the
+sibling-repo half of E2 — filed separately; the on-completion spawn satisfies the
+#353 acceptance on its own. `task_recurrence` is an **app-native operational table,
+not silver tier** (like `time_entry` / `work_comment` / `notification`) — no
+semantic-layer concept file applies, and the migration only `REFERENCES task` (it
+does not alter the `task` concept).
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —

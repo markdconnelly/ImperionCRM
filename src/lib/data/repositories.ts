@@ -99,6 +99,8 @@ import type {
   TaskRow,
   TaskHierarchy,
   TaskDependencies,
+  TaskRecurrenceRow,
+  TaskRecurrenceInput,
   TaskTimeEntryRow,
   ProjectTimeRollup,
   ProjectBaselineRow,
@@ -641,6 +643,32 @@ export interface CrmRepository {
    * is actual-completion − planned go-live in whole days; otherwise null.
    */
   getProjectSlippage(projectId: string): Promise<ProjectSlippage | null>;
+
+  // Recurring tasks (ADR-0070 E2, #353)
+  /** The recurrence series owned by a task, or null if it doesn't recur. */
+  getTaskRecurrence(taskId: string): Promise<TaskRecurrenceRow | null>;
+  /**
+   * Create or replace a task's recurrence series (the GUI defines it). `task_id` is
+   * UNIQUE, so this upserts — re-saving edits the series in place.
+   */
+  upsertTaskRecurrence(input: TaskRecurrenceInput): Promise<void>;
+  /** Stop a task recurring (delete its series row). Idempotent. */
+  clearTaskRecurrence(taskId: string): Promise<void>;
+  /**
+   * Spawn the next occurrence when a recurring task is completed (#353 acceptance:
+   * "a weekly recurring task spawns the next instance on completion with the right
+   * due date; ending the series stops generation"). Transactional + idempotent:
+   *
+   *  - No series owned by `taskId` → no-op, returns null (so re-completing the same
+   *    task never double-spawns — the series row moved to the freshly-spawned task).
+   *  - Series exhausted (count_remaining hit 0, or next_run_at past ends_at) →
+   *    deletes the series, returns null (no further generation).
+   *  - Otherwise inserts a new task cloned from the source with due = next_run_at
+   *    (preserving any start→due span), RE-POINTS the series row at the new task,
+   *    advances next_run_at by one rule period, decrements count_remaining, and
+   *    deletes the series if that spawn was the last one. Returns the new task id.
+   */
+  advanceTaskRecurrence(taskId: string): Promise<string | null>;
 
   // Subtasks / task hierarchy (ADR-0065 B1, #335)
   /** A task's child tasks, ordered by ordinal then title, with the n/m rollup. */

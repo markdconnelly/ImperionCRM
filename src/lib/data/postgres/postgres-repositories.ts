@@ -28,6 +28,7 @@ import {
   rolledUpPercent as goalRolledUpPercent,
   displayPercent as goalDisplayPercent,
 } from "@/lib/goals";
+import { parseRRule, nextOccurrence } from "@/lib/recurrence";
 import type {
   AccountDetail,
   AccountInput,
@@ -200,6 +201,8 @@ import type {
   TaskHierarchy,
   TaskDependencies,
   TaskDependencyRow,
+  TaskRecurrenceRow,
+  TaskRecurrenceInput,
   WorkAssignments,
   WorkAssignmentRow,
   WorkRole,
@@ -1560,6 +1563,159 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return null;
+      }
+    },
+
+    // ── Recurring tasks (ADR-0070 E2, #353) ────────────────────────────────────
+    async getTaskRecurrence(taskId: string): Promise<TaskRecurrenceRow | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getTaskRecurrence(taskId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          task_id: string;
+          rule: string;
+          next_run_at: Date;
+          ends_at: Date | null;
+          count_remaining: number | null;
+        }>(
+          `SELECT id, task_id, rule, next_run_at, ends_at, count_remaining
+             FROM task_recurrence WHERE task_id = $1`,
+          [taskId],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          taskId: r.task_id,
+          rule: r.rule,
+          nextRunAt: fmtDate(r.next_run_at) ?? "",
+          endsAt: fmtDate(r.ends_at),
+          countRemaining: r.count_remaining,
+        };
+      } catch (err) {
+        // task_recurrence (0110) may not be prod-applied yet → no series, not a 500.
+        if (isSchemaLagError(err)) return null;
+        return mockRepositories.crm.getTaskRecurrence(taskId);
+      }
+    },
+
+    async upsertTaskRecurrence(input: TaskRecurrenceInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.upsertTaskRecurrence(input);
+      // task_id is UNIQUE → re-saving the recurrence edits the series in place.
+      await pool.query(
+        `INSERT INTO task_recurrence (task_id, rule, next_run_at, ends_at, count_remaining)
+         VALUES ($1, $2, $3::date, $4::date, $5)
+         ON CONFLICT (task_id) DO UPDATE
+            SET rule = EXCLUDED.rule,
+                next_run_at = EXCLUDED.next_run_at,
+                ends_at = EXCLUDED.ends_at,
+                count_remaining = EXCLUDED.count_remaining,
+                updated_at = now()`,
+        [input.taskId, input.rule, input.nextRunAt, input.endsAt, input.countRemaining],
+      );
+    },
+
+    async clearTaskRecurrence(taskId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.clearTaskRecurrence(taskId);
+      await pool.query(`DELETE FROM task_recurrence WHERE task_id = $1`, [taskId]);
+    },
+
+    async advanceTaskRecurrence(taskId: string): Promise<string | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.advanceTaskRecurrence(taskId);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Lock the series owned by the completed task. Absent → this task does not
+        // own a (live) series, so completing it spawns nothing (idempotent: the row
+        // moved to the previously-spawned task).
+        const { rows } = await client.query<{
+          id: string;
+          rule: string;
+          next_run_at: Date;
+          ends_at: Date | null;
+          count_remaining: number | null;
+        }>(
+          `SELECT id, rule, next_run_at, ends_at, count_remaining
+             FROM task_recurrence WHERE task_id = $1 FOR UPDATE`,
+          [taskId],
+        );
+        const r = rows[0];
+        if (!r) {
+          await client.query("COMMIT");
+          return null;
+        }
+
+        const rule = parseRRule(r.rule);
+        const nextRunAt = fmtDate(r.next_run_at) ?? "";
+        const endsAt = fmtDate(r.ends_at);
+        // Exhausted? (cap hit, end date passed, or an unparseable rule) → stop the
+        // series; the already-spawned task is the final occurrence.
+        const exhausted =
+          !rule ||
+          (r.count_remaining != null && r.count_remaining <= 0) ||
+          (endsAt != null && nextRunAt > endsAt);
+        if (exhausted) {
+          await client.query(`DELETE FROM task_recurrence WHERE id = $1`, [r.id]);
+          await client.query("COMMIT");
+          return null;
+        }
+
+        // Clone the source task into the next occurrence: due = next_run_at,
+        // preserving any start→due span (newStart = next_run_at − span). status
+        // resets to 'open'; ordinal mirrors createTask. RETURNING the new id.
+        const ins = await client.query<{ id: string }>(
+          `INSERT INTO task (account_id, title, detail, status, category, due_at, start_at,
+                             estimate, estimate_unit, project_id, parent_task_id, ordinal)
+           SELECT account_id, title, detail, 'open', category,
+                  $2::date,
+                  CASE WHEN start_at IS NOT NULL AND due_at IS NOT NULL
+                       THEN $2::date - (due_at::date - start_at) END,
+                  estimate, estimate_unit, project_id, parent_task_id,
+                  CASE WHEN parent_task_id IS NULL THEN 0
+                       ELSE COALESCE((SELECT max(ordinal) + 1 FROM task c
+                                       WHERE c.parent_task_id = task.parent_task_id), 0)
+                  END
+             FROM task WHERE id = $1
+           RETURNING id`,
+          [taskId, nextRunAt],
+        );
+        const newId = ins.rows[0]?.id ?? null;
+        if (!newId) {
+          // Source task vanished mid-transaction → nothing to recur.
+          await client.query("ROLLBACK");
+          return null;
+        }
+
+        const newNext = nextOccurrence(rule, nextRunAt);
+        const newCount = r.count_remaining != null ? r.count_remaining - 1 : null;
+        // Will the series outlive this spawn? Stop if the cap is now spent or the
+        // following occurrence would pass the end date.
+        const continues =
+          (newCount == null || newCount > 0) && (endsAt == null || newNext <= endsAt);
+        if (continues) {
+          // Re-point the series at the freshly-spawned (now-live) task.
+          await client.query(
+            `UPDATE task_recurrence
+                SET task_id = $2, next_run_at = $3::date, count_remaining = $4, updated_at = now()
+              WHERE id = $1`,
+            [r.id, newId, newNext, newCount],
+          );
+        } else {
+          await client.query(`DELETE FROM task_recurrence WHERE id = $1`, [r.id]);
+        }
+        await client.query("COMMIT");
+        return newId;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        // Schema not applied yet → silently no-op (completion still succeeds).
+        if (isSchemaLagError(err)) return null;
+        throw err;
+      } finally {
+        client.release();
       }
     },
 

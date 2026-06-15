@@ -9,6 +9,7 @@ import { str, strOr, strOrNull, intOr, checkbox } from "@/lib/form-data";
 import { auth } from "@/auth";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 import type { TaskInput } from "@/lib/data/repositories";
+import { formatRRule, nextOccurrence, type RecurrenceFreq } from "@/lib/recurrence";
 
 function parse(formData: FormData): TaskInput {
   return {
@@ -49,6 +50,11 @@ export async function updateTaskAction(formData: FormData) {
   if (before && before.status !== input.status) {
     await emitTaskStatusEvent(work, id, before.status, input.status);
   }
+  // Completing a recurring task from the edit form spawns the next occurrence,
+  // same as the kanban drag (#353). Best-effort — never fail the edit.
+  if (before && before.status !== "done" && input.status === "done") {
+    await spawnRecurrenceOnComplete(id);
+  }
   revalidatePath("/tasks");
   revalidatePath("/projects/[id]", "page");
   redirect("/tasks");
@@ -88,8 +94,84 @@ export async function moveTaskAction(id: string, status: string) {
   if (prevStatus !== null && prevStatus !== status) {
     await emitTaskStatusEvent(work, taskId, prevStatus, status);
   }
+  // On a real X→done move, spawn the next occurrence of a recurring task (#353
+  // acceptance). The data layer is idempotent + best-effort here so a board drag
+  // never fails on a recurrence hiccup.
+  if (prevStatus !== null && prevStatus !== "done" && status === "done") {
+    await spawnRecurrenceOnComplete(taskId);
+  }
   revalidatePath("/tasks");
   revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Spawn the next instance of a recurring task on completion (ADR-0070 E2, #353).
+ * The data layer holds the idempotency + stop logic; this wrapper just keeps the
+ * spawn off the critical path — a failure logs and is swallowed so completing the
+ * task always succeeds.
+ */
+async function spawnRecurrenceOnComplete(taskId: string) {
+  try {
+    const { crm } = getRepositories();
+    await crm.advanceTaskRecurrence(taskId);
+  } catch (err) {
+    console.error(`[tasks] recurrence spawn failed for ${taskId}:`, err);
+  }
+}
+
+/** Recurrence frequencies the GUI offers (the RRULE-subset, ADR-0070 E2). */
+const RECUR_FREQS: readonly RecurrenceFreq[] = ["DAILY", "WEEKLY", "MONTHLY"];
+
+/**
+ * Define / edit / clear a task's recurrence series from the edit page (#353). The
+ * GUI authors the schedule; the backend materialises occurrences on completion.
+ *
+ *  - `repeat` = "none" (or absent) clears the series.
+ *  - Otherwise it is a frequency (daily|weekly|monthly) + interval, serialised to
+ *    the stored RRULE subset. `next_run_at` is derived = one period after the
+ *    task's current due date (or today if it has none) — the due date the next
+ *    spawned instance will carry.
+ *  - End condition: `endMode` = "date" sets `ends_at`; "count" sets
+ *    `count_remaining` (how many MORE occurrences to spawn); "never" leaves both
+ *    null (unbounded).
+ *
+ * Same `delivery:write` audited path as the rest of task mutation.
+ */
+export async function setTaskRecurrenceAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const taskId = String(formData.get("taskId") ?? "").trim();
+  if (!taskId) return;
+  const { crm } = getRepositories();
+
+  const repeat = String(formData.get("repeat") ?? "none").trim().toUpperCase();
+  if (repeat === "NONE" || !RECUR_FREQS.includes(repeat as RecurrenceFreq)) {
+    await crm.clearTaskRecurrence(taskId);
+    revalidatePath(`/tasks/${taskId}/edit`);
+    revalidatePath("/tasks");
+    return;
+  }
+
+  const interval = Math.max(1, intOr(formData, "interval", 1));
+  const rule = formatRRule({ freq: repeat as RecurrenceFreq, interval });
+
+  // Base the first spawn on the task's due date, else today (server clock).
+  const task = await crm.getTask(taskId);
+  const base = task?.dueAt ?? new Date().toISOString().slice(0, 10);
+  const nextRunAt = nextOccurrence({ freq: repeat as RecurrenceFreq, interval }, base);
+
+  const endMode = String(formData.get("endMode") ?? "never").trim();
+  let endsAt: string | null = null;
+  let countRemaining: number | null = null;
+  if (endMode === "date") {
+    endsAt = strOrNull(formData, "endDate");
+  } else if (endMode === "count") {
+    const n = intOr(formData, "endCount", 0);
+    countRemaining = n > 0 ? n : null;
+  }
+
+  await crm.upsertTaskRecurrence({ taskId, rule, nextRunAt, endsAt, countRemaining });
+  revalidatePath(`/tasks/${taskId}/edit`);
+  revalidatePath("/tasks");
 }
 
 /**
