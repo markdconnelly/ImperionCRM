@@ -594,6 +594,65 @@ export const mockRepositories: Repositories = {
       // pretend to persist (mirrors createProject / createDeliveryTemplate).
       throw new Error(NO_DB);
     },
+    // Project templates (ADR-0070 E1, #352) — one seed so the manager/picker render.
+    async listProjectTemplates() {
+      return [
+        {
+          id: "ptpl-implementation",
+          key: "implementation",
+          name: "Implementation",
+          description: "Standard 4-milestone implementation playbook.",
+          projectTypeId: null,
+          projectTypeName: null,
+          isProtected: false,
+          milestoneCount: 4,
+          itemCount: 0,
+        },
+        {
+          id: "ptpl-standard_msp",
+          key: "standard_msp",
+          name: "Standard MSP Onboarding",
+          description: "Seeded protected default — delegates to the onboarding playbook.",
+          projectTypeId: null,
+          projectTypeName: null,
+          isProtected: true,
+          milestoneCount: 9,
+          itemCount: 0,
+        },
+      ];
+    },
+    async getProjectTemplate(id: string) {
+      if (id !== "ptpl-implementation") return null;
+      const ms = ["Discovery", "Build", "Validate", "Go-live"];
+      return {
+        id: "ptpl-implementation",
+        key: "implementation",
+        name: "Implementation",
+        description: "Standard 4-milestone implementation playbook.",
+        projectTypeId: null,
+        projectTypeName: null,
+        isProtected: false,
+        items: ms.map((name, i) => ({
+          id: `ptpl-impl-m${i}`,
+          parentId: null,
+          kind: "milestone" as const,
+          ordinal: i,
+          title: name,
+          offsetDays: i * 7,
+          durationDays: 7,
+        })),
+      };
+    },
+    async createProjectTemplate() {
+      throw new Error(NO_DB);
+    },
+    async deleteProjectTemplate() {
+      throw new Error(NO_DB);
+    },
+    async instantiateProjectTemplate() {
+      // Writes a project + milestones/tasks in one transaction — needs a database.
+      throw new Error(NO_DB);
+    },
     // Delivery board (#568) — no demo provisioned projects, so the read returns
     // empty (the board renders its empty state); the fire-intent write needs a
     // database, so it fails honestly rather than pretend to persist.

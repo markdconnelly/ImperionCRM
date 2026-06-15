@@ -58,6 +58,8 @@ import type {
   StatusDefRow,
   DeliveryInstantiationInput,
   DeliveryTemplateInput,
+  ProjectTemplateInput,
+  ProjectTemplateInstantiationInput,
   ExpenseItemInput,
   ExpenseCorrection,
   ExpenseCategoryMappingInput,
@@ -116,6 +118,9 @@ import type {
   CountDatum,
   CurrentConsentRow,
   DeliveryTemplateRow,
+  ProjectTemplateRow,
+  ProjectTemplateDetail,
+  TemplateItem,
   TimesheetRow,
   TimesheetDetail,
   TimesheetReviewRow,
@@ -3231,6 +3236,247 @@ export const postgresRepositories: Repositories = {
           ],
         );
 
+        await client.query("COMMIT");
+        return projectId;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    // ── Project templates (ADR-0070 E1, migration 0109, #352) ───────────────────
+    async listProjectTemplates(opts?: { projectTypeId?: string }): Promise<ProjectTemplateRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listProjectTemplates(opts);
+      try {
+        const params: unknown[] = [];
+        let where = "";
+        if (opts?.projectTypeId) {
+          // A type filter matches templates bound to that type OR unbound (any-type).
+          params.push(opts.projectTypeId);
+          where = `WHERE (pt.project_type_id = $1 OR pt.project_type_id IS NULL)`;
+        }
+        const { rows } = await pool.query<{
+          id: string;
+          key: string;
+          name: string;
+          description: string | null;
+          project_type_id: string | null;
+          project_type_name: string | null;
+          is_protected: boolean;
+          milestone_count: string;
+          item_count: string;
+        }>(
+          `SELECT pt.id, pt.key, pt.name, pt.description, pt.project_type_id,
+                  ty.name AS project_type_name, pt.is_protected,
+                  count(ti.id) FILTER (WHERE ti.kind = 'milestone')          AS milestone_count,
+                  count(ti.id) FILTER (WHERE ti.kind IN ('step', 'task'))    AS item_count
+           FROM project_template pt
+           LEFT JOIN project_type ty ON ty.id = pt.project_type_id
+           LEFT JOIN template_item ti ON ti.template_id = pt.id
+           ${where}
+           GROUP BY pt.id, ty.name
+           ORDER BY pt.is_protected DESC, pt.name`,
+          params,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          key: r.key,
+          name: r.name,
+          description: r.description,
+          projectTypeId: r.project_type_id,
+          projectTypeName: r.project_type_name,
+          isProtected: r.is_protected,
+          milestoneCount: Number(r.milestone_count),
+          itemCount: Number(r.item_count),
+        }));
+      } catch {
+        return mockRepositories.crm.listProjectTemplates(opts);
+      }
+    },
+
+    async getProjectTemplate(id: string): Promise<ProjectTemplateDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getProjectTemplate(id);
+      const { rows: tRows } = await pool.query<{
+        id: string;
+        key: string;
+        name: string;
+        description: string | null;
+        project_type_id: string | null;
+        project_type_name: string | null;
+        is_protected: boolean;
+      }>(
+        `SELECT pt.id, pt.key, pt.name, pt.description, pt.project_type_id,
+                ty.name AS project_type_name, pt.is_protected
+         FROM project_template pt
+         LEFT JOIN project_type ty ON ty.id = pt.project_type_id
+         WHERE pt.id = $1`,
+        [id],
+      );
+      const t = tRows[0];
+      if (!t) return null;
+      // parent_id NULLS FIRST so a milestone always precedes its children; then by
+      // ordinal so the tree rebuilds in authoring order.
+      const { rows: iRows } = await pool.query<{
+        id: string;
+        parent_id: string | null;
+        kind: "milestone" | "step" | "task";
+        ordinal: number;
+        payload: Record<string, unknown>;
+      }>(
+        `SELECT id, parent_id, kind, ordinal, payload
+         FROM template_item WHERE template_id = $1
+         ORDER BY parent_id NULLS FIRST, ordinal`,
+        [id],
+      );
+      const items: TemplateItem[] = iRows.map((r) => {
+        const p = r.payload ?? {};
+        return {
+          id: r.id,
+          parentId: r.parent_id,
+          kind: r.kind,
+          ordinal: Number(r.ordinal),
+          title: String((p.title ?? p.name ?? "") as string),
+          offsetDays: Number((p.offsetDays ?? 0) as number),
+          durationDays: Number((p.durationDays ?? 0) as number),
+        };
+      });
+      return {
+        id: t.id,
+        key: t.key,
+        name: t.name,
+        description: t.description,
+        projectTypeId: t.project_type_id,
+        projectTypeName: t.project_type_name,
+        isProtected: t.is_protected,
+        items,
+      };
+    },
+
+    async createProjectTemplate(input: ProjectTemplateInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createProjectTemplate(input);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO project_template (key, name, description, project_type_id, is_protected)
+           VALUES ($1, $2, $3, $4, false)
+           RETURNING id`,
+          [input.key, input.name, nullIfEmpty(input.description), input.projectTypeId],
+        );
+        const templateId = rows[0].id;
+        let mOrd = 0;
+        for (const m of input.milestones) {
+          const { rows: mRows } = await client.query<{ id: string }>(
+            `INSERT INTO template_item (template_id, parent_id, kind, ordinal, payload)
+             VALUES ($1, NULL, 'milestone', $2, $3::jsonb) RETURNING id`,
+            [
+              templateId,
+              mOrd++,
+              JSON.stringify({ name: m.name, offsetDays: m.offsetDays, durationDays: m.durationDays }),
+            ],
+          );
+          const milestoneId = mRows[0].id;
+          let cOrd = 0;
+          for (const c of m.items) {
+            await client.query(
+              `INSERT INTO template_item (template_id, parent_id, kind, ordinal, payload)
+               VALUES ($1, $2, $3, $4, $5::jsonb)`,
+              [
+                templateId,
+                milestoneId,
+                c.kind,
+                cOrd++,
+                JSON.stringify({ title: c.title, offsetDays: c.offsetDays, durationDays: c.durationDays }),
+              ],
+            );
+          }
+        }
+        await client.query("COMMIT");
+        return templateId;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteProjectTemplate(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteProjectTemplate(id);
+      // CASCADE drops template_item rows. A protected (seeded) template is undeletable.
+      const { rowCount } = await pool.query(
+        `DELETE FROM project_template WHERE id = $1 AND is_protected = false`,
+        [id],
+      );
+      if (!rowCount) throw new Error("Template not found, or it is a protected default.");
+    },
+
+    async instantiateProjectTemplate(input: ProjectTemplateInstantiationInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.instantiateProjectTemplate(input);
+      const startDate = /^\d{4}-\d{2}-\d{2}$/.test(input.startDate)
+        ? input.startDate
+        : new Date().toISOString().slice(0, 10);
+
+      const template = await this.getProjectTemplate(input.projectTemplateId);
+      if (!template) throw new Error(`Project template ${input.projectTemplateId} not found.`);
+
+      // The protected onboarding default carries no items: create the project, then
+      // delegate to the hard-coded playbook (no behaviour change, no drift — ADR-0070
+      // E1-F4). Two transactions are fine: the project is committed before the
+      // playbook is applied (idempotent), mirroring the onboarding new-project flow.
+      if (template.isProtected && template.items.length === 0) {
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO project (account_id, name, project_type_id, status, started_at, completed_at)
+           VALUES ($1, $2, $3, 'not_started'::project_status, NULL, NULL)
+           RETURNING id`,
+          [input.accountId, input.name, input.projectTypeId],
+        );
+        const projectId = rows[0].id;
+        await this.applyOnboardingTemplate(projectId, startDate);
+        return projectId;
+      }
+
+      // Generic template: snapshot the tree onto a new project in one transaction.
+      const milestones = template.items.filter((i) => i.kind === "milestone");
+      const childrenOf = (mid: string) =>
+        template.items.filter((i) => i.parentId === mid).sort((a, b) => a.ordinal - b.ordinal);
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows: projRows } = await client.query<{ id: string }>(
+          `INSERT INTO project (account_id, name, project_type_id, status, started_at, completed_at)
+           VALUES ($1, $2, $3, 'not_started'::project_status, NULL, NULL)
+           RETURNING id`,
+          [input.accountId, input.name, input.projectTypeId],
+        );
+        const projectId = projRows[0].id;
+
+        let ordinal = 1;
+        for (const m of milestones.sort((a, b) => a.ordinal - b.ordinal)) {
+          const mStart = addDays(startDate, m.offsetDays);
+          const mDue = addDays(mStart, m.durationDays);
+          await client.query(
+            `INSERT INTO project_milestone (project_id, name, ordinal, status, health, start_at, due_at)
+             VALUES ($1, $2, $3, 'not_started', 'amber', $4::date, $5::date)`,
+            [projectId, m.title, ordinal++, mStart, mDue],
+          );
+          for (const c of childrenOf(m.id)) {
+            const due = addDays(mStart, c.offsetDays + c.durationDays);
+            await client.query(
+              `INSERT INTO task (account_id, project_id, title, status, category, due_at)
+               VALUES ($1, $2, $3, 'open', 'project'::task_category, $4::date)`,
+              [input.accountId, projectId, c.title, due],
+            );
+          }
+        }
         await client.query("COMMIT");
         return projectId;
       } catch (e) {

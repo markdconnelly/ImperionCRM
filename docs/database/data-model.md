@@ -350,6 +350,24 @@ erDiagram
       text ticket_title "defaults to task title"
       integer ticket_lead_days "JIT window before task start"
     }
+    PROJECT_TEMPLATE ||--o{ TEMPLATE_ITEM : "tree (milestone → step|task)"
+    TEMPLATE_ITEM ||--o{ TEMPLATE_ITEM : "parent_ref (milestone owns children)"
+    PROJECT_TYPE ||--o{ PROJECT_TEMPLATE : "optional binding (picker filter)"
+    PROJECT_TEMPLATE {
+      uuid id PK
+      text key "UNIQUE"
+      text name
+      uuid project_type_id FK "SET NULL — NULL = any type"
+      boolean is_protected "seeded onboarding default — undeletable (0109, ADR-0070 E1)"
+    }
+    TEMPLATE_ITEM {
+      uuid id PK
+      uuid template_id FK "CASCADE"
+      uuid parent_id FK "self-FK (parent_ref): NULL = milestone"
+      text kind "milestone|step|task"
+      integer ordinal "position among siblings"
+      jsonb payload "snapshot fields {name|title, offsetDays, durationDays}"
+    }
 ```
 
 `project_provisioning` (0082) gains `delivery_template_id` (provenance) and a **hard
