@@ -818,6 +818,27 @@ export interface ProjectTaskDependencyEdge {
 }
 
 /**
+ * One person's open-task load for the workload / capacity view (ADR-0069 D2,
+ * #347). Pure read model over `work_assignment` + `task` — there is no
+ * `user_capacity` table or `task.estimate` column yet (both are D1, #346), so
+ * "load" is measured in OPEN TASK COUNTS, not estimated hours:
+ *  - `openTasks`  — not-done tasks the user is attached to (primary or assignee).
+ *  - `dueSoon`    — of those, the ones due within the next 7 days (a horizon
+ *                   proxy for pressure until estimates land).
+ *  - `overdue`    — of those, the ones whose due date is already past.
+ * Over-allocation is classified by a task-count threshold (see `lib/workload.ts`)
+ * as an honest stand-in for true hours-vs-capacity until D1 ships estimates +
+ * `user_capacity.weekly_hours`. No new table; no writes.
+ */
+export interface WorkloadRow {
+  userId: string;
+  name: string; // display name (or email local-part fallback)
+  openTasks: number;
+  dueSoon: number;
+  overdue: number;
+}
+
+/**
  * A row in the Sales Queue (ADR-0052 §6) — an open `category='sales'` task with
  * its owner and deal context. Pure read model; no new tables.
  */

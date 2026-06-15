@@ -98,6 +98,7 @@ import type {
   TaskDependencies,
   WorkAssignments,
   WorkRole,
+  WorkloadRow,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -555,6 +556,15 @@ export interface CrmRepository {
    * `role` is fixed to 'primary' — the param documents intent at the call site.
    */
   setTaskPrimary(taskId: string, userId: string, role: Extract<WorkRole, "primary">): Promise<void>;
+  /**
+   * Per-user open-task load for the workload / capacity view (ADR-0069 D2, #347).
+   * One row per app_user attached to at least one not-done task (as primary OR
+   * assignee, via `work_assignment`), with that user's open-task count, the count
+   * due within the next 7 days, and the count already overdue. Pure read over
+   * `work_assignment` + `task`; no `user_capacity` / `task.estimate` (those are
+   * D1, #346) — load is COUNTS, not hours. No writes, no migration.
+   */
+  listWorkload(): Promise<WorkloadRow[]>;
 
   // Sales Activity (ADR-0052 §6) — the Sales Queue read model + its two writes
   /** Open `category='sales'` tasks with owner + deal context (the Sales Queue). */

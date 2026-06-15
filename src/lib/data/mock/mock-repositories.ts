@@ -229,6 +229,16 @@ export const mockRepositories: Repositories = {
     async listProjectTaskDependencies() {
       return [];
     },
+    async listWorkload() {
+      // Mock load (ADR-0069 D2, #347) so the workload view renders without a DB.
+      // Counts, not hours — estimates/`user_capacity` are D1 (#346). Ada is over-
+      // allocated, Grace near, Alan idle.
+      return [
+        { userId: "mock-user-ada", name: "Ada Lovelace", openTasks: 9, dueSoon: 4, overdue: 2 },
+        { userId: "mock-user-grace", name: "Grace Hopper", openTasks: 5, dueSoon: 2, overdue: 0 },
+        { userId: "mock-user-alan", name: "Alan Turing", openTasks: 1, dueSoon: 0, overdue: 0 },
+      ];
+    },
     async listSalesTasks() {
       return [];
     },
