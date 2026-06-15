@@ -1,8 +1,4 @@
--- 9001 configurable statuses per project type (ADR-0065 B5, issue #339)
---
--- PLACEHOLDER NUMBER — the orchestrator renumbers this to the next free slot at
--- merge (concurrency contract §10.3); do not treat 9001 as final. Referenced as
--- 9001 in this header only.
+-- 0102 configurable statuses per project type (ADR-0065 B5, issue #339)
 --
 -- PM task structure B5 (ADR-0065): today's status values are hard-coded — `task.status`
 -- is a free `text` column (open|in_progress|done, 0007) and `project.status` is the
