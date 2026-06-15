@@ -1,6 +1,6 @@
--- 9001 tags / labels (ADR-0065 B6, issue #340)
+-- 0096 tags / labels (ADR-0065 B6, issue #340)
 -- PLACEHOLDER NUMBER — the orchestrator renumbers this to the next free slot at
--- merge (concurrency contract §10.3); do not treat 9001 as final.
+-- merge (concurrency contract §10.3); do not treat 0096 as final.
 --
 -- PM task-structure B6 (ADR-0065): free-form, colour-coded tags with a GLOBAL
 -- vocabulary, applied to work objects (tasks / projects) across the system, so a

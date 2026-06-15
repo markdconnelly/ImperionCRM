@@ -185,7 +185,7 @@ erDiagram
     }
     TAG {
       uuid id PK
-      text label "unique on lower(label) — global vocab (9001, ADR-0065 B6)"
+      text label "unique on lower(label) — global vocab (0096, ADR-0065 B6)"
       text color "design-token name, not hex"
       uuid created_by FK "SET NULL"
     }
@@ -1844,7 +1844,7 @@ cannot inject script. Mentions (A2), notifications (A3) and attachments (A4) are
 separate ADR-0064 follow-ups, not in this slice (#330). These are **app-native
 tables, not silver tier** — no semantic-layer concept file applies.
 
-## Tags / labels — global vocabulary + polymorphic application (ADR-0065 B6, migration 9001)
+## Tags / labels — global vocabulary + polymorphic application (ADR-0065 B6, migration 0096)
 
 PM task-structure B6 adds **free-form, colour-coded tags** with a **global
 vocabulary**, applied to work objects (task / project) across the system — distinct
