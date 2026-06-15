@@ -242,6 +242,17 @@ export const mockRepositories: Repositories = {
     async deleteTask() {
       throw new Error(NO_DB);
     },
+    async listTaskTimeEntries() {
+      // No DB: no logged time (ADR-0069 D1, #346). Read returns empty, never throws.
+      return [];
+    },
+    async logTime() {
+      throw new Error(NO_DB);
+    },
+    async getProjectTimeRollup() {
+      // No DB: nothing logged, nothing estimated (#346 rollup).
+      return { loggedMinutes: 0, estimateMinutes: null };
+    },
     async getTaskChildren(parentId: string) {
       return { parentId, children: [], total: 0, done: 0 };
     },

@@ -66,6 +66,9 @@ describe("addSubtaskAction", () => {
       dueAt: "2026-07-01",
       projectId: "proj-1",
       parentTaskId: "p1",
+      startAt: null,
+      estimate: null,
+      estimateUnit: null,
     });
     expect(h.revalidatePath).toHaveBeenCalledWith("/tasks");
   });

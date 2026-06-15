@@ -148,6 +148,8 @@ export async function createProjectTaskAction(formData: FormData) {
   const accountId = String(formData.get("accountId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const dueAt = String(formData.get("dueAt") ?? "").trim();
+  const startAt = String(formData.get("startAt") ?? "").trim();
+  const estimate = String(formData.get("estimate") ?? "").trim();
   if (!projectId || !title) return;
   const { crm } = getRepositories();
   await crm.createTask({
@@ -158,6 +160,10 @@ export async function createProjectTaskAction(formData: FormData) {
     category: "project", // tasks created from a project (ADR-0052 §2)
     dueAt: dueAt === "" ? null : dueAt,
     projectId,
+    // Start date (#580) + estimate (ADR-0069 D1, #346) from the project quick-add.
+    startAt: startAt === "" ? null : startAt,
+    estimate: estimate === "" ? null : estimate,
+    estimateUnit: estimate === "" ? null : "hours",
   });
   revalidatePath("/projects/[id]", "page");
   revalidatePath("/tasks");
