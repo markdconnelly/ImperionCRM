@@ -68,12 +68,22 @@ export default async function ProjectsPage({
     (swim === "account" || swim === "owner" || swim === "type") && swim !== activeGroup
       ? swim
       : "none";
-  const { crm } = getRepositories();
+  const { crm, tags } = getRepositories();
   const [roles, projects, types] = await Promise.all([
     getSessionRoles(),
     crm.listProjects(),
     crm.listProjectTypes(),
   ]);
+  // Tag chips for the board's rich cards (#439 C1-F4) — one bulk read over the
+  // visible projects, mirroring the tasks page (ADR-0065 B6, #340). Only needed
+  // for the board view; the list view renders its own table.
+  const tagsByProject =
+    activeView === "board"
+      ? await tags.listTagsForMany(
+          "project",
+          projects.map((p) => p.id),
+        )
+      : {};
   const canWrite = canManageProjects(roles);
   const open = projects.filter((p) => p.status !== "complete").length;
 
@@ -180,6 +190,7 @@ export default async function ProjectsPage({
           types={types}
           groupBy={activeGroup}
           swimBy={activeSwim}
+          tagsByProject={tagsByProject}
           moveStatusAction={moveProjectAction}
           moveTypeAction={moveProjectTypeAction}
         />
