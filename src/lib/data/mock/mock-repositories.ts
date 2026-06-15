@@ -201,6 +201,9 @@ export const mockRepositories: Repositories = {
     async setTaskCategory() {
       throw new Error(NO_DB);
     },
+    async setTaskDue() {
+      throw new Error(NO_DB);
+    },
     async listProposals() {
       return [];
     },

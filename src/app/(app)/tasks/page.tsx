@@ -3,9 +3,16 @@ import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { TasksBoard, type TaskGroupBy, type TaskSwimBy } from "@/components/tasks/tasks-board";
+import { TasksCalendar } from "@/components/tasks/tasks-calendar";
+import { parseMonth } from "@/lib/calendar";
 import { getRepositories } from "@/lib/data";
 import { TagChip } from "@/components/tags/tag-chip";
-import { deleteTaskAction, moveTaskAction, moveTaskCategoryAction } from "./actions";
+import {
+  deleteTaskAction,
+  moveTaskAction,
+  moveTaskCategoryAction,
+  moveTaskDueAction,
+} from "./actions";
 import {
   applyTagAction,
   applyExistingTagAction,
@@ -23,6 +30,7 @@ const FILTERS = [
 const VIEWS = [
   { key: "list", label: "List" },
   { key: "board", label: "Board" },
+  { key: "calendar", label: "Calendar" },
 ] as const;
 
 const GROUPS = [
@@ -36,14 +44,22 @@ const SWIMS = [
   { key: "category", label: "Category" },
 ] as const;
 
-/** Preserve the active category / group / swimlane / tag when switching view. */
-function href(category: string, view: string, group: string, swim: string, tag: string) {
+/** Preserve the active category / group / swimlane / tag / month when switching view. */
+function href(
+  category: string,
+  view: string,
+  group: string,
+  swim: string,
+  tag: string,
+  month = "",
+) {
   const qs = new URLSearchParams();
   if (category !== "all") qs.set("category", category);
   if (view !== "list") qs.set("view", view);
   if (group !== "status") qs.set("group", group);
   if (swim !== "none") qs.set("swim", swim);
   if (tag) qs.set("tag", tag);
+  if (month) qs.set("month", month);
   const s = qs.toString();
   return s ? `/tasks?${s}` : "/tasks";
 }
@@ -57,11 +73,17 @@ export default async function TasksPage({
     group?: string;
     swim?: string;
     tag?: string;
+    month?: string;
   }>;
 }) {
-  const { category, view, group, swim, tag } = await searchParams;
+  const { category, view, group, swim, tag, month } = await searchParams;
   const active = category ?? "all";
-  const activeView = view === "board" ? "board" : "list";
+  const activeView = view === "board" ? "board" : view === "calendar" ? "calendar" : "list";
+  // Calendar month (ADR-0066 C2) — resolved against the server's "today" so the
+  // default month and the highlighted day are SSR-stable.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const { year, month: monthNum } = parseMonth(month, todayIso);
+  const activeMonth = activeView === "calendar" ? `${year}-${String(monthNum).padStart(2, "0")}` : "";
   const activeGroup: TaskGroupBy = group === "category" ? "category" : "status";
   // A swimlane that duplicates the active column group-by is meaningless — drop it.
   const activeSwim: TaskSwimBy =
@@ -153,7 +175,14 @@ export default async function TasksPage({
             {VIEWS.map((v) => (
               <Link
                 key={v.key}
-                href={href(active, v.key, activeGroup, activeSwim, activeTag)}
+                href={href(
+                  active,
+                  v.key,
+                  activeGroup,
+                  activeSwim,
+                  activeTag,
+                  v.key === "calendar" ? activeMonth : "",
+                )}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm transition-colors",
                   activeView === v.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -188,7 +217,7 @@ export default async function TasksPage({
           })}
           {activeTag && (
             <Link
-              href={href(active, activeView, activeGroup, activeSwim, "")}
+              href={href(active, activeView, activeGroup, activeSwim, "", activeMonth)}
               className="ml-1 text-xs text-dim hover:text-text"
             >
               Clear
@@ -204,6 +233,14 @@ export default async function TasksPage({
           swimBy={activeSwim}
           moveStatusAction={moveTaskAction}
           moveCategoryAction={moveTaskCategoryAction}
+        />
+      ) : activeView === "calendar" ? (
+        <TasksCalendar
+          tasks={tasks}
+          month={{ year, monthNum }}
+          today={todayIso}
+          monthHref={(ym) => href(active, "calendar", activeGroup, activeSwim, activeTag, ym)}
+          moveDueAction={moveTaskDueAction}
         />
       ) : (
         <TasksTable

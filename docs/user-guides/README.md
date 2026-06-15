@@ -22,6 +22,8 @@ right (scoped to your Entra permissions).
   tasks by due date and deal; create and complete them in place.
 - [Task board — the kanban view](task-board.md): drag tasks between
   Open / In progress / Done; the drop saves the status.
+- [Task calendar — the month view](task-calendar.md): see tasks on a month grid
+  by due date; drag a task to another day to reschedule it.
 - [Project board — the kanban view](project-board.md): drag projects across
   Not started / In progress / Blocked / Complete; the drop saves the status.
 - [Delivery templates](delivery-templates.md): author the reusable provisioning

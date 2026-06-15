@@ -1345,6 +1345,14 @@ export const postgresRepositories: Repositories = {
       await pool.query(`UPDATE task SET category = $2 WHERE id = $1`, [id, category]);
     },
 
+    async setTaskDue(id: string, dueAt: string | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskDue(id, dueAt);
+      // Calendar drag-reschedule (ADR-0066 C2, #342) — writes the existing
+      // due_at column (0007); a null clears the date. No new schema.
+      await pool.query(`UPDATE task SET due_at = $2 WHERE id = $1`, [id, dueAt]);
+    },
+
     async listProposals(): Promise<ProposalRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.listProposals();
