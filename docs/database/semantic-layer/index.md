@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -58,6 +58,7 @@ subset; remaining entities are tracked for expansion
 | [`posture_snapshot`](tables/posture_snapshot.md) | ledger | append-only; grade at capture | ADR-0051 |
 | [`tenant_posture`](tables/tenant_posture.md) | golden/drift | observed vs human-approved golden | ADR-0051 |
 | [`dns_domain`](tables/dns_domain.md) | golden/drift | account_domain SoR; dns_golden approved | ADR-0063 |
+| [`dns_golden`](tables/dns_golden.md) | golden/drift | operator approval (Set-ImperionDnsGoldenState) | ADR-0063 |
 | [`knowledge_object`](tables/knowledge_object.md) | gold | on-prem produced; Voyage 1024d | ADR-0041 |
 | [`app_user`](tables/app_user.md) | reference | Entra ID identity | ADR-0016 |
 | [`connection`](tables/connection.md) | reference | sync config; tokens in Key Vault (by ref) | ADR-0024 |

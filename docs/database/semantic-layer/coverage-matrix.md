@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -118,8 +118,9 @@ object · **H** reference/config/identity.
 | [posture_snapshot](tables/posture_snapshot.md) (+pillar) | C (INSERT-only) | ✅ | posture-report |
 | [tenant_posture](tables/tenant_posture.md) | E | ✅ | drift-monitor |
 | [dns_domain](tables/dns_domain.md) | E | ✅ | DNS drift-monitor |
+| [dns_golden](tables/dns_golden.md) | E | ✅ | golden approval (human-gated) |
 | posture_policy, *_golden (CA / Intune / Autopilot / device-config / Defender XDR) | E | ⏳ | drift-monitor (autonomy-dialed) |
-| account_domain, dns_golden | H / E | ⏳ | golden approval (human-gated) |
+| account_domain | H | ⏳ | domain registry (operator-curated) |
 | defender_incidents, defender_alerts | B | ⏳ | incident triage |
 | defender_incident_ticket_link | D | ⏳ | incident→ticket (ADR-0059) |
 
