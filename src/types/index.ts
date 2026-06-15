@@ -750,6 +750,37 @@ export interface TaskDependencies {
 }
 
 /**
+ * The role a person holds on a work object (ADR-0065 B3, #337). `primary` is the
+ * single owner that still drives rollups, the Sales Queue, and RBAC; `assignee`
+ * is an additional worker; `watcher` is a follower. Widens additively if new
+ * roles are ever needed — never a new shape.
+ */
+export type WorkRole = "primary" | "assignee" | "watcher";
+
+/** One person attached to a work object, with their role (ADR-0065 B3, #337). */
+export interface WorkAssignmentRow {
+  userId: string;
+  name: string; // display name (or email fallback)
+  role: WorkRole;
+}
+
+/**
+ * Everyone attached to a single work object plus the viewer's own watch state
+ * (ADR-0065 B3, #337). `primary` is the single owner (may be null if unassigned);
+ * `assignees` are additional workers; `watchers` are followers. `viewerWatching`
+ * lets the UI render the watch/unwatch toggle without a second query.
+ */
+export interface WorkAssignments {
+  parentType: string; // 'task' | 'project'
+  parentId: string;
+  primary: WorkAssignmentRow | null;
+  assignees: WorkAssignmentRow[];
+  watchers: WorkAssignmentRow[];
+  /** True when the signed-in user holds any row on this object (watcher or worker). */
+  viewerWatching: boolean;
+}
+
+/**
  * A row in the Sales Queue (ADR-0052 §6) — an open `category='sales'` task with
  * its owner and deal context. Pure read model; no new tables.
  */

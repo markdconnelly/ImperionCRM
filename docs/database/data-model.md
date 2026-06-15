@@ -199,10 +199,36 @@ erDiagram
       uuid successor_id FK "CASCADE — the blocked task"
       text type "blocks (finish-to-start) — CHECK"
     }
-    TAG  ||--o{ WORK_TAG        : "applied via"
-    TASK ||--o{ TASK_DEPENDENCY : "blocks (predecessor)"
-    TASK ||--o{ TASK_DEPENDENCY : "blocked by (successor)"
+    WORK_ASSIGNMENT {
+      text parent_type "task|project (CHECK) — 0099, ADR-0065 B3, #337"
+      uuid parent_id "polymorphic — no FK"
+      uuid user_id FK "CASCADE → app_user"
+      text role "primary|assignee|watcher (CHECK); one primary per object (partial unique)"
+    }
+    TAG  ||--o{ WORK_TAG          : "applied via"
+    TASK ||--o{ TASK_DEPENDENCY   : "blocks (predecessor)"
+    TASK ||--o{ TASK_DEPENDENCY   : "blocked by (successor)"
+    APP_USER ||--o{ WORK_ASSIGNMENT : "assigned/watches via"
 ```
+
+### Multiple assignees & watchers (ADR-0065 B3, migration 0099, #337)
+
+A work object (task today; `project` reserved in the `parent_type` CHECK) keeps a
+**single primary owner** but can carry many additional **assignees** plus **watchers**.
+Rather than widen the single `task.owner_user_id` FK, `work_assignment` is the polymorphic
+people-on-work join — same shape as `work_comment` (0094) and `work_tag` (0096):
+`(parent_type, parent_id, user_id, role)` with `role ∈ {primary, assignee, watcher}`.
+
+- **Primary** is the single owner that still drives rollups, the Sales Queue (ADR-0052 §6)
+  and RBAC. A partial unique index (`role='primary'`) enforces exactly one per object, and
+  the data layer mirrors a primary change onto the legacy `task.owner_user_id` so existing
+  reads stay in lockstep (acceptance: "primary still drives reporting").
+- **Assignee** is an additional worker; **watcher** is a follower. Everyone attached sees
+  the item and receives the relevant notifications (notification fan-out rides the ADR-0064
+  A1 activity feed).
+- The migration **backfills** every existing `task.owner_user_id` into a `primary` row
+  (idempotent `ON CONFLICT DO NOTHING`). No FK on `parent_id` (polymorphic, same tradeoff
+  as `work_comment`/`work_tag`); `ON DELETE CASCADE` on `user_id` clears a removed user.
 
 ### Sale→delivery orchestration tracking (ADR-0080, migration 0082)
 

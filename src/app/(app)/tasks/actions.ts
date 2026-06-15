@@ -6,6 +6,8 @@ import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { ticketsService } from "@/lib/services";
 import { str, strOr, strOrNull } from "@/lib/form-data";
+import { auth } from "@/auth";
+import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 import type { TaskInput } from "@/lib/data/repositories";
 
 function parse(formData: FormData): TaskInput {
@@ -201,6 +203,64 @@ export async function removeTaskDependencyAction(formData: FormData) {
   revalidatePath(`/tasks/${taskId}/edit`);
   revalidatePath("/tasks");
   revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Save a task's additional assignees (ADR-0065 B3, #337). The multi-select posts
+ * every checked user id under `assignee`; the data layer replaces the assignee set
+ * wholesale, never touching the primary owner or the watcher rows. A user that is
+ * the primary owner is skipped server-side (they already own the object). Same
+ * `delivery:write` audited path as the edit form.
+ */
+export async function setTaskAssigneesAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const taskId = String(formData.get("taskId") ?? "").trim();
+  if (!taskId) return;
+  const userIds = formData.getAll("assignee").map((v) => String(v).trim()).filter(Boolean);
+  const { crm } = getRepositories();
+  await crm.setTaskAssignees(taskId, userIds);
+  revalidatePath(`/tasks/${taskId}/edit`);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Promote a user to the single primary owner of a task (ADR-0065 B3, #337). The
+ * data layer demotes the previous primary to assignee (kept on the object) and
+ * mirrors the change onto task.owner_user_id so the Sales Queue / rollups / RBAC
+ * stay in lockstep (acceptance: "primary still drives reporting"). Same audited path.
+ */
+export async function setTaskPrimaryAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const taskId = String(formData.get("taskId") ?? "").trim();
+  const userId = String(formData.get("userId") ?? "").trim();
+  if (!taskId || !userId) return;
+  const { crm } = getRepositories();
+  await crm.setTaskPrimary(taskId, userId, "primary");
+  revalidatePath(`/tasks/${taskId}/edit`);
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
+/**
+ * Watch / unwatch a task as the signed-in user (ADR-0065 B3, #337). `watch` is the
+ * desired end-state ("true"/"false") so the same action handles both toggle
+ * directions idempotently. The viewer is resolved by email → app_user; an
+ * unresolved user is a silent no-op. Watching only adds a watcher row when the user
+ * holds no other role (a primary/assignee already sees the item).
+ */
+export async function setTaskWatchAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const taskId = String(formData.get("taskId") ?? "").trim();
+  const watch = String(formData.get("watch") ?? "") === "true";
+  if (!taskId) return;
+  const session = await auth();
+  const userId = await resolveAppUserIdByEmail(session?.user?.email ?? "");
+  if (!userId) return;
+  const { crm } = getRepositories();
+  await crm.setTaskWatch(taskId, userId, watch);
+  revalidatePath(`/tasks/${taskId}/edit`);
+  revalidatePath("/tasks");
 }
 
 /**

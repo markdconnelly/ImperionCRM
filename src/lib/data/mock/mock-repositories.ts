@@ -201,6 +201,25 @@ export const mockRepositories: Repositories = {
     async listBlockedProjectTasks() {
       return [];
     },
+    async getWorkAssignments(parentType: string, parentId: string) {
+      return {
+        parentType,
+        parentId,
+        primary: null,
+        assignees: [],
+        watchers: [],
+        viewerWatching: false,
+      };
+    },
+    async setTaskAssignees() {
+      throw new Error(NO_DB);
+    },
+    async setTaskWatch() {
+      throw new Error(NO_DB);
+    },
+    async setTaskPrimary() {
+      throw new Error(NO_DB);
+    },
     async listSalesTasks() {
       return [];
     },

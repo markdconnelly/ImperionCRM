@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TaskForm } from "@/components/tasks/task-form";
 import { TaskSubtasks } from "@/components/tasks/task-subtasks";
 import { TaskDependencies } from "@/components/tasks/task-dependencies";
+import { TaskAssignees } from "@/components/tasks/task-assignees";
 import {
   updateTaskAction,
   createTaskTicketAction,
@@ -10,8 +11,12 @@ import {
   reparentTaskAction,
   addTaskDependencyAction,
   removeTaskDependencyAction,
+  setTaskAssigneesAction,
+  setTaskPrimaryAction,
+  setTaskWatchAction,
 } from "../../actions";
 import { getRepositories } from "@/lib/data";
+import { auth } from "@/auth";
 
 const TICKET_NOTICES: Record<string, string> = {
   filed: "Autotask ticket created — the ref is stored on the task and the next sync links it.",
@@ -32,12 +37,16 @@ export default async function EditTaskPage({
   const { id } = await params;
   const { ticket } = await searchParams;
   const { crm, engagements } = getRepositories();
-  const [task, accounts, hierarchy, deps, taskOptions] = await Promise.all([
+  const session = await auth();
+  const viewerEmail = session?.user?.email ?? null;
+  const [task, accounts, hierarchy, deps, taskOptions, assignments, users] = await Promise.all([
     crm.getTask(id),
     crm.accountOptions(),
     crm.getTaskChildren(id),
     crm.getTaskDependencies(id),
     crm.taskOptions(id),
+    crm.getWorkAssignments("task", id, viewerEmail),
+    crm.userOptions(),
   ]);
   if (!task) notFound();
 
@@ -65,6 +74,15 @@ export default async function EditTaskPage({
       )}
 
       <TaskForm action={updateTaskAction} task={task} accounts={accounts} />
+
+      <TaskAssignees
+        taskId={task.id}
+        assignments={assignments}
+        users={users}
+        setAssigneesAction={setTaskAssigneesAction}
+        setPrimaryAction={setTaskPrimaryAction}
+        setWatchAction={setTaskWatchAction}
+      />
 
       <TaskSubtasks
         taskId={task.id}
