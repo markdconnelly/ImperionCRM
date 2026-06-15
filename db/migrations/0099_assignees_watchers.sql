@@ -1,8 +1,4 @@
--- 9001 multiple assignees & watchers (ADR-0065 B3, issue #337)
--- PLACEHOLDER NUMBER (9001) — the orchestrator renumbers this to the next free
--- slot at merge (concurrency contract §10.3); do NOT treat 9001 as final. At the
--- time of authoring the highest repo migration is 0098, so the real number is
--- claimed at merge (expected 0099) after rebasing on main.
+-- 0099 multiple assignees & watchers (ADR-0065 B3, issue #337)
 --
 -- PM task-structure B3 (ADR-0065): a work object keeps ONE primary owner but can
 -- carry many additional assignees plus watchers. Rather than widen the single
