@@ -169,13 +169,28 @@ function FilterTab({ href, label, active }: { href: string; label: string; activ
   );
 }
 
+/** Map a raw task status onto a board-friendly label for the feed copy (#438). */
+const STATUS_LABELS: Record<string, string> = {
+  open: "Open",
+  in_progress: "In Progress",
+  done: "Done",
+};
+const statusLabel = (s: unknown): string =>
+  typeof s === "string" ? STATUS_LABELS[s] ?? s.replace(/_/g, " ") : "—";
+
 /** Human-readable one-liner for an audit event in the feed. */
 function describeEvent(action: string | null, detail: Record<string, unknown> | null): string {
   if (action === "comment.deleted") return "deleted a comment";
   if (action === "comment.mentioned") return "mentioned a teammate in a comment";
-  const verb = action?.replace(/_/g, " ") ?? "system event";
-  if (detail && typeof detail === "object" && Object.keys(detail).length > 0) {
-    return `${verb}`;
+  // Status move (#438): render the X→Y transition when the payload carries it.
+  if (action === "task.status_changed") {
+    const from = detail?.from;
+    const to = detail?.to;
+    return from || to
+      ? `moved status ${statusLabel(from)} → ${statusLabel(to)}`
+      : "changed task status";
   }
+  if (action === "attachment.removed") return "removed an attachment";
+  const verb = action?.replace(/_/g, " ") ?? "system event";
   return verb;
 }

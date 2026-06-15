@@ -573,8 +573,12 @@ export interface CrmRepository {
   listSalesTasks(): Promise<SalesTaskRow[]>;
   /** Create a sales task (category fixed to 'sales', owned by the creating rep). */
   createSalesTask(input: SalesTaskInput): Promise<void>;
-  /** Set a task's status (Sales Queue complete button; idempotent). */
-  setTaskStatus(id: string, status: string): Promise<void>;
+  /**
+   * Set a task's status (Sales Queue complete button / kanban drag; idempotent).
+   * Returns the PREVIOUS status (null if the task was absent) so the caller can
+   * emit an `task.status_changed` activity event only on a real X→Y move (#438).
+   */
+  setTaskStatus(id: string, status: string): Promise<string | null>;
   /** Set a task's category (kanban group-by=category drop; idempotent). */
   setTaskCategory(id: string, category: string): Promise<void>;
   /**
@@ -1590,6 +1594,26 @@ export interface WorkRepository {
    * unless `asAdmin`. Returns true if a row was deleted.
    */
   deleteComment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean>;
+  /**
+   * Emit a system activity event onto a work object's feed (ADR-0064 A1, #438).
+   * Writes an `audit_log` row whose (entity_type, entity_id) map onto
+   * (parent_type, parent_id) in the `work_activity_feed` view, so the event
+   * surfaces in the object's Activity tab alongside comments. No new schema — it
+   * reuses the merged A1 mechanism. `detail` is an opaque jsonb payload (e.g.
+   * `{ from, to }` for a status move). The caller resolves and supplies the actor.
+   */
+  emitWorkEvent(input: WorkEventInput): Promise<void>;
+}
+
+/** A system activity event to record on a work object's feed (ADR-0064 A1, #438). */
+export interface WorkEventInput {
+  parentType: WorkParentType;
+  parentId: string;
+  actorUserId: string | null;
+  /** Dotted event name, e.g. `task.status_changed` — rendered in the feed. */
+  action: string;
+  /** Opaque jsonb payload describing the change (e.g. `{ from, to }`). */
+  detail?: Record<string, unknown>;
 }
 
 /**

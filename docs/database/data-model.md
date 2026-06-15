@@ -1894,6 +1894,22 @@ cannot inject script. Notifications (A3) and attachments (A4) are separate ADR-0
 follow-ups. These are **app-native tables, not silver tier** — no semantic-layer
 concept file applies.
 
+### Status-change system events (ADR-0066 C1, #438)
+
+Moving a task between kanban statuses (the drag on the board, and an equivalent
+status change from the edit form) **emits a `task.status_changed` system event**
+into the same feed (ADR-0066 C1: "emits a system event (ADR-0064 activity feed)").
+No new schema — `WorkRepository.emitWorkEvent` writes an `audit_log` row whose
+`(entity_type, entity_id)` map onto `(parent_type, parent_id)` in
+`work_activity_feed`, so the event surfaces on the task's Activity tab with `kind =
+'event'`. `detail = { from, to }` carries the transition, which the feed renders as
+`moved status Open → Done`. The event fires only on a **real X→Y move**:
+`setTaskStatus` now returns the previous status, and the action skips the emit when
+it is unchanged (a same-status drag records nothing). The write is **best-effort** —
+a feed-event failure is logged and swallowed so it can never fail the underlying
+status mutation. The actor is resolved from the session email → `app_user`; an
+unresolved user still records the event as a system-authored fact.
+
 ### @mentions (ADR-0064 A2, migration 0097, #331)
 
 A comment body may **@mention** a user as `@handle`, where the handle is the

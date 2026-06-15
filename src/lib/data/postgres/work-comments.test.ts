@@ -204,3 +204,68 @@ describe("work comments + activity feed (ADR-0064 A1, #330)", () => {
     expect(sqls[sqls.length - 1]).toContain("ROLLBACK");
   });
 });
+
+describe("emitWorkEvent — kanban status-move activity event (ADR-0064 A1, #438)", () => {
+  it("writes an audit_log row mapping (entity_type, entity_id) onto the feed object", async () => {
+    await work.emitWorkEvent({
+      parentType: "task",
+      parentId: "t1",
+      actorUserId: "u1",
+      action: "task.status_changed",
+      detail: { from: "open", to: "done" },
+    });
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("INSERT INTO audit_log");
+    // entity_type/entity_id are what work_activity_feed maps to parent_type/parent_id.
+    expect(sql).toContain("entity_type");
+    expect(sql).toContain("entity_id");
+    // action + actor + the from→to payload are persisted for the feed copy.
+    expect(params[0]).toBe("u1"); // actor_user_id
+    expect(params[1]).toBe("task.status_changed"); // action
+    expect(params[2]).toBe("task"); // entity_type ← parentType
+    expect(params[3]).toBe("t1"); // entity_id ← parentId
+    expect(JSON.parse(String(params[4]))).toEqual({ from: "open", to: "done" });
+  });
+
+  it("defaults detail to an empty object and tolerates a null actor (system event)", async () => {
+    await work.emitWorkEvent({
+      parentType: "project",
+      parentId: "p9",
+      actorUserId: null,
+      action: "task.status_changed",
+    });
+    const params = (query.mock.calls[0] as unknown as [string, unknown[]])[1];
+    expect(params[0]).toBeNull(); // actor optional — still records the fact
+    expect(JSON.parse(String(params[4]))).toEqual({});
+  });
+
+  it("never throws when the feed write fails (best-effort; must not fail the move)", async () => {
+    query.mockRejectedValueOnce(new Error("db down"));
+    await expect(
+      work.emitWorkEvent({
+        parentType: "task",
+        parentId: "t1",
+        actorUserId: "u1",
+        action: "task.status_changed",
+        detail: { from: "open", to: "in_progress" },
+      }),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("setTaskStatus returns the previous status (drives the #438 X→Y guard)", () => {
+  it("returns the prior status via the RETURNING CTE", async () => {
+    query.mockResolvedValueOnce({ rows: [{ prev_status: "open" }] });
+    const prev = await postgresRepositories.crm.setTaskStatus("t1", "done");
+    const [sql, params] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain("UPDATE task SET status = $2");
+    expect(sql).toContain("RETURNING");
+    expect(params).toEqual(["t1", "done"]);
+    expect(prev).toBe("open");
+  });
+
+  it("returns null when the task does not exist (no-op move)", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(await postgresRepositories.crm.setTaskStatus("missing", "done")).toBeNull();
+  });
+});

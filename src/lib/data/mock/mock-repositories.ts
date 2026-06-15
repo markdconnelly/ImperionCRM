@@ -32,6 +32,7 @@ import {
 import type {
   Repositories,
   WorkCommentInput,
+  WorkEventInput,
   WorkAttachmentInput,
   NotificationInput,
   TagApplicationInput,
@@ -1321,6 +1322,11 @@ export const mockRepositories: Repositories = {
       if (i === -1) return false;
       mockComments.splice(i, 1);
       return true;
+    },
+    async emitWorkEvent(input: WorkEventInput): Promise<void> {
+      // Mock has no audit_log fixture (listActivity is comments-only here), so a
+      // system event is a no-op — the postgres repo records it for real (#438).
+      void input;
     },
   },
 

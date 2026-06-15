@@ -78,6 +78,7 @@ import type {
   WorkflowInput,
   WorkflowStepInput,
   WorkCommentInput,
+  WorkEventInput,
   WorkAttachmentInput,
   NotificationInput,
   TagApplicationInput,
@@ -1711,10 +1712,18 @@ export const postgresRepositories: Repositories = {
       );
     },
 
-    async setTaskStatus(id: string, status: string): Promise<void> {
+    async setTaskStatus(id: string, status: string): Promise<string | null> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.setTaskStatus(id, status);
-      await pool.query(`UPDATE task SET status = $2 WHERE id = $1`, [id, status]);
+      // RETURNING the old value via a CTE so the caller can detect a real X→Y
+      // move (#438) without a second round-trip; null = task absent (no-op).
+      const { rows } = await pool.query<{ prev_status: string }>(
+        `WITH prev AS (SELECT status FROM task WHERE id = $1)
+         UPDATE task SET status = $2 WHERE id = $1
+         RETURNING (SELECT status FROM prev) AS prev_status`,
+        [id, status],
+      );
+      return rows[0]?.prev_status ?? null;
     },
 
     async setTaskCategory(id: string, category: string): Promise<void> {
@@ -8613,6 +8622,30 @@ export const postgresRepositories: Repositories = {
         throw err;
       } finally {
         client.release();
+      }
+    },
+
+    async emitWorkEvent(input: WorkEventInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.work.emitWorkEvent(input);
+      try {
+        // The (entity_type, entity_id) pair maps onto (parent_type, parent_id)
+        // in work_activity_feed, so this audit row surfaces on the object's
+        // feed (#438, ADR-0064 A1). No new schema — reuses the A1 mechanism.
+        await pool.query(
+          `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+           VALUES ($1::uuid, $2, $3, $4::uuid, $5::jsonb)`,
+          [
+            input.actorUserId,
+            input.action,
+            input.parentType,
+            input.parentId,
+            JSON.stringify(input.detail ?? {}),
+          ],
+        );
+      } catch (err) {
+        // Never fail the originating mutation on a feed-event write (house style).
+        console.error(`[work] emitWorkEvent failed for ${input.action}:`, err);
       }
     },
   },
