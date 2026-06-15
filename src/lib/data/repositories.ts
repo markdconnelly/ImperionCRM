@@ -83,6 +83,8 @@ import type {
   OpportunityRow,
   OpportunityForecastRow,
   QuotaRow,
+  LeadScoreRow,
+  LeadScoreKind,
   PipelineColumn,
   PortfolioRow,
   ProjectRow,
@@ -658,6 +660,12 @@ export interface CrmRepository {
   listOpportunityForecast(): Promise<OpportunityForecastRow[]>;
   /** Revenue quotas per owner / team / period. */
   listQuotas(): Promise<QuotaRow[]>;
+
+  // Lead scoring (ADR-0073 decision 5, #401) — read model over the 0116 lead_score table.
+  /** Stored lead scores joined to their contact, ranked high→low (rule kind by default). */
+  listLeadScores(kind?: LeadScoreKind): Promise<LeadScoreRow[]>;
+  /** A single contact's scores (rule + any predicted), highest first. */
+  listLeadScoresForContact(contactId: string): Promise<LeadScoreRow[]>;
 
   // Tasks (full CRUD)
   listTasks(): Promise<TaskRow[]>;

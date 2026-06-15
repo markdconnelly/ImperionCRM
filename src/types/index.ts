@@ -109,6 +109,60 @@ export interface ContactRow {
 }
 
 /**
+ * Lead scoring (ADR-0073 decision 5, #401). `rule` = the deterministic fit +
+ * weighted-engagement score shipped here (lib/lead-score.ts); `predicted` = a later
+ * LP model over engagement history (#402) that COEXISTS — never silently replaces the
+ * rule score. Both are stored per contact (one `lead_score` row each).
+ */
+export type LeadScoreKind = "rule" | "predicted";
+
+/** The qualitative band a numeric score falls into (derived, not stored). */
+export type LeadScoreBand = "cold" | "warm" | "hot";
+
+/**
+ * One explainable contribution to a rule score (ADR-0073 decision 5 — the breakdown
+ * is what makes the rule score auditable and tunable). `group` separates fit (who the
+ * contact is) from engagement (what they have done); `points` is the awarded value.
+ */
+export interface LeadScoreComponent {
+  group: "fit" | "engagement";
+  label: string;
+  points: number;
+  detail?: string;
+}
+
+/** The raw signals the rule engine scores — read from `contact` + `interaction`. */
+export interface LeadScoreInput {
+  hasEmail: boolean;
+  hasPhone: boolean;
+  crmStage: ContactCrmStage;
+  hasAccount: boolean; // contact is linked to an account (a real org, not a stray lead)
+  recentInteractions: number; // engagements in the scoring window
+  inboundInteractions: number; // inbound/reply count (intent signal)
+  distinctChannels: number; // breadth of engagement across channels
+}
+
+/** The result of scoring one contact (ADR-0073 decision 5) — pure, see lib/lead-score.ts. */
+export interface LeadScoreResult {
+  score: number; // 0..100, clamped
+  band: LeadScoreBand;
+  breakdown: LeadScoreComponent[];
+}
+
+/** A stored lead score read from `lead_score`, joined to its contact (ADR-0073, #401). */
+export interface LeadScoreRow {
+  id: string;
+  contactId: string;
+  contactName: string;
+  account: string | null;
+  kind: LeadScoreKind;
+  score: number;
+  band: LeadScoreBand;
+  breakdown: LeadScoreComponent[];
+  computedAt: string; // ISO
+}
+
+/**
  * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
  * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
  * client. Distinct from the enrichment lifecycle_status.
