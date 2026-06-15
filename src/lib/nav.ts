@@ -21,6 +21,10 @@ export const navSecondary: NavItem[] = [
   { key: "accounts", label: "Accounts", icon: "Building2", href: "/accounts" },
   { key: "contacts", label: "Contacts", icon: "Contact", href: "/contacts" },
   { key: "campaigns", label: "Campaigns", icon: "Megaphone", href: "/campaigns" },
+  // Multi-step marketing journeys (ADR-0073, #397) — a journey is a workflow
+  // (kind='journey') whose steps/A-B/branches live in one object; read-only here,
+  // builder is #399. Sits with the other marketing surfaces.
+  { key: "journeys", label: "Journeys", icon: "Waypoints", href: "/journeys" },
   // Events are first-class objects campaigns promote (ADR-0053 §1).
   { key: "events", label: "Events", icon: "CalendarDays", href: "/events" },
   { key: "communications", label: "Communications", icon: "MessagesSquare", href: "/communications" },

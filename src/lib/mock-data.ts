@@ -20,6 +20,7 @@ import type {
   PipelineColumn,
   SocialIdentityRow,
   WorkflowRow,
+  JourneyDefinition,
 } from "@/types";
 
 // NOTE: Mock data only. Used as the fallback when no database is configured and
@@ -279,4 +280,160 @@ export const workflows: WorkflowRow[] = [
 export const enrollments: EnrollmentRow[] = [
   { id: "wfe_01", contact: "Priya Anand", workflow: "Pre-Discovery Enrichment", status: "active", currentStep: 2, enrolledAt: "2026-06-04" },
   { id: "wfe_02", contact: "Sam Ortega", workflow: "Default Nurture", status: "active", currentStep: 1, enrolledAt: "2026-06-05" },
+];
+
+// ── Marketing journeys (ADR-0073, #397) ──────────────────────────────────────
+// A journey is a workflow (kind='journey') whose `definition` jsonb is the single
+// object below. The mock holds the raw definition; the mock repo parses + summarises
+// it via lib/journey.ts (same path the postgres read takes), so the surface renders
+// without a DB. One sample exercises A/B + a branch; one is a plain linear cadence.
+
+export interface MockJourney {
+  id: string;
+  name: string;
+  status: string;
+  activeEnrollments: number;
+  definition: JourneyDefinition;
+}
+
+export const journeys: MockJourney[] = [
+  {
+    id: "jny_01",
+    name: "New-lead nurture (A/B subject)",
+    status: "active",
+    activeEnrollments: 41,
+    definition: {
+      entryStepKey: "s1",
+      sourceSegmentIds: ["seg_new_leads"],
+      steps: [
+        {
+          key: "s1",
+          kind: "send",
+          label: "Welcome email",
+          next: "s2",
+          templateId: null,
+          channel: "email",
+          variants: [
+            { key: "a", ratio: 1, templateId: "tpl_welcome_a", label: "Direct" },
+            { key: "b", ratio: 1, templateId: "tpl_welcome_b", label: "Story-led" },
+          ],
+          waitHours: null,
+          condition: null,
+          ifTrue: null,
+          ifFalse: null,
+          scoreDelta: null,
+        },
+        {
+          key: "s2",
+          kind: "wait",
+          label: "Give it 2 days",
+          next: "s3",
+          templateId: null,
+          channel: null,
+          variants: [],
+          waitHours: 48,
+          condition: null,
+          ifTrue: null,
+          ifFalse: null,
+          scoreDelta: null,
+        },
+        {
+          key: "s3",
+          kind: "branch",
+          label: "Did they open?",
+          next: null,
+          templateId: null,
+          channel: null,
+          variants: [],
+          waitHours: null,
+          condition: "opened",
+          ifTrue: "s4",
+          ifFalse: "s5",
+          scoreDelta: null,
+        },
+        {
+          key: "s4",
+          kind: "score",
+          label: "Engaged → +10",
+          next: "s6",
+          templateId: null,
+          channel: null,
+          variants: [],
+          waitHours: null,
+          condition: null,
+          ifTrue: null,
+          ifFalse: null,
+          scoreDelta: 10,
+        },
+        {
+          key: "s5",
+          kind: "send",
+          label: "Re-send (no open)",
+          next: "s6",
+          templateId: "tpl_nudge",
+          channel: "email",
+          variants: [],
+          waitHours: null,
+          condition: null,
+          ifTrue: null,
+          ifFalse: null,
+          scoreDelta: null,
+        },
+        {
+          key: "s6",
+          kind: "exit",
+          label: "Done",
+          next: null,
+          templateId: null,
+          channel: null,
+          variants: [],
+          waitHours: null,
+          condition: null,
+          ifTrue: null,
+          ifFalse: null,
+          scoreDelta: null,
+        },
+      ],
+    },
+  },
+  {
+    id: "jny_02",
+    name: "Event follow-up",
+    status: "paused",
+    activeEnrollments: 0,
+    definition: {
+      entryStepKey: "t1",
+      sourceSegmentIds: ["seg_event_q2"],
+      steps: [
+        {
+          key: "t1",
+          kind: "send",
+          label: "Thanks for coming",
+          next: "t2",
+          templateId: "tpl_event_thanks",
+          channel: "email",
+          variants: [],
+          waitHours: null,
+          condition: null,
+          ifTrue: null,
+          ifFalse: null,
+          scoreDelta: null,
+        },
+        {
+          key: "t2",
+          kind: "exit",
+          label: "Done",
+          next: null,
+          templateId: null,
+          channel: null,
+          variants: [],
+          waitHours: null,
+          condition: null,
+          ifTrue: null,
+          ifFalse: null,
+          scoreDelta: null,
+        },
+      ],
+    },
+  },
 ];
