@@ -115,8 +115,31 @@ without error.
 | `myitprocess` | Credential | API key* |
 | `quotemanager` | Credential | API key*, tenant/account ID (Kaseya Quote Manager) |
 | `televy` | Credential | API key* — assessment reporting |
+| `meta` | Credential (**send-capable**) | Page access token*, Facebook Page ID — FB/IG DM replies |
 
 \* write-only secret — stored in Key Vault, never returned to the client.
+
+### Meta (Facebook / Instagram) send credential (`meta`, #586 / pipeline #89 PR #113)
+
+`meta` is the first **send-capable** company credential: its long-lived Page access token
+authorizes OUTBOUND Facebook & Instagram DM replies (`pages_messaging` /
+`instagram_manage_messages`), not just ingest. The cloud pipeline reads it from Key Vault
+(`conn-company-meta`, fields `pageAccessToken` + `pageId`) and stays **dormant / fail-closed**
+until the secret exists (pipeline `credentials.ts`, issue #89). Because nothing *polls* a send
+token, the card renders **no poll cadence and no Refresh button** (`sendCapable: true` →
+`providerIsPollable` is false).
+
+**Security gate.** Entering this token is a **Mark-approved security event**: Meta App Review /
+Advanced Access for the messaging permissions must be granted before the token is valid, and
+Mark approves before the field goes live. The field naming mirrors the pipeline's
+`credentials.ts` exactly (`pageAccessToken`, `pageId`) so the two provider lists stay in sync.
+
+> **Enum follow-up.** The company `connection` row written on save uses the
+> `connection_provider` Postgres enum, which does not yet include `meta` (it is distinct from
+> the per-user `facebook` ingest provider). Adding that enum value is a separate migration,
+> tracked outside this PR (one migration per wave). Until it lands, saving the credential
+> records a `pending` row only after the enum is extended; the Settings UI + field contract
+> ship here independently.
 
 ### QuickBooks Online connect (`qbo`, OAuth — #528 / backend #117, ADR-0048/0085)
 
