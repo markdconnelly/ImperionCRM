@@ -29,7 +29,11 @@ import {
   userConnections,
   workflows,
 } from "@/lib/mock-data";
-import type { Repositories, WorkCommentInput } from "@/lib/data/repositories";
+import type {
+  Repositories,
+  WorkCommentInput,
+  TagApplicationInput,
+} from "@/lib/data/repositories";
 import type {
   Health,
   OnboardingMilestone,
@@ -37,6 +41,9 @@ import type {
   WorkComment,
   WorkActivityEntry,
   WorkParentType,
+  Tag,
+  AppliedTag,
+  TagParentType,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 
@@ -46,6 +53,26 @@ const NO_DB =
 /** In-memory comment store so the comment/feed UI works in mock mode (ADR-0064 A1). */
 const mockComments: WorkComment[] = [];
 let mockCommentSeq = 0;
+
+/** In-memory tag vocabulary + applications so the tags UI works in mock mode (ADR-0065 B6). */
+interface MockTag {
+  id: string;
+  label: string;
+  color: string;
+}
+interface MockApplication {
+  tagId: string;
+  parentType: TagParentType;
+  parentId: string;
+}
+const mockTags: MockTag[] = [];
+const mockTagApplications: MockApplication[] = [];
+let mockTagSeq = 0;
+
+/** Count work objects carrying a tag (mock usage rollup). */
+function mockTagUsage(tagId: string): number {
+  return mockTagApplications.filter((a) => a.tagId === tagId).length;
+}
 
 /** Lifecycle stages mock contacts are spread across (ADR-0031). */
 const MOCK_STAGES = ["audience", "lead", "prospect", "client"] as const;
@@ -1209,6 +1236,103 @@ export const mockRepositories: Repositories = {
       const i = mockComments.findIndex((c) => c.id === id);
       if (i === -1) return false;
       mockComments.splice(i, 1);
+      return true;
+    },
+  },
+
+  // ── Tags / labels (ADR-0065 B6, #340) ──────────────────────────────────────
+  tags: {
+    async listTags(): Promise<Tag[]> {
+      return mockTags
+        .map((t) => ({ ...t, usageCount: mockTagUsage(t.id) }))
+        .sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+    },
+    async upsertTag(label: string, color: string): Promise<Tag> {
+      const trimmed = label.trim();
+      const existing = mockTags.find((t) => t.label.toLowerCase() === trimmed.toLowerCase());
+      if (existing) return { ...existing, usageCount: mockTagUsage(existing.id) };
+      const row: MockTag = { id: `mock-tag-${++mockTagSeq}`, label: trimmed, color };
+      mockTags.push(row);
+      return { ...row, usageCount: 0 };
+    },
+    async renameTag(id: string, label: string): Promise<Tag | null> {
+      const trimmed = label.trim();
+      const row = mockTags.find((t) => t.id === id);
+      if (!row) return null;
+      // Reject a rename that collides with another tag (mirrors the unique index).
+      if (mockTags.some((t) => t.id !== id && t.label.toLowerCase() === trimmed.toLowerCase())) {
+        return null;
+      }
+      row.label = trimmed;
+      return { ...row, usageCount: mockTagUsage(row.id) };
+    },
+    async mergeTags(sourceId: string, targetId: string): Promise<boolean> {
+      if (sourceId === targetId) return false;
+      const i = mockTags.findIndex((t) => t.id === sourceId);
+      if (i === -1) return false;
+      for (const a of mockTagApplications) {
+        if (a.tagId !== sourceId) continue;
+        const collides = mockTagApplications.some(
+          (e) => e.tagId === targetId && e.parentType === a.parentType && e.parentId === a.parentId,
+        );
+        if (!collides) a.tagId = targetId;
+      }
+      // Drop applications that still point at the source (the collided ones) + the tag.
+      for (let j = mockTagApplications.length - 1; j >= 0; j--) {
+        if (mockTagApplications[j].tagId === sourceId) mockTagApplications.splice(j, 1);
+      }
+      mockTags.splice(i, 1);
+      return true;
+    },
+    async deleteTag(id: string): Promise<boolean> {
+      const i = mockTags.findIndex((t) => t.id === id);
+      if (i === -1) return false;
+      for (let j = mockTagApplications.length - 1; j >= 0; j--) {
+        if (mockTagApplications[j].tagId === id) mockTagApplications.splice(j, 1);
+      }
+      mockTags.splice(i, 1);
+      return true;
+    },
+    async listTagsFor(parentType: TagParentType, parentId: string): Promise<AppliedTag[]> {
+      return mockTagApplications
+        .filter((a) => a.parentType === parentType && a.parentId === parentId)
+        .map((a) => mockTags.find((t) => t.id === a.tagId))
+        .filter((t): t is MockTag => Boolean(t))
+        .map((t) => ({ id: t.id, label: t.label, color: t.color }))
+        .sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+    },
+    async listTagsForMany(
+      parentType: TagParentType,
+      parentIds: string[],
+    ): Promise<Record<string, AppliedTag[]>> {
+      const out: Record<string, AppliedTag[]> = {};
+      for (const a of mockTagApplications) {
+        if (a.parentType !== parentType || !parentIds.includes(a.parentId)) continue;
+        const t = mockTags.find((x) => x.id === a.tagId);
+        if (!t) continue;
+        (out[a.parentId] ??= []).push({ id: t.id, label: t.label, color: t.color });
+      }
+      for (const id of Object.keys(out)) {
+        out[id].sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+      }
+      return out;
+    },
+    async applyTag(input: TagApplicationInput): Promise<void> {
+      const exists = mockTagApplications.some(
+        (a) => a.tagId === input.tagId && a.parentType === input.parentType && a.parentId === input.parentId,
+      );
+      if (!exists) {
+        mockTagApplications.push({
+          tagId: input.tagId, parentType: input.parentType, parentId: input.parentId,
+        });
+      }
+    },
+    async removeTag(input: TagApplicationInput): Promise<boolean> {
+      const i = mockTagApplications.findIndex(
+        (a) => a.tagId === input.tagId && a.parentType === input.parentType && a.parentId === input.parentId,
+      );
+      if (i === -1) return false;
+      mockTagApplications.splice(i, 1);
       return true;
     },
   },

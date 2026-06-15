@@ -75,6 +75,7 @@ import type {
   WorkflowInput,
   WorkflowStepInput,
   WorkCommentInput,
+  TagApplicationInput,
 } from "@/lib/data/repositories";
 import type {
   Account,
@@ -184,6 +185,9 @@ import type {
   WorkParentType,
   WorkComment,
   WorkActivityEntry,
+  TagParentType,
+  Tag,
+  AppliedTag,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -8047,6 +8051,194 @@ export const postgresRepositories: Repositories = {
       } finally {
         client.release();
       }
+    },
+  },
+
+  // ── Tags / labels (ADR-0065 B6, #340) ──────────────────────────────────────
+  tags: {
+    async listTags(): Promise<Tag[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.listTags();
+      try {
+        const { rows } = await pool.query<{
+          id: string; label: string; color: string; usage_count: string;
+        }>(
+          `SELECT t.id, t.label, t.color,
+                  count(wt.tag_id) AS usage_count
+             FROM tag t
+             LEFT JOIN work_tag wt ON wt.tag_id = t.id
+            GROUP BY t.id, t.label, t.color
+            ORDER BY lower(t.label)`,
+        );
+        return rows.map((r) => ({
+          id: r.id, label: r.label, color: r.color, usageCount: Number(r.usage_count),
+        }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // schema not applied yet (#340)
+        return mockRepositories.tags.listTags();
+      }
+    },
+
+    async upsertTag(label: string, color: string, createdBy: string | null): Promise<Tag> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.upsertTag(label, color, createdBy);
+      // Global vocabulary: a label exists once (case-insensitive). ON CONFLICT on
+      // the lower(label) unique index makes upsert idempotent; colour is set on
+      // create only (a re-upsert keeps the existing colour).
+      const { rows } = await pool.query<{
+        id: string; label: string; color: string; usage_count: string;
+      }>(
+        `WITH up AS (
+           INSERT INTO tag (label, color, created_by)
+           VALUES ($1, $2, $3::uuid)
+           ON CONFLICT (lower(label)) DO UPDATE SET label = tag.label
+           RETURNING id, label, color
+         )
+         SELECT up.id, up.label, up.color,
+                (SELECT count(*) FROM work_tag wt WHERE wt.tag_id = up.id) AS usage_count
+           FROM up`,
+        [label.trim(), color, createdBy],
+      );
+      const r = rows[0];
+      return { id: r.id, label: r.label, color: r.color, usageCount: Number(r.usage_count) };
+    },
+
+    async renameTag(id: string, label: string): Promise<Tag | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.renameTag(id, label);
+      try {
+        const { rows } = await pool.query<{
+          id: string; label: string; color: string; usage_count: string;
+        }>(
+          `WITH up AS (
+             UPDATE tag SET label = $2 WHERE id = $1::uuid RETURNING id, label, color
+           )
+           SELECT up.id, up.label, up.color,
+                  (SELECT count(*) FROM work_tag wt WHERE wt.tag_id = up.id) AS usage_count
+             FROM up`,
+          [id, label.trim()],
+        );
+        if (!rows[0]) return null;
+        const r = rows[0];
+        return { id: r.id, label: r.label, color: r.color, usageCount: Number(r.usage_count) };
+      } catch (err) {
+        // Unique-violation on lower(label) → label already taken; surface as null.
+        if (typeof err === "object" && err && (err as { code?: string }).code === "23505") {
+          return null;
+        }
+        throw err;
+      }
+    },
+
+    async mergeTags(sourceId: string, targetId: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.mergeTags(sourceId, targetId);
+      if (sourceId === targetId) return false;
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Repoint the source's applications onto the target, skipping any that
+        // would collide with an existing (target, parent) pair, then drop source.
+        await client.query(
+          `UPDATE work_tag wt
+              SET tag_id = $2::uuid
+            WHERE wt.tag_id = $1::uuid
+              AND NOT EXISTS (
+                SELECT 1 FROM work_tag e
+                 WHERE e.tag_id = $2::uuid
+                   AND e.parent_type = wt.parent_type
+                   AND e.parent_id = wt.parent_id
+              )`,
+          [sourceId, targetId],
+        );
+        const { rowCount } = await client.query(
+          `DELETE FROM tag WHERE id = $1::uuid`,
+          [sourceId],
+        );
+        await client.query("COMMIT");
+        return (rowCount ?? 0) > 0;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteTag(id: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.deleteTag(id);
+      const { rowCount } = await pool.query(`DELETE FROM tag WHERE id = $1::uuid`, [id]);
+      return (rowCount ?? 0) > 0;
+    },
+
+    async listTagsFor(parentType: TagParentType, parentId: string): Promise<AppliedTag[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.listTagsFor(parentType, parentId);
+      try {
+        const { rows } = await pool.query<{ id: string; label: string; color: string }>(
+          `SELECT t.id, t.label, t.color
+             FROM work_tag wt JOIN tag t ON t.id = wt.tag_id
+            WHERE wt.parent_type = $1 AND wt.parent_id = $2::uuid
+            ORDER BY lower(t.label)`,
+          [parentType, parentId],
+        );
+        return rows;
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.tags.listTagsFor(parentType, parentId);
+      }
+    },
+
+    async listTagsForMany(
+      parentType: TagParentType,
+      parentIds: string[],
+    ): Promise<Record<string, AppliedTag[]>> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.listTagsForMany(parentType, parentIds);
+      if (parentIds.length === 0) return {};
+      try {
+        const { rows } = await pool.query<{
+          parent_id: string; id: string; label: string; color: string;
+        }>(
+          `SELECT wt.parent_id::text AS parent_id, t.id, t.label, t.color
+             FROM work_tag wt JOIN tag t ON t.id = wt.tag_id
+            WHERE wt.parent_type = $1 AND wt.parent_id = ANY($2::uuid[])
+            ORDER BY lower(t.label)`,
+          [parentType, parentIds],
+        );
+        const out: Record<string, AppliedTag[]> = {};
+        for (const r of rows) {
+          (out[r.parent_id] ??= []).push({ id: r.id, label: r.label, color: r.color });
+        }
+        return out;
+      } catch (err) {
+        if (isSchemaLagError(err)) return {};
+        return mockRepositories.tags.listTagsForMany(parentType, parentIds);
+      }
+    },
+
+    async applyTag(input: TagApplicationInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.applyTag(input);
+      // Idempotent — the PK makes a repeated application a no-op.
+      await pool.query(
+        `INSERT INTO work_tag (tag_id, parent_type, parent_id)
+         VALUES ($1::uuid, $2, $3::uuid)
+         ON CONFLICT DO NOTHING`,
+        [input.tagId, input.parentType, input.parentId],
+      );
+    },
+
+    async removeTag(input: TagApplicationInput): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.tags.removeTag(input);
+      const { rowCount } = await pool.query(
+        `DELETE FROM work_tag
+          WHERE tag_id = $1::uuid AND parent_type = $2 AND parent_id = $3::uuid`,
+        [input.tagId, input.parentType, input.parentId],
+      );
+      return (rowCount ?? 0) > 0;
     },
   },
 };

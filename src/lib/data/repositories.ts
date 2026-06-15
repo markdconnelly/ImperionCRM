@@ -111,6 +111,9 @@ import type {
   WorkParentType,
   WorkComment,
   WorkActivityEntry,
+  TagParentType,
+  Tag,
+  AppliedTag,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -1476,6 +1479,52 @@ export interface WorkRepository {
   deleteComment(id: string, actorUserId: string | null, asAdmin: boolean): Promise<boolean>;
 }
 
+/** A tag to apply to (or remove from) a work object. */
+export interface TagApplicationInput {
+  tagId: string;
+  parentType: TagParentType;
+  parentId: string;
+}
+
+/**
+ * Tags / labels repository (ADR-0065 B6, #340): a global colour-coded tag
+ * vocabulary + polymorphic application to work objects (task / project), distinct
+ * from `task.category`. Authorization is enforced in the calling server action
+ * (`delivery:write`); the repo trusts the resolved ids it is handed.
+ */
+export interface TagsRepository {
+  /** The whole tag vocabulary with usage counts, label-sorted (for management + pickers). */
+  listTags(): Promise<Tag[]>;
+  /**
+   * Find an existing tag by label (case-insensitive) or create it; returns the
+   * row. `color` is only used on create. Keeps the vocabulary global (no dupes).
+   */
+  upsertTag(label: string, color: string, createdBy: string | null): Promise<Tag>;
+  /** Rename a tag in place (UPDATE label). Returns the updated row, or null if gone / label collides. */
+  renameTag(id: string, label: string): Promise<Tag | null>;
+  /**
+   * Merge tag `sourceId` into `targetId`: repoint applications (skipping ones that
+   * would collide) then delete the source. Returns true if the source existed.
+   */
+  mergeTags(sourceId: string, targetId: string): Promise<boolean>;
+  /** Delete a tag and all its applications (ON DELETE CASCADE). Returns true if a row was removed. */
+  deleteTag(id: string): Promise<boolean>;
+  /** Tags applied to one work object, label-sorted (for its chips). */
+  listTagsFor(parentType: TagParentType, parentId: string): Promise<AppliedTag[]>;
+  /**
+   * Tags applied across many work objects of one kind, as a map of parentId →
+   * applied tags — one read for a whole list view (chips + tag filter).
+   */
+  listTagsForMany(
+    parentType: TagParentType,
+    parentIds: string[],
+  ): Promise<Record<string, AppliedTag[]>>;
+  /** Apply a tag to a work object (idempotent — PK collision is a no-op). */
+  applyTag(input: TagApplicationInput): Promise<void>;
+  /** Remove a tag from a work object. Returns true if an application was removed. */
+  removeTag(input: TagApplicationInput): Promise<boolean>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -1494,4 +1543,5 @@ export interface Repositories {
   knowledge: KnowledgeRepository;
   security: SecurityRepository;
   work: WorkRepository;
+  tags: TagsRepository;
 }
