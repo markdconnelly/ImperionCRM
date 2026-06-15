@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { TasksTable } from "@/components/tasks/tasks-table";
+import { ProjectTimeline } from "@/components/projects/project-timeline";
 import { TextInput } from "@/components/ui/form";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -33,12 +34,13 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const { feed } = await searchParams;
   const { crm, comms } = getRepositories();
-  const [roles, project, rows, projectTasks, blockedTasks, meetings] = await Promise.all([
+  const [roles, project, rows, projectTasks, blockedTasks, taskDeps, meetings] = await Promise.all([
     getSessionRoles(),
     crm.getProject(id),
     crm.listProjects(),
     crm.listProjectTasks(id),
     crm.listBlockedProjectTasks(id),
+    crm.listProjectTaskDependencies(id),
     comms.listInteractions({ kind: "meeting", projectId: id, limit: 50 }),
   ]);
   if (!project) notFound();
@@ -151,6 +153,26 @@ export default async function ProjectDetailPage({
           </form>
         )}
         <TasksTable tasks={projectTasks} deleteAction={deleteTaskAction} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div>
+          <h3 className="font-display text-base font-semibold tracking-tight">Timeline</h3>
+          <p className="mt-0.5 text-sm text-dim">
+            Tasks on a time axis by due date, with blocked-by dependencies drawn as connectors
+            (ADR-0066 C3). Tasks render as point markers on their due date — full start→end bars need
+            a <code className="text-dim">task.start_at</code> column, tracked in #580.
+          </p>
+        </div>
+        <ProjectTimeline
+          tasks={projectTasks.map((t) => ({
+            id: t.id,
+            title: t.title,
+            status: t.status,
+            due: t.due,
+          }))}
+          edges={taskDeps}
+        />
       </section>
 
       <section className="flex flex-col gap-3">

@@ -220,6 +220,9 @@ export const mockRepositories: Repositories = {
     async setTaskPrimary() {
       throw new Error(NO_DB);
     },
+    async listProjectTaskDependencies() {
+      return [];
+    },
     async listSalesTasks() {
       return [];
     },

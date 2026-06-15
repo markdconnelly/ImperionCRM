@@ -82,6 +82,7 @@ import type {
   ProjectRow,
   ProjectTypeRow,
   ProposalRow,
+  ProjectTaskDependencyEdge,
   QuestionRow,
   QuestionTemplateRow,
   ReportSummary,
@@ -509,6 +510,13 @@ export interface CrmRepository {
    * close. {id, name=title} per blocked task, title-sorted.
    */
   listBlockedProjectTasks(projectId: string): Promise<Option[]>;
+  /**
+   * Every `blocks` dependency edge BETWEEN two tasks of the given project
+   * (ADR-0066 C3, #343) — the connectors the timeline/Gantt view draws. Both
+   * endpoints are project tasks; an edge crossing the project boundary is not
+   * returned (it has nothing to connect on this surface). Pure read; no writes.
+   */
+  listProjectTaskDependencies(projectId: string): Promise<ProjectTaskDependencyEdge[]>;
 
   // Assignees & watchers — people on a work object (ADR-0065 B3, #337)
   /**
