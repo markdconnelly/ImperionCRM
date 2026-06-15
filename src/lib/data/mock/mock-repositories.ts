@@ -667,6 +667,56 @@ export const mockRepositories: Repositories = {
       // Writes a project + milestones/tasks in one transaction — needs a database.
       throw new Error(NO_DB);
     },
+    // Intake forms (ADR-0070 E3, #354) — one seed so the manager + renderer render.
+    async listIntakeForms() {
+      return [
+        {
+          id: "intake-new-client-request",
+          key: "new_client_request",
+          name: "New client request",
+          description: "Capture an internal request and file it as a task.",
+          defaultProjectName: null,
+          defaultCategory: "general",
+          isActive: true,
+          fieldCount: 2,
+          submissionCount: 0,
+        },
+      ];
+    },
+    async getIntakeForm(id: string) {
+      if (id !== "intake-new-client-request") return null;
+      return {
+        id: "intake-new-client-request",
+        key: "new_client_request",
+        name: "New client request",
+        description: "Capture an internal request and file it as a task.",
+        fields: [
+          { key: "summary", label: "Summary", type: "text" as const, required: true, options: [], mapsTo: "title" as const },
+          { key: "details", label: "Details", type: "textarea" as const, required: false, options: [], mapsTo: "detail" as const },
+        ],
+        defaultProjectId: null,
+        defaultAccountId: null,
+        defaultOwnerUserId: null,
+        defaultCategory: "general",
+        isActive: true,
+        defaultProjectName: null,
+        defaultAccountName: null,
+        defaultOwnerName: null,
+      };
+    },
+    async createIntakeForm() {
+      throw new Error(NO_DB);
+    },
+    async deleteIntakeForm() {
+      throw new Error(NO_DB);
+    },
+    async submitIntakeForm() {
+      // Writes a task + submission in one transaction — needs a database.
+      throw new Error(NO_DB);
+    },
+    async listIntakeSubmissions() {
+      return [];
+    },
     // Delivery board (#568) — no demo provisioned projects, so the read returns
     // empty (the board renders its empty state); the fire-intent write needs a
     // database, so it fails honestly rather than pretend to persist.

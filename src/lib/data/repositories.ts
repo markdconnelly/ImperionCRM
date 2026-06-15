@@ -404,6 +404,71 @@ export interface ProjectTemplateInstantiationInput {
   startDate: string;
 }
 
+// ── Intake forms (ADR-0070 E3, migration 0111, #354) ────────────────────────────
+/** A field's input type on an intake form (reuses the registration_page pattern). */
+export type IntakeFieldType = "text" | "textarea" | "date" | "select";
+/** Where a field's answer lands on the created task. */
+export type IntakeFieldMap = "title" | "detail" | "due_at" | "note";
+
+/** One field descriptor stored in intake_form.fields jsonb. */
+export interface IntakeFormField {
+  key: string; // stable machine key (slug); the form posts under `f_<key>`
+  label: string;
+  type: IntakeFieldType;
+  required: boolean;
+  options: string[]; // choices for `select`; empty otherwise
+  mapsTo: IntakeFieldMap;
+}
+
+/** Fields for creating/editing an intake form (the whole definition). */
+export interface IntakeFormInput {
+  key: string; // slugified from the name
+  name: string;
+  description: string | null;
+  fields: IntakeFormField[];
+  defaultProjectId: string | null; // routes submissions to this project
+  defaultAccountId: string | null;
+  defaultOwnerUserId: string | null; // primary owner of the created task
+  defaultCategory: string; // sales|project|onboarding|general = the queue
+  isActive: boolean;
+}
+
+/** Manager/picker list row. */
+export interface IntakeFormRow {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  defaultProjectName: string | null;
+  defaultCategory: string;
+  isActive: boolean;
+  fieldCount: number;
+  submissionCount: number;
+}
+
+/** Full intake form for rendering / submitting. */
+export interface IntakeFormDetail extends IntakeFormInput {
+  id: string;
+  defaultProjectName: string | null;
+  defaultAccountName: string | null;
+  defaultOwnerName: string | null;
+}
+
+/** One submission audit row (the form detail page list). */
+export interface IntakeSubmissionRow {
+  id: string;
+  createdAt: string | null;
+  createdTaskId: string | null;
+  taskTitle: string | null;
+  submittedBy: string | null; // app_user display name, or null
+}
+
+/** Result of a successful submit: the task it created + the audit row. */
+export interface IntakeSubmitResult {
+  taskId: string;
+  submissionId: string;
+}
+
 /** A new/edited attendance Time Entry (ADR-0082). Duration is derived from start/end. */
 export interface TimeEntryInput {
   timesheetId: string;
@@ -861,6 +926,30 @@ export interface CrmRepository {
    * applyOnboardingTemplate (no behaviour change). Returns the new project id.
    */
   instantiateProjectTemplate(input: ProjectTemplateInstantiationInput): Promise<string>;
+
+  // Intake forms — staff-authored forms that create a task on submit (ADR-0070 E3, migration 0111, #354)
+  /** Manager/picker list with field + submission counts. */
+  listIntakeForms(): Promise<IntakeFormRow[]>;
+  /** The full form definition (fields + routing defaults), or null if not found. */
+  getIntakeForm(id: string): Promise<IntakeFormDetail | null>;
+  /** Create a form; returns the id. */
+  createIntakeForm(input: IntakeFormInput): Promise<string>;
+  /** Delete a form (CASCADE drops its submissions). */
+  deleteIntakeForm(id: string): Promise<void>;
+  /**
+   * Submit a form (ADR-0070 E3, #354): map the answers onto a new task (title/
+   * detail/due_at/note per each field's mapsTo) routed to the form's default
+   * account/project/owner/queue, and record the submission — in one transaction.
+   * `submittedBy` is the resolved app_user id (null when unresolved). Returns the
+   * created task + submission ids.
+   */
+  submitIntakeForm(
+    formId: string,
+    payload: Record<string, string>,
+    submittedBy: string | null,
+  ): Promise<IntakeSubmitResult>;
+  /** A form's submissions, newest first (the detail page audit list). */
+  listIntakeSubmissions(formId: string): Promise<IntakeSubmissionRow[]>;
   /**
    * The delivery board read model (ADR-0080 §4/§7, #568): every provisioned
    * project (`project_provisioning ⋈ project ⋈ account`) with its dispatching

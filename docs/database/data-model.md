@@ -2185,6 +2185,39 @@ not silver tier** (like `time_entry` / `work_comment` / `notification`) — no
 semantic-layer concept file applies, and the migration only `REFERENCES task` (it
 does not alter the `task` concept).
 
+## Intake forms — form → task on submit (ADR-0070 E3, migration 0111, #354)
+
+PM templates/recurrence E3 lets staff author internal **intake forms** that create a
+task on submit, routed to a default project/queue — reusing the
+`event.registration_page` JSON-form pattern (ADR-0053). v1 is **staff-authenticated
+only** (`delivery:write`); a public channel is a deliberate later phase.
+
+- **`intake_form`** — one reusable form definition: `{ id, key (UNIQUE slug), name,
+  description, fields (jsonb array), default_project_id? → project (SET NULL),
+  default_account_id? → account (SET NULL), default_owner_user_id? → app_user
+  (SET NULL), default_category (CHECK sales|project|onboarding|general = the queue),
+  is_active, created_at, updated_at }`. `fields` is an ordered array of descriptors
+  `{ key, label, type (text|textarea|date|select), required, options (select only),
+  mapsTo (title|detail|due_at|note) }` — `mapsTo` decides where each answer lands on
+  the created task. jsonb so the field shape can grow (assignee / custom-field
+  mapping, #354 follow-ups) without a migration.
+- **`intake_submission`** — one audit row per submit: `{ id, form_id → intake_form
+  (ON DELETE CASCADE), payload (jsonb raw answers), created_task_id? → task
+  (SET NULL), submitted_by? → app_user (SET NULL), created_at }`.
+
+On submit (`submitIntakeForm`, one transaction): each answered field maps onto the
+task per its `mapsTo` — first `title` field → task title (falls back to the form name
+when none is filled), `detail` fields concatenated, `note` fields appended as
+`Label: value` lines, first valid `due_at` field → due date — then the task is
+inserted with the form's default account/project/owner/category and the submission
+row records who requested what + the task produced. Both tables are **app-native
+operational/config objects, not silver tier** (like `custom_field_def` /
+`saved_views` / `task_recurrence`) — no semantic-layer concept file applies, and the
+migration only `REFERENCES project`/`account`/`app_user`/`task` (it alters no existing
+concept). v1 maps to the task's base fields + routing defaults; assignee/custom-field
+field mapping and an in-place form editor (v1 = delete+recreate) are documented
+follow-ups.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
