@@ -54,6 +54,7 @@ subset; remaining entities are tracked for expansion
 | [`discovery_call`](tables/discovery_call.md) | single-SoR | website system of record | ADR-0023 |
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |
 | [`ticket`](tables/ticket.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
+| [`chat_session`](tables/chat_session.md) | single-SoR | website (backend chat process; native pre-ticket) | ADR-0074 |
 | [`contract`](tables/contract.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`interaction`](tables/interaction.md) | single-SoR | per-source / per-channel | ADR-0011 |
 | [`meeting`](tables/meeting.md) | single-SoR | per-platform (1:1 with interaction) | ADR-0011 |

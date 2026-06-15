@@ -184,6 +184,10 @@ import type {
   LeadScoreRow,
   LeadScoreKind,
   LeadScoreComponent,
+  ChatSessionRow,
+  ChatSessionStatus,
+  ChatSessionChannel,
+  ChatDeflectionKind,
   PipelineColumn,
   PipelineStage,
   PortfolioRow,
@@ -587,6 +591,43 @@ function mapLeadScoreRow(row: {
     band: leadScoreBand(score),
     breakdown: Array.isArray(row.breakdown) ? row.breakdown : [],
     computedAt: row.computed_at,
+  };
+}
+
+/** Map a chat_session row joined to its (nullable) account/contact (ADR-0074 §5, #403). */
+function mapChatSessionRow(row: {
+  id: string;
+  account_id: string | null;
+  account: string | null;
+  contact_id: string | null;
+  contact_name: string | null;
+  status: ChatSessionStatus;
+  channel: ChatSessionChannel;
+  deflected: boolean;
+  deflection_kind: ChatDeflectionKind | null;
+  escalated_ticket_ref: string | null;
+  had_ticket: boolean;
+  transcript_uri: string | null;
+  summary: string | null;
+  started_at: string;
+  closed_at: string | null;
+}): ChatSessionRow {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    account: row.account,
+    contactId: row.contact_id,
+    contactName: row.contact_name,
+    status: row.status,
+    channel: row.channel,
+    deflected: row.deflected,
+    deflectionKind: row.deflection_kind,
+    escalatedTicketRef: row.escalated_ticket_ref,
+    hadTicket: row.had_ticket,
+    transcriptUri: row.transcript_uri,
+    summary: row.summary,
+    startedAt: row.started_at,
+    closedAt: row.closed_at,
   };
 }
 
@@ -1344,6 +1385,87 @@ export const postgresRepositories: Repositories = {
         return rows.map(mapLeadScoreRow);
       } catch {
         return mockRepositories.crm.listLeadScoresForContact(contactId);
+      }
+    },
+
+    // Chat-session read model (ADR-0074 §5, #403): Imperion-native pre-ticket / bot
+    // conversations + deflection telemetry. Account/contact are LEFT-joined (a pre-ticket
+    // session may be anonymous). WRITTEN by the backend chat process (ADR-0042); read here.
+    async listChatSessions(limit = 200): Promise<ChatSessionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listChatSessions(limit);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string | null;
+          account: string | null;
+          contact_id: string | null;
+          contact_name: string | null;
+          status: ChatSessionStatus;
+          channel: ChatSessionChannel;
+          deflected: boolean;
+          deflection_kind: ChatDeflectionKind | null;
+          escalated_ticket_ref: string | null;
+          had_ticket: boolean;
+          transcript_uri: string | null;
+          summary: string | null;
+          started_at: string;
+          closed_at: string | null;
+        }>(
+          `SELECT cs.id, cs.account_id, a.name AS account,
+                  cs.contact_id, c.full_name AS contact_name,
+                  cs.status, cs.channel, cs.deflected, cs.deflection_kind,
+                  cs.escalated_ticket_ref, cs.had_ticket, cs.transcript_uri,
+                  cs.summary, cs.started_at, cs.closed_at
+           FROM chat_session cs
+           LEFT JOIN contact c ON c.id = cs.contact_id
+           LEFT JOIN account a ON a.id = cs.account_id
+           ORDER BY cs.started_at DESC
+           LIMIT $1`,
+          [limit],
+        );
+        return rows.map(mapChatSessionRow);
+      } catch {
+        return mockRepositories.crm.listChatSessions(limit);
+      }
+    },
+
+    async listChatSessionsForContact(contactId: string): Promise<ChatSessionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listChatSessionsForContact(contactId);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          account_id: string | null;
+          account: string | null;
+          contact_id: string | null;
+          contact_name: string | null;
+          status: ChatSessionStatus;
+          channel: ChatSessionChannel;
+          deflected: boolean;
+          deflection_kind: ChatDeflectionKind | null;
+          escalated_ticket_ref: string | null;
+          had_ticket: boolean;
+          transcript_uri: string | null;
+          summary: string | null;
+          started_at: string;
+          closed_at: string | null;
+        }>(
+          `SELECT cs.id, cs.account_id, a.name AS account,
+                  cs.contact_id, c.full_name AS contact_name,
+                  cs.status, cs.channel, cs.deflected, cs.deflection_kind,
+                  cs.escalated_ticket_ref, cs.had_ticket, cs.transcript_uri,
+                  cs.summary, cs.started_at, cs.closed_at
+           FROM chat_session cs
+           LEFT JOIN contact c ON c.id = cs.contact_id
+           LEFT JOIN account a ON a.id = cs.account_id
+           WHERE cs.contact_id = $1
+           ORDER BY cs.started_at DESC`,
+          [contactId],
+        );
+        return rows.map(mapChatSessionRow);
+      } catch {
+        return mockRepositories.crm.listChatSessionsForContact(contactId);
       }
     },
 

@@ -68,6 +68,7 @@ object · **H** reference/config/identity.
 | [discovery_call](tables/discovery_call.md) | B | ✅ | discovery-prep |
 | [strategic_business_review](tables/strategic_business_review.md) | B | ✅ | QBR / SBR-prep |
 | [ticket](tables/ticket.md) | B (Autotask SoR) | ✅ | service-desk |
+| [chat_session](tables/chat_session.md) | B (native pre-ticket + deflection) | ✅ | service-desk (chatbot deflection / routing) |
 | sbr_dimension_score, sbr_ticket | B | ⏳ | SBR-prep |
 | question_template, question, engagement_answer | B | ⏳ | discovery / assessment capture |
 | [contract](tables/contract.md) | B | ✅ | sale→delivery (DocuSign-gated) |

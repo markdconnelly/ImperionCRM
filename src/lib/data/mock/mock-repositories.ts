@@ -243,6 +243,14 @@ export const mockRepositories: Repositories = {
     async listLeadScoresForContact() {
       return [];
     },
+    // Chat sessions (ADR-0074 §5, #403) — read model over 0117 chat_session.
+    // Honest empty with no DB (sessions are written by the backend chat process).
+    async listChatSessions() {
+      return [];
+    },
+    async listChatSessionsForContact() {
+      return [];
+    },
     async listTasks() {
       return [];
     },
