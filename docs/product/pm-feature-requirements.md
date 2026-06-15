@@ -320,31 +320,34 @@ minutes, started_at?, note, billable }`.
 ## D2. Workload / capacity
 
 - D2-F1 (COULD) Per-user workload view: assigned open work (count + estimated hours)
-  over a date range. **Shipped (counts) — #347:** `/projects/workload` lists every
-  person's open-task load (primary + assignee, via `work_assignment`), busiest first,
-  with due-soon / overdue counts. **Estimated hours + date range deferred to D1** —
-  `task.estimate` does not exist yet.
+  over a date range. **Shipped (hours + range) — #591:** `/projects/workload` lists
+  every person's load (primary + assignee, via `work_assignment`), busiest first, as
+  **summed estimated hours** (`task.estimate` where unit is hours) over a Monday-start
+  **week** (prev/next picker), with due-soon / overdue counts. Supersedes the #347
+  count interim.
 - D2-F2 (COULD) Over-allocation highlight against a per-user weekly capacity.
-  **Shipped (count proxy) — #347:** over/near tones from an open-task-count threshold
-  (`lib/workload.ts`). **True hours-vs-capacity deferred to D1** — `user_capacity.weekly_hours`
-  does not exist yet.
-- D2-F3 (COULD) Reassign from the workload view. **Deferred to D1 (#346)** — reassign is
-  only meaningful against estimated load; per-task reassignment already exists (assignees
-  control, #337).
+  **Shipped (hours) — #591:** over/near tones from each user's own
+  `user_capacity.weekly_hours` (≥100% → over, ≥80% → near; overdue work escalates a near
+  user), replacing the #347 flat count threshold. A per-user weekly-hours admin lives at
+  `/projects/capacity` (delivery-management gated). People with no capacity set can't be
+  flagged.
+- D2-F3 (COULD) Reassign from the workload view. **Still deferred** — reassign is handled
+  per-task via the assignees control (#337); a from-view reassign is a separate follow-up.
 - AC: A user with assignments exceeding capacity in a week is flagged; reassigning
-  updates both users' loads. **Met for counts** (over-allocated assignees are flagged);
-  the weekly-hours form of the AC lands with D1 estimates.
+  updates both users' loads. **Met (hours):** a user whose summed estimated hours due in
+  the week reach their weekly capacity is flagged over-allocated. Reassign-from-view
+  remains the per-task control.
 
-**Data model.** `user_capacity{ user_id, weekly_hours }`; load derived from
-assignments + estimates. **#347 reads `work_assignment` (0099) + `task` only — no
-migration; the `user_capacity` table and `task.estimate` are D1, #346.**
+**Data model.** `user_capacity{ user_id, weekly_hours }` + `task.estimate(+unit)`; load
+derived from assignments + estimates. **The migration authoring these (the `user_capacity`
+table + `task.estimate`/`estimate_unit`) is the #346/#580 heavy lane this wave; #591 is the
+view/admin/data-layer lane that CONSUMES them — no migration of its own.**
 
-> **View-lane note (#347).** Workload renders the load that exists today —
-> open-task COUNTS per assignee — and approximates capacity by a count threshold.
-> The full hours-vs-capacity model and reassign-from-view are gated on D1 (#346)
-> landing `task.estimate` + `user_capacity.weekly_hours`. RBAC: the cross-person
-> view is delivery-management only (admin / project_manager), per ADR-0069's
-> staff-performance-data security impact.
+> **Note (#591).** Workload is hours-based: load = Σ `task.estimate` (hours-unit) over each
+> person's open tasks due in the scoped week, classified against their
+> `user_capacity.weekly_hours`. RBAC: the cross-person view + the capacity admin are
+> delivery-management only (admin / project_manager), per ADR-0069's staff-performance-data
+> security impact.
 
 ## D3. Goals / OKRs — SHIPPED (#348)
 

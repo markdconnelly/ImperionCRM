@@ -102,6 +102,7 @@ import type {
   WorkAssignments,
   WorkRole,
   WorkloadRow,
+  UserCapacity,
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
@@ -619,14 +620,29 @@ export interface CrmRepository {
    */
   setTaskPrimary(taskId: string, userId: string, role: Extract<WorkRole, "primary">): Promise<void>;
   /**
-   * Per-user open-task load for the workload / capacity view (ADR-0069 D2, #347).
-   * One row per app_user attached to at least one not-done task (as primary OR
-   * assignee, via `work_assignment`), with that user's open-task count, the count
-   * due within the next 7 days, and the count already overdue. Pure read over
-   * `work_assignment` + `task`; no `user_capacity` / `task.estimate` (those are
-   * D1, #346) — load is COUNTS, not hours. No writes, no migration.
+   * Per-user load for the workload / capacity view (ADR-0069 D1/D2, #591). One row
+   * per app_user attached to at least one not-done task (primary OR assignee, via
+   * `work_assignment`), carrying that user's SUMMED estimated hours (`task.estimate`
+   * where `estimate_unit = 'hours'`), their `user_capacity.weekly_hours`, and the
+   * open / due-soon / overdue counts. `range` scopes load by task due date (D2-F1
+   * "over a date range") — omit for all open work. Read over `work_assignment` +
+   * `task` + `user_capacity`; no writes.
    */
-  listWorkload(): Promise<WorkloadRow[]>;
+  listWorkload(range?: { from: string; to: string }): Promise<WorkloadRow[]>;
+
+  // #591 user_capacity — per-user weekly-hours capacity (the workload threshold)
+  /**
+   * Every app_user with their `user_capacity.weekly_hours` (null when unset). Drives
+   * the weekly-hours admin surface (`/projects/capacity`). Read over `app_user` LEFT
+   * JOIN `user_capacity`. ADR-0069 D2, #591.
+   */
+  listUserCapacity(): Promise<UserCapacity[]>;
+  /**
+   * Upsert a user's weekly capacity hours (`user_capacity.weekly_hours`). `null`
+   * clears it. Gated by `delivery:capacity` (admin∨project_manager) at the action.
+   * ADR-0069 D2, #591.
+   */
+  setUserCapacity(userId: string, weeklyHours: number | null): Promise<void>;
 
   // Sales Activity (ADR-0052 §6) — the Sales Queue read model + its two writes
   /** Open `category='sales'` tasks with owner + deal context (the Sales Queue). */
