@@ -1946,6 +1946,45 @@ App-native, not silver tier — no semantic-layer concept file applies (the gate
 does not flag a new polymorphic collaboration table, see
 `docs/operations/semantic-layer-gate.md`).
 
+### In-app notifications (ADR-0064 A3, migration 0101, #332)
+
+The third ADR-0064 slice adds the **in-app notification centre** (the bell) plus the
+recipient store the **backend** fans out from. Recipients are the people on the work
+object — the watchers/assignees in `work_assignment` (B3 / migration 0099) and
+@mentioned users (0097). A notification is written inside the originating work
+event's transaction (assigned / @mentioned / commented); the GUI reads the bell
+straight off the table (ADR-0042), while the **outbound** fan-out to email/Teams via
+Power Automate and the **scheduled** due-soon/overdue evaluation are **backend
+processes** (ADR-0064: the front end never holds a provider key).
+
+- **`notification`** — `{ id, recipient_user_id → app_user (ON DELETE CASCADE),
+  kind (assigned|mentioned|commented|due_soon|overdue|blocked, CHECK),
+  parent_type (task|project|milestone, CHECK), parent_id, actor_user_id → app_user
+  (ON DELETE SET NULL), payload jsonb, read_at, created_at }`. No DB-level FK on
+  `parent_id` (polymorphic, same tradeoff). `read_at NULL = unread` drives the
+  bell badge; `idx_notification_recipient (recipient_user_id, created_at DESC)`
+  serves the list and a **partial** `idx_notification_unread … WHERE read_at IS NULL`
+  the badge count. `payload` is pre-rendered context (title + actor) — **no client
+  PII** (recipients are employees).
+- **`notification_pref`** — `{ user_id → app_user (ON DELETE CASCADE),
+  kind (CHECK), channel (in_app|email|teams, CHECK), enabled, updated_at }`, PK
+  `(user_id, kind, channel)`. **Absence of a row = default** (in-app ON); an explicit
+  `enabled=false` row **mutes** that trigger on that channel (acceptance: "muting a
+  trigger suppresses it"). The FE honours `in_app`; the backend dispatcher honours
+  `email`/`teams`. The in-app dispatch insert suppresses a muted kind via a
+  `NOT EXISTS` guard.
+- **Dispatch points.** `addComment`/mention-reconcile write a `mentioned` row per
+  @mention and a `commented` row per watcher/assignee (minus the author and the
+  already-mentioned); `setTaskAssignees` writes an `assigned` row per **newly-added**
+  assignee. The insert **never fails the originating event** — a schema-lag (table
+  not yet applied) is swallowed so the bell is simply dormant until migration 0101
+  lands. `due_soon`/`overdue`/`blocked` are produced by the **backend's scheduled
+  evaluation** (out of scope for this front-end slice — see the #332 follow-up).
+
+App-native, not silver tier — no semantic-layer concept file applies (the gate
+does not flag a new polymorphic collaboration table, see
+`docs/operations/semantic-layer-gate.md`).
+
 ## Tags / labels — global vocabulary + polymorphic application (ADR-0065 B6, migration 0096)
 
 PM task-structure B6 adds **free-form, colour-coded tags** with a **global

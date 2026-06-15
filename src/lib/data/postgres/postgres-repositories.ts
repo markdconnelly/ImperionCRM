@@ -79,6 +79,7 @@ import type {
   WorkflowStepInput,
   WorkCommentInput,
   WorkAttachmentInput,
+  NotificationInput,
   TagApplicationInput,
 } from "@/lib/data/repositories";
 import type {
@@ -200,6 +201,8 @@ import type {
   WorkActivityEntry,
   CommentMention,
   MentionableUser,
+  Notification,
+  NotificationKind,
   TagParentType,
   Tag,
   AppliedTag,
@@ -1463,6 +1466,13 @@ export const postgresRepositories: Repositories = {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
+        // Who is ALREADY attached (any role) — so we only notify NEWLY-added people.
+        const { rows: before } = await client.query<{ user_id: string }>(
+          `SELECT user_id::text AS user_id FROM work_assignment
+            WHERE parent_type = 'task' AND parent_id = $1`,
+          [taskId],
+        );
+        const alreadyOn = new Set(before.map((r) => r.user_id));
         // Drop every assignee row that is no longer wanted (leaves primary/watcher
         // rows untouched).
         await client.query(
@@ -1488,6 +1498,15 @@ export const postgresRepositories: Repositories = {
                WHERE work_assignment.role <> 'primary'`,
             [taskId, uid],
           );
+          // A3 (#332): notify someone added to the task for the first time
+          // (acceptance: "assigning notifies assignee in-app within one refresh").
+          // Actor is unattributed here — the assignee save carries no acting user;
+          // a later slice threads it through (#332 follow-up).
+          if (!alreadyOn.has(uid)) {
+            await insertNotification(client, uid, "assigned", "task", taskId, null, {
+              title: "You were assigned to a task",
+            });
+          }
         }
         await client.query("COMMIT");
       } catch (err) {
@@ -8488,6 +8507,22 @@ export const postgresRepositories: Repositories = {
         const mentions = await persistMentions(
           client, row.id, input.body, input.parentType, input.parentId, input.authorUserId,
         );
+        // A3 (#332): notify everyone watching/assigned to this object that a comment
+        // landed (kind=commented), EXCLUDING the author (insertNotification skips
+        // self) and anyone already notified by an @mention (kind=mentioned) above.
+        const mentionedIds = new Set(mentions.map((m) => m.userId).filter(Boolean));
+        const { rows: watchers } = await client.query<{ user_id: string }>(
+          `SELECT user_id::text AS user_id FROM work_assignment
+            WHERE parent_type = $1 AND parent_id = $2::uuid`,
+          [input.parentType, input.parentId],
+        );
+        for (const w of watchers) {
+          if (mentionedIds.has(w.user_id)) continue;
+          await insertNotification(
+            client, w.user_id, "commented", input.parentType, input.parentId,
+            input.authorUserId, { title: "New comment on a work item you follow" },
+          );
+        }
         await client.query("COMMIT");
         return mapWorkComment(row, mentions);
       } catch (err) {
@@ -8667,6 +8702,128 @@ export const postgresRepositories: Repositories = {
         throw err;
       } finally {
         client.release();
+      }
+    },
+  },
+
+  // ── Notifications — the in-app bell (ADR-0064 A3, #332) ─────────────────────
+  notifications: {
+    async listForUser(
+      recipientUserId: string,
+      opts?: { unreadOnly?: boolean; limit?: number },
+    ): Promise<Notification[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.notifications.listForUser(recipientUserId, opts);
+      const limit = Math.min(Math.max(opts?.limit ?? 30, 1), 100);
+      try {
+        const { rows } = await pool.query<NotificationDbRow>(
+          `SELECT n.id, n.kind, n.parent_type, n.parent_id::text AS parent_id,
+                  coalesce(n.payload->>'actor', a.display_name) AS actor,
+                  coalesce(n.payload->>'title', n.kind) AS title,
+                  (n.read_at IS NOT NULL) AS read, n.created_at::text AS created_at
+             FROM notification n
+             LEFT JOIN app_user a ON a.id = n.actor_user_id
+            WHERE n.recipient_user_id = $1::uuid
+              AND ($2::boolean IS FALSE OR n.read_at IS NULL)
+            ORDER BY n.created_at DESC
+            LIMIT $3`,
+          [recipientUserId, opts?.unreadOnly ?? false, limit],
+        );
+        return rows.map(mapNotification);
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // schema not applied yet (#332)
+        return mockRepositories.notifications.listForUser(recipientUserId, opts);
+      }
+    },
+
+    async unreadCount(recipientUserId: string): Promise<number> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.notifications.unreadCount(recipientUserId);
+      try {
+        const { rows } = await pool.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM notification
+            WHERE recipient_user_id = $1::uuid AND read_at IS NULL`,
+          [recipientUserId],
+        );
+        return Number(rows[0]?.count ?? 0);
+      } catch (err) {
+        if (isSchemaLagError(err)) return 0; // schema not applied yet (#332)
+        return mockRepositories.notifications.unreadCount(recipientUserId);
+      }
+    },
+
+    async markRead(id: string, recipientUserId: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.notifications.markRead(id, recipientUserId);
+      try {
+        // Recipient-scoped: a user can only mark their OWN notifications read.
+        const { rows } = await pool.query<{ id: string }>(
+          `UPDATE notification SET read_at = now()
+            WHERE id = $1::uuid AND recipient_user_id = $2::uuid AND read_at IS NULL
+          RETURNING id`,
+          [id, recipientUserId],
+        );
+        return rows.length > 0;
+      } catch (err) {
+        if (isSchemaLagError(err)) return false; // schema not applied yet (#332)
+        throw err;
+      }
+    },
+
+    async markAllRead(recipientUserId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.notifications.markAllRead(recipientUserId);
+      try {
+        await pool.query(
+          `UPDATE notification SET read_at = now()
+            WHERE recipient_user_id = $1::uuid AND read_at IS NULL`,
+          [recipientUserId],
+        );
+      } catch (err) {
+        if (isSchemaLagError(err)) return; // schema not applied yet (#332)
+        throw err;
+      }
+    },
+
+    async dispatch(
+      input: NotificationInput,
+      recipientUserIds: string[],
+      client?: Queryable,
+    ): Promise<void> {
+      const q: Queryable | Pool | null = client ?? getPool();
+      if (!q) return mockRepositories.notifications.dispatch(input, recipientUserIds, client);
+      // Never notify the actor; dedupe the recipient set.
+      const recipients = Array.from(new Set(recipientUserIds)).filter(
+        (uid) => uid && uid !== input.actorUserId,
+      );
+      if (recipients.length === 0) return;
+      try {
+        // One INSERT per recipient, suppressing any user that has explicitly muted
+        // this kind on the in_app channel (notification_pref enabled=false). Absence
+        // of a pref row = default ON (NOT EXISTS leaves the insert in place).
+        for (const uid of recipients) {
+          await q.query(
+            `INSERT INTO notification
+               (recipient_user_id, kind, parent_type, parent_id, actor_user_id, payload)
+             SELECT $1::uuid, $2, $3, $4::uuid, $5::uuid, $6::jsonb
+              WHERE NOT EXISTS (
+                SELECT 1 FROM notification_pref p
+                 WHERE p.user_id = $1::uuid AND p.kind = $2
+                   AND p.channel = 'in_app' AND p.enabled = false
+              )`,
+            [
+              uid, input.kind, input.parentType, input.parentId,
+              input.actorUserId, JSON.stringify(input.payload),
+            ],
+          );
+        }
+      } catch (err) {
+        // A notification must NEVER fail the originating work event (assignment /
+        // comment). Swallow a schema-lag (table not applied yet) silently; rethrow
+        // anything else only when not inside the caller's transaction.
+        if (isSchemaLagError(err)) return;
+        if (!client) return; // best-effort outside a txn
+        throw err; // inside a txn the caller decides (its catch rolls back)
       }
     },
   },
@@ -8905,10 +9062,67 @@ function mapWorkAttachment(r: AttachmentDbRow): WorkAttachment {
   };
 }
 
+/** The selected shape of a notification row (snake_case), ADR-0064 A3 / #332. */
+interface NotificationDbRow {
+  id: string; kind: string; parent_type: string; parent_id: string;
+  actor: string | null; title: string; read: boolean; created_at: string;
+}
+
+/** Map a notification DB row (snake_case) onto the {@link Notification} type. */
+function mapNotification(r: NotificationDbRow): Notification {
+  return {
+    id: r.id,
+    kind: r.kind as Notification["kind"],
+    parentType: r.parent_type as WorkParentType,
+    parentId: r.parent_id,
+    actor: r.actor,
+    title: r.title,
+    read: r.read,
+    createdAt: r.created_at,
+  };
+}
+
 // ── @mention persistence helpers (ADR-0064 A2, migration 0097, #331) ──
 // A minimal client surface so these helpers work with both a Pool and a pooled
 // client (the add/edit paths run inside a transaction).
 type Queryable = { query: <T>(sql: string, params?: unknown[]) => Promise<{ rows: T[] }> };
+
+/**
+ * Insert a single in-app notification (ADR-0064 A3, #332) inside the caller's
+ * transaction, suppressing it when the recipient has explicitly muted this kind on
+ * the in_app channel (notification_pref enabled=false; absence of a row = ON). Used
+ * by the in-txn work-event paths (mention, comment, assignment). Swallows a
+ * schema-lag (0101 not applied yet) so it NEVER fails the originating event; other
+ * errors propagate to the caller's transaction (which rolls back). `payload` is
+ * pre-rendered context (title + actor) carrying no client PII.
+ */
+async function insertNotification(
+  client: Queryable,
+  recipientUserId: string,
+  kind: NotificationKind,
+  parentType: WorkParentType,
+  parentId: string,
+  actorUserId: string | null,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  if (!recipientUserId || recipientUserId === actorUserId) return; // never notify yourself
+  try {
+    await client.query(
+      `INSERT INTO notification
+         (recipient_user_id, kind, parent_type, parent_id, actor_user_id, payload)
+       SELECT $1::uuid, $2, $3, $4::uuid, $5::uuid, $6::jsonb
+        WHERE NOT EXISTS (
+          SELECT 1 FROM notification_pref p
+           WHERE p.user_id = $1::uuid AND p.kind = $2
+             AND p.channel = 'in_app' AND p.enabled = false
+        )`,
+      [recipientUserId, kind, parentType, parentId, actorUserId, JSON.stringify(payload)],
+    );
+  } catch (err) {
+    if (isSchemaLagError(err)) return; // 0101 not applied — bell dormant, event still lands
+    throw err;
+  }
+}
 
 /**
  * Batch-load resolved mentions for a set of comment ids → Map(commentId →
@@ -8996,6 +9210,10 @@ async function persistMentions(
                  jsonb_build_object('commentId', $4::text, 'mentionedUserId', $5::text))`,
         [actorUserId, parentType, parentId, commentId, u.id],
       );
+      // A3 (#332): also write the in-app notification the bell reads.
+      await insertNotification(client, u.id!, "mentioned", parentType, parentId, actorUserId, {
+        title: "You were mentioned in a comment",
+      });
     }
   }
   return resolved.map((u) => ({ userId: u.id, handle: u.handle, displayName: u.displayName }));
@@ -9043,6 +9261,10 @@ async function reconcileMentions(
                  jsonb_build_object('commentId', $4::text, 'mentionedUserId', $5::text))`,
         [actorUserId, parentType, parentId, commentId, u.id],
       );
+      // A3 (#332): notify a NEWLY-added mention (existing ones already were).
+      await insertNotification(client, u.id!, "mentioned", parentType, parentId, actorUserId, {
+        title: "You were mentioned in a comment",
+      });
     }
   }
   return resolved.map((u) => ({ userId: u.id, handle: u.handle, displayName: u.displayName }));
