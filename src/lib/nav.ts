@@ -91,6 +91,9 @@ export const navHidden: NavItem[] = [
   { key: "knowledge", label: "Knowledge", icon: "BrainCircuit", href: "/knowledge" },
   { key: "workflows", label: "Workflows", icon: "Workflow", href: "/workflows" },
   { key: "questions", label: "Questions", icon: "FileQuestion", href: "/questions" },
+  // Admin-definable custom fields on tasks/projects (ADR-0065 B4, #338) — reached
+  // from Settings → Tools & configuration; listed so the top bar resolves its title.
+  { key: "custom-fields", label: "Custom fields", icon: "ListPlus", href: "/custom-fields" },
 ];
 
 export const navAll: NavItem[] = [...navPrimary, ...navSecondary, ...navTertiary, ...navHidden];

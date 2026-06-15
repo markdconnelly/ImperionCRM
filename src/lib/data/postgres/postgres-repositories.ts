@@ -88,6 +88,8 @@ import type {
   WorkAttachmentInput,
   NotificationInput,
   TagApplicationInput,
+  CustomFieldDefInput,
+  CustomFieldValueInput,
 } from "@/lib/data/repositories";
 import type {
   Account,
@@ -215,6 +217,10 @@ import type {
   TagParentType,
   Tag,
   AppliedTag,
+  CustomFieldDef,
+  CustomFieldType,
+  CustomFieldValue,
+  CustomFieldParentType,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -9152,7 +9158,220 @@ export const postgresRepositories: Repositories = {
       return (rowCount ?? 0) > 0;
     },
   },
+
+  // ── Custom fields (ADR-0065 B4, #338) ──────────────────────────────────────
+  customFields: {
+    async listFieldDefs(): Promise<CustomFieldDef[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.customFields.listFieldDefs();
+      try {
+        const { rows } = await pool.query<CustomFieldDefDbRow>(
+          `SELECT d.id, d.scope, d.project_type_id, pt.name AS project_type_name,
+                  d.key, d.label, d.field_type, d.options, d.required, d.ordinal
+             FROM custom_field_def d
+             LEFT JOIN project_type pt ON pt.id = d.project_type_id
+            ORDER BY d.scope, d.ordinal, lower(d.label)`,
+        );
+        return rows.map(mapCustomFieldDef);
+      } catch (err) {
+        if (isSchemaLagError(err)) return []; // schema not applied yet (#338)
+        return mockRepositories.customFields.listFieldDefs();
+      }
+    },
+
+    async listFieldDefsFor(
+      scope: CustomFieldParentType,
+      projectTypeId: string | null,
+    ): Promise<CustomFieldDef[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.customFields.listFieldDefsFor(scope, projectTypeId);
+      try {
+        // A form sees the scope's global fields (project_type_id IS NULL) plus the
+        // ones scoped to this project_type (when the object has a known type).
+        const { rows } = await pool.query<CustomFieldDefDbRow>(
+          `SELECT d.id, d.scope, d.project_type_id, pt.name AS project_type_name,
+                  d.key, d.label, d.field_type, d.options, d.required, d.ordinal
+             FROM custom_field_def d
+             LEFT JOIN project_type pt ON pt.id = d.project_type_id
+            WHERE d.scope = $1
+              AND (d.project_type_id IS NULL OR d.project_type_id = $2::uuid)
+            ORDER BY d.ordinal, lower(d.label)`,
+          [scope, projectTypeId],
+        );
+        return rows.map(mapCustomFieldDef);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.customFields.listFieldDefsFor(scope, projectTypeId);
+      }
+    },
+
+    async createFieldDef(input: CustomFieldDefInput): Promise<CustomFieldDef> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.customFields.createFieldDef(input);
+      const { rows } = await pool.query<CustomFieldDefDbRow>(
+        `WITH ins AS (
+           INSERT INTO custom_field_def
+             (scope, project_type_id, key, label, field_type, options, required, ordinal)
+           VALUES ($1, $2::uuid, $3, $4, $5, $6::jsonb, $7, $8)
+           RETURNING *
+         )
+         SELECT ins.id, ins.scope, ins.project_type_id,
+                pt.name AS project_type_name, ins.key, ins.label, ins.field_type,
+                ins.options, ins.required, ins.ordinal
+           FROM ins LEFT JOIN project_type pt ON pt.id = ins.project_type_id`,
+        defParams(input),
+      );
+      return mapCustomFieldDef(rows[0]);
+    },
+
+    async updateFieldDef(
+      id: string,
+      input: CustomFieldDefInput,
+    ): Promise<CustomFieldDef | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.customFields.updateFieldDef(id, input);
+      const { rows } = await pool.query<CustomFieldDefDbRow>(
+        `WITH up AS (
+           UPDATE custom_field_def
+              SET scope = $1, project_type_id = $2::uuid, key = $3, label = $4,
+                  field_type = $5, options = $6::jsonb, required = $7, ordinal = $8
+            WHERE id = $9::uuid
+           RETURNING *
+         )
+         SELECT up.id, up.scope, up.project_type_id,
+                pt.name AS project_type_name, up.key, up.label, up.field_type,
+                up.options, up.required, up.ordinal
+           FROM up LEFT JOIN project_type pt ON pt.id = up.project_type_id`,
+        [...defParams(input), id],
+      );
+      return rows[0] ? mapCustomFieldDef(rows[0]) : null;
+    },
+
+    async deleteFieldDef(id: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.customFields.deleteFieldDef(id);
+      const { rowCount } = await pool.query(
+        `DELETE FROM custom_field_def WHERE id = $1::uuid`,
+        [id],
+      );
+      return (rowCount ?? 0) > 0;
+    },
+
+    async listValuesFor(
+      parentType: CustomFieldParentType,
+      parentId: string,
+      projectTypeId: string | null,
+    ): Promise<CustomFieldValue[]> {
+      const pool = getPool();
+      if (!pool) {
+        return mockRepositories.customFields.listValuesFor(parentType, parentId, projectTypeId);
+      }
+      try {
+        // LEFT JOIN so a field with no value yet still appears (value null) — the
+        // form shows every applicable field, not only the answered ones.
+        const { rows } = await pool.query<{
+          field_id: string; key: string; label: string; field_type: string;
+          options: unknown; required: boolean; value: unknown;
+        }>(
+          `SELECT d.id AS field_id, d.key, d.label, d.field_type, d.options, d.required,
+                  v.value
+             FROM custom_field_def d
+             LEFT JOIN custom_field_value v
+               ON v.field_id = d.id AND v.parent_type = $1 AND v.parent_id = $2::uuid
+            WHERE d.scope = $1
+              AND (d.project_type_id IS NULL OR d.project_type_id = $3::uuid)
+            ORDER BY d.ordinal, lower(d.label)`,
+          [parentType, parentId, projectTypeId],
+        );
+        return rows.map((r) => ({
+          fieldId: r.field_id,
+          key: r.key,
+          label: r.label,
+          fieldType: r.field_type as CustomFieldType,
+          options: Array.isArray(r.options) ? (r.options as string[]) : [],
+          required: r.required,
+          value: (r.value ?? null) as CustomFieldValue["value"],
+        }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.customFields.listValuesFor(parentType, parentId, projectTypeId);
+      }
+    },
+
+    async setValue(input: CustomFieldValueInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.customFields.setValue(input);
+      // A null/empty value clears the field (delete the row); otherwise upsert on
+      // the PK so a re-write is idempotent.
+      const cleared =
+        input.value === null || (Array.isArray(input.value) && input.value.length === 0);
+      if (cleared) {
+        await pool.query(
+          `DELETE FROM custom_field_value
+            WHERE field_id = $1::uuid AND parent_type = $2 AND parent_id = $3::uuid`,
+          [input.fieldId, input.parentType, input.parentId],
+        );
+        return;
+      }
+      await pool.query(
+        `INSERT INTO custom_field_value (field_id, parent_type, parent_id, value)
+         VALUES ($1::uuid, $2, $3::uuid, $4::jsonb)
+         ON CONFLICT (field_id, parent_type, parent_id)
+           DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+        [input.fieldId, input.parentType, input.parentId, JSON.stringify(input.value)],
+      );
+    },
+  },
 };
+
+/** A select-type custom field carries an options list; the others store []. */
+function isSelectFieldType(t: CustomFieldType): boolean {
+  return t === "single_select" || t === "multi_select";
+}
+
+/** Positional params shared by create/update of a custom_field_def. */
+function defParams(input: CustomFieldDefInput): unknown[] {
+  return [
+    input.scope,
+    input.scope === "project" ? input.projectTypeId : null, // a task field is never type-scoped
+    input.key.trim(),
+    input.label.trim(),
+    input.fieldType,
+    JSON.stringify(isSelectFieldType(input.fieldType) ? input.options : []),
+    input.required,
+    input.ordinal,
+  ];
+}
+
+/** The selected shape of a custom_field_def row (snake_case), ADR-0065 B4. */
+interface CustomFieldDefDbRow {
+  id: string;
+  scope: string;
+  project_type_id: string | null;
+  project_type_name: string | null;
+  key: string;
+  label: string;
+  field_type: string;
+  options: unknown;
+  required: boolean;
+  ordinal: number;
+}
+
+/** Map a custom_field_def DB row (snake_case) onto the {@link CustomFieldDef} type. */
+function mapCustomFieldDef(r: CustomFieldDefDbRow): CustomFieldDef {
+  return {
+    id: r.id,
+    scope: r.scope as CustomFieldParentType,
+    projectTypeId: r.project_type_id,
+    projectTypeName: r.project_type_name,
+    key: r.key,
+    label: r.label,
+    fieldType: r.field_type as CustomFieldType,
+    options: Array.isArray(r.options) ? (r.options as string[]) : [],
+    required: r.required,
+    ordinal: Number(r.ordinal),
+  };
+}
 
 /** The selected shape of a work_comment row (snake_case) across the work repo. */
 interface CommentDbRow {

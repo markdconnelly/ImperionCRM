@@ -2027,6 +2027,38 @@ every mutation requires `delivery:write`; `color` is clamped to the design-token
 palette so a caller can't inject a raw hex. These are **app-native tables, not
 silver tier** — no semantic-layer concept file applies.
 
+## Custom fields — admin-definable fields on tasks/projects (ADR-0065 B4, migration 0102)
+
+PM task-structure B4 adds **admin-definable custom fields** on work objects
+(task / project), optionally **scoped to one `project_type`**, so an admin can add
+(e.g.) a "Risk level" single-select that appears **only on Implementation projects**
+and is filterable in reporting (the B4 acceptance). The EAV shape ADR-0065 chose
+(definition + `*_value` jsonb), mirroring the polymorphic application of `work_tag`.
+
+- **`custom_field_def`** — the definition: `{ id, scope (task|project, CHECK),
+  project_type_id? → project_type (ON DELETE CASCADE; NULL = every project/task of
+  the scope), key, label, field_type (text|number|date|single_select|multi_select|
+  checkbox|user|currency, CHECK), options jsonb (choice list for the select types),
+  required (B4-F3), ordinal, created_by, created_at, updated_at }`. The `key` is
+  unique within a `(scope, project_type_id)` group — two **partial** unique indexes
+  cover the NULL-vs-typed cases (NULLs aren't equal in a plain unique index), so a
+  global `risk_level` and an Implementation-only `risk_level` can coexist. A
+  `(scope, project_type_id, ordinal)` index serves the per-form read.
+- **`custom_field_value`** — the polymorphic value: `{ field_id → custom_field_def
+  (ON DELETE CASCADE), parent_type (task|project, CHECK), parent_id, value jsonb,
+  updated_at }` with **PK `(field_id, parent_type, parent_id)`** so a write is
+  idempotent. No DB-level FK on `parent_id` (polymorphic, ADR-0064/0065 tradeoff). A
+  **GIN index on `value`** (issue #338) lets reporting filter work objects by a custom
+  field's value (e.g. Risk level = High) without a sequential scan.
+
+Defining a field is an **admin** action (`catalog:write`, the catalog-config
+capability); writing a value is `delivery:write`. A custom field **can capture PII at
+runtime** — handled as any task field (ADR-0065 security impact) — but the **schema
+holds none**. These are **app-native tables, not silver tier** — no semantic-layer
+concept file applies. The admin definition surface is `/custom-fields` (linked from
+Settings → Tools & configuration). The per-object value read/write on the task/project
+detail and the reporting filter integration are tracked as a follow-up to #338.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —

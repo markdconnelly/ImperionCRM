@@ -125,6 +125,10 @@ import type {
   TagParentType,
   Tag,
   AppliedTag,
+  CustomFieldParentType,
+  CustomFieldType,
+  CustomFieldDef,
+  CustomFieldValue,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -1772,6 +1776,71 @@ export interface TagsRepository {
   removeTag(input: TagApplicationInput): Promise<boolean>;
 }
 
+/** Admin input to create/update a custom-field definition (ADR-0065 B4, #338). */
+export interface CustomFieldDefInput {
+  scope: CustomFieldParentType;
+  /** Narrow a project-scoped field to one project_type; null = every project/task of the scope. */
+  projectTypeId: string | null;
+  key: string;
+  label: string;
+  fieldType: CustomFieldType;
+  /** Choice list for the select types; ignored (stored []) for the others. */
+  options: string[];
+  required: boolean;
+  ordinal: number;
+}
+
+/** Write one custom field's value onto a work object (ADR-0065 B4, #338). */
+export interface CustomFieldValueInput {
+  fieldId: string;
+  parentType: CustomFieldParentType;
+  parentId: string;
+  /** Decoded value; null clears it. Stored as jsonb keyed by the field's type. */
+  value: string | number | boolean | string[] | null;
+}
+
+/**
+ * Custom fields repository (ADR-0065 B4, #338): admin-definable custom fields on
+ * work objects (task / project), optionally scoped to one project_type, plus the
+ * polymorphic per-object values. Defining fields is an admin action
+ * (`catalog:write`); writing a value is `delivery:write` — both enforced in the
+ * calling server action. The repo trusts the resolved ids it is handed.
+ */
+export interface CustomFieldsRepository {
+  /** Every field definition, scope→type→ordinal sorted (the admin management list). */
+  listFieldDefs(): Promise<CustomFieldDef[]>;
+  /**
+   * The field definitions that apply to a (scope, projectTypeId) form — both the
+   * type-scoped fields and the global (project_type_id IS NULL) ones — in display
+   * order. `projectTypeId` is null for a task form (or a project of unknown type).
+   */
+  listFieldDefsFor(
+    scope: CustomFieldParentType,
+    projectTypeId: string | null,
+  ): Promise<CustomFieldDef[]>;
+  /** Create a field definition; returns the created row (resolved project-type name). */
+  createFieldDef(input: CustomFieldDefInput): Promise<CustomFieldDef>;
+  /** Update a field definition in place; returns the updated row, or null if gone. */
+  updateFieldDef(id: string, input: CustomFieldDefInput): Promise<CustomFieldDef | null>;
+  /** Delete a field definition and all its values (ON DELETE CASCADE). True if removed. */
+  deleteFieldDef(id: string): Promise<boolean>;
+  /**
+   * The custom-field values on one work object, with each value's definition
+   * denormalised on so the renderer needs one read. Includes fields with no value
+   * yet (value null) so the form shows every applicable field.
+   */
+  listValuesFor(
+    parentType: CustomFieldParentType,
+    parentId: string,
+    projectTypeId: string | null,
+  ): Promise<CustomFieldValue[]>;
+  /**
+   * Upsert one field's value on a work object (idempotent via the PK). A null value
+   * deletes the row (clears the field). Returns nothing.
+   */
+  setValue(input: CustomFieldValueInput): Promise<void>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -1793,4 +1862,5 @@ export interface Repositories {
   attachments: AttachmentRepository;
   notifications: NotificationRepository;
   tags: TagsRepository;
+  customFields: CustomFieldsRepository;
 }
