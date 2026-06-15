@@ -7893,7 +7893,7 @@ export const postgresRepositories: Repositories = {
   },
 
   // ── Work collaboration: comments + activity feed (ADR-0064 A1, migration 0094;
-  //    @mentions A2, migration 9001 [placeholder], #331) ─────────────────────────
+  //    @mentions A2, migration 0097, #331) ─────────────────────────
   work: {
     async listMentionableUsers(): Promise<MentionableUser[]> {
       const pool = getPool();
@@ -8329,14 +8329,14 @@ function mapWorkComment(r: CommentDbRow, mentions: CommentMention[] = []): WorkC
   };
 }
 
-// ── @mention persistence helpers (ADR-0064 A2, migration 9001 [placeholder], #331) ──
+// ── @mention persistence helpers (ADR-0064 A2, migration 0097, #331) ──
 // A minimal client surface so these helpers work with both a Pool and a pooled
 // client (the add/edit paths run inside a transaction).
 type Queryable = { query: <T>(sql: string, params?: unknown[]) => Promise<{ rows: T[] }> };
 
 /**
  * Batch-load resolved mentions for a set of comment ids → Map(commentId →
- * mentions[]). Returns an empty map when 9001 isn't applied yet (schema lag) so
+ * mentions[]). Returns an empty map when 0097 isn't applied yet (schema lag) so
  * comments still render (A1 stays functional without A2's table).
  */
 async function loadMentions(
@@ -8369,7 +8369,7 @@ async function loadMentions(
       out.set(r.comment_id, list);
     }
   } catch (err) {
-    if (isSchemaLagError(err)) return out; // 9001 not applied — degrade to no mentions
+    if (isSchemaLagError(err)) return out; // 0097 not applied — degrade to no mentions
     throw err;
   }
   return out;

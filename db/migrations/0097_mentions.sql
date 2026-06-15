@@ -1,4 +1,4 @@
--- 9001 [PLACEHOLDER — renumber at merge, §10.3] @mentions in comments (ADR-0064 A2)
+-- 0097 @mentions in comments (ADR-0064 A2)
 -- PM collaboration A2 — @mention users inside a work comment (issue #331).
 -- Builds on 0094 (work_comment, ADR-0064 A1, #330). The handle parsed from a
 -- body (`@local-part`) resolves to an app_user; each resolved mention is

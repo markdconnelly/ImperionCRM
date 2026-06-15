@@ -1844,7 +1844,7 @@ cannot inject script. Notifications (A3) and attachments (A4) are separate ADR-0
 follow-ups. These are **app-native tables, not silver tier** — no semantic-layer
 concept file applies.
 
-### @mentions (ADR-0064 A2, migration 9001 [placeholder — renumber at merge], #331)
+### @mentions (ADR-0064 A2, migration 0097, #331)
 
 A comment body may **@mention** a user as `@handle`, where the handle is the
 lowercased local-part of the user's email (`ada@imperion.com` → `@ada`). On save,
