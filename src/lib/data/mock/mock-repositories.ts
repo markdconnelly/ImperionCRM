@@ -288,6 +288,20 @@ export const mockRepositories: Repositories = {
     async getProjectSlippage() {
       return null;
     },
+    // Recurring tasks (ADR-0070 E2, #353) — no series without a DB; writes throw,
+    // completion-spawn is a silent no-op.
+    async getTaskRecurrence() {
+      return null;
+    },
+    async upsertTaskRecurrence() {
+      throw new Error(NO_DB);
+    },
+    async clearTaskRecurrence() {
+      throw new Error(NO_DB);
+    },
+    async advanceTaskRecurrence() {
+      return null;
+    },
     async getTaskChildren(parentId: string) {
       return { parentId, children: [], total: 0, done: 0 };
     },

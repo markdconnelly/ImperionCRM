@@ -905,6 +905,32 @@ export interface SprintRow {
   doneCount: number; // of those, how many done
 }
 
+/**
+ * A recurring task SERIES (ADR-0070 E2, #353) as read for the edit-page section.
+ * Attached to the task that currently holds the series (`task_recurrence.task_id`
+ * is UNIQUE). `rule` is the stored RRULE-subset string (FREQ=…;INTERVAL=n) —
+ * parse it with `src/lib/recurrence.ts` for display. `nextRunAt` is the due date
+ * of the next occurrence to spawn. `endsAt` / `countRemaining` bound the series
+ * (either null = unbounded on that axis).
+ */
+export interface TaskRecurrenceRow {
+  id: string;
+  taskId: string;
+  rule: string; // RRULE subset: FREQ=DAILY|WEEKLY|MONTHLY;INTERVAL=n
+  nextRunAt: string; // yyyy-mm-dd — due date of the next occurrence
+  endsAt: string | null; // yyyy-mm-dd series end, or null
+  countRemaining: number | null; // more occurrences to spawn, or null = unbounded
+}
+
+/** Editable recurrence fields written from the task edit page (#353). */
+export interface TaskRecurrenceInput {
+  taskId: string;
+  rule: string; // RRULE subset
+  nextRunAt: string; // yyyy-mm-dd
+  endsAt: string | null;
+  countRemaining: number | null;
+}
+
 /** A single child task under a parent (ADR-0065 B1, #335). */
 export interface TaskSubtaskRow {
   id: string;

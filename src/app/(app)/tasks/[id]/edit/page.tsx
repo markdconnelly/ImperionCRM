@@ -5,6 +5,7 @@ import { TaskSubtasks } from "@/components/tasks/task-subtasks";
 import { TaskDependencies } from "@/components/tasks/task-dependencies";
 import { TaskAssignees } from "@/components/tasks/task-assignees";
 import { TaskTimeLog } from "@/components/tasks/task-time-log";
+import { TaskRecurrence } from "@/components/tasks/task-recurrence";
 import { Attachments } from "@/components/work/attachments";
 import {
   updateTaskAction,
@@ -92,6 +93,9 @@ export default async function EditTaskPage({
 
       {/* Time tracking (ADR-0069 D1, #346): log time + logged-vs-estimate rollup. */}
       <TaskTimeLog task={task} />
+
+      {/* Recurrence (ADR-0070 E2, #353): define the schedule; next instance spawns on completion. */}
+      <TaskRecurrence task={task} />
 
       <TaskSubtasks
         taskId={task.id}
