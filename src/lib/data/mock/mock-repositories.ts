@@ -253,6 +253,31 @@ export const mockRepositories: Repositories = {
       // No DB: nothing logged, nothing estimated (#346 rollup).
       return { loggedMinutes: 0, estimateMinutes: null };
     },
+    // Sprints / backlog (ADR-0069 D4, #349) — reads empty, writes throw NO_DB.
+    async listSprints() {
+      return [];
+    },
+    async getSprint() {
+      return null;
+    },
+    async createSprint() {
+      throw new Error(NO_DB);
+    },
+    async updateSprint() {
+      throw new Error(NO_DB);
+    },
+    async closeSprint() {
+      throw new Error(NO_DB);
+    },
+    async listSprintTasks() {
+      return [];
+    },
+    async listBacklogTasks() {
+      return [];
+    },
+    async setTaskSprint() {
+      throw new Error(NO_DB);
+    },
     async getTaskChildren(parentId: string) {
       return { parentId, children: [], total: 0, done: 0 };
     },

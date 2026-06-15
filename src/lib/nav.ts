@@ -88,6 +88,9 @@ export const navHidden: NavItem[] = [
   // Weekly-capacity admin (ADR-0069 D2, #591) — reached from the workload header;
   // listed here so the top bar resolves its title (nested under /projects).
   { key: "capacity", label: "Weekly capacity", icon: "Gauge", href: "/projects/capacity" },
+  // Sprints / backlog (ADR-0069 D4, #349) — reached from the project board header;
+  // listed here so the top bar resolves its title (nested under /projects).
+  { key: "sprints", label: "Sprints & backlog", icon: "Repeat", href: "/projects/sprints" },
   { key: "security", label: "Security", icon: "ShieldCheck", href: "/security" },
   { key: "leads", label: "Leads", icon: "UserPlus", href: "/leads" },
   { key: "consent", label: "Consent", icon: "FileCheck", href: "/consent" },

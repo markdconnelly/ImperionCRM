@@ -801,6 +801,24 @@ export interface ProjectTimeRollup {
   estimateMinutes: number | null;
 }
 
+/**
+ * A sprint / backlog container (ADR-0069 D4, #349) as shown in the list. Carries
+ * the task rollup (`taskCount` / `doneCount`) computed on the read so a row can
+ * show its progress without a second query. `project` is the owning project's
+ * name, null for a cross-project sprint.
+ */
+export interface SprintRow {
+  id: string;
+  name: string;
+  projectId: string | null;
+  project: string | null; // owning project name (null = cross-project)
+  startsAt: string | null; // formatted date or null
+  endsAt: string | null;
+  status: string; // planned|active|completed
+  taskCount: number; // committed tasks
+  doneCount: number; // of those, how many done
+}
+
 /** A single child task under a parent (ADR-0065 B1, #335). */
 export interface TaskSubtaskRow {
   id: string;
