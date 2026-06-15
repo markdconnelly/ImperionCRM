@@ -4,7 +4,7 @@ title: task
 description: Single unified task model across sales/project/onboarding/general — website system of record.
 resource: ../../../decision-records/ADR-0052-project-board-tasks-meetings-sales-activity.md
 tags: [silver, delivery, task]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-15T14:00:00Z
 ---
 
 # task
