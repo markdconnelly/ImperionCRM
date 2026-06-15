@@ -1792,6 +1792,33 @@ erDiagram
 > sibling-repo processes (Autotask write, MileIQ OAuth, QuickBooks read, bronze→silver merge,
 > receipt lifecycle) build on these tables — **prod-applied 2026-06-14 (0088–0090, #494)**.
 
+## Work collaboration — comments & activity feed (ADR-0064 A1, migration 9001)
+
+PM collaboration adds a **polymorphic** comment surface reused across every work
+object instead of per-entity comment tables (ADR-0064 chose this; the reuse
+outweighs losing a parent FK for an internal tool).
+
+- **`work_comment`** — `{ id, parent_type (task|project|milestone, CHECK), parent_id,
+  author_user_id → app_user, body (markdown), edited_at, deleted_at, created_at }`.
+  No DB-level FK on the parent (polymorphic): `parent_type` is bounded by a CHECK,
+  the app validates the parent exists, and a covering index
+  `(parent_type, parent_id, created_at DESC)` serves the per-object read. Comments
+  **soft-delete** (`deleted_at`) so the activity trail is retained (NFR-2).
+- **`work_activity_feed`** (view) — the unified per-object feed: live `work_comment`
+  rows **UNION** `audit_log` system events for the same object (`entity_type` ∈
+  task|project|milestone), discriminated by `kind` (`comment`|`event`). Read
+  newest-first by `occurred_at`, filtered by `(parent_type, parent_id)` and
+  optionally to comments-only. Deleting a comment writes a `comment.deleted`
+  `audit_log` row, so a delete still **leaves an audit record in the feed**
+  (acceptance).
+
+Authorization: posting/editing/deleting requires `delivery:write`; edit/delete are
+author-scoped in SQL unless the caller is an admin (ADR-0064: own, or any if admin).
+Comment bodies are stored raw and rendered as **plain text** (never HTML) so a body
+cannot inject script. Mentions (A2), notifications (A3) and attachments (A4) are
+separate ADR-0064 follow-ups, not in this slice (#330). These are **app-native
+tables, not silver tier** — no semantic-layer concept file applies.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —

@@ -7,6 +7,7 @@ import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageProjects } from "@/lib/auth/roles";
 import { cn } from "@/lib/cn";
+import { ActivityFeed } from "@/components/work/activity-feed";
 import { createProjectMeetingAction, createProjectTaskAction } from "../actions";
 import { deleteTaskAction } from "../../tasks/actions";
 
@@ -24,10 +25,13 @@ const statusTone: Record<string, string> = {
  */
 export default async function ProjectDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ feed?: string }>;
 }) {
   const { id } = await params;
+  const { feed } = await searchParams;
   const { crm, comms } = getRepositories();
   const [roles, project, rows, projectTasks, meetings] = await Promise.all([
     getSessionRoles(),
@@ -180,6 +184,14 @@ export default async function ProjectDetailPage({
           </ul>
         )}
       </section>
+
+      <ActivityFeed
+        parentType="project"
+        parentId={id}
+        canComment={canWrite}
+        commentsOnly={feed === "comments"}
+        basePath={`/projects/${id}`}
+      />
     </div>
   );
 }
