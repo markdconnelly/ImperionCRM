@@ -247,6 +247,37 @@ export function variantSplit(variants: readonly JourneyVariant[]): { key: string
   return variants.map((v) => ({ key: v.key, fraction: (v.ratio > 0 ? v.ratio : 0) / total }));
 }
 
+// ── Builder helpers (ADR-0073, #399) ─────────────────────────────────────────
+
+/** A fresh step of the given kind, all kind-specific fields null/empty (builder #399). */
+export function newJourneyStep(kind: JourneyStepKind, key: string): JourneyStep {
+  return {
+    key,
+    kind,
+    label: null,
+    next: null,
+    templateId: null,
+    channel: kind === "send" ? "email" : null,
+    variants: [],
+    waitHours: kind === "wait" ? 24 : null,
+    condition: kind === "branch" ? "opened" : null,
+    ifTrue: null,
+    ifFalse: null,
+    scoreDelta: kind === "score" ? 10 : null,
+  };
+}
+
+/**
+ * The next free `sN` step key for a definition (builder #399). Stable, collision-free
+ * keys are what branches + the enrollment cursor reference, so they never reuse.
+ */
+export function nextStepKey(def: JourneyDefinition): string {
+  let n = def.steps.length + 1;
+  const used = new Set(def.steps.map((s) => s.key));
+  while (used.has(`s${n}`)) n += 1;
+  return `s${n}`;
+}
+
 /** A one-line human summary of a step for the read viewer. */
 export function describeStep(step: JourneyStep): string {
   switch (step.kind) {

@@ -138,6 +138,7 @@ import type {
   WorkflowRow,
   JourneyRow,
   JourneyDetail,
+  JourneyInput,
   WorkParentType,
   WorkComment,
   WorkActivityEntry,
@@ -1896,6 +1897,11 @@ export interface WorkflowsRepository {
   listJourneys(): Promise<JourneyRow[]>;
   /** One journey with its parsed definition (lib/journey.ts). null if not a journey. */
   getJourney(id: string): Promise<JourneyDetail | null>;
+  // ── Marketing journey BUILDER (ADR-0073, #399) — authors the SINGLE object ──
+  /** Create an empty journey (workflow kind='journey'); returns its id. */
+  createJourney(name: string): Promise<string>;
+  /** Persist a journey's whole definition + name/status onto the workflow row. */
+  saveJourney(id: string, input: JourneyInput): Promise<void>;
 }
 
 // ── Knowledge search & security posture ──────────────────────────────────────

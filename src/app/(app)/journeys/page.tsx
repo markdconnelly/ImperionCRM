@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { JourneysTable } from "@/components/journeys/journeys-table";
 import { getRepositories } from "@/lib/data";
@@ -12,10 +13,18 @@ export default async function JourneysPage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3">
-        <PageHeader
-          title="Journeys"
-          description="Multi-step marketing automation — cadences, A/B sends, and engagement branches. A journey is one object on the workflow engine (ADR-0073). Read-only here; the builder is coming."
-        />
+        <div className="flex items-start justify-between gap-4">
+          <PageHeader
+            title="Journeys"
+            description="Multi-step marketing automation — cadences, A/B sends, and engagement branches. A journey is one object on the workflow engine (ADR-0073)."
+          />
+          <Link
+            href="/journeys/new"
+            className="shrink-0 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+          >
+            New journey
+          </Link>
+        </div>
         <JourneysTable journeys={journeys} />
         <p className="text-xs text-dim">
           Sends still cross the approval gate and autonomy dial (ADR-0058/0055) — automation is not a bypass.

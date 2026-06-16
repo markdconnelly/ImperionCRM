@@ -31,7 +31,11 @@ import {
 import { parseRRule, nextOccurrence } from "@/lib/recurrence";
 import { effectiveWinProbability, weightedValue } from "@/lib/forecast";
 import { leadScoreBand } from "@/lib/lead-score";
-import { parseJourneyDefinition, summariseJourney } from "@/lib/journey";
+import {
+  EMPTY_JOURNEY_DEFINITION,
+  parseJourneyDefinition,
+  summariseJourney,
+} from "@/lib/journey";
 import type { ForecastCategory } from "@/types";
 import type {
   AccountDetail,
@@ -253,6 +257,7 @@ import type {
   WorkflowRow,
   JourneyRow,
   JourneyDetail,
+  JourneyInput,
   WorkParentType,
   WorkComment,
   WorkAttachment,
@@ -9970,6 +9975,33 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.workflows.getJourney(id);
       }
+    },
+
+    // ── Journey builder (ADR-0073, #399). A journey is a SINGLE object: create
+    // inserts a workflow row of kind='journey' with an empty definition; save writes
+    // the whole `definition` jsonb plus name/status back onto that one row. No child
+    // tables — the journey is authored/versioned as one object (ADR-0073 decision 1).
+    async createJourney(name: string): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.createJourney(name);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO workflow (name, kind, status, definition)
+         VALUES ($1, 'journey'::workflow_kind, 'paused', $2::jsonb)
+         RETURNING id`,
+        [name, JSON.stringify(EMPTY_JOURNEY_DEFINITION)],
+      );
+      return rows[0].id;
+    },
+
+    async saveJourney(id: string, input: JourneyInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.workflows.saveJourney(id, input);
+      await pool.query(
+        `UPDATE workflow
+         SET name = $2, status = $3, definition = $4::jsonb
+         WHERE id = $1 AND kind = 'journey'`,
+        [id, input.name, input.status, JSON.stringify(input.definition)],
+      );
     },
   },
 
