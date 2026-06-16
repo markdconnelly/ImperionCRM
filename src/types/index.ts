@@ -1382,6 +1382,18 @@ export interface WorkAssignments {
 }
 
 /**
+ * Per-object engagement counts for a kanban card footer (#608, ADR-0066 C1-F4):
+ * the number of live (non-deleted) comments (ADR-0064 A1) and attachments
+ * (ADR-0064 A4) on a work object. Bulk-read across the board's visible cards so
+ * the board never N+1s; 0/0 when nothing is attached (honest degradation — a
+ * missing count never fabricates a number).
+ */
+export interface EngagementCounts {
+  comments: number;
+  attachments: number;
+}
+
+/**
  * A single predecessor → successor dependency edge between two tasks of one
  * project (ADR-0066 C3, #343). The timeline view reads these to draw connectors;
  * both ends are tasks of the same project (edges touching tasks outside the

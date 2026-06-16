@@ -245,15 +245,22 @@ sales/project/onboarding/general partition.)
 > (per-column, per-browser localStorage cap with over-limit highlight; an aid, not
 > a hard block). F3 swimlanes shipped #447 (optional collapsible bands orthogonal to
 > the columns — tasks by account|category, projects by account|owner|type; drag still
-> only reassigns the column dimension). Remaining C1 scope (F4 rich cards) tracked in
-> #439, blocked on ADR-0064/0065 data; activity-feed event (A1) in #438.
+> only reassigns the column dimension). F4 rich cards shipped in two lanes: the
+> first half (#439 — subtask progress + tags on task cards, owner + tags on project
+> cards, all from the list read) and the **remainder (#608 — assignee avatars +
+> comment/attachment counts)**, which adds two board-only bulk reads
+> (`listAssigneesForMany` / `listEngagementCountsForMany`) over the existing
+> ADR-0064 (`work_comment`/`work_attachment`) + ADR-0065 B3 (`work_assignment`)
+> tables — no migration. C1 is now complete. Activity-feed event (A1) in #438.
 
 - C1-F1 (MUST) Board view of tasks and of projects, columns = status (B5 once built,
   else current enum). Drag a card between columns to change status.
 - C1-F2 (MUST) Group-by selector (status default; assignee, project_type, tag).
 - C1-F3 (SHOULD) Swimlanes (e.g. by project or assignee); collapse/expand.
 - C1-F4 (SHOULD) Card shows assignee avatar(s), due date, tags, subtask progress,
-  attachment/comment counts.
+  attachment/comment counts. **Shipped:** subtask progress + tags + owner/due date
+  (#439); assignee avatars (capped, "+N" overflow) + comment/attachment count footer
+  (#608, `CardEngagement`) — both task and project cards. ✅
 - C1-F5 (COULD) WIP limits per column (B5-F3) with over-limit highlight.
 - AC: Dragging a card to "Done" persists the status change and emits a system event
   (A1); board reflects filters from the list view.
