@@ -14,8 +14,8 @@ QuickBooks Online invoice, **mirrored read-only** for observability: the
 order-to-cash / revenue-in leg the Collections (AR-dunning) and Controller (reconciliation-
 assurance) agents reason over ([#667](https://github.com/markdconnelly/ImperionCRM/issues/667),
 [#668](https://github.com/markdconnelly/ImperionCRM/issues/668)). It is **not** an app-owned AR
-object: it is a thin projection (`invoice_mirror` VIEW, migration `0121` — placeholder until
-claimed at merge) over bronze `qbo_invoices` (migration 0120, LP #197 QBO pull), exactly as
+object: it is a thin projection (`invoice_mirror` VIEW, migration `0121`) over bronze
+`qbo_invoices` (migration 0120, LP #197 QBO pull), exactly as
 [`ticket`](ticket.md) mirrors Autotask. Governed by
 [ADR-0085](../../../decision-records/ADR-0085-qbo-payment-fact-purchase-simple-start.md) (QBO
 read-only financial posture) with [ADR-0044](../../../decision-records/ADR-0044-silver-contracts-tickets.md)

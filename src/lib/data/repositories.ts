@@ -646,7 +646,7 @@ export interface CrmRepository {
 
   /**
    * Read-only AR/invoice MIRROR over bronze `qbo_invoices` (the `invoice_mirror` view,
-   * migration 0121 [placeholder until claimed at merge], #668; ADR-0085 QBO read-only /
+   * migration 0121, #668; ADR-0085 QBO read-only /
    * ADR-0044 external-SoR mirror). QuickBooks is the invoice SoR and read-only on our side — there
    * is NO write path to QBO. Aging (days_overdue, aging_bucket, is_open) is recomputed by
    * the view on every read; the silver account is resolved best-effort by name. Drives the

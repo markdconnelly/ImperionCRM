@@ -294,14 +294,14 @@ export interface SlaBreachSummary {
 
 /**
  * The aging partition a mirrored invoice falls in (`invoice_mirror` view, migration
- * 0121 — placeholder until claimed at merge). `paid` = settled (balance ≤ 0);
+ * 0121). `paid` = settled (balance ≤ 0);
  * `current` = open but not past due; the overdue tiers are open & past due by N days.
  */
 export type InvoiceAgingBucket = "paid" | "current" | "1-30" | "31-60" | "61-90" | "90+";
 
 /**
  * One row of the read-only AR/invoice MIRROR over bronze `qbo_invoices`
- * (`invoice_mirror` view, migration 0121 [placeholder], #668; ADR-0085 QBO read-only /
+ * (`invoice_mirror` view, migration 0121, #668; ADR-0085 QBO read-only /
  * ADR-0044 external-SoR mirror). NOT an app-side AR store — QuickBooks is the system of record
  * and is read-only on our side; the Collections + Controller agents (#667) detect / draft /
  * escalate against this, never move money. Aging is recomputed by the view on every read.

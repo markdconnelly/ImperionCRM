@@ -1148,7 +1148,7 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.listInvoices();
       try {
-        // Read the `invoice_mirror` view (migration 0121 [placeholder], #668, ADR-0085).
+        // Read the `invoice_mirror` view (migration 0121, #668, ADR-0085).
         // A plain read-only projection over bronze qbo_invoices — every read recomputes
         // aging against the latest pulled invoices. Amounts/dates are already typed in the
         // view; cast numerics to text so they map straight to the typed string fields (no

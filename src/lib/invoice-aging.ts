@@ -3,7 +3,7 @@
  *
  * Pure, dependency-free, NOT server-only — safe to import from server reads, a future AR /
  * collections worklist or BI-hub surface, and the vitest suite alike. The aging itself is a
- * DATABASE PROJECTION (`invoice_mirror` view, migration 0121 [placeholder]): QuickBooks is the
+ * DATABASE PROJECTION (`invoice_mirror` view, migration 0121): QuickBooks is the
  * invoice system of record and read-only on our side, so the view recomputes `days_overdue` /
  * `aging_bucket` / `is_open` on every read against the latest pulled bronze `qbo_invoices`.
  * This module only READS those projected rows and rolls them up for display / sort — it never

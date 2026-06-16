@@ -1,8 +1,7 @@
--- 9001 (PLACEHOLDER — claim the next free number, 0121, at squash-merge; §10.3):
--- silver `invoice` read-only MIRROR over bronze `qbo_invoices` (#668, epic #667).
--- Take the next free migration number just before squash; if another migration merges
--- during the CI window, rename this file (rename is data-safe) and fix the in-file refs +
--- data-model.md + the invoice OKF concept timestamp + every `9001`/placeholder reference.
+-- 0121: silver `invoice` read-only MIRROR over bronze `qbo_invoices` (#668, epic #667).
+-- (0120 was the latest applied/repo migration; 0121 claimed at merge per §10.3. If another
+-- migration merges ahead of this during the CI window, rename this file — rename is data-safe
+-- — and fix the in-file refs + data-model.md + the invoice OKF concept timestamp.)
 --
 -- THE OWN-vs-MIRROR DECISION (RESOLVED — MIRROR, #668): there is no app-side AR object and
 -- no write path to QuickBooks. QBO is the system of record for invoices and is READ-ONLY on
