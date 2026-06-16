@@ -7,22 +7,32 @@ import type { ProjectTypeRow } from "@/types";
 /**
  * Authoring form for a project template (ADR-0070 E1, #352). The milestone/item
  * tree is too deep for flat FormData, so local React state holds the whole
- * template and a hidden `payload` input carries its JSON to
- * `createProjectTemplateAction`, which parses + persists it in one transaction.
- * Edit is delete+recreate in v1, so this form only creates.
+ * template and a hidden `payload` input carries its JSON to the server action,
+ * which parses + persists it in one transaction.
+ *
+ * Supports both create and IN-PLACE EDIT (#634): pass `initial` to pre-load an
+ * existing template's tree and `templateId` to carry its id back to
+ * `updateProjectTemplateAction` (which re-snapshots the tree). Create is the
+ * no-`initial` path and is unchanged.
  */
 
-interface ItemDraft {
+export interface ItemDraft {
   kind: "step" | "task";
   title: string;
   offsetDays: number;
   durationDays: number;
 }
-interface MilestoneDraft {
+export interface MilestoneDraft {
   name: string;
   offsetDays: number;
   durationDays: number;
   items: ItemDraft[];
+}
+export interface ProjectTemplateDraft {
+  name: string;
+  description: string;
+  projectTypeId: string;
+  milestones: MilestoneDraft[];
 }
 
 const newItem = (): ItemDraft => ({ kind: "task", title: "", offsetDays: 0, durationDays: 1 });
@@ -34,14 +44,24 @@ const numCell =
 export function ProjectTemplateForm({
   types,
   action,
+  initial,
+  templateId,
+  submitLabel = "Create template",
 }: {
   types: ProjectTypeRow[];
   action: (formData: FormData) => void | Promise<void>;
+  /** Pre-loaded draft for in-place edit (#634); omit for create. */
+  initial?: ProjectTemplateDraft;
+  /** Existing template id, carried back to the update action; omit for create. */
+  templateId?: string;
+  submitLabel?: string;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [projectTypeId, setProjectTypeId] = useState("");
-  const [milestones, setMilestones] = useState<MilestoneDraft[]>([newMilestone()]);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [projectTypeId, setProjectTypeId] = useState(initial?.projectTypeId ?? "");
+  const [milestones, setMilestones] = useState<MilestoneDraft[]>(
+    initial?.milestones?.length ? initial.milestones : [newMilestone()],
+  );
 
   const patchM = (mi: number, patch: Partial<MilestoneDraft>) =>
     setMilestones((ms) => ms.map((m, i) => (i === mi ? { ...m, ...patch } : m)));
@@ -62,6 +82,7 @@ export function ProjectTemplateForm({
   return (
     <form action={action} className="flex flex-col gap-5">
       <input type="hidden" name="payload" value={payload} />
+      {templateId && <input type="hidden" name="id" value={templateId} />}
 
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-panel p-5 md:grid-cols-2">
         <Field label="Template name">
@@ -146,7 +167,10 @@ export function ProjectTemplateForm({
         + Add milestone
       </button>
 
-      <FormActions cancelHref="/project-templates" />
+      <FormActions
+        cancelHref={templateId ? `/project-templates/${templateId}` : "/project-templates"}
+        submitLabel={submitLabel}
+      />
     </form>
   );
 }

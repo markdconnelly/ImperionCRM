@@ -444,8 +444,14 @@ ADR-0069's "land each table with its first UI slice".
 - E1-F3 (SHOULD) Task checklist templates (apply a set of subtasks to a task).
 - E1-F4 (SHOULD) Existing onboarding playbook becomes the seeded, protected default
   template (no behaviour change for current onboarding).
+- E1-F5 (SHOULD, #634) **In-place edit** of an existing template: change name/metadata
+  and add/remove/reorder milestones and their steps/tasks. Saving re-snapshots the
+  `template_item` tree; protected defaults stay uneditable; live projects are never
+  retro-mutated (apply is a snapshot). Shipped — `updateProjectTemplate` +
+  `/project-templates/[id]/edit`.
 - AC: Admin defines an "Implementation" template with 4 milestones; creating a project
-  from it instantiates those milestones and their steps.
+  from it instantiates those milestones and their steps. Editing that template later
+  (add a milestone, rename a task) leaves already-created projects unchanged.
 
 **Data model.** `project_template{ id, name, project_type_id, is_protected }` +
 `template_item{ template_id, kind: milestone|step|task, parent_ref, ordinal, payload

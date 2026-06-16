@@ -1025,6 +1025,14 @@ export interface CrmRepository {
   getProjectTemplate(id: string): Promise<ProjectTemplateDetail | null>;
   /** Create a template + its whole milestone/item tree in one transaction; returns the id. */
   createProjectTemplate(input: ProjectTemplateInput): Promise<string>;
+  /**
+   * In-place edit of an existing template (ADR-0070 E1, #634): patch the header and
+   * RE-SNAPSHOT its milestone/item tree (drop all `template_item` rows, re-insert from
+   * `input`) in one transaction. Refuses a protected (seeded) template. Because apply is
+   * a snapshot (ADR-0070), editing a template never retro-mutates already-instantiated
+   * projects.
+   */
+  updateProjectTemplate(id: string, input: ProjectTemplateInput): Promise<void>;
   /** Delete a template (CASCADE drops its items). Refuses a protected (seeded) template. */
   deleteProjectTemplate(id: string): Promise<void>;
   /**

@@ -125,6 +125,44 @@ describe("createProjectTemplate (transaction)", () => {
   });
 });
 
+describe("updateProjectTemplate (re-snapshot, ADR-0070 E1, #634)", () => {
+  const input = {
+    key: "impl",
+    name: "Implementation v2",
+    description: "updated",
+    projectTypeId: null,
+    milestones: [
+      { name: "Discovery", offsetDays: 0, durationDays: 7, items: [{ kind: "task" as const, title: "Kickoff", offsetDays: 0, durationDays: 1 }] },
+    ],
+  };
+
+  it("patches the header, drops old items, and re-inserts the tree in one transaction", async () => {
+    // header UPDATE reports a row hit so the guard passes
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("UPDATE project_template")) return { rows: [], rowCount: 1 };
+      return { rows: [{ id: "new-id" }] };
+    });
+    await crm.updateProjectTemplate("t1", input);
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls).toContain("BEGIN");
+    expect(sqls.some((s) => s.includes("UPDATE project_template") && s.includes("is_protected = false"))).toBe(true);
+    expect(sqls.some((s) => s.includes("DELETE FROM template_item"))).toBe(true);
+    expect(sqls.filter((s) => s.includes("INSERT INTO template_item")).length).toBe(2); // milestone + child
+    expect(sqls).toContain("COMMIT");
+  });
+
+  it("refuses a protected default (header UPDATE hits no row → rollback + throw)", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("UPDATE project_template")) return { rows: [], rowCount: 0 };
+      return { rows: [{ id: "new-id" }] };
+    });
+    await expect(crm.updateProjectTemplate("protected-id", input)).rejects.toThrow(/protected/i);
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls).toContain("ROLLBACK");
+    expect(sqls.some((s) => s.includes("DELETE FROM template_item"))).toBe(false);
+  });
+});
+
 describe("deleteProjectTemplate", () => {
   it("refuses a protected default (no row deleted → throws)", async () => {
     query.mockResolvedValueOnce({ rows: [], rowCount: 0 });

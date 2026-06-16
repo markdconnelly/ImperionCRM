@@ -10,11 +10,12 @@ import type { Option } from "@/lib/data/repositories";
 import type { ProjectTypeRow } from "@/types";
 
 /**
- * Read-only view of a project-template tree (ADR-0070 E1, #352): milestones with
- * their scheduling skeleton and child steps/tasks. Edit is delete+recreate in v1,
- * so there is no edit form. `canManageProjects` users also get the
+ * View of a project-template tree (ADR-0070 E1, #352): milestones with their
+ * scheduling skeleton and child steps/tasks. `canManageProjects` users get an
+ * in-place Edit entry point (#634, non-protected templates only) plus the
  * create-project-from-template entry point. The protected onboarding default
- * carries no editable items (it delegates to the hard-coded playbook).
+ * carries no editable items (it delegates to the hard-coded playbook) and cannot
+ * be edited.
  */
 export default async function ProjectTemplateDetailPage({
   params,
@@ -42,6 +43,14 @@ export default async function ProjectTemplateDetailPage({
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={t.name} description={t.description ?? "Project template"}>
+        {canInstantiate && !t.isProtected && (
+          <Link
+            href={`/project-templates/${t.id}/edit`}
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-accent"
+          >
+            Edit
+          </Link>
+        )}
         <Link href="/project-templates" className="text-sm text-dim transition-colors hover:text-text">
           ← All templates
         </Link>
