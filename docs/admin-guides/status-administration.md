@@ -57,12 +57,23 @@ see a set read-only — every create/edit/reorder/delete server action re-checks
 capability and fails closed. The least-privilege INSERT/UPDATE/DELETE grant on
 `status_def` for the web role ships in migration 0104.
 
+## Where these statuses show up
+
+The task, project and sprint **kanban boards read these sets** (#613, ADR-0065 B5):
+columns render from `status_def` in your configured order and colour, and a custom
+per-type status (e.g. *Onboarding → "Waiting on client"*) appears as its own board
+column. A drag dual-stamps the new `status_def_id` FK alongside the legacy status
+column, so the boards adopt configurable statuses without breaking the legacy
+string path. See the [project board](../user-guides/project-board.md) and
+[task board](../user-guides/task-board.md) guides.
+
 ## Not in this surface (deferred)
 
 - **Per-status WIP limits** and the **over-limit board-column highlight** (ADR-0066
-  C1) are part 2 of #616, blocked on the board-columns follow-up **#613**. The
-  `wip_limit` column is shown read-only here so admins can see seeded values, but it
-  is not editable on this surface yet.
-- **Stamping the FK on every mutation**, the kanban board reading `status_def`
-  columns, and reporting re-keying off `category` are the broader consumer re-key
-  tracked under epic #326 — additive on top of this admin surface.
+  C1) are part 2 of #616. The board already honours a per-column WIP nudge stored in
+  the browser; surfacing the seeded `wip_limit` as the board default and editing it
+  here is the remaining work — now **unblocked** by the board-columns re-key (#613).
+  The `wip_limit` column is shown read-only here so admins can see seeded values.
+- **Reporting re-keying off `category`** (instead of labels) is the remaining
+  broader consumer re-key tracked under epic #326 (#615) — additive on top of this
+  admin surface and the board re-key.

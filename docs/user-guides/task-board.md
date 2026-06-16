@@ -8,13 +8,20 @@ over the one task object (ADR-0052), introduced in #341 (ADR-0066 C1).
 
 ## What you see
 
-Three columns, one per task status:
+One column per **configurable status** (ADR-0065 B5, #613). Columns come from the
+task `status_def` set an admin manages at **Settings → Statuses**
+([status administration](../admin-guides/status-administration.md)), in the order and
+colours configured there — not a hard-coded three. The seeded default set reproduces
+the legacy statuses, so out of the box you still see:
 
 ```mermaid
 flowchart LR
     O["Open"] -->|drag| P["In progress"] -->|drag| D["Done"]
     D -. drag back .-> O
 ```
+
+Task statuses are a single global set (tasks are not scoped per project type), so the
+task board has no per-type columns — unlike the [project board](project-board.md).
 
 - Each column shows its task count.
 - A card shows the task **title**, its **category** chip (Sales / Project /
@@ -80,7 +87,10 @@ nothing is written to the server.
 Drag a card to another column. The card jumps immediately (optimistic), and the
 new status is saved through the same permission-gated path as the edit form
 (`delivery:write`) — a move you are not allowed to make is rejected server-side.
-The board then re-reads server state, so what you see always matches the record.
+The drop stamps **both** the configurable status (`status_def_id`) and the legacy
+status text column (#613), so the activity feed and reporting stay consistent during
+the compatibility window. The board then re-reads server state, so what you see
+always matches the record.
 
 There is no separate "save"; the drop *is* the save.
 

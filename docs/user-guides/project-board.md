@@ -9,7 +9,11 @@ sibling of the [task board](task-board.md).
 
 ## What you see
 
-Four columns, one per project status:
+One column per **configurable status** (ADR-0065 B5, #613). The columns are no
+longer a hard-coded four — they come from the `status_def` set an admin manages at
+**Settings → Statuses** ([status administration](../admin-guides/status-administration.md)),
+in the order and colours configured there. The seeded default set reproduces the
+legacy statuses, so out of the box you still see:
 
 ```mermaid
 flowchart LR
@@ -19,6 +23,14 @@ flowchart LR
     B -.-> P
     C -. drag back .-> P
 ```
+
+### Per-project-type columns (#613)
+
+Because the board spans every project type at once, its columns are the **union**
+of the global default set and any **per-type** sets. So when an admin adds a status
+to one type — e.g. **"Waiting on client"** to *Onboarding* — that status appears as
+its own board column. Projects of types that don't define it simply have no card in
+that column. Each status keeps the colour configured for it.
 
 - Each column shows its project count.
 - A card shows the project **name** (a link to the project), its **type** chip,
@@ -78,9 +90,14 @@ the server.
 Drag a card to another column. The card jumps immediately (optimistic), and the
 new status is saved through the same permission-gated path as the edit form
 (`delivery:write`) — a move you are not allowed to make is rejected server-side.
-Moving out of *Not started* stamps the project's start time; moving to *Complete*
-stamps its completion time — identical to editing the status on the form. The
-board then re-reads server state, so what you see always matches the record.
+The drop stamps **both** the new configurable status (`status_def_id`) and the
+legacy status column it maps to, so reporting and the edit form stay in lockstep
+during the compatibility window (#613). A custom status maps to the legacy enum by
+its **category** (a `todo` status → *Not started*, `done` → *Complete*, otherwise
+*In progress*); moving out of a *Not started*-category status stamps the project's
+start time and a *Complete*-category status stamps its completion time — identical
+to editing the status on the form. The board then re-reads server state, so what
+you see always matches the record.
 
 There is no separate "save"; the drop *is* the save.
 
