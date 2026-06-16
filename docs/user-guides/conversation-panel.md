@@ -22,15 +22,12 @@ surface).
 - **Contact 360** (`/contacts/[id]`) — the conversations tied to that specific
   contact (company-wide voice that is not contact-specific stays on the Company
   360, so it is not duplicated).
+- **Deal (opportunity) 360** (`/pipeline/[id]`) — the conversations tied to that
+  specific deal (company-wide voice with no deal link stays on the Company 360, so
+  it is not duplicated). Reached by clicking a deal's title on the Pipeline board.
 
-The panel sits just above the **Communications timeline** section on both pages.
-
-> **Deal (opportunity) surfacing.** The data model is deal-aware
-> (`conversation.opportunity_id`), and a deal's conversations already appear on its
-> account's Company 360. A dedicated deal/opportunity 360 route does not exist in
-> the app yet, so there is no standalone deal page to host the panel today; when
-> that route lands, the same `ConversationPanel` component drops onto it unchanged.
-> Tracked as a follow-up issue.
+The panel sits just above the **Communications timeline** section on the Company and
+Contact 360s, and is the primary section of the Deal 360.
 
 ## What each conversation shows
 
@@ -70,8 +67,12 @@ no new migration**.
   formatting, insight-text extraction, insight ordering): the unit-tested
   `src/lib/conversations.ts`.
 - The panel itself: `src/components/comms/conversation-panel.tsx`.
-- Wired onto `src/app/(app)/accounts/[id]/page.tsx` and
-  `src/app/(app)/contacts/[id]/page.tsx`.
+- Wired onto `src/app/(app)/accounts/[id]/page.tsx`,
+  `src/app/(app)/contacts/[id]/page.tsx`, and
+  `src/app/(app)/pipeline/[id]/page.tsx` (the Deal 360, ADR-0068 / #681).
+- The Deal 360 keys the account-scoped conversation read off the deal's account
+  (`crm.getOpportunity()` exposes `accountId`) and filters it to this deal via
+  `filterConversationsForOpportunity()` in `src/lib/conversations.ts`.
 
 The whole **capture → transcribe → analyze → embed** write path is a backend
 process (ADR-0042/ADR-0068), **dormant** until ACS / Azure Speech credentials land.
@@ -81,8 +82,6 @@ fails the page when the pipeline is unwired.**
 
 ## Not yet in the panel
 
-- **A dedicated deal/opportunity 360** to host the panel directly (today deal voice
-  rides the Company 360).
 - **Drilling into the full diarized transcript** — the per-turn segments
   (`conversation_segment`) are read but not yet rendered as a transcript reader.
 - **Live data** — populated once the backend capture/analyze pipeline and ACS /

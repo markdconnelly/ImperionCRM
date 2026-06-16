@@ -272,6 +272,12 @@ export const mockRepositories: Repositories = {
     async listOpportunities() {
       return opportunities;
     },
+    // Deal/opportunity 360 (ADR-0068, #681) — synthesize accountId from the id
+    // for no-DB dev; conversations return [] without a DB so the filter is moot.
+    async getOpportunity(id: string) {
+      const o = opportunities.find((x) => x.id === id);
+      return o ? { ...o, accountId: `acc_${o.id}` } : null;
+    },
     async setOpportunityStage() {
       throw new Error(NO_DB);
     },

@@ -126,3 +126,17 @@ export function sortInsights(
     (a, b) => (KIND_ORDER[a.kind] ?? 99) - (KIND_ORDER[b.kind] ?? 99),
   );
 }
+
+/**
+ * Narrow an account's conversations to the ones tied to one deal (ADR-0068, #681).
+ * Conversations are keyed by account, each carrying an optional `opportunityId`
+ * (silver `conversation`, migration 0112); the deal/opportunity 360 reads the
+ * account-wide list and keeps only the rows for THIS opportunity — account-wide
+ * voice (no deal link) stays on the Company 360. Pure; preserves input order.
+ */
+export function filterConversationsForOpportunity(
+  conversations: ConversationRow[],
+  opportunityId: string,
+): ConversationRow[] {
+  return conversations.filter((c) => c.opportunityId === opportunityId);
+}

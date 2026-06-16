@@ -6,8 +6,23 @@ import {
   formatConversationDuration,
   insightText,
   sortInsights,
+  filterConversationsForOpportunity,
 } from "./conversations";
-import type { ConversationInsightRow } from "@/types";
+import type { ConversationInsightRow, ConversationRow } from "@/types";
+
+function conversation(over: Partial<ConversationRow> = {}): ConversationRow {
+  return {
+    id: "c1",
+    source: "acs",
+    status: "analyzed",
+    startedAt: "2026-06-15 09:30",
+    durationSeconds: 600,
+    contactId: null,
+    opportunityId: null,
+    hasTranscript: true,
+    ...over,
+  };
+}
 
 function insight(over: Partial<ConversationInsightRow> = {}): ConversationInsightRow {
   return {
@@ -97,5 +112,39 @@ describe("sortInsights", () => {
     const input = [insight({ id: "r", kind: "risk" }), insight({ id: "s", kind: "summary" })];
     sortInsights(input);
     expect(input[0].id).toBe("r");
+  });
+});
+
+describe("filterConversationsForOpportunity (ADR-0068, #681)", () => {
+  const rows = [
+    conversation({ id: "a", opportunityId: "opp_1" }),
+    conversation({ id: "b", opportunityId: "opp_2" }),
+    conversation({ id: "c", opportunityId: "opp_1" }),
+    conversation({ id: "d", opportunityId: null }), // account-wide, no deal link
+  ];
+
+  it("keeps only the rows tied to THIS deal", () => {
+    expect(filterConversationsForOpportunity(rows, "opp_1").map((c) => c.id)).toEqual([
+      "a",
+      "c",
+    ]);
+  });
+
+  it("excludes account-wide conversations with no opportunityId", () => {
+    const out = filterConversationsForOpportunity(rows, "opp_2");
+    expect(out.map((c) => c.id)).toEqual(["b"]);
+    expect(out.some((c) => c.opportunityId == null)).toBe(false);
+  });
+
+  it("returns [] (empty state) when the deal has no conversations", () => {
+    expect(filterConversationsForOpportunity(rows, "opp_absent")).toEqual([]);
+    expect(filterConversationsForOpportunity([], "opp_1")).toEqual([]);
+  });
+
+  it("preserves input order", () => {
+    expect(filterConversationsForOpportunity(rows, "opp_1").map((c) => c.id)).toEqual([
+      "a",
+      "c",
+    ]);
   });
 });
