@@ -47,6 +47,9 @@ import type {
   EventRow,
   ExternalIdentityRow,
   GoalRow,
+  GoalEditable,
+  GoalInput,
+  GoalLinkInput,
   IntelStrip,
   InteractionRow,
   InvoiceMirrorRow,
@@ -1064,6 +1067,23 @@ export interface CrmRepository {
    * never stored. Backs the read-only goals list.
    */
   listGoals(): Promise<GoalRow[]>;
+  /** A single goal loaded for editing (authoring form), or null (issue #621). */
+  getGoal(id: string): Promise<GoalEditable | null>;
+  /** Create a goal (issue #621). The rollup is always derived, never stored. */
+  createGoal(input: GoalInput): Promise<void>;
+  /** Update a goal's authored fields (issue #621). */
+  updateGoal(id: string, input: GoalInput): Promise<void>;
+  /** Delete a goal; its `goal_link` rows CASCADE (issue #621). */
+  deleteGoal(id: string): Promise<void>;
+  /**
+   * Add (or idempotently re-weight) a goal_link — a polymorphic project|task link
+   * with a rollup weight (issue #621). ON CONFLICT updates the weight.
+   */
+  addGoalLink(input: GoalLinkInput): Promise<void>;
+  /** Remove a goal_link by its (goal, parent_type, parent_id) identity (issue #621). */
+  removeGoalLink(goalId: string, parentType: string, parentId: string): Promise<void>;
+  /** Projects + tasks available to link to a goal (the link picker, issue #621). */
+  goalLinkCandidates(): Promise<{ projects: Option[]; tasks: Option[] }>;
   getProject(id: string): Promise<ProjectEditable | null>;
   createProject(input: ProjectInput): Promise<void>;
   updateProject(id: string, input: ProjectInput): Promise<void>;

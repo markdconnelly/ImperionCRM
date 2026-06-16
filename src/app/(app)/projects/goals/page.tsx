@@ -20,9 +20,8 @@ export const metadata = { title: "Goals & OKRs · Projects" };
  * view is delivery-management only (admin | project_manager, `canManageProjects`) —
  * the same gate as the rest of the project-board planning surface (ADR-0069).
  *
- * SCOPE (this slice): READ-ONLY list. Authoring goals and managing their links is a
- * tracked follow-up (#348 comment) — the schema + rollup land here with the first
- * consuming slice (ADR-0069's "land each table with its first UI slice").
+ * Authoring goals, managing their project/task links, and the task-level rollup
+ * landed in issue #621 (this list links each goal to its editable detail page).
  */
 export default async function GoalsPage() {
   const roles = await getSessionRoles();
@@ -47,27 +46,27 @@ export default async function GoalsPage() {
         title="Goals & OKRs"
         description={`${goals.length} ${goals.length === 1 ? "goal" : "goals"} — progress rolled up from linked projects (ADR-0069 D3)`}
       >
-        <Link
-          href="/projects"
-          className="text-sm text-dim transition-colors hover:text-text"
-        >
-          ← Project board
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/projects"
+            className="text-sm text-dim transition-colors hover:text-text"
+          >
+            ← Project board
+          </Link>
+          <Link
+            href="/projects/goals/new"
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+          >
+            New goal
+          </Link>
+        </div>
       </PageHeader>
 
-      <p className="rounded-lg border border-amber/30 bg-amber/5 px-4 py-2.5 text-xs text-dim">
-        This is a <span className="text-text">read-only</span> view. Goals in
-        rollup mode show the <span className="text-text">weighted average</span> of
-        their linked projects&apos; completion; manual goals show the owner&apos;s
-        current-vs-target figure. Authoring goals and editing their project links is
-        a tracked follow-up on{" "}
-        <Link
-          href="https://github.com/markdconnelly/ImperionCRM/issues/348"
-          className="text-accent hover:underline"
-        >
-          #348
-        </Link>
-        .
+      <p className="rounded-lg border border-border bg-panel px-4 py-2.5 text-xs text-dim">
+        Goals in <span className="text-text">rollup</span> mode show the{" "}
+        <span className="text-text">weighted average</span> of their linked projects
+        and tasks&apos; completion; manual goals show the owner&apos;s
+        current-vs-target figure. Open a goal to edit it and manage its links.
       </p>
 
       <GoalsList goals={goals} />

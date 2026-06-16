@@ -24,6 +24,7 @@ import { nextMilestone, rollupHealth } from "@/lib/portfolio";
 import type { PortfolioMilestone } from "@/lib/portfolio";
 import {
   projectPercentComplete,
+  taskPercentComplete as goalTaskPercentComplete,
   manualPercent as goalManualPercent,
   rolledUpPercent as goalRolledUpPercent,
   displayPercent as goalDisplayPercent,
@@ -206,6 +207,10 @@ import type {
   PortfolioRow,
   GoalRow,
   GoalLinkedProject,
+  GoalLinkedTask,
+  GoalInput,
+  GoalEditable,
+  GoalLinkInput,
   ProjectRow,
   ProjectTypeRow,
   ProposalRow,
@@ -3785,8 +3790,7 @@ export const postgresRepositories: Repositories = {
             ORDER BY g.created_at DESC, g.name`,
         );
         // 2. Linked PROJECTS with their milestone completion (the rollup inputs,
-        //    ADR-0069 D3). Only project links roll up today (the AC is project
-        //    rollup); task links can join later via the same `goal_link` table.
+        //    ADR-0069 D3).
         const { rows: links } = await pool.query<{
           goal_id: string;
           project_id: string;
@@ -3824,14 +3828,43 @@ export const postgresRepositories: Repositories = {
           });
           byGoal.set(l.goal_id, list);
         }
+        // 3. Linked TASKS (issue #621). A task is binary (done → 100, else 0); it
+        //    feeds the SAME weighted pool as project links via `goal_link.weight`.
+        const { rows: taskRows } = await pool.query<{
+          goal_id: string;
+          task_id: string;
+          title: string;
+          status: string;
+          weight: string;
+        }>(
+          `SELECT gl.goal_id, t.id AS task_id, t.title, t.status, gl.weight
+             FROM goal_link gl
+             JOIN task t ON t.id = gl.parent_id AND gl.parent_type = 'task'`,
+        );
+        const tasksByGoal = new Map<string, GoalLinkedTask[]>();
+        for (const t of taskRows) {
+          const list = tasksByGoal.get(t.goal_id) ?? [];
+          list.push({
+            taskId: t.task_id,
+            title: t.title,
+            status: t.status,
+            weight: Number(t.weight),
+            percentComplete: goalTaskPercentComplete(t.status),
+          });
+          tasksByGoal.set(t.goal_id, list);
+        }
         return rows.map((g) => {
           const goalLinks = (byGoal.get(g.id) ?? []).sort((a, b) =>
             a.name.localeCompare(b.name),
           );
+          const goalTaskLinks = (tasksByGoal.get(g.id) ?? []).sort((a, b) =>
+            a.title.localeCompare(b.title),
+          );
           const target = Number(g.target);
           const current = Number(g.current);
           const manual = goalManualPercent(current, target);
-          const rolledUp = goalRolledUpPercent(goalLinks);
+          // Project AND task links share one weighted average (issue #621).
+          const rolledUp = goalRolledUpPercent([...goalLinks, ...goalTaskLinks]);
           return {
             id: g.id,
             name: g.name,
@@ -3849,12 +3882,139 @@ export const postgresRepositories: Repositories = {
               rolledUp,
             }),
             links: goalLinks,
+            taskLinks: goalTaskLinks,
           };
         });
       } catch (err) {
         // goal/goal_link (0102) may not be prod-applied yet → empty, not a 500.
         if (isSchemaLagError(err)) return [];
         return mockRepositories.crm.listGoals();
+      }
+    },
+
+    // ── Goal authoring + link CRUD (ADR-0069 D3, issue #621) ──────────────────
+
+    async getGoal(id: string): Promise<GoalEditable | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getGoal(id);
+      const { rows } = await pool.query<{
+        id: string;
+        name: string;
+        owner_user_id: string | null;
+        period: string | null;
+        target: string;
+        current: string;
+        progress_mode: "manual" | "rollup";
+        notes: string | null;
+      }>(
+        `SELECT id, owner_user_id, name, period, target, current, progress_mode, notes
+           FROM goal WHERE id = $1`,
+        [id],
+      );
+      const g = rows[0];
+      if (!g) return null;
+      return {
+        id: g.id,
+        name: g.name,
+        ownerUserId: g.owner_user_id,
+        period: g.period,
+        target: Number(g.target),
+        current: Number(g.current),
+        progressMode: g.progress_mode,
+        notes: g.notes,
+      };
+    },
+
+    async createGoal(input: GoalInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createGoal(input);
+      await pool.query(
+        `INSERT INTO goal (name, owner_user_id, period, target, current, progress_mode, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          input.name,
+          nullIfEmpty(input.ownerUserId),
+          nullIfEmpty(input.period),
+          input.target,
+          input.current,
+          input.progressMode,
+          nullIfEmpty(input.notes),
+        ],
+      );
+    },
+
+    async updateGoal(id: string, input: GoalInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateGoal(id, input);
+      await pool.query(
+        `UPDATE goal
+            SET name = $1, owner_user_id = $2, period = $3, target = $4,
+                current = $5, progress_mode = $6, notes = $7
+          WHERE id = $8`,
+        [
+          input.name,
+          nullIfEmpty(input.ownerUserId),
+          nullIfEmpty(input.period),
+          input.target,
+          input.current,
+          input.progressMode,
+          nullIfEmpty(input.notes),
+          id,
+        ],
+      );
+    },
+
+    async deleteGoal(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteGoal(id);
+      // goal_link rows CASCADE on the FK (migration 0102).
+      await pool.query(`DELETE FROM goal WHERE id = $1`, [id]);
+    },
+
+    async addGoalLink(input: GoalLinkInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.addGoalLink(input);
+      // Idempotent re-link via the UNIQUE (goal_id, parent_type, parent_id) — a
+      // repeat updates the weight rather than erroring (migration 0102).
+      await pool.query(
+        `INSERT INTO goal_link (goal_id, parent_type, parent_id, weight)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (goal_id, parent_type, parent_id)
+         DO UPDATE SET weight = EXCLUDED.weight`,
+        [input.goalId, input.parentType, input.parentId, input.weight],
+      );
+    },
+
+    async removeGoalLink(goalId: string, parentType: string, parentId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.removeGoalLink(goalId, parentType, parentId);
+      await pool.query(
+        `DELETE FROM goal_link
+          WHERE goal_id = $1 AND parent_type = $2 AND parent_id = $3`,
+        [goalId, parentType, parentId],
+      );
+    },
+
+    async goalLinkCandidates(): Promise<{ projects: Option[]; tasks: Option[] }> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.goalLinkCandidates();
+      try {
+        const [{ rows: projects }, { rows: tasks }] = await Promise.all([
+          pool.query<{ id: string; name: string }>(
+            `SELECT pr.id, a.name || ' — ' || pr.name AS name
+               FROM project pr JOIN account a ON a.id = pr.account_id
+              ORDER BY a.name, pr.name`,
+          ),
+          pool.query<{ id: string; name: string }>(
+            `SELECT id, title AS name FROM task ORDER BY title`,
+          ),
+        ]);
+        return {
+          projects: projects.map((r) => ({ id: r.id, name: r.name })),
+          tasks: tasks.map((r) => ({ id: r.id, name: r.name })),
+        };
+      } catch {
+        return mockRepositories.crm.goalLinkCandidates();
       }
     },
 

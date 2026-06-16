@@ -395,28 +395,26 @@ view/admin/data-layer lane that CONSUMES them — no migration of its own.**
 > delivery-management only (admin / project_manager), per ADR-0069's staff-performance-data
 > security impact.
 
-## D3. Goals / OKRs — SHIPPED (#348)
+## D3. Goals / OKRs — SHIPPED (#348, #621)
 
 - D3-F1 (COULD) Goal object above projects with measurable key results; link
-  projects/tasks that contribute. — **shipped (read-only):** `goal` + `goal_link`
-  (polymorphic `parent_type/parent_id`, so projects roll up now and tasks can later),
-  surfaced read-only at `/projects/goals`.
+  projects/tasks that contribute. — **shipped:** `goal` + `goal_link`
+  (polymorphic `parent_type/parent_id`); authoring (create/edit/delete) and link
+  management (add/remove projects AND tasks with a weight) at `/projects/goals`,
+  `/projects/goals/new`, and `/projects/goals/[id]` (#621, `delivery:write`-gated).
 - D3-F2 (COULD) Auto-progress from linked work completion or manual %. — **shipped:**
   per-goal `progress_mode` ('rollup' | 'manual'); rollup is the weight-weighted
-  average of each linked project's completion (milestone done/total, or 100% when a
-  project is `complete` with no milestones), derived in the read layer
-  (`src/lib/goals.ts`, unit-tested) — never stored.
+  average of each linked **project's** completion (milestone done/total, or 100% when
+  a project is `complete` with no milestones) **and each linked task's** completion (a
+  task is binary — 100% when `done`, else 0%), all in one weighted pool, derived in
+  the read layer (`src/lib/goals.ts`, unit-tested) — never stored (#621).
 - AC: A goal shows rolled-up progress from its linked projects. — **met** (covered by
-  `src/lib/goals.test.ts`'s weighted-average case). See
+  `src/lib/goals.test.ts`'s weighted-average cases, incl. the projects+tasks pool). See
   [user guide](../user-guides/goals-okrs.md).
 
 **Data model.** `goal{ id, name, owner_user_id, period, target, current, progress_mode,
-notes }` + `goal_link{ goal_id, parent_type, parent_id, weight }` (migration 0102).
-
-**Deferred (tracked on #348):** authoring goals + managing their links from the GUI,
-and rolling up linked *tasks* (the schema already allows `parent_type='task'`; only
-project rollup is wired). The table lands here with its first consuming slice per
-ADR-0069's "land each table with its first UI slice".
+notes }` + `goal_link{ goal_id, parent_type, parent_id, weight }` (migration 0102). App-
+native PM tables (not source-mirrored silver) — no OKF concept file, like `task`/`project`.
 
 ## D4. Sprints / backlog
 
