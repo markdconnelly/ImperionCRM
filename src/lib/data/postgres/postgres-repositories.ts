@@ -66,6 +66,7 @@ import type {
   ProjectInput,
   ProjectTypeInput,
   StatusDefRow,
+  StatusDefInput,
   DeliveryInstantiationInput,
   DeliveryTemplateInput,
   ProjectTemplateInput,
@@ -333,6 +334,55 @@ function deriveHealth(
 function nullIfEmpty(v: string | null | undefined): string | null {
   const s = (v ?? "").trim();
   return s === "" ? null : s;
+}
+
+/** Raw status_def row as returned by the configurable-status queries (ADR-0065 B5, #616). */
+type StatusDefDbRow = {
+  id: string;
+  scope: string;
+  project_type_id: string | null;
+  context: string;
+  key: string;
+  label: string;
+  color: string | null;
+  category: string;
+  ordinal: number;
+  wip_limit: number | null;
+};
+
+/** Map a snake_case status_def row to the camelCase StatusDefRow shape. */
+function mapStatusDef(r: StatusDefDbRow): StatusDefRow {
+  return {
+    id: r.id,
+    scope: r.scope,
+    projectTypeId: r.project_type_id,
+    context: r.context,
+    key: r.key,
+    label: r.label,
+    color: r.color,
+    category: r.category,
+    ordinal: r.ordinal,
+    wipLimit: r.wip_limit,
+  };
+}
+
+/**
+ * Ordered insert/update params for a status_def write. A global row carries no
+ * project_type_id regardless of what the form posted, so the scope CHECK can never
+ * be violated from this surface.
+ */
+function statusDefParams(input: StatusDefInput): unknown[] {
+  return [
+    input.scope,
+    input.scope === "project_type" ? input.projectTypeId : null,
+    input.context,
+    input.key.trim(),
+    input.label.trim(),
+    nullIfEmpty(input.color),
+    input.category,
+    input.ordinal,
+    input.wipLimit,
+  ];
 }
 
 /**
@@ -4247,6 +4297,94 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.crm.listStatusDefs(context, projectTypeId);
       }
+    },
+
+    // ── Configurable-status admin CRUD (ADR-0065 B5, #616, migration 0104) ──────
+    // The grant for INSERT/UPDATE/DELETE on status_def is in 0104's least-privilege
+    // block (verified applied to prod). scope/project_type_id are kept consistent
+    // by the status_def_scope_type_chk CHECK and the partial unique indexes — a
+    // duplicate key within a (context, scope, type) raises, surfaced as a thrown
+    // error to the gated action.
+    async listStatusDefsForScope(
+      context: string,
+      scope: string,
+      projectTypeId: string | null,
+    ): Promise<StatusDefRow[]> {
+      const pool = getPool();
+      if (!pool) {
+        return mockRepositories.crm.listStatusDefsForScope(context, scope, projectTypeId);
+      }
+      const { rows } = await pool.query<StatusDefDbRow>(
+        `SELECT id, scope, project_type_id, context, key, label, color,
+                category, ordinal, wip_limit
+           FROM status_def
+          WHERE context = $1 AND scope = $2
+            AND project_type_id IS NOT DISTINCT FROM $3::uuid
+          ORDER BY ordinal, label`,
+        [context, scope, projectTypeId],
+      );
+      return rows.map(mapStatusDef);
+    },
+
+    async createStatusDef(input: StatusDefInput): Promise<StatusDefRow> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createStatusDef(input);
+      const { rows } = await pool.query<StatusDefDbRow>(
+        `INSERT INTO status_def
+           (scope, project_type_id, context, key, label, color, category, ordinal, wip_limit)
+         VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, scope, project_type_id, context, key, label, color,
+                   category, ordinal, wip_limit`,
+        statusDefParams(input),
+      );
+      return mapStatusDef(rows[0]);
+    },
+
+    async updateStatusDef(
+      id: string,
+      input: StatusDefInput,
+    ): Promise<StatusDefRow | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateStatusDef(id, input);
+      const { rows } = await pool.query<StatusDefDbRow>(
+        `UPDATE status_def
+            SET scope = $1, project_type_id = $2::uuid, context = $3, key = $4,
+                label = $5, color = $6, category = $7, ordinal = $8, wip_limit = $9
+          WHERE id = $10::uuid
+        RETURNING id, scope, project_type_id, context, key, label, color,
+                  category, ordinal, wip_limit`,
+        [...statusDefParams(input), id],
+      );
+      return rows[0] ? mapStatusDef(rows[0]) : null;
+    },
+
+    async deleteStatusDef(id: string): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteStatusDef(id);
+      const { rowCount } = await pool.query(
+        `DELETE FROM status_def WHERE id = $1::uuid`,
+        [id],
+      );
+      return (rowCount ?? 0) > 0;
+    },
+
+    async reorderStatusDefs(order: { id: string; ordinal: number }[]): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.reorderStatusDefs(order);
+      if (order.length === 0) return;
+      // One statement: VALUES list joined onto the table so the whole reorder is a
+      // single atomic UPDATE (no per-row round-trips, no partial reorder on error).
+      const values = order
+        .map((_, i) => `($${i * 2 + 1}::uuid, $${i * 2 + 2}::integer)`)
+        .join(", ");
+      const params = order.flatMap((o) => [o.id, o.ordinal]);
+      await pool.query(
+        `UPDATE status_def AS sd
+            SET ordinal = v.ordinal
+           FROM (VALUES ${values}) AS v(id, ordinal)
+          WHERE sd.id = v.id`,
+        params,
+      );
     },
 
     // ── Delivery templates (ADR-0081, migration 0084) ──────────────────────────

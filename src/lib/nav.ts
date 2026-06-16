@@ -116,6 +116,10 @@ export const navHidden: NavItem[] = [
   // Admin-definable custom fields on tasks/projects (ADR-0065 B4, #338) — reached
   // from Settings → Tools & configuration; listed so the top bar resolves its title.
   { key: "custom-fields", label: "Custom fields", icon: "ListPlus", href: "/custom-fields" },
+  // Admin-definable status sets per context/project type (ADR-0065 B5, #616) —
+  // reached from Settings → Tools & configuration; listed so the top bar resolves
+  // its title.
+  { key: "statuses", label: "Statuses", icon: "ListChecks", href: "/settings/statuses" },
 ];
 
 export const navAll: NavItem[] = [...navPrimary, ...navSecondary, ...navTertiary, ...navHidden];

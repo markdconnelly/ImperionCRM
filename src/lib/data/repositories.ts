@@ -332,6 +332,27 @@ export interface StatusDefRow {
   wipLimit: number | null;
 }
 
+/**
+ * Admin input to create/update a status definition (ADR-0065 B5, #616). `scope`
+ * is 'global' (a default set shared by every project type; `projectTypeId` null)
+ * or 'project_type' (scoped to one type; `projectTypeId` required). `context`
+ * partitions the task set from the project set. `category` (todo|in_progress|done)
+ * is the reporting partition — rollups key off it, never `label`. `wipLimit` is
+ * carried for round-tripping but its dedicated editing UI + over-limit board
+ * highlight are the deferred part 2 of #616 (blocked on board-columns #613).
+ */
+export interface StatusDefInput {
+  scope: string; // 'global' | 'project_type'
+  projectTypeId: string | null;
+  context: string; // 'task' | 'project'
+  key: string;
+  label: string;
+  color: string | null;
+  category: string; // 'todo' | 'in_progress' | 'done'
+  ordinal: number;
+  wipLimit: number | null;
+}
+
 /** A {id,name} option for select dropdowns (e.g. picking an account). */
 export interface Option {
   id: string;
@@ -1410,6 +1431,26 @@ export interface CrmRepository {
     context: string,
     projectTypeId?: string | null,
   ): Promise<StatusDefRow[]>;
+
+  /**
+   * The full status set for one (context, scope, projectTypeId) — admin CRUD read
+   * (ADR-0065 B5, #616). Unlike `listStatusDefs` (which resolves typed-over-global
+   * for consumers), this returns EXACTLY the rows of the named scope so the admin
+   * surface edits one set at a time. Ordered by `ordinal`.
+   */
+  listStatusDefsForScope(
+    context: string,
+    scope: string,
+    projectTypeId: string | null,
+  ): Promise<StatusDefRow[]>;
+  /** Create a status definition; returns the created row (ADR-0065 B5, #616). */
+  createStatusDef(input: StatusDefInput): Promise<StatusDefRow>;
+  /** Update a status definition in place; returns the updated row, or null if gone. */
+  updateStatusDef(id: string, input: StatusDefInput): Promise<StatusDefRow | null>;
+  /** Delete a status definition (the FK is ON DELETE SET NULL). True if removed. */
+  deleteStatusDef(id: string): Promise<boolean>;
+  /** Persist a new column order: each {id, ordinal} pair is stamped onto its row. */
+  reorderStatusDefs(order: { id: string; ordinal: number }[]): Promise<void>;
 
   // Onboarding dashboard — projects with their R/Y/G milestones + checklist (ADR-0034/0037)
   listOnboarding(): Promise<OnboardingProject[]>;
