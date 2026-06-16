@@ -45,6 +45,9 @@ right (scoped to your Entra permissions).
 - [Conversations on the 360](conversation-panel.md): read a company's / contact's
   call & meeting intelligence — summary, action items, sentiment, and deal-risk
   from transcribed voice, beside the timeline; read-only (ADR-0068 / ADR-0011).
+- [Signature status on a proposal](signature-status.md): read a proposal's
+  e-signature state — DocuSign envelope status badge, per-signer states, and the
+  signed-document link once signed; read-only (ADR-0071).
 - [Company security posture](security-posture.md): read a company's posture —
   per-tenant secure score, policy classification, **DNS governance** (per-domain
   verdict + record drift, ADR-0063), and credential exposures.

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProposalForm } from "@/components/proposals/proposal-form";
+import { SignatureStatusPanel } from "@/components/proposals/signature-status-panel";
 import { updateProposalAction } from "../../actions";
 import { getRepositories } from "@/lib/data";
 
@@ -11,9 +12,10 @@ export default async function EditProposalPage({
 }) {
   const { id } = await params;
   const { crm } = getRepositories();
-  const [proposal, opportunities] = await Promise.all([
+  const [proposal, opportunities, envelopes] = await Promise.all([
     crm.getProposal(id),
     crm.opportunityOptions(),
+    crm.listEsignEnvelopesForProposal(id),
   ]);
   if (!proposal) notFound();
 
@@ -25,6 +27,8 @@ export default async function EditProposalPage({
         proposal={proposal}
         opportunities={opportunities}
       />
+      {/* E-signature status surface (ADR-0071, #395) — read-only DocuSign envelope state. */}
+      <SignatureStatusPanel envelopes={envelopes} />
     </div>
   );
 }
