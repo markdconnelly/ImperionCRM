@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.13.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.12.0...imperion-crm-v0.13.0) (2026-06-16)
+
+
+### Features
+
+* **agents:** agent.yaml workspace manifest schema (CMA agent-object shape) ([#699](https://github.com/markdconnelly/ImperionCRM/issues/699)) ([#713](https://github.com/markdconnelly/ImperionCRM/issues/713)) ([b9a3414](https://github.com/markdconnelly/ImperionCRM/commit/b9a3414b0ab8abcc996180bbf37746f0c2d0f9bf))
+* **collections:** /collections aging worklist + dunning panel ([#678](https://github.com/markdconnelly/ImperionCRM/issues/678)) ([#722](https://github.com/markdconnelly/ImperionCRM/issues/722)) ([e59a1e7](https://github.com/markdconnelly/ImperionCRM/commit/e59a1e70cca26fb09d7528e221fa6388abbd6a24))
+* **collections:** gated dunning send — approved reminder → employee M365 mailbox ([#679](https://github.com/markdconnelly/ImperionCRM/issues/679)) ([#724](https://github.com/markdconnelly/ImperionCRM/issues/724)) ([f16e8af](https://github.com/markdconnelly/ImperionCRM/commit/f16e8afbf51efad347a4ece31a3612da57f6340d))
+* **projects:** in-place edit of project templates ([#634](https://github.com/markdconnelly/ImperionCRM/issues/634)) ([#712](https://github.com/markdconnelly/ImperionCRM/issues/712)) ([da35ea9](https://github.com/markdconnelly/ImperionCRM/commit/da35ea964a23d205f9bef6b876497c2ee5ce3bb7))
+* **projects:** timeline/gantt + calendar span view over task.start_at ([#628](https://github.com/markdconnelly/ImperionCRM/issues/628)) ([#703](https://github.com/markdconnelly/ImperionCRM/issues/703)) ([eba9ebe](https://github.com/markdconnelly/ImperionCRM/commit/eba9ebe628311e15f879a38321772cc61e740291))
+* **schema:** agent_autopilot_policy autonomy dial ([#721](https://github.com/markdconnelly/ImperionCRM/issues/721)) ([#723](https://github.com/markdconnelly/ImperionCRM/issues/723)) ([e6011ce](https://github.com/markdconnelly/ImperionCRM/commit/e6011ce937e019bbad5b76da725fc074292107f0))
+* **schema:** collections_activity dunning overlay ([#677](https://github.com/markdconnelly/ImperionCRM/issues/677)) ([#720](https://github.com/markdconnelly/ImperionCRM/issues/720)) ([d9aaced](https://github.com/markdconnelly/ImperionCRM/commit/d9aaced0bc99a4aad625a4fa7d0c5b1bfc737de8))
+* **schema:** silver invoice read-only mirror ([#668](https://github.com/markdconnelly/ImperionCRM/issues/668)) ([#718](https://github.com/markdconnelly/ImperionCRM/issues/718)) ([c541046](https://github.com/markdconnelly/ImperionCRM/commit/c54104649a1d906b326151e45347642bd2b72195))
+* **tasks:** custom-field columns + filter on list/board + reporting ([#714](https://github.com/markdconnelly/ImperionCRM/issues/714)) ([#725](https://github.com/markdconnelly/ImperionCRM/issues/725)) ([1b03e3a](https://github.com/markdconnelly/ImperionCRM/commit/1b03e3a7d8921c7de5cc77975c4ed391c3593794))
+* **tasks:** kanban C1-F4 remainder — assignee avatars + comment/attachment counts ([#608](https://github.com/markdconnelly/ImperionCRM/issues/608)) ([#711](https://github.com/markdconnelly/ImperionCRM/issues/711)) ([1f6e714](https://github.com/markdconnelly/ImperionCRM/commit/1f6e7146108953efd692ac56549db1ec2bbff41b))
+* **tasks:** render + edit custom-field values on tasks/projects ([#614](https://github.com/markdconnelly/ImperionCRM/issues/614)) ([#715](https://github.com/markdconnelly/ImperionCRM/issues/715)) ([c09e568](https://github.com/markdconnelly/ImperionCRM/commit/c09e568983d80a8bd1256e761e7753d7d728c457))
+
 ## [0.12.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.11.0...imperion-crm-v0.12.0) (2026-06-16)
 
 
