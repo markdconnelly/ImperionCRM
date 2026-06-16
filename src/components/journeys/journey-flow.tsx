@@ -1,5 +1,5 @@
 import type { JourneyDetail, JourneyStep } from "@/types";
-import { describeStep, validateJourneyDefinition, variantSplit } from "@/lib/journey";
+import { allocateSplitPercent, describeStep, validateJourneyDefinition } from "@/lib/journey";
 
 const STEP_TONE: Record<string, string> = {
   send: "text-accent",
@@ -25,24 +25,40 @@ function StepCard({ step }: { step: JourneyStep }) {
 
       <p className="mt-1 text-sm text-dim">{describeStep(step)}</p>
 
-      {/* A/B variants on a send step (ADR-0073 decision 4). */}
+      {/* A/B variants on a send step (ADR-0073 decision 4) + winner selection (#400). */}
       {step.kind === "send" && step.variants.length >= 2 && (
-        <ul className="mt-3 flex flex-col gap-1">
-          {variantSplit(step.variants).map((v) => {
-            const variant = step.variants.find((x) => x.key === v.key);
-            return (
-              <li key={v.key} className="flex items-center justify-between text-xs">
-                <span className="text-text">
-                  {variant?.label ?? v.key}
-                  {variant?.templateId ? (
-                    <span className="text-dim"> · {variant.templateId}</span>
-                  ) : null}
-                </span>
-                <span className="text-accent-2">{Math.round(v.fraction * 100)}%</span>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-3">
+          <div className="mb-1 flex items-center justify-between text-[11px]">
+            <span className="font-medium uppercase tracking-wide text-accent-2">A/B split</span>
+            {step.winner ? (
+              <span className="rounded-full border border-green/40 px-2 py-0.5 text-green">
+                ★ winner: {step.winner}
+              </span>
+            ) : (
+              <span className="rounded-full border border-border px-2 py-0.5 text-dim">
+                splitting traffic
+              </span>
+            )}
+          </div>
+          <ul className="flex flex-col gap-1">
+            {allocateSplitPercent(step.variants).map((v) => {
+              const variant = step.variants.find((x) => x.key === v.key);
+              const isWinner = step.winner === v.key;
+              return (
+                <li key={v.key} className="flex items-center justify-between text-xs">
+                  <span className={isWinner ? "text-green" : "text-text"}>
+                    {isWinner ? "★ " : ""}
+                    {variant?.label ?? v.key}
+                    {variant?.templateId ? (
+                      <span className="text-dim"> · {variant.templateId}</span>
+                    ) : null}
+                  </span>
+                  <span className={isWinner ? "text-green" : "text-accent-2"}>{v.percent}%</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
 
       {/* Branch arms (ADR-0073 decision 3). */}

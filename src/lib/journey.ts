@@ -112,6 +112,12 @@ function parseStep(raw: unknown): JourneyStep | null {
     ifTrue: asString(raw.ifTrue),
     ifFalse: asString(raw.ifFalse),
     scoreDelta: asFiniteNumber(raw.scoreDelta),
+    // A/B winner (#400): keep only if it names a real variant on this step — a stale
+    // winner (variant removed/renamed) is dropped so it can never promote a ghost.
+    winner: (() => {
+      const w = asString(raw.winner);
+      return w != null && variants.some((v) => v.key === w) ? w : null;
+    })(),
   };
 }
 
@@ -200,6 +206,18 @@ export function validateJourneyDefinition(def: JourneyDefinition): string[] {
             problems.push(`Variant "${v.key}" of send step "${step.key}" has no template.`);
           }
         }
+        // A/B winner (#400): a promoted winner must name a real variant on an A/B send.
+        if (step.winner != null) {
+          if (step.variants.length < 2) {
+            problems.push(
+              `Send step "${step.key}" has a winner but is not an A/B test (needs 2+ variants).`,
+            );
+          } else if (!step.variants.some((v) => v.key === step.winner)) {
+            problems.push(
+              `Send step "${step.key}" winner "${step.winner}" is not one of its variants.`,
+            );
+          }
+        }
         break;
       case "wait":
         if (step.waitHours == null || step.waitHours <= 0) {
@@ -247,6 +265,83 @@ export function variantSplit(variants: readonly JourneyVariant[]): { key: string
   return variants.map((v) => ({ key: v.key, fraction: (v.ratio > 0 ? v.ratio : 0) / total }));
 }
 
+// ── A/B split allocation + winner selection (ADR-0073 decision 4, #400) ──────────
+//
+// #399 lets an operator *define* A/B variants (each with a relative `ratio` weight);
+// #400 turns those weights into a deterministic traffic split that sums to EXACTLY
+// 100% — and lets the operator *promote a winner*. Winner selection is MANUAL/
+// operator-chosen: there are NO live per-variant journey-run metrics yet (the runner
+// is backend #398, and no run telemetry exists), so a metric-driven pick is honestly
+// degraded — `variantMetricsAvailable()` is the single source of that truth, and the
+// UI shows an empty state instead of fabricating a "winning" rate.
+
+/**
+ * Deterministic integer-percentage split across variants, summing to EXACTLY 100
+ * (largest-remainder / Hare quota). This is the *displayed and assigned* traffic
+ * split — `variantSplit` gives raw fractions; this rounds them to whole percents
+ * without drift. Order is stable (input order), and the residual percents go to the
+ * largest fractional remainders, ties broken by input order — so the same variants
+ * always allocate the same way (sticky-per-enrollee assignment, ADR-0073 decision 4).
+ */
+export function allocateSplitPercent(
+  variants: readonly JourneyVariant[],
+): { key: string; percent: number }[] {
+  if (variants.length === 0) return [];
+  const fractions = variantSplit(variants); // sums to ~1
+  const raw = fractions.map((f) => f.fraction * 100);
+  const floors = raw.map((r) => Math.floor(r));
+  let remainder = 100 - floors.reduce((s, n) => s + n, 0);
+  // Distribute the leftover percents to the largest fractional parts, input-order ties.
+  const order = raw
+    .map((r, i) => ({ i, frac: r - Math.floor(r) }))
+    .sort((a, b) => b.frac - a.frac || a.i - b.i);
+  const percents = [...floors];
+  for (let k = 0; k < order.length && remainder > 0; k += 1) {
+    percents[order[k].i] += 1;
+    remainder -= 1;
+  }
+  return variants.map((v, i) => ({ key: v.key, percent: percents[i] }));
+}
+
+/** Do the integer split percents sum to exactly 100? (Builder validation for #400.) */
+export function splitPercentsSumTo100(
+  alloc: readonly { percent: number }[],
+): boolean {
+  return alloc.reduce((s, a) => s + a.percent, 0) === 100;
+}
+
+/**
+ * Whether per-variant send metrics exist to drive an automatic winner. HONEST FALSE
+ * for now — the journey runner (#398) has shipped no per-variant run telemetry, so
+ * winner selection is operator-manual and the UI must show an empty metrics state
+ * rather than invent open/click rates. Flip this (and feed real counts) when the
+ * backend exposes journey-run metrics.
+ */
+export function variantMetricsAvailable(): boolean {
+  return false;
+}
+
+/** Is this send step running an A/B test with a winner already promoted? (#400) */
+export function stepHasWinner(step: JourneyStep): boolean {
+  return stepHasAbTest(step) && step.winner != null;
+}
+
+/**
+ * Promote a variant as the A/B winner on a send step (#400). Returns a new step (pure).
+ * No-op unless the step is an A/B send and the key names a real variant on it — so a
+ * winner can never reference a ghost variant.
+ */
+export function selectWinner(step: JourneyStep, variantKey: string): JourneyStep {
+  if (!stepHasAbTest(step)) return step;
+  if (!step.variants.some((v) => v.key === variantKey)) return step;
+  return { ...step, winner: variantKey };
+}
+
+/** Clear any promoted winner from a step (re-open the split). Pure. (#400) */
+export function clearWinner(step: JourneyStep): JourneyStep {
+  return step.winner == null ? step : { ...step, winner: null };
+}
+
 // ── Builder helpers (ADR-0073, #399) ─────────────────────────────────────────
 
 /** A fresh step of the given kind, all kind-specific fields null/empty (builder #399). */
@@ -264,6 +359,7 @@ export function newJourneyStep(kind: JourneyStepKind, key: string): JourneyStep 
     ifTrue: null,
     ifFalse: null,
     scoreDelta: kind === "score" ? 10 : null,
+    winner: null,
   };
 }
 
@@ -283,7 +379,11 @@ export function describeStep(step: JourneyStep): string {
   switch (step.kind) {
     case "send": {
       const ch = step.channel ?? "message";
-      if (step.variants.length >= 2) return `Send ${ch} — A/B (${step.variants.length} variants)`;
+      if (step.variants.length >= 2) {
+        return step.winner != null
+          ? `Send ${ch} — A/B (winner: ${step.winner})`
+          : `Send ${ch} — A/B (${step.variants.length} variants)`;
+      }
       return `Send ${ch}`;
     }
     case "wait":

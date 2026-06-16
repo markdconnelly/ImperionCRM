@@ -2371,6 +2371,10 @@ export interface JourneyStep {
   ifFalse: string | null; // next step key otherwise
   // score
   scoreDelta: number | null; // lead-score delta (rule-based, ADR-0073 decision 5)
+  // A/B winner selection (#400) — the promoted variant key on an A/B send step.
+  // null = no winner chosen (still splitting). Manual/operator-chosen for now:
+  // there are no live per-variant send metrics yet, so selection is honest-manual.
+  winner: string | null;
 }
 
 /** The journey as a single object — `workflow.definition` parsed (ADR-0073). */
