@@ -4,7 +4,7 @@ title: project_template
 description: Admin-editable project playbook (milestones + steps/tasks, kept in template_item) instantiated as a snapshot onto new projects — website system of record.
 resource: ../../../decision-records/ADR-0070-pm-templates-recurrence-intake.md
 tags: [silver, delivery, project, template, pm]
-timestamp: 2026-06-15T22:00:00Z
+timestamp: 2026-06-16T16:00:00Z
 ---
 
 # project_template
@@ -69,6 +69,11 @@ Autotask ticket-dispatch — `project_template` is the general PM-parity templat
 ## Notes
 
 The snapshot/instantiate is a **runtime operation**, not schema. `payload` is jsonb so checklist
-subtasks (ADR-0070 E1-F3) can ride later without a migration. Templates are internal authoring
-objects — no client PII; item titles may name client-facing work, kept out of this doc and
-resolved against the live read-only DB.
+subtasks (ADR-0070 E1-F3) ride here without a migration. **Task checklist templates (E1-F3, #633)
+reuse this table:** a checklist template is a `project_template` row whose `key` carries the
+`checklist:` prefix, with flat `template_item` rows (`kind='task'`, `parent_id` NULL,
+`payload={title}`); applying one instantiates those items as subtasks under a target task
+(`applyChecklistTemplateToTask`, runtime). The list/get accessors filter on the `checklist:`
+prefix so checklist templates and project playbooks never appear in each other's pickers.
+Templates are internal authoring objects — no client PII; item titles may name client-facing
+work, kept out of this doc and resolved against the live read-only DB.

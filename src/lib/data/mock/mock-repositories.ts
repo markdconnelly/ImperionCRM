@@ -762,6 +762,36 @@ export const mockRepositories: Repositories = {
       // Writes a project + milestones/tasks in one transaction — needs a database.
       throw new Error(NO_DB);
     },
+    // Task checklist templates (ADR-0070 E1-F3, #633) — one seed so the manager/picker render.
+    async listChecklistTemplates() {
+      return [
+        {
+          id: "cltpl-onboarding-checks",
+          name: "New-hire onboarding checks",
+          description: "Standard subtasks to run on a new-hire onboarding task.",
+          itemCount: 3,
+        },
+      ];
+    },
+    async getChecklistTemplate(id: string) {
+      if (id !== "cltpl-onboarding-checks") return null;
+      return {
+        id: "cltpl-onboarding-checks",
+        name: "New-hire onboarding checks",
+        description: "Standard subtasks to run on a new-hire onboarding task.",
+        items: ["Create accounts", "Assign hardware", "Schedule orientation"],
+      };
+    },
+    async createChecklistTemplate() {
+      throw new Error(NO_DB);
+    },
+    async deleteChecklistTemplate() {
+      throw new Error(NO_DB);
+    },
+    async applyChecklistTemplateToTask() {
+      // Writes subtasks under the target task in one transaction — needs a database.
+      throw new Error(NO_DB);
+    },
     // Intake forms (ADR-0070 E3, #354) — one seed so the manager + renderer render.
     async listIntakeForms() {
       return [

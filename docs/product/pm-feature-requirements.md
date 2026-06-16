@@ -459,7 +459,19 @@ ADR-0069's "land each table with its first UI slice".
   hard-coded onboarding playbook.
 - E1-F2 (SHOULD) Apply a template when creating a project; future template edits do
   **not** retro-mutate live projects.
-- E1-F3 (SHOULD) Task checklist templates (apply a set of subtasks to a task).
+- E1-F3 (SHOULD, #633) Task checklist templates (apply a set of subtasks to a task).
+  Shipped — a checklist template is a reusable named set of subtasks, authored at
+  `/checklist-templates` (+ `/checklist-templates/new`) and applied from the
+  "Apply checklist template" control on the task edit page. Apply is a **snapshot**:
+  the items become subtasks under the target task (inheriting its account/project/
+  category), and later edits to the template never touch already-applied subtasks.
+  **No migration** — a checklist template REUSES the existing `project_template` /
+  `template_item` tables (a `project_template` row whose `key` carries the
+  `checklist:` prefix; its items are flat `template_item` rows, `kind='task'`,
+  `parent_id` NULL, `payload={title}`), per the E1-F3 note that the payload jsonb
+  already accommodates this. Data layer: `listChecklistTemplates` /
+  `getChecklistTemplate` / `createChecklistTemplate` / `deleteChecklistTemplate` /
+  `applyChecklistTemplateToTask`. Gated `delivery:write`, like all template authoring.
 - E1-F4 (SHOULD) Existing onboarding playbook becomes the seeded, protected default
   template (no behaviour change for current onboarding).
 - E1-F5 (SHOULD, #634) **In-place edit** of an existing template: change name/metadata

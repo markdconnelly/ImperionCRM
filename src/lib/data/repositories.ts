@@ -57,6 +57,8 @@ import type {
   DeliveryTemplateDetail,
   ProjectTemplateRow,
   ProjectTemplateDetail,
+  ChecklistTemplateRow,
+  ChecklistTemplateDetail,
   DeliveryBoardProject,
   TimesheetRow,
   TimesheetDetail,
@@ -426,6 +428,32 @@ export interface ProjectTemplateInstantiationInput {
   projectTemplateId: string;
   /** Project start date (yyyy-mm-dd) — the anchor for all milestone/task date math. */
   startDate: string;
+}
+
+// ── Task checklist templates (ADR-0070 E1-F3, #633) ─────────────────────────────
+/**
+ * Key prefix that marks a project_template row as a CHECKLIST template (a reusable
+ * named subtask set), rather than a project playbook. Reusing the project_template /
+ * template_item tables avoids a migration (ADR-0070 E1-F3: payload jsonb already
+ * accommodates this). The list/get accessors filter on this prefix so checklist
+ * templates never appear in the project-template picker and vice-versa.
+ */
+export const CHECKLIST_TEMPLATE_KEY_PREFIX = "checklist:";
+
+/** Fields for creating a checklist template + its flat item list (ADR-0070 E1-F3, #633). */
+export interface ChecklistTemplateInput {
+  name: string;
+  description: string | null;
+  /** Ordered checklist item titles; each becomes a template_item (kind='task'). */
+  items: string[];
+}
+
+/** Apply a checklist template's items as subtasks under a target task (ADR-0070 E1-F3, #633). */
+export interface ApplyChecklistTemplateInput {
+  /** The checklist template to instantiate. */
+  checklistTemplateId: string;
+  /** The task the items become subtasks of (parent_task_id). */
+  taskId: string;
 }
 
 // ── Intake forms (ADR-0070 E3, migration 0111, #354) ────────────────────────────
@@ -1090,6 +1118,27 @@ export interface CrmRepository {
    * applyOnboardingTemplate (no behaviour change). Returns the new project id.
    */
   instantiateProjectTemplate(input: ProjectTemplateInstantiationInput): Promise<string>;
+
+  // Task checklist templates — reusable named subtask sets (ADR-0070 E1-F3, #633).
+  // These REUSE the project_template / template_item tables (no migration): a checklist
+  // template is a project_template row whose key carries the CHECKLIST_TEMPLATE_KEY_PREFIX,
+  // and its items are flat template_item rows (kind='task', parent_id NULL, payload={title}).
+  // Apply = instantiate those items as subtasks under a target task.
+  /** Authoring/picker list of checklist templates (project_template rows with the checklist key prefix). */
+  listChecklistTemplates(): Promise<ChecklistTemplateRow[]>;
+  /** A checklist template's ordered items, or null if not found / not a checklist template. */
+  getChecklistTemplate(id: string): Promise<ChecklistTemplateDetail | null>;
+  /** Create a checklist template + its items in one transaction; returns the id. */
+  createChecklistTemplate(input: ChecklistTemplateInput): Promise<string>;
+  /** Delete a checklist template (CASCADE drops its items). Refuses anything that isn't a checklist template. */
+  deleteChecklistTemplate(id: string): Promise<void>;
+  /**
+   * Apply a checklist template to a task (ADR-0070 E1-F3, #633): instantiate each of the
+   * template's items as a subtask under `taskId` (parent_task_id = taskId), snapshotting
+   * the titles. Each subtask inherits the parent's account/project/category. Returns the
+   * number of subtasks created (0 if the task or template is missing/empty).
+   */
+  applyChecklistTemplateToTask(input: ApplyChecklistTemplateInput): Promise<number>;
 
   // Intake forms — staff-authored forms that create a task on submit (ADR-0070 E3, migration 0111, #354)
   /** Manager/picker list with field + submission counts. */

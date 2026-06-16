@@ -69,6 +69,8 @@ import type {
   DeliveryTemplateInput,
   ProjectTemplateInput,
   ProjectTemplateInstantiationInput,
+  ChecklistTemplateInput,
+  ApplyChecklistTemplateInput,
   IntakeFormInput,
   IntakeFormField,
   IntakeFormRow,
@@ -113,6 +115,8 @@ import type {
   CustomFieldValueEntry,
   CustomFieldFilterInput,
 } from "@/lib/data/repositories";
+// Runtime value (not a type): the key prefix marking a checklist template (#633).
+import { CHECKLIST_TEMPLATE_KEY_PREFIX } from "@/lib/data/repositories";
 import type {
   Account,
   ActionItemRow,
@@ -137,6 +141,8 @@ import type {
   DeliveryTemplateRow,
   ProjectTemplateRow,
   ProjectTemplateDetail,
+  ChecklistTemplateRow,
+  ChecklistTemplateDetail,
   TemplateItem,
   TimesheetRow,
   TimesheetDetail,
@@ -4685,6 +4691,148 @@ export const postgresRepositories: Repositories = {
         }
         await client.query("COMMIT");
         return projectId;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    // ── Task checklist templates (ADR-0070 E1-F3, #633) ────────────────────────
+    // Reuse the project_template / template_item tables (no migration): a checklist
+    // template is a project_template row whose key starts with the checklist prefix,
+    // and its items are flat template_item rows (kind='task', parent_id NULL).
+    async listChecklistTemplates(): Promise<ChecklistTemplateRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listChecklistTemplates();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          description: string | null;
+          item_count: string;
+        }>(
+          `SELECT pt.id, pt.name, pt.description,
+                  count(ti.id) AS item_count
+           FROM project_template pt
+           LEFT JOIN template_item ti ON ti.template_id = pt.id
+           WHERE pt.key LIKE $1
+           GROUP BY pt.id
+           ORDER BY pt.name`,
+          [`${CHECKLIST_TEMPLATE_KEY_PREFIX}%`],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          itemCount: Number(r.item_count),
+        }));
+      } catch {
+        return mockRepositories.crm.listChecklistTemplates();
+      }
+    },
+
+    async getChecklistTemplate(id: string): Promise<ChecklistTemplateDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getChecklistTemplate(id);
+      // Only resolve rows that are actually checklist templates (key prefix).
+      const { rows: tRows } = await pool.query<{
+        id: string;
+        name: string;
+        description: string | null;
+      }>(
+        `SELECT id, name, description FROM project_template
+         WHERE id = $1 AND key LIKE $2`,
+        [id, `${CHECKLIST_TEMPLATE_KEY_PREFIX}%`],
+      );
+      const t = tRows[0];
+      if (!t) return null;
+      const { rows: iRows } = await pool.query<{ payload: Record<string, unknown> }>(
+        `SELECT payload FROM template_item WHERE template_id = $1 ORDER BY ordinal`,
+        [id],
+      );
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        items: iRows.map((r) => String((r.payload?.title ?? "") as string)).filter(Boolean),
+      };
+    },
+
+    async createChecklistTemplate(input: ChecklistTemplateInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createChecklistTemplate(input);
+      const items = input.items.map((s) => s.trim()).filter(Boolean);
+      // A unique, prefixed key (the table enforces UNIQUE) — slug + timestamp suffix
+      // so two templates with the same name never collide.
+      const slug = input.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const key = `${CHECKLIST_TEMPLATE_KEY_PREFIX}${slug || "checklist"}_${Date.now().toString(36)}`;
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO project_template (key, name, description, project_type_id, is_protected)
+           VALUES ($1, $2, $3, NULL, false)
+           RETURNING id`,
+          [key, input.name, nullIfEmpty(input.description)],
+        );
+        const templateId = rows[0].id;
+        let ord = 0;
+        for (const title of items) {
+          await client.query(
+            `INSERT INTO template_item (template_id, parent_id, kind, ordinal, payload)
+             VALUES ($1, NULL, 'task', $2, $3::jsonb)`,
+            [templateId, ord++, JSON.stringify({ title })],
+          );
+        }
+        await client.query("COMMIT");
+        return templateId;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteChecklistTemplate(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteChecklistTemplate(id);
+      // CASCADE drops template_item rows. The key-prefix guard prevents deleting a
+      // project playbook through this path.
+      const { rowCount } = await pool.query(
+        `DELETE FROM project_template WHERE id = $1 AND key LIKE $2`,
+        [id, `${CHECKLIST_TEMPLATE_KEY_PREFIX}%`],
+      );
+      if (!rowCount) throw new Error("Checklist template not found.");
+    },
+
+    async applyChecklistTemplateToTask(input: ApplyChecklistTemplateInput): Promise<number> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.applyChecklistTemplateToTask(input);
+      const template = await this.getChecklistTemplate(input.checklistTemplateId);
+      if (!template || template.items.length === 0) return 0;
+      // The subtasks inherit the parent task's account/project/category so they live
+      // in the same context (mirrors addSubtaskAction). Missing parent → no-op.
+      const parent = await this.getTask(input.taskId);
+      if (!parent) return 0;
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        let created = 0;
+        for (const title of template.items) {
+          // ordinal = end of the parent's existing children (matches createTask).
+          await client.query(
+            `INSERT INTO task (account_id, title, status, category, project_id, parent_task_id, ordinal)
+             VALUES ($1, $2, 'open', $3::task_category, $4, $5,
+                     COALESCE((SELECT max(ordinal) + 1 FROM task WHERE parent_task_id = $5), 0))`,
+            [parent.accountId, title, parent.category, parent.projectId, input.taskId],
+          );
+          created++;
+        }
+        await client.query("COMMIT");
+        return created;
       } catch (e) {
         await client.query("ROLLBACK");
         throw e;

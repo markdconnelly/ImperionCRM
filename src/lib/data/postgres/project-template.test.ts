@@ -215,3 +215,128 @@ describe("instantiateProjectTemplate (snapshot, ADR-0070 E1)", () => {
     ).rejects.toThrow(/not found/i);
   });
 });
+
+// ── Task checklist templates (ADR-0070 E1-F3, #633) ─────────────────────────────
+// Reuse the project_template / template_item tables (no migration); the accessors
+// filter on the `checklist:` key prefix.
+describe("listChecklistTemplates (ADR-0070 E1-F3, #633)", () => {
+  it("filters to the checklist key prefix and maps item counts to numbers", async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: "c1", name: "Onboarding checks", description: null, item_count: "3" }],
+    });
+    const out = await crm.listChecklistTemplates();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("WHERE pt.key LIKE $1");
+    expect(query.mock.calls[0][1]).toEqual(["checklist:%"]);
+    expect(out).toEqual([{ id: "c1", name: "Onboarding checks", description: null, itemCount: 3 }]);
+  });
+});
+
+describe("getChecklistTemplate", () => {
+  it("resolves only checklist-prefixed rows and lifts titles out of payload (ordered)", async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: "c1", name: "Onboarding checks", description: "desc" }],
+    });
+    query.mockResolvedValueOnce({
+      rows: [{ payload: { title: "Create accounts" } }, { payload: { title: "Assign hardware" } }],
+    });
+    const out = await crm.getChecklistTemplate("c1");
+    expect(query.mock.calls[0][1]).toEqual(["c1", "checklist:%"]);
+    expect((query.mock.calls[1][0] as string)).toMatch(/ORDER BY ordinal/);
+    expect(out).toEqual({
+      id: "c1",
+      name: "Onboarding checks",
+      description: "desc",
+      items: ["Create accounts", "Assign hardware"],
+    });
+  });
+
+  it("returns null when the id is not a checklist template", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(await crm.getChecklistTemplate("nope")).toBeNull();
+  });
+});
+
+describe("createChecklistTemplate (transaction)", () => {
+  it("inserts a checklist-prefixed project_template then a task item per trimmed line", async () => {
+    const id = await crm.createChecklistTemplate({
+      name: "Onboarding checks",
+      description: null,
+      items: ["Create accounts", "  ", "Assign hardware"], // blank dropped
+    });
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls).toContain("BEGIN");
+    expect(sqls.some((s) => s.includes("INSERT INTO project_template"))).toBe(true);
+    // The project_template key carries the checklist prefix.
+    const ptCall = clientQuery.mock.calls.find((c) => (c[0] as string).includes("INSERT INTO project_template"));
+    expect((ptCall?.[1] as unknown[])[0]).toMatch(/^checklist:/);
+    expect(sqls.filter((s) => s.includes("INSERT INTO template_item")).length).toBe(2); // blank dropped
+    expect(sqls).toContain("COMMIT");
+    expect(id).toBe("new-id");
+  });
+});
+
+describe("deleteChecklistTemplate", () => {
+  it("guards on the checklist key prefix and throws when nothing matched", async () => {
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    await expect(crm.deleteChecklistTemplate("not-a-checklist")).rejects.toThrow(/not found/i);
+    expect(query.mock.calls[0][1]).toEqual(["not-a-checklist", "checklist:%"]);
+  });
+
+  it("deletes a checklist template that matched", async () => {
+    query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    await expect(crm.deleteChecklistTemplate("c1")).resolves.toBeUndefined();
+  });
+});
+
+describe("applyChecklistTemplateToTask (snapshot → subtasks, #633)", () => {
+  it("inserts a subtask under the task per item, inheriting account/project/category", async () => {
+    // getChecklistTemplate: header + items.
+    query.mockResolvedValueOnce({ rows: [{ id: "c1", name: "Checks", description: null }] });
+    query.mockResolvedValueOnce({
+      rows: [{ payload: { title: "Create accounts" } }, { payload: { title: "Assign hardware" } }],
+    });
+    // getTask: the parent task.
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "t1",
+          account_id: "acc-1",
+          title: "Onboard",
+          detail: null,
+          status: "open",
+          category: "onboarding",
+          due_at: null,
+          start_at: null,
+          estimate: null,
+          estimate_unit: null,
+          project_id: "p1",
+          parent_task_id: null,
+          autotask_ticket_ref: null,
+        },
+      ],
+    });
+    const n = await crm.applyChecklistTemplateToTask({ checklistTemplateId: "c1", taskId: "t1" });
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls.filter((s) => s.includes("INSERT INTO task")).length).toBe(2);
+    // Each insert binds parent_task_id = the target task.
+    const insert = clientQuery.mock.calls.find((c) => (c[0] as string).includes("INSERT INTO task"));
+    expect((insert?.[1] as unknown[])).toContain("t1");
+    expect(n).toBe(2);
+  });
+
+  it("is a no-op (0) when the template is empty", async () => {
+    query.mockResolvedValueOnce({ rows: [{ id: "c1", name: "Checks", description: null }] });
+    query.mockResolvedValueOnce({ rows: [] }); // no items
+    const n = await crm.applyChecklistTemplateToTask({ checklistTemplateId: "c1", taskId: "t1" });
+    expect(n).toBe(0);
+  });
+
+  it("is a no-op (0) when the target task is missing", async () => {
+    query.mockResolvedValueOnce({ rows: [{ id: "c1", name: "Checks", description: null }] });
+    query.mockResolvedValueOnce({ rows: [{ payload: { title: "X" } }] });
+    query.mockResolvedValueOnce({ rows: [] }); // getTask → null
+    const n = await crm.applyChecklistTemplateToTask({ checklistTemplateId: "c1", taskId: "gone" });
+    expect(n).toBe(0);
+  });
+});

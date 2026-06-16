@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import type { TaskHierarchy } from "@/types";
+import type { ChecklistTemplateRow, TaskHierarchy } from "@/types";
 
 const statusTone: Record<string, string> = {
   open: "text-amber",
@@ -25,12 +25,17 @@ export function TaskSubtasks({
   hierarchy,
   addSubtaskAction,
   reparentTaskAction,
+  checklistTemplates,
+  applyChecklistTemplateAction,
 }: {
   taskId: string;
   parentTaskId: string | null | undefined;
   hierarchy: TaskHierarchy;
   addSubtaskAction: (formData: FormData) => void | Promise<void>;
   reparentTaskAction: (formData: FormData) => void | Promise<void>;
+  /** Checklist templates the user can seed this task's subtasks from (ADR-0070 E1-F3, #633). */
+  checklistTemplates: ChecklistTemplateRow[];
+  applyChecklistTemplateAction: (formData: FormData) => void | Promise<void>;
 }) {
   const { children, total, done } = hierarchy;
   const allDone = total > 0 && done === total;
@@ -126,6 +131,39 @@ export function TaskSubtasks({
           Add
         </button>
       </form>
+
+      {/* Apply a checklist template (ADR-0070 E1-F3, #633): instantiate a reusable
+          subtask set under this task. Snapshot — later template edits never touch
+          subtasks already applied. Only shown when templates exist. */}
+      {checklistTemplates.length > 0 && (
+        <form action={applyChecklistTemplateAction} className="mt-3 flex items-end gap-2 border-t border-border pt-3">
+          <input type="hidden" name="taskId" value={taskId} />
+          <label className="flex-1">
+            <span className="mb-1 block text-[11px] text-dim">Apply checklist template</span>
+            <select
+              name="checklistTemplateId"
+              required
+              defaultValue=""
+              className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text focus:border-accent focus:outline-none"
+            >
+              <option value="" disabled>
+                Choose a checklist…
+              </option>
+              {checklistTemplates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.itemCount})
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:text-text"
+          >
+            Apply
+          </button>
+        </form>
+      )}
     </section>
   );
 }

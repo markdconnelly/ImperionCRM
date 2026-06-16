@@ -750,6 +750,28 @@ export interface ProjectTemplateDetail {
 }
 
 /**
+ * A task checklist template — a reusable named set of subtasks (ADR-0070 E1-F3,
+ * #633). Stored as a `project_template` row (with a `checklist:` key prefix) whose
+ * `template_item` rows are flat `kind='task'` items — NO migration, the existing
+ * tables/jsonb already accommodate it. Applying one instantiates its items as
+ * subtasks under a target task. This is the list/picker summary.
+ */
+export interface ChecklistTemplateRow {
+  id: string;
+  name: string;
+  description: string | null;
+  itemCount: number; // number of checklist items
+}
+
+/** The full checklist template — its ordered item titles (ADR-0070 E1-F3, #633). */
+export interface ChecklistTemplateDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  items: string[]; // ordered checklist item titles
+}
+
+/**
  * A project_provisioning row (ADR-0080 §4, migration 0082 + 0084 gate) — the 1:1
  * binding of a native delivery project to its Autotask Project, owning the
  * provisioning idempotency + the hard contract gate. Read-shape; the executor
