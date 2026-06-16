@@ -4,7 +4,7 @@ title: campaign
 description: Marketing campaign across platforms — website system of record; parents ads, metrics, and lead attribution.
 resource: ../../../decision-records/ADR-0053-campaign-builders-events-scheduled-sends.md
 tags: [silver, marketing, campaign, demand-gen]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # campaign
@@ -28,13 +28,14 @@ sms). Ad targeting is **consent-gated** — `current_consent` governs who may be
 |---|---|---|
 | `id` | uuid | PK |
 | `name` | text | |
-| `platform` | enum | channel |
+| `platform` | enum `campaign_platform` | `facebook` · `google` · `youtube` · `linkedin` · `email` · `sms` (sms added migration 0071) — the channel |
 | `objective` | text | |
-| `status` | enum | lifecycle |
+| `status` | enum `campaign_status` | `draft` · `active` · `paused` · `completed` (default `draft`) |
 | `budget` | numeric | |
 | `start_at` / `end_at` | date | |
 | `external_ref` | text | platform object id |
-| `event_id` / `workflow_id` | uuid | FK → `event` / `workflow` |
+| `event_id` | uuid | FK → `event` (migration 0070) — campaign promotes an event |
+| `workflow_id` | uuid | FK → `workflow` (migration 0073) — auto-enroll responders |
 | `created_by_user_id` | uuid | FK → `app_user` |
 
 ## Joins

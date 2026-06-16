@@ -4,7 +4,7 @@ title: connection
 description: OAuth/integration connection record — per-user or company-wide; tokens custodied in Key Vault by reference; carries the poll cadence.
 resource: ../../../decision-records/ADR-0024-per-user-personal-connections-and-lead-hooks.md
 tags: [silver, identity, connection, reference, config]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # connection
@@ -27,14 +27,15 @@ database or this doc. `scope` is `user` (per-user personal connection, `owner_us
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK |
-| `scope` | enum | user / company |
-| `owner_user_id` | uuid | FK → `app_user` (user scope) |
-| `provider` | enum | m365, google, autotask, itglue, apollo, facebook, … |
-| `status` | enum | connected / error / disconnected |
+| `scope` | enum | `user` · `company` |
+| `owner_user_id` | uuid | FK → `app_user` (set for user scope; NULL for company; ON DELETE CASCADE) |
+| `provider` | enum | append-extended per integration: `m365` · `google` · `youtube` · `linkedin` · `facebook` · `plaud` · `autotask` · `itglue` (0020) · `apollo` (0031) · `myitprocess` · `televy` · `quotemanager` · `gdap` (0033) · `darkwebid` (0042) · `acs` (0071) · `qbo` (0093) |
+| `display_name` | text | human label for the connection |
+| `status` | enum | `active` (default) · `pending` (0033) · `expired` · `revoked` · `error` |
 | `scopes` | text[] | granted OAuth scopes |
 | `keyvault_secret_ref` | text | **reference only — never the secret value** |
 | `external_account_id` | text | provider account id |
-| `poll_interval_minutes` | integer | cadence gate (0 = paused) |
+| `poll_interval_minutes` | integer | cadence gate (default `60`; `0` = manual/paused; CHECK ≥ 0; ADR-0038, migration 0035) |
 | `sync_cursor` | jsonb | incremental cursor |
 | `last_sync_at` / `connected_at` | timestamptz | |
 

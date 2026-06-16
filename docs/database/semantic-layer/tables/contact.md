@@ -22,23 +22,44 @@ Five bronze sources merge; **precedence `website` > `autotask` > `itglue` > `m36
 pre-linked (resurrection guard — the merge never creates a contact from one).
 
 - `website_contacts` (manual, highest) · `autotask_contacts` · `itglue_contacts` ·
-  `m365_contacts` (directory) · `apollo_contacts` (enrichment, lowest).
+  `m365_contacts` (directory; precedence label `m365_synced`) · `apollo_contacts`
+  (enrichment, lowest).
+
+## Bronze match / merge
+
+How the sources collapse to one person (Pipeline `contact-matcher`); the owning account
+resolves first through the same-source company bronze row (`companyExternalRef`):
+
+1. **Email match** (confidence `0.95`) — a source row joins an existing contact when its
+   `email` matches (case-insensitive) any contact's.
+2. **Name match** (`0.6`) — else case-insensitive `full_name` equality **within the owning
+   account** (`account_id`).
+3. **Create** (`1.0`) — else a new contact is inserted (name/account/email/phone); website
+   rows are app-created and pre-linked, so the merge never creates a contact from one (the
+   resurrection guard).
+
+Once linked, each contact is **recomputed** from all its linked source rows by the
+precedence above; merged fields = `full_name`, `email`, `phone`, `title`, `headline`,
+`location`. `last_enriched_at` is bumped when an `apollo` or `m365_synced` source
+contributes.
 
 ## Schema
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK |
-| `account_id` | uuid | FK → `account` |
-| `full_name` | text | |
-| `email` / `phone` | text | personal — see notes |
-| `title` / `headline` / `location` | text | enrichment-fed |
-| `crm_stage` | enum | sales/CRM stage |
-| `lifecycle_status` | text | normalized lifecycle (ADR-0031) |
-| `is_client` | bool | converted-client flag; `signed_at` stamps conversion |
-| `campaign_id` | uuid | FK → `campaign` (attribution) |
-| `pii` | bool | row carries personal data |
-| `last_enriched_at` | timestamptz | |
+| `account_id` | uuid | FK → `account` (ON DELETE CASCADE) |
+| `full_name` | text | merged by precedence |
+| `email` / `phone` | text | personal — see notes; `email` is the primary match key |
+| `title` / `headline` / `location` / `avatar_url` | text | enrichment-fed (ADR-0025) |
+| `crm_stage` | enum | `audience` · `lead` · `prospect` · `client` (default `audience`; sales/CRM axis, ADR-0027) |
+| `lifecycle_status` | text | enrichment lifecycle (ADR-0025) — `stranger` · `known` · `engaged` · `customer` (default `stranger`); a DIFFERENT axis from `crm_stage` |
+| `is_client` | bool | trigger-derived = (`crm_stage` = `client`); `signed_at` stamped on transition |
+| `signed_at` | timestamptz | conversion timestamp; nulled when no longer a client |
+| `attribution` | jsonb | campaign/ad/utm (ADR-0012) |
+| `campaign_id` | uuid | FK → `campaign` (attribution; ON DELETE SET NULL) |
+| `pii` | bool | row carries personal data (default `true`) |
+| `last_enriched_at` | timestamptz | bumped on apollo/m365 contribution |
 
 ## Joins
 

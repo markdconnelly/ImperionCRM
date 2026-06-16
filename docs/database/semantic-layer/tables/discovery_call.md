@@ -4,7 +4,7 @@ title: discovery_call
 description: Sales discovery engagement with a fit verdict — website system of record; anchors the SBR cadence.
 resource: ../../../decision-records/ADR-0023-engagement-capture-and-relationship-data-model.md
 tags: [silver, sales, discovery, engagement]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # discovery_call
@@ -25,16 +25,17 @@ rhythm.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK |
-| `account_id` | uuid | FK → `account` |
-| `opportunity_id` | uuid | FK → `opportunity` (nullable) |
-| `contact_id` | uuid | FK → `contact` |
-| `conducted_by_user_id` | uuid | FK → `app_user` |
-| `template_id` | uuid | FK → `question_template` |
-| `status` | text | |
-| `held_at` | timestamptz | |
-| `verdict` | enum | fit / not_fit / nurture |
-| `verdict_reason` / `next_step` | text | |
-| `sbr_cadence` | text | seeds the SBR rhythm |
+| `account_id` | uuid | FK → `account` (ON DELETE CASCADE) — the owning company; the call is account-scoped |
+| `opportunity_id` | uuid | FK → `opportunity` (nullable, ON DELETE SET NULL) |
+| `contact_id` | uuid | FK → `contact` (nullable, ON DELETE SET NULL) — the client employee on this instance |
+| `conducted_by_user_id` | uuid | FK → `app_user` (nullable, ON DELETE SET NULL) — the Imperion rep |
+| `template_id` | uuid | FK → `question_template` (nullable) — the question-set version used |
+| `status` | text | `scheduled` \| `completed` \| `cancelled` (default `scheduled`) — call lifecycle |
+| `held_at` | timestamptz | when conducted |
+| `verdict` | enum `discovery_verdict` | `fit` \| `not_fit` \| `nurture` — routes the prospect |
+| `verdict_reason` / `next_step` | text | the locked next step |
+| `sbr_cadence` | text | `monthly` \| `quarterly` — mandated on the call; seeds the post-sale SBR rhythm |
+| `created_at` / `updated_at` | timestamptz | trigger-maintained (`set_updated_at`) |
 
 ## Joins
 
