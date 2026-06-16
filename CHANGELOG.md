@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.13.0...imperion-crm-v0.14.0) (2026-06-16)
+
+
+### Features
+
+* **projects:** admin status-set CRUD ([#616](https://github.com/markdconnelly/ImperionCRM/issues/616)) ([#730](https://github.com/markdconnelly/ImperionCRM/issues/730)) ([fc19d4b](https://github.com/markdconnelly/ImperionCRM/commit/fc19d4bfe2e1dac5854c8c3d93c5c2bc8968719b))
+* **projects:** goal authoring GUI + link management + task-level rollup ([#621](https://github.com/markdconnelly/ImperionCRM/issues/621)) ([#727](https://github.com/markdconnelly/ImperionCRM/issues/727)) ([1e6fd4b](https://github.com/markdconnelly/ImperionCRM/commit/1e6fd4be5f80451ff7d1b4bd04c4878a9378c977))
+* **projects:** task checklist templates ([#633](https://github.com/markdconnelly/ImperionCRM/issues/633)) ([#726](https://github.com/markdconnelly/ImperionCRM/issues/726)) ([62ea89b](https://github.com/markdconnelly/ImperionCRM/commit/62ea89bc9dcbd447d45b682e678466291abb57cf))
+* **tasks:** in-place intake form editor ([#639](https://github.com/markdconnelly/ImperionCRM/issues/639)) ([#729](https://github.com/markdconnelly/ImperionCRM/issues/729)) ([a535a17](https://github.com/markdconnelly/ImperionCRM/commit/a535a179338eddcbce07411f557e4ea6416a1265))
+
 ## [0.13.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.12.0...imperion-crm-v0.13.0) (2026-06-16)
 
 
