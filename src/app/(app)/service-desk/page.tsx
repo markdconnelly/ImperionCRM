@@ -1,93 +1,72 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
-import { AgentConsole } from "@/components/service-desk/agent-console";
-import { LiveChatWidget } from "@/components/service-desk/live-chat-widget";
+import { QueueSummaryBar } from "@/components/omnichannel-queue/queue-summary-bar";
+import { QueueTable } from "@/components/omnichannel-queue/queue-table";
 import { getRepositories } from "@/lib/data";
-import { summarizeDeflection } from "@/lib/chat-session";
-import { CHAT_TRANSPORT_NOT_WIRED } from "@/lib/chat-live";
-import { getSessionRoles } from "@/lib/auth/session";
-import { can } from "@/lib/auth/policy";
-import { isDbConfigured } from "@/lib/db/client";
-import { escalateChatToTicketAction, sendChatReplyAction } from "./actions";
-
-export const dynamic = "force-dynamic"; // live chat sessions, never prerendered
+import { buildQueue, routingWired, summarizeQueue } from "@/lib/omnichannel-queue";
 
 /**
- * Service desk — live chat agent console (ADR-0074 §6, #407).
+ * The omnichannel inbound queue (ADR-0074 §6, #408): one prioritized agent work queue
+ * that unifies inbound across channels — Imperion-native `chat_session` (the only native
+ * service-desk store, §5) and silver `ticket` (Autotask is the ticket SoR, §1) — into a
+ * single triage surface.
  *
- * Surfaces the Imperion-native `chat_session` read model (migration 0117): active
- * sessions, transcript preview, deflection telemetry, an agent reply box, and
- * escalate-to-Autotask. Reads come straight from the DB (ADR-0042 — the web role has
- * SELECT on chat_session); the reply + escalate paths are PROCESSES and go through
- * the backend. The live chat transport itself isn't wired in every environment, so
- * the console degrades honestly to a read/poll view (ADR-0018). A preview of the
- * customer-facing widget renders below the console.
+ * **Read-only by design.** The queue is a VIEW/orchestration over sources, not a new
+ * system of record (§6). Routing/assignment is the job of the ICM service-desk workspace
+ * (#280) executed by the backend orchestrator (ADR-0042) — the front end reflects it, it
+ * does not route. Until that seam surfaces a routing lane the page degrades honestly to a
+ * read-only view with a notice (the repo's stub-don't-fail pattern); it never breaks.
+ *
+ * Both source reads are direct DB reads for rendering (allowed, §1) via the typed
+ * repositories; with no DB they return empty (mock fallback) and the page shows the empty
+ * state rather than failing.
  */
-export default async function ServiceDeskPage() {
-  const roles = await getSessionRoles();
-  const canWrite = can(roles, "tickets:write"); // matches the action gate (ADR-0045)
-
-  const { crm } = getRepositories();
-  const [sessions, accounts] = await Promise.all([
-    crm.listChatSessions(200),
-    crm.listAccounts(),
+export default async function ServiceDeskQueuePage() {
+  const { crm, engagements } = getRepositories();
+  const [chatSessions, tickets] = await Promise.all([
+    crm.listChatSessions(),
+    engagements.listTickets({}),
   ]);
 
-  const summary = summarizeDeflection(sessions);
-  const dbConfigured = isDbConfigured();
-  // The chat transport host (delivers replies / drives the bot) is the comms backend.
-  const transportWired = Boolean(process.env.COMMS_SERVICE_URL?.trim());
-  // The Autotask escalation seam is the integration backend.
-  const escalateConfigured = Boolean(process.env.INTEGRATION_SERVICE_URL?.trim());
+  // SLA-breach priority (§2) would refine ticket ordering; no FE repo accessor for the
+  // `ticket_sla_breach` view exists yet, so tickets fall back to status-inferred open +
+  // normal priority. Filed as a follow-up (see PR body). Honest, never wrong.
+  const items = buildQueue({ chatSessions, tickets });
+  const summary = summarizeQueue(items);
+  const routed = routingWired(items);
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title="Service Desk"
-        description="Live chat agent console — active sessions, transcripts, deflection telemetry, and escalate-to-ticket. Autotask is the ticket system of record (ADR-0074)."
+        title="Omnichannel queue"
+        description="Unified inbound work across chat, social, email and tickets, prioritized into one agent queue."
       />
 
-      {!transportWired && (
-        <div className="flex items-start gap-2 rounded-md border border-amber/40 bg-amber/10 px-4 py-2 text-xs text-amber">
-          <Icon name="Info" size={14} className="mt-0.5 shrink-0" />
-          {CHAT_TRANSPORT_NOT_WIRED}
+      {/* Honest degrade: the queue reflects ICM #280 routing; until that seam is wired it
+          is a read-only triage view, not an active router. */}
+      {!routed && (
+        <div className="flex items-start gap-2 rounded-md border border-amber/40 bg-amber/10 px-4 py-2.5 text-sm text-amber">
+          <Icon name="Info" size={15} className="mt-0.5 shrink-0" />
+          <span>
+            Read-only view. Active routing and assignment run through the ICM service-desk
+            workspace (#280) on the backend (ADR-0042); items show as{" "}
+            <span className="font-medium">unrouted</span> until that seam is wired. Triage
+            from the source surfaces:{" "}
+            <Link href="/communications" className="underline hover:text-text">
+              Communications
+            </Link>{" "}
+            and{" "}
+            <Link href="/tickets" className="underline hover:text-text">
+              Tickets
+            </Link>
+            .
+          </span>
         </div>
       )}
 
-      <AgentConsole
-        sessions={sessions}
-        summary={summary}
-        accounts={accounts.map((a) => ({ id: a.id, name: a.name }))}
-        canWrite={canWrite}
-        escalateConfigured={escalateConfigured}
-        transportNote={transportWired ? "" : CHAT_TRANSPORT_NOT_WIRED}
-        escalateAction={escalateChatToTicketAction}
-        replyAction={sendChatReplyAction}
-      />
-
-      {/* Customer-facing widget preview (the component embedded on the public site). */}
-      <section className="rounded-xl border border-border bg-panel p-5">
-        <div className="mb-1 flex items-center justify-between gap-2">
-          <h3 className="font-display text-sm font-semibold tracking-tight">
-            Customer chat widget
-          </h3>
-          <span className="text-[11px] text-dim">
-            embeddable · {dbConfigured ? "" : "sample data · "}
-            {transportWired ? "transport wired" : "preview mode"}
-          </span>
-        </div>
-        <p className="mb-3 text-sm text-dim">
-          This is the live preview of the widget visitors use — a bot grounded in gold
-          knowledge answers first (ADR-0041), then escalates to a person or an Autotask
-          ticket. Try it in the bottom-right corner.
-        </p>
-        <div className="rounded-lg border border-dashed border-border bg-panel-2/40 px-4 py-10 text-center text-sm text-dim">
-          The widget launcher is pinned to the bottom-right of this page — open it to try the
-          customer experience.
-        </div>
-      </section>
-
-      <LiveChatWidget transportWired={transportWired} />
+      <QueueSummaryBar summary={summary} />
+      <QueueTable items={items} />
     </div>
   );
 }

@@ -66,9 +66,12 @@ export const navSecondary: NavItem[] = [
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
+  // The omnichannel inbound queue (ADR-0074 §6, #408) — one prioritized triage queue
+  // unifying chat sessions + tickets across channels; coordinates ICM routing (#280).
+  { key: "service-desk", label: "Omnichannel queue", icon: "Inbox", href: "/service-desk" },
   // The live-chat agent console (ADR-0074 §6, #407) — active chat sessions, transcripts,
-  // deflection telemetry, escalate-to-Autotask. Sits with the other service-desk surfaces.
-  { key: "service-desk", label: "Service Desk", icon: "Headset", href: "/service-desk" },
+  // deflection telemetry, escalate-to-Autotask. Nested under the service-desk area.
+  { key: "service-desk-chat", label: "Live Chat", icon: "Headset", href: "/service-desk/chat" },
 ];
 
 // System group (bottom): the AI surfaces and Settings. Feedback sits LAST —

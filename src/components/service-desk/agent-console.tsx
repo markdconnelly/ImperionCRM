@@ -16,7 +16,7 @@ import type { ChatDeflectionSummary, ChatSessionRow } from "@/types";
 import type {
   ChatReplyResult,
   EscalateChatResult,
-} from "@/app/(app)/service-desk/actions";
+} from "@/app/(app)/service-desk/chat/actions";
 
 const REPLY_MAX = 8000;
 const TITLE_MAX = 250;

@@ -98,7 +98,7 @@ export async function escalateChatToTicketAction(formData: FormData): Promise<Es
     return { ok: false, status: "error", message: outcome.message, ticketRef: null };
   }
 
-  revalidatePath("/service-desk");
+  revalidatePath("/service-desk/chat");
   const { ticketRef, created } = outcome.value;
   return {
     ok: true,
