@@ -112,3 +112,79 @@ describe("sprints / backlog (ADR-0069 D4, #349)", () => {
     expect(release).toHaveBeenCalledOnce();
   });
 });
+
+describe("agile reporting reads (C5, ADR-0066, #345)", () => {
+  it("getSprintBurndownData reads the sprint, its estimated tasks (done via status_def category) and the un-estimated count", async () => {
+    query
+      // getSprint (sprint + rollup)
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "sp1",
+            name: "Sprint 7",
+            project_id: null,
+            project: null,
+            starts_at: new Date("2026-06-01T00:00:00Z"),
+            ends_at: new Date("2026-06-05T00:00:00Z"),
+            status: "active",
+            task_count: "3",
+            done_count: "1",
+          },
+        ],
+      })
+      // estimated tasks
+      .mockResolvedValueOnce({
+        rows: [
+          { estimate: "5", estimate_unit: "points", done: true, completed_at: new Date("2026-06-03T10:00:00Z") },
+          { estimate: "3", estimate_unit: "points", done: false, completed_at: null },
+        ],
+      })
+      // un-estimated count
+      .mockResolvedValueOnce({ rows: [{ n: "1" }] });
+
+    const out = await crm.getSprintBurndownData("sp1");
+    // estimated-task query keys done off status_def category and pulls updated_at as completed_at.
+    const taskSql = String(query.mock.calls[1][0]);
+    expect(taskSql).toMatch(/COALESCE\(sd\.category, t\.status\) = 'done'/);
+    expect(taskSql).toMatch(/t\.updated_at/);
+    expect(taskSql).toMatch(/t\.estimate IS NOT NULL/);
+    expect(out).toEqual({
+      sprint: expect.objectContaining({ id: "sp1", startsAt: "2026-06-01", endsAt: "2026-06-05" }),
+      tasks: [
+        { estimate: 5, done: true, completedAt: "2026-06-03" },
+        { estimate: 3, done: false, completedAt: null },
+      ],
+      unit: "points",
+      unestimatedCount: 1,
+    });
+  });
+
+  it("getSprintBurndownData returns null when the sprint is absent", async () => {
+    query.mockResolvedValueOnce({ rows: [] }); // getSprint → none
+    expect(await crm.getSprintBurndownData("nope")).toBeNull();
+  });
+
+  it("listSprintVelocity sums committed/completed effort per sprint, completed-first", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: "sp1", name: "S1", ends_at: new Date("2026-05-15T00:00:00Z"), status: "completed", committed: "20", completed: "18", unit: "points" },
+      ],
+    });
+    const out = await crm.listSprintVelocity();
+    const sql = String(query.mock.calls[0][0]);
+    expect(sql).toMatch(/FROM sprint s/);
+    expect(sql).toMatch(/FILTER \(/);
+    expect(sql).toMatch(/\(s\.status = 'completed'\) DESC/);
+    expect(out).toEqual([
+      {
+        id: "sp1",
+        name: "S1",
+        endsAt: "2026-05-15",
+        status: "completed",
+        committedEffort: 20,
+        completedEffort: 18,
+        unit: "points",
+      },
+    ]);
+  });
+});

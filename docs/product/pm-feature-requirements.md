@@ -299,6 +299,16 @@ sales/project/onboarding/general partition.)
 - C5-F1 (COULD) Burndown for a sprint/date-range; velocity across sprints; cumulative
   flow by status. Depends on D1 (estimates) and D4 (sprints).
 - AC: A sprint shows remaining-effort burndown sourced from estimates + status history.
+- **Status: SHIPPED (#345).** `/reporting/agile` — sprint selector → ideal-vs-actual
+  burndown + per-sprint committed/completed velocity (rolling average). Gated
+  `canManageProjects` (delivery-management; comp-free). Math is `src/lib/agile-reporting.ts`
+  (pure, unit-tested); reads are `getSprintBurndownData` / `listSprintVelocity`.
+  **Honest-degradation:** the schema has NO task status-history table, so the actual
+  burndown line is derived from each done task's best-available completion date
+  (`task.updated_at`) rather than an audited daily record, and **cumulative-flow is
+  omitted** (it genuinely requires status history) — both caveats are stated on the
+  surface, not faked. Closing the gap to true time-series would need a status-history
+  table (a future schema proposal in the front-end repo, ADR + migration).
 
 ---
 

@@ -1135,6 +1135,63 @@ export interface SprintRow {
 }
 
 /**
+ * One committed, ESTIMATED task in a sprint, as the burndown read returns it
+ * (agile reporting C5, ADR-0066, #345). Only tasks carrying a numeric `estimate`
+ * participate — un-estimated tasks are counted separately (a sprint with none has
+ * nothing to burn down). `done` is the status-is-done flag; `completedAt` is the
+ * BEST-AVAILABLE completion timestamp.
+ *
+ * Honest-degradation note: there is NO task status-history table in the schema, so
+ * true per-day status time-series cannot be reconstructed. `completedAt` is
+ * `task.updated_at` for a done task (the only timestamp that moves when a task is
+ * closed) — it is the closure date only if the row was not edited afterwards. The
+ * burndown is therefore a best-effort actual derived from current state, not an
+ * audited history. NULL when the task is not done.
+ */
+export interface SprintEstimatedTask {
+  estimate: number; // numeric effort (hours or points, per the sprint's unit)
+  done: boolean; // status category is done
+  completedAt: string | null; // yyyy-mm-dd best-available closure date, or null
+}
+
+/**
+ * Everything the burndown chart needs for one sprint (C5, #345): the sprint meta,
+ * its estimated tasks, the effort `unit` (the most common estimate_unit among the
+ * sprint's tasks — 'hours' | 'points' | …), and how many committed tasks carry no
+ * estimate (surfaced as an honesty caveat). The day-by-day series is COMPUTED from
+ * this in `src/lib/agile-reporting.ts` (pure, unit-tested) — the read stays dumb.
+ */
+export interface SprintBurndownData {
+  sprint: SprintRow;
+  tasks: SprintEstimatedTask[];
+  unit: string | null; // dominant estimate unit, or null when nothing estimated
+  unestimatedCount: number; // committed tasks with no estimate (excluded from burn)
+}
+
+/** One point on the burndown chart: ideal vs actual remaining effort on a day. */
+export interface BurndownPoint {
+  date: string; // yyyy-mm-dd
+  ideal: number; // straight line: total effort on start → 0 on end
+  remaining: number | null; // actual remaining effort; null for future days
+}
+
+/**
+ * Per-sprint velocity (C5, #345): completed effort vs committed effort for a
+ * sprint, used for the velocity bar chart and the rolling average. `completedAt`
+ * caveat from SprintEstimatedTask applies — `completedEffort` is Σ estimate of
+ * done tasks. Listed completed-sprints-first so the chart reads left-to-right in time.
+ */
+export interface SprintVelocityRow {
+  id: string;
+  name: string;
+  endsAt: string | null; // yyyy-mm-dd or null
+  status: string; // planned|active|completed
+  committedEffort: number; // Σ estimate of all estimated committed tasks
+  completedEffort: number; // Σ estimate of done estimated committed tasks
+  unit: string | null; // dominant estimate unit for the sprint
+}
+
+/**
  * A recurring task SERIES (ADR-0070 E2, #353) as read for the edit-page section.
  * Attached to the task that currently holds the series (`task_recurrence.task_id`
  * is UNIQUE). `rule` is the stored RRULE-subset string (FREQ=…;INTERVAL=n) —

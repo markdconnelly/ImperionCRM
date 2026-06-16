@@ -220,6 +220,9 @@ import type {
   TaskCategory,
   TaskRow,
   SprintRow,
+  SprintBurndownData,
+  SprintEstimatedTask,
+  SprintVelocityRow,
   ProjectBaselineRow,
   ConversationRow,
   ConversationDetail,
@@ -667,6 +670,28 @@ function mapSprintRow(row: {
     taskCount: Number(row.task_count),
     doneCount: Number(row.done_count),
   };
+}
+
+/**
+ * Most common non-null estimate unit in a list (agile reporting C5, #345) — the
+ * sprint's effort unit for axis labels. Ties resolve to first-seen; null when the
+ * list is entirely null/empty.
+ */
+function dominantUnit(units: (string | null)[]): string | null {
+  const counts = new Map<string, number>();
+  for (const u of units) {
+    if (u == null || u === "") continue;
+    counts.set(u, (counts.get(u) ?? 0) + 1);
+  }
+  let best: string | null = null;
+  let bestN = 0;
+  for (const [u, n] of counts) {
+    if (n > bestN) {
+      best = u;
+      bestN = n;
+    }
+  }
+  return best;
 }
 
 const ONBOARDING_LIFECYCLE = ["onboarding", "implementation", "operational_readiness"];
@@ -1824,6 +1849,104 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.setTaskSprint(taskId, sprintId);
       await pool.query(`UPDATE task SET sprint_id = $2 WHERE id = $1`, [taskId, sprintId]);
+    },
+
+    // ── Agile reporting — burndown / velocity (C5, ADR-0066, #345) ─────────────
+    async getSprintBurndownData(sprintId: string): Promise<SprintBurndownData | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getSprintBurndownData(sprintId);
+      try {
+        const sprint = await this.getSprint(sprintId);
+        if (!sprint) return null;
+        // The sprint's committed tasks that carry a numeric estimate. `done` keys
+        // off the status_def CATEGORY (ADR-0065 — rollups key off category, never
+        // label), falling back to the legacy status='done' when no FK is set.
+        // completed_at: honest degradation — no status-history table, so updated_at
+        // is the best-available closure date for a done task (NULL otherwise).
+        const { rows } = await pool.query<{
+          estimate: string;
+          estimate_unit: string | null;
+          done: boolean;
+          completed_at: Date | null;
+        }>(
+          `SELECT t.estimate,
+                  t.estimate_unit,
+                  (COALESCE(sd.category, t.status) = 'done') AS done,
+                  CASE WHEN COALESCE(sd.category, t.status) = 'done'
+                       THEN t.updated_at ELSE NULL END        AS completed_at
+             FROM task t
+             LEFT JOIN status_def sd ON sd.id = t.status_def_id
+            WHERE t.sprint_id = $1
+              AND t.estimate IS NOT NULL`,
+          [sprintId],
+        );
+        // Un-estimated committed tasks (excluded from the burn, surfaced as a caveat).
+        const { rows: unest } = await pool.query<{ n: string }>(
+          `SELECT count(*) AS n FROM task WHERE sprint_id = $1 AND estimate IS NULL`,
+          [sprintId],
+        );
+
+        const tasks: SprintEstimatedTask[] = rows.map((r) => ({
+          estimate: Number(r.estimate),
+          done: r.done,
+          completedAt: fmtDate(r.completed_at),
+        }));
+        // Dominant unit: the most common estimate_unit among the estimated tasks.
+        const unit = dominantUnit(rows.map((r) => r.estimate_unit));
+        return {
+          sprint,
+          tasks,
+          unit,
+          unestimatedCount: Number(unest[0]?.n ?? 0),
+        };
+      } catch (err) {
+        if (isSchemaLagError(err)) return null;
+        return mockRepositories.crm.getSprintBurndownData(sprintId);
+      }
+    },
+
+    async listSprintVelocity(): Promise<SprintVelocityRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listSprintVelocity();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          ends_at: Date | null;
+          status: string;
+          committed: string;
+          completed: string;
+          unit: string | null;
+        }>(
+          // Per sprint: Σ estimate of estimated committed tasks (committed) and Σ
+          // estimate of done ones (completed), plus the modal estimate_unit. Done
+          // keys off status_def category (legacy status fallback). completed-first,
+          // then most-recently-ended, so the velocity chart reads left→right in time.
+          `SELECT s.id, s.name, s.ends_at, s.status,
+                  COALESCE(SUM(t.estimate), 0)                                   AS committed,
+                  COALESCE(SUM(t.estimate) FILTER (
+                    WHERE COALESCE(sd.category, t.status) = 'done'), 0)          AS completed,
+                  MODE() WITHIN GROUP (ORDER BY t.estimate_unit)                 AS unit
+             FROM sprint s
+             LEFT JOIN task t
+                    ON t.sprint_id = s.id AND t.estimate IS NOT NULL
+             LEFT JOIN status_def sd ON sd.id = t.status_def_id
+            GROUP BY s.id, s.name, s.ends_at, s.status
+            ORDER BY (s.status = 'completed') DESC, s.ends_at DESC NULLS LAST, s.name`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          endsAt: fmtDate(r.ends_at),
+          status: r.status,
+          committedEffort: Number(r.committed),
+          completedEffort: Number(r.completed),
+          unit: r.unit,
+        }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.crm.listSprintVelocity();
+      }
     },
 
     // ── Baselines / planned-vs-actual (ADR-0069 D6, #351) ──────────────────────

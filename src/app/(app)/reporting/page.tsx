@@ -2,7 +2,12 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
-import { canSeeLaborCost, canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
+import {
+  canManageProjects,
+  canSeeLaborCost,
+  canSeeRevenue,
+  REDACTED_MONEY,
+} from "@/lib/auth/roles";
 import { StagePipelineChart, StatusBarChart } from "@/components/reporting/report-charts";
 
 function ChartCard({
@@ -131,6 +136,14 @@ export default async function ReportingPage() {
         >
           Portfolio rollup →
         </Link>
+        {canManageProjects(roles) && (
+          <Link
+            href="/reporting/agile"
+            className="text-sm text-dim transition-colors hover:text-text"
+          >
+            Agile (burndown) →
+          </Link>
+        )}
       </PageHeader>
 
       <SectionHeading id="sales" title="Sales" hint="pipeline, conversion, delivery" />

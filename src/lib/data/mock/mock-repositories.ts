@@ -312,6 +312,13 @@ export const mockRepositories: Repositories = {
     async setTaskSprint() {
       throw new Error(NO_DB);
     },
+    // Agile reporting — burndown / velocity (C5, ADR-0066, #345) — reads empty/null.
+    async getSprintBurndownData() {
+      return null;
+    },
+    async listSprintVelocity() {
+      return [];
+    },
     // Baselines / planned-vs-actual (ADR-0069 D6, #351) — reads empty, capture throws.
     async listProjectBaselines() {
       return [];
