@@ -51,6 +51,9 @@ import type {
   WorkParentType,
   MentionableUser,
   Notification,
+  NotificationKind,
+  NotificationChannel,
+  NotificationPref,
   Tag,
   AppliedTag,
   TagParentType,
@@ -75,6 +78,16 @@ let mockAttachmentSeq = 0;
 /** In-memory notification store so the bell works in mock mode (ADR-0064 A3, #332). */
 const mockNotifications: Notification[] = [];
 let mockNotificationSeq = 0;
+
+/**
+ * In-memory notification-preference store so the prefs UI works in mock mode
+ * (ADR-0064 A3, #601). Keyed `${userId}|${kind}|${channel}` → enabled; absence
+ * of a key = the default (in-app ON). Single-viewer mock, so userId is honoured
+ * but rarely varies.
+ */
+const mockNotificationPrefs = new Map<string, boolean>();
+const prefKey = (userId: string, kind: NotificationKind, channel: NotificationChannel) =>
+  `${userId}|${kind}|${channel}`;
 
 /** A fixed mentionable roster so the @mention typeahead works in mock mode (A2, #331). */
 const mockMentionableUsers: MentionableUser[] = [
@@ -1835,6 +1848,27 @@ export const mockRepositories: Repositories = {
           createdAt: new Date().toISOString(),
         });
       }
+    },
+    async listPrefs(userId: string): Promise<NotificationPref[]> {
+      const out: NotificationPref[] = [];
+      for (const [key, enabled] of mockNotificationPrefs) {
+        const [uid, kind, channel] = key.split("|");
+        if (uid !== userId) continue;
+        out.push({
+          kind: kind as NotificationKind,
+          channel: channel as NotificationChannel,
+          enabled,
+        });
+      }
+      return out;
+    },
+    async setPref(
+      userId: string,
+      kind: NotificationKind,
+      channel: NotificationChannel,
+      enabled: boolean,
+    ): Promise<void> {
+      mockNotificationPrefs.set(prefKey(userId, kind, channel), enabled);
     },
   },
 

@@ -2118,6 +2118,23 @@ processes** (ADR-0064: the front end never holds a provider key).
   not yet applied) is swallowed so the bell is simply dormant until migration 0101
   lands. `due_soon`/`overdue`/`blocked` are produced by the **backend's scheduled
   evaluation** (out of scope for this front-end slice — see the #332 follow-up).
+- **Actor attribution on assignment (#601).** `setTaskAssignees` now takes the
+  acting employee's `app_user.id` (resolved in `setTaskAssigneesAction` from the
+  session email, best-effort) and stamps it as the `assigned` row's `actor_user_id`,
+  so the bell reads as actor-attributed ("X assigned you") instead of a bare system
+  event. An unresolved actor falls back to `null` (system) — backward-safe. A
+  self-assign is still skipped (`insertNotification` no-ops when recipient = actor).
+- **Preferences surface (#601).** Employees tune their own notifications at
+  **`/notifications/preferences`** — a per-user grid of (trigger kind × channel)
+  toggles over `notification_pref`. It is a **per-user** page (sign-in gated only,
+  not the admin-only Settings page); the `setNotificationPrefAction` server action
+  resolves the acting user server-side and only ever upserts that user's own rows
+  (validated against the schema CHECK sets), so one user can never mute another's
+  notifications. The grid overlays the user's explicit rows on the channel defaults
+  (in-app ON). `in_app` toggles take effect immediately (the FE dispatch honours the
+  mute); `email`/`teams` are **recorded** here but **dispatched by the backend** —
+  the backend dispatch + the scheduled due-eval remain a **backend lane** (#601
+  parts 1+2), not built in this front-end slice (no provider key in the FE).
 
 App-native, not silver tier — no semantic-layer concept file applies (the gate
 does not flag a new polymorphic collaboration table, see

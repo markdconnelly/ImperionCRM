@@ -2603,6 +2603,30 @@ export interface Notification {
   createdAt: string;
 }
 
+/**
+ * A notification delivery channel (ADR-0064 A3, #601). Mirrors the
+ * `notification_pref.channel` CHECK:
+ *  - in_app — the bell (honoured by the front end — an enabled=false mute
+ *             suppresses the in-app row at dispatch time)
+ *  - email  — outbound email (honoured by the BACKEND dispatcher; the FE only
+ *             records the preference, it never sends — no provider key in the FE)
+ *  - teams  — Microsoft Teams (likewise backend-honoured)
+ */
+export type NotificationChannel = "in_app" | "email" | "teams";
+
+/**
+ * One per-user, per-trigger, per-channel notification preference row
+ * (ADR-0064 A3, #601, migration 0101). ABSENCE of a row = the default (in-app
+ * ON, outbound = the backend's default); an explicit `enabled=false` row mutes
+ * that (kind × channel) for the user. The prefs surface reads the explicit rows
+ * and overlays them on the defaults so an untouched cell shows its default state.
+ */
+export interface NotificationPref {
+  kind: NotificationKind;
+  channel: NotificationChannel;
+  enabled: boolean;
+}
+
 // ── PM task structure — tags / labels (ADR-0065 B6, #340) ────────────────────
 
 /** Work objects a tag can be applied to (polymorphic, ADR-0065 B6). */

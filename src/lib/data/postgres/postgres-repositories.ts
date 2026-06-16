@@ -269,6 +269,8 @@ import type {
   MentionableUser,
   Notification,
   NotificationKind,
+  NotificationChannel,
+  NotificationPref,
   TagParentType,
   Tag,
   AppliedTag,
@@ -2853,9 +2855,13 @@ export const postgresRepositories: Repositories = {
       }
     },
 
-    async setTaskAssignees(taskId: string, userIds: string[]): Promise<void> {
+    async setTaskAssignees(
+      taskId: string,
+      userIds: string[],
+      actingUserId: string | null = null,
+    ): Promise<void> {
       const pool = getPool();
-      if (!pool) return mockRepositories.crm.setTaskAssignees(taskId, userIds);
+      if (!pool) return mockRepositories.crm.setTaskAssignees(taskId, userIds, actingUserId);
       // De-dup the requested set; the primary is excluded (they're already on the
       // object as owner) and never demoted by an assignee save.
       const wanted = Array.from(new Set(userIds.filter(Boolean)));
@@ -2896,10 +2902,11 @@ export const postgresRepositories: Repositories = {
           );
           // A3 (#332): notify someone added to the task for the first time
           // (acceptance: "assigning notifies assignee in-app within one refresh").
-          // Actor is unattributed here — the assignee save carries no acting user;
-          // a later slice threads it through (#332 follow-up).
+          // The acting employee (#601) is stamped as the actor so the bell reads as
+          // actor-attributed instead of a system event; null = no resolved actor.
+          // insertNotification skips a self-assign (recipient === actor).
           if (!alreadyOn.has(uid)) {
-            await insertNotification(client, uid, "assigned", "task", taskId, null, {
+            await insertNotification(client, uid, "assigned", "task", taskId, actingUserId, {
               title: "You were assigned to a task",
             });
           }
@@ -11176,6 +11183,52 @@ export const postgresRepositories: Repositories = {
         if (isSchemaLagError(err)) return;
         if (!client) return; // best-effort outside a txn
         throw err; // inside a txn the caller decides (its catch rolls back)
+      }
+    },
+
+    async listPrefs(userId: string): Promise<NotificationPref[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.notifications.listPrefs(userId);
+      try {
+        const { rows } = await pool.query<{
+          kind: NotificationKind;
+          channel: NotificationChannel;
+          enabled: boolean;
+        }>(
+          `SELECT kind, channel, enabled
+             FROM notification_pref
+            WHERE user_id = $1::uuid`,
+          [userId],
+        );
+        return rows.map((r) => ({ kind: r.kind, channel: r.channel, enabled: r.enabled }));
+      } catch (err) {
+        // 0101 not applied yet — the prefs grid degrades to all-defaults.
+        if (isSchemaLagError(err)) return [];
+        throw err;
+      }
+    },
+
+    async setPref(
+      userId: string,
+      kind: NotificationKind,
+      channel: NotificationChannel,
+      enabled: boolean,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.notifications.setPref(userId, kind, channel, enabled);
+      try {
+        // Upsert on the (user_id, kind, channel) PK — a toggle is idempotent.
+        await pool.query(
+          `INSERT INTO notification_pref (user_id, kind, channel, enabled, updated_at)
+           VALUES ($1::uuid, $2, $3, $4, now())
+           ON CONFLICT (user_id, kind, channel)
+             DO UPDATE SET enabled = EXCLUDED.enabled, updated_at = now()`,
+          [userId, kind, channel, enabled],
+        );
+      } catch (err) {
+        // 0101 not applied yet — the toggle is a no-op (the bell still defaults ON).
+        if (isSchemaLagError(err)) return;
+        throw err;
       }
     },
   },
