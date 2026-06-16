@@ -1,9 +1,6 @@
--- 9001 (PLACEHOLDER → claim 0122 at merge): `collections_activity` app-native dunning
--- overlay keyed to the read-only invoice mirror (#677, parent #668, epic #667).
--- (0121 was the latest applied/repo migration when this branch was authored; the real number
---  is claimed at MERGE per system CLAUDE.md §10.3. Just before merge: rebase on main, take the
---  next free number — 0122 unless another migration merged ahead — `git mv` this file, and fix
---  the in-file refs + data-model.md + the collections_activity OKF concept timestamp.)
+-- 0122: `collections_activity` app-native dunning overlay keyed to the read-only invoice
+-- mirror (#677, parent #668, epic #667). (Number claimed at merge per system CLAUDE.md §10.3 —
+--  0121 was the latest applied/repo migration; 0122 was free after rebasing on main.)
 --
 -- WHY THIS EXISTS (own-vs-mirror, RESOLVED — #668): QuickBooks is the invoice system of record
 -- and is READ-ONLY on our side (ADR-0085; the `invoice_mirror` VIEW, migration 0121, is the AR
