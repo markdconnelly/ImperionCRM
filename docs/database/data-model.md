@@ -2484,6 +2484,53 @@ erDiagram
     }
 ```
 
+## RMM/managed-estate + security-incident bronze — bronze-batch-A (#674, LP #195/#196)
+
+Eight lossless-envelope bronze landing tables (the `0083` convention — flat text columns
+for the curated subset + lossless `raw_payload jsonb`; envelope
+`tenant_id/source/external_id/collected_at/raw_payload/content_hash`, PK
+`(tenant_id, source, external_id)`). FE owns the table names (CLAUDE.md §1); the on-prem
+LocalPipeline collectors (LP #195 RMM, LP #196 security) **fail loudly until these exist**,
+so this front-end migration lands them ahead of the gated collectors. Bronze only — **no
+silver entity changes** (so no OKF concept file, no app surface). Writer:
+`imperion-localpipeline` (SELECT/INSERT/UPDATE); web/backend/cloud-pipeline read (SELECT).
+
+**RMM / managed-estate (LP #195):**
+
+- `datto_rmm_devices` — Datto RMM managed-estate device inventory + patch/AV posture.
+  Domain: RMM. Source: Datto RMM. Flat: device_uid, hostname, site_name, operating_system,
+  last_seen, patch_status, antivirus_status, agent_version, device_type, soft_delete.
+  `external_id` = device_uid; **device_uid** is the join key to `datto_bcdr_backups`.
+- `datto_bcdr_backups` — backup posture per device (protected/unprotected, last-good-backup).
+  Domain: RMM/BCDR. Source: Datto BCDR. Flat: device_uid, protected_status, last_backup_at,
+  last_good_backup_at, backup_type, agent_version. Joins `datto_rmm_devices` on `device_uid`.
+- `myitprocess_recommendations` — strategic roadmap / QBR / assessment recommendations.
+  Domain: vCIO/strategy. Source: myITprocess. Flat: account_ref, assessment_name,
+  recommendation_title, category, priority, status, target_date. `account_ref` joins the
+  silver account.
+
+**Security incidents + posture (LP #196):**
+
+- `m365_incidents` — M365 XDR/Sentinel security incidents. Source: Microsoft Graph
+  security. Flat: incident_id, title, severity, status, classification, autotask_ticket_ref,
+  created_at, last_update_at, assigned_to. **Autotask is the incident system of record**;
+  `autotask_ticket_ref` correlates to the `autotask_*` ticket bronze (0038).
+- `m365_alerts` — alerts under an incident. Flat: alert_id, incident_id, title, severity,
+  category, mitre_techniques, detection_source, created_at. `incident_id` joins
+  `m365_incidents`.
+- `m365_evidence` — evidence entities per alert. Flat: evidence_id, alert_id, evidence_type,
+  entity_value, verdict, remediation_status. `alert_id` joins `m365_alerts`.
+- `purview_compliance_policies` — Microsoft Purview compliance **posture** (config/compliance
+  STATE only). Flat: policy_id, policy_name, policy_type, state, scope, last_modified_at.
+  Follows the existing `*_policies`/`*_golden` posture pattern (cf. `dns_*`, 0080).
+- `purview_compliance_golden` — human-approved golden snapshot of the Purview posture for
+  drift reconciliation (same drift pattern as `dns_golden`, 0080).
+
+**Exclusions (recorded on `purview_compliance_policies`, owned LP-side per #196):** raw
+security logs and Purview **alerts** are NOT ingested — KQL hunting stays native. The
+**180-day retention prune** of security rows is an LP cmdlet (#196), not a DB constraint
+here.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
