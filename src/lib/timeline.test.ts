@@ -96,3 +96,64 @@ describe("layoutTimeline", () => {
     expect(t.bars.every((b) => b.fraction > 0 && b.fraction < 1)).toBe(true);
   });
 });
+
+/** Span bars over task.start_at (#628). */
+describe("layoutTimeline spans (#628)", () => {
+  it("draws a span when a task has a start_at on/before its due", () => {
+    const t = layoutTimeline(
+      [{ id: "a", title: "Build", status: "open", due: "2026-06-15", startAt: "2026-06-05" }],
+      [],
+    );
+    const bar = t.bars[0];
+    expect(bar.startAt).toBe("2026-06-05");
+    expect(bar.hasSpan).toBe(true);
+    expect(bar.startFraction).toBeLessThan(bar.fraction);
+  });
+
+  it("collapses to a point (startFraction === fraction) when there is no start_at", () => {
+    const t = layoutTimeline([{ id: "a", title: "A", status: "open", due: "2026-06-15" }], []);
+    expect(t.bars[0].hasSpan).toBe(false);
+    expect(t.bars[0].startFraction).toBe(t.bars[0].fraction);
+    expect(t.bars[0].startAt).toBeNull();
+  });
+
+  it("extends the axis to cover a start that precedes the earliest due", () => {
+    const t = layoutTimeline(
+      [
+        { id: "a", title: "A", status: "open", due: "2026-06-10", startAt: "2026-05-20" },
+        { id: "b", title: "B", status: "open", due: "2026-06-20" },
+      ],
+      [],
+      2,
+    );
+    // Axis starts at the earliest START (05-20) − pad, not the earliest due.
+    expect(t.start).toBe("2026-05-18");
+    expect(t.end).toBe("2026-06-22");
+  });
+
+  it("clamps a start_at that falls after its due to a point and flags it inverted", () => {
+    const t = layoutTimeline(
+      [{ id: "a", title: "Bad", status: "open", due: "2026-06-10", startAt: "2026-06-20" }],
+      [],
+    );
+    expect(t.bars[0].hasSpan).toBe(false);
+    expect(t.bars[0].inverted).toBe(true);
+    expect(t.bars[0].startAt).toBeNull();
+    expect(t.bars[0].startFraction).toBe(t.bars[0].fraction);
+  });
+
+  it("returns undated tasks in `unscheduled`, flagging whether they have a start", () => {
+    const t = layoutTimeline(
+      [
+        { id: "a", title: "Dated", status: "open", due: "2026-06-10" },
+        { id: "b", title: "Has start no due", status: "open", due: null, startAt: "2026-06-01" },
+        { id: "c", title: "No dates", status: "open", due: null },
+      ],
+      [],
+    );
+    expect(t.unscheduled.map((u) => u.id)).toEqual(["b", "c"]); // sorted by title
+    expect(t.unscheduled.find((u) => u.id === "b")?.hasStart).toBe(true);
+    expect(t.unscheduled.find((u) => u.id === "c")?.hasStart).toBe(false);
+    expect(t.undatedCount).toBe(2);
+  });
+});
