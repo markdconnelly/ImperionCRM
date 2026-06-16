@@ -26,7 +26,13 @@ export default async function IntakeFormDetailPage({
   const [form, roles] = await Promise.all([crm.getIntakeForm(id), getSessionRoles()]);
   if (!form) notFound();
   const canManage = canManageProjects(roles);
-  const submissions = canManage ? await crm.listIntakeSubmissions(id) : [];
+  // App-user options for any assignee-mapped field's picker (#638). Only fetched
+  // when the form actually has an assignee field.
+  const hasAssignee = form.fields.some((f) => f.mapsTo === "assignee");
+  const [submissions, users] = await Promise.all([
+    canManage ? crm.listIntakeSubmissions(id) : Promise.resolve([]),
+    hasAssignee ? crm.userOptions() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -67,7 +73,18 @@ export default async function IntakeFormDetailPage({
           const label = f.required ? `${f.label} *` : f.label;
           return (
             <Field key={f.key} label={label}>
-              {f.type === "textarea" ? (
+              {f.mapsTo === "assignee" ? (
+                // An assignee-mapped field always picks a real app_user (its answer
+                // becomes the task's owner), regardless of the field's input type (#638).
+                <Select name={name} required={f.required} defaultValue="">
+                  <option value="">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </Select>
+              ) : f.type === "textarea" ? (
                 <TextArea name={name} rows={3} required={f.required} />
               ) : f.type === "select" ? (
                 <Select name={name} required={f.required} defaultValue="">

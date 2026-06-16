@@ -13,8 +13,12 @@ import { createIntakeFormAction } from "../actions";
 export default async function NewIntakeFormPage() {
   const roles = await getSessionRoles();
   if (!canManageProjects(roles)) redirect("/intake");
-  const { crm } = getRepositories();
-  const projects = await crm.listProjects();
+  const { crm, customFields } = getRepositories();
+  const [projects, taskCustomFields] = await Promise.all([
+    crm.listProjects(),
+    // Task-scoped, global custom fields offered as `custom:<key>` map targets (#638).
+    customFields.listFieldDefsFor("task", null),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -22,7 +26,11 @@ export default async function NewIntakeFormPage() {
         title="New intake form"
         description="Define the fields a requester fills in and where each answer lands on the created task."
       />
-      <IntakeFormBuilder projects={projects} action={createIntakeFormAction} />
+      <IntakeFormBuilder
+        projects={projects}
+        customFields={taskCustomFields.map((d) => ({ key: d.key, label: d.label }))}
+        action={createIntakeFormAction}
+      />
     </div>
   );
 }

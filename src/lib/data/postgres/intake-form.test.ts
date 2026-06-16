@@ -237,3 +237,163 @@ describe("submitIntakeForm (transaction + field → task mapping, ADR-0070 E3)",
     expect(clientQuery.mock.calls.map((c) => c[0] as string)).toContain("ROLLBACK");
   });
 });
+
+describe("userOptions — the assignee picker source (#638)", () => {
+  it("lists app users id + display name (email fallback), name-sorted", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: "u1", name: "Ada Lovelace" },
+        { id: "u2", name: "noname@imperion.test" },
+      ],
+    });
+    const out = await crm.userOptions();
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toMatch(/FROM app_user/);
+    expect(sql).toMatch(/coalesce\(display_name, email\)/);
+    expect(out).toEqual([
+      { id: "u1", name: "Ada Lovelace" },
+      { id: "u2", name: "noname@imperion.test" },
+    ]);
+  });
+});
+
+describe("submitIntakeForm — assignee mapping (#638)", () => {
+  it("an assignee field overrides the form's default owner with the picked app_user", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            name: "Assignable",
+            fields: [
+              { key: "summary", label: "Summary", type: "text", required: true, options: [], mapsTo: "title" },
+              { key: "who", label: "Owner", type: "select", required: false, options: [], mapsTo: "assignee" },
+            ],
+            default_project_id: null,
+            default_account_id: null,
+            default_owner_user_id: "default-owner",
+            default_category: "general",
+          },
+        ],
+      }) // SELECT form
+      .mockResolvedValueOnce({ rows: [{ id: "task-9" }] }) // INSERT task
+      .mockResolvedValueOnce({ rows: [{ id: "sub-9" }] }); // INSERT submission
+
+    await crm.submitIntakeForm("f1", { summary: "Do it", who: "picked-user" }, "actor-1");
+    const taskCall = clientQuery.mock.calls.find((c) => (c[0] as string).includes("INSERT INTO task"))!;
+    // owner_user_id ($7 → index 6) is the picked assignee, not the form default.
+    expect((taskCall[1] as unknown[])[6]).toBe("picked-user");
+  });
+
+  it("falls back to the form default owner when the assignee field is left blank", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            name: "Assignable",
+            fields: [
+              { key: "summary", label: "Summary", type: "text", required: true, options: [], mapsTo: "title" },
+              { key: "who", label: "Owner", type: "select", required: false, options: [], mapsTo: "assignee" },
+            ],
+            default_project_id: null,
+            default_account_id: null,
+            default_owner_user_id: "default-owner",
+            default_category: "general",
+          },
+        ],
+      }) // SELECT form
+      .mockResolvedValueOnce({ rows: [{ id: "task-10" }] }) // INSERT task
+      .mockResolvedValueOnce({ rows: [{ id: "sub-10" }] }); // INSERT submission
+
+    await crm.submitIntakeForm("f1", { summary: "Do it" }, null);
+    const taskCall = clientQuery.mock.calls.find((c) => (c[0] as string).includes("INSERT INTO task"))!;
+    expect((taskCall[1] as unknown[])[6]).toBe("default-owner");
+  });
+});
+
+describe("submitIntakeForm — custom-field mapping (#638)", () => {
+  it("resolves custom:<key> to its task def and writes a coerced custom_field_value", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            name: "Custom form",
+            fields: [
+              { key: "summary", label: "Summary", type: "text", required: true, options: [], mapsTo: "title" },
+              { key: "sev", label: "Severity", type: "select", required: false, options: [], mapsTo: "custom:severity" },
+              { key: "cost", label: "Cost", type: "text", required: false, options: [], mapsTo: "custom:est_cost" },
+            ],
+            default_project_id: null,
+            default_account_id: null,
+            default_owner_user_id: null,
+            default_category: "general",
+          },
+        ],
+      }) // SELECT form
+      .mockResolvedValueOnce({ rows: [{ id: "task-11" }] }) // INSERT task
+      .mockResolvedValueOnce({
+        rows: [
+          { id: "def-sev", key: "severity", field_type: "single_select" },
+          { id: "def-cost", key: "est_cost", field_type: "currency" },
+        ],
+      }) // SELECT custom_field_def
+      .mockResolvedValueOnce({ rows: [] }) // INSERT custom_field_value (severity)
+      .mockResolvedValueOnce({ rows: [] }) // INSERT custom_field_value (est_cost)
+      .mockResolvedValueOnce({ rows: [{ id: "sub-11" }] }); // INSERT submission
+
+    const out = await crm.submitIntakeForm(
+      "f1",
+      // Answers are keyed by each FIELD's key, not its mapsTo target.
+      { summary: "Outage", sev: "High", cost: "1200" },
+      "actor-1",
+    );
+
+    // The def lookup is scoped to task / global by the chosen keys.
+    const defCall = clientQuery.mock.calls.find((c) => (c[0] as string).includes("FROM custom_field_def"))!;
+    expect(defCall[0] as string).toMatch(/scope = 'task'/);
+    expect((defCall[1] as unknown[])[0]).toEqual(["severity", "est_cost"]);
+
+    const cfvCalls = clientQuery.mock.calls.filter((c) =>
+      (c[0] as string).includes("INSERT INTO custom_field_value"),
+    );
+    expect(cfvCalls).toHaveLength(2);
+    // severity → the string answer verbatim; est_cost (currency) → coerced number.
+    const byField = new Map(cfvCalls.map((c) => [(c[1] as unknown[])[0], c[1] as unknown[]]));
+    expect(JSON.parse(byField.get("def-sev")![2] as string)).toBe("High");
+    expect(JSON.parse(byField.get("def-cost")![2] as string)).toBe(1200);
+    // Each value is written against the new task id.
+    expect(byField.get("def-sev")![1]).toBe("task-11");
+    expect(out).toEqual({ taskId: "task-11", submissionId: "sub-11" });
+  });
+
+  it("ignores a custom:<key> with no matching task definition", async () => {
+    clientQuery
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            name: "Custom form",
+            fields: [
+              { key: "summary", label: "Summary", type: "text", required: true, options: [], mapsTo: "title" },
+              { key: "gone", label: "Removed", type: "text", required: false, options: [], mapsTo: "custom:removed_key" },
+            ],
+            default_project_id: null,
+            default_account_id: null,
+            default_owner_user_id: null,
+            default_category: "general",
+          },
+        ],
+      }) // SELECT form
+      .mockResolvedValueOnce({ rows: [{ id: "task-12" }] }) // INSERT task
+      .mockResolvedValueOnce({ rows: [] }) // SELECT custom_field_def → none match
+      .mockResolvedValueOnce({ rows: [{ id: "sub-12" }] }); // INSERT submission
+
+    await crm.submitIntakeForm("f1", { summary: "X", gone: "whatever" }, null);
+    const cfvCalls = clientQuery.mock.calls.filter((c) =>
+      (c[0] as string).includes("INSERT INTO custom_field_value"),
+    );
+    expect(cfvCalls).toHaveLength(0); // unmatched key written nowhere
+  });
+});

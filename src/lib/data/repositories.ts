@@ -483,8 +483,26 @@ export interface ApplyChecklistTemplateInput {
 // ── Intake forms (ADR-0070 E3, migration 0111, #354) ────────────────────────────
 /** A field's input type on an intake form (reuses the registration_page pattern). */
 export type IntakeFieldType = "text" | "textarea" | "date" | "select";
-/** Where a field's answer lands on the created task. */
-export type IntakeFieldMap = "title" | "detail" | "due_at" | "note";
+/**
+ * Where a field's answer lands on the created task (ADR-0070 E3).
+ *  - the base task fields: `title` | `detail` | `due_at` | `note`
+ *  - `assignee` (#638): the answer is an app_user id → the created task's primary
+ *    owner (`task.owner_user_id`), overriding the form's `defaultOwnerUserId`.
+ *  - `custom:<cf_key>` (#638): the answer is written as a `custom_field_value`
+ *    (migration 0103) onto the new task, keyed by the `custom_field_def` whose
+ *    `key` is `<cf_key>` for `parent_type='task'`. Rides the same `fields` jsonb —
+ *    no migration. Unknown/unmatched custom keys are ignored on submit.
+ */
+export type IntakeFieldMap =
+  | "title"
+  | "detail"
+  | "due_at"
+  | "note"
+  | "assignee"
+  | `custom:${string}`;
+
+/** The jsonb-stored prefix marking a field that maps to a task custom field (#638). */
+export const INTAKE_CUSTOM_MAP_PREFIX = "custom:";
 
 /** One field descriptor stored in intake_form.fields jsonb. */
 export interface IntakeFormField {
@@ -1204,6 +1222,12 @@ export interface CrmRepository {
    * account/project/owner/queue, and record the submission — in one transaction.
    * `submittedBy` is the resolved app_user id (null when unresolved). Returns the
    * created task + submission ids.
+   *
+   * Extended fields (#638): a field's mapsTo may also be `assignee` (the answer is
+   * an app_user id → the task's primary owner, overriding the form default) or
+   * `custom:<cf_key>` (the answer is written as a `custom_field_value` keyed by the
+   * task-scoped `custom_field_def` of that key). Both are written inside the same
+   * transaction; an unmatched custom key is ignored.
    */
   submitIntakeForm(
     formId: string,

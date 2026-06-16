@@ -12,6 +12,7 @@ import type {
   IntakeFieldType,
   IntakeFieldMap,
 } from "@/lib/data/repositories";
+import { INTAKE_CUSTOM_MAP_PREFIX } from "@/lib/data/repositories";
 
 /**
  * Intake-form authoring + submission actions (ADR-0070 E3, #354). Authoring is
@@ -25,8 +26,28 @@ import type {
  */
 
 const FIELD_TYPES: readonly IntakeFieldType[] = ["text", "textarea", "date", "select"];
-const FIELD_MAPS: readonly IntakeFieldMap[] = ["title", "detail", "due_at", "note"];
+/** The base task-field targets (#354). `assignee` + `custom:<key>` (#638) validated separately. */
+const BASE_FIELD_MAPS: readonly IntakeFieldMap[] = ["title", "detail", "due_at", "note", "assignee"];
 const CATEGORIES = ["sales", "project", "onboarding", "general"] as const;
+
+/** A slugified custom-field key — the same shape `custom_field_def.key` uses. */
+const CF_KEY_RE = /^[a-z0-9][a-z0-9_]*$/;
+
+/**
+ * Validate a stored mapsTo (#638): a known base target, or a well-formed
+ * `custom:<cf_key>` target. Anything else falls back to `note` so a malformed/stale
+ * client value never breaks submit. The cf_key's existence isn't checked here — an
+ * unmatched key is simply ignored at submit time (the def may have been removed).
+ */
+function coerceMapsTo(raw: unknown): IntakeFieldMap {
+  const v = String(raw ?? "");
+  if (BASE_FIELD_MAPS.includes(v as IntakeFieldMap)) return v as IntakeFieldMap;
+  if (v.startsWith(INTAKE_CUSTOM_MAP_PREFIX)) {
+    const key = v.slice(INTAKE_CUSTOM_MAP_PREFIX.length);
+    if (CF_KEY_RE.test(key)) return `${INTAKE_CUSTOM_MAP_PREFIX}${key}` as IntakeFieldMap;
+  }
+  return "note";
+}
 
 function slugify(name: string): string {
   return name
@@ -54,9 +75,7 @@ function parsePayload(raw: string): IntakeFormInput {
     const type = FIELD_TYPES.includes(f.type as IntakeFieldType)
       ? (f.type as IntakeFieldType)
       : "text";
-    const mapsTo = FIELD_MAPS.includes(f.mapsTo as IntakeFieldMap)
-      ? (f.mapsTo as IntakeFieldMap)
-      : "note";
+    const mapsTo = coerceMapsTo(f.mapsTo);
     const options =
       type === "select" && Array.isArray(f.options)
         ? f.options.map((o) => String(o).trim()).filter(Boolean)
