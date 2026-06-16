@@ -41,9 +41,23 @@ describe("statusLanes", () => {
   it("maps a status_def set to lanes carrying key, label and color, preserving order", () => {
     const lanes = statusLanes(GLOBAL_PROJECT);
     expect(lanes.map((l) => l.key)).toEqual(["not_started", "in_progress", "blocked", "complete"]);
-    expect(lanes[0]).toEqual({ key: "not_started", label: "Not Started", color: "#8A93A6" });
+    expect(lanes[0]).toEqual({
+      key: "not_started",
+      label: "Not Started",
+      color: "#8A93A6",
+      wipLimit: undefined,
+    });
     // A null color maps to undefined (no inline style) rather than "null".
     expect(statusLanes([def({ key: "x", label: "X", color: null })])[0].color).toBeUndefined();
+  });
+
+  it("threads the admin-configured wip_limit into the lane (ADR-0066 C1, #616), null → undefined", () => {
+    const lanes = statusLanes([
+      def({ key: "in_progress", label: "In Progress", wipLimit: 3 }),
+      def({ key: "done", label: "Done", wipLimit: null }),
+    ]);
+    expect(lanes[0].wipLimit).toBe(3);
+    expect(lanes[1].wipLimit).toBeUndefined();
   });
 });
 

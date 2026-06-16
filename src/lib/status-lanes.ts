@@ -24,11 +24,19 @@ export interface StatusKeyed {
 /**
  * Map an ordered `status_def` set to kanban lanes (ADR-0065 B5, #613). The
  * machine `key` is the lane key a drop persists; `label` + `color` are the display.
- * Input is assumed already ordered by `ordinal` (the data layer orders it); this is
- * a 1:1 shaping so the column order is exactly the configured order.
+ * `wipLimit` (ADR-0066 C1, #616 part 2) is the admin-configured per-status board cap
+ * — the baseline over-limit threshold the board highlights against (a personal,
+ * per-browser override still wins where set). Input is assumed already ordered by
+ * `ordinal` (the data layer orders it); this is a 1:1 shaping so the column order is
+ * exactly the configured order.
  */
 export function statusLanes(defs: StatusDefRow[]): KanbanLane[] {
-  return defs.map((d) => ({ key: d.key, label: d.label, color: d.color ?? undefined }));
+  return defs.map((d) => ({
+    key: d.key,
+    label: d.label,
+    color: d.color ?? undefined,
+    wipLimit: d.wipLimit ?? undefined,
+  }));
 }
 
 /**

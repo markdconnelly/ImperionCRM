@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
-import { intOr, str, strOr, strOrNull } from "@/lib/form-data";
+import { intOr, intOrNull, str, strOr, strOrNull } from "@/lib/form-data";
 import type { StatusDefInput } from "@/lib/data/repositories";
 
 /**
@@ -15,10 +15,10 @@ import type { StatusDefInput } from "@/lib/data/repositories";
  * and template catalogs), enforced fail-closed at the top of every mutation. The
  * status_def grants (INSERT/UPDATE/DELETE on the web role) ship in migration 0104.
  *
- * SCOPE: this is PART 1 of #616 (admin CRUD) only. The dedicated WIP-limit editing
- * UI + over-limit board highlight (part 2) depend on the board-columns follow-up
- * #613 and are intentionally NOT built here; `wipLimit` is carried through the
- * writers (defaulting to null) so part 2 can layer on without a re-key.
+ * PART 1 of #616 (admin CRUD) shipped in #730. PART 2 (#616, this change) adds the
+ * per-status WIP-limit input — `wipLimit` is now parsed from the form (blank = null
+ * = no limit) instead of hard-coded null — plus the over-limit board highlight (the
+ * board reads `status_def.wip_limit` as its baseline threshold; ADR-0066 C1).
  */
 
 const CONTEXTS = ["task", "project"] as const;
@@ -53,8 +53,8 @@ function parse(formData: FormData): StatusDefInput {
     color: strOrNull(formData, "color"),
     category: category(formData),
     ordinal: intOr(formData, "ordinal", 0),
-    // wip_limit is round-tripped only; its editing UI is deferred part 2 (#613).
-    wipLimit: null,
+    // wip_limit (ADR-0066 C1, #616 part 2): blank = no limit (null), else the cap.
+    wipLimit: intOrNull(formData, "wipLimit"),
   };
 }
 

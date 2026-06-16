@@ -4,6 +4,7 @@ import {
   hasAnswerValue,
   indexedPairs,
   intOr,
+  intOrNull,
   orNull,
   parseAnswer,
   str,
@@ -53,6 +54,13 @@ describe("scalar coercion", () => {
     expect(intOr(fd([["n", "7"]]), "n", 0)).toBe(7);
     expect(intOr(fd([["n", "x"]]), "n", 3)).toBe(3);
     expect(intOr(fd([]), "n", 0)).toBe(0); // Number("") === 0
+  });
+
+  it("intOrNull parses, but blank/absent/NaN map to null (a WIP limit left blank = no limit)", () => {
+    expect(intOrNull(fd([["n", "3"]]), "n")).toBe(3);
+    expect(intOrNull(fd([["n", ""]]), "n")).toBeNull(); // blank ≠ a coerced 0
+    expect(intOrNull(fd([]), "n")).toBeNull();
+    expect(intOrNull(fd([["n", "x"]]), "n")).toBeNull();
   });
 });
 
