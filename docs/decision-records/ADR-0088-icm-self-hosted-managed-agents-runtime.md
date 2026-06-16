@@ -1,14 +1,11 @@
-# ADR-00NN: ICM agent runtime on self-hosted Managed Agents + domain-tiered context
+# ADR-0088: ICM agent runtime on self-hosted Managed Agents + domain-tiered context
 
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-16 |
 | **Cross-references** | ADR-0061 (ICM, amended) · ADR-0087 (orchestration matrix) · ADR-0086 (OKF) · ADR-0058 (approval-gated send) · ADR-0043 (settled AI stack) · backend ADR-0036 (orchestrator runtime, superseded for the loop) |
-
-> Number claimed at merge (ADR-0084). Authored against `ADR-00NN`; the branch that
-> merges takes the next free number and renames the file + this heading.
 
 ## Problem
 
