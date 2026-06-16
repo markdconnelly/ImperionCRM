@@ -353,6 +353,85 @@ export interface InvoiceAgingSummary {
 }
 
 /**
+ * Where the collections conversation on an invoice currently stands
+ * (`collections_activity.status` enum, migration 0122, #677). App-native dunning
+ * workflow state — `promised` is a human-recorded promise-to-pay, NOT a payment.
+ */
+export type DunningStatus =
+  | "none"
+  | "reminded"
+  | "escalated"
+  | "promised"
+  | "paused"
+  | "disputed";
+
+/** All dunning statuses in worklist order (drives the status filter UI in #678). */
+export const DUNNING_STATUSES: readonly DunningStatus[] = [
+  "none",
+  "reminded",
+  "escalated",
+  "promised",
+  "paused",
+  "disputed",
+] as const;
+
+/**
+ * One entry in an invoice's append-only reminder log
+ * (`collections_activity.reminders` JSONB element, migration 0122, #677).
+ */
+export interface CollectionsReminder {
+  /** When the reminder went out (ISO timestamp). */
+  at: string;
+  /** Channel used, e.g. "email" | "sms" | "call" | "letter" (free text — not enumerated in DB). */
+  channel: string;
+  /** What kind of reminder, e.g. "courtesy" | "standard" | "demand" (free text). */
+  kind: string;
+  /** Optional human note attached to this reminder. */
+  note?: string | null;
+}
+
+/**
+ * The app-native dunning / collections overlay on a (read-only mirrored) invoice
+ * (`collections_activity` table, migration 0122, #677; parent #668, ADR-0085 QBO
+ * read-only / ADR-0087 orchestration). Keyed to the invoice by QBO invoice id.
+ * Archetype D (write-back sidecar) but **app-native — never synced to QBO**: agents
+ * READ `invoice_mirror`, WRITE this; there is NO app→QBO write path. Holds workflow
+ * state ONLY (no amounts/balances — those are read live from the mirror). Gated by
+ * `collections:read` / `collections:write` (admin/finance, ADR-0030).
+ */
+export interface CollectionsActivity {
+  id: string;
+  /** Business key into `InvoiceMirrorRow.qboInvoiceId` (the mirror is a VIEW — no FK). */
+  qboInvoiceId: string;
+  status: DunningStatus;
+  /** Escalation tier: 0 = none, increasing = further escalated. */
+  escalationLevel: number;
+  /** Employee owning the chase, or null when unassigned. */
+  assigneeUserId: string | null;
+  /** Append-only reminder history, oldest first. */
+  reminders: CollectionsReminder[];
+  /** Internal collections notes (not client-facing, not personal PII). */
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Write payload for upserting an invoice's collections overlay state
+ * (`crm.upsertCollectionsActivity`, migration 0122, #677). Identity = the QBO
+ * invoice id; the overlay is one CURRENT-state row per invoice.
+ */
+export interface CollectionsActivityInput {
+  qboInvoiceId: string;
+  status: DunningStatus;
+  escalationLevel: number;
+  assigneeUserId?: string | null;
+  /** A reminder to APPEND to the log (the upsert appends; it never rewrites prior entries). */
+  appendReminder?: CollectionsReminder | null;
+  notes?: string | null;
+}
+
+/**
  * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
  * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
  * client. Distinct from the enrichment lifecycle_status.

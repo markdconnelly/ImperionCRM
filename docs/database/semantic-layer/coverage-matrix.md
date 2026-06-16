@@ -137,6 +137,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | Object | Domain | Archetype | IKF | Acting ICM workflow |
 |---|---|---|---|---|
 | [invoice](tables/invoice.md) | Finance | B (QBO read-only mirror) | ✅ | collections / AR-dunning; reconciliation-assurance (#667) |
+| [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | ⏳ | collections / AR-dunning (#677/#678) |
 
 ## Security / MSSP
 

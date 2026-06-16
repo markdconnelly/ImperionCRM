@@ -258,6 +258,10 @@ import type {
   DeviceInventoryRow,
   InvoiceMirrorRow,
   InvoiceAgingBucket,
+  CollectionsActivity,
+  CollectionsActivityInput,
+  CollectionsReminder,
+  DunningStatus,
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
@@ -1210,6 +1214,94 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.crm.listInvoices();
       }
+    },
+
+    async getCollectionsActivity(qboInvoiceId: string): Promise<CollectionsActivity | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getCollectionsActivity(qboInvoiceId);
+      try {
+        // Read the app-native dunning overlay (collections_activity, migration 0122, #677)
+        // for one invoice. Keyed by the QBO invoice id (the invoice mirror is a VIEW — no FK).
+        // One CURRENT-state row per invoice; null when the invoice has never been worked.
+        const { rows } = await pool.query<{
+          id: string;
+          qbo_invoice_id: string;
+          status: DunningStatus;
+          escalation_level: number;
+          assignee_user_id: string | null;
+          reminders: CollectionsReminder[] | null;
+          notes: string | null;
+          created_at: Date;
+          updated_at: Date;
+        }>(
+          `SELECT id::text AS id, qbo_invoice_id, status, escalation_level,
+                  assignee_user_id::text AS assignee_user_id, reminders, notes,
+                  created_at, updated_at
+             FROM collections_activity
+            WHERE qbo_invoice_id = $1
+            ORDER BY updated_at DESC
+            LIMIT 1`,
+          [qboInvoiceId],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          qboInvoiceId: r.qbo_invoice_id,
+          status: r.status,
+          escalationLevel: Number(r.escalation_level),
+          assigneeUserId: r.assignee_user_id,
+          reminders: Array.isArray(r.reminders) ? r.reminders : [],
+          notes: r.notes,
+          createdAt: fmtIso(r.created_at) ?? "",
+          updatedAt: fmtIso(r.updated_at) ?? "",
+        };
+      } catch {
+        return mockRepositories.crm.getCollectionsActivity(qboInvoiceId);
+      }
+    },
+
+    async upsertCollectionsActivity(input: CollectionsActivityInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.upsertCollectionsActivity(input);
+      // Resolve the invoice's tenant from the read-only mirror — the overlay is scoped per
+      // (tenant, invoice) and the QBO invoice id is unique within a tenant/realm. A missing
+      // invoice (not in the mirror) is a programmer/data error; bail rather than write an
+      // orphan overlay row. App-native — this NEVER writes QuickBooks.
+      const tq = await pool.query<{ tenant_id: string }>(
+        `SELECT tenant_id FROM invoice_mirror WHERE qbo_invoice_id = $1 LIMIT 1`,
+        [input.qboInvoiceId],
+      );
+      const tenantId = tq.rows[0]?.tenant_id;
+      if (!tenantId) {
+        throw new Error(`collections overlay: invoice ${input.qboInvoiceId} not found in mirror`);
+      }
+      // Upsert the CURRENT-state row; the reminder log is APPENDED (jsonb || array), never
+      // rewritten, so concurrent reminders don't clobber each other's history.
+      const appended = input.appendReminder
+        ? JSON.stringify([input.appendReminder])
+        : "[]";
+      await pool.query(
+        `INSERT INTO collections_activity
+           (tenant_id, qbo_invoice_id, status, escalation_level, assignee_user_id, reminders, notes)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
+         ON CONFLICT (tenant_id, qbo_invoice_id) DO UPDATE SET
+           status           = EXCLUDED.status,
+           escalation_level = EXCLUDED.escalation_level,
+           assignee_user_id = EXCLUDED.assignee_user_id,
+           reminders        = collections_activity.reminders || EXCLUDED.reminders,
+           notes            = EXCLUDED.notes,
+           updated_at       = now()`,
+        [
+          tenantId,
+          input.qboInvoiceId,
+          input.status,
+          input.escalationLevel,
+          input.assigneeUserId ?? null,
+          appended,
+          input.notes ?? null,
+        ],
+      );
     },
 
     async createAccount(input: AccountInput): Promise<void> {

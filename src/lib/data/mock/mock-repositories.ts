@@ -205,6 +205,12 @@ export const mockRepositories: Repositories = {
     async listInvoices() {
       return [];
     },
+    async getCollectionsActivity() {
+      return null;
+    },
+    async upsertCollectionsActivity() {
+      throw new Error(NO_DB);
+    },
     async createAccount() {
       throw new Error(NO_DB);
     },

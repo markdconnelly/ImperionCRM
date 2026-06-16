@@ -844,6 +844,26 @@ correct now (balance>0 is the open-AR truth); it sharpens when the mapping lands
 `src/lib/data` `crm.listInvoices()` (typed `InvoiceMirrorRow`) + `src/lib/invoice-aging.ts`
 (worklist sort + aging summary). PII-free: the view selects no customer email/phone/address.
 
+### Collections / dunning overlay — `collections_activity` table (ADR-0085/0087, migration 0122, #677)
+
+The dunning **workflow state** QuickBooks can't give us, layered on the read-only invoice
+mirror: agents and humans **READ** `invoice_mirror`, **WRITE** this overlay (parent #668 —
+own-vs-mirror RESOLVED: the AR fact is mirrored, the workflow state is app-owned). **Archetype
+D (write-back sidecar) but app-native — NOT synced to QuickBooks**: there is still NO app→QBO
+write path and no money movement; `promised` is a human-recorded promise-to-pay, not a payment.
+
+A single table, **one CURRENT-state row per (tenant, invoice)** keyed by the QBO invoice id
+**business key** (`qbo_invoice_id` text — the mirror is a VIEW, so no real FK; the app resolves
+`tenant_id` from the mirror at write). Columns: `status` (`dunning_status` enum —
+none|reminded|escalated|promised|paused|disputed), `escalation_level` (smallint ≥ 0),
+`assignee_user_id` → `app_user` (SET NULL on delete), an **append-only `reminders` JSONB log**
+(`[{ at, channel, kind, note }]`, appended via `||`, never rewritten), and internal `notes`.
+Unique `(tenant_id, qbo_invoice_id)`. Gated by `collections:read` / `collections:write`
+(admin∨finance, ADR-0030/0045). Read via `crm.getCollectionsActivity(qboInvoiceId)`, write via
+`crm.upsertCollectionsActivity`; pure helpers in `src/lib/collections.ts`. The worklist UI is a
+follow-up (#678). PII-free: no amounts/balances (read live from the mirror), no customer
+contact data, no personal identifiers.
+
 ## Diagram 5 — As-built: communications, connections, enrichment, demand-gen audiences & automation (ADR-0024–0027)
 
 The multi-channel timeline (every comm is one `interaction`), per-user + company
