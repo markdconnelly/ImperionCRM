@@ -4248,6 +4248,61 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async updateProjectTemplate(id: string, input: ProjectTemplateInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateProjectTemplate(id, input);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Patch the header, but only for a non-protected template (the seeded onboarding
+        // default delegates to the hard-coded playbook and is uneditable). rowCount 0 →
+        // missing or protected → abort.
+        const { rowCount } = await client.query(
+          `UPDATE project_template
+              SET key = $2, name = $3, description = $4, project_type_id = $5
+            WHERE id = $1 AND is_protected = false`,
+          [id, input.key, input.name, nullIfEmpty(input.description), input.projectTypeId],
+        );
+        if (!rowCount) throw new Error("Template not found, or it is a protected default.");
+        // Re-snapshot the tree: drop the old items, re-insert from input. Apply is a
+        // snapshot (ADR-0070), so this never touches already-instantiated projects.
+        await client.query(`DELETE FROM template_item WHERE template_id = $1`, [id]);
+        let mOrd = 0;
+        for (const m of input.milestones) {
+          const { rows: mRows } = await client.query<{ id: string }>(
+            `INSERT INTO template_item (template_id, parent_id, kind, ordinal, payload)
+             VALUES ($1, NULL, 'milestone', $2, $3::jsonb) RETURNING id`,
+            [
+              id,
+              mOrd++,
+              JSON.stringify({ name: m.name, offsetDays: m.offsetDays, durationDays: m.durationDays }),
+            ],
+          );
+          const milestoneId = mRows[0].id;
+          let cOrd = 0;
+          for (const c of m.items) {
+            await client.query(
+              `INSERT INTO template_item (template_id, parent_id, kind, ordinal, payload)
+               VALUES ($1, $2, $3, $4, $5::jsonb)`,
+              [
+                id,
+                milestoneId,
+                c.kind,
+                cOrd++,
+                JSON.stringify({ title: c.title, offsetDays: c.offsetDays, durationDays: c.durationDays }),
+              ],
+            );
+          }
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
     async deleteProjectTemplate(id: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteProjectTemplate(id);

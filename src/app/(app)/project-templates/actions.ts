@@ -73,6 +73,25 @@ export async function createProjectTemplateAction(formData: FormData) {
   redirect("/project-templates");
 }
 
+/**
+ * In-place edit of an existing project template (ADR-0070 E1, #634). Reuses the same
+ * `payload` JSON contract + parser as create; the data layer re-snapshots the
+ * milestone/item tree and refuses a protected default. Gated `delivery:write`, the
+ * same gate as authoring. Editing a template never retro-mutates live projects
+ * (apply is a snapshot, ADR-0070).
+ */
+export async function updateProjectTemplateAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) throw new Error("Template id is required.");
+  const input = parsePayload(String(formData.get("payload") ?? "{}"));
+  const { crm } = getRepositories();
+  await crm.updateProjectTemplate(id, input);
+  revalidatePath("/project-templates");
+  revalidatePath(`/project-templates/${id}`);
+  redirect(`/project-templates/${id}`);
+}
+
 export async function deleteProjectTemplateAction(formData: FormData) {
   await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "");

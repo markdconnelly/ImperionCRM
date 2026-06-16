@@ -725,6 +725,10 @@ export const mockRepositories: Repositories = {
     async createProjectTemplate() {
       throw new Error(NO_DB);
     },
+    async updateProjectTemplate() {
+      // Re-snapshots the template_item tree in one transaction — needs a database.
+      throw new Error(NO_DB);
+    },
     async deleteProjectTemplate() {
       throw new Error(NO_DB);
     },

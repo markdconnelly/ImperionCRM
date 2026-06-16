@@ -30,14 +30,21 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={inputClass} />;
 }
 
-export function FormActions({ cancelHref }: { cancelHref: string }) {
+export function FormActions({
+  cancelHref,
+  submitLabel = "Save",
+}: {
+  cancelHref: string;
+  /** Submit-button label; defaults to "Save" (back-compat). */
+  submitLabel?: string;
+}) {
   return (
     <div className="flex items-center gap-2 pt-2">
       <button
         type="submit"
         className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90"
       >
-        Save
+        {submitLabel}
       </button>
       <Link
         href={cancelHref}
