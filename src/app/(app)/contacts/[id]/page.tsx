@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getRepositories } from "@/lib/data";
 import { Icon } from "@/components/ui/icon";
 import { Timeline } from "@/components/comms/timeline";
+import { ConversationPanel } from "@/components/comms/conversation-panel";
 import { EnrichmentDossier } from "@/components/comms/enrichment-dossier";
 import { SocialIdentities } from "@/components/comms/social-identities";
 import { SourceRecords } from "@/components/comms/source-records";
@@ -66,7 +67,7 @@ export default async function ContactDetailPage({
 }) {
   const { id } = await params;
   const { sent, blocked, mode, reason, error } = await searchParams;
-  const { contacts, comms, consent } = getRepositories();
+  const { contacts, comms, consent, crm } = getRepositories();
 
   const profile = await contacts.getProfile(id);
   if (!profile) notFound();
@@ -94,6 +95,20 @@ export default async function ContactDetailPage({
     contacts.listContactRelatedBronze(id),
     contacts.listDirectoryGroups(id),
   ]);
+
+  // Conversational intelligence (ADR-0068, #379) — conversations are keyed by
+  // account; surface only the ones tied to THIS contact (account-wide voice
+  // lives on the Company 360). Read-only; [] when the contact has no account or
+  // the backend pipeline (ADR-0042) is unwired, so it never fails the page.
+  const accountConversations = profile.accountId
+    ? await crm.listConversationsForAccount(profile.accountId)
+    : [];
+  const conversations = accountConversations.filter((c) => c.contactId === id);
+  const conversationDetails = Object.fromEntries(
+    await Promise.all(
+      conversations.map(async (c) => [c.id, await crm.getConversation(c.id)] as const),
+    ),
+  );
 
   const back = `/contacts/${id}`;
 
@@ -230,6 +245,23 @@ export default async function ContactDetailPage({
 
           <Section title="Consent" icon="ShieldCheck">
             <ConsentPanel current={currentConsent} contactId={id} action={setConsentAction} />
+          </Section>
+        </div>
+
+        {/* Conversational intelligence (#379, ADR-0068) — this contact's voice
+            conversations (ACS / Teams / upload) with their AI insights. Read-only;
+            empty until the backend capture/analyze pipeline (ADR-0042) is wired. */}
+        <div className="lg:col-span-3">
+          <Section title="Conversations" icon="Mic">
+            <p className="-mt-2 mb-3 text-xs text-dim">
+              Call &amp; meeting intelligence (ADR-0068) — summary, action items,
+              sentiment, and deal-risk from transcribed voice. Read-only.
+            </p>
+            <ConversationPanel
+              conversations={conversations}
+              details={conversationDetails}
+              emptyHint="No conversations captured for this contact yet."
+            />
           </Section>
         </div>
 

@@ -42,6 +42,9 @@ right (scoped to your Entra permissions).
 - [Goals & OKRs](goals-okrs.md): measurable objectives above projects with progress
   rolled up (weighted) from their linked projects' completion, or set manually
   (ADR-0069 D3).
+- [Conversations on the 360](conversation-panel.md): read a company's / contact's
+  call & meeting intelligence — summary, action items, sentiment, and deal-risk
+  from transcribed voice, beside the timeline; read-only (ADR-0068 / ADR-0011).
 - [Company security posture](security-posture.md): read a company's posture —
   per-tenant secure score, policy classification, **DNS governance** (per-domain
   verdict + record drift, ADR-0063), and credential exposures.

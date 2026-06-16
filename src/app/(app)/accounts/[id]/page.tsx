@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { Timeline } from "@/components/comms/timeline";
+import { ConversationPanel } from "@/components/comms/conversation-panel";
 import { SourceRecords } from "@/components/comms/source-records";
 import { SharePointSites } from "@/components/accounts/sharepoint-sites";
 import { DnsPostureCard } from "@/components/accounts/dns-posture-card";
@@ -87,6 +88,7 @@ export default async function AccountDetailPage({
     mfa,
     sharePointSites,
     dnsDomains,
+    conversations,
   ] = await Promise.all([
     crm.getAccount(id),
     comms.listInteractionsByAccount(id),
@@ -97,8 +99,19 @@ export default async function AccountDetailPage({
     security.countMfaRegistrationForAccount(id),
     security.listSharePointSitesForAccount(id),
     security.listDnsDomainsForAccount(id),
+    crm.listConversationsForAccount(id),
   ]);
   if (!account) notFound();
+
+  // Conversational intelligence (ADR-0068, #379) — resolve each account
+  // conversation's insights server-side so the panel can render them inline.
+  // Read-only; returns [] when the pipeline is unwired (ADR-0042), so this never
+  // fails the page.
+  const conversationDetails = Object.fromEntries(
+    await Promise.all(
+      conversations.map(async (c) => [c.id, await crm.getConversation(c.id)] as const),
+    ),
+  );
 
   // At-a-glance Imperion Secure Score (#94, ADR-0051 §4) — live Score Model v1
   // over the mapped tenants' rollups. No Tenant Mappings → no posture card.
@@ -303,6 +316,23 @@ export default async function AccountDetailPage({
             <SharePointSites sites={sharePointSites} />
           </Section>
         )}
+
+        {/* Conversational intelligence (#379, ADR-0068) — voice conversations
+            (ACS / Teams / upload) tied to this company with their AI insights.
+            Read-only; renders an empty state until the backend capture/analyze
+            pipeline (ADR-0042) is wired. */}
+        <Section
+          title="Conversations"
+          icon="Mic"
+          hint="Call & meeting intelligence (ADR-0068) — summary, action items, sentiment, and deal-risk from transcribed voice. Read-only."
+          className="lg:col-span-3"
+        >
+          <ConversationPanel
+            conversations={conversations}
+            details={conversationDetails}
+            emptyHint="No conversations captured for this company yet."
+          />
+        </Section>
 
         <Section
           title="Communications timeline"
