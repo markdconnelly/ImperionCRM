@@ -3143,3 +3143,78 @@ export interface ConfigurationItem {
   displayName: string;
   attributes: { label: string; value: string }[];
 }
+
+// ── Self-serve report builder (ADR-0075, #410) ───────────────────────────────
+// Persistence shapes for the governed report builder. `report_definition` is a
+// generalised saved view (ADR-0046): owner-scoped, private|shared, jsonb query
+// shape. The semantic registry that validates `rootObject`/`fields` lives in code
+// (#409) — these types are the stored config only.
+
+/** Sharing model reused from saved views (ADR-0046): owner-private or company-shared. */
+export type ReportVisibility = "private" | "shared";
+
+/** A saved self-serve report definition row (`report_definition`, ADR-0075 §3). */
+export interface ReportDefinition {
+  id: string;
+  /** Creator display name (resolved from app_user); null if unresolved. */
+  owner: string | null;
+  /** True when the viewer owns this row (drives owner-only edit/delete affordances). */
+  isMine: boolean;
+  name: string;
+  /** Registry object the report is rooted on — validated in app, not by FK. */
+  rootObject: string;
+  /** Selected fields + aggregations (registry-validated at the app layer). */
+  fields: unknown[];
+  /** Filter set, shape owned by the builder. */
+  filters: Record<string, unknown>;
+  /** Grouping columns. */
+  groupBy: unknown[];
+  /** Visualization choice (table | bar | line | …), rendered via ADR-0021. */
+  viz: string;
+  visibility: ReportVisibility;
+}
+
+/** Create/update payload for a report definition (server resolves owner + ids). */
+export interface ReportDefinitionInput {
+  name: string;
+  rootObject: string;
+  fields: unknown[];
+  filters: Record<string, unknown>;
+  groupBy: unknown[];
+  viz: string;
+  visibility: ReportVisibility;
+}
+
+/** A saved dashboard row (`dashboard`, ADR-0075 §3) — composes report definitions. */
+export interface Dashboard {
+  id: string;
+  owner: string | null;
+  isMine: boolean;
+  name: string;
+  /** Grid/placement blob owned by the dashboard surface. */
+  layout: Record<string, unknown>;
+  visibility: ReportVisibility;
+}
+
+/** Create/update payload for a dashboard. */
+export interface DashboardInput {
+  name: string;
+  layout: Record<string, unknown>;
+  visibility: ReportVisibility;
+}
+
+/** One report tile on a dashboard (`dashboard_item`, ADR-0075 §3). */
+export interface DashboardItem {
+  id: string;
+  dashboardId: string;
+  reportDefinitionId: string;
+  /** Placement blob ({ x, y, w, h, ordinal }). */
+  position: Record<string, unknown>;
+}
+
+/** Add a tile to a dashboard. */
+export interface DashboardItemInput {
+  dashboardId: string;
+  reportDefinitionId: string;
+  position: Record<string, unknown>;
+}
