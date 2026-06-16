@@ -5,6 +5,9 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Line,
+  LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -81,6 +84,70 @@ export function ForecastScenarioChart({ data }: { data: ScenarioDatum[] }) {
           ))}
         </Bar>
       </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+const pctAxis = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
+
+export interface AccuracyDatum {
+  /** x-label — the capture date the forecast call was made on. */
+  capturedOn: string;
+  /** Accuracy % (0..1) of that call vs the realised actual; null = undefined (no actual). */
+  accuracyPct: number | null;
+}
+
+/**
+ * Forecast-accuracy trend over time (ADR-0072 decision 5, #384): how each
+ * point-in-time snapshot call compared to the eventual realised closed-won, as the
+ * calls converge toward each period's close. Higher = more accurate. The 100% line
+ * is the perfect-call reference.
+ */
+export function ForecastAccuracyChart({ data }: { data: AccuracyDatum[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="capturedOn"
+          stroke={AXIS}
+          tickLine={false}
+          axisLine={{ stroke: GRID }}
+          fontSize={11}
+          minTickGap={16}
+        />
+        <YAxis
+          stroke={AXIS}
+          tickLine={false}
+          axisLine={false}
+          fontSize={12}
+          domain={[0, 1]}
+          tickFormatter={(v: number) => pctAxis.format(v)}
+          width={48}
+        />
+        <ReferenceLine y={1} stroke="#3FBF8F" strokeDasharray="4 4" />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          cursor={{ stroke: GRID }}
+          formatter={(v) => [
+            v == null ? "—" : pctAxis.format(Number(v)),
+            "Accuracy",
+          ]}
+        />
+        <Line
+          type="monotone"
+          dataKey="accuracyPct"
+          name="Accuracy"
+          stroke="#5B8DEF"
+          strokeWidth={2}
+          dot={{ r: 3, fill: "#5B8DEF" }}
+          connectNulls
+          isAnimationActive={false}
+        />
+      </LineChart>
     </ResponsiveContainer>
   );
 }

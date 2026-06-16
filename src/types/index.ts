@@ -99,6 +99,29 @@ export interface ForecastSummary {
   openCount: number;
 }
 
+/**
+ * A nightly point-in-time forecast capture (ADR-0072 decision 5, migration 0114,
+ * #384). One row per (owner | team, period, captured_on): the forecast call as it
+ * stood that day. WRITTEN by the backend/pipeline snapshot job (#382, ADR-0042);
+ * the front end READS it for the accuracy trend (snapshot call vs eventual actual).
+ * Money is unredacted — the caller applies canSeeRevenue (ADR-0030).
+ */
+export interface ForecastSnapshotRow {
+  id: string;
+  capturedOn: string; // yyyy-mm-dd — when the call was made
+  ownerUserId: string | null;
+  ownerName: string | null;
+  team: string | null;
+  periodStart: string; // yyyy-mm-dd
+  periodEnd: string; // yyyy-mm-dd
+  weighted: number; // Σ deal_value × win_probability at capture
+  commitTotal: number;
+  bestCaseTotal: number;
+  pipelineTotal: number;
+  closedWon: number; // realised floor in the period at capture
+  quota: number | null;
+}
+
 /** A row in the Contacts list. */
 export interface ContactRow {
   id: string;

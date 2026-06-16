@@ -83,6 +83,7 @@ import type {
   OpportunityRow,
   OpportunityForecastRow,
   QuotaRow,
+  ForecastSnapshotRow,
   LeadScoreRow,
   LeadScoreKind,
   ChatSessionRow,
@@ -662,6 +663,12 @@ export interface CrmRepository {
   listOpportunityForecast(): Promise<OpportunityForecastRow[]>;
   /** Revenue quotas per owner / team / period. */
   listQuotas(): Promise<QuotaRow[]>;
+  /**
+   * Nightly forecast snapshots (ADR-0072 decision 5, #384) — point-in-time
+   * forecast calls per owner/team/period. Powers the forecast-accuracy trend.
+   * WRITTEN by the backend/pipeline snapshot job (#382); read-only here.
+   */
+  listForecastSnapshots(): Promise<ForecastSnapshotRow[]>;
 
   // Lead scoring (ADR-0073 decision 5, #401) — read model over the 0116 lead_score table.
   /** Stored lead scores joined to their contact, ranked high→low (rule kind by default). */
