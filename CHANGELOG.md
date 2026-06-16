@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.15.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.14.0...imperion-crm-v0.15.0) (2026-06-16)
+
+
+### Features
+
+* **projects:** board columns read configurable status_def sets ([#613](https://github.com/markdconnelly/ImperionCRM/issues/613)) ([#733](https://github.com/markdconnelly/ImperionCRM/issues/733)) ([9f6a0ca](https://github.com/markdconnelly/ImperionCRM/commit/9f6a0cadce72238ba6f36b9ae45735aa095492b5))
+* **projects:** per-status WIP-limit UI + over-limit board highlight ([#616](https://github.com/markdconnelly/ImperionCRM/issues/616)) ([#736](https://github.com/markdconnelly/ImperionCRM/issues/736)) ([0d3f44d](https://github.com/markdconnelly/ImperionCRM/commit/0d3f44d43d5aa73fb642d7e01f7788cbb8339146))
+* **reporting:** rollups re-key off status_def.category ([#615](https://github.com/markdconnelly/ImperionCRM/issues/615)) ([#735](https://github.com/markdconnelly/ImperionCRM/issues/735)) ([e075c3f](https://github.com/markdconnelly/ImperionCRM/commit/e075c3f978a3c897c11afd3f5cf37b80de1d99b3))
+* **tasks:** intake form field mapping to assignee + custom fields ([#638](https://github.com/markdconnelly/ImperionCRM/issues/638)) ([#732](https://github.com/markdconnelly/ImperionCRM/issues/732)) ([b7686c2](https://github.com/markdconnelly/ImperionCRM/commit/b7686c2b4d8cd43300ad5f61ed68211e5d686183))
+
 ## [0.14.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.13.0...imperion-crm-v0.14.0) (2026-06-16)
 
 
