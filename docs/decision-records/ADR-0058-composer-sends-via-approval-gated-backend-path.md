@@ -39,6 +39,19 @@ Frontend mechanics (`sendMessageAction`):
 keep in lockstep, for zero capability gain; silent stub fallback on real failures —
 violates the timeline-as-evidence invariant.)
 
+## Consumers (this is the one send path — reuse it, never add a second)
+
+- **Contact composer** 1:1 email/SMS (`sendMessageAction`, #183) — the original consumer.
+- **Gated dunning send** (`sendDunningReminderAction`, #679) — an approved reminder on the
+  `/collections` per-invoice dunning panel sends AS THE ACCOUNT OWNER'S OWN M365 mailbox
+  through this same path (recipient = an emailable contact on the invoice's account;
+  approver = the acting employee; human approval required every send — no auto-send). On a
+  real or stubbed send it ALSO appends an `email`-channel reminder to `collections_activity`
+  (the dunning overlay) and adds an outbound timeline entry on the account. Money-adjacent +
+  customer-facing, but **reminder email only — it never moves money** (the overlay is
+  app-native, ADR-0085/0087). Same honest logged-stub degradation when M365 send is
+  unconfigured; same never-fake-success rule on a real failure.
+
 ## Security impact
 
 Strengthens the invariant: ALL outbound now flows through the single backend choke point

@@ -1,20 +1,45 @@
-import { DUNNING_STATUSES, type CollectionsActivity, type DunningStatus, type InvoiceMirrorRow } from "@/types";
+import {
+  DUNNING_STATUSES,
+  type CollectionsActivity,
+  type ContactRow,
+  type DunningStatus,
+  type InvoiceMirrorRow,
+} from "@/types";
 import {
   escalateCollectionsAction,
   recordCollectionsActivityAction,
+  sendDunningReminderAction,
   setDunningStatusAction,
 } from "@/app/(app)/collections/actions";
 
+/** The send disposition the panel surfaces after an approve-to-send round-trip (#679). */
+export type SendNotice =
+  | { kind: "real" }
+  | { kind: "logged"; reason: string }
+  | { kind: "blocked" }
+  | { kind: "error" }
+  | null;
+
+/** A short, honest line describing what happened on the last send (no amounts/PII). */
+const STUB_REASON_LABEL: Record<string, string> = {
+  backend_unconfigured: "the M365 send backend isn't configured yet",
+  no_connection: "you have no active M365 connection",
+  no_app_user: "your employee record isn't resolvable here",
+  no_address: "the recipient has no email address",
+};
+
 /**
- * Per-invoice dunning panel (#678, parent #668; ADR-0085 QBO read-only / ADR-0087).
+ * Per-invoice dunning panel (#678 worklist + #679 SEND; parent #668; ADR-0085 QBO read-only
+ * / ADR-0087 orchestration; send via ADR-0058 approval-gated path).
  *
  * Reads the app-native dunning overlay (`collections_activity`, migration 0122): reminder
  * history (oldest first, from the JSONB log), escalation level, and current status. Write
- * controls — change status, escalate, record activity (a logged reminder + note) — post the
- * `collections:write`-gated server actions; they are only rendered when `canWrite` (ADR-0030
- * GUI gate; the server re-checks fail-closed). App-native: NONE of this writes QuickBooks or
- * moves money. The drafted-reminder SEND is the send slice (#679) — surfaced here only as a
- * disabled placeholder so the worklist reads honestly.
+ * controls — change status, escalate, record activity, and APPROVE-TO-SEND a drafted reminder
+ * — post the `collections:write`-gated server actions; rendered only when `canWrite` (ADR-0030
+ * GUI gate; the server re-checks fail-closed). The send routes through the employee's own M365
+ * mailbox (ADR-0058) and is HUMAN-GATED every time. App-native: NONE of this writes QuickBooks
+ * or moves money — the send is a reminder email only, and it degrades to an honest logged-stub
+ * with a visible notice when the M365 send backend is unconfigured.
  */
 export function DunningPanel({
   invoice,
@@ -22,15 +47,22 @@ export function DunningPanel({
   canWrite,
   balanceLabel,
   statusLabel,
+  recipients = [],
+  notice = null,
 }: {
   invoice: InvoiceMirrorRow;
   activity: CollectionsActivity;
   canWrite: boolean;
   balanceLabel: string;
   statusLabel: Record<DunningStatus, string>;
+  /** Contacts on the invoice's account that have an email — the send recipient choices. */
+  recipients?: ContactRow[];
+  /** Disposition of the last approve-to-send round-trip (drives the visible notice). */
+  notice?: SendNotice;
 }) {
   const invId = invoice.qboInvoiceId;
   const reminders = [...activity.reminders].reverse(); // newest first for display
+  const draftSubject = `Payment reminder${invoice.docNumber ? ` — invoice #${invoice.docNumber}` : ""}`;
 
   return (
     <div className="flex flex-col gap-5 rounded-lg border border-border bg-panel p-5">
@@ -169,18 +201,107 @@ export function DunningPanel({
             </button>
           </form>
 
-          {/* Send placeholder — the drafted-reminder SEND is the send slice (#679). */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              disabled
-              title="Drafting + sending a reminder is the send slice (#679) — not yet available."
-              className="cursor-not-allowed rounded-md border border-border px-3 py-1.5 text-sm text-dim opacity-60"
-            >
-              Send drafted reminder
-            </button>
-            <span className="text-xs text-dim">Coming in the send slice (#679).</span>
-          </div>
+          {/* ── Approve-to-send a drafted reminder (#679, ADR-0058 gated send) ──── */}
+          <form
+            action={sendDunningReminderAction}
+            className="flex flex-col gap-3 rounded-md border border-accent/40 bg-accent/5 p-3"
+          >
+            <input type="hidden" name="qboInvoiceId" value={invId} />
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-dim">
+                Send dunning reminder
+              </h3>
+              <span className="text-[11px] text-dim">
+                Sends as your own M365 mailbox · approval required every send
+              </span>
+            </div>
+
+            {/* The send-disposition notice from the last round-trip (honest about logged-stub). */}
+            {notice && (
+              <p
+                className={
+                  notice.kind === "real"
+                    ? "rounded-md border border-green/50 bg-green/10 px-3 py-2 text-sm text-green"
+                    : notice.kind === "error" || notice.kind === "blocked"
+                      ? "rounded-md border border-red/50 bg-red/10 px-3 py-2 text-sm text-red"
+                      : "rounded-md border border-amber/50 bg-amber/10 px-3 py-2 text-sm text-amber"
+                }
+              >
+                {notice.kind === "real" && "Reminder sent from your M365 mailbox and logged."}
+                {notice.kind === "logged" &&
+                  `Reminder logged to the dunning history but NOT sent — ${
+                    STUB_REASON_LABEL[notice.reason] ?? "the send backend is unavailable"
+                  }.`}
+                {notice.kind === "blocked" &&
+                  "Send blocked — the recipient has no current consent for email."}
+                {notice.kind === "error" &&
+                  "The send failed at the backend — nothing was sent. Try again or check the connection."}
+              </p>
+            )}
+
+            {recipients.length === 0 ? (
+              <p className="text-sm text-dim">
+                No emailable contact on this account. Add a billing/AP contact with an email to
+                send a reminder.
+              </p>
+            ) : (
+              <>
+                <label className="flex flex-col gap-1 text-xs text-dim">
+                  Recipient (account contact)
+                  <select
+                    name="recipientContactId"
+                    required
+                    defaultValue=""
+                    className="w-full rounded-md border border-border bg-panel px-2 py-1 text-sm text-text outline-none focus:border-accent"
+                  >
+                    <option value="" disabled>
+                      Choose a contact…
+                    </option>
+                    {recipients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-dim">
+                  Subject
+                  <input
+                    type="text"
+                    name="subject"
+                    defaultValue={draftSubject}
+                    className="w-full rounded-md border border-border bg-panel px-2 py-1 text-sm text-text outline-none focus:border-accent"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-dim">
+                  Message (no client PII beyond what the recipient already knows)
+                  <textarea
+                    name="body"
+                    required
+                    rows={4}
+                    defaultValue={`Hello,\n\nOur records show invoice ${
+                      invoice.docNumber ? `#${invoice.docNumber}` : invId
+                    } (${balanceLabel}) is past due. Please arrange payment at your earliest convenience, or reply if you have any questions.\n\nThank you.`}
+                    className="w-full rounded-md border border-border bg-panel px-2 py-1.5 text-sm text-text outline-none focus:border-accent"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-xs text-dim">
+                  <input type="checkbox" name="escalate" className="accent-accent" />
+                  Escalate on send (bump escalation level → demand tone)
+                </label>
+                <button
+                  type="submit"
+                  className="w-fit rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+                >
+                  Approve &amp; send reminder
+                </button>
+                <p className="text-[11px] text-dim">
+                  Consent is re-checked at send; this never moves money — it is a reminder email
+                  only.
+                </p>
+              </>
+            )}
+          </form>
         </div>
       ) : (
         <p className="border-t border-border pt-4 text-sm text-dim">
