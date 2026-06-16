@@ -268,8 +268,8 @@
   <div class="hero-stats reveal in d3">
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
-    <div class="hs"><div class="n" id="hero-commits">800+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="116"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n" id="hero-commits">850+</div><div class="l">commits</div></div>
+    <div class="hs"><div class="n"><span data-count="120"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -317,28 +317,28 @@
     <p class="say reveal d1">A deliberate division of labor: <b>front end = GUI · backend = processes · cloud pipeline = live data · on-prem = heavy lifting.</b></p>
     <div class="repos reveal d2">
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.11.0</span></div>
+        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.12.0</span></div>
         <div class="role">Front end · the GUI</div>
         <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration, plus the reporting BI hub that reads the whole gold layer.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 404 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 428 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.4.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.5.0</span></div>
         <div class="role">Backend · every process</div>
         <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the AI Board of Directors, OAuth token custody, consent-gated sends, M365 mail/calendar ingestion, and per-process cost metering.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 102 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 112 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Pipeline" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.5.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.6.0</span></div>
         <div class="role">Cloud · live data</div>
         <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, a source-schema registry that fails loudly on drift, and the bronze→silver merge.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 89 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 91 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-built">Built · v0.8.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-built">Built · v0.9.0</span></div>
         <div class="role">On-prem · heavy lifting</div>
-        <p>PowerShell 7 scheduled tasks on a home server. Collectors for ten+ sources, the medallion transforms, and all vectorization — 460+ tests green, awaiting server bringup.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 213 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
+        <p>PowerShell 7 scheduled tasks on a home server. Collectors for ten+ sources, the medallion transforms, and all vectorization — 700+ tests green, awaiting server bringup.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 224 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
       </a>
     </div>
     <p class="repos-note reveal d2">Each repo reads and writes the same Postgres — but only the front end owns migrations.</p>
@@ -555,20 +555,20 @@
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.11.0</span></div>
-        <p>Running on Azure with Entra SSO. The schema runs to <b>0116</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard). The newest wave is a near-complete <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — landing beside <b>lead scoring, customer journeys, opportunity forecasting, e-signature, and conversational intelligence</b>. <b>Employee time and expense tracking are both now live on real data</b> — weekly timesheets, mileage and out-of-pocket capture through to reimbursement, with Autotask/QuickBooks reconciliation. All real screens over a typed data layer.</p>
+        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.12.0</span></div>
+        <p>Running on Azure with Entra SSO. The schema runs to <b>0120</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the CRM-parity verticals that broke ground overnight have since <b>shipped</b> as schema + surface: <b>conversational intelligence, opportunity forecasting, e-signature, a service desk (SLA, live chat, omnichannel queue), customer journeys with A/B and lead scoring, and agile reporting</b>. The build now advances as a <b>four-lane wave train</b> across all four repos. <b>Employee time and expense tracking are both now live on real data</b> — weekly timesheets, mileage and out-of-pocket capture through to reimbursement, with Autotask/QuickBooks reconciliation. All real screens over a typed data layer.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.4.0</span></div>
+        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.5.0</span></div>
         <p>The orchestrator and its specialist sub-agents (Autotask, IT Glue, CRM, M365, documentation, advisors), the board runtime with resumable deputy sessions, M365 mail/calendar ingestion, Autotask ticket creation, lead capture, contact enrichment, and per-process cost metering.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.5.0</span></div>
+        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.6.0</span></div>
         <p>Autotask ticket webhooks are live in production. Per-tenant Graph subscription upkeep (per-client app model, ADR-0018), a source-schema registry that fails loudly on drift, the 5-minute bronze→silver merge, and on-demand posture snapshots.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-built">Built · v0.8.0</span></div>
-        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 460+ tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
+        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-built">Built · v0.9.0</span></div>
+        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 700+ tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
       </div>
     </div>
     <div class="deferred reveal d2">
