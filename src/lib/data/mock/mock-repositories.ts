@@ -235,6 +235,13 @@ export const mockRepositories: Repositories = {
     async listQuotas() {
       return [];
     },
+    // Forecast snapshots (ADR-0072 decision 5, #384) — read model over the 0114
+    // forecast_snapshot table. Honest empty with no DB (snapshots are written by the
+    // backend/pipeline nightly job, #382); the accuracy-trend reader supplies an
+    // illustrative sample when this returns nothing.
+    async listForecastSnapshots() {
+      return [];
+    },
     // Lead scoring (ADR-0073 decision 5, #401) — read model over 0116 lead_score.
     // Honest empty when there is no DB (scores are written by the backend/LP pass).
     async listLeadScores() {

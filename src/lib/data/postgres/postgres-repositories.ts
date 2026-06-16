@@ -181,6 +181,7 @@ import type {
   OpportunityRow,
   OpportunityForecastRow,
   QuotaRow,
+  ForecastSnapshotRow,
   LeadScoreRow,
   LeadScoreKind,
   LeadScoreComponent,
@@ -1330,6 +1331,59 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listQuotas();
+      }
+    },
+
+    async listForecastSnapshots(): Promise<ForecastSnapshotRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listForecastSnapshots();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          captured_on: string;
+          owner_user_id: string | null;
+          owner_name: string | null;
+          team: string | null;
+          period_start: string;
+          period_end: string;
+          weighted: string;
+          commit_total: string;
+          best_case_total: string;
+          pipeline_total: string;
+          closed_won: string;
+          quota: string | null;
+        }>(
+          // Forecast-accuracy read model (ADR-0072 decision 5, #384): the nightly
+          // point-in-time forecast calls. The accuracy/variance math lives in
+          // lib/forecast-accuracy.ts; this only shapes rows. ORDER feeds the trend.
+          `SELECT s.id,
+                  to_char(s.captured_on, 'YYYY-MM-DD')  AS captured_on,
+                  s.owner_user_id, u.display_name        AS owner_name, s.team,
+                  to_char(s.period_start, 'YYYY-MM-DD')  AS period_start,
+                  to_char(s.period_end, 'YYYY-MM-DD')    AS period_end,
+                  s.weighted, s.commit_total, s.best_case_total, s.pipeline_total,
+                  s.closed_won, s.quota
+           FROM forecast_snapshot s
+           LEFT JOIN app_user u ON u.id = s.owner_user_id
+           ORDER BY s.period_end DESC, s.captured_on ASC`,
+        );
+        return rows.map((row) => ({
+          id: row.id,
+          capturedOn: row.captured_on,
+          ownerUserId: row.owner_user_id,
+          ownerName: row.owner_name,
+          team: row.team,
+          periodStart: row.period_start,
+          periodEnd: row.period_end,
+          weighted: Number(row.weighted) || 0,
+          commitTotal: Number(row.commit_total) || 0,
+          bestCaseTotal: Number(row.best_case_total) || 0,
+          pipelineTotal: Number(row.pipeline_total) || 0,
+          closedWon: Number(row.closed_won) || 0,
+          quota: row.quota == null ? null : Number(row.quota) || 0,
+        }));
+      } catch {
+        return mockRepositories.crm.listForecastSnapshots();
       }
     },
 

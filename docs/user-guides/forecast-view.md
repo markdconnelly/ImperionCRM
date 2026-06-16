@@ -54,6 +54,41 @@ A table, one row per quota target (an **owner** or a **team**, for a period),
 showing closed-won, the quota, the attainment percentage, and a colour-coded bar.
 Empty until a quota lands.
 
+### Forecast accuracy
+
+The lower section grades **how good our past forecasts were** — the point of the
+nightly `forecast_snapshot` ([ADR-0072](../decision-records/ADR-0072-revenue-forecasting-model.md)
+decision 5). Each snapshot is a point-in-time forecast *call* for one
+owner/team/period; once a period closes, its **realised closed-won** is known and
+every earlier call can be scored against it.
+
+- **Mean accuracy** — average of `1 − |forecast − realised| / realised` across all
+  graded calls, coloured green (≥90%), amber (≥70%), or red. A wild over-forecast
+  reads as 0%, never negative.
+- **Settled periods** — how many periods have closed and therefore have a realised
+  actual to grade against.
+- **Forecast bias** — the average **signed** variance (forecast − realised). A
+  positive figure means we habitually **over-forecast**; negative means we
+  **under-forecast**. This is the systematic lean, distinct from the miss size.
+- **Typical miss** — the average **absolute** variance (miss size regardless of
+  direction).
+- **Accuracy over time** — a line chart of each call's accuracy %, with a dashed
+  100% reference line; accuracy should climb as calls get closer to the period
+  close.
+- **Graded calls** — a table (newest first) of each call: the date it was made, the
+  target, the period end, the **lead** (days ahead the call was made), the forecast,
+  the realised actual, the signed **variance** (amber = over, blue = under), and the
+  accuracy %.
+
+The forecast number graded is the **weighted** call by default (the
+probability-discounted pipeline-health number). The accuracy section keys off the
+snapshot's **owner/team dimension** when it is present — accuracy is reported per
+target, so a per-owner attainment/accuracy split is available; if the snapshots are
+account/category-scoped only, the surface says so honestly and reports the
+account/category accuracy instead. Until a period has settled (a snapshot captured
+on or after the period end), the section explains that accuracy populates once the
+nightly job has run and at least one period has closed.
+
 ## Sample vs live data
 
 Until owners start setting forecast categories and quotas land, the page shows an
@@ -73,14 +108,25 @@ tally, per-quota attainment) is the unit-tested `src/lib/forecast-view.ts`; the
 read + sample fallback is `src/lib/forecast-view-data.ts`; the screen is
 `src/app/(app)/reporting/forecast/`.
 
+The **accuracy trend** ([ADR-0062](../decision-records/ADR-0062-reporting-bi-hub.md)
+BI hub · [ADR-0072](../decision-records/ADR-0072-revenue-forecasting-model.md)
+decision 5, #384) is the same read-only pattern over the `forecast_snapshot` table
+(also migration 0114, no new schema): the grading math (realised actual per period,
+variance, accuracy %) is the pure, unit-tested `src/lib/forecast-accuracy.ts`; the
+read + sample fallback is `src/lib/forecast-accuracy-data.ts`
+(`crm.listForecastSnapshots()`); the chart is `ForecastAccuracyChart` in
+`src/components/reporting/forecast-charts.tsx`. The snapshots themselves are
+**written by the backend/pipeline nightly job** (#382, ADR-0042) — never by this
+front end.
+
 ## Not yet on the forecast
 
-- **Forecast trend over time + forecast accuracy** — reads the nightly
-  `forecast_snapshot` (the call N weeks ago vs the eventual actual), written by the
-  backend/pipeline snapshot job (ADR-0072 decision 5). Its own slice, **#384**.
 - **Setting forecast fields in the UI** — editing a deal's category / probability /
   expected close date is a separate control surface; today they are set upstream.
-- **Per-owner closed-won attribution** — v1 attributes the period closed-won floor
-  to each quota target; the per-owner split lands with owner attribution (#384).
-- **Period / owner filters** — the v1 view rolls up the whole open pipeline; period
-  and owner slicing follow with the snapshot trend.
+- **Choosing the accuracy basis in the UI** — the accuracy trend grades the
+  **weighted** call; grading the commit call (or toggling between them) is a small
+  follow-up.
+- **Period / owner filters on the live forecast** — the headline view rolls up the
+  whole open pipeline; the accuracy section already breaks out per owner/team target
+  from the snapshots, but interactive period/owner slicing of the live forecast is
+  still to come.

@@ -6,9 +6,12 @@ import { canSeeRevenue } from "@/lib/auth/roles";
 import { getForecastView } from "@/lib/forecast-view-data";
 import {
   AttainmentBar,
+  ForecastAccuracyChart,
   ForecastScenarioChart,
+  type AccuracyDatum,
   type ScenarioDatum,
 } from "@/components/reporting/forecast-charts";
+import { getForecastAccuracyView } from "@/lib/forecast-accuracy-data";
 
 export const metadata = { title: "Forecast · Reporting" };
 export const dynamic = "force-dynamic"; // role-gated revenue surface, never prerendered
@@ -19,6 +22,9 @@ const usd = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 const pct = (v: number) => `${Math.round(v * 100)}%`;
+/** Signed currency for a variance figure: +$1,200 over / −$800 under / $0. */
+const signedUsd = (v: number) =>
+  `${v > 0 ? "+" : v < 0 ? "−" : ""}${usd.format(Math.abs(v))}`;
 
 function StatTile({
   label,
@@ -82,9 +88,22 @@ export default async function ForecastPage() {
   const roles = await getSessionRoles();
   if (!canSeeRevenue(roles)) redirect("/reporting");
 
-  const view = await getForecastView();
+  const [view, accuracy] = await Promise.all([
+    getForecastView(),
+    getForecastAccuracyView("weighted"),
+  ]);
   const { summary, rollup, attainment } = view;
   const isSample = view.source === "sample";
+
+  // Accuracy trend (ADR-0072 decision 5, #384): each prior snapshot call vs its
+  // period's eventual realised closed-won. accuracyTrend feeds the line chart;
+  // accuracyRows the table (newest call first).
+  const accuracyTrend: AccuracyDatum[] = accuracy.points.map((p) => ({
+    capturedOn: p.capturedOn,
+    accuracyPct: p.accuracyPct,
+  }));
+  const accuracyRows = [...accuracy.points].reverse();
+  const accSummary = accuracy.summary;
 
   // Scenario ladder (ADR-0072 decision 3): realised floor, weighted, then the
   // cumulative category bands. Best/Pipeline shown as the running cumulative total.
@@ -260,6 +279,139 @@ export default async function ForecastPage() {
             No quotas set yet — attainment populates once a quota lands for an owner
             or team.
           </p>
+        )}
+      </div>
+
+      {/* Forecast-accuracy trend (ADR-0072 decision 5, #384). How prior snapshot
+          calls compared to the eventual realised closed-won — the point of the
+          nightly forecast_snapshot. Revenue-gated like the rest of this surface. */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="font-display text-base font-semibold tracking-tight">
+            Forecast accuracy
+          </h2>
+          <p className="text-xs text-dim">
+            How our weighted forecast calls compared to the eventual closed-won, as
+            each call converged toward the period close (ADR-0072 decision 5).
+            {accuracy.hasOwnerDimension
+              ? " Snapshots carry an owner/team dimension — accuracy is per target."
+              : " Snapshots are account/category-scoped — no owner split available yet."}
+          </p>
+        </div>
+
+        {accSummary.gradedCalls === 0 ? (
+          <div className="rounded-lg border border-border bg-panel px-4 py-6 text-center text-sm text-dim">
+            No settled forecast periods yet — accuracy populates once the nightly
+            snapshot job has captured calls and at least one period has closed.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatTile
+                label="Mean accuracy"
+                value={accSummary.meanAccuracyPct == null ? "—" : pct(accSummary.meanAccuracyPct)}
+                hint={`${accSummary.gradedCalls} graded call${accSummary.gradedCalls === 1 ? "" : "s"}`}
+                tone={
+                  accSummary.meanAccuracyPct == null
+                    ? undefined
+                    : accSummary.meanAccuracyPct >= 0.9
+                      ? "text-green"
+                      : accSummary.meanAccuracyPct >= 0.7
+                        ? "text-amber"
+                        : "text-red"
+                }
+              />
+              <StatTile
+                label="Settled periods"
+                value={String(accSummary.settledPeriods)}
+                hint="periods with a realised actual"
+              />
+              <StatTile
+                label="Forecast bias"
+                value={signedUsd(accSummary.meanVariance)}
+                hint={
+                  accSummary.meanVariance > 0
+                    ? "tends to over-forecast"
+                    : accSummary.meanVariance < 0
+                      ? "tends to under-forecast"
+                      : "balanced"
+                }
+                tone={Math.abs(accSummary.meanVariance) < 1 ? "text-dim" : undefined}
+              />
+              <StatTile
+                label="Typical miss"
+                value={usd.format(accSummary.meanAbsVariance)}
+                hint="mean absolute variance"
+              />
+            </div>
+
+            <ChartCard
+              title="Accuracy over time"
+              subtitle="Each snapshot call vs its period's realised closed-won (100% = perfect call)"
+            >
+              <ForecastAccuracyChart data={accuracyTrend} />
+            </ChartCard>
+
+            <div className="rounded-lg border border-border bg-panel p-4">
+              <div className="mb-3">
+                <h3 className="font-display text-sm font-semibold tracking-tight">
+                  Graded calls
+                </h3>
+                <p className="text-xs text-dim">
+                  Newest call first — forecast vs realised, with the variance and how
+                  far ahead the call was made
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs text-dim">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Called on</th>
+                      <th className="px-3 py-2 font-medium">Target</th>
+                      <th className="px-3 py-2 font-medium">Period end</th>
+                      <th className="px-3 py-2 font-medium">Lead</th>
+                      <th className="px-3 py-2 font-medium">Forecast</th>
+                      <th className="px-3 py-2 font-medium">Realised</th>
+                      <th className="px-3 py-2 font-medium">Variance</th>
+                      <th className="px-3 py-2 font-medium">Accuracy</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accuracyRows.map((p, i) => (
+                      <tr
+                        key={`${p.target}-${p.periodEnd}-${p.capturedOn}-${i}`}
+                        className="border-t border-border/60"
+                      >
+                        <td className="px-3 py-2">{p.capturedOn}</td>
+                        <td className="px-3 py-2">
+                          {p.target}
+                          <span className="ml-2 text-xs text-dim">{p.scope}</span>
+                        </td>
+                        <td className="px-3 py-2 text-dim">{p.periodEnd}</td>
+                        <td className="px-3 py-2 text-dim">{p.leadDays}d</td>
+                        <td className="px-3 py-2">{usd.format(p.forecast)}</td>
+                        <td className="px-3 py-2">{usd.format(p.realised)}</td>
+                        <td
+                          className={`px-3 py-2 ${
+                            p.variance > 0
+                              ? "text-amber"
+                              : p.variance < 0
+                                ? "text-accent"
+                                : "text-dim"
+                          }`}
+                        >
+                          {signedUsd(p.variance)}
+                        </td>
+                        <td className="px-3 py-2 font-medium">
+                          {p.accuracyPct == null ? "—" : pct(p.accuracyPct)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
