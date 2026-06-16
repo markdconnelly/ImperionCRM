@@ -1,0 +1,37 @@
+# CONSTITUTION.yaml — the OUTER least-privilege allow-list (ADR-0088 §3).
+#
+# Machine-readable companion to CONSTITUTION.md: the widest set of tools and OKF
+# rooms any ICM worker may EVER be granted. A domain's room.yaml narrows this; a
+# workflow's agent.yaml narrows further. The invariant the gate enforces is
+#     workflow ⊆ domain ⊆ Constitution
+# (scripts/agent-yaml-gate.mjs). Widening at any inner tier is a conformance
+# failure. This file is the only place a NEW capability enters the agent layer —
+# adding a tool/room here is a deliberate, reviewed unit of work.
+#
+# NOTE: the budget-file convention itself (this file + domains/<d>/room.yaml) is
+# introduced by the gate and is NOT yet ADR-ratified — ratification is a tracked
+# follow-up. The clauses it enforces ARE ratified (CONSTITUTION.md §3/§5).
+#
+# No secrets, no client PII (these files replicate to every agent machine,
+# ADR-0060). Tool and room names are references, never values.
+
+# Tools: the union of every capability the agent workforce may be granted.
+# Names are stable tool identifiers the backend loader maps to implementations.
+tools:
+  - pg.read              # read-only silver/gold reads (ADR-0086 OKF rooms)
+  - consent.check        # assert a current consent basis (Governance, gates sends)
+  - send.email           # approval-gated email send (ADR-0058 path only)
+  - send.dm              # approval-gated in-channel DM reply (ADR-0058 path only)
+  - send.sms             # approval-gated SMS via ACS (ADR-0058 path only)
+  - booking.link         # mint/lookup a booking link (no PII, no send)
+
+# OKF rooms: the union of every silver entity any worker may read. Each name
+# resolves to a docs/database/semantic-layer/ coverage-matrix row (ADR-0086).
+okf_rooms:
+  - contact
+  - account
+  - opportunity
+  - interaction
+  - consent_event
+  - lead_score
+  - campaign

@@ -8,9 +8,11 @@ anything.
 ## Routing (Layer 1)
 
 To work on or run a business workflow: open
-`workspaces/<workflow>/CONTEXT.md` first — it names the trigger, the stage
-order, and the workflow's autonomy contract. Route to exactly one stage at a
-time; the numbered folder IS the execution order.
+`domains/<domain>/<workflow>/CONTEXT.md` first — it names the trigger, the stage
+order, and the workflow's autonomy contract (its structured manifest is
+`agent.yaml`, its composed prose `prose.md`). Route to exactly one stage at a
+time; the numbered folder IS the execution order. The reference implementation is
+`domains/sales/lead-response/` (ADR-0088 domain tier, issue #701).
 
 ## Operating a stage
 

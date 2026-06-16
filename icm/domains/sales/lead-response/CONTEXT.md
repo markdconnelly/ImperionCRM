@@ -28,8 +28,11 @@ and an existing consent basis. Pricing/contract questions, complaints, DM
 replies near the 24-hour window edge, and any audit failure always park for a
 human, in every mode.
 
-## Runtime skills (Layer 3)
+## Runtime skills
 
-`skills/icp.md` · `skills/voice-and-tone.md` · `skills/offer-catalog.md` ·
-`skills/channel-rules.md` — Mark-editable business content; stages cite, never
-restate. Rules of the format: `../../CONVENTIONS.md`.
+Workflow-local (Tier 3, `./skills/`): `icp.md` · `offer-catalog.md` ·
+`channel-rules.md`. Domain-shared (Tier 2, `../skills/`):
+`voice-and-tone.md` (promoted — every sales draft sounds the same).
+Mark-editable business content; stages cite, never restate. Rules of the
+format: `../../../CONVENTIONS.md`. The structured manifest is `agent.yaml`;
+the composed workflow prose is `prose.md`.
