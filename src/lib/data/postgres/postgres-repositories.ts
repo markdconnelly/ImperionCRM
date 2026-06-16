@@ -799,6 +799,26 @@ function fmtUsdCompact(n: number): string {
   return usdCompact.format(Number.isFinite(n) ? n : 0);
 }
 
+/**
+ * Human-friendly label for a status rollup bucket (ADR-0065 B5, #615). The three
+ * canonical status_def categories get titled labels; any legacy `status` string
+ * (used only when a row has no status_def_id) is de-snaked and title-cased so the
+ * BI-hub chart reads sensibly either way.
+ */
+const STATUS_CATEGORY_LABELS: Record<string, string> = {
+  todo: "To Do",
+  in_progress: "In Progress",
+  done: "Done",
+};
+function humanizeStatusBucket(bucket: string): string {
+  return (
+    STATUS_CATEGORY_LABELS[bucket] ??
+    bucket
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (ch) => ch.toUpperCase())
+  );
+}
+
 /** Fixed display order for opportunity sales stages. */
 const SALES_STAGE_ORDER = ["lead", "qualified", "proposal", "won", "lost"];
 
@@ -7841,10 +7861,29 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.reports.projectsByStatus();
       try {
-        const { rows } = await pool.query<{ status: string; c: string }>(
-          `SELECT status, count(*) AS c FROM project GROUP BY status ORDER BY status`,
+        // ADR-0065 B5 (#615): the BI-hub rollup keys off the status_def CATEGORY
+        // (todo|in_progress|done), not the raw label, so a custom status (e.g.
+        // "Waiting on client", category in_progress) rolls up under in_progress
+        // rather than as its own bucket. JOIN status_def on the precise FK and
+        // GROUP BY its category; fall back to the legacy `status` string only when
+        // status_def_id IS NULL. Behaviour-preserving for seeded data: the project
+        // category seeds reproduce today's rollups (blocked→in_progress,
+        // complete→done) so the three buckets read sensibly (To Do / In Progress /
+        // Done). ORDER BY the canonical category lifecycle, legacy labels last.
+        const { rows } = await pool.query<{ bucket: string; c: string }>(
+          `SELECT COALESCE(sd.category, p.status::text) AS bucket, count(*) AS c
+             FROM project p
+             LEFT JOIN status_def sd ON sd.id = p.status_def_id
+            GROUP BY COALESCE(sd.category, p.status::text)
+            ORDER BY CASE COALESCE(sd.category, p.status::text)
+                       WHEN 'todo' THEN 0
+                       WHEN 'in_progress' THEN 1
+                       WHEN 'done' THEN 2
+                       ELSE 3
+                     END,
+                     bucket`,
         );
-        return rows.map((r) => ({ label: r.status, count: Number(r.c) }));
+        return rows.map((r) => ({ label: humanizeStatusBucket(r.bucket), count: Number(r.c) }));
       } catch {
         return mockRepositories.reports.projectsByStatus();
       }

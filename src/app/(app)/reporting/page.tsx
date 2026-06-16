@@ -187,7 +187,10 @@ export default async function ReportingPage() {
         <ChartCard title="Proposals by status" subtitle="Proposal lifecycle distribution">
           <StatusBarChart data={proposals} color="#5B8DEF" />
         </ChartCard>
-        <ChartCard title="Delivery projects by status" subtitle="Onboarding & implementation">
+        <ChartCard
+          title="Delivery projects by status"
+          subtitle="Onboarding & implementation — rolled up by status category (ADR-0065 B5)"
+        >
           <StatusBarChart data={projects} color="#7C6BF0" />
         </ChartCard>
       </div>

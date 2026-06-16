@@ -314,6 +314,74 @@ describe("Time Efficiency BI section (#467 — ADR-0082)", () => {
   });
 });
 
+describe("projectsByStatus category rollup (#615 — ADR-0065 B5)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPool.mockReturnValue({ query });
+  });
+
+  it("groups by status_def.category and renders friendly bucket labels", async () => {
+    // The DB returns category buckets (todo|in_progress|done) already ordered by
+    // the canonical lifecycle — the repo only humanizes the labels.
+    query.mockResolvedValue({
+      rows: [
+        { bucket: "todo", c: "2" },
+        { bucket: "in_progress", c: "6" },
+        { bucket: "done", c: "9" },
+      ],
+    });
+    const r = await reports.projectsByStatus();
+    expect(r).toEqual([
+      { label: "To Do", count: 2 },
+      { label: "In Progress", count: 6 },
+      { label: "Done", count: 9 },
+    ]);
+  });
+
+  it("ACCEPTANCE: a custom in_progress status rolls up under In Progress, not its own bucket", async () => {
+    // "Waiting on client" is a custom status_def with category in_progress; the
+    // SQL groups it under the in_progress category, so the repo never sees it as a
+    // distinct bucket — the rollup returns a single In Progress slice.
+    query.mockResolvedValue({
+      rows: [
+        { bucket: "in_progress", c: "7" }, // 5 in_progress + 2 "Waiting on client"
+        { bucket: "done", c: "9" },
+      ],
+    });
+    const r = await reports.projectsByStatus();
+    expect(r).toEqual([
+      { label: "In Progress", count: 7 },
+      { label: "Done", count: 9 },
+    ]);
+    expect(r.some((d) => d.label === "Waiting on client")).toBe(false);
+  });
+
+  it("keys off status_def.category with a legacy status fallback when status_def_id IS NULL", async () => {
+    await reports.projectsByStatus();
+    const sql = query.mock.calls.map((c) => c[0] as string).find((s) => s.includes("FROM project"))!;
+    expect(sql).toContain("LEFT JOIN status_def sd ON sd.id = p.status_def_id");
+    expect(sql).toContain("COALESCE(sd.category, p.status::text)");
+    expect(sql).toMatch(/GROUP BY COALESCE\(sd\.category, p\.status::text\)/);
+  });
+
+  it("humanizes a legacy label (no status_def_id) by de-snaking and title-casing", async () => {
+    query.mockResolvedValue({ rows: [{ bucket: "not_started", c: "3" }] });
+    const r = await reports.projectsByStatus();
+    expect(r).toEqual([{ label: "Not Started", count: 3 }]);
+  });
+
+  it("falls back to the mock (category buckets) when no pool is configured", async () => {
+    getPool.mockReturnValue(null);
+    const r = await reports.projectsByStatus();
+    expect(r).toEqual([
+      { label: "To Do", count: 2 },
+      { label: "In Progress", count: 6 },
+      { label: "Done", count: 9 },
+    ]);
+    expect(query).not.toHaveBeenCalled();
+  });
+});
+
 describe("Dashboard intelligence strip (#292 — ADR-0062)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
