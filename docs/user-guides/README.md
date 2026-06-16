@@ -36,6 +36,9 @@ right (scoped to your Entra permissions).
 - [Portfolio rollup](portfolio-rollup.md): every project on one screen with its
   rolled-up health + next milestone; filter by account/owner/type/health and
   export to CSV (ADR-0069 D5).
+- [Forecast](forecast-view.md): weighted pipeline, category rollup
+  (commit/best-case/pipeline), and attainment vs quota on the Reporting hub;
+  revenue-gated (ADR-0072 / ADR-0030).
 - [Goals & OKRs](goals-okrs.md): measurable objectives above projects with progress
   rolled up (weighted) from their linked projects' completion, or set manually
   (ADR-0069 D3).

@@ -117,6 +117,14 @@ export default async function ReportingPage() {
         title="Reporting"
         description="The business-intelligence hub: sales, marketing & social, service desk, and security in one place."
       >
+        {showRevenue && (
+          <Link
+            href="/reporting/forecast"
+            className="text-sm text-dim transition-colors hover:text-text"
+          >
+            Forecast →
+          </Link>
+        )}
         <Link
           href="/reporting/portfolio"
           className="text-sm text-dim transition-colors hover:text-text"
