@@ -4,7 +4,7 @@ title: collections_activity
 description: App-native dunning/collections workflow overlay keyed to the read-only invoice mirror by QBO invoice id. Archetype D sidecar but app-native — agents READ the mirror, WRITE here, NEVER write QuickBooks.
 resource: ../../../decision-records/ADR-0085-qbo-payment-fact-purchase-simple-start.md
 tags: [silver, finance, accounts-receivable, collections, dunning, overlay, archetype-d, app-native]
-timestamp: 2026-06-16T00:00:00Z
+timestamp: 2026-06-16T12:00:00Z
 ---
 
 # collections_activity
@@ -64,8 +64,11 @@ Unique on `(tenant_id, qbo_invoice_id)` — one current-state row per invoice.
 - `qbo_invoice_id` → [`invoice`](invoice.md) `invoice_mirror.qbo_invoice_id` (the mirrored
   AR fact this overlay annotates; business-key join, not an FK — the mirror is a VIEW).
 - `assignee_user_id` → [`app_user`](app_user.md) (the owning employee).
-- **Consumers:** the collections worklist UI ([#678](https://github.com/markdconnelly/ImperionCRM/issues/678))
-  and the Collections (AR-dunning) ICM agent ([#667](https://github.com/markdconnelly/ImperionCRM/issues/667)).
+- **Consumers:** the collections worklist UI ([#678](https://github.com/markdconnelly/ImperionCRM/issues/678)),
+  the gated dunning **send** leg ([#679](https://github.com/markdconnelly/ImperionCRM/issues/679) —
+  an approved reminder sent via the ADR-0058 approval-gated path appends an `email`-channel
+  reminder + optional escalation bump through the same write accessor), and the Collections
+  (AR-dunning) ICM agent ([#667](https://github.com/markdconnelly/ImperionCRM/issues/667)).
   Read accessor: `crm.getCollectionsActivity(qboInvoiceId)`; write: `crm.upsertCollectionsActivity`.
 
 ## Notes

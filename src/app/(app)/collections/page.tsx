@@ -14,14 +14,29 @@ import {
   WORKLIST_BUCKETS,
   type WorklistFilters,
 } from "@/lib/collections-worklist";
-import { DunningPanel } from "@/components/collections/dunning-panel";
+import { DunningPanel, type SendNotice } from "@/components/collections/dunning-panel";
 
 type SP = {
   account?: string;
   bucket?: string;
   status?: string;
   invoice?: string;
+  // Approve-to-send round-trip disposition (#679).
+  sent?: string;
+  mode?: string;
+  reason?: string;
+  blocked?: string;
+  error?: string;
 };
+
+/** Map the approve-to-send redirect query into the panel's send notice (#679). */
+function sendNotice(sp: SP): SendNotice {
+  if (sp.blocked) return { kind: "blocked" };
+  if (sp.error) return { kind: "error" };
+  if (sp.sent === "email" && sp.mode === "real") return { kind: "real" };
+  if (sp.sent === "email" && sp.mode === "logged") return { kind: "logged", reason: sp.reason ?? "" };
+  return null;
+}
 
 const STATUS_LABEL: Record<DunningStatus, string> = {
   none: "Not worked",
@@ -109,6 +124,17 @@ export default async function CollectionsPage({
 
   // The drilled-into invoice (must still be on the worklist), for the dunning panel.
   const selected = sp.invoice ? worklist.find((r) => r.invoice.qboInvoiceId === sp.invoice) : null;
+
+  // Send recipients (#679): emailable contacts on the selected invoice's account, resolved
+  // by account name off the read-only mirror (the mirror has no contact FK). Only loaded when
+  // an invoice is open and resolved to an account, so the worklist stays a cheap read.
+  const recipientName = selected?.invoice.accountName ?? selected?.invoice.qboCustomerName ?? null;
+  const recipients =
+    selected && recipientName
+      ? (await crm.listContacts()).filter(
+          (c) => c.account === recipientName && c.email != null && c.email !== "",
+        )
+      : [];
 
   // Query-string builder preserving active filters.
   const base: Record<string, string | undefined> = {
@@ -278,6 +304,8 @@ export default async function CollectionsPage({
           canWrite={canWrite}
           balanceLabel={money(selected.invoice.balance)}
           statusLabel={STATUS_LABEL}
+          recipients={recipients}
+          notice={sendNotice(sp)}
         />
       )}
     </div>
