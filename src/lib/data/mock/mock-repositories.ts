@@ -223,6 +223,11 @@ export const mockRepositories: Repositories = {
     async listDeviceInventory() {
       return [];
     },
+    // CMDB CI register (#645) — no silver to project in mock mode, so the register
+    // renders empty rather than crashing (acceptance: mock fallback returns []).
+    async listConfigurationItems() {
+      return [];
+    },
     async listInvoices() {
       return [];
     },

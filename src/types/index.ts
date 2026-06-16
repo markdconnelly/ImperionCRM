@@ -3114,3 +3114,32 @@ export interface QueueSummary {
   /** Open items broken down by normalized channel (only non-zero channels appear). */
   byChannel: Partial<Record<QueueChannel, number>>;
 }
+
+/**
+ * The v1 Configuration Item (CI) types in the CMDB read-model (#645, epic #372,
+ * ADR-0078). Each is projected over an EXISTING silver entity — no new ingest:
+ *  - `account`  → silver `account` (the managed client itself)
+ *  - `user`     → silver `contact` scoped to a client account (a managed-estate
+ *                 end-user identity; Imperion staff/admin = `app_user`, EXCLUDED)
+ *  - `device`   → silver `device`
+ */
+export type CiType = "account" | "user" | "device";
+
+/**
+ * One Configuration Item in the `cmdb_ci` union read-model (#645). A CI is a
+ * read-only projection over silver inventory — never persisted as its own row.
+ * `ciId` is unique only WITHIN a `ciType`, so the stable cross-union key is the
+ * `${ciType}:${ciId}` pair (encoded in the detail route). `accountId` is the
+ * owning managed account (always set — staff/account-less rows are excluded);
+ * `accountName` is the resolved display name for the register. `attributes` is a
+ * small, type-specific set of key display attributes (no PII beyond a name/email
+ * already shown elsewhere in the app).
+ */
+export interface ConfigurationItem {
+  ciType: CiType;
+  ciId: string;
+  accountId: string;
+  accountName: string | null;
+  displayName: string;
+  attributes: { label: string; value: string }[];
+}

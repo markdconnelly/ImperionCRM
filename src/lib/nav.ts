@@ -69,6 +69,10 @@ export const navSecondary: NavItem[] = [
   { key: "monthly-close", label: "Monthly Close", icon: "CalendarRange", href: "/monthly-close" },
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
+  // The CMDB Configuration Item register (ADR-0078, #645) — a read-only union over
+  // silver inventory (client accounts, end-user identities, devices) as one CI surface.
+  // Admin-only (`canSeeCmdb`, nav-guarded + route-guarded, ADR-0030).
+  { key: "cmdb", label: "CMDB", icon: "Network", href: "/cmdb" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
   // The omnichannel inbound queue (ADR-0074 §6, #408) — one prioritized triage queue
   // unifying chat sessions + tickets across channels; coordinates ICM routing (#280).

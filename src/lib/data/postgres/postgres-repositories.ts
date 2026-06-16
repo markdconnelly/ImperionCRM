@@ -275,6 +275,7 @@ import type {
   TicketSlaState,
   ContractRow,
   DeviceInventoryRow,
+  ConfigurationItem,
   InvoiceMirrorRow,
   InvoiceAgingBucket,
   CollectionsActivity,
@@ -1241,6 +1242,92 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listDeviceInventory();
+      }
+    },
+
+    async listConfigurationItems(): Promise<ConfigurationItem[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listConfigurationItems();
+      try {
+        // The cmdb_ci union read-model (#645, ADR-0078): one row per CI across the
+        // v1 types, projected over EXISTING silver — NO new ingest/schema. Each arm
+        // tags `ci_type` + owning `account_id` and carries up to four key display
+        // attributes (label/value pairs) packed as a jsonb array.
+        //
+        // STAFF EXCLUSION: the `user` CI is silver `contact` (client end-user
+        // identities) — Imperion staff/admin are `app_user`, a different table never
+        // joined here. Every arm also requires a non-null `account_id`, so an
+        // account-less/internal row can never enter the set.
+        const { rows } = await pool.query<{
+          ci_type: ConfigurationItem["ciType"];
+          ci_id: string;
+          account_id: string;
+          account_name: string | null;
+          display_name: string;
+          attributes: { label: string; value: string }[] | null;
+        }>(
+          `SELECT ci_type, ci_id, account_id, account_name, display_name, attributes
+             FROM (
+               SELECT 'account'::text AS ci_type,
+                      a.id::text       AS ci_id,
+                      a.id::text       AS account_id,
+                      a.name           AS account_name,
+                      a.name           AS display_name,
+                      jsonb_build_array(
+                        jsonb_build_object('label','Lifecycle','value',replace(a.lifecycle_stage::text,'_',' ')),
+                        jsonb_build_object('label','Relationship','value',coalesce(a.relationship,'—')),
+                        jsonb_build_object('label','Active','value',CASE WHEN a.is_active THEN 'Yes' ELSE 'No' END)
+                      ) AS attributes
+                 FROM account a
+
+               UNION ALL
+
+               SELECT 'user'::text,
+                      c.id::text,
+                      c.account_id::text,
+                      a.name,
+                      c.full_name,
+                      jsonb_build_array(
+                        jsonb_build_object('label','Email','value',coalesce(c.email,'—')),
+                        jsonb_build_object('label','Phone','value',coalesce(c.phone,'—'))
+                      )
+                 FROM contact c
+                 JOIN account a ON a.id = c.account_id
+                WHERE c.account_id IS NOT NULL
+
+               UNION ALL
+
+               SELECT 'device'::text,
+                      d.id::text,
+                      d.account_id::text,
+                      a.name,
+                      coalesce(d.name, d.serial_number, 'Unnamed device'),
+                      jsonb_build_array(
+                        jsonb_build_object('label','Type','value',coalesce(d.device_type,'—')),
+                        jsonb_build_object('label','Make / model','value',trim(both ' ' from concat_ws(' ', d.manufacturer, d.model))),
+                        jsonb_build_object('label','Serial','value',coalesce(d.serial_number,'—')),
+                        jsonb_build_object('label','OS','value',coalesce(d.os,'—'))
+                      )
+                 FROM device d
+                 JOIN account a ON a.id = d.account_id
+                WHERE d.account_id IS NOT NULL
+             ) ci
+            ORDER BY account_name NULLS LAST, ci_type, display_name`,
+        );
+        return rows.map((r) => ({
+          ciType: r.ci_type,
+          ciId: r.ci_id,
+          accountId: r.account_id,
+          accountName: r.account_name,
+          displayName: r.display_name,
+          attributes: (r.attributes ?? []).map((kv) => ({
+            label: kv.label,
+            // Empty make/model concat collapses to '' — normalise to the dash.
+            value: kv.value && kv.value.length > 0 ? kv.value : "—",
+          })),
+        }));
+      } catch {
+        return mockRepositories.crm.listConfigurationItems();
       }
     },
 
