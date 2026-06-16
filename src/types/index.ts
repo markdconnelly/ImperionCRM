@@ -54,6 +54,15 @@ export interface OpportunityRow {
   mrr: string;
 }
 
+/**
+ * A single opportunity resolved for the deal/opportunity 360 (ADR-0068, #681).
+ * Extends the board row with `accountId` so the 360 can key the account-scoped
+ * conversation read (`listConversationsForAccount`) and filter it to this deal.
+ */
+export interface OpportunityDetailRow extends OpportunityRow {
+  accountId: string;
+}
+
 /** The owner's explicit forecast call, independent of stage (ADR-0072 decision 2). */
 export type ForecastCategory = "commit" | "best_case" | "pipeline" | "omitted";
 

@@ -91,6 +91,7 @@ import type {
   TimeEfficiencyReport,
   SecurityPosture,
   OpportunityRow,
+  OpportunityDetailRow,
   OpportunityForecastRow,
   QuotaRow,
   ForecastSnapshotRow,
@@ -780,6 +781,12 @@ export interface CrmRepository {
 
   // Opportunities (Pipeline board)
   listOpportunities(): Promise<OpportunityRow[]>;
+  /**
+   * One opportunity resolved for the deal/opportunity 360 (ADR-0068, #681) —
+   * the board row plus `accountId` for keying the conversation read. Null when
+   * the id is absent.
+   */
+  getOpportunity(id: string): Promise<OpportunityDetailRow | null>;
   /** Move an opportunity to a different sales stage (pipeline board). */
   setOpportunityStage(id: string, stage: string): Promise<void>;
 

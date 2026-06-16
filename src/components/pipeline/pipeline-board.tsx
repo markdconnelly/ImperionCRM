@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { OpportunityRow } from "@/types";
 
 const COLUMNS: { key: string; label: string }[] = [
@@ -42,7 +43,14 @@ export function PipelineBoard({
             <div className="flex flex-col gap-2 p-2">
               {items.map((o) => (
                 <div key={o.id} className="rounded-lg border border-border bg-panel-2 px-3 py-2">
-                  <div className="truncate text-sm font-medium">{o.name}</div>
+                  {/* Drill into the deal/opportunity 360 (ADR-0068, #681). */}
+                  <Link
+                    href={`/pipeline/${o.id}`}
+                    title="Open deal 360"
+                    className="block truncate text-sm font-medium hover:text-accent"
+                  >
+                    {o.name}
+                  </Link>
                   <div className="mt-0.5 flex items-center justify-between text-xs text-dim">
                     <span className="truncate">{o.account}</span>
                     <span className="ml-2 shrink-0 text-text">{o.mrr}</span>

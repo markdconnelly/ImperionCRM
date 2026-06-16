@@ -197,6 +197,7 @@ import type {
   OnboardingStep,
   SecurityPosture,
   OpportunityRow,
+  OpportunityDetailRow,
   OpportunityForecastRow,
   QuotaRow,
   ForecastSnapshotRow,
@@ -1582,6 +1583,43 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listOpportunities();
+      }
+    },
+
+    // Deal/opportunity 360 (ADR-0068, #681) — one opportunity for the detail
+    // route's header, with account_id so the page can key the account-scoped
+    // conversation read and filter it to this deal.
+    async getOpportunity(id: string): Promise<OpportunityDetailRow | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getOpportunity(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          account: string;
+          account_id: string;
+          stage: string;
+          mrr: string;
+        }>(
+          `SELECT o.id, o.name, a.name AS account, o.account_id,
+                  o.sales_stage AS stage, coalesce(o.amount_mrr, 0) AS mrr
+             FROM opportunity o
+             JOIN account a ON a.id = o.account_id
+            WHERE o.id = $1`,
+          [id],
+        );
+        const row = rows[0];
+        if (!row) return null;
+        return {
+          id: row.id,
+          name: row.name,
+          account: row.account,
+          accountId: row.account_id,
+          stage: row.stage,
+          mrr: Number(row.mrr) > 0 ? `${fmtUsd(Number(row.mrr))}/mo` : "—",
+        };
+      } catch {
+        return mockRepositories.crm.getOpportunity(id);
       }
     },
 

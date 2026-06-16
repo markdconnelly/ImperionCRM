@@ -143,3 +143,55 @@ describe("conversational intelligence reads (ADR-0068, #375)", () => {
     expect(query).toHaveBeenCalledOnce();
   });
 });
+
+describe("deal/opportunity 360 read (ADR-0068, #681)", () => {
+  it("getOpportunity joins the account and exposes accountId for the conversation key", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "op1",
+          name: "Northwind — Managed Services",
+          account: "Northwind Logistics",
+          account_id: "acc1",
+          stage: "proposal",
+          mrr: "8200",
+        },
+      ],
+    });
+    const out = await crm.getOpportunity("op1");
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/FROM opportunity o/);
+    expect(sql).toMatch(/JOIN account a ON a.id = o.account_id/);
+    expect(sql).toMatch(/WHERE o.id = \$1/);
+    expect(params).toEqual(["op1"]);
+    expect(out).toEqual({
+      id: "op1",
+      name: "Northwind — Managed Services",
+      account: "Northwind Logistics",
+      accountId: "acc1",
+      stage: "proposal",
+      mrr: "$8,200/mo",
+    });
+  });
+
+  it("getOpportunity renders — for a zero/absent MRR", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "op2",
+          name: "Pilot — Discovery",
+          account: "Acme",
+          account_id: "acc2",
+          stage: "lead",
+          mrr: "0",
+        },
+      ],
+    });
+    expect((await crm.getOpportunity("op2"))?.mrr).toBe("—");
+  });
+
+  it("getOpportunity returns null when the id is absent", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(await crm.getOpportunity("nope")).toBeNull();
+  });
+});
