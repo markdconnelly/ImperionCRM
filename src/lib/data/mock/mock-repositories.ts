@@ -208,6 +208,10 @@ export const mockRepositories: Repositories = {
     async getCollectionsActivity() {
       return null;
     },
+    // Collections worklist batched read (#678) — no overlays in mock mode.
+    async getCollectionsActivityForMany() {
+      return {};
+    },
     async upsertCollectionsActivity() {
       throw new Error(NO_DB);
     },
