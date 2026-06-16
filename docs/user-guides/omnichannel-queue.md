@@ -31,9 +31,12 @@ flowchart LR
   breakdown.
 - **The queue** — one row per inbound item, ordered **open before closed, then
   by priority (urgent → low), then longest-waiting first**:
-  - **Priority** — for a ticket, derived from its SLA breach bucket (ADR-0074
-    §2: breached → urgent, at-risk → high); for chat, a live human-handled
-    session is urgent and a bot session is high.
+  - **Priority** — for a ticket, **SLA-driven**: derived from its SLA breach
+    bucket (ADR-0074 §2: breached → urgent, at-risk → high, otherwise normal)
+    via the `ticket_sla_breach` projection (migration 0118), read by the
+    `listTicketSlaBreaches()` accessor and joined to the queue by ticket id
+    (#671). A ticket with no projection row falls back to *normal*. For chat, a
+    live human-handled session is urgent and a bot session is high.
   - **Channel · Subject · Account · Contact · Status · Received**.
   - **Routing** — the ICM lane the item routes to, or **unrouted** until that
     seam is wired (see below).
@@ -64,6 +67,7 @@ source surfaces, each behind its own capability (e.g. `tickets:write`).
 - Surface the ICM #280 routing lane / assignee once the backend exposes it,
   and (ADR-0074 future) graduate routing from a view into an active assignment
   engine.
-- Fold SLA-breach priority into ticket ordering once a front-end read accessor
-  for the `ticket_sla_breach` view (migration 0118) exists — today tickets
-  without that projection fall back to *normal* priority.
+- Sharpen SLA priority once the pipeline promotes the real Autotask SLA
+  timestamps to silver `ticket` (today the `ticket_sla_breach` view derives
+  targets from `opened_at` + a priority-keyed contract-term policy, ADR-0044
+  fallback; see migration 0118's follow-up note).

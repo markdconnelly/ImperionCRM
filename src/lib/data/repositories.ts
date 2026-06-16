@@ -129,6 +129,7 @@ import type {
   MfaRegistrationCounts,
   SharePointSiteRow,
   TicketRow,
+  TicketSlaBreachRow,
   ContractRow,
   DeviceInventoryRow,
   UnmappedTenant,
@@ -1435,6 +1436,12 @@ export interface EngagementsRepository {
   getTicketByRef(externalRef: string): Promise<TicketRow | null>;
   /** Distinct status/priority values present in the data, for the filter selects. */
   ticketFilterOptions(): Promise<TicketFilterOptions>;
+  /**
+   * SLA-breach projection rows over silver `ticket` (the `ticket_sla_breach` view,
+   * migration 0118, ADR-0074 §2). Read-only; drives omnichannel-queue priority (§6,
+   * #671) and the SLA worklist. Mock fallback = `[]`.
+   */
+  listTicketSlaBreaches(): Promise<TicketSlaBreachRow[]>;
 
   // Saved list views (ADR-0046) — personal + company-shared filter sets.
   listSavedViews(entityType: string, viewerEmail: string | null): Promise<SavedViewRow[]>;

@@ -171,6 +171,48 @@ describe("buildQueue", () => {
   });
 });
 
+describe("SLA accessor → map → buildQueue priority (#671)", () => {
+  // Mirrors the /service-desk page wiring: the repository accessor
+  // `engagements.listTicketSlaBreaches()` returns TicketSlaBreachRow[], the page keys
+  // them into a Map<ticketId, row> and hands it to buildQueue. This proves the
+  // breached → urgent / at_risk → high ordering lights up end-to-end from that shape.
+  function mapByTicketId(rows: TicketSlaBreachRow[]) {
+    return new Map(rows.map((r) => [r.ticketId, r] as const));
+  }
+
+  it("sorts a breached ticket to urgent at the top of the queue", () => {
+    const breaches = [
+      sla({ ticketId: "ok-1", slaState: "ok" }),
+      sla({ ticketId: "breached-1", slaState: "breached", resolutionBreached: true }),
+      sla({ ticketId: "risk-1", slaState: "at_risk" }),
+    ];
+    const queue = buildQueue({
+      chatSessions: [],
+      tickets: [
+        ticket({ id: "ok-1", opened: "2026-06-10T00:00:00Z" }),
+        ticket({ id: "breached-1", opened: "2026-06-10T00:00:00Z" }),
+        ticket({ id: "risk-1", opened: "2026-06-10T00:00:00Z" }),
+      ],
+      slaByTicketId: mapByTicketId(breaches),
+    });
+
+    expect(queue.map((i) => i.sourceId)).toEqual(["breached-1", "risk-1", "ok-1"]);
+    expect(queue[0].priority).toBe("urgent"); // breached → urgent
+    expect(queue[1].priority).toBe("high"); // at_risk → high
+    expect(queue[2].priority).toBe("normal"); // ok → normal
+  });
+
+  it("an empty accessor result (mock fallback) leaves tickets at normal priority", () => {
+    const queue = buildQueue({
+      chatSessions: [],
+      tickets: [ticket({ id: "t1", status: "Open" })],
+      slaByTicketId: mapByTicketId([]), // listTicketSlaBreaches() === [] with no DB
+    });
+    expect(queue[0].priority).toBe("normal");
+    expect(queue[0].isOpen).toBe(true); // status-inferred open
+  });
+});
+
 describe("summarizeQueue", () => {
   it("zeroes cleanly for an empty queue (no NaN)", () => {
     expect(summarizeQueue([])).toEqual({ total: 0, open: 0, urgent: 0, byChannel: {} });

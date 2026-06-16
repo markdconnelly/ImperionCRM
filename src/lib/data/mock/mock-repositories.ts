@@ -1088,6 +1088,9 @@ export const mockRepositories: Repositories = {
     async ticketFilterOptions() {
       return { statuses: [], priorities: [], queues: [] };
     },
+    async listTicketSlaBreaches() {
+      return [];
+    },
     async listSavedViews() {
       return [];
     },
