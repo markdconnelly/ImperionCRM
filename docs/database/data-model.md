@@ -788,6 +788,37 @@ erDiagram
 > record points back to the engagement that produced it — the engagement's data is never
 > copied forward.
 
+### SLA breach read-model — `ticket_sla_breach` view (ADR-0074 §2, migration 0118)
+
+SLA breach is a **read-model PROJECTION over silver `ticket`, not an authoritative
+`sla_state` store** (ADR-0074 §2 — Autotask is the ticket system of record; Imperion keeps
+no forked ticket state). It is a plain `CREATE OR REPLACE VIEW ticket_sla_breach`, so every
+read recomputes against the latest pulled silver `ticket` — the pipeline's normal ticket
+pull (bronze `autotask_tickets`, mig 0038 → `mergeTicketSources`) **is** the refresh; no
+separate projection job exists. A breach annotation worth persisting is written to the
+Autotask ticket via the API (ADR-0074 §2) and round-trips back through the pull — never
+stored in this view.
+
+**Columns it derives onto each ticket row:** `sla_applies` / `sla_id` (does a contractual
+SLA apply, via the account's `contract.sla_id`, mig 0050), `first_response_due_at` /
+`resolution_due_at`, `first_response_breached` / `resolution_breached`,
+`resolution_time_remaining` (interval; negative = overrun), and an `sla_state` worklist
+bucket (`breached` > `at_risk` (open, <25% of budget left) > `ok` > `unknown`).
+
+**SLA targets — the honest part (ADR-0074 §2, ADR-0044):** the ADR allows targets from
+"Autotask SLA fields pulled into silver, OR computed against contract terms where absent."
+Today the typed Autotask SLA timestamps (`dueDateTime` / `firstResponseDateTime` /
+`resolvedDateTime`) live **only in bronze `autotask_tickets`** (mig 0038, all-text envelope)
+and were **not** promoted to typed columns on silver `ticket` (mig 0050 added
+`last_activity_at` / `description` / `resolution` / `sub_issue_type` / `ticket_type`, no SLA
+columns). So the view takes the **contract-term fallback branch**: it derives due timestamps
+from `opened_at` + a priority-keyed default policy (critical/high/medium/low). **Follow-up
+(pipeline-owned, file as a sibling-repo issue per CLAUDE.md §1):** promote the bronze
+SLA timestamps to silver `ticket`, then `COALESCE(real, derived)` in this view. The
+projection is correct now; it sharpens when the real targets land. Read via
+`src/lib/sla-breach.ts` (typed `TicketSlaBreachRow`, worklist sort + breach summary).
+PII-free: the view selects no ticket title/description/resolution text.
+
 ## Diagram 5 — As-built: communications, connections, enrichment, demand-gen audiences & automation (ADR-0024–0027)
 
 The multi-channel timeline (every comm is one `interaction`), per-user + company

@@ -4,7 +4,7 @@ title: ticket
 description: Support/service ticket — Autotask is the external system of record, fetched to silver; provenance to the engagement that opened it.
 resource: ../../../decision-records/ADR-0044-silver-contracts-tickets.md
 tags: [silver, service, ticket, autotask]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # ticket
@@ -43,6 +43,19 @@ originate from the `task_ticket_fire` / `defender_incident_ticket_link` write-ba
 
 - `account_id` → `account`; `contact_id` → `contact`.
 - Provenance: `assessment`, `strategic_business_review` (via `sbr_ticket`).
+
+## Derived read-models
+
+- **`ticket_sla_breach`** (view, migration 0118, ADR-0074 §2 / ADR-0044, #404) —
+  a read-model PROJECTION over this table that adds SLA breach state (first-response /
+  resolution due timestamps, breached booleans, time-remaining, and an `sla_state` worklist
+  bucket `breached|at_risk|ok|unknown`). **Not an authoritative `sla_state` store** — Autotask
+  is the ticket SoR; the view recomputes on every read against the latest pulled silver, so
+  the pipeline's normal ticket pull is its refresh. SLA targets are derived from `opened_at` +
+  a priority-keyed contract-term policy (joined to `contract.sla_id` for SLA applicability),
+  because the real Autotask SLA timestamps live only in bronze `autotask_tickets` (mig 0038)
+  and are not yet promoted to typed columns here — a flagged follow-up (promote them, then
+  `COALESCE(real, derived)`).
 
 ## Notes
 
