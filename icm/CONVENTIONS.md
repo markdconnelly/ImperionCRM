@@ -55,7 +55,11 @@ The CMA agent-object shape (ADR-0088). `system` is **composed** from prose files
 `model`/`tools`/`skills`/`mcp_servers`/`okf_rooms`/`autonomy_rung` are structured
 fields where least-privilege is enforced. Required keys and the
 `workflow ⊆ domain ⊆ Constitution` invariant are defined in
-[CONSTITUTION.md §3](CONSTITUTION.md).
+[CONSTITUTION.md §3](CONSTITUTION.md). The machine contract is
+[`agent.schema.json`](agent.schema.json) (validated by
+[`scripts/agent-yaml-gate.mjs`](../scripts/agent-yaml-gate.mjs), CI
+`icm-conformance`); the field-by-field walkthrough is
+[`docs/agents/agent-yaml-schema.md`](../docs/agents/agent-yaml-schema.md).
 
 ```yaml
 name: expense-close

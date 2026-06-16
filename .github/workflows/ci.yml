@@ -66,6 +66,21 @@ jobs:
           done
           exit $missing
 
+  icm-conformance:
+    # agent.yaml conformance gate (ADR-0088, issue #699 / epic #695). Validates
+    # every workspace manifest under icm/ against icm/agent.schema.json (shape)
+    # and the workflow ⊆ domain ⊆ Constitution least-privilege invariant. The
+    # same pure-function checks the backend loader (#162) runs. No-ops cleanly
+    # while the domain tier is still unpopulated. Runs on PRs and push to main.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Validate workspace agent.yaml manifests
+        run: node scripts/agent-yaml-gate.mjs
+
   semantic-layer:
     # OKF semantic-layer docs-gate (ADR-0086, issue #535). A PR whose migrations
     # change a silver table that already has a concept file under

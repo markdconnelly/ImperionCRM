@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://imperioncrm/icm/agent.schema.json",
+  "title": "ICM agent.yaml manifest",
+  "description": "The per-workspace declarative manifest (ADR-0088). Maps 1:1 to the CMA agent object: `system` is COMPOSED by the backend loader from `system_compose`; the remaining keys are the structured fields where least-privilege is enforced. Structure only — the `tools`/`okf_rooms` subset invariant (workflow ⊆ domain ⊆ Constitution) is cross-file and is checked by scripts/agent-yaml-gate.mjs, not by this schema. See docs/agents/agent-yaml-schema.md and CONSTITUTION.md §3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "model", "system_compose", "tools", "okf_rooms", "autonomy_rung"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Workspace name; unique within the domain. Kebab-case business name (CONVENTIONS Naming).",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "description": "A settled-stack Claude model id (ADR-0043). Not provider-agnostic.",
+      "enum": ["claude-opus-4-8", "claude-sonnet-4-5", "claude-haiku-4-5"]
+    },
+    "system_compose": {
+      "type": "array",
+      "description": "Ordered list of prose files the loader concatenates into the cached `system` prefix. MUST begin with the Constitution, then the domain room.md, then end at the workflow prose. Stable -> caches; never interpolate per-run volatile data here.",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "pattern": "\\.md$"
+      },
+      "allOf": [
+        {
+          "description": "First entry resolves to CONSTITUTION.md.",
+          "contains": { "type": "string", "pattern": "CONSTITUTION\\.md$" }
+        },
+        {
+          "description": "Last entry is the workflow prose (./prose.md).",
+          "contains": { "type": "string", "pattern": "(^|/)prose\\.md$" }
+        }
+      ]
+    },
+    "tools": {
+      "type": "array",
+      "description": "Least-privilege tool allow-list. MUST be a subset of the domain's tools (invariant enforced by the gate). Allow-list, not implicit.",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "okf_rooms": {
+      "type": "array",
+      "description": "The data scope: OKF rooms (ADR-0086) this worker may read. MUST be a subset of the domain's rooms; every entry resolves to a coverage-matrix row whose `domain` matches this workspace's domain (or `kernel`).",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "skills": {
+      "type": "array",
+      "description": "Runtime skills by path, cross/domain/workflow tiers only (CONVENTIONS skills). Cite as icm/skills/<slug>, domains/<d>/skills/<slug>, or ./skills/<slug>.",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "default": []
+    },
+    "autonomy_rung": {
+      "type": "string",
+      "description": "L0-L3: what `auto` mode may self-approve. Every workflow still starts `draft`; the flip to auto is admin-only, read from autopilot_policies (ADR-0061/0087).",
+      "enum": ["L0", "L1", "L2", "L3"]
+    },
+    "auto_may_self_approve": {
+      "type": "string",
+      "description": "Prose statement of what `auto` may self-approve at this rung. Anything unstated parks for a human.",
+      "minLength": 1
+    },
+    "mcp_servers": {
+      "type": "array",
+      "description": "Optional MCP servers. Credentials via vaults, NEVER inline (ADR-0060). No secret values in this file.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "minLength": 1 },
+          "vault_secret_ref": {
+            "type": "string",
+            "description": "Key Vault reference (name/id) for the server's OAuth credential. A reference, never a value.",
+            "minLength": 1
+          }
+        }
+      },
+      "default": []
+    }
+  }
+}
