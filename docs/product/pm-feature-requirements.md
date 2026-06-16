@@ -209,9 +209,15 @@ via `customFields.listValuesFor(parentType, parentId, projectTypeId)`, written v
 `saveCustomFieldValuesAction` submit behind `delivery:write`, one input per `field_type`,
 with **B4-F3 required enforcement** (fail-closed on a blank required field). Honest
 degradation: an object with no applicable field renders nothing; an archived `user`/select
-target falls back to its raw value. **Deferred (follow-up):** the list/board custom-field
-column + saved-views filter and the reporting filter over the GIN index ("Risk level = High
-on Implementation projects") — the AC's filterable-in-reporting leg.
+target falls back to its raw value. B4-F2 **display + filter/sort shipped #714**: the tasks
+list renders a column per defined task field (batched `customFields.listValuesForMany`, one
+read — never N+1; unanswered → dash) with a per-select-field filter strip whose choice rides
+in the URL as `?cf=key:value` (so a saved view, #344, captures it for free), filtered over
+the GIN index via `customFields.filterByCustomField`. The **AC's filterable-in-reporting
+leg** is the `/reporting/custom-fields` report — pick a project select field + value and it
+lists matching projects over the GIN index, honouring project-type scope ("Risk level = High
+on Implementation projects"). Both new accessors were added APPEND-ONLY to
+`CustomFieldsRepository` (interface/postgres/mock) for merge-safety. B4 is now fully shipped.
 
 **Data model.** `custom_field_def{ id, scope, key, label, type, config jsonb,
 project_type_id? }` + `custom_field_value{ field_id, parent_type, parent_id, value

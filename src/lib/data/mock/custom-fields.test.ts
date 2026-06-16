@@ -116,3 +116,63 @@ describe("mock custom fields — values", () => {
     expect(vals.find((v) => v.fieldId === d.id)?.value).toBeNull();
   });
 });
+
+describe("mock custom fields — batched column read + reporting filter (#714)", () => {
+  it("listValuesForMany returns only answered values, keyed by parent (no N+1)", async () => {
+    const d = await cf.createFieldDef({
+      scope: "task",
+      projectTypeId: null,
+      key: "many_note",
+      label: "Note",
+      fieldType: "text",
+      options: [],
+      required: false,
+      ordinal: 0,
+    });
+    await cf.setValue({ fieldId: d.id, parentType: "task", parentId: "t-a", value: "alpha" });
+    // t-b has no value → it must NOT appear in the map (honest degradation).
+    const map = await cf.listValuesForMany("task", ["t-a", "t-b"]);
+    expect(map["t-a"]?.[0]).toMatchObject({ key: "many_note", value: "alpha" });
+    expect(map["t-b"]).toBeUndefined();
+  });
+
+  it("listValuesForMany narrows to the requested field keys", async () => {
+    const a = await cf.createFieldDef({
+      scope: "task", projectTypeId: null, key: "k_keep", label: "Keep",
+      fieldType: "text", options: [], required: false, ordinal: 0,
+    });
+    const b = await cf.createFieldDef({
+      scope: "task", projectTypeId: null, key: "k_drop", label: "Drop",
+      fieldType: "text", options: [], required: false, ordinal: 1,
+    });
+    await cf.setValue({ fieldId: a.id, parentType: "task", parentId: "t-k", value: "yes" });
+    await cf.setValue({ fieldId: b.id, parentType: "task", parentId: "t-k", value: "no" });
+    const map = await cf.listValuesForMany("task", ["t-k"], ["k_keep"]);
+    expect(map["t-k"].map((e) => e.key)).toEqual(["k_keep"]);
+  });
+
+  it("filterByCustomField matches an eq scalar within the (scope, type) field group (B4 AC)", async () => {
+    const risk = await cf.createFieldDef({
+      scope: "project", projectTypeId: "pt-impl-714", key: "risk_714", label: "Risk",
+      fieldType: "single_select", options: ["Low", "High"], required: false, ordinal: 0,
+    });
+    await cf.setValue({ fieldId: risk.id, parentType: "project", parentId: "p-hi", value: "High" });
+    await cf.setValue({ fieldId: risk.id, parentType: "project", parentId: "p-lo", value: "Low" });
+    const hits = await cf.filterByCustomField({
+      scope: "project", projectTypeId: "pt-impl-714", fieldKey: "risk_714", op: "eq", value: "High",
+    });
+    expect(hits).toEqual(["p-hi"]);
+  });
+
+  it("filterByCustomField with contains matches a multi-select member", async () => {
+    const tags = await cf.createFieldDef({
+      scope: "project", projectTypeId: null, key: "ms_714", label: "Areas",
+      fieldType: "multi_select", options: ["net", "sec"], required: false, ordinal: 0,
+    });
+    await cf.setValue({ fieldId: tags.id, parentType: "project", parentId: "p-ms", value: ["net", "sec"] });
+    const hits = await cf.filterByCustomField({
+      scope: "project", projectTypeId: null, fieldKey: "ms_714", op: "contains", value: "sec",
+    });
+    expect(hits).toEqual(["p-ms"]);
+  });
+});

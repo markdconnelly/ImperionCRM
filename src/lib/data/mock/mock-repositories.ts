@@ -40,6 +40,8 @@ import type {
   TagApplicationInput,
   CustomFieldDefInput,
   CustomFieldValueInput,
+  CustomFieldValueEntry,
+  CustomFieldFilterInput,
 } from "@/lib/data/repositories";
 import type {
   Health,
@@ -2108,6 +2110,61 @@ export const mockRepositories: Repositories = {
       } else {
         mockFieldValues[i].value = input.value;
       }
+    },
+    async listValuesForMany(
+      parentType: CustomFieldParentType,
+      parentIds: string[],
+      fieldKeys?: string[],
+    ): Promise<Record<string, CustomFieldValueEntry[]>> {
+      if (parentIds.length === 0) return {};
+      const ids = new Set(parentIds);
+      const keys = fieldKeys && fieldKeys.length > 0 ? new Set(fieldKeys) : null;
+      const out: Record<string, CustomFieldValueEntry[]> = {};
+      for (const v of mockFieldValues) {
+        if (v.parentType !== parentType || !ids.has(v.parentId)) continue;
+        if (v.value === null) continue; // only answered values appear in a column
+        const def = mockFieldDefs.find((d) => d.id === v.fieldId);
+        if (!def) continue;
+        if (keys && !keys.has(def.key)) continue;
+        (out[v.parentId] ??= []).push({
+          fieldId: def.id,
+          key: def.key,
+          label: def.label,
+          fieldType: def.fieldType,
+          value: v.value as CustomFieldValueEntry["value"],
+        });
+      }
+      // Stable ordinal ordering, mirroring the postgres ORDER BY.
+      for (const id of Object.keys(out)) {
+        out[id].sort((a, b) => {
+          const da = mockFieldDefs.find((d) => d.id === a.fieldId);
+          const db = mockFieldDefs.find((d) => d.id === b.fieldId);
+          return (da?.ordinal ?? 0) - (db?.ordinal ?? 0) || a.label.localeCompare(b.label);
+        });
+      }
+      return out;
+    },
+    async filterByCustomField(input: CustomFieldFilterInput): Promise<string[]> {
+      // Resolve the (scope, projectTypeId, key) field group, then match its values.
+      const defs = mockFieldDefs.filter(
+        (d) =>
+          d.scope === input.scope &&
+          d.key === input.fieldKey &&
+          (input.projectTypeId === null
+            ? d.projectTypeId === null
+            : d.projectTypeId === input.projectTypeId),
+      );
+      const defIds = new Set(defs.map((d) => d.id));
+      const out: string[] = [];
+      for (const v of mockFieldValues) {
+        if (v.parentType !== input.scope || !defIds.has(v.fieldId)) continue;
+        const matches =
+          input.op === "contains"
+            ? Array.isArray(v.value) && v.value.includes(input.value as string)
+            : v.value === input.value;
+        if (matches) out.push(v.parentId);
+      }
+      return out;
     },
   },
 };

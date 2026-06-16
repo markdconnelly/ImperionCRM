@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { TaskTagEditor } from "@/components/tags/task-tag-editor";
-import type { AppliedTag, Tag, TaskRow } from "@/types";
+import { formatCustomFieldValue } from "@/lib/custom-fields";
+import type { AppliedTag, CustomFieldDef, Tag, TaskRow } from "@/types";
+import type { CustomFieldValueEntry } from "@/lib/data/repositories";
 
 const statusTone: Record<string, string> = {
   open: "text-amber",
@@ -24,6 +26,8 @@ export function TasksTable({
   applyTagAction,
   applyExistingTagAction,
   removeTagAction,
+  customFieldsByTask = {},
+  customFieldDefs = [],
 }: {
   tasks: TaskRow[];
   deleteAction: (formData: FormData) => void | Promise<void>;
@@ -34,6 +38,10 @@ export function TasksTable({
   applyTagAction?: (formData: FormData) => void | Promise<void>;
   applyExistingTagAction?: (formData: FormData) => void | Promise<void>;
   removeTagAction?: (formData: FormData) => void | Promise<void>;
+  /** parentId → its answered custom-field values, batched (ADR-0065 B4-F2, #714). */
+  customFieldsByTask?: Record<string, CustomFieldValueEntry[]>;
+  /** The task-scoped field definitions, in display order — one column each. */
+  customFieldDefs?: CustomFieldDef[];
 }) {
   const tagsEnabled = Boolean(applyTagAction && applyExistingTagAction && removeTagAction);
   return (
@@ -48,6 +56,11 @@ export function TasksTable({
               <th className="px-4 py-2 font-medium">Account</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Due</th>
+              {customFieldDefs.map((d) => (
+                <th key={d.id} className="px-4 py-2 font-medium">
+                  {d.label}
+                </th>
+              ))}
               <th className="px-4 py-2 font-medium" />
             </tr>
           </thead>
@@ -94,6 +107,16 @@ export function TasksTable({
                   {t.status.replace(/_/g, " ")}
                 </td>
                 <td className="px-4 py-3 text-dim">{t.due ?? "—"}</td>
+                {customFieldDefs.map((d) => {
+                  // The batched read returns only answered values; an unanswered
+                  // field degrades to a dash (#714 honest degradation, never faked).
+                  const entry = (customFieldsByTask[t.id] ?? []).find((e) => e.key === d.key);
+                  return (
+                    <td key={d.id} className="px-4 py-3 text-dim">
+                      {entry ? formatCustomFieldValue(entry.value, entry.fieldType) : "—"}
+                    </td>
+                  );
+                })}
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3">
                     <Link
@@ -114,7 +137,10 @@ export function TasksTable({
             ))}
             {tasks.length === 0 && (
               <tr>
-                <td colSpan={tagsEnabled ? 7 : 6} className="px-4 py-8 text-center text-dim">
+                <td
+                  colSpan={(tagsEnabled ? 7 : 6) + customFieldDefs.length}
+                  className="px-4 py-8 text-center text-dim"
+                >
                   No tasks yet. Create one to get started.
                 </td>
               </tr>

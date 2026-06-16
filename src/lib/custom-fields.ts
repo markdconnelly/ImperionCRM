@@ -95,3 +95,39 @@ export function parseCustomFieldFormValue(
 export function customFieldInputName(fieldId: string): string {
   return `cf_${fieldId}`;
 }
+
+/**
+ * A custom-field filter encoded for the URL (ADR-0065 B4-F2, #714): `<key>:<value>`.
+ * The list/board `?cf=` param and the saved-views snapshot ride on this — saved
+ * views capture the whole query string (#344), so encoding the filter in the URL is
+ * what makes a custom-field filter saveable, with no new storage. `key` is the
+ * field's stable machine key (no colon allowed in a key — the migration uses
+ * snake_case handles); everything after the FIRST colon is the value, so values may
+ * contain colons.
+ */
+export interface CustomFieldFilterToken {
+  key: string;
+  value: string;
+}
+
+/** Encode a `{key, value}` filter as the `key:value` URL token. */
+export function encodeCustomFieldFilter(key: string, value: string): string {
+  return `${key}:${value}`;
+}
+
+/**
+ * Decode a `key:value` URL token into a filter, or null if malformed/empty. Splits
+ * on the first colon so a value containing colons survives; an empty key or value
+ * decodes to null (honest degradation — a bad token is simply ignored).
+ */
+export function parseCustomFieldFilter(
+  raw: string | undefined | null,
+): CustomFieldFilterToken | null {
+  if (!raw) return null;
+  const i = raw.indexOf(":");
+  if (i <= 0) return null;
+  const key = raw.slice(0, i).trim();
+  const value = raw.slice(i + 1).trim();
+  if (key === "" || value === "") return null;
+  return { key, value };
+}
