@@ -431,6 +431,89 @@ export interface CollectionsActivityInput {
   notes?: string | null;
 }
 
+// ── Agent autonomy dial (ADR-0087, migration 0123, #721) ────────────────────────
+/**
+ * The autonomy rung an orchestration agent currently runs at
+ * (`agent_autopilot_policy.rung` enum, migration 0123, #721; ADR-0087's one dial,
+ * stored as data). Ramping a rung after testing — or pulling it back — is a DATA
+ * change, not a code change. The ladder, lowest authority first:
+ *
+ *   L0 Observe   — read-only; reports, never writes.
+ *   L1 Draft     — proposes an action and holds it for a human (the safe default).
+ *   L2 Act-gated — performs an idempotent write under its caps.
+ *   L3 Auto      — acts autonomously.
+ *
+ * Orthogonal to the rung is the Mark-gate flag (see {@link AgentAutopilotPolicy}):
+ * even an L3 agent funnels customer-facing/money/prod-migration/deploy actions to
+ * the single human queue (the 🔒 gate in the matrix).
+ */
+export type AutonomyRung = "L0" | "L1" | "L2" | "L3";
+
+/** All autonomy rungs, lowest authority first (drives any rung picker UI). */
+export const AUTONOMY_RUNGS: readonly AutonomyRung[] = ["L0", "L1", "L2", "L3"] as const;
+
+/**
+ * The most-conservative rung — the safe default an agent assumes when the dial has
+ * no row for it yet (no policy = behave as "draft, hold for a human", never auto).
+ * `L0` would be safer still but a draft agent must be able to propose; ADR-0087's
+ * collections example starts at `L0 detect → L1 draft`, and L1 is the documented
+ * default posture for an un-ramped executor.
+ */
+export const DEFAULT_AUTONOMY_RUNG: AutonomyRung = "L1";
+
+/**
+ * One row of the data-driven autonomy dial (`agent_autopilot_policy` table,
+ * migration 0123, #721; ADR-0087 orchestration matrix). Keyed per
+ * (agent · workflow · plane) → the current {@link AutonomyRung} + the Mark-gate
+ * flag. This is the table backend orchestration agents READ to decide how much
+ * autonomy they have (e.g. BE #156's collections agent, today hardcoding an L1
+ * cap, reads its rung from here once the backend dial-reader lands).
+ *
+ * App-native governance/control table (archetype H) — no PII, no secrets, no
+ * client data; it stores only agent-config. Writes are gated by `agents:operate`
+ * (admin-only, ADR-0050/0030).
+ */
+export interface AgentAutopilotPolicy {
+  id: string;
+  /** Stable agent key, e.g. "collections" | "lead-response" | "time-payroll" (matches the roster in docs/agents/orchestration-matrix.md). */
+  agentKey: string;
+  /** Workflow / work-unit the rung scopes to, or "*" = the agent's default for every workflow. */
+  workflowKey: string;
+  /** Which plane the agent runs on (ADR-0087): the ICM product runtime, the coding meta-layer, or infra. */
+  plane: AgentPlane;
+  /** The current autonomy rung this (agent, workflow, plane) runs at. */
+  rung: AutonomyRung;
+  /**
+   * When true, the agent's actions still funnel to the single human queue (the 🔒
+   * Mark-gate) regardless of `rung` — for customer-facing / money / prod-migration /
+   * deploy / X.0.0 actions (ADR-0087 security impact). Orthogonal to the rung: an
+   * L3 agent with this set is autonomous EXCEPT it stops at the gate for those legs.
+   */
+  markGated: boolean;
+  /** Optional human note on why the rung is where it is (e.g. "ramped to L2 after UAT"). Not PII. */
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Which plane an orchestration agent runs on (ADR-0087's two-planes-one-methodology). */
+export type AgentPlane = "icm" | "coding" | "infra";
+
+/** All agent planes (drives any plane picker / validation). */
+export const AGENT_PLANES: readonly AgentPlane[] = ["icm", "coding", "infra"] as const;
+
+/**
+ * The lookup an agent makes against the dial: "what rung do I run at for this
+ * (agent, workflow, plane)?". `workflowKey` defaults to "*" (the agent's default)
+ * when omitted. The read resolves the most-specific matching row.
+ */
+export interface AutonomyDialQuery {
+  agentKey: string;
+  /** Defaults to "*" (the agent default) when omitted. */
+  workflowKey?: string;
+  plane: AgentPlane;
+}
+
 /**
  * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
  * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =

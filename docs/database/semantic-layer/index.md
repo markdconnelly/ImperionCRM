@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-16T02:00:00Z
+timestamp: 2026-06-16T03:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -78,6 +78,7 @@ subset; remaining entities are tracked for expansion
 | [`knowledge_object`](tables/knowledge_object.md) | gold | on-prem produced; Voyage 1024d | ADR-0041 |
 | [`app_user`](tables/app_user.md) | reference | Entra ID identity | ADR-0016 |
 | [`connection`](tables/connection.md) | reference | sync config; tokens in Key Vault (by ref) | ADR-0024 |
+| [`agent_autopilot_policy`](tables/agent_autopilot_policy.md) | control/config (app-native) | website (autonomy dial; agents read their rung) | ADR-0087 |
 
 Enrichment-agent sync and vectorization of this bundle are tracked as follow-ups
 (LocalPipelineEnrichment #175 / #176).

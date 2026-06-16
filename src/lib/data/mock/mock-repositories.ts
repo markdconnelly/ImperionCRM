@@ -1058,6 +1058,12 @@ export const mockRepositories: Repositories = {
     async getConversation() {
       return agentMessages;
     },
+    // No DB configured: the autonomy dial has no rows, so return null. The caller
+    // assumes DEFAULT_AUTONOMY_RUNG (the safe draft posture) — "no data" ⇒ stay
+    // conservative (ADR-0087, #721).
+    async getAutonomyPolicy() {
+      return null;
+    },
   },
   engagements: {
     // No DB configured: questionnaires/engagements are empty and edits are disabled.

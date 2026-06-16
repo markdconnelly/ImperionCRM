@@ -262,6 +262,10 @@ import type {
   CollectionsActivityInput,
   CollectionsReminder,
   DunningStatus,
+  AgentAutopilotPolicy,
+  AutonomyDialQuery,
+  AutonomyRung,
+  AgentPlane,
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
@@ -7056,6 +7060,54 @@ export const postgresRepositories: Repositories = {
     // No agent runtime yet (ADR-0015 / ADR-0018 — hosted externally). Empty feed.
     async getConversation() {
       return [];
+    },
+
+    async getAutonomyPolicy(query: AutonomyDialQuery): Promise<AgentAutopilotPolicy | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.agent.getAutonomyPolicy(query);
+      try {
+        // Read the autonomy rung from the data-driven dial (agent_autopilot_policy,
+        // migration 0123, #721; ADR-0087). Resolve the MOST-SPECIFIC matching row: a
+        // row whose workflow_key equals the requested workflow wins over the '*' agent
+        // default (ORDER BY puts the exact match first). workflowKey defaults to '*'.
+        const workflowKey = query.workflowKey ?? "*";
+        const { rows } = await pool.query<{
+          id: string;
+          agent_key: string;
+          workflow_key: string;
+          plane: AgentPlane;
+          rung: AutonomyRung;
+          mark_gated: boolean;
+          note: string | null;
+          created_at: Date;
+          updated_at: Date;
+        }>(
+          `SELECT id::text AS id, agent_key, workflow_key, plane, rung, mark_gated, note,
+                  created_at, updated_at
+             FROM agent_autopilot_policy
+            WHERE agent_key = $1 AND plane = $2 AND workflow_key IN ($3, '*')
+            ORDER BY (workflow_key = $3) DESC
+            LIMIT 1`,
+          [query.agentKey, query.plane, workflowKey],
+        );
+        const r = rows[0];
+        if (!r) return null;
+        return {
+          id: r.id,
+          agentKey: r.agent_key,
+          workflowKey: r.workflow_key,
+          plane: r.plane,
+          rung: r.rung,
+          markGated: r.mark_gated,
+          note: r.note,
+          createdAt: fmtIso(r.created_at) ?? "",
+          updatedAt: fmtIso(r.updated_at) ?? "",
+        };
+      } catch {
+        // Table missing (migration not applied) or DB unreachable — return null so the
+        // caller assumes the safe default rung (gating is data; "no data" ⇒ conservative).
+        return mockRepositories.agent.getAutonomyPolicy(query);
+      }
     },
   },
 

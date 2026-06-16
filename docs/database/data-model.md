@@ -864,6 +864,29 @@ Unique `(tenant_id, qbo_invoice_id)`. Gated by `collections:read` / `collections
 follow-up (#678). PII-free: no amounts/balances (read live from the mirror), no customer
 contact data, no personal identifiers.
 
+### Agent autonomy dial — `agent_autopilot_policy` table (ADR-0087, migration 0123, #721)
+
+The data-driven **autonomy dial** for orchestration agents: one CURRENT autonomy rung per
+`(agent_key, workflow_key, plane)` so **ramping an agent's autonomy is a data change, not a
+code change** (ADR-0087's "one dial, stored as data"). **Archetype H** app-native
+governance/control table (horizontal domain) — the twin of `agent_settings`, **not** the
+unrelated `autopilot_policies` (migration 0038, Intune device-posture bronze; the name
+collision is why this table is `agent_`-prefixed).
+
+Columns: `agent_key` (stable roster key, e.g. `collections`), `workflow_key` (the work-unit,
+or `'*'` = the agent default), `plane` (`agent_plane` enum — `icm`|`coding`|`infra`), `rung`
+(`autonomy_rung` enum — `L0` observe | `L1` draft | `L2` act-gated | `L3` auto, default
+`L1`), an orthogonal `mark_gated` boolean (when true, customer-facing/money/prod-migration/
+deploy/X.0.0 legs still funnel to the 🔒 human queue regardless of rung), and a `note`. No
+FKs — `agent_key`/`workflow_key` are loose roster keys (docs, not tables). Unique
+`(agent_key, workflow_key, plane)`; re-ramping is an upsert. Read resolves most-specific
+(exact `workflow_key` beats `'*'`); **no matching row ⇒ the safe default rung** (`L1`).
+Read via `agent.getAutonomyPolicy({ agentKey, workflowKey?, plane })` (returns null ⇒ safe
+default; pure resolvers in `src/lib/autonomy-dial.ts`); the `agents:operate`-gated write
+(admin-only) is a server action. Backend orchestration agents read the rung here to make
+their autonomy data-driven (e.g. BE #156 collections agent, today hardcoding `L1`). Run
+telemetry stays in `agent_run`. PII-free: config keys only, no secrets, no client data.
+
 ## Diagram 5 — As-built: communications, connections, enrichment, demand-gen audiences & automation (ADR-0024–0027)
 
 The multi-channel timeline (every comm is one `interaction`), per-user + company
