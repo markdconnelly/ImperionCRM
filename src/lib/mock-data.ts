@@ -322,6 +322,7 @@ export const journeys: MockJourney[] = [
           ifTrue: null,
           ifFalse: null,
           scoreDelta: null,
+          winner: "b", // operator-promoted A/B winner (#400)
         },
         {
           key: "s2",
@@ -336,6 +337,7 @@ export const journeys: MockJourney[] = [
           ifTrue: null,
           ifFalse: null,
           scoreDelta: null,
+          winner: null,
         },
         {
           key: "s3",
@@ -350,6 +352,7 @@ export const journeys: MockJourney[] = [
           ifTrue: "s4",
           ifFalse: "s5",
           scoreDelta: null,
+          winner: null,
         },
         {
           key: "s4",
@@ -364,6 +367,7 @@ export const journeys: MockJourney[] = [
           ifTrue: null,
           ifFalse: null,
           scoreDelta: 10,
+          winner: null,
         },
         {
           key: "s5",
@@ -378,6 +382,7 @@ export const journeys: MockJourney[] = [
           ifTrue: null,
           ifFalse: null,
           scoreDelta: null,
+          winner: null,
         },
         {
           key: "s6",
@@ -392,6 +397,7 @@ export const journeys: MockJourney[] = [
           ifTrue: null,
           ifFalse: null,
           scoreDelta: null,
+          winner: null,
         },
       ],
     },
@@ -418,6 +424,7 @@ export const journeys: MockJourney[] = [
           ifTrue: null,
           ifFalse: null,
           scoreDelta: null,
+          winner: null,
         },
         {
           key: "t2",
@@ -432,6 +439,7 @@ export const journeys: MockJourney[] = [
           ifTrue: null,
           ifFalse: null,
           scoreDelta: null,
+          winner: null,
         },
       ],
     },
