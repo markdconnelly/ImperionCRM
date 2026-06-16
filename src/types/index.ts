@@ -2589,3 +2589,75 @@ export interface CustomFieldValue {
   required: boolean;
   value: string | number | boolean | string[] | null;
 }
+
+// ---------------------------------------------------------------------------
+// Omnichannel inbound queue (ADR-0074 §6, #408) — APPENDED for the unified
+// service-desk work queue. Coordinates with the ICM service-desk routing
+// workspace (#280): the queue is a VIEW/orchestration over existing sources
+// (native `chat_session`, silver `ticket`), NOT a new system of record. The
+// front end only READS; assignment/triage is a backend/ICM process (ADR-0042).
+// ---------------------------------------------------------------------------
+
+/** Which underlying source an omnichannel queue item was projected from (#408). */
+export type QueueItemSource = "chat_session" | "ticket";
+
+/**
+ * The normalized inbound channel a queue item arrived on (ADR-0074 §6). Unifies the
+ * `ChatSessionChannel` axis with ticket-origin channels into one routing vocabulary
+ * shared with the ICM service-desk workspace (#280).
+ */
+export type QueueChannel =
+  | "web_chat"
+  | "social"
+  | "email"
+  | "sms"
+  | "voice"
+  | "ticket"
+  | "other";
+
+/**
+ * The coarse triage priority of a queue item (#408). Mirrors the SLA worklist buckets
+ * (`TicketSlaState`) for tickets and maps live/open chat to a high lane, so a single
+ * sort can interleave both sources. Lower = more urgent (see `queuePriorityRank`).
+ */
+export type QueuePriority = "urgent" | "high" | "normal" | "low";
+
+/**
+ * One unified inbound work item in the omnichannel queue (ADR-0074 §6, #408) —
+ * projected from a `ChatSessionRow` or a `TicketRow` into one shape an agent can
+ * triage. Derived purely by `lib/omnichannel-queue.ts`; no new store. `routedTo`
+ * names the ICM service-desk workspace (#280) lane the item would route to, when the
+ * routing seam is wired; null = routing not yet resolved (honest degrade).
+ */
+export interface QueueItem {
+  /** Stable id: the source row id, source-prefixed to avoid cross-source collisions. */
+  id: string;
+  source: QueueItemSource;
+  /** The source row's own id (chat_session.id / ticket.id), for deep links. */
+  sourceId: string;
+  channel: QueueChannel;
+  priority: QueuePriority;
+  /** One-line subject for the queue row (ticket title / chat summary / fallback). */
+  subject: string;
+  account: string | null;
+  contactName: string | null;
+  status: string | null;
+  /** ISO (or pre-formatted) arrival/last-activity timestamp the queue sorts on. */
+  receivedAt: string | null;
+  /** True while the item is still actionable (open chat / open ticket). */
+  isOpen: boolean;
+  /** The ICM #280 routing lane, when resolved by the routing seam; null when not wired. */
+  routedTo: string | null;
+}
+
+/**
+ * Aggregate counts across the omnichannel queue (ADR-0074 §6, BI hub ADR-0062) — the
+ * queue headline. Derived purely from `QueueItem[]` by `lib/omnichannel-queue.ts`.
+ */
+export interface QueueSummary {
+  total: number;
+  open: number;
+  urgent: number;
+  /** Open items broken down by normalized channel (only non-zero channels appear). */
+  byChannel: Partial<Record<QueueChannel, number>>;
+}
