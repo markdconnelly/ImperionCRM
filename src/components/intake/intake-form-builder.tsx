@@ -17,11 +17,18 @@ import type { ProjectRow } from "@/types";
  * Edit also surfaces the `is_active` toggle (create defaults it to true).
  *
  * Each field declares where its answer lands on the created task (`mapsTo`): the
- * task title, its detail, an appended note line, or the due date.
+ * task title, its detail, an appended note line, the due date, the task's assignee
+ * (its primary owner), or a task custom field (`custom:<key>`, #638).
  */
 
 type FieldType = "text" | "textarea" | "date" | "select";
-type FieldMap = "title" | "detail" | "due_at" | "note";
+type FieldMap = "title" | "detail" | "due_at" | "note" | "assignee" | `custom:${string}`;
+
+/** One task custom field offered as a `custom:<key>` map target (#638). */
+export interface IntakeCustomFieldOption {
+  key: string;
+  label: string;
+}
 
 interface FieldDraft {
   label: string;
@@ -53,12 +60,15 @@ const cell =
 
 export function IntakeFormBuilder({
   projects,
+  customFields = [],
   action,
   initial,
   formId,
   submitLabel = "Create form",
 }: {
   projects: ProjectRow[];
+  /** Task custom fields offered as `custom:<key>` map targets (#638). */
+  customFields?: IntakeCustomFieldOption[];
   action: (formData: FormData) => void | Promise<void>;
   /** Pre-loaded draft for in-place edit (#639); omit for create. */
   initial?: IntakeFormDraft;
@@ -164,6 +174,22 @@ export function IntakeFormBuilder({
                   <option value="detail">detail</option>
                   <option value="note">note</option>
                   <option value="due_at">due date</option>
+                  <option value="assignee">assignee (owner)</option>
+                  {customFields.length > 0 && (
+                    <optgroup label="custom fields">
+                      {customFields.map((cf) => (
+                        <option key={cf.key} value={`custom:${cf.key}`}>
+                          {cf.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {/* Keep a stale custom:<key> mapping selectable so an edit round-trips
+                      even if its definition was since removed/renamed (#638). */}
+                  {f.mapsTo.startsWith("custom:") &&
+                    !customFields.some((cf) => `custom:${cf.key}` === f.mapsTo) && (
+                      <option value={f.mapsTo}>{f.mapsTo}</option>
+                    )}
                 </select>
               </label>
               <label className="flex items-center gap-1 text-xs text-dim">

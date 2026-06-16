@@ -2314,9 +2314,13 @@ only** (`delivery:write`); a public channel is a deliberate later phase.
   (SET NULL), default_category (CHECK sales|project|onboarding|general = the queue),
   is_active, created_at, updated_at }`. `fields` is an ordered array of descriptors
   `{ key, label, type (text|textarea|date|select), required, options (select only),
-  mapsTo (title|detail|due_at|note) }` — `mapsTo` decides where each answer lands on
-  the created task. jsonb so the field shape can grow (assignee / custom-field
-  mapping, #354 follow-ups) without a migration.
+  mapsTo (title|detail|due_at|note|assignee|custom:<cf_key>) }` — `mapsTo` decides
+  where each answer lands on the created task. jsonb so the field shape can grow
+  without a migration: the **assignee** and **custom-field** targets (#638) ride the
+  same `fields` array — `assignee` sets the new task's primary owner
+  (`task.owner_user_id`, overriding `default_owner_user_id`) from an app_user-picker
+  answer, and `custom:<cf_key>` writes a `custom_field_value` (migration 0103) keyed
+  by the **task-scoped, global** `custom_field_def` whose `key` is `<cf_key>`.
 - **`intake_submission`** — one audit row per submit: `{ id, form_id → intake_form
   (ON DELETE CASCADE), payload (jsonb raw answers), created_task_id? → task
   (SET NULL), submitted_by? → app_user (SET NULL), created_at }`.
@@ -2330,9 +2334,12 @@ row records who requested what + the task produced. Both tables are **app-native
 operational/config objects, not silver tier** (like `custom_field_def` /
 `saved_views` / `task_recurrence`) — no semantic-layer concept file applies, and the
 migration only `REFERENCES project`/`account`/`app_user`/`task` (it alters no existing
-concept). v1 maps to the task's base fields + routing defaults; assignee/custom-field
-field mapping and an in-place form editor (v1 = delete+recreate) are documented
-follow-ups.
+concept). v1 maps to the task's base fields + routing defaults; **assignee +
+custom-field field mapping landed in #638** (the form builder exposes `assignee` and
+each task custom field as `custom:<key>` targets; submit resolves the assignee answer
+to the task owner and writes the custom-field answers as `custom_field_value` rows in
+the same transaction — an unmatched/removed custom key is ignored), and the in-place
+form editor landed in #639.
 
 ## Conversational intelligence — call/meeting capture → transcribe → analyze (ADR-0068, migration 0112, #375)
 

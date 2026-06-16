@@ -117,8 +117,12 @@ import type {
   CustomFieldValueEntry,
   CustomFieldFilterInput,
 } from "@/lib/data/repositories";
-// Runtime value (not a type): the key prefix marking a checklist template (#633).
-import { CHECKLIST_TEMPLATE_KEY_PREFIX } from "@/lib/data/repositories";
+// Runtime values (not types): the checklist-template key prefix (#633) and the
+// intake custom-field map prefix (#638).
+import {
+  CHECKLIST_TEMPLATE_KEY_PREFIX,
+  INTAKE_CUSTOM_MAP_PREFIX,
+} from "@/lib/data/repositories";
 import type {
   Account,
   ActionItemRow,
@@ -5309,15 +5313,24 @@ export const postgresRepositories: Repositories = {
         const form = fRows[0];
         if (!form) throw new Error(`Intake form ${formId} not found.`);
 
-        // Map each answered field onto a task field per its mapsTo (ADR-0070 E3).
+        // Map each answered field onto a task field per its mapsTo (ADR-0070 E3, #638).
         const fields = Array.isArray(form.fields) ? form.fields : [];
         let title = "";
         const detailParts: string[] = [];
         let dueAt: string | null = null;
+        let assigneeId: string | null = null;
+        // custom:<cf_key> field answers, collected here and written after the task
+        // INSERT (they need the new task id). cfKey → the raw answer string.
+        const customAnswers: { cfKey: string; raw: string }[] = [];
         for (const fld of fields) {
           const v = String(payload[fld.key] ?? "").trim();
           if (!v) continue;
-          switch (fld.mapsTo) {
+          const mapsTo = fld.mapsTo;
+          if (typeof mapsTo === "string" && mapsTo.startsWith(INTAKE_CUSTOM_MAP_PREFIX)) {
+            customAnswers.push({ cfKey: mapsTo.slice(INTAKE_CUSTOM_MAP_PREFIX.length), raw: v });
+            continue;
+          }
+          switch (mapsTo) {
             case "title":
               if (!title) title = v;
               break;
@@ -5330,11 +5343,18 @@ export const postgresRepositories: Repositories = {
             case "due_at":
               if (!dueAt && /^\d{4}-\d{2}-\d{2}$/.test(v)) dueAt = v;
               break;
+            case "assignee":
+              // First answered assignee field wins; it is an app_user id (the picker's
+              // value). The DB FK rejects a bogus id, rolling back the whole submit.
+              if (!assigneeId) assigneeId = v;
+              break;
           }
         }
         // A task needs a title; fall back to the form name when none is mapped/filled.
         if (!title) title = form.name;
         const detail = detailParts.length ? detailParts.join("\n\n") : null;
+        // The assignee field (when answered) overrides the form's default owner.
+        const ownerUserId = assigneeId ?? form.default_owner_user_id;
 
         const { rows: tRows } = await client.query<{ id: string }>(
           `INSERT INTO task
@@ -5348,10 +5368,43 @@ export const postgresRepositories: Repositories = {
             form.default_category,
             dueAt,
             form.default_project_id,
-            form.default_owner_user_id,
+            ownerUserId,
           ],
         );
         const taskId = tRows[0].id;
+
+        // Custom-field answers (#638): resolve each chosen cf_key to its task-scoped
+        // custom_field_def, coerce the raw answer to the field's type, and upsert the
+        // value — all in this transaction so a write failure rolls back the task too.
+        if (customAnswers.length > 0) {
+          const keys = [...new Set(customAnswers.map((c) => c.cfKey))];
+          const { rows: defRows } = await client.query<{
+            id: string;
+            key: string;
+            field_type: string;
+          }>(
+            `SELECT id, key, field_type
+               FROM custom_field_def
+              WHERE scope = 'task'
+                AND project_type_id IS NULL
+                AND key = ANY($1::text[])`,
+            [keys],
+          );
+          const defByKey = new Map(defRows.map((d) => [d.key, d]));
+          for (const { cfKey, raw } of customAnswers) {
+            const def = defByKey.get(cfKey);
+            if (!def) continue; // unmatched/removed custom field → ignore
+            const encoded = encodeIntakeCustomValue(def.field_type as CustomFieldType, raw);
+            if (encoded === null) continue; // empty after coercion → no-op
+            await client.query(
+              `INSERT INTO custom_field_value (field_id, parent_type, parent_id, value)
+               VALUES ($1::uuid, 'task', $2::uuid, $3::jsonb)
+               ON CONFLICT (field_id, parent_type, parent_id)
+                 DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+              [def.id, taskId, JSON.stringify(encoded)],
+            );
+          }
+        }
 
         const { rows: sRows } = await client.query<{ id: string }>(
           `INSERT INTO intake_submission (form_id, payload, created_task_id, submitted_by)
@@ -12554,6 +12607,40 @@ export const postgresRepositories: Repositories = {
 /** A select-type custom field carries an options list; the others store []. */
 function isSelectFieldType(t: CustomFieldType): boolean {
   return t === "single_select" || t === "multi_select";
+}
+
+/**
+ * Coerce a raw intake answer (always a string off the form) to the decoded shape a
+ * custom_field_value stores for its field type (#638). Mirrors the decode contract
+ * the task-edit CustomFields panel writes: number/currency → number, checkbox →
+ * boolean, multi_select → string[] (comma-separated answer), everything else →
+ * string (incl. `user`, which stores an app_user id, and the date/single_select/text
+ * kinds). Returns null when the answer is empty after coercion so the caller can skip
+ * the write (no empty custom_field_value rows).
+ */
+function encodeIntakeCustomValue(
+  fieldType: CustomFieldType,
+  raw: string,
+): string | number | boolean | string[] | null {
+  const v = raw.trim();
+  if (!v) return null;
+  switch (fieldType) {
+    case "number":
+    case "currency": {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    case "checkbox":
+      // Truthy strings from a checkbox/select answer; anything else is false.
+      return /^(true|1|yes|on|checked)$/i.test(v);
+    case "multi_select": {
+      const arr = v.split(",").map((s) => s.trim()).filter(Boolean);
+      return arr.length ? arr : null;
+    }
+    default:
+      // text | date | single_select | user → the string answer verbatim.
+      return v;
+  }
 }
 
 /** Positional params shared by create/update of a custom_field_def. */

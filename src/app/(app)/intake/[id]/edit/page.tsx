@@ -26,8 +26,12 @@ export default async function EditIntakeFormPage({
   const roles = await getSessionRoles();
   if (!canManageProjects(roles)) redirect(`/intake/${id}`);
 
-  const { crm } = getRepositories();
-  const [form, projects] = await Promise.all([crm.getIntakeForm(id), crm.listProjects()]);
+  const { crm, customFields } = getRepositories();
+  const [form, projects, taskCustomFields] = await Promise.all([
+    crm.getIntakeForm(id),
+    crm.listProjects(),
+    customFields.listFieldDefsFor("task", null),
+  ]);
   if (!form) notFound();
 
   // Rebuild the stored definition into the builder's draft shape (options array →
@@ -55,6 +59,7 @@ export default async function EditIntakeFormPage({
       />
       <IntakeFormBuilder
         projects={projects}
+        customFields={taskCustomFields.map((d) => ({ key: d.key, label: d.label }))}
         action={updateIntakeFormAction}
         initial={initial}
         formId={form.id}
