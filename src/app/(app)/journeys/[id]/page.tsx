@@ -23,10 +23,18 @@ export default async function JourneyDetailPage({
           ← Journeys
         </Link>
       </div>
-      <PageHeader
-        title={journey.name}
-        description={`Marketing journey · ${journey.status}. One object on the workflow engine (ADR-0073) — steps, A/B, and branches below.`}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title={journey.name}
+          description={`Marketing journey · ${journey.status}. One object on the workflow engine (ADR-0073) — steps, A/B, and branches below.`}
+        />
+        <Link
+          href={`/journeys/${id}/edit`}
+          className="shrink-0 rounded-md border border-border px-4 py-2 text-sm text-text hover:border-accent"
+        >
+          Edit
+        </Link>
+      </div>
       <JourneyFlow journey={journey} />
     </div>
   );

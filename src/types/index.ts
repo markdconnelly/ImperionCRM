@@ -2410,6 +2410,17 @@ export interface JourneyDetail {
   activeEnrollments: number;
 }
 
+/**
+ * Editable journey fields written by the builder (#399). A journey is still a SINGLE
+ * object on the workflow substrate (ADR-0073 decision 1): saving writes the whole
+ * `definition` jsonb plus the workflow row's name/status — never child tables.
+ */
+export interface JourneyInput {
+  name: string;
+  status: string; // active|paused|archived
+  definition: JourneyDefinition; // serialised whole into workflow.definition
+}
+
 // ── PM collaboration — comments & activity feed (ADR-0064 A1) ─────────────────
 
 /** The work objects a comment / activity feed can hang off (polymorphic, ADR-0064). */

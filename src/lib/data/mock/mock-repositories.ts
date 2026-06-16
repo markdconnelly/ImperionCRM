@@ -1419,6 +1419,26 @@ export const mockRepositories: Repositories = {
         activeEnrollments: j.activeEnrollments,
       };
     },
+    // Builder writes (ADR-0073, #399) mutate the in-memory array so the no-DB dev
+    // surface persists a created/edited journey within the session.
+    async createJourney(name: string) {
+      const id = `jny_${Date.now().toString(36)}`;
+      journeys.push({
+        id,
+        name,
+        status: "paused",
+        activeEnrollments: 0,
+        definition: { steps: [], entryStepKey: null, sourceSegmentIds: [] },
+      });
+      return id;
+    },
+    async saveJourney(id, input) {
+      const j = journeys.find((x) => x.id === id);
+      if (!j) return;
+      j.name = input.name;
+      j.status = input.status;
+      j.definition = input.definition;
+    },
   },
   reports: {
     async getSummary() {

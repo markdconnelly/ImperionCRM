@@ -3,13 +3,15 @@ import {
   EMPTY_JOURNEY_DEFINITION,
   JOURNEY_STEP_KINDS,
   describeStep,
+  newJourneyStep,
+  nextStepKey,
   parseJourneyDefinition,
   stepHasAbTest,
   summariseJourney,
   validateJourneyDefinition,
   variantSplit,
 } from "./journey";
-import type { JourneyStep } from "@/types";
+import type { JourneyDefinition, JourneyStep } from "@/types";
 
 // A minimal valid step builder so tests state only the fields they care about.
 function step(partial: Partial<JourneyStep> & { key: string; kind: JourneyStep["kind"] }): JourneyStep {
@@ -219,5 +221,48 @@ describe("describeStep", () => {
     expect(describeStep(step({ key: "s", kind: "score", scoreDelta: 5 }))).toBe("Score +5");
     expect(describeStep(step({ key: "s", kind: "score", scoreDelta: -3 }))).toBe("Score -3");
     expect(describeStep(step({ key: "s", kind: "exit" }))).toBe("Exit");
+  });
+});
+
+// ── Builder helpers (#399) ────────────────────────────────────────────────────
+
+describe("newJourneyStep (builder #399)", () => {
+  it("seeds sensible kind-specific defaults", () => {
+    expect(newJourneyStep("send", "s1")).toMatchObject({ key: "s1", kind: "send", channel: "email" });
+    expect(newJourneyStep("wait", "s1").waitHours).toBeGreaterThan(0);
+    expect(newJourneyStep("branch", "s1").condition).toBe("opened");
+    expect(newJourneyStep("score", "s1").scoreDelta).not.toBeNull();
+    expect(newJourneyStep("exit", "s1")).toMatchObject({ kind: "exit", waitHours: null, condition: null });
+  });
+
+  it("produces a step that round-trips through parse unchanged", () => {
+    const built = newJourneyStep("send", "s1");
+    const parsed = parseJourneyDefinition({ steps: [built] });
+    expect(parsed.steps[0]).toMatchObject({ key: "s1", kind: "send" });
+  });
+});
+
+describe("nextStepKey (builder #399)", () => {
+  function def(keys: string[]): JourneyDefinition {
+    return {
+      entryStepKey: null,
+      sourceSegmentIds: [],
+      steps: keys.map((k) => newJourneyStep("exit", k)),
+    };
+  }
+
+  it("returns s1 for an empty journey", () => {
+    expect(nextStepKey(EMPTY_JOURNEY_DEFINITION)).toBe("s1");
+  });
+
+  it("never collides with an existing key", () => {
+    const d = def(["s1", "s2"]);
+    const next = nextStepKey(d);
+    expect(d.steps.some((s) => s.key === next)).toBe(false);
+  });
+
+  it("skips a gap-filling collision (s1,s3 present → not s1/s3)", () => {
+    const next = nextStepKey(def(["s1", "s3"]));
+    expect(["s1", "s3"]).not.toContain(next);
   });
 });
