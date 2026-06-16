@@ -118,6 +118,8 @@ import type {
   SprintBurndownData,
   SprintVelocityRow,
   WorkAssignments,
+  WorkAssignmentRow,
+  EngagementCounts,
   WorkRole,
   WorkloadRow,
   UserCapacity,
@@ -892,6 +894,32 @@ export interface CrmRepository {
    * `role` is fixed to 'primary' — the param documents intent at the call site.
    */
   setTaskPrimary(taskId: string, userId: string, role: Extract<WorkRole, "primary">): Promise<void>;
+  /**
+   * People attached across MANY work objects of one kind, as a map of parentId →
+   * their assignment rows (#608, ADR-0066 C1-F4). The bulk counterpart to
+   * {@link getWorkAssignments} for the kanban board: one read for every visible
+   * card so the board never N+1s the per-object read. Each row is the primary +
+   * assignees + watchers (primary first, then by name) — the card renderer caps
+   * the avatars it shows and rolls the rest into a "+N" overflow. Empty map entry
+   * (or absent key) = nobody attached. Read-only over `work_assignment`.
+   */
+  listAssigneesForMany(
+    parentType: WorkParentType,
+    parentIds: string[],
+  ): Promise<Record<string, WorkAssignmentRow[]>>;
+  /**
+   * Live comment + attachment counts across MANY work objects of one kind, as a
+   * map of parentId → `{ comments, attachments }` (#608, ADR-0066 C1-F4). One read
+   * for the whole board's visible cards (the bulk counterpart to the per-object
+   * `listComments` / `listAttachments`), counting only non-deleted rows
+   * (`deleted_at IS NULL`, ADR-0064 A1/A4). A parent with neither is absent from
+   * the map; the card renderer treats absence as 0/0 (honest degradation — never
+   * fabricates a count). Read-only over `work_comment` + `work_attachment`.
+   */
+  listEngagementCountsForMany(
+    parentType: WorkParentType,
+    parentIds: string[],
+  ): Promise<Record<string, EngagementCounts>>;
   /**
    * Per-user load for the workload / capacity view (ADR-0069 D1/D2, #591). One row
    * per app_user attached to at least one not-done task (primary OR assignee, via

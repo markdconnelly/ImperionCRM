@@ -49,6 +49,8 @@ import type {
   WorkAttachment,
   WorkActivityEntry,
   WorkParentType,
+  WorkAssignmentRow,
+  EngagementCounts,
   MentionableUser,
   Notification,
   NotificationKind,
@@ -397,6 +399,15 @@ export const mockRepositories: Repositories = {
         watchers: [],
         viewerWatching: false,
       };
+    },
+    async listAssigneesForMany(): Promise<Record<string, WorkAssignmentRow[]>> {
+      // No mock seed for work_assignment (the per-object getWorkAssignments mock
+      // is empty too); the board renders no avatars without a DB. #608.
+      return {};
+    },
+    async listEngagementCountsForMany(): Promise<Record<string, EngagementCounts>> {
+      // No mock comment/attachment seed; absence = 0/0 on the card. #608.
+      return {};
     },
     async setTaskAssignees() {
       throw new Error(NO_DB);
