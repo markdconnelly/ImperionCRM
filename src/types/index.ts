@@ -637,6 +637,58 @@ export interface GoalRow {
   /** The percent shown: rolledUpPercent when mode='rollup' and links exist, else manualPercent. */
   displayPercent: number;
   links: GoalLinkedProject[]; // contributing projects (may be empty)
+  /** Contributing tasks that feed the same weighted rollup (issue #621, may be empty). */
+  taskLinks: GoalLinkedTask[];
+}
+
+/**
+ * One linked contributing TASK on a goal (ADR-0069 D3, issue #621). A task is
+ * binary: `percentComplete` is 100 when its status is the terminal `done`, else 0
+ * (a task has no sub-milestones, unlike a project). `weight` is the link's share in
+ * the goal's weighted rollup — projects and tasks share one weighted pool.
+ */
+export interface GoalLinkedTask {
+  taskId: string;
+  title: string;
+  status: string; // task.status — open|in_progress|done
+  weight: number; // goal_link.weight
+  percentComplete: number; // 0–100, the task's own completion (done → 100)
+}
+
+/**
+ * Authoring input for a goal (create/edit, issue #621). Mirrors the `goal` columns
+ * the GUI writes: name + owner + free-text period + numeric target/current + the
+ * progress mode + notes. The rollup is always derived (never stored), so `current`
+ * matters only for `manual`-mode goals.
+ */
+export interface GoalInput {
+  name: string;
+  ownerUserId: string | null;
+  period: string | null;
+  target: number;
+  current: number;
+  progressMode: "manual" | "rollup";
+  notes: string | null;
+}
+
+/**
+ * A goal loaded for editing (issue #621): the `GoalInput` fields plus its id. The
+ * read-only list uses `GoalRow`; this is the writable shape the authoring form binds.
+ */
+export interface GoalEditable extends GoalInput {
+  id: string;
+}
+
+/**
+ * Authoring input for a goal_link (issue #621): which goal, which work object
+ * (polymorphic project|task), and its weight in the rollup. Re-linking the same work
+ * is idempotent (the schema's UNIQUE (goal_id, parent_type, parent_id)).
+ */
+export interface GoalLinkInput {
+  goalId: string;
+  parentType: "project" | "task";
+  parentId: string;
+  weight: number;
 }
 
 /** A project type — a row in the project_type table, not an enum (ADR-0052). */

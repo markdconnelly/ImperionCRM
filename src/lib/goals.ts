@@ -2,12 +2,11 @@
  * Goal / OKR rollup math (ADR-0069 D3, #348) — pure, DB-free, unit-tested.
  *
  * A goal's progress is EITHER manual (the owner's `current` vs `target`) OR rolled
- * up from the linked projects' completion. This module derives both percents from
- * raw figures so the repository (mock + postgres) and any future caller share one
- * definition, and the acceptance ("a goal shows rolled-up progress from its linked
- * projects") is covered by a test, not just SQL.
+ * up from the linked work's completion (projects AND tasks, issue #621). This module
+ * derives both percents from raw figures so the repository (mock + postgres) and any
+ * future caller share one definition, and the acceptance ("a goal shows rolled-up
+ * progress from its linked work") is covered by a test, not just SQL.
  */
-import type { GoalLinkedProject } from "@/types";
 
 /** Clamp a number to the 0–100 percent range, rounding to a whole percent. */
 export function clampPercent(value: number): number {
@@ -40,11 +39,33 @@ export function manualPercent(current: number, target: number): number {
 }
 
 /**
- * The weight-weighted average of the linked projects' completion, or null when no
- * projects are linked (the caller falls back to the manual percent). Links with a
- * non-positive weight are ignored (the schema forbids them, but be defensive).
+ * A linked task's own completion percent (0–100). A task is binary: 100 when its
+ * status is the terminal `done`, 0 otherwise (a task has no sub-milestones, unlike a
+ * project). Extends the rollup to task links (issue #621) without changing the
+ * weighted-average math — a task just feeds its own percent into the same average.
  */
-export function rolledUpPercent(links: GoalLinkedProject[]): number | null {
+export function taskPercentComplete(status: string): number {
+  return status === "done" ? 100 : 0;
+}
+
+/**
+ * The shape the weighted rollup needs from any linked work object (project OR task,
+ * issue #621): its `weight` (its share of the average) and its own `percentComplete`.
+ * Both `GoalLinkedProject` and `GoalLinkedTask` satisfy this.
+ */
+export interface WeightedLink {
+  weight: number;
+  percentComplete: number;
+}
+
+/**
+ * The weight-weighted average of ALL linked work's completion (projects AND tasks,
+ * issue #621), or null when nothing is linked (the caller falls back to the manual
+ * percent). Links with a non-positive weight are ignored (the schema forbids them,
+ * but be defensive). Project and task links share one weighted pool — a 3×-weighted
+ * task contributes exactly like a 3×-weighted project.
+ */
+export function rolledUpPercent(links: readonly WeightedLink[]): number | null {
   let weightSum = 0;
   let weighted = 0;
   for (const l of links) {

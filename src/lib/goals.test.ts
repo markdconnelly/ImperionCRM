@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   clampPercent,
   projectPercentComplete,
+  taskPercentComplete,
   manualPercent,
   rolledUpPercent,
   displayPercent,
@@ -37,6 +38,14 @@ describe("projectPercentComplete", () => {
   });
 });
 
+describe("taskPercentComplete", () => {
+  it("is 100 only when the task is done (binary, #621)", () => {
+    expect(taskPercentComplete("done")).toBe(100);
+    expect(taskPercentComplete("open")).toBe(0);
+    expect(taskPercentComplete("in_progress")).toBe(0);
+  });
+});
+
 describe("manualPercent", () => {
   it("is current/target as a percent, clamped", () => {
     expect(manualPercent(3, 4)).toBe(75);
@@ -57,6 +66,14 @@ describe("rolledUpPercent", () => {
   });
   it("ignores non-positive weights defensively", () => {
     expect(rolledUpPercent([link(0, 100), link(2, 50)])).toBe(50);
+  });
+  it("rolls up projects AND tasks in one weighted pool (#621)", () => {
+    // A done project (100, weight 1) + a not-done task (0, weight 1) → 50%.
+    const taskLink = { weight: 1, percentComplete: taskPercentComplete("open") };
+    expect(rolledUpPercent([link(1, 100), taskLink])).toBe(50);
+    // A done task is weighted exactly like a done project.
+    const doneTask = { weight: 3, percentComplete: taskPercentComplete("done") };
+    expect(rolledUpPercent([link(1, 0), doneTask])).toBe(75);
   });
 });
 

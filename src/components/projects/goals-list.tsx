@@ -1,15 +1,17 @@
+import Link from "next/link";
 import { cn } from "@/lib/cn";
 import type { GoalRow } from "@/types";
 
 /**
- * Goals / OKRs list (ADR-0069 D3, #348) — read-only. Each goal is a card showing
- * its rolled-up (or manual) progress bar plus the contributing projects that feed
- * the rollup. A server component: no client JS, no writes; the percents are derived
- * upstream by `lib/goals.ts` and carried on `GoalRow`.
+ * Goals / OKRs list (ADR-0069 D3, #348 + #621). Each goal is a card showing its
+ * rolled-up (or manual) progress bar plus the contributing projects AND tasks that
+ * feed the rollup; the title links to the goal's editable detail page (#621). A
+ * server component: the percents are derived upstream by `lib/goals.ts` on `GoalRow`.
  *
- * A rollup goal shows the weighted average of its linked projects' completion (the
- * AC); a manual goal shows its current-vs-target figure with a "manual" tag. The
- * bar tone follows progress: red < 34, amber < 67, green otherwise.
+ * A rollup goal shows the weighted average of its linked work's completion (projects
+ * and tasks share one weighted pool); a manual goal shows its current-vs-target
+ * figure with a "manual" tag. The bar tone follows progress: red < 34, amber < 67,
+ * green otherwise.
  */
 
 function barTone(pct: number): string {
@@ -42,7 +44,9 @@ export function GoalsList({ goals }: { goals: GoalRow[] }) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="font-display text-base font-semibold tracking-tight text-text">
-                {g.name}
+                <Link href={`/projects/goals/${g.id}`} className="hover:text-accent">
+                  {g.name}
+                </Link>
               </h3>
               <p className="mt-0.5 text-sm text-dim">
                 {g.owner ?? "Unassigned"}
@@ -56,12 +60,14 @@ export function GoalsList({ goals }: { goals: GoalRow[] }) {
             <span
               className={cn(
                 "shrink-0 rounded-md border px-2 py-0.5 text-xs",
-                g.progressMode === "rollup" && g.links.length > 0
+                g.progressMode === "rollup" && (g.links.length > 0 || g.taskLinks.length > 0)
                   ? "border-accent/40 bg-accent/10 text-accent"
                   : "border-border text-dim",
               )}
             >
-              {g.progressMode === "rollup" && g.links.length > 0 ? "Rolled up" : "Manual"}
+              {g.progressMode === "rollup" && (g.links.length > 0 || g.taskLinks.length > 0)
+                ? "Rolled up"
+                : "Manual"}
             </span>
           </div>
 
@@ -78,19 +84,19 @@ export function GoalsList({ goals }: { goals: GoalRow[] }) {
             </span>
           </div>
 
-          {/* Linked contributing projects */}
-          {g.links.length > 0 ? (
+          {/* Linked contributing projects + tasks (#621) */}
+          {g.links.length > 0 || g.taskLinks.length > 0 ? (
             <div className="mt-3 overflow-hidden rounded-md border border-border/60">
               <div className="flex items-center gap-3 border-b border-border/60 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-dim">
-                <span className="flex-1">Contributing project</span>
-                <span className="w-40">Account</span>
+                <span className="flex-1">Contributing work</span>
+                <span className="w-40">Account / type</span>
                 <span className="w-24 text-right">Status</span>
                 <span className="w-16 text-right">Weight</span>
                 <span className="w-14 text-right">Done</span>
               </div>
               {g.links.map((l) => (
                 <div
-                  key={l.projectId}
+                  key={`project-${l.projectId}`}
                   className="flex items-center gap-3 border-b border-border/40 px-3 py-1.5 text-sm last:border-b-0"
                 >
                   <span className="flex-1 truncate text-text" title={l.name}>
@@ -108,11 +114,29 @@ export function GoalsList({ goals }: { goals: GoalRow[] }) {
                   </span>
                 </div>
               ))}
+              {g.taskLinks.map((t) => (
+                <div
+                  key={`task-${t.taskId}`}
+                  className="flex items-center gap-3 border-b border-border/40 px-3 py-1.5 text-sm last:border-b-0"
+                >
+                  <span className="flex-1 truncate text-text" title={t.title}>
+                    {t.title}
+                  </span>
+                  <span className="w-40 truncate text-dim">task</span>
+                  <span className={cn("w-24 text-right", statusTone[t.status] ?? "text-dim")}>
+                    {t.status.replace(/_/g, " ")}
+                  </span>
+                  <span className="w-16 text-right tabular-nums text-dim">{t.weight}</span>
+                  <span className="w-14 text-right tabular-nums text-text">
+                    {t.percentComplete}%
+                  </span>
+                </div>
+              ))}
             </div>
           ) : (
             <p className="mt-3 text-xs text-dim">
-              No projects linked yet — showing the manual figure. Link contributing
-              projects to roll up progress automatically.
+              No work linked yet — showing the manual figure. Link contributing
+              projects or tasks to roll up progress automatically.
             </p>
           )}
 

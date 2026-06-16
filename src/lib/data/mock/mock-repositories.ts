@@ -532,6 +532,7 @@ export const mockRepositories: Repositories = {
               percentComplete: 25,
             },
           ],
+          taskLinks: [],
         },
         {
           id: "mock-goal-csat",
@@ -546,8 +547,30 @@ export const mockRepositories: Repositories = {
           rolledUpPercent: null,
           displayPercent: 93,
           links: [],
+          taskLinks: [],
         },
       ];
+    },
+    async getGoal() {
+      return null;
+    },
+    async createGoal() {
+      throw new Error(NO_DB);
+    },
+    async updateGoal() {
+      throw new Error(NO_DB);
+    },
+    async deleteGoal() {
+      throw new Error(NO_DB);
+    },
+    async addGoalLink() {
+      throw new Error(NO_DB);
+    },
+    async removeGoalLink() {
+      throw new Error(NO_DB);
+    },
+    async goalLinkCandidates() {
+      return { projects: [], tasks: [] };
     },
     async getProject() {
       return null;
