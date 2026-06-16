@@ -4,7 +4,7 @@ title: assessment
 description: Paid security/readiness assessment — website system of record, scored across six pillars; anchor of the assessment-led GTM.
 resource: ../../../decision-records/ADR-0022-assessment-led-gtm-and-engagement-model.md
 tags: [silver, sales, assessment, security]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # assessment
@@ -15,25 +15,28 @@ paid assessment → managed services). Born silver — website system of record.
 
 ## Source of record / authority
 
-**Website system of record.** Status drives the lifecycle; six pillar ratings capture the
-verdict. Evidence is held separately in `assessment_artifact` (lossless per-source
-snapshots: Televy, M365 Graph, scans, manual).
+**Website system of record.** Status drives the lifecycle
+(`proposed → scheduled → in_progress → delivered → closed`); the six pillar ratings
+capture the verdict, each on the same four-step scale
+`at_risk → needs_work → solid → strong` (NULL = not yet scored). Evidence is held
+separately in `assessment_artifact` (lossless per-source snapshots: Televy, M365 Graph,
+scans, manual).
 
 ## Schema
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK |
-| `account_id` | uuid | FK → `account` |
-| `opportunity_id` | uuid | FK → `opportunity` (nullable) |
+| `account_id` | uuid | FK → `account` (ON DELETE CASCADE) |
+| `opportunity_id` | uuid | FK → `opportunity` (ON DELETE SET NULL; the opportunity that sold it) |
 | `name` | text | |
-| `status` | enum | assessment lifecycle |
-| `fee_amount` | numeric | paid-assessment fee |
-| `credit_to_onboarding` | bool | fee credited if they proceed |
-| `identity/endpoint/network/email/backup/incident_rating` | enum | the six pillar ratings |
-| `top_priorities` / `recommendation` | text | |
-| `report_url` | text | deliverable |
-| `kickoff_at` / `delivered_at` | date / timestamptz | |
+| `status` | enum `assessment_status` | `proposed` · `scheduled` · `in_progress` · `delivered` · `closed` |
+| `fee_amount` | numeric | one-time paid-assessment fee |
+| `credit_to_onboarding` | bool | fee credited toward onboarding on conversion (default true) |
+| `identity_rating` `endpoint_rating` `network_rating` `email_rating` `backup_rating` `incident_rating` | enum `assessment_rating` | the six pillar ratings (Identity / Endpoint / Network / Email & Collaboration / Backup & Recovery / Incident Readiness), each `at_risk` · `needs_work` · `solid` · `strong`; NULL = not yet scored |
+| `top_priorities` / `recommendation` | text | ranked priorities; recommendation (e.g. proceed to managed services) |
+| `report_url` | text | written report / scorecard deliverable |
+| `kickoff_at` / `delivered_at` | date / timestamptz | scheduled kickoff; set on delivered/closed |
 
 ## Joins
 

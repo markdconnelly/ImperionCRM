@@ -4,7 +4,7 @@ title: time_record
 description: Unified employee time timeline — one row per source fact, website attendance authoritative, Autotask allocation corroborates.
 resource: ../../../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md
 tags: [silver, time-tracking, payroll]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-15T00:00:00Z
 ---
 
 # time_record
@@ -23,6 +23,24 @@ migration `0086`.
   attendance, and it does **not** override the website fact.
 - The admin-approval step writes one **idempotent weekly Autotask Time Ticket** on
   the house company; the link is not a duplicate, so it does not double-count.
+
+## Bronze match / merge
+
+A **union-by-fact** merge (cloud pipeline bronze→silver), not a field-precedence
+collapse like [`account`](account.md): the two sources never contend for the same
+field, so each silver row keeps exactly one source's fact. The `source ↔ kind` pair
+is **fixed by CHECK** — `website→attendance`, `autotask→allocation`.
+
+1. **Employee resolution.** A `website_time_entry` is already keyed to its employee
+   (via `timesheet`). An `autotask_time_entry` resolves to an `app_user` through the
+   Autotask Resource mapping (migration 0085); until matched it stays unresolved and
+   does not merge.
+2. **Normalize.** `minutes` is **derived** — `ended_at − started_at` for attendance,
+   `hours_worked × 60` for hours-only allocation rows. `source_ref` keeps the
+   originating bronze row id (idempotent re-merge).
+3. **No resurrection guard / no field recompute** — there is no contested field to
+   recompute by precedence. Authority is positional: website attendance is the truth
+   for hours worked; Autotask allocation is corroboration only and never overrides it.
 
 ## Schema
 

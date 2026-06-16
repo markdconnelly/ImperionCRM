@@ -12,7 +12,9 @@ timestamp: 2026-06-15T01:00:00Z
 An [OKF](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing)
 bundle — one markdown file per silver concept — that captures what a silver entity
 **means**, what it **joins to**, and which source is **authoritative**. Standard:
-[ADR-0086](../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md).
+[ADR-0086](../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md); the
+required shape, depth bar, and archetype-keyed sections are in
+[AUTHORING.md](AUTHORING.md).
 
 This layer is *meaning*, not *structure* and not *data*:
 

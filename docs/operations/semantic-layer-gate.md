@@ -36,6 +36,8 @@ curated *meaning* layer cannot silently rot away from the schema it documents.
   update the entity's row in
   [`coverage-matrix.md`](../database/semantic-layer/coverage-matrix.md) if its
   shape, source-of-record/authority, or join paths changed). Ship it in the same PR.
+  The bar a concept file must meet is
+  [AUTHORING.md](../database/semantic-layer/AUTHORING.md).
 - **Escape hatch:** add the **`semantic-layer-not-affected`** label and justify it in
   the PR body (mirrors `docs-not-needed`). Use only when the migration genuinely
   doesn't change the entity's meaning — e.g. a grant-only or index-only change.

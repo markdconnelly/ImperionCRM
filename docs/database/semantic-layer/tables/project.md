@@ -4,7 +4,7 @@ title: project
 description: Delivery/onboarding workstream for an account — website system of record; one board across all project types.
 resource: ../../../decision-records/ADR-0020-delivery-project-model.md
 tags: [silver, delivery, project]
-timestamp: 2026-06-15T14:30:00Z
+timestamp: 2026-06-15T23:59:00Z
 ---
 
 # project
@@ -31,7 +31,7 @@ user-creatable. Provenance links record what spawned the project (`source_assess
 | `opportunity_id` | uuid | FK → `opportunity` (nullable) |
 | `project_type_id` | uuid | FK → `project_type` |
 | `name` | text | |
-| `status` | enum | legacy delivery lifecycle (`project_status`); authoritative during the compatibility window |
+| `status` | enum | `project_status`: `not_started` / `in_progress` / `blocked` / `complete`. Legacy delivery lifecycle; authoritative during the compatibility window |
 | `status_def_id` | uuid | FK → `status_def` (configurable status, ADR-0065 B5); nullable, backfilled from `status` |
 | `owner_user_id` | uuid | FK → `app_user` |
 | `target_live_date` | date | |
