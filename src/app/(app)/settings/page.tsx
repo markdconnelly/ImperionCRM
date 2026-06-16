@@ -317,6 +317,7 @@ export default async function SettingsPage({
           { href: "/knowledge", label: "Knowledge", hint: "Search the gold layer (comms, summaries, dossiers)" },
           { href: "/questions", label: "Discovery & assessment questions", hint: "Edit the question catalog" },
           { href: "/custom-fields", label: "Custom fields", hint: "Admin-definable task/project fields (ADR-0065 B4)" },
+          { href: "/settings/statuses", label: "Statuses", hint: "Admin-definable status sets per project type (ADR-0065 B5)" },
         ].map((t) => (
           <li key={t.href}>
             <Link

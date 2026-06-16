@@ -72,3 +72,113 @@ describe("configurable statuses (ADR-0065 B5, #339)", () => {
     expect(out.every((s) => s.scope === "global" && s.projectTypeId === null)).toBe(true);
   });
 });
+
+describe("configurable-status admin CRUD (ADR-0065 B5, #616)", () => {
+  const input = {
+    scope: "global",
+    projectTypeId: null,
+    context: "task",
+    key: "waiting_on_client",
+    label: "Waiting on client",
+    color: "#E0A33E",
+    category: "in_progress",
+    ordinal: 3,
+    wipLimit: null,
+  };
+
+  it("listStatusDefsForScope queries the exact scope (NOT DISTINCT FROM) and maps rows", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await crm.listStatusDefsForScope("task", "global", null);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/WHERE context = \$1 AND scope = \$2/);
+    expect(sql).toMatch(/project_type_id IS NOT DISTINCT FROM/);
+    expect(params).toEqual(["task", "global", null]);
+  });
+
+  it("createStatusDef inserts the ordered params and maps the returned row", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "sdX",
+          scope: "global",
+          project_type_id: null,
+          context: "task",
+          key: "waiting_on_client",
+          label: "Waiting on client",
+          color: "#E0A33E",
+          category: "in_progress",
+          ordinal: 3,
+          wip_limit: null,
+        },
+      ],
+    });
+    const out = await crm.createStatusDef(input);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/INSERT INTO status_def/);
+    // global → project_type_id forced null regardless of input
+    expect(params).toEqual([
+      "global", null, "task", "waiting_on_client", "Waiting on client",
+      "#E0A33E", "in_progress", 3, null,
+    ]);
+    expect(out.id).toBe("sdX");
+    expect(out.projectTypeId).toBeNull();
+    expect(out.wipLimit).toBeNull();
+  });
+
+  it("updateStatusDef updates by id and returns null when the row is gone", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    const out = await crm.updateStatusDef("missing", input);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/UPDATE status_def/);
+    expect(params?.[(params?.length ?? 0) - 1]).toBe("missing");
+    expect(out).toBeNull();
+  });
+
+  it("deleteStatusDef reports whether a row was removed", async () => {
+    query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    expect(await crm.deleteStatusDef("sd1")).toBe(true);
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    expect(await crm.deleteStatusDef("sd1")).toBe(false);
+  });
+
+  it("reorderStatusDefs builds one atomic UPDATE … FROM (VALUES …) and is a no-op when empty", async () => {
+    await crm.reorderStatusDefs([]);
+    expect(query).not.toHaveBeenCalled();
+    await crm.reorderStatusDefs([
+      { id: "a", ordinal: 0 },
+      { id: "b", ordinal: 1 },
+    ]);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/UPDATE status_def AS sd/);
+    expect(sql).toMatch(/FROM \(VALUES/);
+    expect(params).toEqual(["a", 0, "b", 1]);
+  });
+});
+
+describe("configurable-status mock CRUD round-trip (#616)", () => {
+  beforeEach(() => getPool.mockReturnValue(null));
+
+  it("creates, lists by scope, reorders and deletes against the mock store", async () => {
+    const created = await mockRepositories.crm.createStatusDef({
+      scope: "global",
+      projectTypeId: null,
+      context: "task",
+      key: "waiting",
+      label: "Waiting",
+      color: "#E0A33E",
+      category: "in_progress",
+      ordinal: 9,
+      wipLimit: null,
+    });
+    const set = await mockRepositories.crm.listStatusDefsForScope("task", "global", null);
+    expect(set.some((s) => s.id === created.id)).toBe(true);
+
+    await mockRepositories.crm.reorderStatusDefs([{ id: created.id, ordinal: 0 }]);
+    const reordered = await mockRepositories.crm.listStatusDefsForScope("task", "global", null);
+    expect(reordered.find((s) => s.id === created.id)?.ordinal).toBe(0);
+
+    expect(await mockRepositories.crm.deleteStatusDef(created.id)).toBe(true);
+    const after = await mockRepositories.crm.listStatusDefsForScope("task", "global", null);
+    expect(after.some((s) => s.id === created.id)).toBe(false);
+  });
+});

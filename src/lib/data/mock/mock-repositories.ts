@@ -42,6 +42,8 @@ import type {
   CustomFieldValueInput,
   CustomFieldValueEntry,
   CustomFieldFilterInput,
+  StatusDefRow,
+  StatusDefInput,
 } from "@/lib/data/repositories";
 import type {
   Health,
@@ -142,6 +144,23 @@ interface MockFieldValue {
 const mockFieldDefs: MockFieldDef[] = [];
 const mockFieldValues: MockFieldValue[] = [];
 let mockFieldSeq = 0;
+
+/**
+ * Mock status_def store (ADR-0065 B5, #616) — seeded with the global default sets
+ * (migration 0104) so the admin CRUD surface round-trips without a DB. Mock has no
+ * project_type catalog, so admin edits exercise the global scope.
+ */
+type MockStatusDef = StatusDefRow;
+const mockStatusDefs: MockStatusDef[] = [
+  { id: "sd-task-open", scope: "global", projectTypeId: null, context: "task", key: "open", label: "Open", color: "#8A93A6", category: "todo", ordinal: 0, wipLimit: null },
+  { id: "sd-task-in_progress", scope: "global", projectTypeId: null, context: "task", key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1, wipLimit: null },
+  { id: "sd-task-done", scope: "global", projectTypeId: null, context: "task", key: "done", label: "Done", color: "#3FBF8F", category: "done", ordinal: 2, wipLimit: null },
+  { id: "sd-project-not_started", scope: "global", projectTypeId: null, context: "project", key: "not_started", label: "Not Started", color: "#8A93A6", category: "todo", ordinal: 0, wipLimit: null },
+  { id: "sd-project-in_progress", scope: "global", projectTypeId: null, context: "project", key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1, wipLimit: null },
+  { id: "sd-project-blocked", scope: "global", projectTypeId: null, context: "project", key: "blocked", label: "Blocked", color: "#E2615A", category: "in_progress", ordinal: 2, wipLimit: null },
+  { id: "sd-project-complete", scope: "global", projectTypeId: null, context: "project", key: "complete", label: "Complete", color: "#3FBF8F", category: "done", ordinal: 3, wipLimit: null },
+];
+let mockStatusDefSeq = 0;
 
 /** Sort field defs the way both the admin list and the per-form read present them. */
 function sortFieldDefs(a: MockFieldDef, b: MockFieldDef): number {
@@ -617,44 +636,75 @@ export const mockRepositories: Repositories = {
     async deleteProjectType() {
       throw new Error(NO_DB);
     },
-    // Configurable statuses (ADR-0065 B5, #339) — the seeded global default sets
-    // (migration 0104) so the board renders in mock mode. Mock has no per-type
-    // sets, so projectTypeId is ignored and the defaults are always returned.
-    async listStatusDefs(context: string) {
-      const sets: Record<
-        string,
-        Array<{
-          key: string;
-          label: string;
-          color: string;
-          category: string;
-          ordinal: number;
-        }>
-      > = {
-        task: [
-          { key: "open", label: "Open", color: "#8A93A6", category: "todo", ordinal: 0 },
-          { key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1 },
-          { key: "done", label: "Done", color: "#3FBF8F", category: "done", ordinal: 2 },
-        ],
-        project: [
-          { key: "not_started", label: "Not Started", color: "#8A93A6", category: "todo", ordinal: 0 },
-          { key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1 },
-          { key: "blocked", label: "Blocked", color: "#E2615A", category: "in_progress", ordinal: 2 },
-          { key: "complete", label: "Complete", color: "#3FBF8F", category: "done", ordinal: 3 },
-        ],
+    // Configurable statuses (ADR-0065 B5, #339/#616) — backed by the seeded mock
+    // store so the board renders AND the admin CRUD surface round-trips in mock
+    // mode. Mock has no per-type sets, so projectTypeId is ignored and the global
+    // defaults are returned, ordered by ordinal.
+    async listStatusDefs(context: string): Promise<StatusDefRow[]> {
+      return mockStatusDefs
+        .filter((s) => s.context === context && s.scope === "global")
+        .sort((a, b) => a.ordinal - b.ordinal || a.label.localeCompare(b.label))
+        .map((s) => ({ ...s }));
+    },
+    async listStatusDefsForScope(
+      context: string,
+      scope: string,
+      projectTypeId: string | null,
+    ): Promise<StatusDefRow[]> {
+      return mockStatusDefs
+        .filter(
+          (s) =>
+            s.context === context &&
+            s.scope === scope &&
+            (s.projectTypeId ?? null) === (projectTypeId ?? null),
+        )
+        .sort((a, b) => a.ordinal - b.ordinal || a.label.localeCompare(b.label))
+        .map((s) => ({ ...s }));
+    },
+    async createStatusDef(input: StatusDefInput): Promise<StatusDefRow> {
+      const row: MockStatusDef = {
+        id: `mock-status-${++mockStatusDefSeq}`,
+        scope: input.scope,
+        projectTypeId: input.scope === "project_type" ? input.projectTypeId : null,
+        context: input.context,
+        key: input.key.trim(),
+        label: input.label.trim(),
+        color: input.color,
+        category: input.category,
+        ordinal: input.ordinal,
+        wipLimit: input.wipLimit,
       };
-      return (sets[context] ?? []).map((s) => ({
-        id: `sd-${context}-${s.key}`,
-        scope: "global",
-        projectTypeId: null,
-        context,
-        key: s.key,
-        label: s.label,
-        color: s.color,
-        category: s.category,
-        ordinal: s.ordinal,
-        wipLimit: null,
-      }));
+      mockStatusDefs.push(row);
+      return { ...row };
+    },
+    async updateStatusDef(
+      id: string,
+      input: StatusDefInput,
+    ): Promise<StatusDefRow | null> {
+      const row = mockStatusDefs.find((s) => s.id === id);
+      if (!row) return null;
+      row.scope = input.scope;
+      row.projectTypeId = input.scope === "project_type" ? input.projectTypeId : null;
+      row.context = input.context;
+      row.key = input.key.trim();
+      row.label = input.label.trim();
+      row.color = input.color;
+      row.category = input.category;
+      row.ordinal = input.ordinal;
+      row.wipLimit = input.wipLimit;
+      return { ...row };
+    },
+    async deleteStatusDef(id: string): Promise<boolean> {
+      const i = mockStatusDefs.findIndex((s) => s.id === id);
+      if (i === -1) return false;
+      mockStatusDefs.splice(i, 1);
+      return true;
+    },
+    async reorderStatusDefs(order: { id: string; ordinal: number }[]): Promise<void> {
+      for (const o of order) {
+        const row = mockStatusDefs.find((s) => s.id === o.id);
+        if (row) row.ordinal = o.ordinal;
+      }
     },
     // Delivery templates (ADR-0081) — one seed so the manager/picker render in mock mode.
     async listDeliveryTemplates(opts?: { activeOnly?: boolean; projectTypeId?: string }) {
