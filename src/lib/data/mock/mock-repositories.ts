@@ -153,7 +153,7 @@ let mockFieldSeq = 0;
 type MockStatusDef = StatusDefRow;
 const mockStatusDefs: MockStatusDef[] = [
   { id: "sd-task-open", scope: "global", projectTypeId: null, context: "task", key: "open", label: "Open", color: "#8A93A6", category: "todo", ordinal: 0, wipLimit: null },
-  { id: "sd-task-in_progress", scope: "global", projectTypeId: null, context: "task", key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1, wipLimit: null },
+  { id: "sd-task-in_progress", scope: "global", projectTypeId: null, context: "task", key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1, wipLimit: 3 },
   { id: "sd-task-done", scope: "global", projectTypeId: null, context: "task", key: "done", label: "Done", color: "#3FBF8F", category: "done", ordinal: 2, wipLimit: null },
   { id: "sd-project-not_started", scope: "global", projectTypeId: null, context: "project", key: "not_started", label: "Not Started", color: "#8A93A6", category: "todo", ordinal: 0, wipLimit: null },
   { id: "sd-project-in_progress", scope: "global", projectTypeId: null, context: "project", key: "in_progress", label: "In Progress", color: "#5B8DEF", category: "in_progress", ordinal: 1, wipLimit: null },

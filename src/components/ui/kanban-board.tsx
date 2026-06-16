@@ -16,6 +16,33 @@ export interface KanbanLane {
    * classes can't name. The over-limit red still overrides both.
    */
   color?: string;
+  /**
+   * Optional admin-configured WIP limit (a `status_def.wip_limit`, ADR-0066 C1,
+   * #616 part 2). This is the BASELINE over-limit threshold the column highlights
+   * against. A personal, per-browser limit (`wipStorageKey`) still overrides it
+   * where the user sets one; absent a personal value this configured limit applies.
+   * Like the personal limit it highlights but never blocks a drop (an aid, not a gate).
+   */
+  wipLimit?: number;
+}
+
+/**
+ * Resolve a column's effective WIP limit (ADR-0066 C1, #616): the personal
+ * per-browser value when the user set one (> 0), else the admin-configured baseline
+ * (`status_def.wip_limit`). 0/undefined from either layer means "no limit".
+ * Pure — unit-testable without a DOM.
+ */
+export function effectiveWipLimit(personal: number | undefined, configured: number | undefined): number {
+  return personal && personal > 0 ? personal : (configured ?? 0);
+}
+
+/**
+ * Whether a column is over its WIP limit (ADR-0066 C1, #616): a limit is set (> 0)
+ * and the card count strictly exceeds it. Drives the amber/red header + count badge.
+ * Pure — unit-testable without a DOM.
+ */
+export function isOverWipLimit(count: number, effectiveLimit: number): boolean {
+  return effectiveLimit > 0 && count > effectiveLimit;
 }
 
 /** Separator for the (swimlane, lane) drop-target highlight key — never in a key. */
@@ -41,12 +68,18 @@ const CELL_SEP = "␟";
  * column dimension — swimlane membership follows the card's own field, so a
  * card re-homed to another band's column snaps back to its own band on refresh.
  *
- * When `wipStorageKey` is set, each column carries an optional WIP limit
- * (#445, C1-F5): a personal, per-browser cap stored in localStorage (no server
- * write) under `${wipStorageKey}:${groupBy}` so status and category/type lanes
- * keep independent limits. The limit is per-column (totalled across swimlanes);
- * exceeding it highlights the column — it does NOT block the drop (an aid, not
- * a gate).
+ * WIP limits (C1-F5) come from two layers, the effective limit being the personal
+ * one when set, else the configured one:
+ *   1. An admin-configured baseline per status — `lane.wipLimit` (a
+ *      `status_def.wip_limit`, ADR-0066 C1, #616 part 2), set on the Statuses admin
+ *      surface and the same for everyone.
+ *   2. A personal, per-browser override stored in localStorage (no server write,
+ *      enabled by `wipStorageKey`) under `${wipStorageKey}:${groupBy}` so status and
+ *      category/type lanes keep independent limits (#445).
+ * The effective limit is per-column (totalled across swimlanes); exceeding it
+ * highlights the column header (amber/red count badge + header tint) — it does NOT
+ * block the drop (an aid, not a gate). The editable personal input shows only when
+ * `wipStorageKey` is set; its placeholder is the configured baseline.
  */
 export function KanbanBoard<T>({
   items,
@@ -109,6 +142,11 @@ export function KanbanBoard<T>({
       }
       return next;
     });
+  }
+
+  /** The limit a column highlights against (see `effectiveWipLimit`). */
+  function effectiveLimit(lane: KanbanLane): number {
+    return effectiveWipLimit(limits[lane.key], lane.wipLimit);
   }
 
   const bucket = (list: T[]): Record<string, T[]> => {
@@ -196,8 +234,9 @@ export function KanbanBoard<T>({
       <div className="flex gap-3 overflow-x-auto pb-1">
         {lanes.map((lane) => {
           const cards = columns[lane.key] ?? [];
-          const limit = limits[lane.key] ?? 0;
-          const overLimit = limit > 0 && cards.length > limit;
+          const personal = limits[lane.key] ?? 0;
+          const limit = effectiveLimit(lane);
+          const overLimit = isOverWipLimit(cards.length, limit);
           const cellKey = lane.key;
           return (
             <div
@@ -232,10 +271,11 @@ export function KanbanBoard<T>({
                     <input
                       type="number"
                       min={0}
-                      value={limit || ""}
+                      value={personal || ""}
+                      placeholder={lane.wipLimit ? String(lane.wipLimit) : "—"}
                       onChange={(e) => setLimit(lane.key, Number(e.target.value) || 0)}
                       aria-label={`WIP limit for ${lane.label}`}
-                      title="WIP limit (0 = none)"
+                      title="Personal WIP limit (blank = use the configured limit; 0 = none)"
                       className="w-10 rounded-md border border-border bg-panel-2 px-1.5 py-0.5 text-xs text-dim [appearance:textfield] focus:border-accent focus:text-text focus:outline-none"
                     />
                   )}
@@ -272,8 +312,9 @@ export function KanbanBoard<T>({
         <div className="grid gap-3 pl-7" style={{ gridTemplateColumns: gridCols }}>
           {lanes.map((lane) => {
             const total = (columns[lane.key] ?? []).length;
-            const limit = limits[lane.key] ?? 0;
-            const overLimit = limit > 0 && total > limit;
+            const personal = limits[lane.key] ?? 0;
+            const limit = effectiveLimit(lane);
+            const overLimit = isOverWipLimit(total, limit);
             return (
               <div
                 key={lane.key}
@@ -301,10 +342,11 @@ export function KanbanBoard<T>({
                     <input
                       type="number"
                       min={0}
-                      value={limit || ""}
+                      value={personal || ""}
+                      placeholder={lane.wipLimit ? String(lane.wipLimit) : "—"}
                       onChange={(e) => setLimit(lane.key, Number(e.target.value) || 0)}
                       aria-label={`WIP limit for ${lane.label}`}
-                      title="WIP limit (0 = none)"
+                      title="Personal WIP limit (blank = use the configured limit; 0 = none)"
                       className="w-10 rounded-md border border-border bg-panel-2 px-1.5 py-0.5 text-xs text-dim [appearance:textfield] focus:border-accent focus:text-text focus:outline-none"
                     />
                   )}

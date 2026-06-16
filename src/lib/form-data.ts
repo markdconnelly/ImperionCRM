@@ -63,6 +63,18 @@ export function intOr(formData: FormData, key: string, fallback: number): number
 }
 
 /**
+ * Optional integer field: parsed number, or null when absent/blank/not finite.
+ * Unlike `intOr` an empty input means "not set" (e.g. a WIP limit left blank),
+ * never a coerced 0.
+ */
+export function intOrNull(formData: FormData, key: string): number | null {
+  const s = str(formData, key);
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
  * Indexed key/value rows (`${keyField}0`/`${valueField}0` … up to `rows`):
  * keeps only rows where BOTH sides are non-empty.
  */

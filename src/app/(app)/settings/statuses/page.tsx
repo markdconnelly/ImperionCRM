@@ -13,7 +13,7 @@ import {
 } from "./actions";
 
 /**
- * Admin configurable-status surface (ADR-0065 B5, #616 — PART 1 of #616).
+ * Admin configurable-status surface (ADR-0065 B5 + ADR-0066 C1, #616).
  *
  * Create / edit / reorder / delete the `status_def` rows of ONE set at a time. The
  * set is chosen by (context, scope, project type) via the query string so deep-links
@@ -21,9 +21,10 @@ import {
  * `catalog:write`; non-admins see the set read-only (controls hidden, the server
  * actions also fail closed).
  *
- * DEFERRED (part 2 of #616, blocked on board-columns #613): the per-status WIP-limit
- * editor and the over-limit board-column highlight. `wip_limit` is shown read-only
- * here so admins can see the seeded values, but it is not editable on this surface.
+ * PART 1 (CRUD) shipped in #730. PART 2 (#616, ADR-0066 C1) adds the per-status
+ * WIP-limit input here (create + edit) — the board reads `status_def.wip_limit` as
+ * the baseline over-limit highlight threshold (kanban-board.tsx). The WIP-limit
+ * column shows the current cap; a blank value means no limit.
  */
 
 const CONTEXTS = ["task", "project"] as const;
@@ -124,6 +125,18 @@ function StatusRow({
                     className={`${input} w-16`}
                   />
                 </label>
+                <label className="flex flex-col gap-1 text-xs text-dim">
+                  WIP limit
+                  <input
+                    name="wipLimit"
+                    type="number"
+                    min={1}
+                    defaultValue={def.wipLimit ?? ""}
+                    placeholder="none"
+                    title="Highlight the board column when it holds more than this many cards. Blank = no limit."
+                    className={`${input} w-16`}
+                  />
+                </label>
               </div>
               <button
                 type="submit"
@@ -191,7 +204,7 @@ export default async function StatusesPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Statuses"
-        description="Admin-definable status sets per context and project type (ADR-0065 B5). Reporting rolls up by category (todo · in progress · done), never by label — so renaming a status or adding one (e.g. “Waiting on client”) keeps reports stable. WIP limits and the over-limit board highlight are a follow-up (#613)."
+        description="Admin-definable status sets per context and project type (ADR-0065 B5). Reporting rolls up by category (todo · in progress · done), never by label — so renaming a status or adding one (e.g. “Waiting on client”) keeps reports stable. A per-status WIP limit (ADR-0066 C1) highlights a board column when it holds more than that many cards."
       >
         <Link
           href="/settings?tab=tools"
@@ -295,6 +308,17 @@ export default async function StatusesPage({
                 <label className="flex flex-col gap-1 text-xs text-dim">
                   Order
                   <input name="ordinal" type="number" defaultValue={defs.length} className={`${input} w-16`} />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-dim">
+                  WIP limit
+                  <input
+                    name="wipLimit"
+                    type="number"
+                    min={1}
+                    placeholder="none"
+                    title="Highlight the board column when it holds more than this many cards. Blank = no limit."
+                    className={`${input} w-16`}
+                  />
                 </label>
               </div>
               <button
