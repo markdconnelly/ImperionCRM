@@ -237,6 +237,7 @@ import type {
   TaskRecurrenceInput,
   WorkAssignments,
   WorkAssignmentRow,
+  EngagementCounts,
   WorkRole,
   WorkloadRow,
   UserCapacity,
@@ -2852,6 +2853,93 @@ export const postgresRepositories: Repositories = {
         return { parentType, parentId, primary, assignees, watchers, viewerWatching };
       } catch {
         return empty;
+      }
+    },
+
+    async listAssigneesForMany(
+      parentType: WorkParentType,
+      parentIds: string[],
+    ): Promise<Record<string, WorkAssignmentRow[]>> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAssigneesForMany(parentType, parentIds);
+      if (parentIds.length === 0) return {};
+      try {
+        // One read over work_assignment for every visible card (#608, ADR-0066
+        // C1-F4) — the bulk form of getWorkAssignments. Primary first, then by
+        // name, mirroring the per-object read's ORDER BY so the avatar cap shows
+        // the owner first.
+        const { rows } = await pool.query<{
+          parent_id: string;
+          user_id: string;
+          name: string;
+          role: WorkRole;
+        }>(
+          `SELECT wa.parent_id::text AS parent_id, wa.user_id::text AS user_id,
+                  coalesce(u.display_name, u.email) AS name, wa.role
+             FROM work_assignment wa
+             JOIN app_user u ON u.id = wa.user_id
+            WHERE wa.parent_type = $1 AND wa.parent_id = ANY($2::uuid[])
+            ORDER BY (wa.role = 'primary') DESC, name`,
+          [parentType, parentIds],
+        );
+        const out: Record<string, WorkAssignmentRow[]> = {};
+        for (const r of rows) {
+          (out[r.parent_id] ??= []).push({ userId: r.user_id, name: r.name, role: r.role });
+        }
+        return out;
+      } catch (err) {
+        if (isSchemaLagError(err)) return {};
+        return mockRepositories.crm.listAssigneesForMany(parentType, parentIds);
+      }
+    },
+
+    async listEngagementCountsForMany(
+      parentType: WorkParentType,
+      parentIds: string[],
+    ): Promise<Record<string, EngagementCounts>> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listEngagementCountsForMany(parentType, parentIds);
+      if (parentIds.length === 0) return {};
+      try {
+        // Live (non-deleted) comment + attachment counts per object in one read
+        // (#608, ADR-0064 A1/A4): a FULL OUTER JOIN of the two per-parent grouped
+        // counts so an object with only comments OR only attachments still
+        // appears, the other leg defaulting to 0.
+        const { rows } = await pool.query<{
+          parent_id: string;
+          comments: string;
+          attachments: string;
+        }>(
+          `SELECT coalesce(c.parent_id, a.parent_id)::text AS parent_id,
+                  coalesce(c.n, 0) AS comments,
+                  coalesce(a.n, 0) AS attachments
+             FROM (
+               SELECT parent_id, count(*) AS n
+                 FROM work_comment
+                WHERE parent_type = $1 AND parent_id = ANY($2::uuid[])
+                  AND deleted_at IS NULL
+                GROUP BY parent_id
+             ) c
+             FULL OUTER JOIN (
+               SELECT parent_id, count(*) AS n
+                 FROM work_attachment
+                WHERE parent_type = $1 AND parent_id = ANY($2::uuid[])
+                  AND deleted_at IS NULL
+                GROUP BY parent_id
+             ) a ON a.parent_id = c.parent_id`,
+          [parentType, parentIds],
+        );
+        const out: Record<string, EngagementCounts> = {};
+        for (const r of rows) {
+          out[r.parent_id] = {
+            comments: Number(r.comments),
+            attachments: Number(r.attachments),
+          };
+        }
+        return out;
+      } catch (err) {
+        if (isSchemaLagError(err)) return {};
+        return mockRepositories.crm.listEngagementCountsForMany(parentType, parentIds);
       }
     },
 

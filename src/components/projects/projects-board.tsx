@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { KanbanBoard, type KanbanLane } from "@/components/ui/kanban-board";
 import { TagChip } from "@/components/tags/tag-chip";
-import type { AppliedTag, ProjectRow, ProjectTypeRow } from "@/types";
+import { CardEngagement } from "@/components/work/card-engagement";
+import type {
+  AppliedTag,
+  EngagementCounts,
+  ProjectRow,
+  ProjectTypeRow,
+  WorkAssignmentRow,
+} from "@/types";
 
 /**
  * Kanban board for projects (#441, ADR-0066 C1) over the shared `KanbanBoard`
@@ -16,9 +23,11 @@ import type { AppliedTag, ProjectRow, ProjectTypeRow } from "@/types";
  * owner, or type, orthogonal to the column group-by.
  *
  * Rich cards (#439, C1-F4) render the owner and the tag chips (`tagsByProject`,
- * the same `listTagsForMany` map the task board uses, ADR-0065 B6). Projects
- * carry no subtask rollup, and assignee avatars / comment counts stay deferred
- * (they need bulk reads not on the list path yet — no migration in this lane).
+ * the same `listTagsForMany` map the task board uses, ADR-0065 B6). The C1-F4
+ * remainder (#608) adds assignee avatars (`assigneesByProject`) and a comment /
+ * attachment count footer (`countsByProject`), each from a board-only bulk read
+ * (`listAssigneesForMany` / `listEngagementCountsForMany`) so the board never
+ * N+1s. Projects carry no subtask rollup. No migration — tables already exist.
  */
 const STATUS_LANES: KanbanLane[] = [
   { key: "not_started", label: "Not started", tone: "text-dim" },
@@ -49,6 +58,8 @@ export function ProjectsBoard({
   groupBy,
   swimBy = "none",
   tagsByProject = {},
+  assigneesByProject = {},
+  countsByProject = {},
   moveStatusAction,
   moveTypeAction,
 }: {
@@ -58,6 +69,10 @@ export function ProjectsBoard({
   swimBy?: ProjectSwimBy;
   /** parentId → applied tag chips (ADR-0065 B6, #340) for rich cards (#439 C1-F4). */
   tagsByProject?: Record<string, AppliedTag[]>;
+  /** parentId → people on the project (ADR-0065 B3, #337) for the avatar stack (#608 C1-F4). */
+  assigneesByProject?: Record<string, WorkAssignmentRow[]>;
+  /** parentId → live comment/attachment counts (ADR-0064, #608 C1-F4) for the card footer. */
+  countsByProject?: Record<string, EngagementCounts>;
   moveStatusAction: (id: string, status: string) => Promise<void>;
   moveTypeAction: (id: string, projectTypeId: string) => Promise<void>;
 }) {
@@ -125,6 +140,8 @@ export function ProjectsBoard({
                 ))}
               </div>
             )}
+            {/* Assignee avatars + comment/attachment counts (#608 C1-F4). */}
+            <CardEngagement assignees={assigneesByProject[p.id]} counts={countsByProject[p.id]} />
             {p.targetLive && <div className="mt-1 text-[11px] text-dim">Live {p.targetLive}</div>}
           </>
         );

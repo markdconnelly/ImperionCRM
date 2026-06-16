@@ -3,7 +3,8 @@
 import { cn } from "@/lib/cn";
 import { KanbanBoard, type KanbanLane } from "@/components/ui/kanban-board";
 import { TagChip } from "@/components/tags/tag-chip";
-import type { AppliedTag, TaskRow } from "@/types";
+import { CardEngagement } from "@/components/work/card-engagement";
+import type { AppliedTag, EngagementCounts, TaskRow, WorkAssignmentRow } from "@/types";
 
 /**
  * Kanban board for tasks (#341, ADR-0066 C1) over the shared `KanbanBoard`
@@ -14,12 +15,13 @@ import type { AppliedTag, TaskRow } from "@/types";
  * Swimlanes (#447, C1-F3) split the board into collapsible bands by account or
  * category, orthogonal to the column group-by.
  *
- * Rich cards (#439, C1-F4) render the data already on the list read — the
- * subtask rollup (`childCount`/`childDoneCount`, ADR-0065 B1) and the tag chips
- * (`tagsByTask`, the same `listTagsForMany` map the table and tag filter use,
- * ADR-0065 B6). Assignee avatars and comment/attachment counts stay deferred:
- * they need bulk reads that do not exist on the list path yet (no migration in
- * this lane — tracked in the F4 follow-up).
+ * Rich cards (#439, C1-F4) render the subtask rollup (`childCount`/
+ * `childDoneCount`, ADR-0065 B1) and the tag chips (`tagsByTask`, the same
+ * `listTagsForMany` map the table and tag filter use, ADR-0065 B6). The C1-F4
+ * remainder (#608) adds assignee avatars (`assigneesByTask`) and a comment /
+ * attachment count footer (`countsByTask`), each from a board-only bulk read
+ * (`listAssigneesForMany` / `listEngagementCountsForMany`) so the board never
+ * N+1s. No migration — every table already exists (ADR-0064 / ADR-0065 B3).
  */
 const STATUS_LANES: KanbanLane[] = [
   { key: "open", label: "Open", tone: "text-amber" },
@@ -65,6 +67,8 @@ export function TasksBoard({
   groupBy,
   swimBy = "none",
   tagsByTask = {},
+  assigneesByTask = {},
+  countsByTask = {},
   moveStatusAction,
   moveCategoryAction,
 }: {
@@ -73,6 +77,10 @@ export function TasksBoard({
   swimBy?: TaskSwimBy;
   /** parentId → applied tag chips (ADR-0065 B6, #340) for rich cards (#439 C1-F4). */
   tagsByTask?: Record<string, AppliedTag[]>;
+  /** parentId → people on the task (ADR-0065 B3, #337) for the avatar stack (#608 C1-F4). */
+  assigneesByTask?: Record<string, WorkAssignmentRow[]>;
+  /** parentId → live comment/attachment counts (ADR-0064, #608 C1-F4) for the card footer. */
+  countsByTask?: Record<string, EngagementCounts>;
   moveStatusAction: (id: string, status: string) => Promise<void>;
   moveCategoryAction: (id: string, category: string) => Promise<void>;
 }) {
@@ -140,6 +148,8 @@ export function TasksBoard({
                 ))}
               </div>
             )}
+            {/* Assignee avatars + comment/attachment counts (#608 C1-F4). */}
+            <CardEngagement assignees={assigneesByTask[t.id]} counts={countsByTask[t.id]} />
             {t.due && <div className="mt-1 text-[11px] text-dim">Due {t.due}</div>}
           </>
         );

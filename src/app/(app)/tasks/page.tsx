@@ -108,6 +108,23 @@ export default async function TasksPage({
     ? byCategory.filter((t) => (tagsByTask[t.id] ?? []).some((x) => x.id === activeTag))
     : byCategory;
 
+  // Rich-card remainder (#608 C1-F4): assignee avatars + comment/attachment
+  // counts, two bulk reads over the visible tasks — board view ONLY (the list
+  // and calendar render neither), so the table/calendar paths skip the DB cost.
+  const [assigneesByTask, countsByTask] =
+    activeView === "board"
+      ? await Promise.all([
+          crm.listAssigneesForMany(
+            "task",
+            tasks.map((t) => t.id),
+          ),
+          crm.listEngagementCountsForMany(
+            "task",
+            tasks.map((t) => t.id),
+          ),
+        ])
+      : [{}, {}];
+
   // Saved views (ADR-0066 C4, #344): the current canonical query string the
   // user is looking at, derived from the SAME `href()` builder the toggle uses
   // so a "save" snapshot round-trips exactly. Empty string = default List view.
@@ -247,6 +264,8 @@ export default async function TasksPage({
           groupBy={activeGroup}
           swimBy={activeSwim}
           tagsByTask={tagsByTask}
+          assigneesByTask={assigneesByTask}
+          countsByTask={countsByTask}
           moveStatusAction={moveTaskAction}
           moveCategoryAction={moveTaskCategoryAction}
         />
