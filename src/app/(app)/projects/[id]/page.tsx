@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { ProjectTimeline } from "@/components/projects/project-timeline";
+import { ProjectWeekCalendar } from "@/components/projects/project-week-calendar";
 import { TextInput } from "@/components/ui/form";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -231,9 +232,11 @@ export default async function ProjectDetailPage({
         <div>
           <h3 className="font-display text-base font-semibold tracking-tight">Timeline</h3>
           <p className="mt-0.5 text-sm text-dim">
-            Tasks on a time axis by due date, with blocked-by dependencies drawn as connectors
-            (ADR-0066 C3). Tasks render as point markers on their due date — full start→end bars need
-            a <code className="text-dim">task.start_at</code> column, tracked in #580.
+            Tasks on a time axis as start→due span bars, with blocked-by dependencies drawn as
+            connectors (ADR-0066 C3, #628). A task with a{" "}
+            <code className="text-dim">start_at</code> draws a true span; a task with only a due date
+            shows a point marker; tasks with no due date are listed below as unscheduled — dates are
+            never invented.
           </p>
         </div>
         <ProjectTimeline
@@ -242,8 +245,23 @@ export default async function ProjectDetailPage({
             title: t.title,
             status: t.status,
             due: t.due,
+            startAt: t.startAt,
           }))}
           edges={taskDeps}
+        />
+
+        {/* Calendar week view (#628): the same project tasks laid as horizontal span
+            bars across one week, so a near-term plan reads at a glance. Read-only;
+            rescheduling lives on the Tasks calendar (#342). */}
+        <ProjectWeekCalendar
+          tasks={projectTasks.map((t) => ({
+            id: t.id,
+            title: t.title,
+            status: t.status,
+            due: t.due,
+            startAt: t.startAt,
+          }))}
+          today={new Date().toISOString().slice(0, 10)}
         />
       </section>
 

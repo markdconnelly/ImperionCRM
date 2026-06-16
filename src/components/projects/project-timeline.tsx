@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { layoutTimeline, type TimelineDependencyEdge, type TimelineTask } from "@/lib/timeline";
+import {
+  layoutTimeline,
+  type TimelineDependencyEdge,
+  type TimelineTask,
+  type UnscheduledTask,
+} from "@/lib/timeline";
 
 /**
  * Timeline / Gantt of a project's tasks (ADR-0066 C3, #343).
@@ -10,16 +15,14 @@ import { layoutTimeline, type TimelineDependencyEdge, type TimelineTask } from "
  * layout arithmetic lives in the pure, tested `layoutTimeline`; this component is
  * the SVG/grid rendering only — a server component, no client JS.
  *
- * POINT BARS, NOT SPANS — `task.start_at` gap (FE #580). A true Gantt bar spans
- * start→end, but the schema has only `task.due_at` (migration 0007); the
- * `start_at` column does not exist yet (tracked in FE #580, no migration in this
- * lane per the one-migration-per-wave rule). Each task therefore renders as a
- * point marker anchored on its due date. When #580 lands, give `layoutTimeline` a
- * `startAt` and widen the marker into a bar from start→due — the axis math is
- * already span-ready.
+ * SPAN BARS (#628). `task.start_at` landed (migration 0105), so a task with a
+ * start AND a due renders as a true Gantt bar from start→due; a task with only a
+ * due collapses to the legacy point marker on its due date. Tasks with no due
+ * date can't be placed on the axis — they're listed honestly in an "unscheduled"
+ * area below the chart rather than fabricated onto a date.
  *
  * Drag-to-reschedule / resize-suggests (the C3 "could" items) are intentionally
- * out of scope here; rescheduling already lives on the Tasks calendar (C2, #342).
+ * out of scope here (read surface); rescheduling lives on the Tasks calendar (#342).
  */
 
 const STATUS_TONE: Record<string, string> = {
@@ -51,20 +54,26 @@ export function ProjectTimeline({
 
   if (tl.bars.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-panel px-4 py-6 text-sm text-dim">
-        No dated tasks to plot on the timeline.
-        {tl.undatedCount > 0 && (
-          <>
-            {" "}
-            {tl.undatedCount} task{tl.undatedCount === 1 ? "" : "s"} have no due date — set a due date
-            to place {tl.undatedCount === 1 ? "it" : "them"} on the axis.
-          </>
-        )}
+      <div className="flex flex-col gap-3">
+        <div className="rounded-xl border border-border bg-panel px-4 py-6 text-sm text-dim">
+          No dated tasks to plot on the timeline.
+          {tl.undatedCount > 0 && (
+            <>
+              {" "}
+              {tl.undatedCount} task{tl.undatedCount === 1 ? "" : "s"} have no due date — set a due
+              date to place {tl.undatedCount === 1 ? "it" : "them"} on the axis.
+            </>
+          )}
+        </div>
+        <UnscheduledArea unscheduled={tl.unscheduled} basePath={basePath} />
       </div>
     );
   }
 
   const height = tl.bars.length * ROW_H;
+  // Minimum drawn span width (in axis fraction terms) so a same-day or near-zero
+  // span is still a visible nub, not an invisible hairline.
+  const MIN_BAR_FRAC = 0.012;
   // Map a 0..1 axis fraction to an x in the plotting track (right of the gutter).
   const xOf = (fraction: number) =>
     LABEL_W + TRACK_PAD + fraction * (1000 - LABEL_W - 2 * TRACK_PAD);
@@ -129,31 +138,58 @@ export function ProjectTimeline({
             </defs>
           </svg>
 
-          {/* Rows: label gutter + the point marker, positioned by fraction. */}
-          {tl.bars.map((b) => (
-            <div
-              key={b.id}
-              className="absolute left-0 right-0 flex items-center"
-              style={{ top: b.row * ROW_H, height: ROW_H }}
-            >
-              <Link
-                href={`${basePath}/${b.id}/edit`}
-                className="truncate px-3 text-xs text-text hover:text-accent"
-                style={{ width: LABEL_W }}
-                title={b.title}
+          {/* Rows: label gutter + either a start→due span bar or a due-point marker. */}
+          {tl.bars.map((b) => {
+            const tone = STATUS_TONE[b.status] ?? "bg-dim";
+            const leftPct = (xOf(b.startFraction) / 1000) * 100;
+            const widthPct = Math.max(
+              MIN_BAR_FRAC,
+              b.fraction - b.startFraction,
+            ) * ((1000 - LABEL_W - 2 * TRACK_PAD) / 1000) * 100;
+            return (
+              <div
+                key={b.id}
+                className="absolute left-0 right-0 flex items-center"
+                style={{ top: b.row * ROW_H, height: ROW_H }}
               >
-                {b.title}
-              </Link>
-              <span
-                className={cn(
-                  "absolute h-3 w-3 -translate-x-1/2 rounded-full ring-2 ring-panel",
-                  STATUS_TONE[b.status] ?? "bg-dim",
+                <Link
+                  href={`${basePath}/${b.id}/edit`}
+                  className="truncate px-3 text-xs text-text hover:text-accent"
+                  style={{ width: LABEL_W }}
+                  title={b.title}
+                >
+                  {b.title}
+                </Link>
+                {b.hasSpan ? (
+                  // True span: a bar from start_at → due_at.
+                  <span
+                    className={cn("absolute h-2.5 rounded-full ring-1 ring-panel", tone)}
+                    style={{
+                      left: `${leftPct}%`,
+                      width: `${widthPct}%`,
+                      top: ROW_H / 2 - 5,
+                    }}
+                    title={`${b.title} · ${b.startAt} → ${b.due}`}
+                  />
+                ) : (
+                  // No start_at (or inverted): legacy point marker on the due date.
+                  <span
+                    className={cn(
+                      "absolute h-3 w-3 -translate-x-1/2 rounded-full ring-2 ring-panel",
+                      tone,
+                      b.inverted && "ring-amber",
+                    )}
+                    style={{ left: `${(xOf(b.fraction) / 1000) * 100}%`, top: ROW_H / 2 - 6 }}
+                    title={
+                      b.inverted
+                        ? `${b.title} · due ${b.due} (start ${tasks.find((t) => t.id === b.id)?.startAt} is after due — shown as a point)`
+                        : `${b.title} · due ${b.due}`
+                    }
+                  />
                 )}
-                style={{ left: `${(xOf(b.fraction) / 1000) * 100}%`, top: ROW_H / 2 - 6 }}
-                title={`${b.title} · due ${b.due}`}
-              />
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -164,15 +200,65 @@ export function ProjectTimeline({
         </span>
         <span className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-4 rounded-full bg-accent" /> start → due
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-dim ring-1 ring-panel" /> due
+            only
+          </span>
+          <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-4 border-t border-accent-2" /> depends on
           </span>
           {tl.undatedCount > 0 && (
             <span>
-              {tl.undatedCount} undated task{tl.undatedCount === 1 ? "" : "s"} not shown
+              {tl.undatedCount} unscheduled task{tl.undatedCount === 1 ? "" : "s"} below
             </span>
           )}
         </span>
       </div>
+
+      <UnscheduledArea unscheduled={tl.unscheduled} basePath={basePath} />
+    </div>
+  );
+}
+
+/**
+ * Honest "not yet scheduled" area (#628): tasks that can't be placed on the axis
+ * because they have no due date. We never fabricate a date to draw them — they're
+ * listed here so they aren't silently dropped, distinguishing "has a start but no
+ * due" from "no dates at all".
+ */
+function UnscheduledArea({
+  unscheduled,
+  basePath,
+}: {
+  unscheduled: UnscheduledTask[];
+  basePath: string;
+}) {
+  if (unscheduled.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-panel-2/40 p-3">
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-dim">
+        Unscheduled · {unscheduled.length} task{unscheduled.length === 1 ? "" : "s"} (no due date)
+      </p>
+      <ul className="flex flex-wrap gap-1.5">
+        {unscheduled.map((t) => (
+          <li key={t.id}>
+            <Link
+              href={`${basePath}/${t.id}/edit`}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md border border-border bg-panel px-2 py-1 text-[11px] text-text hover:border-accent",
+                t.status === "done" && "text-dim line-through",
+              )}
+              title={t.hasStart ? "Has a start date but no due date" : "No start or due date"}
+            >
+              <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_TONE[t.status] ?? "bg-dim")} />
+              {t.title}
+              {!t.hasStart && <span className="text-dim/70">· no dates</span>}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

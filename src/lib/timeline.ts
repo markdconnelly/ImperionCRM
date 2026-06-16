@@ -8,22 +8,26 @@
  * no env reads; all dates are ISO `yyyy-mm-dd` strings handled in UTC to dodge
  * the local-timezone off-by-one that plagues calendar code.
  *
- * NOTE — point bars, not spans (start_at gap). A full Gantt bar needs a
- * task start *and* end. The schema has only `task.due_at` (migration 0007); the
- * `task.start_at` column that would give true start→end spans does NOT exist yet
- * and is tracked in FE #580. Until then every task renders as a point/short bar
- * anchored on its due date. When #580 lands, widen `TimelineTask` with `startAt`
- * and have `layoutTimeline` derive bar width from (start..due) instead of the
- * fixed point width — the axis math here is already span-ready.
+ * SPAN BARS (#628). `task.start_at` landed (migration 0105), so a task with both
+ * a `startAt` and a `due` renders as a true Gantt bar spanning start→due. A task
+ * with only a `due` collapses to a zero-width point on its due date (the legacy
+ * behaviour); a task with neither has no axis position and is returned in
+ * `unscheduled` for an honest "not yet scheduled" area — dates are never
+ * fabricated. The axis range covers every start AND due endpoint so a bar whose
+ * start precedes the earliest due is not clipped. A degenerate task whose start
+ * is after its due is clamped to a point on `due` (so the bar never runs
+ * backwards) and flagged `inverted` for the UI.
  */
 
-/** A task as the timeline consumes it — id, label, due date, status. */
+/** A task as the timeline consumes it — id, label, due date, optional start, status. */
 export interface TimelineTask {
   id: string;
   title: string;
   status: string;
-  /** ISO `yyyy-mm-dd` due date, or null when undated (excluded from the axis). */
+  /** ISO `yyyy-mm-dd` due date, or null when undated (no axis position → unscheduled). */
   due: string | null;
+  /** ISO `yyyy-mm-dd` start date (#628), or null/undefined → bar collapses to a due point. */
+  startAt?: string | null;
 }
 
 /** One predecessor → successor dependency edge within the project (#336). */
@@ -32,16 +36,26 @@ export interface TimelineDependencyEdge {
   successorId: string;
 }
 
-/** A task placed on the axis: its column position and the row it occupies. */
+/** A task placed on the axis: its span position and the row it occupies. */
 export interface TimelineBar {
   id: string;
   title: string;
   status: string;
-  /** ISO `yyyy-mm-dd` the bar is anchored on (the due date). */
+  /** ISO `yyyy-mm-dd` the bar ends on (the due date) — also the connector anchor. */
   due: string;
-  /** Fractional 0..1 position of the bar's anchor across the axis date range. */
+  /** ISO `yyyy-mm-dd` the bar starts on, or null when the task has no start_at. */
+  startAt: string | null;
+  /** Fractional 0..1 position of the bar's END (due) across the axis date range.
+   * Connectors anchor here so the legacy point-marker geometry is preserved. */
   fraction: number;
-  /** Row index (0-based) — undated-free tasks stack top-to-bottom by due then title. */
+  /** Fractional 0..1 position of the bar's START. Equals `fraction` when there is
+   * no start_at (the bar collapses to a point on its due date). */
+  startFraction: number;
+  /** True when the task has a real start_at that precedes its due — a drawable span. */
+  hasSpan: boolean;
+  /** True when start_at is after due (bad data): clamped to a point, flagged for the UI. */
+  inverted: boolean;
+  /** Row index (0-based) — bars stack top-to-bottom by start (then due, then title). */
   row: number;
 }
 
@@ -60,17 +74,29 @@ export interface TimelineTick {
   fraction: number;
 }
 
+/** A task that can't be placed on the axis (no due date) — shown separately. */
+export interface UnscheduledTask {
+  id: string;
+  title: string;
+  status: string;
+  /** Whether the task at least has a start_at (so the UI can say "no due date"
+   * vs "no dates at all") — never fabricated into a position. */
+  hasStart: boolean;
+}
+
 /** The fully laid-out timeline: bars, connectors, axis bounds and month ticks. */
 export interface Timeline {
   bars: TimelineBar[];
   connectors: TimelineConnector[];
-  /** Inclusive ISO `yyyy-mm-dd` axis bounds (earliest..latest due, padded). */
+  /** Inclusive ISO `yyyy-mm-dd` axis bounds — covers every start AND due, padded. */
   start: string;
   end: string;
   /** First-of-month ticks within the range, for the axis gridlines. */
   ticks: TimelineTick[];
   /** Count of tasks dropped because they have no due date (shown as a footer). */
   undatedCount: number;
+  /** The undated tasks themselves (#628), for an honest "not yet scheduled" area. */
+  unscheduled: UnscheduledTask[];
 }
 
 /** Days between two ISO dates (b − a), UTC, ignoring time-of-day. */
@@ -137,31 +163,64 @@ export function layoutTimeline(
   padDays = 2,
 ): Timeline {
   const dated = tasks.filter((t): t is TimelineTask & { due: string } => !!t.due);
-  const undatedCount = tasks.length - dated.length;
+
+  // Tasks with no due date have no axis position — return them honestly rather
+  // than inventing a date (#628). A task may have a start_at but no due; it still
+  // can't draw a bar (no end), so it's unscheduled with hasStart = true.
+  const unscheduled: UnscheduledTask[] = tasks
+    .filter((t) => !t.due)
+    .map((t) => ({ id: t.id, title: t.title, status: t.status, hasStart: !!t.startAt }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+  const undatedCount = unscheduled.length;
 
   if (dated.length === 0) {
-    return { bars: [], connectors: [], start: "", end: "", ticks: [], undatedCount };
+    return { bars: [], connectors: [], start: "", end: "", ticks: [], undatedCount, unscheduled };
   }
 
-  // Deterministic order: due date, then title (stable tiebreak).
-  const sorted = [...dated].sort((a, b) =>
-    a.due === b.due ? a.title.localeCompare(b.title) : a.due.localeCompare(b.due),
-  );
+  // A usable start_at is one that is on/before the due date. A start after its due
+  // is bad data — drop it to a point on `due` (never draw a backwards bar).
+  const effStart = (t: TimelineTask & { due: string }): string | null =>
+    t.startAt && t.startAt <= t.due ? t.startAt : null;
 
-  const minDue = sorted[0].due;
-  const maxDue = sorted[sorted.length - 1].due;
-  const start = addDays(minDue, -padDays);
-  const end = addDays(maxDue, padDays);
+  // Deterministic order: start (effective, falling back to due), then due, then title.
+  const sorted = [...dated].sort((a, b) => {
+    const sa = effStart(a) ?? a.due;
+    const sb = effStart(b) ?? b.due;
+    if (sa !== sb) return sa.localeCompare(sb);
+    if (a.due !== b.due) return a.due.localeCompare(b.due);
+    return a.title.localeCompare(b.title);
+  });
+
+  // Axis must span every endpoint — earliest of (start, due) to latest due — so a
+  // bar whose start precedes the earliest due is not clipped off the left edge.
+  let minDate = sorted[0].due;
+  let maxDate = sorted[0].due;
+  for (const t of sorted) {
+    const s = effStart(t) ?? t.due;
+    if (s < minDate) minDate = s;
+    if (t.due > maxDate) maxDate = t.due;
+  }
+  const start = addDays(minDate, -padDays);
+  const end = addDays(maxDate, padDays);
   const span = daysBetween(start, end); // > 0 because padDays > 0
+  const fractionOf = (iso: string) => (span === 0 ? 0 : daysBetween(start, iso) / span);
 
-  const bars: TimelineBar[] = sorted.map((t, row) => ({
-    id: t.id,
-    title: t.title,
-    status: t.status,
-    due: t.due,
-    fraction: span === 0 ? 0 : daysBetween(start, t.due) / span,
-    row,
-  }));
+  const bars: TimelineBar[] = sorted.map((t, row) => {
+    const es = effStart(t);
+    const inverted = !!t.startAt && t.startAt > t.due;
+    return {
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      due: t.due,
+      startAt: es,
+      fraction: fractionOf(t.due),
+      startFraction: es ? fractionOf(es) : fractionOf(t.due),
+      hasSpan: !!es && es !== t.due,
+      inverted,
+      row,
+    };
+  });
 
   const byId = new Map(bars.map((b) => [b.id, b]));
   const connectors: TimelineConnector[] = [];
@@ -176,5 +235,13 @@ export function layoutTimeline(
     });
   }
 
-  return { bars, connectors, start, end, ticks: monthTicks(start, end, span), undatedCount };
+  return {
+    bars,
+    connectors,
+    start,
+    end,
+    ticks: monthTicks(start, end, span),
+    undatedCount,
+    unscheduled,
+  };
 }

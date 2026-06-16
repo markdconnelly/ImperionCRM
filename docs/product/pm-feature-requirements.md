@@ -262,6 +262,12 @@ sales/project/onboarding/general partition.)
 
 - C2-F1 (SHOULD) Month/week calendar of tasks/milestones by due date (and start date
   if added). Drag to reschedule.
+  **Month view shipped (#342); week view of spans shipped (#628):** the Tasks page
+  carries the drag-to-reschedule month calendar; the project detail page now also
+  carries a read-only **week** calendar (`ProjectWeekCalendar`) that lays each task
+  as a start→due span bar across one Sunday-start week, navigable prev/next/today,
+  with edge-clipped bars flagged and undated tasks excluded. Pure layout
+  (`buildWeek`/`weekSpans`) in `src/lib/calendar.ts`.
 - C2-F2 (SHOULD) Filter by assignee, project, project_type, tag.
 - C2-F3 (COULD) iCal feed / Outlook overlay (read-only) — defer if it implies API.
 - AC: Moving a task on the calendar updates its due date and is audited.
@@ -270,9 +276,13 @@ sales/project/onboarding/general partition.)
 
 - C3-F1 (COULD) Timeline with bars per task/milestone (start→due), dependency
   connectors (B2), and milestone diamonds.
-  **v1 shipped (#343):** project detail page renders a Timeline section laying
-  each task on a horizontal time axis by due date, with `blocks` dependency edges
-  (B2/#336) drawn as connectors (dashed + red when out-of-order). Pure layout in
+  **v1 shipped (#343); span bars shipped (#628):** project detail page renders a
+  Timeline section laying each task on a horizontal time axis, with `blocks`
+  dependency edges (B2/#336) drawn as connectors (dashed + red when out-of-order).
+  With `task.start_at` now landed (migration 0105), a task that has both a start
+  and a due draws a true start→due **span bar**; a task with only a due collapses
+  to a point marker; tasks with no due date are listed honestly in an
+  "unscheduled" area (dates are never fabricated). Pure layout in
   `src/lib/timeline.ts` (`layoutTimeline`), rendered by
   `src/components/projects/project-timeline.tsx`; project edges read via
   `Repositories.listProjectTaskDependencies`.
@@ -280,11 +290,12 @@ sales/project/onboarding/general partition.)
   force) on change. *(Not in #343 — rescheduling lives on the Tasks calendar, C2/#342.)*
 - C3-F3 (COULD) Critical-path highlight. *(Deferred.)*
 - C3-F4 (SHOULD, if built) Requires a **start date** field on tasks (add
-  `task.start_at`). **Not yet added — tracked in #580.** Until it lands the
-  timeline renders point markers anchored on `due_at`, not start→due bars; the
-  layout math is already span-ready (widen `TimelineTask` with `startAt` when
-  the column exists). No migration in the #343 lane (one-migration-per-wave rule).
+  `task.start_at`). **Landed — `task.start_at` added in migration 0105 (#580).**
+  The timeline + week calendar now consume it for true start→due span bars (#628);
+  `TimelineTask` carries an optional `startAt` and `layoutTimeline` derives the bar
+  from (start..due), falling back to a due-anchored point when start is absent. ✅ (#628)
 - AC: A project's milestones render as a timeline; a blocked-by link draws a connector. ✅ (#343)
+- AC: A task with a start_at and due_at renders as a span bar; an undated task is listed unscheduled, not fabricated. ✅ (#628)
 
 ## C4. Multiple views per dataset
 
