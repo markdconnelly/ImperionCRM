@@ -19,6 +19,7 @@ import {
   setTaskPrimaryAction,
   setTaskWatchAction,
 } from "../../actions";
+import { applyChecklistTemplateAction } from "@/app/(app)/checklist-templates/actions";
 import { getRepositories } from "@/lib/data";
 import { auth } from "@/auth";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -47,15 +48,17 @@ export default async function EditTaskPage({
   const viewerEmail = session?.user?.email ?? null;
   const roles = await getSessionRoles();
   const canManage = canManageProjects(roles);
-  const [task, accounts, hierarchy, deps, taskOptions, assignments, users] = await Promise.all([
-    crm.getTask(id),
-    crm.accountOptions(),
-    crm.getTaskChildren(id),
-    crm.getTaskDependencies(id),
-    crm.taskOptions(id),
-    crm.getWorkAssignments("task", id, viewerEmail),
-    crm.userOptions(),
-  ]);
+  const [task, accounts, hierarchy, deps, taskOptions, assignments, users, checklistTemplates] =
+    await Promise.all([
+      crm.getTask(id),
+      crm.accountOptions(),
+      crm.getTaskChildren(id),
+      crm.getTaskDependencies(id),
+      crm.taskOptions(id),
+      crm.getWorkAssignments("task", id, viewerEmail),
+      crm.userOptions(),
+      crm.listChecklistTemplates(),
+    ]);
   if (!task) notFound();
 
   // Ticket history (#98): the synced silver ticket row carries the live
@@ -108,6 +111,8 @@ export default async function EditTaskPage({
         hierarchy={hierarchy}
         addSubtaskAction={addSubtaskAction}
         reparentTaskAction={reparentTaskAction}
+        checklistTemplates={checklistTemplates}
+        applyChecklistTemplateAction={applyChecklistTemplateAction}
       />
 
       <TaskDependencies

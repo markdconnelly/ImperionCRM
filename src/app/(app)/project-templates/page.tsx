@@ -26,6 +26,9 @@ export default async function ProjectTemplatesPage() {
         <Link href="/projects" className="text-sm text-dim transition-colors hover:text-text">
           ← Project board
         </Link>
+        <Link href="/checklist-templates" className="text-sm text-dim transition-colors hover:text-text">
+          Checklist templates →
+        </Link>
         {canWrite && (
           <Link
             href="/project-templates/new"
