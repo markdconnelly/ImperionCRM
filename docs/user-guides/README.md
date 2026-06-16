@@ -42,6 +42,9 @@ right (scoped to your Entra permissions).
 - [Company security posture](security-posture.md): read a company's posture —
   per-tenant secure score, policy classification, **DNS governance** (per-domain
   verdict + record drift, ADR-0063), and credential exposures.
+- [Omnichannel queue](omnichannel-queue.md): one prioritized inbound queue
+  unifying chat sessions + tickets across channels; coordinates ICM service-desk
+  routing (#280), read-only until that seam is wired (ADR-0074 §6).
 
 ## Walkthroughs to write
 

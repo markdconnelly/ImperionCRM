@@ -66,6 +66,9 @@ export const navSecondary: NavItem[] = [
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
+  // The omnichannel inbound queue (ADR-0074 §6, #408) — one prioritized triage queue
+  // unifying chat sessions + tickets across channels; coordinates ICM routing (#280).
+  { key: "service-desk", label: "Omnichannel queue", icon: "Inbox", href: "/service-desk" },
 ];
 
 // System group (bottom): the AI surfaces and Settings. Feedback sits LAST —
