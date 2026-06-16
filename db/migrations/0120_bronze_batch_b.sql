@@ -1,4 +1,4 @@
--- 9001 (PLACEHOLDER — renumbered to the real next-free number at merge, §10.3):
+-- 0120:
 -- bronze-batch-B — finance/logistics/interaction landing tables (#688).
 --
 -- FE owns the table names (system CLAUDE.md §1 — this repo is the schema source of
