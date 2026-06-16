@@ -115,6 +115,8 @@ import type {
   ProjectBaselineRow,
   ProjectSlippage,
   SprintRow,
+  SprintBurndownData,
+  SprintVelocityRow,
   WorkAssignments,
   WorkRole,
   WorkloadRow,
@@ -731,6 +733,23 @@ export interface CrmRepository {
   listBacklogTasks(): Promise<TaskRow[]>;
   /** Commit a task to a sprint, or null to return it to the backlog (#349). */
   setTaskSprint(taskId: string, sprintId: string | null): Promise<void>;
+
+  // Agile reporting — burndown / velocity (C5, ADR-0066, #345)
+  /**
+   * Burndown input for one sprint (#345): the sprint meta + its committed,
+   * ESTIMATED tasks (each with done-flag + best-available completion date) +
+   * dominant estimate unit + the un-estimated count. The day-by-day series is
+   * computed in `src/lib/agile-reporting.ts`. Null when the sprint is absent.
+   *
+   * Honest-degradation: no status-history table exists, so a done task's
+   * completion date is `task.updated_at` (the only timestamp that moves on close).
+   */
+  getSprintBurndownData(sprintId: string): Promise<SprintBurndownData | null>;
+  /**
+   * Per-sprint velocity (#345): committed vs completed effort for every sprint,
+   * completed-sprints first (for the velocity bar chart + rolling average).
+   */
+  listSprintVelocity(): Promise<SprintVelocityRow[]>;
 
   // Baselines / planned-vs-actual (ADR-0069 D6, #351)
   /** A project's baselines, newest-first (the first is the one slippage uses). */
