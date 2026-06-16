@@ -142,6 +142,12 @@ export default async function ReportingPage() {
         >
           Custom-field report →
         </Link>
+        <Link
+          href="/reporting/builder"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Report builder →
+        </Link>
         {canManageProjects(roles) && (
           <Link
             href="/reporting/agile"
