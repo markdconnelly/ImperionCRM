@@ -42,6 +42,9 @@ right (scoped to your Entra permissions).
 - [Company security posture](security-posture.md): read a company's posture —
   per-tenant secure score, policy classification, **DNS governance** (per-domain
   verdict + record drift, ADR-0063), and credential exposures.
+- [Service Desk — live chat agent console](service-desk-live-chat.md): work active
+  chat sessions — transcript, deflection telemetry, agent reply, and idempotent
+  escalate-to-Autotask; plus the embeddable customer chat widget (ADR-0074).
 
 ## Walkthroughs to write
 

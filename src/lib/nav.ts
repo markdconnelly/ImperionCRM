@@ -66,6 +66,9 @@ export const navSecondary: NavItem[] = [
   { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
   { key: "devices", label: "Devices & Assets", icon: "MonitorSmartphone", href: "/devices" },
   { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
+  // The live-chat agent console (ADR-0074 §6, #407) — active chat sessions, transcripts,
+  // deflection telemetry, escalate-to-Autotask. Sits with the other service-desk surfaces.
+  { key: "service-desk", label: "Service Desk", icon: "Headset", href: "/service-desk" },
 ];
 
 // System group (bottom): the AI surfaces and Settings. Feedback sits LAST —
