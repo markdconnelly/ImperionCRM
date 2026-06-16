@@ -1,7 +1,7 @@
--- 9001 (PLACEHOLDER — claim the real number at merge per system CLAUDE.md §10.3; 0122 was the
---  latest applied/repo migration, so 0123 is the next free slot once rebased on main):
--- `agent_autopilot_policy` — the data-driven autonomy dial for orchestration agents
--- (#721, ADR-0087 orchestration & observability matrix).
+-- 0123: `agent_autopilot_policy` — the data-driven autonomy dial for orchestration agents
+-- (#721, ADR-0087 orchestration & observability matrix). (Number claimed at merge per system
+--  CLAUDE.md §10.3 — 0122 was the latest repo/applied migration; 0123 was free after merging
+--  main, which added no new migration.)
 --
 -- WHY THIS EXISTS: ADR-0087 makes "autonomy is one dial, stored as data" load-bearing —
 -- gating an agent's action, or ramping it after testing, is meant to be a DATA change, not
