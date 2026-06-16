@@ -7,6 +7,7 @@ import { TaskAssignees } from "@/components/tasks/task-assignees";
 import { TaskTimeLog } from "@/components/tasks/task-time-log";
 import { TaskRecurrence } from "@/components/tasks/task-recurrence";
 import { Attachments } from "@/components/work/attachments";
+import { CustomFields } from "@/components/work/custom-fields";
 import {
   updateTaskAction,
   createTaskTicketAction,
@@ -81,6 +82,10 @@ export default async function EditTaskPage({
       )}
 
       <TaskForm action={updateTaskAction} task={task} accounts={accounts} />
+
+      {/* Custom fields (ADR-0065 B4, #614): admin-defined values on the task. A task
+          field is never project-type-scoped (projectTypeId null); editable on `delivery:write`. */}
+      <CustomFields parentType="task" parentId={task.id} projectTypeId={null} canManage={canManage} />
 
       <TaskAssignees
         taskId={task.id}
