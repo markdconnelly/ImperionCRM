@@ -40,3 +40,31 @@ flowchart LR
 Workflow execution (running steps, generating draft answers) runs in external
 functions (ADR-0018); the current scaffold defines the store, the approval gate, and
 the fit/nurture routing.
+
+## Marketing journeys (ADR-0073, #399)
+
+A marketing **journey** is the same `workflow` substrate, not a second engine: a
+`workflow` row with `kind = 'journey'` whose ordered steps, A/B variants, and source
+segments live embedded in `workflow.definition` (jsonb). There are **no**
+`journey_step` / `journey_enrollment` child tables — the journey is authored,
+versioned, and reasoned about as one object (ADR-0073 decision 1, migration 0115).
+Enrollment reuses `workflow_enrollment` (one active per `(workflow, contact)`,
+idempotent).
+
+- **Step kinds**: `send` (composer template, gated per ADR-0058 — A/B variants are
+  send-step config, sticky per enrollee) · `wait` (delay in hours) · `branch`
+  (engagement predicate `opened|clicked|replied|bounced|no_action` → if/else step) ·
+  `score` (lead-score delta) · `exit`.
+- **Surface** (this repo, GUI only): `/journeys` (list) → `/journeys/[id]` (read-only
+  flow viewer, #397) → `/journeys/[id]/edit` (the **builder**, #399 — add/reorder/edit
+  steps, author A/B variants, live structural validation). Create at `/journeys/new`.
+  The builder edits the single in-memory object and saves the whole `definition` back
+  via the data layer (`createJourney` / `saveJourney`); the server action re-parses the
+  untrusted blob through `lib/journey.ts` before persisting.
+- **Honest degradation**: enrollment **targeting is disabled** in the builder because
+  the `segment` / `segment_member` model has no schema yet (#420 / #421, ADR-0073
+  decision 2) — the journey still authors + saves, it just cannot enrol until segments
+  land. Composer template fields are free-text ids until a template index is wired.
+- **No gate bypass** (ADR-0058/0055): authoring a send step does not send; the backend
+  journey runner (#398) crosses the approval gate + autonomy dial at runtime. This
+  front end authors structure only (ADR-0042).
