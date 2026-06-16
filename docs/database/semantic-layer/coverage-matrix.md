@@ -1,18 +1,20 @@
 ---
 type: OKF Reference
 title: Master coverage matrix
-description: Every data object → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
+description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
-tags: [semantic-layer, okf, coverage, matrix, medallion, icm]
-timestamp: 2026-06-15T01:00:00Z
+tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
+timestamp: 2026-06-16T00:00:00Z
 ---
 
 # Master coverage matrix
 
-Every object in the system → its **implementation archetype** → whether it has an **IKF
-(OKF) concept file** yet → the **ICM workflow** that acts on it. Archetypes and the loop
-are defined in
-[data-and-automation-doctrine](../../architecture/data-and-automation-doctrine.md).
+Every object in the system → its **owning domain** → **implementation archetype** →
+whether it has an **IKF (OKF) concept file** yet → the **ICM workflow** that acts on it.
+Archetypes and the loop are defined in
+[data-and-automation-doctrine](../../architecture/data-and-automation-doctrine.md); the
+domain tier is [ADR-0088](../../decision-records/ADR-0088-icm-self-hosted-managed-agents-runtime.md)
+(epic [#695](https://github.com/markdconnelly/ImperionCRM/issues/695)).
 
 **IKF status:** ✅ concept file exists · ⏳ planned (expansion, #536). **Authored
 concepts** live in [`tables/`](tables/). The matrix is the whole picture; concept files
@@ -23,147 +25,155 @@ silver · **C** append-only ledger + derived view · **D** write-back sidecar (i
 external write) · **E** golden/drift · **F** reconciliation view · **G** gold knowledge
 object · **H** reference/config/identity.
 
+**Domain legend (ADR-0088):** every entity has **exactly one** owning domain — the rule
+that validates the carve (zero or two domains = a defect to resolve). Nine verticals:
+**Marketing · Sales · Delivery · Service Desk · Customer Success · Finance · People ·
+Knowledge · Security**. Two non-vertical markers: **kernel** — the shared customer record
+referenced everywhere (`account`/`contact`/`employee`/`contract`); **horizontal** — an
+inherited concern (governance/identity/observability/data-platform), owned by the
+Constitution, not a vertical. Contested rows are the seams flagged at the end.
+
 ## CRM core
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [account](tables/account.md) | A | ✅ | research / QBR-prep; lead dedupe |
-| [contact](tables/contact.md) | A | ✅ | research; lead-response |
-| [device](tables/device.md) | A | ✅ | asset/security context |
-| external_identity | H | ⏳ | identity resolution |
-| contact_social_identity | B | ⏳ | enrichment |
-| contact_enrichment | B | ⏳ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [account](tables/account.md) | kernel | A | ✅ | research / QBR-prep; lead dedupe |
+| [contact](tables/contact.md) | kernel | A | ✅ | research; lead-response |
+| [device](tables/device.md) | Service Desk | A | ✅ | asset/security context |
+| external_identity | horizontal | H | ⏳ | identity resolution |
+| contact_social_identity | kernel | B | ⏳ | enrichment |
+| contact_enrichment | kernel | B | ⏳ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
 
 ## Sales
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [opportunity](tables/opportunity.md) | A | ✅ | sale→delivery; forecasting |
-| [quota](tables/quota.md) | B | ✅ | forecasting (attainment) |
-| [forecast_snapshot](tables/forecast_snapshot.md) | C | ✅ | forecasting (nightly trend/accuracy) |
-| [proposal](tables/proposal.md) | B | ✅ | proposal-draft |
-| [esign_envelope](tables/esign_envelope.md) | B (DocuSign SoR) | ✅ | e-signature (sale→delivery, DocuSign-gated) |
-| [assessment](tables/assessment.md) | B | ✅ | assessment delivery |
-| [assessment_artifact](tables/assessment_artifact.md) | B | ✅ | assessment evidence |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [opportunity](tables/opportunity.md) | Sales | A | ✅ | sale→delivery; forecasting |
+| [quota](tables/quota.md) | Sales | B | ✅ | forecasting (attainment) |
+| [forecast_snapshot](tables/forecast_snapshot.md) | Sales | C | ✅ | forecasting (nightly trend/accuracy) |
+| [proposal](tables/proposal.md) | Sales | B | ✅ | proposal-draft |
+| [esign_envelope](tables/esign_envelope.md) | Sales | B (DocuSign SoR) | ✅ | e-signature (sale→delivery, DocuSign-gated) |
+| [assessment](tables/assessment.md) | Sales | B | ✅ | assessment delivery |
+| [assessment_artifact](tables/assessment_artifact.md) | Sales | B | ✅ | assessment evidence |
 
 ## Delivery / PM
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [project](tables/project.md) | B | ✅ | provisioning |
-| [delivery_template](tables/delivery_template.md) | B | ✅ | provisioning (instantiation) |
-| [task](tables/task.md) | B | ✅ | service-desk / onboarding |
-| [sprint](tables/sprint.md) | B | ✅ | provisioning / delivery (iteration planning) |
-| [project_baseline](tables/project_baseline.md) | B | ✅ | provisioning / delivery (planned-vs-actual) |
-| [project_template](tables/project_template.md) | B | ✅ | provisioning / delivery (project instantiation) |
-| project_provisioning | D | ⏳ | provisioning executor (autonomy-dialed) |
-| task_ticket_fire | D | ⏳ | JIT ticket-fire executor |
-| project_milestone, delivery_template_phase/_task, onboarding_step, meeting_action_item | B | ⏳ | provisioning / onboarding |
-| project_type | H | ⏳ | n/a (reference) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [project](tables/project.md) | Delivery | B | ✅ | provisioning |
+| [delivery_template](tables/delivery_template.md) | Delivery | B | ✅ | provisioning (instantiation) |
+| [task](tables/task.md) | Delivery | B | ✅ | service-desk / onboarding |
+| [sprint](tables/sprint.md) | Delivery | B | ✅ | provisioning / delivery (iteration planning) |
+| [project_baseline](tables/project_baseline.md) | Delivery | B | ✅ | provisioning / delivery (planned-vs-actual) |
+| [project_template](tables/project_template.md) | Delivery | B | ✅ | provisioning / delivery (project instantiation) |
+| project_provisioning | Delivery | D | ⏳ | provisioning executor (autonomy-dialed) |
+| task_ticket_fire | Delivery | D | ⏳ | JIT ticket-fire executor |
+| project_milestone, delivery_template_phase/_task, onboarding_step, meeting_action_item | Delivery | B | ⏳ | provisioning / onboarding |
+| project_type | Delivery | H | ⏳ | n/a (reference) |
 
 ## Engagement / service
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [discovery_call](tables/discovery_call.md) | B | ✅ | discovery-prep |
-| [strategic_business_review](tables/strategic_business_review.md) | B | ✅ | QBR / SBR-prep |
-| [ticket](tables/ticket.md) | B (Autotask SoR) | ✅ | service-desk |
-| [chat_session](tables/chat_session.md) | B (native pre-ticket + deflection) | ✅ | service-desk (chatbot deflection / routing) |
-| sbr_dimension_score, sbr_ticket | B | ⏳ | SBR-prep |
-| question_template, question, engagement_answer | B | ⏳ | discovery / assessment capture |
-| [contract](tables/contract.md) | B | ✅ | sale→delivery (DocuSign-gated) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [discovery_call](tables/discovery_call.md) | Sales | B | ✅ | discovery-prep |
+| [strategic_business_review](tables/strategic_business_review.md) | Customer Success | B | ✅ | QBR / SBR-prep |
+| [ticket](tables/ticket.md) | Service Desk | B (Autotask SoR) | ✅ | service-desk |
+| [chat_session](tables/chat_session.md) | Service Desk | B (native pre-ticket + deflection) | ✅ | service-desk (chatbot deflection / routing) |
+| sbr_dimension_score, sbr_ticket | Customer Success | B | ⏳ | SBR-prep |
+| question_template, question, engagement_answer | Sales | B | ⏳ | discovery / assessment capture |
+| [contract](tables/contract.md) | kernel | B | ✅ | sale→delivery (DocuSign-gated) |
 
 ## Communications
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [interaction](tables/interaction.md) | B (+ gold) | ✅ | every workflow's research stage |
-| [meeting](tables/meeting.md) | B | ✅ | meeting follow-up |
-| [conversation](tables/conversation.md) | B (+ gold) | ✅ | conversational intelligence (transcribe→analyze→embed) |
-| conversation_segment (embedding unit), conversation_insight (AI output) | B / G | ⏳ | conversational intelligence; risk/objection → forecasting |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [interaction](tables/interaction.md) | Knowledge | B (+ gold) | ✅ | every workflow's research stage |
+| [meeting](tables/meeting.md) | Knowledge | B | ✅ | meeting follow-up |
+| [conversation](tables/conversation.md) | Knowledge | B (+ gold) | ✅ | conversational intelligence (transcribe→analyze→embed) |
+| conversation_segment (embedding unit), conversation_insight (AI output) | Knowledge | B / G | ⏳ | conversational intelligence; risk/objection → forecasting |
 
 ## Consent / enrichment / exposure
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [consent_event](tables/consent_event.md) → current_consent | C → F | ✅ | **gates all sends & ads** |
-| [credential_exposure](tables/credential_exposure.md) | A | ✅ | exposure-response |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [consent_event](tables/consent_event.md) → current_consent | horizontal | C → F | ✅ | **gates all sends & ads** (Governance) |
+| [credential_exposure](tables/credential_exposure.md) | Security | A | ✅ | exposure-response |
 
 ## Demand generation
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [campaign](tables/campaign.md) | B | ✅ | lead-response / nurture |
-| [workflow](tables/workflow.md) → step/enrollment | B | ✅ | nurture executor |
-| [workflow](tables/workflow.md) kind=journey (definition jsonb) | B | ✅ | journey runner (ADR-0073, #398) |
-| [lead_score](tables/lead_score.md) | C | ✅ | lead scoring (rule; routing/journeys/forecast) |
-| ad, campaign_metric, campaign_send | B | ⏳ | campaign ops |
-| audience, audience_member | B | ⏳ | segmentation |
-| event, event_registration, lead_hook, lead_capture_event | B | ⏳ | lead-response |
-| social_metric | B | ⏳ | BI / reporting |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [campaign](tables/campaign.md) | Marketing | B | ✅ | lead-response / nurture |
+| [workflow](tables/workflow.md) → step/enrollment | Marketing | B | ✅ | nurture executor |
+| [workflow](tables/workflow.md) kind=journey (definition jsonb) | Marketing | B | ✅ | journey runner (ADR-0073, #398) |
+| [lead_score](tables/lead_score.md) | Marketing | C | ✅ | lead scoring (rule; routing/journeys/forecast) |
+| ad, campaign_metric, campaign_send | Marketing | B | ⏳ | campaign ops |
+| audience, audience_member | Marketing | B | ⏳ | segmentation |
+| event, event_registration, lead_hook, lead_capture_event | Marketing | B | ⏳ | lead-response |
+| social_metric | Marketing | B | ⏳ | BI / reporting |
 
 ## Time
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [time_record](tables/time_record.md) | A | ✅ | monthly-close |
-| [timesheet](tables/timesheet.md) | B | ✅ | time-approval |
-| time_ticket | D | ⏳ | Time Ticket writer (→ Autotask) |
-| employee_profile, pay_rate | H | ⏳ | n/a (comp-gated) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [time_record](tables/time_record.md) | Finance | A | ✅ | monthly-close |
+| [timesheet](tables/timesheet.md) | Finance | B | ✅ | time-approval |
+| time_ticket | Finance | D | ⏳ | Time Ticket writer (→ Autotask) |
+| employee_profile, pay_rate | People | H | ⏳ | n/a (comp-gated) |
 
 ## Expense
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [expense_item](tables/expense_item.md) | A | ✅ | monthly-close |
-| [expense_report](tables/expense_report.md) | B | ✅ | expense-approval |
-| autotask_expense_report | D | ⏳ | ExpenseReport writer (→ Autotask) |
-| expense_reconciliation | F | ⏳ | monthly-close (QBO match) |
-| receipt_attachment | B | ⏳ | receipt handling |
-| expense_category, qbo_expense_account, mileage_rate | H | ⏳ | n/a (config; rate comp-gated) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [expense_item](tables/expense_item.md) | Finance | A | ✅ | monthly-close |
+| [expense_report](tables/expense_report.md) | Finance | B | ✅ | expense-approval |
+| autotask_expense_report | Finance | D | ⏳ | ExpenseReport writer (→ Autotask) |
+| expense_reconciliation | Finance | F | ⏳ | monthly-close (QBO match) |
+| receipt_attachment | Finance | B | ⏳ | receipt handling |
+| expense_category, qbo_expense_account, mileage_rate | Finance | H | ⏳ | n/a (config; rate comp-gated) |
 
 ## Security / MSSP
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [posture_snapshot](tables/posture_snapshot.md) (+pillar) | C (INSERT-only) | ✅ | posture-report |
-| [tenant_posture](tables/tenant_posture.md) | E | ✅ | drift-monitor |
-| [dns_domain](tables/dns_domain.md) | E | ✅ | DNS drift-monitor |
-| [dns_golden](tables/dns_golden.md) | E | ✅ | golden approval (human-gated) |
-| posture_policy, *_golden (CA / Intune / Autopilot / device-config / Defender XDR) | E | ⏳ | drift-monitor (autonomy-dialed) |
-| account_domain | H | ⏳ | domain registry (operator-curated) |
-| defender_incidents, defender_alerts | B | ⏳ | incident triage |
-| defender_incident_ticket_link | D | ⏳ | incident→ticket (ADR-0059) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [posture_snapshot](tables/posture_snapshot.md) (+pillar) | Security | C (INSERT-only) | ✅ | posture-report |
+| [tenant_posture](tables/tenant_posture.md) | Security | E | ✅ | drift-monitor |
+| [dns_domain](tables/dns_domain.md) | Security | E | ✅ | DNS drift-monitor |
+| [dns_golden](tables/dns_golden.md) | Security | E | ✅ | golden approval (human-gated) |
+| posture_policy, *_golden (CA / Intune / Autopilot / device-config / Defender XDR) | Security | E | ⏳ | drift-monitor (autonomy-dialed) |
+| account_domain | Security | H | ⏳ | domain registry (operator-curated) |
+| defender_incidents, defender_alerts | Security | B | ⏳ | incident triage |
+| defender_incident_ticket_link | Security | D | ⏳ | incident→ticket (ADR-0059) |
 
 ## Knowledge (gold)
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [knowledge_object](tables/knowledge_object.md) | G | ✅ | RAG for all workflows |
-| knowledge_embedding | G | ⏳ | (vector pair; Voyage 1024d) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [knowledge_object](tables/knowledge_object.md) | Knowledge | G | ✅ | RAG for all workflows |
+| knowledge_embedding | Knowledge | G | ⏳ | (vector pair; Voyage 1024d) |
 
 ## Reference / config / identity
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| [app_user](tables/app_user.md) | H | ✅ | n/a (RBAC) |
-| [connection](tables/connection.md) | H | ✅ | n/a (sync config) |
-| agent, agent_tool_grant, agent_settings | H | ⏳ | n/a (agent config) |
-| account_tenant, saved_view | H | ⏳ | n/a |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [app_user](tables/app_user.md) | horizontal | H | ✅ | n/a (Identity / RBAC) |
+| [connection](tables/connection.md) | horizontal | H | ✅ | n/a (Data Platform / sync config) |
+| agent, agent_tool_grant, agent_settings | horizontal | H | ⏳ | n/a (Governance / agent config) |
+| account_tenant, saved_view | horizontal | H | ⏳ | n/a |
 
 ## Audit / governance
 
-| Object | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|
-| audit_log | C | n/a | (the audit substrate) |
-| agent_run, agent_message, agent_memory | C / B / G | n/a | orchestrator telemetry |
-| board_session (+member/+message/+recommendation) | B | n/a | board deliberation |
-| feature_request (+vote/+status_history) | B | n/a | feedback (GitHub-coupled) |
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| audit_log | horizontal | C | n/a | (Observability — the audit substrate) |
+| agent_run, agent_message, agent_memory | horizontal | C / B / G | n/a | Observability — orchestrator telemetry |
+| board_session (+member/+message/+recommendation) | horizontal | B | n/a | Governance — board deliberation |
+| feature_request (+vote/+status_history) | horizontal | B | n/a | Engineering — feedback (GitHub-coupled) |
 
 ## Bronze source tables (raw, per-source — archetype inputs)
 
-Bronze never gets its own concept file (it is raw, lossless input); each feeds a silver
-entity above.
+Bronze never gets its own concept file (it is raw, lossless input) and carries no domain
+of its own — it inherits the domain of the silver entity it feeds.
 
 | Feeds | Bronze tables |
 |---|---|
@@ -177,10 +187,25 @@ entity above.
 | posture / dns (C/E) | `secure_scores` · `defender_incidents/_alerts` · `entra_*` · `intune_*` · `*_golden` · `dns_zones` · `dns_records` · `sharepoint_sites` · `azure_*` · `sentinel_*` |
 | social_metric (B) | `meta_insights` |
 
+## Seams to resolve (the one-domain rule)
+
+These rows are defensibly single-owned today but sit on a boundary; revisit as the domain
+tier matures:
+
+- **`device`** — Service Desk (CMDB authority) vs Security (asset context). Owned by Service
+  Desk; Security reads it.
+- **`time_record` / `timesheet`** — Finance (monthly-close authority) vs People (workforce).
+  Owned by Finance; People reads attendance.
+- **`contact_enrichment` / `contact_social_identity`** — kernel satellite vs Marketing demand.
+  Kept on **kernel** as contact extensions; Marketing consumes.
+- **`discovery_call` / `assessment*`** — Sales (qualification) vs Customer Success. Owned by
+  Sales; CS consumes downstream.
+
 ---
 
 Expansion of remaining ⏳ concepts is tracked in
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536). The staleness CI gate
 ([#535](https://github.com/markdconnelly/ImperionCRM/issues/535)) is **live**: a PR
 changing a silver table with a ✅ concept file must update that file in the same PR
-(see [semantic-layer-gate](../../operations/semantic-layer-gate.md)).
+(see [semantic-layer-gate](../../operations/semantic-layer-gate.md)). The domain column
+feeds the planned `icm-conformance` check ([#702](https://github.com/markdconnelly/ImperionCRM/issues/702)).
