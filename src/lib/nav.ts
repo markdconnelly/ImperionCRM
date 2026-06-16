@@ -32,6 +32,10 @@ export const navSecondary: NavItem[] = [
   { key: "assessments", label: "Assessments", icon: "ShieldAlert", href: "/assessments" },
   { key: "proposals", label: "Proposals", icon: "FileText", href: "/proposals" },
   { key: "contracts", label: "Contracts", icon: "FileSignature", href: "/contracts" },
+  // AR collections / dunning worklist (#678, ADR-0085 QBO read-only) — overdue invoices
+  // from the read-only invoice mirror + the app-native dunning overlay. Finance∨admin
+  // (`canSeeCollections`, nav-guarded). App-native: never writes QuickBooks.
+  { key: "collections", label: "Collections", icon: "BadgeDollarSign", href: "/collections" },
   // The project board (ADR-0052) — "board" unqualified is the AI Board of Directors.
   { key: "projects", label: "Projects", icon: "FolderKanban", href: "/projects" },
   { key: "onboarding", label: "Onboarding", icon: "Rocket", href: "/onboarding" },
