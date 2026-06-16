@@ -27,6 +27,13 @@ and memory, **enforces permissions**, and returns one response. The AI stack is
 **settled** (ADR-0043 / backend ADR-0034): **Claude** for generation (Haiku cheap tier,
 Sonnet premium tier) + **Voyage `voyage-3-large` @ 1024** for embeddings.
 
+## The orchestration & observability matrix (ADR-0087)
+
+The single map of **every agent** — the five-tier taxonomy (Triage · Dispatch · Execute ·
+Observe/Govern · Spine), each role's autonomy rung (one dial, stored in
+`autopilot_policies`), the workflows + tools wired per tier, and the OKF concept files
+each role loads: **[orchestration-matrix.md](orchestration-matrix.md)**.
+
 ## What belongs here
 
 Every agent gets a dedicated doc: **identity · responsibilities · inputs · outputs ·
