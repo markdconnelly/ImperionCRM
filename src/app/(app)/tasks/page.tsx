@@ -11,7 +11,7 @@ import { parseCustomFieldFilter, encodeCustomFieldFilter } from "@/lib/custom-fi
 import { TagChip } from "@/components/tags/tag-chip";
 import {
   deleteTaskAction,
-  moveTaskAction,
+  moveTaskStatusDefAction,
   moveTaskCategoryAction,
   moveTaskDueAction,
 } from "./actions";
@@ -162,6 +162,13 @@ export default async function TasksPage({
           ),
         ])
       : [{}, {}];
+
+  // Status columns for the board (#613, ADR-0065 B5): the resolved task status_def
+  // set, ordered by ordinal. Tasks are never project-type-scoped (the 0104 migration
+  // forces task rows to scope=global), so this is the single global task set. Board
+  // view only — the list/calendar render neither.
+  const taskStatusDefs =
+    activeView === "board" ? await crm.listStatusDefs("task", null) : [];
 
   // Saved views (ADR-0066 C4, #344): the current canonical query string the
   // user is looking at, derived from the SAME `href()` builder the toggle uses
@@ -345,12 +352,13 @@ export default async function TasksPage({
       {activeView === "board" ? (
         <TasksBoard
           tasks={tasks}
+          statusDefs={taskStatusDefs}
           groupBy={activeGroup}
           swimBy={activeSwim}
           tagsByTask={tagsByTask}
           assigneesByTask={assigneesByTask}
           countsByTask={countsByTask}
-          moveStatusAction={moveTaskAction}
+          moveStatusAction={moveTaskStatusDefAction}
           moveCategoryAction={moveTaskCategoryAction}
         />
       ) : activeView === "calendar" ? (

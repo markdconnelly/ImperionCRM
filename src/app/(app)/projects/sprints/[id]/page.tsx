@@ -6,7 +6,7 @@ import { TasksBoard } from "@/components/tasks/tasks-board";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageProjects } from "@/lib/auth/roles";
-import { moveTaskAction, moveTaskCategoryAction } from "../../../tasks/actions";
+import { moveTaskStatusDefAction, moveTaskCategoryAction } from "../../../tasks/actions";
 import {
   addTasksToSprintAction,
   removeTaskFromSprintAction,
@@ -52,9 +52,11 @@ export default async function SprintDetailPage({ params }: { params: Promise<{ i
   const sprint = await crm.getSprint(id);
   if (!sprint) notFound();
 
-  const [tasks, backlog] = await Promise.all([
+  const [tasks, backlog, taskStatusDefs] = await Promise.all([
     crm.listSprintTasks(id),
     sprint.status === "completed" ? Promise.resolve([]) : crm.listBacklogTasks(),
+    // Status columns for the sprint board (#613, ADR-0065 B5) — the global task set.
+    crm.listStatusDefs("task", null),
   ]);
 
   const window =
@@ -134,8 +136,9 @@ export default async function SprintDetailPage({ params }: { params: Promise<{ i
         <h2 className="text-sm font-medium text-text">Board</h2>
         <TasksBoard
           tasks={tasks}
+          statusDefs={taskStatusDefs}
           groupBy="status"
-          moveStatusAction={moveTaskAction}
+          moveStatusAction={moveTaskStatusDefAction}
           moveCategoryAction={moveTaskCategoryAction}
         />
       </section>

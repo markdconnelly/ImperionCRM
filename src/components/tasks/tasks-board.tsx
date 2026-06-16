@@ -4,6 +4,8 @@ import { cn } from "@/lib/cn";
 import { KanbanBoard, type KanbanLane } from "@/components/ui/kanban-board";
 import { TagChip } from "@/components/tags/tag-chip";
 import { CardEngagement } from "@/components/work/card-engagement";
+import { statusLanes, statusLaneOf } from "@/lib/status-lanes";
+import type { StatusDefRow } from "@/lib/data/repositories";
 import type { AppliedTag, EngagementCounts, TaskRow, WorkAssignmentRow } from "@/types";
 
 /**
@@ -22,12 +24,14 @@ import type { AppliedTag, EngagementCounts, TaskRow, WorkAssignmentRow } from "@
  * attachment count footer (`countsByTask`), each from a board-only bulk read
  * (`listAssigneesForMany` / `listEngagementCountsForMany`) so the board never
  * N+1s. No migration — every table already exists (ADR-0064 / ADR-0065 B3).
+ *
+ * Status columns (#613, ADR-0065 B5) come from the resolved `status_def` set the page
+ * passes in (`statusDefs`, ordered by ordinal), never a hard-coded enum. A card
+ * buckets by its `statusDefKey` when set, else the legacy `status` (default-set keys
+ * reproduce the legacy enum, so unmigrated tasks still place). A status drop persists
+ * the dropped lane key through `moveStatusAction`, which resolves it to the status_def
+ * id and dual-stamps the FK + legacy text status. Category lanes stay the fixed enum.
  */
-const STATUS_LANES: KanbanLane[] = [
-  { key: "open", label: "Open", tone: "text-amber" },
-  { key: "in_progress", label: "In progress", tone: "text-accent" },
-  { key: "done", label: "Done", tone: "text-green" },
-];
 
 const CATEGORY_LANES: KanbanLane[] = [
   { key: "sales", label: "Sales" },
@@ -64,6 +68,7 @@ export function taskCardMeta(t: TaskRow, tags: Record<string, AppliedTag[]>) {
 
 export function TasksBoard({
   tasks,
+  statusDefs,
   groupBy,
   swimBy = "none",
   tagsByTask = {},
@@ -73,6 +78,9 @@ export function TasksBoard({
   moveCategoryAction,
 }: {
   tasks: TaskRow[];
+  /** Resolved task status_def set (ADR-0065 B5, #613), ordered by ordinal — the status
+   *  columns. Tasks are never project-type-scoped, so this is the global task set. */
+  statusDefs: StatusDefRow[];
   groupBy: TaskGroupBy;
   swimBy?: TaskSwimBy;
   /** parentId → applied tag chips (ADR-0065 B6, #340) for rich cards (#439 C1-F4). */
@@ -81,13 +89,14 @@ export function TasksBoard({
   assigneesByTask?: Record<string, WorkAssignmentRow[]>;
   /** parentId → live comment/attachment counts (ADR-0064, #608 C1-F4) for the card footer. */
   countsByTask?: Record<string, EngagementCounts>;
-  moveStatusAction: (id: string, status: string) => Promise<void>;
+  /** Persist a status drop: receives the dropped status_def KEY (ADR-0065 B5, #613). */
+  moveStatusAction: (id: string, statusKey: string) => Promise<void>;
   moveCategoryAction: (id: string, category: string) => Promise<void>;
 }) {
   const config =
     groupBy === "category"
       ? { lanes: CATEGORY_LANES, laneOf: (t: TaskRow) => t.category, onMove: moveCategoryAction }
-      : { lanes: STATUS_LANES, laneOf: (t: TaskRow) => t.status, onMove: moveStatusAction };
+      : { lanes: statusLanes(statusDefs), laneOf: statusLaneOf, onMove: moveStatusAction };
 
   // Swimlane bands (#447): category uses the fixed enum lanes; account is derived
   // from the live set of account names present (sorted, blanks → Unassigned band).

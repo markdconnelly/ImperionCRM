@@ -9,6 +9,13 @@ export interface KanbanLane {
   key: string;
   label: string;
   tone?: string;
+  /**
+   * Optional explicit header color (a CSS color, e.g. a `status_def.color` hex,
+   * ADR-0065 B5, #613). When set it wins over `tone` for the lane label via an inline
+   * style — configurable statuses carry admin-chosen colors the Tailwind `tone`
+   * classes can't name. The over-limit red still overrides both.
+   */
+  color?: string;
 }
 
 /** Separator for the (swimlane, lane) drop-target highlight key — never in a key. */
@@ -206,8 +213,9 @@ export function KanbanBoard<T>({
                 <span
                   className={cn(
                     "text-sm font-medium",
-                    overLimit ? "text-red" : (lane.tone ?? "text-text"),
+                    overLimit ? "text-red" : !lane.color ? (lane.tone ?? "text-text") : undefined,
                   )}
+                  style={!overLimit && lane.color ? { color: lane.color } : undefined}
                 >
                   {lane.label}
                 </span>
@@ -274,8 +282,9 @@ export function KanbanBoard<T>({
                 <span
                   className={cn(
                     "text-sm font-medium",
-                    overLimit ? "text-red" : (lane.tone ?? "text-text"),
+                    overLimit ? "text-red" : !lane.color ? (lane.tone ?? "text-text") : undefined,
                   )}
+                  style={!overLimit && lane.color ? { color: lane.color } : undefined}
                 >
                   {lane.label}
                 </span>

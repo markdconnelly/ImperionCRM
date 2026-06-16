@@ -155,6 +155,42 @@ describe("configurable-status admin CRUD (ADR-0065 B5, #616)", () => {
   });
 });
 
+describe("configurable-status board dual-stamp writers (ADR-0065 B5, #613)", () => {
+  it("setTaskStatusDef stamps BOTH status_def_id and the legacy text status (=key) and returns prev", async () => {
+    query.mockResolvedValueOnce({ rows: [{ prev_status: "open" }] });
+    const prev = await crm.setTaskStatusDef("t1", "sd-done");
+    const [sql, params] = query.mock.calls[0];
+    // Resolves the status_def (task context) and writes both columns in one statement.
+    expect(sql).toMatch(/FROM status_def WHERE id = \$2 AND context = 'task'/);
+    expect(sql).toMatch(/SET status = sd\.key, status_def_id = sd\.id/);
+    expect(sql).toMatch(/prev_status/);
+    expect(params).toEqual(["t1", "sd-done"]);
+    expect(prev).toBe("open"); // drives the #438 X→Y activity guard
+  });
+
+  it("setTaskStatusDef returns null when the task/status_def did not resolve (no-op)", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(await crm.setTaskStatusDef("missing", "sd-x")).toBeNull();
+  });
+
+  it("setProjectStatusDef stamps the FK + maps category→legacy enum + restamps started/completed", async () => {
+    query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    await crm.setProjectStatusDef("p1", "sd-waiting");
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/FROM status_def WHERE id = \$2 AND context = 'project'/);
+    // Category→enum mapping so the legacy project_status enum stays valid for a custom status.
+    expect(sql).toMatch(/WHEN 'todo' THEN 'not_started'/);
+    expect(sql).toMatch(/WHEN 'done' THEN 'complete'/);
+    expect(sql).toMatch(/ELSE 'in_progress'/);
+    expect(sql).toMatch(/status_def_id = sd\.id/);
+    expect(sql).toMatch(/status = sd\.legacy_status::project_status/);
+    // started_at/completed_at restamped off the derived enum, like setProjectStatus.
+    expect(sql).toMatch(/started_at = CASE WHEN sd\.legacy_status = 'not_started'/);
+    expect(sql).toMatch(/completed_at = CASE WHEN sd\.legacy_status = 'complete'/);
+    expect(params).toEqual(["p1", "sd-waiting"]);
+  });
+});
+
 describe("configurable-status mock CRUD round-trip (#616)", () => {
   beforeEach(() => getPool.mockReturnValue(null));
 

@@ -570,6 +570,15 @@ export interface ProjectRow {
   owner: string | null; // owning app_user display name
   status: string; // project_status label
   targetLive: string | null; // formatted target go-live date
+  /**
+   * Configurable-status key (ADR-0065 B5, #613): the `status_def.key` this project's
+   * `status_def_id` resolves to, or null when the FK is unset (compatibility window).
+   * The kanban board buckets a card by this when present, else by the legacy `status`
+   * (default-set keys reproduce the legacy enum, so unmigrated rows still place
+   * correctly). Lets a project sit in a per-type custom column the legacy enum cannot
+   * name (e.g. Onboarding's "Waiting on client").
+   */
+  statusDefKey?: string | null;
 }
 
 /**
@@ -1340,6 +1349,14 @@ export interface TaskRow {
   estimateUnit: string | null;
   /** Sum of logged minutes across this task's time_entry rows (#346); 0 when none. */
   loggedMinutes: number;
+  /**
+   * Configurable-status key (ADR-0065 B5, #613): the `status_def.key` this task's
+   * `status_def_id` resolves to, or null when the FK is unset (compatibility window).
+   * The kanban board buckets a card by this when present, else by the legacy `status`
+   * (default-set keys reproduce the legacy enum, so unmigrated rows still place
+   * correctly).
+   */
+  statusDefKey?: string | null;
 }
 
 /**

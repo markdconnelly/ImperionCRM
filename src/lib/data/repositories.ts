@@ -1074,6 +1074,16 @@ export interface CrmRepository {
    * emit an `task.status_changed` activity event only on a real X→Y move (#438).
    */
   setTaskStatus(id: string, status: string): Promise<string | null>;
+  /**
+   * Stamp a task's status from a configurable-status board drop (ADR-0065 B5, #613).
+   * Given the target `status_def.id`, writes BOTH the new `status_def_id` FK AND the
+   * legacy `status` text column (back-compat during the compatibility window) — the
+   * latter set to the status_def's `key` (task.status is free text, so any key fits).
+   * Returns the PREVIOUS legacy status (null if the task was absent) so the caller can
+   * emit a `task.status_changed` activity event on a real X→Y move, mirroring
+   * `setTaskStatus`. A status_def id of another context/missing row is a no-op (null).
+   */
+  setTaskStatusDef(id: string, statusDefId: string): Promise<string | null>;
   /** Set a task's category (kanban group-by=category drop; idempotent). */
   setTaskCategory(id: string, category: string): Promise<void>;
   /**
@@ -1128,6 +1138,17 @@ export interface CrmRepository {
   updateProject(id: string, input: ProjectInput): Promise<void>;
   /** Set a project's status (kanban board drop; idempotent). */
   setProjectStatus(id: string, status: string): Promise<void>;
+  /**
+   * Stamp a project's status from a configurable-status board drop (ADR-0065 B5, #613).
+   * Given the target `status_def.id`, writes BOTH the new `status_def_id` FK AND the
+   * legacy `status` enum (back-compat). `project.status` is the `project_status` ENUM,
+   * which cannot hold a custom key, so the legacy column is set to the enum value the
+   * status_def's `category` maps to (todo→not_started, in_progress→in_progress,
+   * done→complete) — the FK carries the precise (possibly custom) column, the enum
+   * keeps the legacy rollup honest. started_at/completed_at are stamped exactly as
+   * `setProjectStatus`/`updateProject` do. A missing/other-context id is a no-op.
+   */
+  setProjectStatusDef(id: string, statusDefId: string): Promise<void>;
   /** Set a project's type (kanban group-by=type drop; idempotent). */
   setProjectType(id: string, projectTypeId: string): Promise<void>;
   deleteProject(id: string): Promise<void>;

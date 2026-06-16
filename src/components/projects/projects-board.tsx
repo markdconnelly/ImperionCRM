@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { KanbanBoard, type KanbanLane } from "@/components/ui/kanban-board";
+import { KanbanBoard } from "@/components/ui/kanban-board";
 import { TagChip } from "@/components/tags/tag-chip";
 import { CardEngagement } from "@/components/work/card-engagement";
+import { statusLanes, statusLaneOf } from "@/lib/status-lanes";
+import type { StatusDefRow } from "@/lib/data/repositories";
 import type {
   AppliedTag,
   EngagementCounts,
@@ -28,13 +30,15 @@ import type {
  * attachment count footer (`countsByProject`), each from a board-only bulk read
  * (`listAssigneesForMany` / `listEngagementCountsForMany`) so the board never
  * N+1s. Projects carry no subtask rollup. No migration — tables already exist.
+ *
+ * Status columns (#613, ADR-0065 B5) come from the resolved `status_def` set the page
+ * passes in (`statusDefs`, ordered by ordinal) — including a per-project-type custom
+ * status (e.g. Onboarding's "Waiting on client") — never a hard-coded enum. A card
+ * buckets by its `statusDefKey` when set, else the legacy `status` (default-set keys
+ * reproduce the legacy enum, so unmigrated projects still place). A status drop
+ * persists the dropped lane key through `moveStatusAction`, which resolves it to the
+ * status_def id and dual-stamps the FK + legacy enum.
  */
-const STATUS_LANES: KanbanLane[] = [
-  { key: "not_started", label: "Not started", tone: "text-dim" },
-  { key: "in_progress", label: "In progress", tone: "text-accent" },
-  { key: "blocked", label: "Blocked", tone: "text-red" },
-  { key: "complete", label: "Complete", tone: "text-green" },
-];
 
 export type ProjectGroupBy = "status" | "type";
 export type ProjectSwimBy = "none" | "account" | "owner" | "type";
@@ -55,6 +59,7 @@ export function projectCardMeta(p: ProjectRow, tags: Record<string, AppliedTag[]
 export function ProjectsBoard({
   projects,
   types,
+  statusDefs,
   groupBy,
   swimBy = "none",
   tagsByProject = {},
@@ -65,6 +70,10 @@ export function ProjectsBoard({
 }: {
   projects: ProjectRow[];
   types: ProjectTypeRow[];
+  /** Resolved project status_def set (ADR-0065 B5, #613), ordered by ordinal — the
+   *  status columns. The page resolves it for the active scope (global defaults, or a
+   *  per-type set when the board is filtered to one project type). */
+  statusDefs: StatusDefRow[];
   groupBy: ProjectGroupBy;
   swimBy?: ProjectSwimBy;
   /** parentId → applied tag chips (ADR-0065 B6, #340) for rich cards (#439 C1-F4). */
@@ -73,7 +82,8 @@ export function ProjectsBoard({
   assigneesByProject?: Record<string, WorkAssignmentRow[]>;
   /** parentId → live comment/attachment counts (ADR-0064, #608 C1-F4) for the card footer. */
   countsByProject?: Record<string, EngagementCounts>;
-  moveStatusAction: (id: string, status: string) => Promise<void>;
+  /** Persist a status drop: receives the dropped status_def KEY (ADR-0065 B5, #613). */
+  moveStatusAction: (id: string, statusKey: string) => Promise<void>;
   moveTypeAction: (id: string, projectTypeId: string) => Promise<void>;
 }) {
   // Type lanes are keyed by project_type id (what moveTypeAction persists); a
@@ -86,7 +96,7 @@ export function ProjectsBoard({
           laneOf: (p: ProjectRow) => keyToId.get(p.typeKey) ?? "",
           onMove: moveTypeAction,
         }
-      : { lanes: STATUS_LANES, laneOf: (p: ProjectRow) => p.status, onMove: moveStatusAction };
+      : { lanes: statusLanes(statusDefs), laneOf: statusLaneOf, onMove: moveStatusAction };
 
   // Swimlane bands (#447): type uses the live project_type set; account/owner are
   // derived from the names present (sorted, blanks → Unassigned band).

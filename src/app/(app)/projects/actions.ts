@@ -76,6 +76,35 @@ export async function moveProjectAction(id: string, status: string) {
 }
 
 /**
+ * Persist a project's status from a CONFIGURABLE-status kanban drop (#613,
+ * ADR-0065 B5). The board hands us the dropped status_def KEY; we resolve it
+ * against the same resolved set the columns were built from — global defaults, or
+ * the per-project-type set when the project defines its own — so a forged/stale key
+ * is rejected (no-op) rather than writing a bad FK. The dual-stamp (FK + legacy
+ * enum) lives in `setProjectStatusDef`. Same `delivery:write`-audited path; no
+ * redirect (the board refreshes in place). Falls back gracefully: a project whose
+ * type carries no custom set resolves against the global defaults.
+ */
+export async function moveProjectStatusDefAction(id: string, statusKey: string) {
+  await requireCapability("delivery:write");
+  const projectId = id.trim();
+  const key = statusKey.trim();
+  if (!projectId || !key) return;
+  const { crm } = getRepositories();
+  // Resolve the project's effective project-type so a per-type custom status (e.g.
+  // Onboarding's "Waiting on client") resolves to ITS row, not a global one.
+  const projects = await crm.listProjects();
+  const project = projects.find((p) => p.id === projectId);
+  const types = project ? await crm.listProjectTypes() : [];
+  const projectTypeId = project ? (types.find((t) => t.key === project.typeKey)?.id ?? null) : null;
+  const defs = await crm.listStatusDefs("project", projectTypeId);
+  const target = defs.find((d) => d.key === key);
+  if (!target) return;
+  await crm.setProjectStatusDef(projectId, target.id);
+  revalidateProjectSurfaces();
+}
+
+/**
  * Re-type a project from the kanban board when grouped by type (#443,
  * ADR-0066 C1-F2). The target is validated against the live project_type table
  * (not a static allowlist — types are data, ADR-0052) before the write, so a
