@@ -12,6 +12,10 @@ orchestrator, with human checkpoints and a per-workflow autonomy dial.
 - **Trust ramp:** every workflow starts draft-for-approval; admins flip
   trusted workflows to `auto` per ADR-0061. Sends always exit via ADR-0058.
 - **Two skill tiers:** dev skills = `plugins/imperion-skills/` (Claude Code); runtime skills = `icm/skills/` (shared, orchestrator-wide) + per-workspace `skills/` (workflow-local). See CONVENTIONS.md.
+- **Workspace manifest:** each workflow carries an `agent.yaml` (ADR-0088, the
+  CMA agent-object shape) — see [`agent-yaml-schema.md`](agent-yaml-schema.md)
+  (schema [`icm/agent.schema.json`](../../icm/agent.schema.json), gate
+  `scripts/agent-yaml-gate.mjs` / CI `icm-conformance`).
 - **Authoring:** use the `imperion-icm` skill (skills plugin); changes are
   normal issue → micro-PR.
 
