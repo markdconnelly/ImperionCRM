@@ -1,4 +1,4 @@
--- 9001 (PLACEHOLDER — real number claimed at MERGE, system CLAUDE.md §10.3):
+-- 0119:
 -- bronze-batch-A — RMM/managed-estate + security-incident landing tables (#674).
 --
 -- FE owns the table names (system CLAUDE.md §1 — this repo is the schema source of
