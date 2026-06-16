@@ -223,6 +223,53 @@ export interface ChatDeflectionSummary {
 }
 
 /**
+ * The coarse SLA worklist bucket of a ticket (ADR-0074 §2). Mirrors the
+ * `ticket_sla_breach.sla_state` view column. `unknown` = no opened_at to clock from.
+ */
+export type TicketSlaState = "breached" | "at_risk" | "ok" | "unknown";
+
+/**
+ * A row of the read-model SLA breach PROJECTION over silver `ticket`
+ * (`ticket_sla_breach` view, migration 9001 placeholder, ADR-0074 §2 / ADR-0044, #404).
+ * NOT an authoritative store — recomputed on every read against the latest pulled
+ * ticket state (Autotask is the ticket SoR). The front end only READS this.
+ */
+export interface TicketSlaBreachRow {
+  ticketId: string;
+  accountId: string | null;
+  number: string | null;
+  status: string | null;
+  priority: string | null;
+  openedAt: string | null; // ISO
+  closedAt: string | null; // ISO
+  /** Whether a contractual SLA applies (the account's contract carries an sla_id). */
+  slaApplies: boolean;
+  slaId: string | null;
+  isOpen: boolean;
+  firstResponseDueAt: string | null; // ISO; null when no openedAt
+  resolutionDueAt: string | null; // ISO; null when no openedAt
+  firstResponseBreached: boolean;
+  resolutionBreached: boolean;
+  /** Postgres interval string (e.g. "1 day 02:00:00"); negative = overrun. Null when no openedAt. */
+  resolutionTimeRemaining: string | null;
+  slaState: TicketSlaState;
+}
+
+/**
+ * Aggregate SLA breach telemetry over a set of tickets — the worklist headline
+ * counts (ADR-0074 §2 "breach risk surfaces on a worklist", BI hub ADR-0062).
+ * Derived purely from `TicketSlaBreachRow[]` — see `lib/sla-breach.ts`.
+ */
+export interface SlaBreachSummary {
+  total: number;
+  breached: number;
+  atRisk: number;
+  ok: number;
+  /** breached / total, 0..1 (0 when total = 0). */
+  breachRate: number;
+}
+
+/**
  * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
  * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
  * client. Distinct from the enrichment lifecycle_status.
