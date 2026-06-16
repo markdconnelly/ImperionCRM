@@ -788,7 +788,7 @@ erDiagram
 > record points back to the engagement that produced it — the engagement's data is never
 > copied forward.
 
-### SLA breach read-model — `ticket_sla_breach` view (ADR-0074 §2, migration 9001)
+### SLA breach read-model — `ticket_sla_breach` view (ADR-0074 §2, migration 0118)
 
 SLA breach is a **read-model PROJECTION over silver `ticket`, not an authoritative
 `sla_state` store** (ADR-0074 §2 — Autotask is the ticket system of record; Imperion keeps

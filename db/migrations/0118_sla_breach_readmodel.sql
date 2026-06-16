@@ -1,4 +1,4 @@
--- 9001 (PLACEHOLDER — renumbered at merge, concurrency contract §10.3): SLA breach
+-- 0118: SLA breach
 -- read-model PROJECTION over silver `ticket` (ADR-0074 §2, issue #404, epic #320 ·
 -- parent #314). Take the next free migration number just before squash; if another
 -- migration merges during the CI window, rename this file (rename is data-safe) and

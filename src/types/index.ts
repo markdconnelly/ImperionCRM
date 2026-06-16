@@ -230,7 +230,7 @@ export type TicketSlaState = "breached" | "at_risk" | "ok" | "unknown";
 
 /**
  * A row of the read-model SLA breach PROJECTION over silver `ticket`
- * (`ticket_sla_breach` view, migration 9001 placeholder, ADR-0074 §2 / ADR-0044, #404).
+ * (`ticket_sla_breach` view, migration 0118, ADR-0074 §2 / ADR-0044, #404).
  * NOT an authoritative store — recomputed on every read against the latest pulled
  * ticket state (Autotask is the ticket SoR). The front end only READS this.
  */
