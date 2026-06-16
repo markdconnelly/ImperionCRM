@@ -1636,11 +1636,14 @@ export const mockRepositories: Repositories = {
       ];
     },
     async projectsByStatus() {
+      // Category rollup (ADR-0065 B5, #615): buckets key off status_def.category,
+      // not the raw label, so blocked (in_progress) and complete (done) roll up.
+      // Seeded mapping: not_started→To Do, in_progress+blocked→In Progress (5+1),
+      // complete→Done. Ordered by the canonical category lifecycle.
       return [
-        { label: "not_started", count: 2 },
-        { label: "in_progress", count: 5 },
-        { label: "blocked", count: 1 },
-        { label: "complete", count: 9 },
+        { label: "To Do", count: 2 },
+        { label: "In Progress", count: 6 },
+        { label: "Done", count: 9 },
       ];
     },
     async revenueSplit() {
