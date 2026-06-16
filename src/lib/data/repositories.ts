@@ -12,7 +12,9 @@
 import type {
   Account,
   ActionItemRow,
+  AgentAutopilotPolicy,
   AgentMessage,
+  AutonomyDialQuery,
   AnswerReviewRow,
   ArtifactRow,
   AssessmentConversion,
@@ -1388,6 +1390,21 @@ export interface CrmRepository {
 export interface AgentRepository {
   /** The orchestrator conversation feed shown in the agent panel. */
   getConversation(): Promise<AgentMessage[]>;
+
+  /**
+   * Read the autonomy rung for an orchestration agent from the data-driven dial
+   * (`agent_autopilot_policy` table, migration 0123, #721; ADR-0087's "one dial,
+   * stored as data"). Keyed per (agent · workflow · plane); resolves the
+   * most-specific matching row — an exact `workflowKey` beats the `'*'` agent
+   * default. Returns the policy row, or **null** when the dial has no row for that
+   * (agent, plane) yet (the caller then assumes `DEFAULT_AUTONOMY_RUNG` = the safe
+   * draft posture — gating is data, so "no data" means "stay conservative"). This
+   * is the read backend orchestration agents will consume to make their autonomy a
+   * data change, not a hardcoded cap (e.g. BE #156's collections agent). Pure read;
+   * the agents:operate-gated write lives behind a server action, not here. Mock
+   * fallback = null (no DB → safe default).
+   */
+  getAutonomyPolicy(query: AutonomyDialQuery): Promise<AgentAutopilotPolicy | null>;
 }
 
 /** Editable question fields (catalog admin). */
