@@ -148,6 +148,12 @@ export default async function ReportingPage() {
         >
           Report builder →
         </Link>
+        <Link
+          href="/reporting/dashboards"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Dashboards →
+        </Link>
         {canManageProjects(roles) && (
           <Link
             href="/reporting/agile"
