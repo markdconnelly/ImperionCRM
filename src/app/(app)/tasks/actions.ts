@@ -105,6 +105,41 @@ export async function moveTaskAction(id: string, status: string) {
 }
 
 /**
+ * Move a task to a CONFIGURABLE status from the kanban board (#613, ADR-0065 B5).
+ * The board hands us the dropped status_def KEY; we resolve it against the global
+ * task set (tasks are never project-type-scoped — the 0104 migration forces task
+ * status_def rows to scope=global) and dual-stamp the FK + legacy text status via
+ * `setTaskStatusDef`. A forged/stale key resolves nothing and is a no-op.
+ *
+ * Keeps full parity with `moveTaskAction`: emits the `task.status_changed` activity
+ * event on a real X→Y move (the writer returns the previous legacy status), and on a
+ * real X→done move spawns the next occurrence of a recurring task (#353). Both are
+ * keyed off the target status_def's CATEGORY so a custom "done"-category status still
+ * closes recurrence correctly. Same `delivery:write` audited path; no redirect.
+ */
+export async function moveTaskStatusDefAction(id: string, statusKey: string) {
+  await requireCapability("delivery:write");
+  const taskId = id.trim();
+  const key = statusKey.trim();
+  if (!taskId || !key) return;
+  const { crm, work } = getRepositories();
+  const defs = await crm.listStatusDefs("task", null);
+  const target = defs.find((d) => d.key === key);
+  if (!target) return;
+  const prevStatus = await crm.setTaskStatusDef(taskId, target.id);
+  if (prevStatus !== null && prevStatus !== target.key) {
+    await emitTaskStatusEvent(work, taskId, prevStatus, target.key);
+  }
+  // Spawn the next recurrence when the move lands in a 'done'-category status and the
+  // task wasn't already there (matches moveTaskAction's done semantics, by category).
+  if (prevStatus !== null && prevStatus !== "done" && target.category === "done") {
+    await spawnRecurrenceOnComplete(taskId);
+  }
+  revalidatePath("/tasks");
+  revalidatePath("/projects/[id]", "page");
+}
+
+/**
  * Spawn the next instance of a recurring task on completion (ADR-0070 E2, #353).
  * The data layer holds the idempotency + stop logic; this wrapper just keeps the
  * spawn off the critical path — a failure logs and is swallowed so completing the

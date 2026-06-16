@@ -11,9 +11,11 @@ import { ProjectTypeManager } from "@/components/projects/project-type-manager";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canManageProjects } from "@/lib/auth/roles";
+import type { Repositories, StatusDefRow } from "@/lib/data/repositories";
+import { unionStatusDefs } from "@/lib/status-lanes";
 import {
   deleteProjectAction,
-  moveProjectAction,
+  moveProjectStatusDefAction,
   moveProjectTypeAction,
   createProjectTypeAction,
   deleteProjectTypeAction,
@@ -44,6 +46,24 @@ function boardHref(view: string, group: string, swim: string) {
   if (swim !== "none") qs.set("swim", swim);
   const s = qs.toString();
   return s ? `/projects?${s}` : "/projects";
+}
+
+/**
+ * Resolve the board's status columns (#613, ADR-0065 B5): the global project status
+ * set plus each present type's resolved set (typed-over-global), unioned + de-duped by
+ * key, ordered by ordinal. `listStatusDefs("project", typeId)` already returns the
+ * typed set when a type defines its own, else the global defaults — so unioning the
+ * global call with one call per present type surfaces every custom column exactly once.
+ */
+async function resolveProjectStatusColumns(
+  crm: Repositories["crm"],
+  presentTypeIds: string[],
+): Promise<StatusDefRow[]> {
+  const sets = await Promise.all([
+    crm.listStatusDefs("project", null),
+    ...presentTypeIds.map((id) => crm.listStatusDefs("project", id)),
+  ]);
+  return unionStatusDefs(sets);
 }
 
 /**
@@ -98,6 +118,20 @@ export default async function ProjectsPage({
           ),
         ])
       : [{}, {}, {}];
+
+  // Status columns for the board (#613, ADR-0065 B5): the board shows every project
+  // type on one surface, so the column set is the UNION of each present type's
+  // resolved status_def set (typed-over-global per type) plus the global defaults,
+  // de-duped by key and ordered by ordinal. A per-type custom status (e.g.
+  // Onboarding's "Waiting on client") therefore appears as its own column; projects
+  // of other types simply have no card in it. Only the board view pays this cost.
+  const statusDefs: StatusDefRow[] =
+    activeView === "board"
+      ? await resolveProjectStatusColumns(
+          crm,
+          types.filter((t) => projects.some((p) => p.typeKey === t.key)).map((t) => t.id),
+        )
+      : [];
   const canWrite = canManageProjects(roles);
   const open = projects.filter((p) => p.status !== "complete").length;
 
@@ -216,12 +250,13 @@ export default async function ProjectsPage({
         <ProjectsBoard
           projects={projects}
           types={types}
+          statusDefs={statusDefs}
           groupBy={activeGroup}
           swimBy={activeSwim}
           tagsByProject={tagsByProject}
           assigneesByProject={assigneesByProject}
           countsByProject={countsByProject}
-          moveStatusAction={moveProjectAction}
+          moveStatusAction={moveProjectStatusDefAction}
           moveTypeAction={moveProjectTypeAction}
         />
       )}

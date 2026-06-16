@@ -613,9 +613,11 @@ function fmtDateTime(d: Date | null): string | null {
 const TASK_LIST_SELECT = `SELECT t.id, t.title, t.status, t.category, t.due_at, t.start_at,
                   t.estimate, t.estimate_unit, a.name AS account,
                   t.project_id, c.child_count, c.child_done_count,
-                  COALESCE(te.logged_minutes, 0) AS logged_minutes
+                  COALESCE(te.logged_minutes, 0) AS logged_minutes,
+                  sd.key AS status_def_key
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
+           LEFT JOIN status_def sd ON sd.id = t.status_def_id
            LEFT JOIN LATERAL (
              SELECT count(*) AS child_count,
                     count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
@@ -640,6 +642,7 @@ type TaskListSqlRow = {
   project_id: string | null;
   child_count: string;
   child_done_count: string;
+  status_def_key: string | null;
 };
 
 /** Map a TASK_LIST_SELECT row onto the shared TaskRow shape. */
@@ -658,6 +661,7 @@ function mapTaskListRow(row: TaskListSqlRow): TaskRow {
     estimate: row.estimate,
     estimateUnit: row.estimate_unit,
     loggedMinutes: Number(row.logged_minutes),
+    statusDefKey: row.status_def_key,
   };
 }
 
@@ -1863,16 +1867,21 @@ export const postgresRepositories: Repositories = {
           project_id: string | null;
           child_count: string;
           child_done_count: string;
+          status_def_key: string | null;
         }>(
           // Top-level tasks only (parent_task_id IS NULL); subtasks surface under
           // their parent via getTaskChildren. The lateral counts the n/m rollup
-          // (ADR-0065 B1, #335); the second lateral sums logged minutes (#346).
+          // (ADR-0065 B1, #335); the second lateral sums logged minutes (#346). The
+          // status_def join exposes the configurable-status key (ADR-0065 B5, #613) so
+          // the kanban board buckets by it when set, else the legacy text status.
           `SELECT t.id, t.title, t.status, t.category, t.due_at, t.start_at,
                   t.estimate, t.estimate_unit, a.name AS account,
                   t.project_id, c.child_count, c.child_done_count,
-                  COALESCE(te.logged_minutes, 0) AS logged_minutes
+                  COALESCE(te.logged_minutes, 0) AS logged_minutes,
+                  sd.key AS status_def_key
            FROM task t
            LEFT JOIN account a ON a.id = t.account_id
+           LEFT JOIN status_def sd ON sd.id = t.status_def_id
            LEFT JOIN LATERAL (
              SELECT count(*) AS child_count,
                     count(*) FILTER (WHERE ch.status = 'done') AS child_done_count
@@ -1899,6 +1908,7 @@ export const postgresRepositories: Repositories = {
           estimate: row.estimate,
           estimateUnit: row.estimate_unit,
           loggedMinutes: Number(row.logged_minutes),
+          statusDefKey: row.status_def_key,
         }));
       } catch {
         return mockRepositories.crm.listTasks();
@@ -3557,6 +3567,29 @@ export const postgresRepositories: Repositories = {
       return rows[0]?.prev_status ?? null;
     },
 
+    async setTaskStatusDef(id: string, statusDefId: string): Promise<string | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setTaskStatusDef(id, statusDefId);
+      // Dual-stamp from a configurable-status drop (ADR-0065 B5, #613): set the FK AND
+      // the legacy text `status` to the status_def's key (task.status is free text, so
+      // any key fits). The status_def must be a 'task'-context row — a forged/wrong id
+      // resolves no key and the UPDATE never runs (null = no-op). RETURNING the prior
+      // legacy status via a CTE drives the #438 X→Y activity guard, like setTaskStatus.
+      const { rows } = await pool.query<{ prev_status: string }>(
+        `WITH sd AS (
+           SELECT id, key FROM status_def WHERE id = $2 AND context = 'task'
+         ),
+         prev AS (SELECT status FROM task WHERE id = $1)
+         UPDATE task t
+            SET status = sd.key, status_def_id = sd.id
+           FROM sd
+          WHERE t.id = $1
+         RETURNING (SELECT status FROM prev) AS prev_status`,
+        [id, statusDefId],
+      );
+      return rows[0]?.prev_status ?? null;
+    },
+
     async setTaskCategory(id: string, category: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.setTaskCategory(id, category);
@@ -3708,16 +3741,21 @@ export const postgresRepositories: Repositories = {
           owner: string | null;
           status: string;
           target_live_date: Date | null;
+          status_def_key: string | null;
         }>(
+          // status_def join exposes the configurable-status key (ADR-0065 B5, #613) so
+          // the board buckets by it when set — letting a project sit in a per-type
+          // custom column the legacy project_status enum cannot name.
           `SELECT pr.id, pr.name, a.name AS account, o.name AS opportunity,
                   pt.name AS type, pt.key AS type_key,
                   coalesce(u.display_name, u.email) AS owner,
-                  pr.status, pr.target_live_date
+                  pr.status, pr.target_live_date, sd.key AS status_def_key
            FROM project pr
            JOIN account a ON a.id = pr.account_id
            JOIN project_type pt ON pt.id = pr.project_type_id
            LEFT JOIN opportunity o ON o.id = pr.opportunity_id
            LEFT JOIN app_user u ON u.id = pr.owner_user_id
+           LEFT JOIN status_def sd ON sd.id = pr.status_def_id
            ORDER BY pr.target_live_date NULLS LAST, a.name`,
         );
         return rows.map((row) => ({
@@ -3730,6 +3768,7 @@ export const postgresRepositories: Repositories = {
           owner: row.owner,
           status: row.status,
           targetLive: fmtDate(row.target_live_date),
+          statusDefKey: row.status_def_key,
         }));
       } catch {
         return mockRepositories.crm.listProjects();
@@ -4175,6 +4214,40 @@ export const postgresRepositories: Repositories = {
                                  THEN coalesce(completed_at, now()) ELSE NULL END
          WHERE id = $1`,
         [id, status],
+      );
+    },
+
+    async setProjectStatusDef(id: string, statusDefId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setProjectStatusDef(id, statusDefId);
+      // Dual-stamp from a configurable-status drop (ADR-0065 B5, #613). project.status
+      // is the project_status ENUM, which cannot hold a custom key, so the legacy
+      // column is set to the enum value the status_def's CATEGORY maps to
+      // (todo→not_started, in_progress→in_progress, done→complete) — the FK carries the
+      // precise (possibly custom) column while the enum keeps the legacy rollup honest.
+      // started_at/completed_at are stamped off that derived enum exactly as
+      // setProjectStatus/updateProject do. The status_def must be a 'project'-context
+      // row; a missing/wrong id resolves nothing and the UPDATE never runs (no-op).
+      await pool.query(
+        `WITH sd AS (
+           SELECT id,
+                  CASE category
+                    WHEN 'todo' THEN 'not_started'
+                    WHEN 'done' THEN 'complete'
+                    ELSE 'in_progress'
+                  END AS legacy_status
+             FROM status_def WHERE id = $2 AND context = 'project'
+         )
+         UPDATE project pr
+            SET status_def_id = sd.id,
+                status = sd.legacy_status::project_status,
+                started_at = CASE WHEN sd.legacy_status = 'not_started' THEN NULL
+                                  ELSE coalesce(pr.started_at, now()) END,
+                completed_at = CASE WHEN sd.legacy_status = 'complete'
+                                    THEN coalesce(pr.completed_at, now()) ELSE NULL END
+           FROM sd
+          WHERE pr.id = $1`,
+        [id, statusDefId],
       );
     },
 
