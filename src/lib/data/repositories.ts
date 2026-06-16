@@ -148,6 +148,8 @@ import type {
   WorkAttachment,
   Notification,
   NotificationKind,
+  NotificationChannel,
+  NotificationPref,
   TagParentType,
   Tag,
   AppliedTag,
@@ -870,9 +872,11 @@ export interface CrmRepository {
    * Set the full assignee set for a work object (the multi-select save). Replaces
    * every `assignee` row with `userIds`, never touching the `primary` row or any
    * `watcher` rows. Idempotent. A user already the primary is skipped (they are
-   * already on the object as its owner).
+   * already on the object as its owner). `actingUserId` (the employee making the
+   * change, #601) is stamped as the actor on the `assigned` notification so the
+   * bell reads "X assigned you" rather than a system event; omit/null = system.
    */
-  setTaskAssignees(taskId: string, userIds: string[]): Promise<void>;
+  setTaskAssignees(taskId: string, userIds: string[], actingUserId?: string | null): Promise<void>;
   /**
    * Add or remove the viewer as a `watcher` (the watch/unwatch toggle, ADR-0065
    * B3). `watch=true` upserts a watcher row (no-op if the user already holds any
@@ -2130,6 +2134,25 @@ export interface NotificationRepository {
     input: NotificationInput,
     recipientUserIds: string[],
     client?: Queryable,
+  ): Promise<void>;
+  /**
+   * A user's EXPLICIT notification preferences (ADR-0064 A3, #601) — the rows
+   * that override a default. Absence of a (kind × channel) row means "use the
+   * default" (in-app ON), so the prefs surface overlays these on the default
+   * grid. Scoped to the user's own id (the calling action resolves it).
+   */
+  listPrefs(userId: string): Promise<NotificationPref[]>;
+  /**
+   * Set one (kind × channel) preference for a user (ADR-0064 A3, #601). Upsert
+   * on the (user_id, kind, channel) PK — `enabled=false` mutes that trigger on
+   * that channel; `enabled=true` records an explicit opt-in. The caller gates
+   * this to the user's own prefs.
+   */
+  setPref(
+    userId: string,
+    kind: NotificationKind,
+    channel: NotificationChannel,
+    enabled: boolean,
   ): Promise<void>;
 }
 

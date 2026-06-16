@@ -139,6 +139,17 @@ export function NotificationBell() {
               ))
             )}
           </ul>
+          <div className="border-t border-border px-3 py-2 text-right">
+            <button
+              onClick={() => {
+                setOpen(false);
+                router.push("/notifications/preferences");
+              }}
+              className="text-[11px] text-dim hover:text-text"
+            >
+              Notification preferences →
+            </button>
+          </div>
         </div>
       )}
     </div>
