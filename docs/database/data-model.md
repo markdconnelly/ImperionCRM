@@ -2341,6 +2341,42 @@ to the task owner and writes the custom-field answers as `custom_field_value` ro
 the same transaction — an unmatched/removed custom key is ignored), and the in-place
 form editor landed in #639.
 
+## Self-serve report builder — report_definition + dashboard + dashboard_item (ADR-0075, migration 0124, #410)
+
+CRM-parity epic #321 adds a **governed self-serve report builder** (ADR-0075): a user
+picks a reportable object, chooses fields/aggregations/filters/grouping + a viz, saves
+it, and composes saved reports onto dashboards. The **semantic registry** that names the
+reportable objects/fields + the RBAC grant each requires lives in **code** (ADR-0075 §1,
+#409) — `root_object`/`fields` are validated against it at the **app layer**, never as a
+DB FK. This migration adds only the persistence, reusing the saved-view (ADR-0046)
+ownership/visibility model exactly.
+
+- **`report_definition`** — one saved report: `{ id, owner_user_id → app_user
+  (ON DELETE CASCADE), name, root_object, fields (jsonb — selected fields +
+  aggregations), filters (jsonb), group_by (jsonb), viz (table|bar|line|…),
+  visibility (CHECK private|shared), created_at, updated_at }` with **UNIQUE
+  `(owner_user_id, name)`**. Partial index on `visibility = 'shared'` + an owner index
+  serve the list read.
+- **`dashboard`** — a named composition of reports: `{ id, owner_user_id → app_user
+  (ON DELETE CASCADE), name, layout (jsonb grid/placement), visibility (CHECK
+  private|shared), created_at, updated_at }`, **UNIQUE `(owner_user_id, name)`**.
+- **`dashboard_item`** — one tile: `{ id, dashboard_id → dashboard (ON DELETE CASCADE),
+  report_definition_id → report_definition (ON DELETE CASCADE), position (jsonb —
+  {x,y,w,h,ordinal}), created_at }`. Deleting a dashboard cascades its tiles; deleting a
+  referenced report cascades the tiles pointing at it.
+
+RBAC/visibility (ADR-0075 §2, the saved-view posture): reads return the viewer's own
+rows plus any `visibility='shared'` row; mutations are owner-only (the write WHERE clause
+is the enforcement, admins may delete shared rows for cleanup). The **field-level grant
+stripping** ("no report surfaces data its author could not see") is enforced at **run
+time** in the query layer (#411), not in this schema. Grants follow the `saved_view`
+least-privilege pattern — the **web** identity gets SELECT/INSERT/UPDATE/DELETE;
+pipeline/backend/local get nothing (a pure GUI concern). These are **app-native config
+tables, not silver tier** (like `saved_view` / `status_def` / `custom_field_def` /
+`intake_form`) — **no semantic-layer concept file applies**, and the migration only
+`REFERENCES app_user`. The builder GUI is #411 (next wave); this slice is schema +
+persistence accessors so #411 rides on them.
+
 ## Conversational intelligence — call/meeting capture → transcribe → analyze (ADR-0068, migration 0112, #375)
 
 The voice channel of the customer 360 (ADR-0068, epic #315). A captured conversation —

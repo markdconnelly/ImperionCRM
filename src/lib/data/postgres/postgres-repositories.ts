@@ -309,6 +309,12 @@ import type {
   CustomFieldType,
   CustomFieldValue,
   CustomFieldParentType,
+  ReportDefinition,
+  ReportDefinitionInput,
+  Dashboard,
+  DashboardInput,
+  DashboardItem,
+  DashboardItemInput,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -12839,6 +12845,240 @@ export const postgresRepositories: Repositories = {
       }
     },
   },
+
+  // ── Self-serve report builder (ADR-0075, #410) ─────────────────────────────
+  // Generalised saved views (ADR-0046): owner-scoped reads return the viewer's
+  // own rows plus shared ones; mutations are owner-only (the WHERE clause is the
+  // enforcement). root_object/fields are validated against the in-code semantic
+  // registry (#409) at the call site, not here. Falls back to the mock when no
+  // pool is configured.
+  reportBuilder: {
+    async listReportDefinitions(viewerEmail: string | null): Promise<ReportDefinition[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.listReportDefinitions(viewerEmail);
+      try {
+        const { rows } = await pool.query<ReportDefDbRow>(
+          `SELECT r.id, u.display_name AS owner,
+                  COALESCE(u.email = $1, false) AS is_mine,
+                  r.name, r.root_object, r.fields, r.filters, r.group_by, r.viz, r.visibility
+           FROM report_definition r JOIN app_user u ON u.id = r.owner_user_id
+           WHERE r.visibility = 'shared' OR u.email = $1
+           ORDER BY COALESCE(u.email = $1, false) DESC, r.name`,
+          [viewerEmail],
+        );
+        return rows.map(mapReportDef);
+      } catch {
+        return mockRepositories.reportBuilder.listReportDefinitions(viewerEmail);
+      }
+    },
+
+    async getReportDefinition(id: string, viewerEmail: string | null): Promise<ReportDefinition | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.getReportDefinition(id, viewerEmail);
+      try {
+        const { rows } = await pool.query<ReportDefDbRow>(
+          `SELECT r.id, u.display_name AS owner,
+                  COALESCE(u.email = $2, false) AS is_mine,
+                  r.name, r.root_object, r.fields, r.filters, r.group_by, r.viz, r.visibility
+           FROM report_definition r JOIN app_user u ON u.id = r.owner_user_id
+           WHERE r.id = $1 AND (r.visibility = 'shared' OR u.email = $2)`,
+          [id, viewerEmail],
+        );
+        return rows[0] ? mapReportDef(rows[0]) : null;
+      } catch {
+        return mockRepositories.reportBuilder.getReportDefinition(id, viewerEmail);
+      }
+    },
+
+    async createReportDefinition(input: ReportDefinitionInput, ownerEmail: string): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.createReportDefinition(input, ownerEmail);
+      const ownerId = await resolveAppUserId(pool, ownerEmail);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO report_definition
+           (owner_user_id, name, root_object, fields, filters, group_by, viz, visibility)
+         VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7, $8)
+         RETURNING id`,
+        [
+          ownerId,
+          input.name,
+          input.rootObject,
+          JSON.stringify(input.fields),
+          JSON.stringify(input.filters),
+          JSON.stringify(input.groupBy),
+          input.viz,
+          input.visibility,
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateReportDefinition(
+      id: string,
+      input: ReportDefinitionInput,
+      ownerEmail: string,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.updateReportDefinition(id, input, ownerEmail);
+      // Owner-only: the WHERE clause is the enforcement — a non-owner id updates 0 rows.
+      await pool.query(
+        `UPDATE report_definition
+         SET name = $3, root_object = $4, fields = $5::jsonb, filters = $6::jsonb,
+             group_by = $7::jsonb, viz = $8, visibility = $9, updated_at = now()
+         WHERE id = $1
+           AND owner_user_id =
+               (SELECT id FROM app_user WHERE email = $2 ORDER BY updated_at DESC LIMIT 1)`,
+        [
+          id,
+          ownerEmail,
+          input.name,
+          input.rootObject,
+          JSON.stringify(input.fields),
+          JSON.stringify(input.filters),
+          JSON.stringify(input.groupBy),
+          input.viz,
+          input.visibility,
+        ],
+      );
+    },
+
+    async deleteReportDefinition(
+      id: string,
+      ownerEmail: string | null,
+      asAdmin: boolean,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.deleteReportDefinition(id, ownerEmail, asAdmin);
+      // dashboard_item.report_definition_id CASCADEs, so tiles clean up automatically.
+      await pool.query(
+        `DELETE FROM report_definition
+         WHERE id = $1
+           AND ($3 OR owner_user_id =
+                (SELECT id FROM app_user WHERE email = $2 ORDER BY updated_at DESC LIMIT 1))`,
+        [id, ownerEmail, asAdmin],
+      );
+    },
+
+    async listDashboards(viewerEmail: string | null): Promise<Dashboard[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.listDashboards(viewerEmail);
+      try {
+        const { rows } = await pool.query<DashboardDbRow>(
+          `SELECT d.id, u.display_name AS owner,
+                  COALESCE(u.email = $1, false) AS is_mine,
+                  d.name, d.layout, d.visibility
+           FROM dashboard d JOIN app_user u ON u.id = d.owner_user_id
+           WHERE d.visibility = 'shared' OR u.email = $1
+           ORDER BY COALESCE(u.email = $1, false) DESC, d.name`,
+          [viewerEmail],
+        );
+        return rows.map(mapDashboard);
+      } catch {
+        return mockRepositories.reportBuilder.listDashboards(viewerEmail);
+      }
+    },
+
+    async getDashboard(id: string, viewerEmail: string | null): Promise<Dashboard | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.getDashboard(id, viewerEmail);
+      try {
+        const { rows } = await pool.query<DashboardDbRow>(
+          `SELECT d.id, u.display_name AS owner,
+                  COALESCE(u.email = $2, false) AS is_mine,
+                  d.name, d.layout, d.visibility
+           FROM dashboard d JOIN app_user u ON u.id = d.owner_user_id
+           WHERE d.id = $1 AND (d.visibility = 'shared' OR u.email = $2)`,
+          [id, viewerEmail],
+        );
+        return rows[0] ? mapDashboard(rows[0]) : null;
+      } catch {
+        return mockRepositories.reportBuilder.getDashboard(id, viewerEmail);
+      }
+    },
+
+    async createDashboard(input: DashboardInput, ownerEmail: string): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.createDashboard(input, ownerEmail);
+      const ownerId = await resolveAppUserId(pool, ownerEmail);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO dashboard (owner_user_id, name, layout, visibility)
+         VALUES ($1, $2, $3::jsonb, $4)
+         RETURNING id`,
+        [ownerId, input.name, JSON.stringify(input.layout), input.visibility],
+      );
+      return rows[0].id;
+    },
+
+    async updateDashboard(id: string, input: DashboardInput, ownerEmail: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.updateDashboard(id, input, ownerEmail);
+      await pool.query(
+        `UPDATE dashboard
+         SET name = $3, layout = $4::jsonb, visibility = $5, updated_at = now()
+         WHERE id = $1
+           AND owner_user_id =
+               (SELECT id FROM app_user WHERE email = $2 ORDER BY updated_at DESC LIMIT 1)`,
+        [id, ownerEmail, input.name, JSON.stringify(input.layout), input.visibility],
+      );
+    },
+
+    async deleteDashboard(id: string, ownerEmail: string | null, asAdmin: boolean): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.deleteDashboard(id, ownerEmail, asAdmin);
+      // dashboard_item.dashboard_id CASCADEs, so the tiles go with it.
+      await pool.query(
+        `DELETE FROM dashboard
+         WHERE id = $1
+           AND ($3 OR owner_user_id =
+                (SELECT id FROM app_user WHERE email = $2 ORDER BY updated_at DESC LIMIT 1))`,
+        [id, ownerEmail, asAdmin],
+      );
+    },
+
+    async listDashboardItems(dashboardId: string): Promise<DashboardItem[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.listDashboardItems(dashboardId);
+      try {
+        const { rows } = await pool.query<DashboardItemDbRow>(
+          `SELECT id, dashboard_id, report_definition_id, position
+           FROM dashboard_item
+           WHERE dashboard_id = $1
+           ORDER BY COALESCE((position->>'ordinal')::numeric, 0), created_at`,
+          [dashboardId],
+        );
+        return rows.map(mapDashboardItem);
+      } catch {
+        return mockRepositories.reportBuilder.listDashboardItems(dashboardId);
+      }
+    },
+
+    async addDashboardItem(input: DashboardItemInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.addDashboardItem(input);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO dashboard_item (dashboard_id, report_definition_id, position)
+         VALUES ($1, $2, $3::jsonb)
+         RETURNING id`,
+        [input.dashboardId, input.reportDefinitionId, JSON.stringify(input.position)],
+      );
+      return rows[0].id;
+    },
+
+    async removeDashboardItem(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.removeDashboardItem(id);
+      await pool.query(`DELETE FROM dashboard_item WHERE id = $1`, [id]);
+    },
+
+    async reorderDashboardItem(id: string, position: Record<string, unknown>): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reportBuilder.reorderDashboardItem(id, position);
+      await pool.query(
+        `UPDATE dashboard_item SET position = $2::jsonb WHERE id = $1`,
+        [id, JSON.stringify(position)],
+      );
+    },
+  },
 };
 
 /** A select-type custom field carries an options list; the others store []. */
@@ -13277,6 +13517,85 @@ async function upsertWebsiteCompanyRow(
   } catch {
     /* best-effort */
   }
+}
+
+// ── Report builder row mappers + helper (ADR-0075, #410) ─────────────────────
+
+interface ReportDefDbRow {
+  id: string;
+  owner: string | null;
+  is_mine: boolean;
+  name: string;
+  root_object: string;
+  fields: unknown[] | null;
+  filters: Record<string, unknown> | null;
+  group_by: unknown[] | null;
+  viz: string;
+  visibility: "private" | "shared";
+}
+
+interface DashboardDbRow {
+  id: string;
+  owner: string | null;
+  is_mine: boolean;
+  name: string;
+  layout: Record<string, unknown> | null;
+  visibility: "private" | "shared";
+}
+
+interface DashboardItemDbRow {
+  id: string;
+  dashboard_id: string;
+  report_definition_id: string;
+  position: Record<string, unknown> | null;
+}
+
+function mapReportDef(r: ReportDefDbRow): ReportDefinition {
+  return {
+    id: r.id,
+    owner: r.owner,
+    isMine: r.is_mine === true,
+    name: r.name,
+    rootObject: r.root_object,
+    fields: r.fields ?? [],
+    filters: r.filters ?? {},
+    groupBy: r.group_by ?? [],
+    viz: r.viz,
+    visibility: r.visibility,
+  };
+}
+
+function mapDashboard(r: DashboardDbRow): Dashboard {
+  return {
+    id: r.id,
+    owner: r.owner,
+    isMine: r.is_mine === true,
+    name: r.name,
+    layout: r.layout ?? {},
+    visibility: r.visibility,
+  };
+}
+
+function mapDashboardItem(r: DashboardItemDbRow): DashboardItem {
+  return {
+    id: r.id,
+    dashboardId: r.dashboard_id,
+    reportDefinitionId: r.report_definition_id,
+    position: r.position ?? {},
+  };
+}
+
+/** Resolve the app_user id for an email, or throw the same hint saved-view writes use. */
+async function resolveAppUserId(pool: Pool, ownerEmail: string): Promise<string> {
+  const { rows } = await pool.query<{ id: string }>(
+    `SELECT id FROM app_user WHERE email = $1 ORDER BY updated_at DESC LIMIT 1`,
+    [ownerEmail],
+  );
+  const id = rows[0]?.id;
+  if (!id) {
+    throw new Error(`No app_user for ${ownerEmail} — sign in once so the identity is mirrored.`);
+  }
+  return id;
 }
 
 function mapConnection(r: ConnectionDbRow): ConnectionRow {

@@ -66,6 +66,12 @@ import type {
   CustomFieldDef,
   CustomFieldValue,
   CustomFieldParentType,
+  ReportDefinition,
+  ReportDefinitionInput,
+  Dashboard,
+  DashboardInput,
+  DashboardItem,
+  DashboardItemInput,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { resolveMentions } from "@/lib/mentions";
@@ -144,6 +150,65 @@ interface MockFieldValue {
 const mockFieldDefs: MockFieldDef[] = [];
 const mockFieldValues: MockFieldValue[] = [];
 let mockFieldSeq = 0;
+
+/**
+ * In-memory report-builder store (ADR-0075, #410) so the builder accessors
+ * round-trip without a DB. Rows carry the owner's email directly (mock has no
+ * app_user catalog); reads resolve `isMine`/visibility against the viewer email
+ * exactly like the Postgres impl. Tile deletes cascade in JS to mirror the
+ * dashboard_id / report_definition_id ON DELETE CASCADE.
+ */
+interface MockReportDef extends ReportDefinitionInput {
+  id: string;
+  ownerEmail: string;
+}
+interface MockDashboard extends DashboardInput {
+  id: string;
+  ownerEmail: string;
+}
+interface MockDashboardItem {
+  id: string;
+  dashboardId: string;
+  reportDefinitionId: string;
+  position: Record<string, unknown>;
+}
+const mockReportDefs: MockReportDef[] = [];
+const mockDashboards: MockDashboard[] = [];
+const mockDashboardItems: MockDashboardItem[] = [];
+let mockReportSeq = 0;
+
+const toReportDef = (r: MockReportDef, viewerEmail: string | null): ReportDefinition => ({
+  id: r.id,
+  owner: r.ownerEmail,
+  isMine: viewerEmail !== null && r.ownerEmail === viewerEmail,
+  name: r.name,
+  rootObject: r.rootObject,
+  fields: r.fields,
+  filters: r.filters,
+  groupBy: r.groupBy,
+  viz: r.viz,
+  visibility: r.visibility,
+});
+const toDashboard = (d: MockDashboard, viewerEmail: string | null): Dashboard => ({
+  id: d.id,
+  owner: d.ownerEmail,
+  isMine: viewerEmail !== null && d.ownerEmail === viewerEmail,
+  name: d.name,
+  layout: d.layout,
+  visibility: d.visibility,
+});
+const toDashboardItem = (i: MockDashboardItem): DashboardItem => ({
+  id: i.id,
+  dashboardId: i.dashboardId,
+  reportDefinitionId: i.reportDefinitionId,
+  position: i.position,
+});
+/** Remove every dashboard_item pointing at a deleted dashboard or report (cascade). */
+function cascadeDashboardItems(pred: (i: MockDashboardItem) => boolean): void {
+  for (let j = mockDashboardItems.length - 1; j >= 0; j--) {
+    if (pred(mockDashboardItems[j])) mockDashboardItems.splice(j, 1);
+  }
+}
 
 /**
  * Mock status_def store (ADR-0065 B5, #616) — seeded with the global default sets
@@ -2292,6 +2357,119 @@ export const mockRepositories: Repositories = {
         if (matches) out.push(v.parentId);
       }
       return out;
+    },
+  },
+
+  // ── Self-serve report builder (ADR-0075, #410) ─────────────────────────────
+  // In-memory store: reads return the viewer's own rows plus shared ones (own
+  // first); mutations are owner-scoped by email. Tile deletes cascade in JS to
+  // mirror the dashboard_id / report_definition_id ON DELETE CASCADE.
+  reportBuilder: {
+    async listReportDefinitions(viewerEmail: string | null): Promise<ReportDefinition[]> {
+      return mockReportDefs
+        .filter((r) => r.visibility === "shared" || r.ownerEmail === viewerEmail)
+        .map((r) => toReportDef(r, viewerEmail))
+        .sort((a, b) => Number(b.isMine) - Number(a.isMine) || a.name.localeCompare(b.name));
+    },
+    async getReportDefinition(
+      id: string,
+      viewerEmail: string | null,
+    ): Promise<ReportDefinition | null> {
+      const r = mockReportDefs.find((x) => x.id === id);
+      if (!r || (r.visibility !== "shared" && r.ownerEmail !== viewerEmail)) return null;
+      return toReportDef(r, viewerEmail);
+    },
+    async createReportDefinition(
+      input: ReportDefinitionInput,
+      ownerEmail: string,
+    ): Promise<string> {
+      const id = `mock-report-${++mockReportSeq}`;
+      mockReportDefs.push({ ...input, id, ownerEmail });
+      return id;
+    },
+    async updateReportDefinition(
+      id: string,
+      input: ReportDefinitionInput,
+      ownerEmail: string,
+    ): Promise<void> {
+      const r = mockReportDefs.find((x) => x.id === id && x.ownerEmail === ownerEmail);
+      if (!r) return; // owner-only, like the SQL WHERE
+      Object.assign(r, input);
+    },
+    async deleteReportDefinition(
+      id: string,
+      ownerEmail: string | null,
+      asAdmin: boolean,
+    ): Promise<void> {
+      const i = mockReportDefs.findIndex(
+        (x) => x.id === id && (asAdmin || x.ownerEmail === ownerEmail),
+      );
+      if (i === -1) return;
+      mockReportDefs.splice(i, 1);
+      cascadeDashboardItems((it) => it.reportDefinitionId === id);
+    },
+
+    async listDashboards(viewerEmail: string | null): Promise<Dashboard[]> {
+      return mockDashboards
+        .filter((d) => d.visibility === "shared" || d.ownerEmail === viewerEmail)
+        .map((d) => toDashboard(d, viewerEmail))
+        .sort((a, b) => Number(b.isMine) - Number(a.isMine) || a.name.localeCompare(b.name));
+    },
+    async getDashboard(id: string, viewerEmail: string | null): Promise<Dashboard | null> {
+      const d = mockDashboards.find((x) => x.id === id);
+      if (!d || (d.visibility !== "shared" && d.ownerEmail !== viewerEmail)) return null;
+      return toDashboard(d, viewerEmail);
+    },
+    async createDashboard(input: DashboardInput, ownerEmail: string): Promise<string> {
+      const id = `mock-dashboard-${++mockReportSeq}`;
+      mockDashboards.push({ ...input, id, ownerEmail });
+      return id;
+    },
+    async updateDashboard(
+      id: string,
+      input: DashboardInput,
+      ownerEmail: string,
+    ): Promise<void> {
+      const d = mockDashboards.find((x) => x.id === id && x.ownerEmail === ownerEmail);
+      if (!d) return;
+      Object.assign(d, input);
+    },
+    async deleteDashboard(
+      id: string,
+      ownerEmail: string | null,
+      asAdmin: boolean,
+    ): Promise<void> {
+      const i = mockDashboards.findIndex(
+        (x) => x.id === id && (asAdmin || x.ownerEmail === ownerEmail),
+      );
+      if (i === -1) return;
+      mockDashboards.splice(i, 1);
+      cascadeDashboardItems((it) => it.dashboardId === id);
+    },
+
+    async listDashboardItems(dashboardId: string): Promise<DashboardItem[]> {
+      return mockDashboardItems
+        .filter((i) => i.dashboardId === dashboardId)
+        .sort((a, b) => Number(a.position.ordinal ?? 0) - Number(b.position.ordinal ?? 0))
+        .map(toDashboardItem);
+    },
+    async addDashboardItem(input: DashboardItemInput): Promise<string> {
+      const id = `mock-dashitem-${++mockReportSeq}`;
+      mockDashboardItems.push({
+        id,
+        dashboardId: input.dashboardId,
+        reportDefinitionId: input.reportDefinitionId,
+        position: input.position,
+      });
+      return id;
+    },
+    async removeDashboardItem(id: string): Promise<void> {
+      const i = mockDashboardItems.findIndex((x) => x.id === id);
+      if (i !== -1) mockDashboardItems.splice(i, 1);
+    },
+    async reorderDashboardItem(id: string, position: Record<string, unknown>): Promise<void> {
+      const it = mockDashboardItems.find((x) => x.id === id);
+      if (it) it.position = position;
     },
   },
 };

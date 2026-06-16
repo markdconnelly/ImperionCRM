@@ -171,6 +171,12 @@ import type {
   CustomFieldType,
   CustomFieldDef,
   CustomFieldValue,
+  ReportDefinition,
+  ReportDefinitionInput,
+  Dashboard,
+  DashboardInput,
+  DashboardItem,
+  DashboardItemInput,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -2603,6 +2609,51 @@ export interface CustomFieldFilterInput {
   value: string | number | boolean;
 }
 
+// ── Self-serve report builder (ADR-0075, #410) ───────────────────────────────
+
+/**
+ * Persistence for the governed self-serve report builder (ADR-0075 §3). Report
+ * definitions are generalised saved views (ADR-0046): owner-scoped, private or
+ * company-shared, jsonb query shape. Ownership + visibility are enforced exactly
+ * like `saved_view` — reads return the viewer's own rows plus shared ones, and
+ * mutations are owner-only (the WHERE clause is the enforcement, never trusting
+ * the caller). The semantic registry that validates `rootObject`/`fields` lives
+ * in code (#409); this layer only stores/serves the saved config. Mock returns
+ * sensible empties / an in-memory store.
+ */
+export interface ReportBuilderRepository {
+  /** The viewer's own report definitions plus any shared ones (own first). */
+  listReportDefinitions(viewerEmail: string | null): Promise<ReportDefinition[]>;
+  /** One report definition by id, visible only if owned or shared. Null otherwise. */
+  getReportDefinition(id: string, viewerEmail: string | null): Promise<ReportDefinition | null>;
+  /** Create a report definition owned by `ownerEmail`; returns the new id. */
+  createReportDefinition(input: ReportDefinitionInput, ownerEmail: string): Promise<string>;
+  /** Owner-only update (enforced in the write). No-op for a non-owner id. */
+  updateReportDefinition(id: string, input: ReportDefinitionInput, ownerEmail: string): Promise<void>;
+  /** Owners delete their own; admins may delete any (shared cleanup). Cascades dashboard tiles. */
+  deleteReportDefinition(id: string, ownerEmail: string | null, asAdmin: boolean): Promise<void>;
+
+  /** The viewer's own dashboards plus any shared ones (own first). */
+  listDashboards(viewerEmail: string | null): Promise<Dashboard[]>;
+  /** One dashboard by id, visible only if owned or shared. Null otherwise. */
+  getDashboard(id: string, viewerEmail: string | null): Promise<Dashboard | null>;
+  /** Create a dashboard owned by `ownerEmail`; returns the new id. */
+  createDashboard(input: DashboardInput, ownerEmail: string): Promise<string>;
+  /** Owner-only update (enforced in the write). No-op for a non-owner id. */
+  updateDashboard(id: string, input: DashboardInput, ownerEmail: string): Promise<void>;
+  /** Owners delete their own; admins may delete any. Cascades its items. */
+  deleteDashboard(id: string, ownerEmail: string | null, asAdmin: boolean): Promise<void>;
+
+  /** The tiles on one dashboard, in placement order. */
+  listDashboardItems(dashboardId: string): Promise<DashboardItem[]>;
+  /** Add a report tile to a dashboard; returns the new item id. */
+  addDashboardItem(input: DashboardItemInput): Promise<string>;
+  /** Remove a tile by id. */
+  removeDashboardItem(id: string): Promise<void>;
+  /** Persist a new placement for a tile (reorder/move). */
+  reorderDashboardItem(id: string, position: Record<string, unknown>): Promise<void>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -2625,4 +2676,5 @@ export interface Repositories {
   notifications: NotificationRepository;
   tags: TagsRepository;
   customFields: CustomFieldsRepository;
+  reportBuilder: ReportBuilderRepository;
 }
