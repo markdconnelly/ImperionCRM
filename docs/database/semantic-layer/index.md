@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-15T01:00:00Z
+timestamp: 2026-06-16T02:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -68,6 +68,7 @@ subset; remaining entities are tracked for expansion
 | [`expense_report`](tables/expense_report.md) | single-SoR | website system of record | ADR-0083 |
 | [`time_record`](tables/time_record.md) | merge | website attendance (Autotask corroborates) | ADR-0082 |
 | [`expense_item`](tables/expense_item.md) | merge | website out-of-pocket / MileIQ miles | ADR-0083 |
+| [`invoice`](tables/invoice.md) | single-SoR (mirror) | QuickBooks Online (read-only external SoR) | ADR-0085 |
 | [`consent_event`](tables/consent_event.md) | ledger | append-only; current_consent is the gate | ADR-0014 |
 | [`posture_snapshot`](tables/posture_snapshot.md) | ledger | append-only; grade at capture | ADR-0051 |
 | [`tenant_posture`](tables/tenant_posture.md) | golden/drift | observed vs human-approved golden | ADR-0051 |

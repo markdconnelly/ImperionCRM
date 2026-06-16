@@ -256,6 +256,8 @@ import type {
   TicketSlaState,
   ContractRow,
   DeviceInventoryRow,
+  InvoiceMirrorRow,
+  InvoiceAgingBucket,
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
@@ -1139,6 +1141,74 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listDeviceInventory();
+      }
+    },
+
+    async listInvoices(): Promise<InvoiceMirrorRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listInvoices();
+      try {
+        // Read the `invoice_mirror` view (migration 0121, #668, ADR-0085).
+        // A plain read-only projection over bronze qbo_invoices — every read recomputes
+        // aging against the latest pulled invoices. Amounts/dates are already typed in the
+        // view; cast numerics to text so they map straight to the typed string fields (no
+        // driver-dependent numeric object). Sort oldest-overdue first (collections worklist):
+        // open & overdue (90+ → 1-30) ahead of open-current ahead of paid, larger balance
+        // breaking ties.
+        const { rows } = await pool.query<{
+          qbo_invoice_id: string;
+          doc_number: string | null;
+          qbo_customer_id: string | null;
+          qbo_customer_name: string | null;
+          account_id: string | null;
+          account_name: string | null;
+          txn_date: Date | null;
+          due_date: Date | null;
+          total_amount: string | null;
+          balance: string | null;
+          currency: string | null;
+          email_status: string | null;
+          is_open: boolean;
+          days_overdue: number | null;
+          aging_bucket: InvoiceAgingBucket;
+        }>(
+          `SELECT qbo_invoice_id, doc_number, qbo_customer_id, qbo_customer_name,
+                  account_id::text AS account_id, account_name,
+                  txn_date, due_date,
+                  total_amount::text AS total_amount,
+                  balance::text AS balance,
+                  currency, email_status, is_open, days_overdue, aging_bucket
+           FROM invoice_mirror
+           ORDER BY
+             CASE aging_bucket
+               WHEN '90+'     THEN 0
+               WHEN '61-90'   THEN 1
+               WHEN '31-60'   THEN 2
+               WHEN '1-30'    THEN 3
+               WHEN 'current' THEN 4
+               ELSE 5
+             END,
+             COALESCE(balance, 0) DESC`,
+        );
+        return rows.map((r) => ({
+          qboInvoiceId: r.qbo_invoice_id,
+          docNumber: r.doc_number,
+          qboCustomerId: r.qbo_customer_id,
+          qboCustomerName: r.qbo_customer_name,
+          accountId: r.account_id,
+          accountName: r.account_name,
+          txnDate: fmtIso(r.txn_date),
+          dueDate: fmtIso(r.due_date),
+          totalAmount: r.total_amount,
+          balance: r.balance,
+          currency: r.currency,
+          emailStatus: r.email_status,
+          isOpen: r.is_open,
+          daysOverdue: r.days_overdue,
+          agingBucket: r.aging_bucket,
+        }));
+      } catch {
+        return mockRepositories.crm.listInvoices();
       }
     },
 

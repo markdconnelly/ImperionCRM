@@ -293,6 +293,66 @@ export interface SlaBreachSummary {
 }
 
 /**
+ * The aging partition a mirrored invoice falls in (`invoice_mirror` view, migration
+ * 0121). `paid` = settled (balance ≤ 0);
+ * `current` = open but not past due; the overdue tiers are open & past due by N days.
+ */
+export type InvoiceAgingBucket = "paid" | "current" | "1-30" | "31-60" | "61-90" | "90+";
+
+/**
+ * One row of the read-only AR/invoice MIRROR over bronze `qbo_invoices`
+ * (`invoice_mirror` view, migration 0121, #668; ADR-0085 QBO read-only /
+ * ADR-0044 external-SoR mirror). NOT an app-side AR store — QuickBooks is the system of record
+ * and is read-only on our side; the Collections + Controller agents (#667) detect / draft /
+ * escalate against this, never move money. Aging is recomputed by the view on every read.
+ * The front end (and the agents) only READ this.
+ */
+export interface InvoiceMirrorRow {
+  /** QBO Invoice Id (stable natural key). */
+  qboInvoiceId: string;
+  /** Human invoice number (QBO DocNumber), or null. */
+  docNumber: string | null;
+  /** QBO CustomerRef.value — joins `qbo_customers.customer_id`. */
+  qboCustomerId: string | null;
+  /** QBO CustomerRef.name — the billed entity's name (business identifier, not PII). */
+  qboCustomerName: string | null;
+  /** Silver account id resolved best-effort by name (null on a miss — observability only). */
+  accountId: string | null;
+  accountName: string | null;
+  txnDate: string | null; // ISO date
+  dueDate: string | null; // ISO date
+  /** Invoice total, numeric-as-string from pg (e.g. "1200.00"); null when unparseable. */
+  totalAmount: string | null;
+  /** Open AR balance, numeric-as-string; > 0 ⟺ `isOpen`. */
+  balance: string | null;
+  currency: string | null;
+  emailStatus: string | null;
+  /** Open ⟺ QBO still shows an outstanding balance (balance > 0). */
+  isOpen: boolean;
+  /** Whole days past `dueDate`, only while open & overdue; null otherwise (not "0"). */
+  daysOverdue: number | null;
+  agingBucket: InvoiceAgingBucket;
+}
+
+/**
+ * Aggregate AR aging telemetry over a set of mirrored invoices — the collections
+ * worklist headline (#668, BI hub ADR-0062). Derived purely from `InvoiceMirrorRow[]`
+ * — see `lib/invoice-aging.ts`.
+ */
+export interface InvoiceAgingSummary {
+  /** Count of OPEN invoices (balance > 0). */
+  openCount: number;
+  /** Count of open invoices that are past due (in a 1-30..90+ bucket). */
+  overdueCount: number;
+  /** Summed open balance across all open invoices (numeric-as-string, 2dp). */
+  openBalance: string;
+  /** Summed open balance of the past-due (overdue) invoices (numeric-as-string, 2dp). */
+  overdueBalance: string;
+  /** Per-bucket open count + balance, in worklist order (current → 90+). */
+  buckets: { bucket: InvoiceAgingBucket; count: number; balance: string }[];
+}
+
+/**
  * The CRM lifecycle axis a contact moves along (ADR-0031). One normalized
  * contact object; Leads = not-yet-client (audience|lead|prospect), Contacts =
  * client. Distinct from the enrichment lifecycle_status.

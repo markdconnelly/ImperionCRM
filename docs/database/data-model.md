@@ -819,6 +819,31 @@ projection is correct now; it sharpens when the real targets land. Read via
 `src/lib/sla-breach.ts` (typed `TicketSlaBreachRow`, worklist sort + breach summary).
 PII-free: the view selects no ticket title/description/resolution text.
 
+### AR/invoice mirror read-model — `invoice_mirror` view (ADR-0085 / ADR-0044, migration 0121, #668)
+
+The accounts-receivable surface (money owed **to** the MSP) is a **read-only MIRROR over
+bronze `qbo_invoices`, not an app-owned AR object** (#668 own-vs-mirror RESOLVED as MIRROR;
+ADR-0085 — QuickBooks is the invoice system of record and read-only on our side, no app→QBO
+write path). It is a plain `CREATE OR REPLACE VIEW invoice_mirror`, so every read recomputes
+aging against the latest pulled bronze (`qbo_invoices`, mig 0120, LP #197 QBO pull) — that
+pull **is** the refresh; no bronze→silver merge job exists or is needed (the reason a view
+was chosen over a materialized table). The Collections (AR-dunning) and Controller
+(reconciliation-assurance) agents (#667) detect/draft/escalate against it and **never move
+money**.
+
+**Columns it derives onto each invoice row:** type-cast `total_amount` / `balance` (from the
+all-text bronze envelope), `is_open` (`balance > 0`), `days_overdue` (whole days past
+`due_date`, only while open & overdue — else NULL), and an `aging_bucket` worklist partition
+(`paid` · `current` · `1-30` · `31-60` · `61-90` · `90+`). The silver `account` is resolved
+**best-effort by case-insensitive name** (LEFT JOIN; NULL on a miss — observability only).
+
+**Follow-up (pipeline-owned, file as a sibling-repo issue per CLAUDE.md §1):** a typed
+`account` ↔ QBO-customer mapping so the account join is a firm key rather than a name match;
+and a `qbo_payments` apply/match if a paid-line breakdown is later needed. The mirror is
+correct now (balance>0 is the open-AR truth); it sharpens when the mapping lands. Read via
+`src/lib/data` `crm.listInvoices()` (typed `InvoiceMirrorRow`) + `src/lib/invoice-aging.ts`
+(worklist sort + aging summary). PII-free: the view selects no customer email/phone/address.
+
 ## Diagram 5 — As-built: communications, connections, enrichment, demand-gen audiences & automation (ADR-0024–0027)
 
 The multi-channel timeline (every comm is one `interaction`), per-user + company
