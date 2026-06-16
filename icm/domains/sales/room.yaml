@@ -1,0 +1,28 @@
+# room.yaml — the sales domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any sales workflow may be granted. A workflow's agent.yaml narrows this further
+# (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs). Every
+# entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+# Sales workers may read/draft/send on the lead→opportunity motion. SMS is NOT
+# in the sales budget (channel-rules: SMS is follow-up-only and opt-in — granted
+# per-workflow if/when a workflow needs it, not domain-wide).
+tools:
+  - pg.read
+  - consent.check
+  - send.email
+  - send.dm
+  - booking.link
+
+# The sales data scope — the rooms a sales worker may read.
+okf_rooms:
+  - contact
+  - account
+  - opportunity
+  - interaction
+  - consent_event
+  - lead_score
+  - campaign

@@ -6,7 +6,13 @@ management → service desk) using the Interpreted Context Methodology
 orchestrator, with human checkpoints and a per-workflow autonomy dial.
 
 - **Definitions:** [`icm/`](../../icm/CONVENTIONS.md) in this repo — the
-  factory. One folder per workflow; stage contracts + runtime skill bundles.
+  factory. Workflows live under the **domain tier**
+  `icm/domains/<domain>/<workflow>/` (ADR-0088): a thin domain `room.md` +
+  `room.yaml` budget, then per-workflow `CONTEXT.md` (routing) + `agent.yaml`
+  (manifest) + `prose.md` + `stages/` + skill bundles. The reference
+  implementation is
+  [`icm/domains/sales/lead-response/`](../../icm/domains/sales/lead-response/CONTEXT.md)
+  (issue #701).
 - **Execution:** backend orchestrator (backend ADR-0036) — the product. Stage
   artifacts are Postgres run records, editable in the GUI between stages.
 - **Trust ramp:** every workflow starts draft-for-approval; admins flip
@@ -19,4 +25,4 @@ orchestrator, with human checkpoints and a per-workflow autonomy dial.
 - **Authoring:** use the `imperion-icm` skill (skills plugin); changes are
   normal issue → micro-PR.
 
-Current workspaces: see [`icm/workspaces/`](../../icm/workspaces/).
+Current domains/workflows: see [`icm/domains/`](../../icm/domains/) — `sales/lead-response` is the live reference workspace.

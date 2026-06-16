@@ -7,7 +7,7 @@
 | Source | Location | Scope | Why |
 |---|---|---|---|
 | Triage + dossier | stages 01/02 outputs | all | substance |
-| Voice | `../../skills/voice-and-tone.md` | all | how we sound |
+| Voice | `../../../skills/voice-and-tone.md` | all | how we sound (domain-tier skill) |
 | Offers | `../../skills/offer-catalog.md` | the suggested angle's entry | what we propose |
 | Channel rules | `../../skills/channel-rules.md` | the lead's channel section | hard constraints |
 

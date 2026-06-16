@@ -1,0 +1,15 @@
+name: lead-response
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> workflow prose
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ./prose.md
+okf_rooms: [contact, account, interaction, consent_event, lead_score, campaign]   # subset of domains/sales/room.yaml
+tools: [pg.read, consent.check, send.email, send.dm, booking.link]                # subset of domains/sales/room.yaml
+skills:
+  - domains/sales/skills/voice-and-tone     # Tier 2 — domain-shared
+  - ./skills/icp                            # Tier 3 — workflow-local
+  - ./skills/offer-catalog                  # Tier 3 — workflow-local
+  - ./skills/channel-rules                  # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "email replies to triage class 'standard-inquiry' with an audit-clean draft and an existing consent basis; everything else parks for a human"

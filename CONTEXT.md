@@ -274,7 +274,7 @@ A future Posture Pillar scoring DNS health (drift + governance verdict). Not in 
 ### Agent automation (ICM, ADR-0061)
 
 **ICM Workspace**:
-One business workflow defined as files under `icm/workspaces/<slug>/` — Layer-1 routing CONTEXT.md, numbered stage contracts, workflow-local runtime skills. The factory; runs are platform records, never files.
+One business workflow defined as files under `icm/domains/<domain>/<workflow>/` (the domain tier, ADR-0088) — Layer-1 routing CONTEXT.md, the `agent.yaml` manifest, composed `prose.md`, numbered stage contracts, workflow-local runtime skills. The factory; runs are platform records, never files. Reference: `icm/domains/sales/lead-response/`.
 _Avoid_: workflow (unqualified — that's the in-app Workflows module), pipeline (that's data ingestion)
 
 **Stage Contract**:
