@@ -88,12 +88,12 @@ The **Constitution is the outer allow-list**, the **domain narrows it**, the
 Constitution permits domain-wide. The domain and Constitution budgets live in
 sibling **budget files** (`icm/domains/<d>/room.yaml`, `icm/CONSTITUTION.yaml`) —
 their naming, location, `{tools, okf_rooms}` shape, and the absent-tier
-degradation rule below are ratified in **ADR-00XX** (the budget-file convention),
+degradation rule below are ratified in **ADR-0089** (the budget-file convention),
 extending ADR-0088 §3. Until those files land with the domain tier, the gate
 still fully shape-checks every manifest and applies the invariant wherever a
 budget is declared; when an upper tier's budget is absent, its bound is the
 next-lower declared list (so an absent budget can never be widened past — see
-ADR-00XX §3).
+ADR-0089 §3).
 
 ## How it is consumed
 

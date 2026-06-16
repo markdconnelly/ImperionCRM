@@ -1,4 +1,4 @@
-# ADR-00XX: ICM least-privilege budget files (CONSTITUTION.yaml + domains/<d>/room.yaml)
+# ADR-0089: ICM least-privilege budget files (CONSTITUTION.yaml + domains/<d>/room.yaml)
 
 | Field | Value |
 |---|---|
