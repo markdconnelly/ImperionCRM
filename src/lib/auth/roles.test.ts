@@ -6,6 +6,7 @@ import {
   canManageSales,
   canSeeCollections,
   canSeeAgentPages,
+  canSeeCmdb,
   canSeeLaborCost,
   canSeeRevenue,
   canSeeSettings,
@@ -81,6 +82,19 @@ describe("predicates", () => {
     }
     expect(canSeeAgentPages([])).toBe(false);
     expect(canSeeAgentPages(undefined)).toBe(false);
+  });
+
+  test("canSeeCmdb is admin-only (#645 — CI register matches the Settings gate)", () => {
+    expect(canSeeCmdb(["admin"])).toBe(true);
+    expect(canSeeCmdb(["support", "admin"])).toBe(true);
+    for (const r of ["finance", "sales", "project_manager", "support"] as const) {
+      expect(canSeeCmdb([r])).toBe(false);
+    }
+    expect(canSeeCmdb([])).toBe(false);
+    expect(canSeeCmdb(undefined)).toBe(false);
+    // and the nav guard hides /cmdb for non-admins
+    expect(canSeeFeature("cmdb", ["admin"])).toBe(true);
+    expect(canSeeFeature("cmdb", ["support"])).toBe(false);
   });
 
   test("canManageProjects is admin | project_manager (ADR-0052 §8)", () => {

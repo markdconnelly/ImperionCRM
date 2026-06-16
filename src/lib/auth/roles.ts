@@ -74,6 +74,18 @@ export function canSeeAgentPages(roles: readonly AppRole[] | undefined): boolean
 }
 
 /**
+ * The CMDB Configuration Item register (#645, epic #372, ADR-0078) is admin-only:
+ * it exposes the full client managed-estate inventory (accounts, end-user
+ * identities, devices) as one cross-account CI surface, so it rides the same
+ * nav-visibility + route gate as Settings / AI Agents (ADR-0030) rather than a
+ * per-module capability. Read-only — there is NO write path, so no `policy.ts`
+ * capability is added (mirrors `canSeeAgentPages`).
+ */
+export function canSeeCmdb(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles);
+}
+
+/**
  * Project-board writes — creating/editing projects and project types — belong
  * to delivery: admin | project_manager (ADR-0052 §8). This is the GUI-side
  * twin of the `delivery:write` capability the server actions enforce
@@ -255,6 +267,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   security: canSeeSettings,
   agents: canSeeAgentPages,
   board: canSeeAgentPages,
+  cmdb: canSeeCmdb,
   "time-admin": canAdministerTimesheets,
   "time-mappings": canManageEmployeeMappings,
   "expense-admin": canAdministerExpenses,

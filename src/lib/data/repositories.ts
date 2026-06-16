@@ -148,6 +148,7 @@ import type {
   TicketSlaBreachRow,
   ContractRow,
   DeviceInventoryRow,
+  ConfigurationItem,
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
@@ -718,6 +719,17 @@ export interface CrmRepository {
 
   /** Read-only device & cloud-asset inventory (ADR-0047, view migration 0053). */
   listDeviceInventory(): Promise<DeviceInventoryRow[]>;
+
+  /**
+   * The CMDB Configuration Item (CI) union read-model (#645, epic #372, ADR-0078) —
+   * a READ-ONLY projection over EXISTING silver inventory, NO new ingest/schema. One
+   * row per CI across the v1 types (`account` silver `account`, `user` silver `contact`,
+   * `device` silver `device`), each tagged with `ciType` + owning `accountId`. Imperion
+   * staff/admin identities (modelled as `app_user`, not `contact`) are EXCLUDED, and any
+   * account-less row is dropped (`account_id IS NOT NULL`). Sorted account → type → name.
+   * Mock / schema-lag fallback = `[]` (the register renders empty, never crashes).
+   */
+  listConfigurationItems(): Promise<ConfigurationItem[]>;
 
   /**
    * Read-only AR/invoice MIRROR over bronze `qbo_invoices` (the `invoice_mirror` view,
