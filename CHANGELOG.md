@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.15.0...imperion-crm-v0.16.0) (2026-06-16)
+
+
+### Features
+
+* **cmdb:** CI read-model + register surface ([#645](https://github.com/markdconnelly/ImperionCRM/issues/645)) ([#738](https://github.com/markdconnelly/ImperionCRM/issues/738)) ([2bb4e5b](https://github.com/markdconnelly/ImperionCRM/commit/2bb4e5b557dac920a6cf6eb52615b692c0c88e54))
+* **pipeline:** dedicated deal/opportunity 360 route hosting conversation panel ([#681](https://github.com/markdconnelly/ImperionCRM/issues/681)) ([#737](https://github.com/markdconnelly/ImperionCRM/issues/737)) ([0820499](https://github.com/markdconnelly/ImperionCRM/commit/082049917a17434500e77a802fc3b5c45ec6a2a5))
+* **reporting:** dashboard compose + share over saved reports ([#412](https://github.com/markdconnelly/ImperionCRM/issues/412)) ([#743](https://github.com/markdconnelly/ImperionCRM/issues/743)) ([2c6b408](https://github.com/markdconnelly/ImperionCRM/commit/2c6b40893d115ee62ac1a57dc6642ee470c3db07))
+* **reporting:** governed semantic model — reportable objects/fields + RBAC scoping ([#409](https://github.com/markdconnelly/ImperionCRM/issues/409)) ([#740](https://github.com/markdconnelly/ImperionCRM/issues/740)) ([492134a](https://github.com/markdconnelly/ImperionCRM/commit/492134a7c6ff5da6ea754f2ad6580d3c50707587))
+* **reporting:** report_definition + dashboard schema + accessors ([#410](https://github.com/markdconnelly/ImperionCRM/issues/410)) ([#741](https://github.com/markdconnelly/ImperionCRM/issues/741)) ([97126a4](https://github.com/markdconnelly/ImperionCRM/commit/97126a491a09441430029772f298e7ee9b70f70c))
+* **reporting:** self-serve report builder UI + in-memory executor ([#411](https://github.com/markdconnelly/ImperionCRM/issues/411)) ([#742](https://github.com/markdconnelly/ImperionCRM/issues/742)) ([cb5db88](https://github.com/markdconnelly/ImperionCRM/commit/cb5db881e2114b5bf5d9105aee5b4590868d9cbd))
+
 ## [0.15.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.14.0...imperion-crm-v0.15.0) (2026-06-16)
 
 
