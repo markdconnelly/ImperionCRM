@@ -51,7 +51,12 @@ backend adds a scheduled job but is the only correct home for a process (ADR-004
   JSON-form pattern; submit maps fields → a task/project (title, assignee, project,
   custom fields) and routes to a default project/queue. **Staff-authenticated only in
   v1**; external/public intake is a later, separately-scoped decision (it borders on
-  the excluded public-API surface).
+  the excluded public-API surface). **Editing is in-place** (#639): a form's definition
+  is patched on the existing `intake_form` row, so its id and stable `key` — and the
+  prior submissions joined on `intake_submission.form_id` — survive an edit. The
+  `is_active` flag is author-controlled (an inactive form stops accepting submissions
+  without being deleted). The builder reuses the same `payload` JSON contract for both
+  create and edit.
 
 ## Consequences
 

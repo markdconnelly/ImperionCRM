@@ -1167,6 +1167,14 @@ export interface CrmRepository {
   getIntakeForm(id: string): Promise<IntakeFormDetail | null>;
   /** Create a form; returns the id. */
   createIntakeForm(input: IntakeFormInput): Promise<string>;
+  /**
+   * In-place edit of a form (ADR-0070 E3, #639): patch the existing row's
+   * definition (fields + routing defaults + `is_active`) WITHOUT changing its id
+   * or `key`, so the stable key and submission history (`intake_submission.form_id`)
+   * survive an edit. The `key` is column-immutable here — it is derived from the
+   * name at create and edits never re-slug it.
+   */
+  updateIntakeForm(id: string, input: IntakeFormInput): Promise<void>;
   /** Delete a form (CASCADE drops its submissions). */
   deleteIntakeForm(id: string): Promise<void>;
   /**

@@ -5110,6 +5110,33 @@ export const postgresRepositories: Repositories = {
       return rows[0].id;
     },
 
+    async updateIntakeForm(id: string, input: IntakeFormInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateIntakeForm(id, input);
+      // Patch the existing row IN PLACE (ADR-0070 E3, #639): the id and `key` are
+      // deliberately NOT touched, so the stable key and submission history
+      // (intake_submission.form_id) survive the edit. rowCount 0 → missing → throw.
+      const { rowCount } = await pool.query(
+        `UPDATE intake_form
+            SET name = $2, description = $3, fields = $4::jsonb,
+                default_project_id = $5, default_account_id = $6,
+                default_owner_user_id = $7, default_category = $8, is_active = $9
+          WHERE id = $1`,
+        [
+          id,
+          input.name,
+          nullIfEmpty(input.description),
+          JSON.stringify(input.fields ?? []),
+          nullIfEmpty(input.defaultProjectId),
+          nullIfEmpty(input.defaultAccountId),
+          nullIfEmpty(input.defaultOwnerUserId),
+          input.defaultCategory,
+          input.isActive,
+        ],
+      );
+      if (!rowCount) throw new Error("Intake form not found.");
+    },
+
     async deleteIntakeForm(id: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.deleteIntakeForm(id);

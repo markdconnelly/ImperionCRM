@@ -94,6 +94,25 @@ export async function createIntakeFormAction(formData: FormData) {
   redirect("/intake");
 }
 
+/**
+ * In-place edit of an intake form (ADR-0070 E3, #639): reuses the same `payload`
+ * JSON contract + parser as create; the data layer patches the existing row WITHOUT
+ * touching its id or `key`, so the stable key and prior submissions
+ * (`intake_submission.form_id`) survive the edit. Gated `delivery:write`, the same
+ * gate as authoring.
+ */
+export async function updateIntakeFormAction(formData: FormData) {
+  await requireCapability("delivery:write");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) throw new Error("Intake form id is required.");
+  const input = parsePayload(String(formData.get("payload") ?? "{}"));
+  const { crm } = getRepositories();
+  await crm.updateIntakeForm(id, input);
+  revalidatePath("/intake");
+  revalidatePath(`/intake/${id}`);
+  redirect(`/intake/${id}`);
+}
+
 export async function deleteIntakeFormAction(formData: FormData) {
   await requireCapability("delivery:write");
   const id = String(formData.get("id") ?? "").trim();

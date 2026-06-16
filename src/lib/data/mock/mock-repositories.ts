@@ -855,6 +855,10 @@ export const mockRepositories: Repositories = {
     async createIntakeForm() {
       throw new Error(NO_DB);
     },
+    async updateIntakeForm() {
+      // Patches an existing form's definition in place — needs a database.
+      throw new Error(NO_DB);
+    },
     async deleteIntakeForm() {
       throw new Error(NO_DB);
     },
