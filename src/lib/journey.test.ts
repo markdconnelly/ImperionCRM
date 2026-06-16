@@ -2,13 +2,19 @@ import { describe, it, expect } from "vitest";
 import {
   EMPTY_JOURNEY_DEFINITION,
   JOURNEY_STEP_KINDS,
+  allocateSplitPercent,
+  clearWinner,
   describeStep,
   newJourneyStep,
   nextStepKey,
   parseJourneyDefinition,
+  selectWinner,
+  splitPercentsSumTo100,
   stepHasAbTest,
+  stepHasWinner,
   summariseJourney,
   validateJourneyDefinition,
+  variantMetricsAvailable,
   variantSplit,
 } from "./journey";
 import type { JourneyDefinition, JourneyStep } from "@/types";
@@ -26,6 +32,7 @@ function step(partial: Partial<JourneyStep> & { key: string; kind: JourneyStep["
     ifTrue: null,
     ifFalse: null,
     scoreDelta: null,
+    winner: null,
     ...partial,
   };
 }
@@ -264,5 +271,155 @@ describe("nextStepKey (builder #399)", () => {
   it("skips a gap-filling collision (s1,s3 present → not s1/s3)", () => {
     const next = nextStepKey(def(["s1", "s3"]));
     expect(["s1", "s3"]).not.toContain(next);
+  });
+});
+
+// ── A/B split + winner selection (#400) ───────────────────────────────────────
+
+const variant = (key: string, ratio: number) => ({ key, ratio, templateId: `t_${key}`, label: null });
+
+describe("allocateSplitPercent (#400)", () => {
+  it("returns whole percents summing to exactly 100 for an even split", () => {
+    const alloc = allocateSplitPercent([variant("a", 1), variant("b", 1)]);
+    expect(alloc).toEqual([
+      { key: "a", percent: 50 },
+      { key: "b", percent: 50 },
+    ]);
+    expect(splitPercentsSumTo100(alloc)).toBe(true);
+  });
+
+  it("honours weighted ratios (3:1 → 75/25)", () => {
+    const alloc = allocateSplitPercent([variant("a", 3), variant("b", 1)]);
+    expect(alloc).toEqual([
+      { key: "a", percent: 75 },
+      { key: "b", percent: 25 },
+    ]);
+  });
+
+  it("sums to exactly 100 even when fractions don't divide evenly (3-way)", () => {
+    const alloc = allocateSplitPercent([variant("a", 1), variant("b", 1), variant("c", 1)]);
+    expect(alloc.reduce((s, a) => s + a.percent, 0)).toBe(100);
+    expect(splitPercentsSumTo100(alloc)).toBe(true);
+    // largest-remainder gives the leftover percent to the first variant deterministically.
+    expect(alloc).toEqual([
+      { key: "a", percent: 34 },
+      { key: "b", percent: 33 },
+      { key: "c", percent: 33 },
+    ]);
+  });
+
+  it("is empty for no variants and 100 for a single variant", () => {
+    expect(allocateSplitPercent([])).toEqual([]);
+    expect(allocateSplitPercent([variant("a", 1)])).toEqual([{ key: "a", percent: 100 }]);
+  });
+});
+
+describe("winner selection (#400)", () => {
+  const abSend = () =>
+    step({
+      key: "s1",
+      kind: "send",
+      templateId: null,
+      variants: [variant("a", 1), variant("b", 1)],
+    });
+
+  it("metrics are honestly unavailable (manual selection only, no run telemetry yet)", () => {
+    expect(variantMetricsAvailable()).toBe(false);
+  });
+
+  it("promotes a real variant and reflects it in stepHasWinner + describeStep", () => {
+    const promoted = selectWinner(abSend(), "b");
+    expect(promoted.winner).toBe("b");
+    expect(stepHasWinner(promoted)).toBe(true);
+    expect(describeStep(promoted)).toContain("winner: b");
+  });
+
+  it("ignores a winner that names no variant on the step", () => {
+    const promoted = selectWinner(abSend(), "ghost");
+    expect(promoted.winner).toBeNull();
+    expect(stepHasWinner(promoted)).toBe(false);
+  });
+
+  it("won't promote a winner on a non-A/B send (single variant)", () => {
+    const single = step({ key: "s1", kind: "send", templateId: "t", variants: [variant("a", 1)] });
+    expect(selectWinner(single, "a").winner).toBeNull();
+  });
+
+  it("clearWinner re-opens the split", () => {
+    const promoted = selectWinner(abSend(), "a");
+    expect(clearWinner(promoted).winner).toBeNull();
+  });
+});
+
+describe("parseJourneyDefinition winner (#400)", () => {
+  it("keeps a winner that names a real variant", () => {
+    const def = parseJourneyDefinition({
+      steps: [
+        {
+          key: "s1",
+          kind: "send",
+          winner: "b",
+          variants: [
+            { key: "a", templateId: "ta" },
+            { key: "b", templateId: "tb" },
+          ],
+        },
+      ],
+    });
+    expect(def.steps[0].winner).toBe("b");
+  });
+
+  it("drops a stale winner that names no variant", () => {
+    const def = parseJourneyDefinition({
+      steps: [
+        {
+          key: "s1",
+          kind: "send",
+          winner: "ghost",
+          variants: [{ key: "a", templateId: "ta" }, { key: "b", templateId: "tb" }],
+        },
+      ],
+    });
+    expect(def.steps[0].winner).toBeNull();
+  });
+});
+
+describe("validateJourneyDefinition winner (#400)", () => {
+  it("flags a winner on a non-A/B send and a winner naming no variant", () => {
+    const def = {
+      entryStepKey: "s1",
+      sourceSegmentIds: [],
+      steps: [
+        step({ key: "s1", kind: "send", templateId: "t", winner: "a" }), // winner but no variants
+        step({
+          key: "s2",
+          kind: "send",
+          winner: "z",
+          variants: [variant("a", 1), variant("b", 1)],
+        }), // winner names no variant
+        step({ key: "s3", kind: "exit" }),
+      ],
+    };
+    const problems = validateJourneyDefinition(def);
+    expect(problems.some((p) => p.includes("is not an A/B test"))).toBe(true);
+    expect(problems.some((p) => p.includes('winner "z" is not one of its variants'))).toBe(true);
+  });
+
+  it("passes a valid A/B send with a promoted winner", () => {
+    const def = {
+      entryStepKey: "s1",
+      sourceSegmentIds: [],
+      steps: [
+        step({
+          key: "s1",
+          kind: "send",
+          next: "s2",
+          winner: "a",
+          variants: [variant("a", 1), variant("b", 1)],
+        }),
+        step({ key: "s2", kind: "exit" }),
+      ],
+    };
+    expect(validateJourneyDefinition(def)).toEqual([]);
   });
 });

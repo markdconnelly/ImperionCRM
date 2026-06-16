@@ -11,10 +11,12 @@ import type {
 import {
   JOURNEY_BRANCH_CONDITIONS,
   JOURNEY_STEP_KINDS,
+  allocateSplitPercent,
   describeStep,
   newJourneyStep,
   nextStepKey,
   validateJourneyDefinition,
+  variantMetricsAvailable,
 } from "@/lib/journey";
 import { saveJourneyAction } from "@/app/(app)/journeys/actions";
 
@@ -465,6 +467,11 @@ function VariantEditor({
   step: JourneyStep;
   onChange: (patch: Partial<JourneyStep>) => void;
 }) {
+  const isAbTest = step.variants.length >= 2;
+  // Deterministic whole-percent split (sums to 100) derived from the ratio weights (#400).
+  const split = allocateSplitPercent(step.variants);
+  const percentByKey = new Map(split.map((s) => [s.key, s.percent]));
+
   function addVariant() {
     const key = String.fromCharCode(97 + step.variants.length); // a, b, c…
     onChange({ variants: [...step.variants, { key, ratio: 1, templateId: null, label: null }] });
@@ -475,14 +482,19 @@ function VariantEditor({
     });
   }
   function removeVariant(key: string) {
-    onChange({ variants: step.variants.filter((v) => v.key !== key) });
+    // Removing the promoted winner clears it (a winner can never name a ghost variant).
+    const winner = step.winner === key ? null : step.winner;
+    onChange({ variants: step.variants.filter((v) => v.key !== key), winner });
+  }
+  function toggleWinner(key: string) {
+    onChange({ winner: step.winner === key ? null : key });
   }
 
   return (
     <div className="sm:col-span-2 rounded-md border border-border/60 bg-panel-2 p-2">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-accent-2">
-          A/B variants {step.variants.length >= 2 ? "(test active)" : "(optional)"}
+          A/B variants {isAbTest ? "(test active)" : "(optional)"}
         </span>
         <button
           type="button"
@@ -498,35 +510,94 @@ function VariantEditor({
           single template above, no test runs.
         </p>
       ) : (
-        <ul className="mt-2 flex flex-col gap-1">
-          {step.variants.map((v) => (
-            <li key={v.key} className="grid grid-cols-[auto_1fr_5rem_auto] items-center gap-2">
-              <code className="text-[11px] text-dim">{v.key}</code>
-              <input
-                value={v.templateId ?? ""}
-                onChange={(e) => updateVariant(v.key, { templateId: e.target.value || null })}
-                placeholder="template id"
-                className={`${inputClass} py-1`}
-              />
-              <input
-                type="number"
-                min={1}
-                value={v.ratio}
-                onChange={(e) => updateVariant(v.key, { ratio: Number(e.target.value) || 1 })}
-                title="split weight"
-                className={`${inputClass} py-1`}
-              />
-              <button
-                type="button"
-                onClick={() => removeVariant(v.key)}
-                aria-label="Remove variant"
-                className="rounded border border-border px-2 py-0.5 text-[11px] text-red hover:bg-red/10"
-              >
-                ✕
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="mt-2 flex flex-col gap-1">
+            {step.variants.map((v) => {
+              const isWinner = step.winner === v.key;
+              return (
+                <li
+                  key={v.key}
+                  className="grid grid-cols-[auto_1fr_4rem_3rem_auto_auto] items-center gap-2"
+                >
+                  <code className="text-[11px] text-dim">{v.key}</code>
+                  <input
+                    value={v.templateId ?? ""}
+                    onChange={(e) => updateVariant(v.key, { templateId: e.target.value || null })}
+                    placeholder="template id"
+                    className={`${inputClass} py-1`}
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    value={v.ratio}
+                    onChange={(e) => updateVariant(v.key, { ratio: Number(e.target.value) || 1 })}
+                    title="split weight"
+                    className={`${inputClass} py-1`}
+                  />
+                  <span
+                    className="text-right text-[11px] tabular-nums text-accent-2"
+                    title="resulting traffic split (sums to 100%)"
+                  >
+                    {percentByKey.get(v.key) ?? 0}%
+                  </span>
+                  {isAbTest ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleWinner(v.key)}
+                      aria-pressed={isWinner}
+                      title={isWinner ? "Winner — click to un-promote" : "Promote as winner"}
+                      className={`rounded border px-2 py-0.5 text-[11px] ${
+                        isWinner
+                          ? "border-green bg-green/10 text-green"
+                          : "border-border text-dim hover:text-text"
+                      }`}
+                    >
+                      {isWinner ? "★ winner" : "promote"}
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeVariant(v.key)}
+                    aria-label="Remove variant"
+                    className="rounded border border-border px-2 py-0.5 text-[11px] text-red hover:bg-red/10"
+                  >
+                    ✕
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {isAbTest && (
+            <div className="mt-2 rounded border border-border/60 bg-panel p-2 text-[11px] text-dim">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-text">Winner</span>
+                {step.winner ? (
+                  <span className="rounded-full border border-green/40 px-2 py-0.5 text-green">
+                    promoted: {step.winner}
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-border px-2 py-0.5 text-dim">
+                    splitting traffic
+                  </span>
+                )}
+              </div>
+              <p className="mt-1">
+                Split is computed from the weights above and always sums to 100%. Promote a variant
+                to send the winner to everyone once enrolment continues.
+              </p>
+              {!variantMetricsAvailable() && (
+                <p className="mt-1 text-amber">
+                  No per-variant send metrics yet (the journey runner has shipped no run telemetry,
+                  #398), so winner selection is operator-chosen — there are no open/click rates to
+                  auto-pick from.
+                </p>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
