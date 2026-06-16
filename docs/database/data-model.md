@@ -2531,6 +2531,65 @@ security logs and Purview **alerts** are NOT ingested — KQL hunting stays nati
 **180-day retention prune** of security rows is an LP cmdlet (#196), not a DB constraint
 here.
 
+## Finance/logistics/interaction bronze — bronze-batch-B (#688, LP #197/#198/#199)
+
+Eleven lossless-envelope bronze landing tables (the `0083` convention — flat text columns
+for the curated subset + lossless `raw_payload jsonb`; envelope
+`tenant_id/source/external_id/collected_at/raw_payload/content_hash`, PK
+`(tenant_id, source, external_id)`). FE owns the table names (CLAUDE.md §1); the on-prem
+LocalPipeline collectors (LP #197 finance, LP #198 logistics, LP #199 interaction) **fail
+loudly until these exist**, so this front-end migration lands them ahead of the gated
+collectors. Bronze only — **no silver entity changes** (so no OKF concept file, no app
+surface). Writer: `imperion-localpipeline` (SELECT/INSERT/UPDATE); web/backend/cloud-pipeline
+read (SELECT).
+
+**Finance / QBO (LP #197):** full read-only pull on the existing `conn-company-qbo`
+connection — the app never writes to QBO. Field names model the Intuit Accounting API v3;
+`raw_payload` is lossless so any drift is recoverable. (`qbo_purchases` already exists from
+0092 and is NOT recreated.)
+
+- `qbo_invoices` — Invoices (A/R). Flat: doc_number, customer_ref, customer_name, txn_date,
+  due_date, total_amount, balance, currency, email_status, last_updated_time. `external_id` =
+  QBO Invoice Id; `customer_ref` joins `qbo_customers`.
+- `qbo_payments` — customer Payments received against invoices. Flat: customer_ref,
+  customer_name, txn_date, total_amount, unapplied_amount, payment_method, deposit_account,
+  currency, last_updated_time. Applied-invoice links in `raw_payload`.
+- `qbo_customers` — Customers (the billed entity → maps LP-side to the silver account). Flat:
+  customer_id, display_name, company_name, active, balance, currency, created_time,
+  last_updated_time. Join target for the invoice/payment/estimate refs. PII in `raw_payload`.
+- `qbo_estimates` — Estimates (quotes). Flat: doc_number, customer_ref, customer_name,
+  txn_date, expiration_date, txn_status, total_amount, currency, last_updated_time.
+- `qbo_bills` — Bills (A/P; feature-limited on Simple Start, cf. 0092). Flat: doc_number,
+  vendor_ref, vendor_name, txn_date, due_date, total_amount, balance, currency,
+  last_updated_time.
+- `qbo_accounts` — chart of accounts. Flat: account_id, name, fully_qualified_name,
+  account_type, account_sub_type, classification, active, current_balance, currency,
+  last_updated_time. The CFO expense-account mapping (cf. 0092) resolves against this list.
+- `qbo_profit_and_loss` — Profit & Loss **report** snapshot. Flat (header only): report_name,
+  period_start, period_end, accounting_method, summarize_by, currency, generated_at. The full
+  report Rows tree is lossless in `raw_payload`; `external_id` = an LP-minted period+basis key.
+
+**Logistics (LP #198):** procurement orders + shipment/tracking + spend; per-line detail is
+lossless in `raw_payload`.
+
+- `amazon_business_orders` — Amazon Business orders. Flat: order_id, order_date, order_status,
+  order_total, currency, buyer_name, tracking_number, carrier, ship_status, estimated_delivery.
+  `external_id` = order_id.
+- `cdw_orders` — CDW orders. Flat: order_id, po_number, order_date, order_status, order_total,
+  currency, account_ref, tracking_number, carrier, ship_status, estimated_delivery.
+  `external_id` = order_id.
+
+**Interaction (LP #199):** scoped Derek/Mark↔clients capture. The participant **allowlist
+filter is applied LP-side at collection**, not in this schema. Only a short preview is curated;
+full bodies + structured participants are lossless in `raw_payload`.
+
+- `m365_email` — scoped email. Flat: message_id, conversation_id, subject, preview,
+  from_address, to_recipients, direction, sent_at, has_attachments, mailbox_owner.
+  `external_id` = message_id; `conversation_id` threads.
+- `m365_teams` — scoped Teams chat/channel. Flat: message_id, conversation_id, preview,
+  from_user, participants, direction, message_type, sent_at, has_attachments, captured_user.
+  `external_id` = message_id; `conversation_id` threads.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —
