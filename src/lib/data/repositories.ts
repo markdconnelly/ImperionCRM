@@ -666,6 +666,19 @@ export interface CrmRepository {
    */
   getCollectionsActivity(qboInvoiceId: string): Promise<CollectionsActivity | null>;
 
+  // ── Collections worklist batched read (#678) ──────────────────────────────
+  /**
+   * Batched read of the dunning overlay for MANY invoices at once — the bulk form of
+   * `getCollectionsActivity`, backing the `/collections` aging worklist (#678). Keyed by
+   * the QBO invoice id; only invoices that have been worked appear (a missing key ⟺ the
+   * implicit not-yet-worked overlay, which the pure `buildWorklist` helper fills in). One
+   * CURRENT-state row per invoice, most-recent first. Holds workflow state ONLY — amounts
+   * are read from `listInvoices()`. Mirrors `listAssigneesForMany`. Mock/schema-lag = `{}`.
+   */
+  getCollectionsActivityForMany(
+    qboInvoiceIds: string[],
+  ): Promise<Record<string, CollectionsActivity>>;
+
   /**
    * Upsert the collections/dunning overlay state for an invoice (migration 0122, #677).
    * One CURRENT-state row per (tenant, invoice); `appendReminder` is appended to the

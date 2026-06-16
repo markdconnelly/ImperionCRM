@@ -1261,6 +1261,59 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    // ── Collections worklist batched read (#678) ──────────────────────────────
+    async getCollectionsActivityForMany(
+      qboInvoiceIds: string[],
+    ): Promise<Record<string, CollectionsActivity>> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getCollectionsActivityForMany(qboInvoiceIds);
+      if (qboInvoiceIds.length === 0) return {};
+      try {
+        // One read over collections_activity for every overdue invoice on the worklist
+        // (#678) — the bulk form of getCollectionsActivity. DISTINCT ON keeps one
+        // CURRENT-state row per invoice (most recently updated wins), mirroring the
+        // per-invoice read's `ORDER BY updated_at DESC LIMIT 1`.
+        const { rows } = await pool.query<{
+          id: string;
+          qbo_invoice_id: string;
+          status: DunningStatus;
+          escalation_level: number;
+          assignee_user_id: string | null;
+          reminders: CollectionsReminder[] | null;
+          notes: string | null;
+          created_at: Date;
+          updated_at: Date;
+        }>(
+          `SELECT DISTINCT ON (qbo_invoice_id)
+                  id::text AS id, qbo_invoice_id, status, escalation_level,
+                  assignee_user_id::text AS assignee_user_id, reminders, notes,
+                  created_at, updated_at
+             FROM collections_activity
+            WHERE qbo_invoice_id = ANY($1::text[])
+            ORDER BY qbo_invoice_id, updated_at DESC`,
+          [qboInvoiceIds],
+        );
+        const out: Record<string, CollectionsActivity> = {};
+        for (const r of rows) {
+          out[r.qbo_invoice_id] = {
+            id: r.id,
+            qboInvoiceId: r.qbo_invoice_id,
+            status: r.status,
+            escalationLevel: Number(r.escalation_level),
+            assigneeUserId: r.assignee_user_id,
+            reminders: Array.isArray(r.reminders) ? r.reminders : [],
+            notes: r.notes,
+            createdAt: fmtIso(r.created_at) ?? "",
+            updatedAt: fmtIso(r.updated_at) ?? "",
+          };
+        }
+        return out;
+      } catch (err) {
+        if (isSchemaLagError(err)) return {};
+        return mockRepositories.crm.getCollectionsActivityForMany(qboInvoiceIds);
+      }
+    },
+
     async upsertCollectionsActivity(input: CollectionsActivityInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.upsertCollectionsActivity(input);
