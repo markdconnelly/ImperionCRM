@@ -45,6 +45,9 @@ right (scoped to your Entra permissions).
 - [Omnichannel queue](omnichannel-queue.md): one prioritized inbound queue
   unifying chat sessions + tickets across channels; coordinates ICM service-desk
   routing (#280), read-only until that seam is wired (ADR-0074 §6).
+- [Service Desk — live chat agent console](service-desk-live-chat.md): work active
+  chat sessions — transcript, deflection telemetry, agent reply, and idempotent
+  escalate-to-Autotask; plus the embeddable customer chat widget (ADR-0074).
 
 ## Walkthroughs to write
 
