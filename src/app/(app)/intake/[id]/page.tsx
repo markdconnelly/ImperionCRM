@@ -34,6 +34,14 @@ export default async function IntakeFormDetailPage({
         <Link href="/intake" className="text-sm text-dim transition-colors hover:text-text">
           ← Intake forms
         </Link>
+        {canManage && (
+          <Link
+            href={`/intake/${form.id}/edit`}
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:text-text"
+          >
+            Edit
+          </Link>
+        )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-dim">

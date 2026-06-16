@@ -7,8 +7,14 @@ import type { ProjectRow } from "@/types";
 /**
  * Authoring form for an intake form (ADR-0070 E3, #354). The field list is too
  * structured for flat FormData, so local React state holds the whole definition and
- * a hidden `payload` input carries its JSON to createIntakeFormAction, which parses
- * + persists it. Edit is delete+recreate in v1, so this form only creates.
+ * a hidden `payload` input carries its JSON to the server action, which parses +
+ * persists it.
+ *
+ * Supports both create and IN-PLACE EDIT (#639): pass `initial` to pre-load an
+ * existing form's definition and `formId` to carry its id back to
+ * `updateIntakeFormAction` (which patches the row in place, preserving the stable
+ * key + submission history). Create is the no-`initial` path and is unchanged.
+ * Edit also surfaces the `is_active` toggle (create defaults it to true).
  *
  * Each field declares where its answer lands on the created task (`mapsTo`): the
  * task title, its detail, an appended note line, or the due date.
@@ -25,6 +31,15 @@ interface FieldDraft {
   options: string; // comma-separated; only used for `select`
 }
 
+export interface IntakeFormDraft {
+  name: string;
+  description: string;
+  defaultProjectId: string;
+  defaultCategory: string;
+  isActive: boolean;
+  fields: FieldDraft[];
+}
+
 const newField = (mapsTo: FieldMap = "note"): FieldDraft => ({
   label: "",
   type: "text",
@@ -39,18 +54,27 @@ const cell =
 export function IntakeFormBuilder({
   projects,
   action,
+  initial,
+  formId,
+  submitLabel = "Create form",
 }: {
   projects: ProjectRow[];
   action: (formData: FormData) => void | Promise<void>;
+  /** Pre-loaded draft for in-place edit (#639); omit for create. */
+  initial?: IntakeFormDraft;
+  /** Existing form id, carried back to the update action; omit for create. */
+  formId?: string;
+  submitLabel?: string;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [defaultProjectId, setDefaultProjectId] = useState("");
-  const [defaultCategory, setDefaultCategory] = useState("general");
+  const [name, setName] = useState(initial?.name ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [defaultProjectId, setDefaultProjectId] = useState(initial?.defaultProjectId ?? "");
+  const [defaultCategory, setDefaultCategory] = useState(initial?.defaultCategory ?? "general");
+  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
   // Seed with a title field so a new form is valid by default.
-  const [fields, setFields] = useState<FieldDraft[]>([
-    { ...newField("title"), label: "Summary" },
-  ]);
+  const [fields, setFields] = useState<FieldDraft[]>(
+    initial?.fields?.length ? initial.fields : [{ ...newField("title"), label: "Summary" }],
+  );
 
   const patch = (i: number, p: Partial<FieldDraft>) =>
     setFields((fs) => fs.map((f, j) => (j === i ? { ...f, ...p } : f)));
@@ -60,7 +84,7 @@ export function IntakeFormBuilder({
     description,
     defaultProjectId: defaultProjectId || null,
     defaultCategory,
-    isActive: true,
+    isActive,
     fields: fields.map((f) => ({
       key: f.label, // server slugifies label→key when key is absent
       label: f.label,
@@ -74,6 +98,7 @@ export function IntakeFormBuilder({
   return (
     <form action={action} className="flex flex-col gap-5">
       <input type="hidden" name="payload" value={payload} />
+      {formId && <input type="hidden" name="id" value={formId} />}
 
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-panel p-5 md:grid-cols-2">
         <Field label="Form name">
@@ -99,6 +124,16 @@ export function IntakeFormBuilder({
             <option value="onboarding">Onboarding</option>
             <option value="sales">Sales</option>
           </Select>
+        </Field>
+        <Field label="Status">
+          <label className="flex items-center gap-2 text-sm text-text">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
+            Active — accepting submissions
+          </label>
         </Field>
       </div>
 
@@ -156,7 +191,7 @@ export function IntakeFormBuilder({
         </button>
       </div>
 
-      <FormActions cancelHref="/intake" />
+      <FormActions cancelHref={formId ? `/intake/${formId}` : "/intake"} submitLabel={submitLabel} />
     </form>
   );
 }

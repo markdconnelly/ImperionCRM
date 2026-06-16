@@ -119,6 +119,40 @@ describe("createIntakeForm", () => {
   });
 });
 
+describe("updateIntakeForm (in-place edit, ADR-0070 E3, #639)", () => {
+  const input = {
+    key: "ncr", // present, but the UPDATE must NOT change the column
+    name: "New client request v2",
+    description: "updated",
+    fields: [{ key: "summary", label: "Summary", type: "text" as const, required: true, options: [], mapsTo: "title" as const }],
+    defaultProjectId: "p1",
+    defaultAccountId: null,
+    defaultOwnerUserId: null,
+    defaultCategory: "project",
+    isActive: false,
+  };
+
+  it("patches the row in place without touching id or key (preserves submissions)", async () => {
+    query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    await crm.updateIntakeForm("f1", input);
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toContain("UPDATE intake_form");
+    // The stable `key` and id must survive an edit — the SET clause never re-keys.
+    expect(sql).not.toMatch(/SET[\s\S]*\bkey\s*=/);
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(params[0]).toBe("f1"); // WHERE id = $1
+    expect(params[1]).toBe("New client request v2");
+    expect(JSON.parse(params[3] as string)[0].mapsTo).toBe("title");
+    expect(params[7]).toBe("project"); // default_category
+    expect(params[8]).toBe(false); // is_active toggle is honored
+  });
+
+  it("throws when the form does not exist (rowCount 0)", async () => {
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    await expect(crm.updateIntakeForm("gone", input)).rejects.toThrow(/not found/i);
+  });
+});
+
 describe("deleteIntakeForm", () => {
   it("deletes by id (CASCADE drops submissions)", async () => {
     await crm.deleteIntakeForm("f1");
