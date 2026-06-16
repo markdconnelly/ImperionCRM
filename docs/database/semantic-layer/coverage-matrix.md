@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-16T00:00:00Z
+timestamp: 2026-06-16T02:00:00Z
 ---
 
 # Master coverage matrix
@@ -132,6 +132,12 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | receipt_attachment | Finance | B | ⏳ | receipt handling |
 | expense_category, qbo_expense_account, mileage_rate | Finance | H | ⏳ | n/a (config; rate comp-gated) |
 
+## Revenue / AR
+
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [invoice](tables/invoice.md) | Finance | B (QBO read-only mirror) | ✅ | collections / AR-dunning; reconciliation-assurance (#667) |
+
 ## Security / MSSP
 
 | Object | Domain | Archetype | IKF | Acting ICM workflow |
@@ -182,6 +188,7 @@ of its own — it inherits the domain of the silver entity it feeds.
 | contract / ticket (B) | `autotask_contracts` · `docusign_contracts` · `autotask_tickets` |
 | time_record (A) | `website_time_entry` · `autotask_time_entry` |
 | expense_item (A) | `website_expense_item` · `mileiq_drive` · `qbo_purchases` (match) |
+| invoice (B, QBO read-only mirror) | `qbo_invoices` (+ `qbo_customers` join; `qbo_payments` future match) |
 | credential_exposure / assessment_artifact (A/B) | `darkwebid_exposures` · `televy_reports` |
 | interaction (B) | `m365_mail_messages` · `m365_teams_chats/_meetings` · `facebook_posts/_comments/_messages` · `instagram_media/_comments` |
 | posture / dns (C/E) | `secure_scores` · `defender_incidents/_alerts` · `entra_*` · `intune_*` · `*_golden` · `dns_zones` · `dns_records` · `sharepoint_sites` · `azure_*` · `sentinel_*` |

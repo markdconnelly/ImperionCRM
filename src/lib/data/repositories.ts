@@ -45,6 +45,7 @@ import type {
   GoalRow,
   IntelStrip,
   InteractionRow,
+  InvoiceMirrorRow,
   KnowledgeHit,
   Kpi,
   LeadCaptureEventRow,
@@ -642,6 +643,17 @@ export interface CrmRepository {
 
   /** Read-only device & cloud-asset inventory (ADR-0047, view migration 0053). */
   listDeviceInventory(): Promise<DeviceInventoryRow[]>;
+
+  /**
+   * Read-only AR/invoice MIRROR over bronze `qbo_invoices` (the `invoice_mirror` view,
+   * migration 0121 [placeholder until claimed at merge], #668; ADR-0085 QBO read-only /
+   * ADR-0044 external-SoR mirror). QuickBooks is the invoice SoR and read-only on our side — there
+   * is NO write path to QBO. Aging (days_overdue, aging_bucket, is_open) is recomputed by
+   * the view on every read; the silver account is resolved best-effort by name. Drives the
+   * AR observability surface and the Collections + Controller agents (#667). Sorted oldest-
+   * overdue first. Mock fallback = `[]`.
+   */
+  listInvoices(): Promise<InvoiceMirrorRow[]>;
   createAccount(input: AccountInput): Promise<void>;
   updateAccount(id: string, input: AccountInput): Promise<void>;
   deleteAccount(id: string): Promise<void>;
