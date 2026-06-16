@@ -204,6 +204,32 @@
 
   @media(max-width:680px){.chapter{padding-left:64px}.chapter::before{left:23px}.node{width:48px;height:48px;font-size:13px}}
   @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+
+  /* build timeline (milestones) */
+  .tl{margin-top:28px;list-style:none;display:flex;flex-direction:column;max-width:760px}
+  .tlrow{display:flex;gap:18px;align-items:flex-start;position:relative;padding:13px 0 13px 16px;border-left:2px solid var(--line)}
+  .tlrow::before{content:"";position:absolute;left:-6px;top:18px;width:10px;height:10px;border-radius:50%;background:var(--surface-2);border:2px solid var(--cyan)}
+  .tlrow:last-child{border-left-color:transparent}
+  .tlrow.tlnow::before{background:var(--cyan);box-shadow:0 0 0 4px rgba(45,212,191,.18)}
+  .tldate{font-family:var(--mono);font-size:12px;color:var(--cyan-bright);min-width:74px;flex:none;padding-top:1px}
+  .tlbody b{font-family:var(--display);font-size:15.5px;font-weight:600;display:block;margin-bottom:2px}
+  .tlbody span{font-size:13.5px;color:var(--muted);line-height:1.5}
+  .tlrow.tlnow .tlbody b{color:var(--cyan-bright)}
+
+  /* capability tracker (checked as it ships) */
+  .track{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:840px}
+  .tk{display:flex;gap:11px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 15px}
+  .tkc{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;flex:none;line-height:1}
+  .tk b{font-family:var(--display);font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.25;display:block}
+  .tk small{font-family:var(--mono);font-size:10px;color:var(--muted-2);letter-spacing:.4px}
+  .tk-live{background:rgba(52,211,153,.16);color:var(--green)}
+  .tk-built{background:rgba(45,212,191,.16);color:var(--cyan-bright)}
+  .tk-dev{background:rgba(251,191,36,.16);color:var(--amber)}
+  .tk-plan{background:var(--surface-2);color:var(--muted-2);border:1px solid var(--line)}
+  .tracknote{margin-top:16px;font-family:var(--mono);font-size:11.5px;color:var(--muted-2);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .tracknote span{display:inline-flex;align-items:center;gap:6px}
+  .tracknote .tkc{width:18px;height:18px;font-size:10px}
+  @media(max-width:640px){.track{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -223,6 +249,7 @@
       <a href="#velocity">velocity</a>
       <a href="#frontier">frontier</a>
       <a href="#status">status</a>
+      <a href="#timeline">timeline</a>
       <a class="gh" href="https://github.com/markdconnelly" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
         GitHub
@@ -580,6 +607,50 @@
       <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <p><b>The through-line is the same as the rest of this page.</b> Bet on the frontier — but keep every bet open, standard, and auditable, so being early is an advantage instead of a liability.</p>
     </div>
+  </article>
+
+  <!-- 15 build timeline + release tracker -->
+  <article class="chapter" id="timeline">
+    <div class="node reveal">15</div>
+    <div class="ch-eyebrow reveal">The timeline</div>
+    <h2 class="reveal d1">From a spark to a rolling release train</h2>
+    <p class="say reveal d1">The whole arc, compressed: a foundation in days, the first feature in an evening, ten parallel sessions overnight, and now a steady <b>wave train</b> shipping capability across all four repos. The dates are the git history, not a press release.</p>
+
+    <!-- milestone timeline -->
+    <ol class="tl reveal d2">
+      <li class="tlrow"><span class="tldate">Jun 6–9</span><div class="tlbody"><b>Foundation</b><span>The web app, Entra SSO, PostgreSQL + pgvector, and the four-repo split that shaped everything after it.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 9–12</span><div class="tlbody"><b>Build-out</b><span>Every CRM module, the first integrations, and the reporting BI hub — carried across the line at speed.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 12</span><div class="tlbody"><b>Live integrations</b><span>Meta (Facebook/Instagram) flowing in production; Autotask ticket webhooks and M365 ingestion wired.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 13</span><div class="tlbody"><b>One evening → ten sessions</b><span>Time tracking built end-to-end in a single evening; that night a concurrency contract turned one session into ten.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 13–14</span><div class="tlbody"><b>The unattended day</b><span>~60 reviewed pull requests overnight — a near-complete project-management suite, the expense loop, and five new verticals — with no one at the keyboard.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 14–15</span><div class="tlbody"><b>CRM parity wave</b><span>Conversational intelligence, opportunity forecasting, e-signature, marketing journeys, and a service desk shipped as schema + surface.</span></div></li>
+      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time, with premium service management (asset/identity CMDB · ITIL change enablement) and an accounts-receivable collections agent designed and queued.</span></div></li>
+    </ol>
+
+    <!-- capability tracker (checked as it ships) -->
+    <p class="say reveal d2" style="margin-top:34px">And the capability ledger — <em>checked off as each one lands</em>:</p>
+    <div class="track reveal d2">
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>CRM core &amp; pipeline</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Reporting BI hub</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>AI orchestrator &amp; Board</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Security posture &amp; drift</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Project-management suite</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Time tracking</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Expense &amp; reimbursement</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Meta social ingestion</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Service desk · SLA · live chat</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Conversational intelligence</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Opportunity forecasting</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>E-signature</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Sale→delivery orchestration</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-dev">◐</span><div><b>Marketing automation · journeys</b><small>IN BUILD</small></div></div>
+      <div class="tk"><span class="tkc tk-plan">○</span><div><b>Self-serve report builder</b><small>DESIGNED · QUEUED</small></div></div>
+      <div class="tk"><span class="tkc tk-plan">○</span><div><b>Integration marketplace</b><small>DESIGNED · QUEUED</small></div></div>
+      <div class="tk"><span class="tkc tk-plan">○</span><div><b>Asset &amp; identity CMDB</b><small>DESIGNED · QUEUED</small></div></div>
+      <div class="tk"><span class="tkc tk-plan">○</span><div><b>ITIL change enablement</b><small>DESIGNED · QUEUED</small></div></div>
+      <div class="tk"><span class="tkc tk-plan">○</span><div><b>AR · collections agent</b><small>DESIGNED · QUEUED</small></div></div>
+    </div>
+    <p class="tracknote reveal d2"><span><span class="tkc tk-live">✓</span> live on real data</span><span><span class="tkc tk-built">✓</span> shipped, activation-gated</span><span><span class="tkc tk-dev">◐</span> in build</span><span><span class="tkc tk-plan">○</span> designed &amp; queued</span></p>
   </article>
 
 </main>

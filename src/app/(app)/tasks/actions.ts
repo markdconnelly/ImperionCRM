@@ -377,8 +377,13 @@ export async function setTaskAssigneesAction(formData: FormData) {
   const taskId = String(formData.get("taskId") ?? "").trim();
   if (!taskId) return;
   const userIds = formData.getAll("assignee").map((v) => String(v).trim()).filter(Boolean);
+  // Resolve the acting employee so the `assigned` notification is actor-attributed
+  // (#601) instead of a system event. Best-effort: an unresolved actor falls back
+  // to null (system), exactly as before — the assignee save never fails on it.
+  const session = await auth();
+  const actingUserId = await resolveAppUserIdByEmail(session?.user?.email ?? "");
   const { crm } = getRepositories();
-  await crm.setTaskAssignees(taskId, userIds);
+  await crm.setTaskAssignees(taskId, userIds, actingUserId);
   revalidatePath(`/tasks/${taskId}/edit`);
   revalidatePath("/tasks");
   revalidatePath("/projects/[id]", "page");

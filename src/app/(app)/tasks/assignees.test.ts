@@ -49,7 +49,9 @@ beforeEach(() => {
 });
 
 describe("setTaskAssigneesAction", () => {
-  it("collects every checked assignee id and saves the set", async () => {
+  it("collects every checked assignee id and saves the set with the acting user (#601)", async () => {
+    h.auth.mockResolvedValue({ user: { email: "ada@imperionllc.com" } });
+    h.resolveAppUserIdByEmail.mockResolvedValue("actor-1");
     await setTaskAssigneesAction(
       form([
         ["taskId", "t1"],
@@ -58,13 +60,24 @@ describe("setTaskAssigneesAction", () => {
       ]),
     );
     expect(h.requireCapability).toHaveBeenCalledWith("delivery:write");
-    expect(h.setTaskAssignees).toHaveBeenCalledWith("t1", ["u1", "u2"]);
+    // The acting employee threads through as the notification actor (#601).
+    expect(h.resolveAppUserIdByEmail).toHaveBeenCalledWith("ada@imperionllc.com");
+    expect(h.setTaskAssignees).toHaveBeenCalledWith("t1", ["u1", "u2"], "actor-1");
     expect(h.revalidatePath).toHaveBeenCalledWith("/tasks/t1/edit");
   });
 
+  it("falls back to a null actor (system) when the acting user can't be resolved", async () => {
+    h.auth.mockResolvedValue({ user: { email: "" } });
+    h.resolveAppUserIdByEmail.mockResolvedValue(null);
+    await setTaskAssigneesAction(form([["taskId", "t1"], ["assignee", "u1"]]));
+    expect(h.setTaskAssignees).toHaveBeenCalledWith("t1", ["u1"], null);
+  });
+
   it("saves an empty set when no assignee is checked (clears assignees)", async () => {
+    h.auth.mockResolvedValue({ user: { email: "ada@imperionllc.com" } });
+    h.resolveAppUserIdByEmail.mockResolvedValue("actor-1");
     await setTaskAssigneesAction(form([["taskId", "t1"]]));
-    expect(h.setTaskAssignees).toHaveBeenCalledWith("t1", []);
+    expect(h.setTaskAssignees).toHaveBeenCalledWith("t1", [], "actor-1");
   });
 
   it("does nothing without a task id", async () => {
