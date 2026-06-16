@@ -201,6 +201,18 @@ primary|assignee|watcher }`. Migrate existing `owner_user_id` → `primary` rows
 - AC: Admin creates a "Risk level" select field on Implementation projects; it appears
   on those projects only and is filterable in reporting.
 
+**Status:** schema + admin authoring shipped #338 (`custom_field_def` +
+`custom_field_value`, GIN-indexed; `/custom-fields` admin surface). B4-F2 **show + edit
+values shipped #614**: the `CustomFields` panel (`src/components/work/custom-fields.tsx`)
+renders + edits the applicable field set on the task and project edit forms — resolved
+via `customFields.listValuesFor(parentType, parentId, projectTypeId)`, written via one
+`saveCustomFieldValuesAction` submit behind `delivery:write`, one input per `field_type`,
+with **B4-F3 required enforcement** (fail-closed on a blank required field). Honest
+degradation: an object with no applicable field renders nothing; an archived `user`/select
+target falls back to its raw value. **Deferred (follow-up):** the list/board custom-field
+column + saved-views filter and the reporting filter over the GIN index ("Risk level = High
+on Implementation projects") — the AC's filterable-in-reporting leg.
+
 **Data model.** `custom_field_def{ id, scope, key, label, type, config jsonb,
 project_type_id? }` + `custom_field_value{ field_id, parent_type, parent_id, value
 jsonb }`.
