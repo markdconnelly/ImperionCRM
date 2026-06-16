@@ -204,6 +204,18 @@ export function canManageMileageRate(roles: readonly AppRole[] | undefined): boo
 }
 
 /**
+ * The collections / AR-dunning surface (ADR-0085/0087, #677) is the finance gate —
+ * finance∨admin. This is the GUI-side READ twin (`collections:read`) of the
+ * `collections:write` capability the server action enforces (ADR-0045): both the
+ * read of the dunning overlay and the worklist view (#678) are AR/finance work, so
+ * they ride the same finance gate as `contracts:write`. App-native overlay on the
+ * read-only invoice mirror — nothing here moves money or writes QuickBooks.
+ */
+export function canSeeCollections(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "finance");
+}
+
+/**
  * Revenue / MRR / money is hidden from Support. A user whose ONLY role is
  * `support` cannot see revenue; any other role (or a mix) can.
  */
@@ -252,6 +264,9 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   // The unified Monthly Close (ADR-0083 #491) is the finance gate — finance∨admin,
   // same as the payroll/finance-approve surfaces (`canApprovePayroll`).
   "monthly-close": canApprovePayroll,
+  // The collections / AR-dunning worklist (#678) is the finance gate — finance∨admin
+  // (`collections:read`). The UI lands in a follow-up; the nav guard is wired now.
+  collections: canSeeCollections,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

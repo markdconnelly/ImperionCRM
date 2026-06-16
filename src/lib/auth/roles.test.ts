@@ -4,6 +4,7 @@ import {
   canManageMileageRate,
   canManageProjects,
   canManageSales,
+  canSeeCollections,
   canSeeAgentPages,
   canSeeLaborCost,
   canSeeRevenue,
@@ -133,5 +134,18 @@ describe("predicates", () => {
     // The nav guard hides the surface for the same roles.
     expect(canSeeFeature("expense-mileage-rate", ["finance"])).toBe(true);
     expect(canSeeFeature("expense-mileage-rate", ["support"])).toBe(false);
+  });
+
+  test("collections / AR-dunning is the finance gate — finance∨admin (#677)", () => {
+    // collections:read GUI twin — admin and finance only (AR work), like contracts.
+    expect(canSeeCollections(["admin"])).toBe(true);
+    expect(canSeeCollections(["finance"])).toBe(true);
+    for (const r of ["sales", "project_manager", "support"] as const) {
+      expect(canSeeCollections([r])).toBe(false);
+    }
+    expect(canSeeCollections(undefined)).toBe(false);
+    // The nav guard hides the worklist (#678) for the same roles.
+    expect(canSeeFeature("collections", ["finance"])).toBe(true);
+    expect(canSeeFeature("collections", ["support"])).toBe(false);
   });
 });

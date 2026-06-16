@@ -22,6 +22,8 @@ import type {
   CampaignDetail,
   CampaignRow,
   CampaignSendRow,
+  CollectionsActivity,
+  CollectionsActivityInput,
   CommunicationDetail,
   ConnectionRow,
   ConsentEventRow,
@@ -654,6 +656,25 @@ export interface CrmRepository {
    * overdue first. Mock fallback = `[]`.
    */
   listInvoices(): Promise<InvoiceMirrorRow[]>;
+
+  /**
+   * Read the app-native collections/dunning overlay for one invoice
+   * (`collections_activity` table, migration 0122, #677). Keyed by the QBO invoice id
+   * (the invoice mirror is a VIEW — no FK). Returns null when no overlay row exists
+   * yet (the invoice has never been worked). Holds workflow state ONLY — amounts and
+   * balances are read from `listInvoices()` (the read-only mirror). Mock fallback = null.
+   */
+  getCollectionsActivity(qboInvoiceId: string): Promise<CollectionsActivity | null>;
+
+  /**
+   * Upsert the collections/dunning overlay state for an invoice (migration 0122, #677).
+   * One CURRENT-state row per (tenant, invoice); `appendReminder` is appended to the
+   * reminder log (prior entries are never rewritten). App-native — NEVER writes QBO.
+   * Gated by `collections:write` (admin/finance, ADR-0030) at the server-action layer.
+   * Mock fallback throws (no DB).
+   */
+  upsertCollectionsActivity(input: CollectionsActivityInput): Promise<void>;
+
   createAccount(input: AccountInput): Promise<void>;
   updateAccount(id: string, input: AccountInput): Promise<void>;
   deleteAccount(id: string): Promise<void>;

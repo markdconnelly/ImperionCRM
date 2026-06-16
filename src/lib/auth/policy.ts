@@ -38,6 +38,7 @@ export const CAPABILITIES = [
   "expense:category-map", // admin maps the synced QuickBooks chart of accounts → clean website categories (ADR-0083; admin-only)
   "expense:mileage-rate", // set the effective-dated system mileage rate — COMP DATA, gated like Pay Rate (ADR-0083; finance∨admin)
   "delivery:capacity", // set per-user weekly capacity hours for the workload view (ADR-0069 D2, #591; admin∨project_manager)
+  "collections:write", // dunning/collections overlay on the read-only invoice mirror (ADR-0085/0087, #677; admin∨finance — app-native, NEVER writes QBO)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -96,6 +97,11 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   // against. Same gate as project-board writes (`delivery:write`): admin∨project_manager.
   // NOT comp data (hours of capacity, not pay), so it does not ride the finance gate.
   "delivery:capacity": ["project_manager"],
+  // The collections/dunning overlay write gate (ADR-0085/0087, #677) — finance∨admin. Writing
+  // the dunning workflow state (status/escalation/assignee/reminders) on the read-only invoice
+  // mirror is finance work; admin holds it implicitly. App-native overlay — it NEVER writes QBO.
+  // Mirrors `contracts:write` (the other finance-owned money surface).
+  "collections:write": ["finance"],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */
