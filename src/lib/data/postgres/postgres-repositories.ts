@@ -243,6 +243,8 @@ import type {
   MfaRegistrationCounts,
   SharePointSiteRow,
   TicketRow,
+  TicketSlaBreachRow,
+  TicketSlaState,
   ContractRow,
   DeviceInventoryRow,
   UnmappedTenant,
@@ -484,6 +486,11 @@ async function assembleExpenseReportDetail(
 
 function fmtDate(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 10) : null;
+}
+
+/** Full ISO-8601 timestamp (UTC) or null — for read-models that carry an instant. */
+function fmtIso(d: Date | null): string | null {
+  return d ? d.toISOString() : null;
 }
 
 /**
@@ -7828,6 +7835,63 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.engagements.listTickets();
+      }
+    },
+
+    async listTicketSlaBreaches(): Promise<TicketSlaBreachRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.engagements.listTicketSlaBreaches();
+      try {
+        // Read the `ticket_sla_breach` view (migration 0118, ADR-0074 §2). A plain
+        // projection — every read recomputes against the latest pulled silver ticket.
+        // `resolution_time_remaining` is a Postgres interval → cast to text so it maps
+        // straight to the typed string field (no driver-dependent interval object).
+        const { rows } = await pool.query<{
+          ticket_id: string;
+          account_id: string | null;
+          number: string | null;
+          status: string | null;
+          priority: string | null;
+          opened_at: Date | null;
+          closed_at: Date | null;
+          sla_applies: boolean;
+          sla_id: string | null;
+          is_open: boolean;
+          first_response_due_at: Date | null;
+          resolution_due_at: Date | null;
+          first_response_breached: boolean;
+          resolution_breached: boolean;
+          resolution_time_remaining: string | null;
+          sla_state: TicketSlaState;
+        }>(
+          `SELECT ticket_id, account_id, number, status, priority,
+                  opened_at, closed_at, sla_applies, sla_id, is_open,
+                  first_response_due_at, resolution_due_at,
+                  first_response_breached, resolution_breached,
+                  resolution_time_remaining::text AS resolution_time_remaining,
+                  sla_state
+           FROM ticket_sla_breach`,
+        );
+        return rows.map((r) => ({
+          ticketId: r.ticket_id,
+          accountId: r.account_id,
+          number: r.number,
+          status: r.status,
+          priority: r.priority,
+          openedAt: fmtIso(r.opened_at),
+          closedAt: fmtIso(r.closed_at),
+          slaApplies: r.sla_applies,
+          slaId: r.sla_id,
+          isOpen: r.is_open,
+          firstResponseDueAt: fmtIso(r.first_response_due_at),
+          resolutionDueAt: fmtIso(r.resolution_due_at),
+          firstResponseBreached: r.first_response_breached,
+          resolutionBreached: r.resolution_breached,
+          resolutionTimeRemaining: r.resolution_time_remaining,
+          slaState: r.sla_state,
+        }));
+      } catch {
+        return mockRepositories.engagements.listTicketSlaBreaches();
       }
     },
 

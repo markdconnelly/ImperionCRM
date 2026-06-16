@@ -24,15 +24,18 @@ import { buildQueue, routingWired, summarizeQueue } from "@/lib/omnichannel-queu
  */
 export default async function ServiceDeskQueuePage() {
   const { crm, engagements } = getRepositories();
-  const [chatSessions, tickets] = await Promise.all([
+  const [chatSessions, tickets, slaBreaches] = await Promise.all([
     crm.listChatSessions(),
     engagements.listTickets({}),
+    engagements.listTicketSlaBreaches(),
   ]);
 
-  // SLA-breach priority (§2) would refine ticket ordering; no FE repo accessor for the
-  // `ticket_sla_breach` view exists yet, so tickets fall back to status-inferred open +
-  // normal priority. Filed as a follow-up (see PR body). Honest, never wrong.
-  const items = buildQueue({ chatSessions, tickets });
+  // SLA-breach priority (ADR-0074 §2, #671): the `ticket_sla_breach` projection
+  // (migration 0118) drives ticket ordering — breached → urgent, at_risk → high.
+  // Keyed by ticket id; with no DB the accessor returns [] (mock fallback), so the
+  // queue degrades to status-inferred open + normal priority. Honest, never wrong.
+  const slaByTicketId = new Map(slaBreaches.map((r) => [r.ticketId, r]));
+  const items = buildQueue({ chatSessions, tickets, slaByTicketId });
   const summary = summarizeQueue(items);
   const routed = routingWired(items);
 
