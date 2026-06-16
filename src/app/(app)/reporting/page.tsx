@@ -136,6 +136,12 @@ export default async function ReportingPage() {
         >
           Portfolio rollup →
         </Link>
+        <Link
+          href="/reporting/custom-fields"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Custom-field report →
+        </Link>
         {canManageProjects(roles) && (
           <Link
             href="/reporting/agile"

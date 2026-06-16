@@ -2373,6 +2373,52 @@ export interface CustomFieldsRepository {
    * deletes the row (clears the field). Returns nothing.
    */
   setValue(input: CustomFieldValueInput): Promise<void>;
+  /**
+   * Batched read of custom-field values for MANY work objects of one kind at once,
+   * as a map parentId → its answered values (ADR-0065 B4-F2, #714). One read for a
+   * whole list/board column — `listValuesFor` is per-object and would N+1. Only
+   * fields that actually have a value are returned (the column shows what's set, not
+   * every definition); honest degradation means an absent parent simply has no entry.
+   * `fieldKeys` (optional) narrows to specific field keys so a column read fetches
+   * only the displayed fields.
+   */
+  listValuesForMany(
+    parentType: CustomFieldParentType,
+    parentIds: string[],
+    fieldKeys?: string[],
+  ): Promise<Record<string, CustomFieldValueEntry[]>>;
+  /**
+   * The work objects whose custom field `fieldKey` matches `value`, over the GIN
+   * index on `custom_field_value.value` (ADR-0065 B4 acceptance / #714 — "Risk level
+   * = High on Implementation projects"). Returns the matching parent ids for the
+   * caller to intersect with its already-loaded rows. `op` is `eq` for a scalar
+   * match or `contains` for a multi-select array membership test. Scoped to one
+   * (scope, projectTypeId) field group so a global and a type-scoped field of the
+   * same key don't bleed together; `projectTypeId` null = the global field.
+   */
+  filterByCustomField(input: CustomFieldFilterInput): Promise<string[]>;
+}
+
+/** One answered custom-field value in a batched column read (ADR-0065 B4-F2, #714). */
+export interface CustomFieldValueEntry {
+  fieldId: string;
+  key: string;
+  label: string;
+  fieldType: CustomFieldType;
+  value: string | number | boolean | string[];
+}
+
+/** A reporting/list filter over one custom field's value (ADR-0065 B4, #714). */
+export interface CustomFieldFilterInput {
+  scope: CustomFieldParentType;
+  /** Narrow to a project-type-scoped field; null = the global field of this key. */
+  projectTypeId: string | null;
+  /** The field's stable machine key (e.g. 'risk_level'). */
+  fieldKey: string;
+  /** `eq` for scalar equality; `contains` for multi-select array membership. */
+  op: "eq" | "contains";
+  /** The value to match (the decoded scalar a select/text/etc. stores). */
+  value: string | number | boolean;
 }
 
 /** The full set of repositories a request can resolve. */

@@ -162,4 +162,56 @@ describe("custom fields repository (ADR-0065 B4, #338)", () => {
     await cf.setValue({ fieldId: "f1", parentType: "task", parentId: "t-1", value: [] });
     expect(query.mock.calls[0][0]).toMatch(/DELETE FROM custom_field_value/);
   });
+
+  it("listValuesForMany short-circuits to {} for an empty id list (no query)", async () => {
+    const out = await cf.listValuesForMany("task", []);
+    expect(out).toEqual({});
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("listValuesForMany INNER JOINs the value table and buckets rows by parent", async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { parent_id: "t-a", field_id: "f1", key: "risk_level", label: "Risk level", field_type: "single_select", value: "High" },
+        { parent_id: "t-a", field_id: "f2", key: "notes", label: "Notes", field_type: "text", value: "hi" },
+        { parent_id: "t-b", field_id: "f1", key: "risk_level", label: "Risk level", field_type: "single_select", value: "Low" },
+      ],
+    });
+    const map = await cf.listValuesForMany("task", ["t-a", "t-b"]);
+    expect(query.mock.calls[0][0]).toMatch(/JOIN custom_field_def d ON d\.id = v\.field_id/);
+    expect(map["t-a"]).toHaveLength(2);
+    expect(map["t-b"][0]).toMatchObject({ key: "risk_level", value: "Low" });
+  });
+
+  it("listValuesForMany adds the key filter only when fieldKeys is non-empty", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await cf.listValuesForMany("task", ["t-a"], ["risk_level"]);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/d\.key = ANY\(\$3::text\[\]\)/);
+    expect(params).toEqual(["task", ["t-a"], ["risk_level"]]);
+  });
+
+  it("filterByCustomField eq matches the scalar over the GIN index within the field group", async () => {
+    query.mockResolvedValueOnce({ rows: [{ parent_id: "p-hi" }] });
+    const ids = await cf.filterByCustomField({
+      scope: "project", projectTypeId: "pt-impl", fieldKey: "risk_level", op: "eq", value: "High",
+    });
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/v\.value = \$4::jsonb/);
+    expect(params).toEqual(["project", "risk_level", "pt-impl", JSON.stringify("High")]);
+    expect(ids).toEqual(["p-hi"]);
+  });
+
+  it("filterByCustomField contains wraps the value as a jsonb array for @>", async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await cf.filterByCustomField({
+      scope: "project", projectTypeId: null, fieldKey: "areas", op: "contains", value: "sec",
+    });
+    const sql = query.mock.calls[0][0];
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(sql).toMatch(/v\.value @> \$4::jsonb/);
+    expect(params[3]).toBe(JSON.stringify(["sec"]));
+    // a null projectTypeId matches the global field
+    expect(params[2]).toBeNull();
+  });
 });

@@ -7,6 +7,7 @@ import { TasksCalendar } from "@/components/tasks/tasks-calendar";
 import { TaskSavedViews } from "@/components/tasks/task-saved-views";
 import { parseMonth } from "@/lib/calendar";
 import { getRepositories } from "@/lib/data";
+import { parseCustomFieldFilter, encodeCustomFieldFilter } from "@/lib/custom-fields";
 import { TagChip } from "@/components/tags/tag-chip";
 import {
   deleteTaskAction,
@@ -45,7 +46,7 @@ const SWIMS = [
   { key: "category", label: "Category" },
 ] as const;
 
-/** Preserve the active category / group / swimlane / tag / month when switching view. */
+/** Preserve the active category / group / swimlane / tag / custom-field / month when switching view. */
 function href(
   category: string,
   view: string,
@@ -53,6 +54,7 @@ function href(
   swim: string,
   tag: string,
   month = "",
+  cf = "",
 ) {
   const qs = new URLSearchParams();
   if (category !== "all") qs.set("category", category);
@@ -61,6 +63,7 @@ function href(
   if (swim !== "none") qs.set("swim", swim);
   if (tag) qs.set("tag", tag);
   if (month) qs.set("month", month);
+  if (cf) qs.set("cf", cf);
   const s = qs.toString();
   return s ? `/tasks?${s}` : "/tasks";
 }
@@ -75,9 +78,10 @@ export default async function TasksPage({
     swim?: string;
     tag?: string;
     month?: string;
+    cf?: string;
   }>;
 }) {
-  const { category, view, group, swim, tag, month } = await searchParams;
+  const { category, view, group, swim, tag, month, cf } = await searchParams;
   const active = category ?? "all";
   const activeView = view === "board" ? "board" : view === "calendar" ? "calendar" : "list";
   // Calendar month (ADR-0066 C2) — resolved against the server's "today" so the
@@ -89,7 +93,7 @@ export default async function TasksPage({
   // A swimlane that duplicates the active column group-by is meaningless — drop it.
   const activeSwim: TaskSwimBy =
     (swim === "account" || swim === "category") && swim !== activeGroup ? swim : "none";
-  const { crm, tags } = getRepositories();
+  const { crm, tags, customFields } = getRepositories();
   const all = await crm.listTasks();
   const byCategory = active === "all" ? all : all.filter((t) => t.category === active);
 
@@ -104,9 +108,43 @@ export default async function TasksPage({
     ),
   ]);
   const activeTag = tag && vocabulary.some((v) => v.id === tag) ? tag : "";
-  const tasks = activeTag
+  const tagged = activeTag
     ? byCategory.filter((t) => (tagsByTask[t.id] ?? []).some((x) => x.id === activeTag))
     : byCategory;
+
+  // Custom-field filter + columns (ADR-0065 B4-F2, #714). The `?cf=key:value`
+  // token narrows to tasks whose custom field matches (over the GIN index), and the
+  // SAME token rides in the URL so a saved view (#344) captures it for free. Task
+  // fields are never project-type-scoped (the migration forces null), so the filter
+  // resolves the global task field of that key. Honest degradation: an unknown key
+  // (no such defined field) leaves the list unfiltered and shows no column.
+  const taskFieldDefs = await customFields.listFieldDefsFor("task", null);
+  const cfFilter = parseCustomFieldFilter(cf);
+  const activeCf =
+    cfFilter && taskFieldDefs.some((d) => d.key === cfFilter.key) ? cfFilter : null;
+  let tasks = tagged;
+  if (activeCf) {
+    const def = taskFieldDefs.find((d) => d.key === activeCf.key)!;
+    const matchIds = new Set(
+      await customFields.filterByCustomField({
+        scope: "task",
+        projectTypeId: null,
+        fieldKey: activeCf.key,
+        op: def.fieldType === "multi_select" ? "contains" : "eq",
+        value: activeCf.value,
+      }),
+    );
+    tasks = tagged.filter((t) => matchIds.has(t.id));
+  }
+  // Batched values for the column — one read over the visible tasks (never N+1).
+  // Only render a custom-field column when at least one task field is defined.
+  const valuesByTask =
+    taskFieldDefs.length > 0
+      ? await customFields.listValuesForMany(
+          "task",
+          tasks.map((t) => t.id),
+        )
+      : {};
 
   // Rich-card remainder (#608 C1-F4): assignee avatars + comment/attachment
   // counts, two bulk reads over the visible tasks — board view ONLY (the list
@@ -128,10 +166,16 @@ export default async function TasksPage({
   // Saved views (ADR-0066 C4, #344): the current canonical query string the
   // user is looking at, derived from the SAME `href()` builder the toggle uses
   // so a "save" snapshot round-trips exactly. Empty string = default List view.
-  const currentQuery = href(active, activeView, activeGroup, activeSwim, activeTag, activeMonth).replace(
-    /^\/tasks\??/,
-    "",
-  );
+  const activeCfToken = activeCf ? encodeCustomFieldFilter(activeCf.key, activeCf.value) : "";
+  const currentQuery = href(
+    active,
+    activeView,
+    activeGroup,
+    activeSwim,
+    activeTag,
+    activeMonth,
+    activeCfToken,
+  ).replace(/^\/tasks\??/, "");
 
   return (
     <div className="flex flex-col gap-4">
@@ -149,7 +193,7 @@ export default async function TasksPage({
           {FILTERS.map((f) => (
             <Link
               key={f.key}
-              href={href(f.key, activeView, activeGroup, activeSwim, activeTag)}
+              href={href(f.key, activeView, activeGroup, activeSwim, activeTag, activeMonth, activeCfToken)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm transition-colors",
                 active === f.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -167,7 +211,7 @@ export default async function TasksPage({
               {GROUPS.map((g) => (
                 <Link
                   key={g.key}
-                  href={href(active, activeView, g.key, activeSwim, activeTag)}
+                  href={href(active, activeView, g.key, activeSwim, activeTag, activeMonth, activeCfToken)}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-sm transition-colors",
                     activeGroup === g.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -185,7 +229,7 @@ export default async function TasksPage({
               {SWIMS.filter((s) => s.key !== activeGroup).map((s) => (
                 <Link
                   key={s.key}
-                  href={href(active, activeView, activeGroup, s.key, activeTag)}
+                  href={href(active, activeView, activeGroup, s.key, activeTag, activeMonth, activeCfToken)}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-sm transition-colors",
                     activeSwim === s.key ? "bg-panel-2 text-text" : "text-dim hover:text-text",
@@ -208,6 +252,7 @@ export default async function TasksPage({
                   activeSwim,
                   activeTag,
                   v.key === "calendar" ? activeMonth : "",
+                  activeCfToken,
                 )}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm transition-colors",
@@ -237,7 +282,7 @@ export default async function TasksPage({
             return (
               <Link
                 key={v.id}
-                href={href(active, activeView, activeGroup, activeSwim, selected ? "" : v.id)}
+                href={href(active, activeView, activeGroup, activeSwim, selected ? "" : v.id, activeMonth, activeCfToken)}
                 className={cn(
                   "rounded-full transition-opacity",
                   selected ? "ring-2 ring-text/50" : "opacity-70 hover:opacity-100",
@@ -249,7 +294,7 @@ export default async function TasksPage({
           })}
           {activeTag && (
             <Link
-              href={href(active, activeView, activeGroup, activeSwim, "", activeMonth)}
+              href={href(active, activeView, activeGroup, activeSwim, "", activeMonth, activeCfToken)}
               className="ml-1 text-xs text-dim hover:text-text"
             >
               Clear
@@ -257,6 +302,45 @@ export default async function TasksPage({
           )}
         </div>
       )}
+
+      {/* Custom-field filter strip (ADR-0065 B4-F2, #714): for each select-type task
+          field, its options are clickable — pick one to show only tasks with that
+          value (over the GIN index). The choice rides in the URL (?cf=key:value), so
+          a saved view (#344) captures it for free. Select types are the naturally
+          filterable case (the B4 AC); free-text fields are shown as a column only. */}
+      {taskFieldDefs
+        .filter((d) => d.fieldType === "single_select" || d.fieldType === "multi_select")
+        .map((d) => (
+          <div key={d.id} className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-dim">{d.label}</span>
+            {d.options.map((opt) => {
+              const token = encodeCustomFieldFilter(d.key, opt);
+              const selected = activeCfToken === token;
+              return (
+                <Link
+                  key={opt}
+                  href={href(
+                    active,
+                    activeView,
+                    activeGroup,
+                    activeSwim,
+                    activeTag,
+                    activeMonth,
+                    selected ? "" : token,
+                  )}
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-xs transition-colors",
+                    selected
+                      ? "border-accent bg-accent/15 text-text"
+                      : "border-border text-dim hover:text-text",
+                  )}
+                >
+                  {opt}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
 
       {activeView === "board" ? (
         <TasksBoard
@@ -274,7 +358,7 @@ export default async function TasksPage({
           tasks={tasks}
           month={{ year, monthNum }}
           today={todayIso}
-          monthHref={(ym) => href(active, "calendar", activeGroup, activeSwim, activeTag, ym)}
+          monthHref={(ym) => href(active, "calendar", activeGroup, activeSwim, activeTag, ym, activeCfToken)}
           moveDueAction={moveTaskDueAction}
         />
       ) : (
@@ -286,6 +370,8 @@ export default async function TasksPage({
           applyTagAction={applyTagAction}
           applyExistingTagAction={applyExistingTagAction}
           removeTagAction={removeTagAction}
+          customFieldsByTask={valuesByTask}
+          customFieldDefs={taskFieldDefs}
         />
       )}
     </div>

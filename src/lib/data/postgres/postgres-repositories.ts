@@ -110,6 +110,8 @@ import type {
   TagApplicationInput,
   CustomFieldDefInput,
   CustomFieldValueInput,
+  CustomFieldValueEntry,
+  CustomFieldFilterInput,
 } from "@/lib/data/repositories";
 import type {
   Account,
@@ -11992,6 +11994,86 @@ export const postgresRepositories: Repositories = {
            DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
         [input.fieldId, input.parentType, input.parentId, JSON.stringify(input.value)],
       );
+    },
+
+    async listValuesForMany(
+      parentType: CustomFieldParentType,
+      parentIds: string[],
+      fieldKeys?: string[],
+    ): Promise<Record<string, CustomFieldValueEntry[]>> {
+      const pool = getPool();
+      if (!pool) {
+        return mockRepositories.customFields.listValuesForMany(parentType, parentIds, fieldKeys);
+      }
+      if (parentIds.length === 0) return {};
+      try {
+        // One read for a whole list/board column (the per-object listValuesFor would
+        // N+1). INNER JOIN the value table so only ANSWERED fields come back — the
+        // column shows what's set, not the full definition list. Optionally narrow to
+        // the displayed field keys.
+        const narrow = fieldKeys && fieldKeys.length > 0;
+        const { rows } = await pool.query<{
+          parent_id: string; field_id: string; key: string; label: string;
+          field_type: string; value: unknown;
+        }>(
+          `SELECT v.parent_id::text AS parent_id, d.id AS field_id, d.key, d.label,
+                  d.field_type, v.value
+             FROM custom_field_value v
+             JOIN custom_field_def d ON d.id = v.field_id
+            WHERE v.parent_type = $1 AND v.parent_id = ANY($2::uuid[])
+              ${narrow ? "AND d.key = ANY($3::text[])" : ""}
+            ORDER BY d.ordinal, lower(d.label)`,
+          narrow ? [parentType, parentIds, fieldKeys] : [parentType, parentIds],
+        );
+        const out: Record<string, CustomFieldValueEntry[]> = {};
+        for (const r of rows) {
+          (out[r.parent_id] ??= []).push({
+            fieldId: r.field_id,
+            key: r.key,
+            label: r.label,
+            fieldType: r.field_type as CustomFieldType,
+            value: r.value as CustomFieldValueEntry["value"],
+          });
+        }
+        return out;
+      } catch (err) {
+        if (isSchemaLagError(err)) return {};
+        return mockRepositories.customFields.listValuesForMany(parentType, parentIds, fieldKeys);
+      }
+    },
+
+    async filterByCustomField(input: CustomFieldFilterInput): Promise<string[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.customFields.filterByCustomField(input);
+      try {
+        // Match over the GIN index on custom_field_value.value (#338 data-model note):
+        //   eq       → value = the scalar (e.g. Risk level = 'High')
+        //   contains → the multi-select array contains the scalar (jsonb @> [val])
+        // Scoped to the (scope, projectTypeId) field group so a global and a
+        // type-scoped field of the same key never bleed together.
+        const json = JSON.stringify(input.value);
+        const predicate =
+          input.op === "contains"
+            ? `v.value @> $4::jsonb`
+            : `v.value = $4::jsonb`;
+        const arg = input.op === "contains" ? JSON.stringify([input.value]) : json;
+        const { rows } = await pool.query<{ parent_id: string }>(
+          `SELECT v.parent_id::text AS parent_id
+             FROM custom_field_value v
+             JOIN custom_field_def d ON d.id = v.field_id
+            WHERE d.scope = $1
+              AND d.key = $2
+              AND (($3::uuid IS NULL AND d.project_type_id IS NULL)
+                   OR d.project_type_id = $3::uuid)
+              AND v.parent_type = $1
+              AND ${predicate}`,
+          [input.scope, input.fieldKey, input.projectTypeId, arg],
+        );
+        return rows.map((r) => r.parent_id);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.customFields.filterByCustomField(input);
+      }
     },
   },
 };

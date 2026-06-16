@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   customFieldInputName,
+  encodeCustomFieldFilter,
   formatCustomFieldValue,
   hasCustomFieldValue,
   isSelectType,
+  parseCustomFieldFilter,
   parseCustomFieldFormValue,
 } from "./custom-fields";
 import type { CustomFieldType } from "@/types";
@@ -111,5 +113,25 @@ describe("parseCustomFieldFormValue", () => {
 describe("customFieldInputName", () => {
   it("derives a stable per-field input name", () => {
     expect(customFieldInputName("abc")).toBe("cf_abc");
+  });
+});
+
+describe("custom-field URL filter token (B4-F2, #714)", () => {
+  it("round-trips a key:value token", () => {
+    const token = encodeCustomFieldFilter("risk_level", "High");
+    expect(token).toBe("risk_level:High");
+    expect(parseCustomFieldFilter(token)).toEqual({ key: "risk_level", value: "High" });
+  });
+
+  it("splits on the FIRST colon so values may contain colons", () => {
+    expect(parseCustomFieldFilter("when:12:30")).toEqual({ key: "when", value: "12:30" });
+  });
+
+  it("returns null for empty / malformed / partial tokens", () => {
+    expect(parseCustomFieldFilter(undefined)).toBeNull();
+    expect(parseCustomFieldFilter("")).toBeNull();
+    expect(parseCustomFieldFilter("nocolon")).toBeNull();
+    expect(parseCustomFieldFilter(":High")).toBeNull(); // empty key
+    expect(parseCustomFieldFilter("risk_level:")).toBeNull(); // empty value
   });
 });

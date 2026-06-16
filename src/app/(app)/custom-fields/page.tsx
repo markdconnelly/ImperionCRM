@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
@@ -164,7 +165,14 @@ export default async function CustomFieldsPage() {
       <PageHeader
         title="Custom fields"
         description="Admin-definable fields on tasks and projects (ADR-0065 B4). A project field can be scoped to a single project type so it appears only there; fields are filterable and sortable in reporting."
-      />
+      >
+        <Link
+          href="/reporting/custom-fields"
+          className="text-sm text-dim transition-colors hover:text-text"
+        >
+          Custom-field report →
+        </Link>
+      </PageHeader>
 
       {canEdit && (
         <section className="flex flex-col gap-2">
