@@ -1,13 +1,16 @@
 ---
 adr: 0055
 title: "Tiered agent autonomy policy — automation earned by track record"
-status: accepted
+status: consolidated
 date: 2026-06-10
 repo: frontend
 summary: "A four-tier action policy, applied to every agent capability across all four repos"
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0055: Tiered agent autonomy policy — automation earned by track record
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

@@ -1,13 +1,16 @@
 ---
 adr: 0004
 title: "Single-orchestrator agent model"
-status: accepted
+status: consolidated
 date: 2026-06-06
 repo: frontend
 summary: "Users interact with one orchestrator agent; specialized sub-agents never face the user directly."
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0004: Single-orchestrator agent model
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

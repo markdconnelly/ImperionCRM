@@ -1,13 +1,16 @@
 ---
 adr: 0054
 title: "Board of Directors — influence personas, packet grounding, facilitator, advisors, and recommendation review"
-status: accepted
+status: consolidated
 date: 2026-06-10
 repo: frontend
 summary: "Personas are influence profiles, never impersonations."
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0054: Board of Directors — influence personas, packet grounding, facilitator, advisors, and recommendation review
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

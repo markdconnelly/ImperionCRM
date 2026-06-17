@@ -1,13 +1,16 @@
 ---
 adr: 0061
 title: "Interpreted Context Methodology as the business-process automation framework"
-status: accepted
+status: consolidated
 date: 2026-06-12
 repo: frontend
 summary: "The factory lives in git; the product lives in the platform."
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0061: Interpreted Context Methodology as the business-process automation framework
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

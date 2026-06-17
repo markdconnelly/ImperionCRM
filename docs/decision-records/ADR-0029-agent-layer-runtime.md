@@ -1,13 +1,16 @@
 ---
 adr: 0029
 title: "Agent layer — own orchestrator over direct provider APIs (no Foundry Agent Service, no n8n)"
-status: accepted
+status: consolidated
 date: 2026-06-07
 repo: frontend
 summary: "Own orchestrator over direct provider APIs — no Foundry Agent Service, no n8n (governs the backend)."
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0029: Agent layer — own orchestrator over direct provider APIs (no Foundry Agent Service, no n8n)
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 - **Status:** Accepted
 - **Date:** 2026-06-07

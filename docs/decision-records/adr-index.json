@@ -41,7 +41,7 @@
   {
     "adr": "0004",
     "title": "Single-orchestrator agent model",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-06",
     "tags": [
       "agent-icm"
@@ -49,7 +49,7 @@
     "summary": "Users interact with one orchestrator agent; specialized sub-agents never face the user directly.",
     "file": "ADR-0004-single-orchestrator-agent-model.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0005",
@@ -186,7 +186,7 @@
   {
     "adr": "0015",
     "title": "Agent platform persistence and the AI Board of Directors",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-07",
     "tags": [
       "agent-icm"
@@ -194,7 +194,7 @@
     "summary": "Persist the full agent core (agents, tool grants, runs, messages, memory); agent actions inherit the acting user's permission scope.",
     "file": "ADR-0015-agent-platform-and-board.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0016",
@@ -368,7 +368,7 @@
   {
     "adr": "0029",
     "title": "Agent layer — own orchestrator over direct provider APIs (no Foundry Agent Service, no n8n)",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-07",
     "tags": [
       "agent-icm"
@@ -376,7 +376,7 @@
     "summary": "Own orchestrator over direct provider APIs — no Foundry Agent Service, no n8n (governs the backend).",
     "file": "ADR-0029-agent-layer-runtime.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0030",
@@ -617,7 +617,7 @@
   {
     "adr": "0048",
     "title": "AI Agents operations page (orchestrator settings + activity)",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-09",
     "tags": [
       "agent-icm"
@@ -625,12 +625,12 @@
     "summary": "The AI Agents page reads/writes the backend's `/agent/settings` and surfaces `agent.turn` audit activity with tiered fallback.",
     "file": "ADR-0048-ai-agents-operations-page.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0049",
     "title": "Materialize the agent core + AI Board persistence (migration 0056)",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-09",
     "tags": [
       "agent-icm"
@@ -638,7 +638,7 @@
     "summary": "Migration 0056 materializes the agent core and AI Board persistence; model routing is a tier hint resolved at runtime.",
     "file": "ADR-0049-board-runtime-persistence.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0050",
@@ -695,7 +695,7 @@
   {
     "adr": "0054",
     "title": "Board of Directors — influence personas, packet grounding, facilitator, advisors, and recommendation review",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-10",
     "tags": [
       "agent-icm"
@@ -703,12 +703,12 @@
     "summary": "Personas are influence profiles, never impersonations.",
     "file": "ADR-0054-board-influence-personas-and-governance.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0055",
     "title": "Tiered agent autonomy policy — automation earned by track record",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-10",
     "tags": [
       "agent-icm"
@@ -716,7 +716,7 @@
     "summary": "A four-tier action policy, applied to every agent capability across all four repos",
     "file": "ADR-0055-tiered-agent-autonomy-policy.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0056",
@@ -786,7 +786,7 @@
   {
     "adr": "0061",
     "title": "Interpreted Context Methodology as the business-process automation framework",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-12",
     "tags": [
       "agent-icm"
@@ -794,7 +794,7 @@
     "summary": "The factory lives in git; the product lives in the platform.",
     "file": "ADR-0061-icm-business-process-automation.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0062",
@@ -1111,7 +1111,7 @@
   {
     "adr": "0087",
     "title": "Agent orchestration & observability layer",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-15",
     "tags": [
       "agent-icm"
@@ -1119,12 +1119,12 @@
     "summary": "Adopt a five-tier agent taxonomy documented in",
     "file": "ADR-0087-agent-orchestration-and-observability-layer.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0088",
     "title": "ICM agent runtime on self-hosted Managed Agents + domain-tiered context",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-16",
     "tags": [
       "agent-icm"
@@ -1132,12 +1132,12 @@
     "summary": "Adopt self-hosted Managed Agents as the ICM product-runtime executor, and",
     "file": "ADR-0088-icm-self-hosted-managed-agents-runtime.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0089",
     "title": "ICM least-privilege budget files (CONSTITUTION.yaml + domains/<d>/room.yaml)",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-16",
     "tags": [
       "agent-icm"
@@ -1145,7 +1145,7 @@
     "summary": "Ratify the ICM budget-file convention — name/location/`{tools, okf_rooms}` shape of the two files, and the \\\"absent budget ⇒ next-lower declared list\\\" degradation rule; extends ADR-0088 §3.",
     "file": "ADR-0089-icm-budget-file-convention.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0091"
   },
   {
     "adr": "0090",
@@ -1157,6 +1157,19 @@
     ],
     "summary": "Add machine-readable frontmatter to every ADR, generate the README index + adr-index.json from it (CI-linted), and consolidate related decisions into retained dossiers.",
     "file": "ADR-0090-adr-ingestion-overhaul.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0091",
+    "title": "Agent & ICM platform — consolidated dossier",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Consolidated dossier of the agent/ICM platform decisions: single orchestrator, persisted agent core + AI Board, own-orchestrator runtime, AI Agents page, autonomy tiers, ICM framework, the orchestration matrix, and the self-hosted Managed Agents runtime + budget-file convention. Carries every member decision verbatim with a zero-loss traceability table; member ADRs are retained.",
+    "file": "ADR-0091-agent-icm-platform-consolidated.md",
     "superseded_by": [],
     "consolidated_into": null
   }
