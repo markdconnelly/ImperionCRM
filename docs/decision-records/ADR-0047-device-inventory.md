@@ -58,10 +58,14 @@ pattern), which also solves table-level grants.
   SELECT granted to the web role only.
 - **Repository** — `crm.listDeviceInventory()` reads the view; mock fallback
   returns empty so the page is safe before the migration applies.
-- **Page** — `/devices` ("Devices & Assets", nav after Tickets): read-only
-  table (name, type, account, make/model, serial, OS, status, source badge,
-  last seen) with an explicit "not editable in the app" marker. No actions, no
-  forms — there is deliberately nothing to authorize (ADR-0045).
+- **Page** — read-only table (name, type, account, make/model, serial, OS,
+  status, source badge, last seen) with an explicit "not editable in the app"
+  marker. No actions, no forms — there is deliberately nothing to authorize
+  (ADR-0045). *(Superseded by #795, Wave 1 menu+RBAC re-plan: the table moved
+  into `/cmdb` as the **Device inventory** tab alongside the CI register (ADR-0078),
+  so CMDB is the single hardware/asset nav entry. `/devices` is kept as a
+  server-side redirect to `/cmdb`. The data layer — `device_inventory_all` view +
+  `crm.listDeviceInventory()` — is unchanged.)*
 
 ## Consequences
 
