@@ -2823,6 +2823,45 @@ export interface JourneyInput {
   definition: JourneyDefinition; // serialised whole into workflow.definition
 }
 
+// ── Message templates — render-content store for journey sends (#731, ADR-0073) ──
+
+/** A message template's channel. Mirrors the journey send step channel. */
+export type MessageTemplateChannel = "email" | "sms";
+
+/**
+ * A named, channel-typed message template (migration 0134). The render-content store a
+ * journey send step (and each A/B variant) references by id via `templateId`. The backend
+ * journey runner (BE #174) renders against this contract: email → { subject, html },
+ * sms → { body }. App/config content, not a silver entity (no OKF concept file).
+ */
+export interface MessageTemplateRow {
+  id: string;
+  name: string;
+  channel: MessageTemplateChannel;
+  subject: string | null; // email
+  html: string | null; // email
+  body: string | null; // sms
+  mergeFields: string[];
+  updatedAt: string;
+}
+
+/** Editable message-template fields written by the composer (#731). */
+export interface MessageTemplateInput {
+  name: string;
+  channel: MessageTemplateChannel;
+  subject: string | null;
+  html: string | null;
+  body: string | null;
+  mergeFields: string[];
+}
+
+/** A lightweight {id,name,channel} option for the journey-builder template picker (#731). */
+export interface MessageTemplateOption {
+  id: string;
+  name: string;
+  channel: MessageTemplateChannel;
+}
+
 // ── PM collaboration — comments & activity feed (ADR-0064 A1) ─────────────────
 
 /** The work objects a comment / activity feed can hang off (polymorphic, ADR-0064). */

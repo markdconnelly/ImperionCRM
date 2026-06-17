@@ -79,6 +79,9 @@ import type {
   SegmentDetail,
   SegmentMemberRow,
   SegmentMemberSource,
+  MessageTemplateRow,
+  MessageTemplateOption,
+  MessageTemplateInput,
   SegmentInput,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
@@ -199,6 +202,31 @@ interface MockSegment {
 const mockSegments: MockSegment[] = [];
 const mockSegmentMembers: SegmentMemberRow[] = [];
 let mockSegmentSeq = 0;
+
+// Message templates (#731) — a couple of seeds so the no-DB dev surface + picker show data.
+const mockMessageTemplates: MessageTemplateRow[] = [
+  {
+    id: "tpl_welcome",
+    name: "Welcome email",
+    channel: "email",
+    subject: "Welcome to {{company}}",
+    html: "<p>Hi {{firstName}}, thanks for connecting with us.</p>",
+    body: null,
+    mergeFields: ["company", "firstName"],
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tpl_reminder_sms",
+    name: "Reminder SMS",
+    channel: "sms",
+    subject: null,
+    html: null,
+    body: "Hi {{firstName}}, just a reminder about your upcoming review.",
+    mergeFields: ["firstName"],
+    updatedAt: new Date().toISOString(),
+  },
+];
+let mockTemplateSeq = 0;
 
 function toSegmentSummary(s: MockSegment): SegmentSummary {
   return {
@@ -2699,6 +2727,34 @@ export const mockRepositories: Repositories = {
     async removeSegmentMember(memberId: string): Promise<void> {
       const i = mockSegmentMembers.findIndex((m) => m.id === memberId);
       if (i !== -1) mockSegmentMembers.splice(i, 1);
+    },
+  },
+
+  messageTemplates: {
+    async listTemplates(): Promise<MessageTemplateRow[]> {
+      return [...mockMessageTemplates].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    },
+    async listTemplateOptions(): Promise<MessageTemplateOption[]> {
+      return mockMessageTemplates
+        .map((t) => ({ id: t.id, name: t.name, channel: t.channel }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    async getTemplate(id: string): Promise<MessageTemplateRow | null> {
+      return mockMessageTemplates.find((t) => t.id === id) ?? null;
+    },
+    async createTemplate(input: MessageTemplateInput): Promise<string> {
+      const id = `mock-template-${++mockTemplateSeq}`;
+      mockMessageTemplates.push({ id, updatedAt: new Date().toISOString(), ...input });
+      return id;
+    },
+    async updateTemplate(id: string, input: MessageTemplateInput): Promise<void> {
+      const t = mockMessageTemplates.find((x) => x.id === id);
+      if (!t) return;
+      Object.assign(t, input, { updatedAt: new Date().toISOString() });
+    },
+    async deleteTemplate(id: string): Promise<void> {
+      const i = mockMessageTemplates.findIndex((x) => x.id === id);
+      if (i !== -1) mockMessageTemplates.splice(i, 1);
     },
   },
 };

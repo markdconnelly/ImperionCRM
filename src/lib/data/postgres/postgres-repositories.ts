@@ -298,6 +298,10 @@ import type {
   JourneyRow,
   JourneyDetail,
   JourneyInput,
+  MessageTemplateRow,
+  MessageTemplateOption,
+  MessageTemplateInput,
+  MessageTemplateChannel,
   WorkParentType,
   WorkComment,
   WorkAttachment,
@@ -11615,6 +11619,99 @@ export const postgresRepositories: Repositories = {
     },
   },
 
+  // ── Message templates (#731, ADR-0073) — render-content store for journey sends.
+  // App/config content (not silver). The journey runner (BE #174) renders against
+  // {id} → email {subject, html} | sms {body}. Reads degrade to [] under schema-lag
+  // (migration 0134 not yet applied) so the index/picker never 500s.
+  messageTemplates: {
+    async listTemplates(): Promise<MessageTemplateRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.messageTemplates.listTemplates();
+      try {
+        const { rows } = await pool.query<MessageTemplateDbRow>(
+          `SELECT id, name, channel, subject, html, body, merge_fields, updated_at
+             FROM message_template
+            ORDER BY created_at DESC`,
+        );
+        return rows.map(mapMessageTemplate);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.messageTemplates.listTemplates();
+      }
+    },
+
+    async listTemplateOptions(): Promise<MessageTemplateOption[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.messageTemplates.listTemplateOptions();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          name: string;
+          channel: MessageTemplateChannel;
+        }>(`SELECT id, name, channel FROM message_template ORDER BY name ASC`);
+        return rows.map((r) => ({ id: r.id, name: r.name, channel: r.channel }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.messageTemplates.listTemplateOptions();
+      }
+    },
+
+    async getTemplate(id: string): Promise<MessageTemplateRow | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.messageTemplates.getTemplate(id);
+      try {
+        const { rows } = await pool.query<MessageTemplateDbRow>(
+          `SELECT id, name, channel, subject, html, body, merge_fields, updated_at
+             FROM message_template WHERE id = $1`,
+          [id],
+        );
+        return rows[0] ? mapMessageTemplate(rows[0]) : null;
+      } catch (err) {
+        if (isSchemaLagError(err)) return null;
+        return mockRepositories.messageTemplates.getTemplate(id);
+      }
+    },
+
+    async createTemplate(input: MessageTemplateInput, ownerEmail: string): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.messageTemplates.createTemplate(input, ownerEmail);
+      const ownerId = await resolveAppUserIdOrNull(pool, ownerEmail);
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO message_template (name, channel, subject, html, body, merge_fields, created_by_user_id)
+         VALUES ($1, $2, $3, $4, $5, $6::text[], $7)
+         RETURNING id`,
+        [
+          input.name,
+          input.channel,
+          input.subject,
+          input.html,
+          input.body,
+          input.mergeFields,
+          ownerId,
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateTemplate(id: string, input: MessageTemplateInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.messageTemplates.updateTemplate(id, input);
+      await pool.query(
+        `UPDATE message_template
+            SET name = $2, channel = $3, subject = $4, html = $5, body = $6,
+                merge_fields = $7::text[], updated_at = now()
+          WHERE id = $1`,
+        [id, input.name, input.channel, input.subject, input.html, input.body, input.mergeFields],
+      );
+    },
+
+    async deleteTemplate(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.messageTemplates.deleteTemplate(id);
+      await pool.query(`DELETE FROM message_template WHERE id = $1`, [id]);
+    },
+  },
+
   // ── Knowledge search over the gold layer ──────────────────────────────────
   knowledge: {
     async search(query: string): Promise<KnowledgeHit[]> {
@@ -14195,6 +14292,30 @@ async function resolveAppUserIdOrNull(pool: Pool, email: string): Promise<string
 }
 
 // ── Segment row mappers (migration 0126) ───────────────────────────────────────────
+interface MessageTemplateDbRow {
+  id: string;
+  name: string;
+  channel: MessageTemplateChannel;
+  subject: string | null;
+  html: string | null;
+  body: string | null;
+  merge_fields: string[] | null;
+  updated_at: Date | null;
+}
+
+function mapMessageTemplate(r: MessageTemplateDbRow): MessageTemplateRow {
+  return {
+    id: r.id,
+    name: r.name,
+    channel: r.channel,
+    subject: r.subject,
+    html: r.html,
+    body: r.body,
+    mergeFields: r.merge_fields ?? [],
+    updatedAt: r.updated_at ? r.updated_at.toISOString() : new Date(0).toISOString(),
+  };
+}
+
 interface SegmentDbRow {
   id: string;
   name: string;

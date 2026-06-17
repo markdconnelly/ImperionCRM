@@ -7,6 +7,7 @@ import type {
   JourneyDefinition,
   JourneyStep,
   JourneyStepKind,
+  MessageTemplateOption,
 } from "@/types";
 import {
   JOURNEY_BRANCH_CONDITIONS,
@@ -30,8 +31,9 @@ import { saveJourneyAction } from "@/app/(app)/journeys/actions";
 //  - Segment targeting (#420/#421) has no schema yet, so the enrollment source is a
 //    disabled, clearly-labelled empty state (the journey still saves; it just can't
 //    enrol until segments land).
-//  - Composer template pickers are free-text template ids until a template index is
-//    wired — flagged as such, not a fake dropdown of real templates.
+//  - Composer template pickers select from the message-template store (#731, migration
+//    0134); they degrade to a free-text id input only when no templates exist yet (store
+//    empty / schema-lag), never a fake dropdown of nonexistent templates.
 
 const inputClass =
   "w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-sm text-text placeholder:text-dim focus:border-accent focus:outline-none";
@@ -49,6 +51,7 @@ type Props = {
   initialName: string;
   initialStatus: string;
   initialDefinition: JourneyDefinition;
+  templateOptions: MessageTemplateOption[];
 };
 
 export function JourneyBuilder({
@@ -56,6 +59,7 @@ export function JourneyBuilder({
   initialName,
   initialStatus,
   initialDefinition,
+  templateOptions,
 }: Props) {
   const [name, setName] = useState(initialName);
   const [status, setStatus] = useState(initialStatus);
@@ -187,6 +191,7 @@ export function JourneyBuilder({
                   index={i}
                   total={steps.length}
                   stepKeys={stepKeys}
+                  templateOptions={templateOptions}
                   onChange={(patch) => updateStep(step.key, patch)}
                   onRemove={() => removeStep(step.key)}
                   onMove={(dir) => move(step.key, dir)}
@@ -254,6 +259,7 @@ function StepEditor({
   index,
   total,
   stepKeys,
+  templateOptions,
   onChange,
   onRemove,
   onMove,
@@ -262,6 +268,7 @@ function StepEditor({
   index: number;
   total: number;
   stepKeys: string[];
+  templateOptions: MessageTemplateOption[];
   onChange: (patch: Partial<JourneyStep>) => void;
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
@@ -344,20 +351,16 @@ function StepEditor({
                 <option value="sms">sms</option>
               </select>
             </label>
-            <label className="block sm:col-span-2">
-              <span className="mb-1 block text-[11px] text-dim">
-                Template id{" "}
-                <span className="text-dim/70">(free-text until a template picker is wired)</span>
-              </span>
-              <input
-                value={step.templateId ?? ""}
-                onChange={(e) => onChange({ templateId: e.target.value || null })}
-                placeholder="tpl_welcome"
+            <div className="block sm:col-span-2">
+              <span className="mb-1 block text-[11px] text-dim">Template</span>
+              <TemplatePicker
+                value={step.templateId}
+                options={templateOptions}
                 disabled={step.variants.length >= 2}
-                className={`${inputClass} disabled:opacity-50`}
+                onChange={(v) => onChange({ templateId: v })}
               />
-            </label>
-            <VariantEditor step={step} onChange={onChange} />
+            </div>
+            <VariantEditor step={step} templateOptions={templateOptions} onChange={onChange} />
           </>
         )}
 
@@ -460,11 +463,64 @@ function NextSelect({
   );
 }
 
+/**
+ * Send-step template picker (#731). A `<select>` over the message-template store
+ * (migration 0134); the value is the template id the backend journey runner (BE #174)
+ * renders against. Degrades HONESTLY: with no templates available (store empty / schema-
+ * lag) it falls back to a free-text id input rather than a fake dropdown. A current value
+ * not in the option list (a legacy free-text id) is preserved as a selectable option so
+ * editing a send step never silently drops it.
+ */
+function TemplatePicker({
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  value: string | null;
+  options: MessageTemplateOption[];
+  disabled?: boolean;
+  onChange: (value: string | null) => void;
+}) {
+  if (options.length === 0) {
+    return (
+      <input
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        placeholder="template id (no templates yet — create one in Message templates)"
+        disabled={disabled}
+        className={`${inputClass} py-1 disabled:opacity-50`}
+      />
+    );
+  }
+  const known = options.some((o) => o.id === value);
+  return (
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+      disabled={disabled}
+      className={`${inputClass} py-1 disabled:opacity-50`}
+    >
+      <option value="">— select a template —</option>
+      {options.map((o) => (
+        <option key={o.id} value={o.id}>
+          {o.name} ({o.channel})
+        </option>
+      ))}
+      {value != null && !known && (
+        <option value={value}>{value} (unknown — kept)</option>
+      )}
+    </select>
+  );
+}
+
 function VariantEditor({
   step,
+  templateOptions,
   onChange,
 }: {
   step: JourneyStep;
+  templateOptions: MessageTemplateOption[];
   onChange: (patch: Partial<JourneyStep>) => void;
 }) {
   const isAbTest = step.variants.length >= 2;
@@ -520,11 +576,10 @@ function VariantEditor({
                   className="grid grid-cols-[auto_1fr_4rem_3rem_auto_auto] items-center gap-2"
                 >
                   <code className="text-[11px] text-dim">{v.key}</code>
-                  <input
-                    value={v.templateId ?? ""}
-                    onChange={(e) => updateVariant(v.key, { templateId: e.target.value || null })}
-                    placeholder="template id"
-                    className={`${inputClass} py-1`}
+                  <TemplatePicker
+                    value={v.templateId}
+                    options={templateOptions}
+                    onChange={(val) => updateVariant(v.key, { templateId: val })}
                   />
                   <input
                     type="number"

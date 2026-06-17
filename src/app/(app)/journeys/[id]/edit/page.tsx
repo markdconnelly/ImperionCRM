@@ -13,9 +13,12 @@ export default async function EditJourneyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { workflows } = getRepositories();
+  const { workflows, messageTemplates } = getRepositories();
   const journey = await workflows.getJourney(id);
   if (!journey) notFound();
+  // Template options drive the send-step composer picker (#731). Empty under schema-lag
+  // (migration 0134 not yet applied) — the picker falls back to a free-text id input.
+  const templateOptions = await messageTemplates.listTemplateOptions();
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,6 +36,7 @@ export default async function EditJourneyPage({
         initialName={journey.name}
         initialStatus={journey.status}
         initialDefinition={journey.definition}
+        templateOptions={templateOptions}
       />
     </div>
   );
