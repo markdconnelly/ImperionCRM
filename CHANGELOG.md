@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.17.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.16.0...imperion-crm-v0.17.0) (2026-06-17)
+
+
+### Features
+
+* **accounts:** move security-posture-at-a-glance to account detail ([#797](https://github.com/markdconnelly/ImperionCRM/issues/797)) ([#803](https://github.com/markdconnelly/ImperionCRM/issues/803)) ([ef239f9](https://github.com/markdconnelly/ImperionCRM/commit/ef239f963c77610b51b18c4dde915a5c44e5a00b))
+* **cmdb:** CI criticality — manual override with derived default ([#648](https://github.com/markdconnelly/ImperionCRM/issues/648)) ([#814](https://github.com/markdconnelly/ImperionCRM/issues/814)) ([d6e1dc7](https://github.com/markdconnelly/ImperionCRM/commit/d6e1dc7307f60c4536c138d69cd9e35b41f8c152))
+* **cmdb:** CI relationships — derived + manual edges + dependency graph ([#647](https://github.com/markdconnelly/ImperionCRM/issues/647)) ([#813](https://github.com/markdconnelly/ImperionCRM/issues/813)) ([56e2e08](https://github.com/markdconnelly/ImperionCRM/commit/56e2e08923bed9d551fb13d5deefe9b0928c838b))
+* **cmdb:** merge Devices & Assets into CMDB ([#795](https://github.com/markdconnelly/ImperionCRM/issues/795)) ([#801](https://github.com/markdconnelly/ImperionCRM/issues/801)) ([eb00c55](https://github.com/markdconnelly/ImperionCRM/commit/eb00c55883e1f7e57249447525597c914c5bf762))
+* **db:** conversation_segment_citation view + localpipeline SELECT grants ([#663](https://github.com/markdconnelly/ImperionCRM/issues/663)) ([#808](https://github.com/markdconnelly/ImperionCRM/issues/808)) ([0a7b2b8](https://github.com/markdconnelly/ImperionCRM/commit/0a7b2b8801cf99826265d945924b3d1e6d7b2805))
+* **db:** per-client Azure ARM cloud-resource bronze tables ([#800](https://github.com/markdconnelly/ImperionCRM/issues/800)) ([#809](https://github.com/markdconnelly/ImperionCRM/issues/809)) ([e6bf28e](https://github.com/markdconnelly/ImperionCRM/commit/e6bf28e7a3e42fa8a3e04e1ab4cc2605b68cd645))
+* **db:** segment + segment_member CRM contact sets ([#420](https://github.com/markdconnelly/ImperionCRM/issues/420)) ([#805](https://github.com/markdconnelly/ImperionCRM/issues/805)) ([7dc9625](https://github.com/markdconnelly/ImperionCRM/commit/7dc9625f962bf548b1c64ce1bd559407909f0d28))
+* **db:** typed Autotask SLA targets on silver ticket + COALESCE into breach view ([#666](https://github.com/markdconnelly/ImperionCRM/issues/666)) ([#810](https://github.com/markdconnelly/ImperionCRM/issues/810)) ([4ae2311](https://github.com/markdconnelly/ImperionCRM/commit/4ae2311423843bbb5ffd02488fc4fee2ef32689b))
+* **integrations:** connector catalog GUI ([#416](https://github.com/markdconnelly/ImperionCRM/issues/416)) ([#747](https://github.com/markdconnelly/ImperionCRM/issues/747)) ([7f16733](https://github.com/markdconnelly/ImperionCRM/commit/7f16733972b92298ef56f348774f6f8c832d4cb0))
+* **integrations:** connector_instance registry + manifest format ([#414](https://github.com/markdconnelly/ImperionCRM/issues/414)) ([#746](https://github.com/markdconnelly/ImperionCRM/issues/746)) ([67d2cf5](https://github.com/markdconnelly/ImperionCRM/commit/67d2cf5d0932dc3864309fe9c452bf39cec7c4b1))
+* **marketing:** segment management — build segments + add/remove contacts ([#421](https://github.com/markdconnelly/ImperionCRM/issues/421)) ([#806](https://github.com/markdconnelly/ImperionCRM/issues/806)) ([bd4d35c](https://github.com/markdconnelly/ImperionCRM/commit/bd4d35cd8d7b2358f86631a7daa68222bbe4bc57))
+* **nav:** collapsible grouped sidebar + role-driven hide-entirely menu ([#794](https://github.com/markdconnelly/ImperionCRM/issues/794)) ([#798](https://github.com/markdconnelly/ImperionCRM/issues/798)) ([4285413](https://github.com/markdconnelly/ImperionCRM/commit/42854132277f5693321646dd7878e02ae7474c34))
+* **profile:** /profile page (avatar-linked) + move personal connections ([#796](https://github.com/markdconnelly/ImperionCRM/issues/796)) ([#802](https://github.com/markdconnelly/ImperionCRM/issues/802)) ([ecaf9c6](https://github.com/markdconnelly/ImperionCRM/commit/ecaf9c6b8756653818624f61ff5cf3de4b5ff17c))
+* **schema:** add m365_call + meta enum values ([#799](https://github.com/markdconnelly/ImperionCRM/issues/799), [#603](https://github.com/markdconnelly/ImperionCRM/issues/603)) ([#807](https://github.com/markdconnelly/ImperionCRM/issues/807)) ([d18c626](https://github.com/markdconnelly/ImperionCRM/commit/d18c6268fa8a364f3754dcc88e2ca7ab58352e5e))
+
+
+### Bug Fixes
+
+* **docs:** make adr-index --check EOL-agnostic ([#792](https://github.com/markdconnelly/ImperionCRM/issues/792)) ([#793](https://github.com/markdconnelly/ImperionCRM/issues/793)) ([23347d3](https://github.com/markdconnelly/ImperionCRM/commit/23347d3971ae1f10bfc2fac1cbe67cc51ab668c9))
+
+
+### Performance Improvements
+
+* **reporting:** query-cost guardrails on the report runner ([#413](https://github.com/markdconnelly/ImperionCRM/issues/413)) ([#744](https://github.com/markdconnelly/ImperionCRM/issues/744)) ([ea2fd60](https://github.com/markdconnelly/ImperionCRM/commit/ea2fd6020fe721d6d129f13ed31963e6cefd2cf5))
+
 ## [0.16.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.15.0...imperion-crm-v0.16.0) (2026-06-16)
 
 
