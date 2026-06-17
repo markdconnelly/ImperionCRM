@@ -40,6 +40,8 @@ export const CAPABILITIES = [
   "delivery:capacity", // set per-user weekly capacity hours for the workload view (ADR-0069 D2, #591; admin∨project_manager)
   "collections:write", // dunning/collections overlay on the read-only invoice mirror (ADR-0085/0087, #677; admin∨finance — app-native, NEVER writes QBO)
   "cmdb:write", // CMDB relationship curation — author/edit/remove MANUAL CI edges + run on-demand derivation (ADR-0078, #647; admin-only — app-native overlay, IT Glue write-back is a separate gated slice)
+  "change:write", // Change Enablement — raise/edit/cancel a change request + pick affected CIs (ADR-0079, #656; admin∨support[Technician] — the ITIL Service practice, mirrors canSeeCmdb)
+  "change:approve", // Change Enablement — approve/reject a change (ADR-0079, #659; admin-only — the lightweight CAB gate, populated by the approval slice)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -110,6 +112,14 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   // same conservative posture as the read-only CMDB surface itself. App-native overlay;
   // there is NO IT Glue write path here (that is a separate gated slice).
   "cmdb:write": [],
+  // Change Enablement raise/edit (ADR-0079, #656) — admin∨support(Technician), the ITIL
+  // Service practice that also owns the CMDB read (mirrors `canSeeService`/`canSeeCmdb`).
+  // Raising a change + linking affected CIs is service-desk work; admin holds it implicitly.
+  "change:write": ["support"],
+  // Change approval/rejection (ADR-0079, #659) — admin-only (admin holds all caps
+  // implicitly, so the explicit list is empty). The lightweight CAB gate is reserved for
+  // admins; the approval slice (#659) enforces it on the approve/reject action.
+  "change:approve": [],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */

@@ -334,6 +334,12 @@ import type {
   SegmentMemberRow,
   SegmentMemberSource,
   SegmentInput,
+  ChangeRequestSummary,
+  ChangeRequestDetail,
+  ChangeRequestInput,
+  ChangeType,
+  ChangeStatus,
+  ChangeApprovalStatus,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -13814,7 +13820,184 @@ export const postgresRepositories: Repositories = {
       await pool.query(`DELETE FROM segment_member WHERE id = $1`, [memberId]);
     },
   },
+
+  // ── Change Enablement (ADR-0079, #656) — the app-native change working object
+  // (`change_request`, migration 0135) + its affected-CI link. Reads degrade to []/null
+  // when 0135 isn't applied (schema-lag-safe). Affected-CI display names resolve in-process
+  // from the cmdb_ci union read-model (a CI is a projection — there is nothing to JOIN to).
+  changes: {
+    async listChangeRequests(): Promise<ChangeRequestSummary[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.listChangeRequests();
+      try {
+        const { rows } = await pool.query<ChangeRequestDbRow>(
+          `SELECT cr.id, cr.change_type, cr.status, cr.title, cr.description,
+                  u.display_name AS requester, a.name AS account_name, cr.account_id,
+                  cr.risk_derived, cr.risk_override, cr.approval_status,
+                  cr.schedule_start, cr.schedule_end, cr.autotask_change_id,
+                  cr.created_at, cr.updated_at,
+                  (SELECT count(*) FROM change_affected_ci ac WHERE ac.change_id = cr.id)
+                    AS affected_ci_count
+             FROM change_request cr
+             LEFT JOIN app_user u ON u.id = cr.requester_user_id
+             LEFT JOIN account a ON a.id = cr.account_id
+            ORDER BY cr.created_at DESC`,
+        );
+        return rows.map(mapChangeRequestSummary);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.changes.listChangeRequests();
+      }
+    },
+
+    async getChangeRequest(id: string): Promise<ChangeRequestDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.getChangeRequest(id);
+      try {
+        const { rows } = await pool.query<ChangeRequestDbRow>(
+          `SELECT cr.id, cr.change_type, cr.status, cr.title, cr.description,
+                  u.display_name AS requester, a.name AS account_name, cr.account_id,
+                  cr.risk_derived, cr.risk_override, cr.approval_status,
+                  cr.schedule_start, cr.schedule_end, cr.autotask_change_id,
+                  cr.created_at, cr.updated_at,
+                  (SELECT count(*) FROM change_affected_ci ac WHERE ac.change_id = cr.id)
+                    AS affected_ci_count
+             FROM change_request cr
+             LEFT JOIN app_user u ON u.id = cr.requester_user_id
+             LEFT JOIN account a ON a.id = cr.account_id
+            WHERE cr.id = $1`,
+          [id],
+        );
+        if (!rows[0]) return null;
+        const summary = mapChangeRequestSummary(rows[0]);
+        // Affected CIs: read the link rows, then resolve display names from the CI union
+        // read-model in-process (the CI is a projection — no table to JOIN to).
+        const { rows: links } = await pool.query<{
+          id: string;
+          ci_type: CiType;
+          ci_id: string;
+        }>(
+          `SELECT id, ci_type, ci_id FROM change_affected_ci
+            WHERE change_id = $1 ORDER BY created_at`,
+          [id],
+        );
+        const items = await resolveCiIndex();
+        const affectedCis = links.map((l) => {
+          const ci = items.get(`${l.ci_type}:${l.ci_id}`);
+          return {
+            id: l.id,
+            ciType: l.ci_type,
+            ciId: l.ci_id,
+            displayName: ci?.displayName ?? l.ci_id,
+            accountName: ci?.accountName ?? null,
+          };
+        });
+        return { ...summary, affectedCis };
+      } catch (err) {
+        if (isSchemaLagError(err)) return null;
+        return mockRepositories.changes.getChangeRequest(id);
+      }
+    },
+
+    async createChangeRequest(
+      input: ChangeRequestInput,
+      requesterEmail: string,
+    ): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.createChangeRequest(input, requesterEmail);
+      const requesterId = await resolveAppUserIdOrNull(pool, requesterEmail);
+      const validCis = await filterValidCis(input.affectedCis);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO change_request (change_type, title, description, requester_user_id, account_id)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id`,
+          [input.changeType, input.title, input.description, requesterId, input.accountId],
+        );
+        const changeId = rows[0].id;
+        for (const ci of validCis) {
+          await client.query(
+            `INSERT INTO change_affected_ci (change_id, ci_type, ci_id)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (change_id, ci_type, ci_id) DO NOTHING`,
+            [changeId, ci.ciType, ci.ciId],
+          );
+        }
+        await client.query("COMMIT");
+        return changeId;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+
+    async updateChangeRequest(id: string, input: ChangeRequestInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.updateChangeRequest(id, input);
+      const validCis = await filterValidCis(input.affectedCis);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          `UPDATE change_request
+              SET change_type = $2, title = $3, description = $4, account_id = $5, updated_at = now()
+            WHERE id = $1`,
+          [id, input.changeType, input.title, input.description, input.accountId],
+        );
+        // Replace the affected-CI set (the picker is authoritative on save).
+        await client.query(`DELETE FROM change_affected_ci WHERE change_id = $1`, [id]);
+        for (const ci of validCis) {
+          await client.query(
+            `INSERT INTO change_affected_ci (change_id, ci_type, ci_id)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (change_id, ci_type, ci_id) DO NOTHING`,
+            [id, ci.ciType, ci.ciId],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteChangeRequest(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.deleteChangeRequest(id);
+      // change_affected_ci.change_id CASCADEs, so the links clean up automatically.
+      await pool.query(`DELETE FROM change_request WHERE id = $1`, [id]);
+    },
+  },
 };
+
+/** CI key → CI, for resolving affected-CI display names (a CI is a projection — there is
+ *  nothing to JOIN to, so the small union read-model is read in-process). */
+async function resolveCiIndex(): Promise<Map<string, ConfigurationItem>> {
+  const items = await postgresRepositories.crm.listConfigurationItems();
+  return new Map(items.map((i) => [`${i.ciType}:${i.ciId}`, i]));
+}
+
+/** Keep only the affected CIs that actually exist in the cmdb_ci union read-model
+ *  (a CI is a projection, not a row — there is no FK to enforce this), de-duped. */
+async function filterValidCis(
+  cis: { ciType: CiType; ciId: string }[],
+): Promise<{ ciType: CiType; ciId: string }[]> {
+  if (cis.length === 0) return [];
+  const index = await resolveCiIndex();
+  const seen = new Set<string>();
+  return cis.filter((ci) => {
+    const key = `${ci.ciType}:${ci.ciId}`;
+    if (seen.has(key) || !index.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 /** A select-type custom field carries an options list; the others store []. */
 function isSelectFieldType(t: CustomFieldType): boolean {
@@ -14433,6 +14616,49 @@ function mapSegmentSummary(r: SegmentDbRow): SegmentSummary {
 
 function mapSegmentDetail(r: SegmentDbRow): SegmentDetail {
   return { ...mapSegmentSummary(r), ruleJson: r.rule_json };
+}
+
+// ── Change Enablement row mapper (migration 0135, #656) ─────────────────────────────
+interface ChangeRequestDbRow {
+  id: string;
+  change_type: ChangeType;
+  status: ChangeStatus;
+  title: string;
+  description: string | null;
+  requester: string | null;
+  account_name: string | null;
+  account_id: string | null;
+  risk_derived: number | null;
+  risk_override: number | null;
+  approval_status: ChangeApprovalStatus | null;
+  schedule_start: Date | null;
+  schedule_end: Date | null;
+  autotask_change_id: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+  affected_ci_count: string; // count(*) comes back as a string from pg
+}
+
+function mapChangeRequestSummary(r: ChangeRequestDbRow): ChangeRequestSummary {
+  return {
+    id: r.id,
+    changeType: r.change_type,
+    status: r.status,
+    title: r.title,
+    description: r.description,
+    requester: r.requester,
+    accountName: r.account_name,
+    accountId: r.account_id,
+    riskDerived: r.risk_derived === null ? null : Number(r.risk_derived),
+    riskOverride: r.risk_override === null ? null : Number(r.risk_override),
+    approvalStatus: r.approval_status,
+    scheduleStart: r.schedule_start ? r.schedule_start.toISOString() : null,
+    scheduleEnd: r.schedule_end ? r.schedule_end.toISOString() : null,
+    autotaskChangeId: r.autotask_change_id,
+    affectedCiCount: Number(r.affected_ci_count ?? 0),
+    createdAt: r.created_at ? r.created_at.toISOString() : null,
+    updatedAt: r.updated_at ? r.updated_at.toISOString() : null,
+  };
 }
 
 function mapSegmentMember(r: SegmentMemberDbRow): SegmentMemberRow {

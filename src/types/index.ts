@@ -3270,6 +3270,87 @@ export interface CiRelationshipInput {
   note: string | null;
 }
 
+// ── Change Enablement (#656, parent #373, ADR-0079) ──────────────────────────
+// The app-native change WORKING object (migration 0135) + its affected-CI link.
+// Imperion CREATES the change (typed standard|normal|emergency); Autotask is the
+// eventual record SoR via the gated route #661. The risk/approval/schedule fields
+// are nullable here — the downstream slices (#658/#659/#660) populate them.
+
+/** ITIL change classification (the `change_type` DB enum, migration 0135). */
+export type ChangeType = "standard" | "normal" | "emergency";
+
+/** The change lifecycle (the `change_status` DB enum, migration 0135). */
+export type ChangeStatus =
+  | "draft"
+  | "pending_approval"
+  | "approved"
+  | "rejected"
+  | "scheduled"
+  | "completed"
+  | "cancelled";
+
+/** The lightweight approval outcome (#659, the `change_approval_status` DB enum).
+ *  Distinct from `ChangeStatus` (the overall lifecycle); null = not yet requested. */
+export type ChangeApprovalStatus = "pending" | "approved" | "rejected";
+
+/** A change as a list row (`change_request`, migration 0135) — includes the live
+ *  affected-CI count. The risk/approval/schedule fields are nullable until the
+ *  downstream slices populate them. */
+export interface ChangeRequestSummary {
+  id: string;
+  changeType: ChangeType;
+  status: ChangeStatus;
+  title: string;
+  description: string | null;
+  /** Requester display name (resolved from app_user); null if unresolved/system. */
+  requester: string | null;
+  /** Owning client account name (resolved); null if estate-wide/unresolved. */
+  accountName: string | null;
+  accountId: string | null;
+  /** Effective risk = riskOverride ?? riskDerived (resolved in the app layer); null = unassessed. */
+  riskDerived: number | null;
+  riskOverride: number | null;
+  /** Lightweight approval (#659); null = not yet requested. */
+  approvalStatus: ChangeApprovalStatus | null;
+  /** Planned change window (#660); null until scheduled. */
+  scheduleStart: string | null;
+  scheduleEnd: string | null;
+  /** Autotask change id once routed (#661); null until the gated write. */
+  autotaskChangeId: string | null;
+  /** Live count of linked affected CIs. */
+  affectedCiCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/** One affected Configuration Item linked to a change (`change_affected_ci`). The CI
+ *  is the polymorphic `(ciType, ciId)` business key over the read-only cmdb_ci union
+ *  (#645); `displayName`/`accountName` resolve live from the register. */
+export interface ChangeAffectedCi {
+  id: string;
+  ciType: CiType;
+  ciId: string;
+  displayName: string;
+  accountName: string | null;
+}
+
+/** A change with its affected-CI list (the detail read). */
+export interface ChangeRequestDetail extends ChangeRequestSummary {
+  affectedCis: ChangeAffectedCi[];
+}
+
+/** Create/update payload for a change (server resolves requester + timestamps). The
+ *  risk/approval/schedule/autotask fields are owned by the downstream slices, never set here. */
+export interface ChangeRequestInput {
+  changeType: ChangeType;
+  title: string;
+  description: string | null;
+  accountId: string | null;
+  /** The CIs this change touches — `(ciType, ciId)` business keys validated against the
+   *  cmdb_ci union before insert. */
+  affectedCis: { ciType: CiType; ciId: string }[];
+}
+
 // ── Self-serve report builder (ADR-0075, #410) ───────────────────────────────
 // Persistence shapes for the governed report builder. `report_definition` is a
 // generalised saved view (ADR-0046): owner-scoped, private|shared, jsonb query

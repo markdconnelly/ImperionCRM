@@ -81,6 +81,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [chat_session](tables/chat_session.md) | Service Desk | B (native pre-ticket + deflection) | ✅ | service-desk (chatbot deflection / routing) |
 | [ci_relationship](tables/ci_relationship.md) | Service Desk | D (app-native CMDB overlay; IT Glue write-back is a separate gated slice) | ⏳ | CMDB / impact analysis (#647, ADR-0078) |
 | [cmdb_ci_overlay](tables/cmdb_ci_overlay.md) | Service Desk | D (app-native per-CI criticality overlay; effective = override ?? derived_default; IT Glue write-back is a separate gated slice) | ⏳ | CMDB / impact analysis (#648, ADR-0078/0097) |
+| [change_request](tables/change_request.md) (+ change_affected_ci) | Service Desk | D (app-native ITIL change working object; Autotask is the eventual record SoR via the gated route #661) | ✅ | Change Enablement (#656, ADR-0079; risk #658 / approval #659 / calendar #660 / route #661) |
 | sbr_dimension_score, sbr_ticket | Customer Success | B | ⏳ | SBR-prep |
 | question_template, question, engagement_answer | Sales | B | ⏳ | discovery / assessment capture |
 | [contract](tables/contract.md) | kernel | B | ✅ | sale→delivery (DocuSign-gated) |
