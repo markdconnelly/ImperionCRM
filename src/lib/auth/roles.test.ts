@@ -12,11 +12,18 @@ import {
   canSeeRevenue,
   canSeeSettings,
   canSeeFeature,
+  canSeeMarketing,
+  canSeeSales,
+  canSeeProjects,
+  canSeeService,
+  canSeeFinance,
+  roleLabel,
   isAdmin,
   normalizeRoles,
   redactMoney,
   REDACTED_MONEY,
   DEFAULT_ROLE,
+  type AppRole,
 } from "@/lib/auth/roles";
 
 describe("normalizeRoles", () => {
@@ -85,17 +92,19 @@ describe("predicates", () => {
     expect(canSeeAgentPages(undefined)).toBe(false);
   });
 
-  test("canSeeCmdb is admin-only (#645 — CI register matches the Settings gate)", () => {
+  test("canSeeCmdb is admin | technician(support) (#794 — IA matrix moves CMDB to the Service tier)", () => {
     expect(canSeeCmdb(["admin"])).toBe(true);
+    expect(canSeeCmdb(["support"])).toBe(true);
     expect(canSeeCmdb(["support", "admin"])).toBe(true);
-    for (const r of ["finance", "sales", "project_manager", "support"] as const) {
+    for (const r of ["finance", "sales", "project_manager"] as const) {
       expect(canSeeCmdb([r])).toBe(false);
     }
     expect(canSeeCmdb([])).toBe(false);
     expect(canSeeCmdb(undefined)).toBe(false);
-    // and the nav guard hides /cmdb for non-admins
+    // and the nav guard hides /cmdb for roles outside admin | technician
     expect(canSeeFeature("cmdb", ["admin"])).toBe(true);
-    expect(canSeeFeature("cmdb", ["support"])).toBe(false);
+    expect(canSeeFeature("cmdb", ["support"])).toBe(true);
+    expect(canSeeFeature("cmdb", ["sales"])).toBe(false);
   });
 
   test("canSeeConnectors is admin-only (#416 — connector catalog matches the Settings gate)", () => {
@@ -175,5 +184,75 @@ describe("predicates", () => {
     // The nav guard hides the worklist (#678) for the same roles.
     expect(canSeeFeature("collections", ["finance"])).toBe(true);
     expect(canSeeFeature("collections", ["support"])).toBe(false);
+  });
+});
+
+describe("nav group guards + role labels (#794, ADR-0030)", () => {
+  // Expected group visibility per the #794 permission matrix.
+  const matrix: Record<
+    string,
+    { guard: (r: readonly AppRole[]) => boolean; roles: AppRole[] }
+  > = {
+    "grp-marketing": { guard: canSeeMarketing, roles: ["admin", "sales"] },
+    "grp-sales": { guard: canSeeSales, roles: ["admin", "sales"] },
+    "grp-projects": { guard: canSeeProjects, roles: ["admin", "project_manager"] },
+    "grp-service": { guard: canSeeService, roles: ["admin", "support"] },
+    "grp-finance": { guard: canSeeFinance, roles: ["admin", "finance"] },
+  };
+
+  const allRoles: AppRole[] = [
+    "admin",
+    "finance",
+    "sales",
+    "project_manager",
+    "support",
+  ];
+
+  test("each MID group is visible to exactly the matrix roles (hide-entirely)", () => {
+    for (const [key, { guard, roles }] of Object.entries(matrix)) {
+      for (const r of allRoles) {
+        const expected = roles.includes(r);
+        expect(guard([r])).toBe(expected);
+        expect(canSeeFeature(key, [r])).toBe(expected);
+      }
+    }
+  });
+
+  test("Top + Employee groups are visible to every role", () => {
+    for (const r of allRoles) {
+      expect(canSeeFeature("dashboard", [r])).toBe(true);
+      expect(canSeeFeature("timesheets", [r])).toBe(true);
+      expect(canSeeFeature("expenses", [r])).toBe(true);
+      // Employee group header carries no guard → visible to all.
+      expect(canSeeFeature("grp-employee", [r])).toBe(true);
+    }
+  });
+
+  test("Board + Settings groups are admin-only", () => {
+    expect(canSeeFeature("grp-settings", ["admin"])).toBe(true);
+    expect(canSeeFeature("board", ["admin"])).toBe(true);
+    for (const r of ["finance", "sales", "project_manager", "support"] as const) {
+      expect(canSeeFeature("grp-settings", [r])).toBe(false);
+      expect(canSeeFeature("board", [r])).toBe(false);
+    }
+  });
+
+  test("per-domain Reports leaves ride their domain group gate", () => {
+    expect(canSeeFeature("report-marketing", ["sales"])).toBe(true);
+    expect(canSeeFeature("report-sales", ["sales"])).toBe(true);
+    expect(canSeeFeature("report-projects", ["project_manager"])).toBe(true);
+    expect(canSeeFeature("report-service", ["support"])).toBe(true);
+    expect(canSeeFeature("report-finance", ["finance"])).toBe(true);
+    // A technician sees only the service report among the five.
+    expect(canSeeFeature("report-marketing", ["support"])).toBe(false);
+    expect(canSeeFeature("report-finance", ["support"])).toBe(false);
+  });
+
+  test("the default role surfaces as the 'Technician' label (key stays support)", () => {
+    expect(DEFAULT_ROLE).toBe("support");
+    expect(roleLabel("support")).toBe("Technician");
+    expect(roleLabel("admin")).toBe("Admin");
+    expect(roleLabel("project_manager")).toBe("Project Manager");
+    expect(roleLabel("unknown")).toBe("unknown");
   });
 });
