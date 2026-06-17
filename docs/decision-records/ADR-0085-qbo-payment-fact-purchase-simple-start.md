@@ -6,8 +6,11 @@ date: 2026-06-14
 repo: frontend
 summary: "Keep Simple Start; re-target the authoritative payment fact from `BillPayment` to the"
 tags: [finance]
+consolidated_into: ADR-0093
 ---
 # ADR-0085: QuickBooks payment fact = `Purchase` on Simple Start (supersedes the `BillPayment` reconciliation source)
+
+> Consolidated into [ADR-0093](ADR-0093-employee-finance-consolidated.md). Retained for history.
 
 | | |
 |---|---|
