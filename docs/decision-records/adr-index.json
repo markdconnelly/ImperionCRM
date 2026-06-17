@@ -825,7 +825,7 @@
   {
     "adr": "0064",
     "title": "PM collaboration — comments, mentions, notifications, attachments",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-12",
     "tags": [
       "pm"
@@ -833,12 +833,12 @@
     "summary": "Adopt the polymorphic model and a backend-dispatched notification pipeline",
     "file": "ADR-0064-pm-collaboration-comments-mentions-notifications-attachments.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0094"
   },
   {
     "adr": "0065",
     "title": "PM task structure — hierarchy, dependencies, assignment, custom fields, statuses, tags",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-12",
     "tags": [
       "pm"
@@ -846,12 +846,12 @@
     "summary": "Extend the existing `task`/`project` model",
     "file": "ADR-0065-pm-task-structure-hierarchy-fields-statuses.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0094"
   },
   {
     "adr": "0066",
     "title": "PM views — kanban board, calendar, timeline, multi-view",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-12",
     "tags": [
       "pm"
@@ -859,7 +859,7 @@
     "summary": "Build an in-app view layer, prioritised within the theme",
     "file": "ADR-0066-pm-views-board-calendar-timeline.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0094"
   },
   {
     "adr": "0067",
@@ -890,7 +890,7 @@
   {
     "adr": "0069",
     "title": "PM planning — time tracking, workload, goals, sprints, portfolio, baselines",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-12",
     "tags": [
       "pm"
@@ -898,12 +898,12 @@
     "summary": "Adopt the following model; build per the phase column in the requirements set",
     "file": "ADR-0069-pm-planning-time-workload-goals-portfolio.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0094"
   },
   {
     "adr": "0070",
     "title": "PM templates, recurring tasks, and form intake",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-12",
     "tags": [
       "pm"
@@ -911,7 +911,7 @@
     "summary": "Editable templates (E1, v2) — `project_template{ id, name, project_type_id,",
     "file": "ADR-0070-pm-templates-recurrence-intake.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0094"
   },
   {
     "adr": "0071",
@@ -1196,6 +1196,19 @@
     ],
     "summary": "Consolidated dossier of the employee time + expense finance decisions: website-authoritative weekly timesheets and monthly expense reports normalized into silver `time_record`/`expense_item`, Autotask documentation writes, the unified Monthly Close, and the authoritative QuickBooks payment fact re-targeted from `BillPayment` to `Purchase` on Simple Start. Carries every member decision and amendment clause verbatim with a zero-loss traceability table; member ADRs are retained.",
     "file": "ADR-0093-employee-finance-consolidated.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0094",
+    "title": "Project-management parity platform — consolidated dossier",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "pm"
+    ],
+    "summary": "Consolidated dossier of the project-management parity cluster: the in-app PM feature platform that closes the table-stakes gaps versus Asana/Jira/Monday — polymorphic collaboration (comments, @mentions, backend-dispatched notifications, attachments), extended task structure (subtasks, dependencies, multi-assignment, custom fields, configurable statuses, tags), an in-app multi-view layer (kanban, calendar, timeline), the planning model (time/estimates, workload, goals, sprints, portfolio, baselines), and user-editable templates + recurring tasks + form intake. Carries every member decision and amendment clause verbatim with a zero-loss traceability table; member ADRs are retained.",
+    "file": "ADR-0094-pm-parity-consolidated.md",
     "superseded_by": [],
     "consolidated_into": null
   }

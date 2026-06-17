@@ -1,13 +1,16 @@
 ---
 adr: 0066
 title: "PM views — kanban board, calendar, timeline, multi-view"
-status: accepted
+status: consolidated
 date: 2026-06-12
 repo: frontend
 summary: "Build an in-app view layer, prioritised within the theme"
 tags: [pm]
+consolidated_into: ADR-0094
 ---
 # ADR-0066: PM views — kanban board, calendar, timeline, multi-view
+
+> Consolidated into [ADR-0094](ADR-0094-pm-parity-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

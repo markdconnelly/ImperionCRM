@@ -1,13 +1,16 @@
 ---
 adr: 0069
 title: "PM planning — time tracking, workload, goals, sprints, portfolio, baselines"
-status: accepted
+status: consolidated
 date: 2026-06-12
 repo: frontend
 summary: "Adopt the following model; build per the phase column in the requirements set"
 tags: [pm]
+consolidated_into: ADR-0094
 ---
 # ADR-0069: PM planning — time tracking, workload, goals, sprints, portfolio, baselines
+
+> Consolidated into [ADR-0094](ADR-0094-pm-parity-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|
