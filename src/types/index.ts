@@ -3264,3 +3264,58 @@ export interface ConnectorInstanceInput {
   grantedScopes: string[];
   cadenceOverrideMinutes: number | null;
 }
+
+// ── CRM contact segments (ADR-0073 decision 2, migration 0126, #420/#421) ──────────
+// A general-purpose CRM contact set — manual (static) or rule (dynamic over contact
+// fields) — with explicit membership. The enrollment source for marketing journeys and
+// reusable for comms / list views. Distinct from an ad audience (ADR-0026). The rule
+// shape lives in `lib/segment.ts`; membership rows carry their `source`.
+
+/** manual = static, members added explicitly; rule = dynamic, materialized from rule_json. */
+export type SegmentType = "manual" | "rule";
+
+/** How a member row got into the segment — lets a rule recompute scope its own rows. */
+export type SegmentMemberSource = "manual" | "bulk" | "rule";
+
+/** A segment as a list row (`segment`, migration 0126) — includes the live member count. */
+export interface SegmentSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  type: SegmentType;
+  /** Owner display name (resolved from app_user); null if unresolved. */
+  owner: string | null;
+  /** Materialized member count (segment_member rows). */
+  memberCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/** A segment with its rule definition (the edit/detail read). */
+export interface SegmentDetail extends SegmentSummary {
+  /** The raw rule_json blob (parsed via parseSegmentRule); null for a manual segment. */
+  ruleJson: Record<string, unknown> | null;
+}
+
+/** A member of a segment (joined to the contact for display). */
+export interface SegmentMemberRow {
+  id: string;
+  segmentId: string;
+  contactId: string;
+  contactName: string;
+  contactEmail: string | null;
+  account: string | null;
+  source: SegmentMemberSource;
+  /** Who/what added the member (display name); null if unresolved/system. */
+  addedBy: string | null;
+  addedAt: string | null;
+}
+
+/** Create/update payload for a segment (server resolves owner + timestamps). */
+export interface SegmentInput {
+  name: string;
+  description: string | null;
+  type: SegmentType;
+  /** The rule predicate blob for a rule segment; null/ignored for a manual segment. */
+  ruleJson: Record<string, unknown> | null;
+}
