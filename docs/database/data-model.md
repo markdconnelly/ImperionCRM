@@ -2442,6 +2442,17 @@ polled source, so there is **no bronze-per-source table** (ADR-0068 decision 3).
 - **`conversation_segment`** — one diarized turn, the **embedding unit** (ADR-0041):
   `{ id, conversation_id → conversation (CASCADE), speaker?, start_ms?, end_ms?, text,
   created_at }`. Vectorized in `_LocalPipelineEnrichment`, not here.
+- **`conversation_segment_citation`** (view, migration 0129, ADR-0068, local-pipeline #200)
+  — resolves a retrieved gold vector back to its source: `knowledge_object`
+  (`entity_type='conversation_segment'`, `entity_ref` = the segment id) → `conversation_segment`
+  → parent `conversation`, exposing `{ knowledge_object_id, tenant_id, segment_id,
+  conversation_id, conversation_source, conversation_external_ref, account_id, contact_id,
+  opportunity_id, speaker, start_ms, end_ms, conversation_started_at, segment_text,
+  conversation_status }` so the backend agent can render an attributed citation. Mirrors the
+  related-bronze citation views (migration 0039); **purged conversations excluded**
+  (`status <> 'purged'`). 0129 also adds least-privilege **SELECT** grants for the
+  `imperion-localpipeline` SP on `conversation` + `conversation_segment` (the composer reads
+  the diarized turns + parent context; SELECT-only, no DELETE).
 - **`conversation_insight`** — one AI output (ADR-0043): `{ id, conversation_id →
   conversation (CASCADE), kind (CHECK summary|action_item|sentiment|objection|risk),
   payload (jsonb, kind-specific), model?, created_at }`. `risk`/`objection` feed
