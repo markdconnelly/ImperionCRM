@@ -13,14 +13,16 @@
 
 ## Process
 
-1. `[haiku]` Extract identity fields (name, email, phone, company, source,
-   message text). Missing email AND phone on a non-DM lead → audit fail.
-2. `[haiku]` Dedupe: match against silver contacts. Existing contact → link;
-   else mark `new`. Never create silver rows here (executor owns writes).
+1. `[script]` Extract identity fields (name, email, phone, company, source,
+   message text) from the payload's known keys. Missing email AND phone on a
+   non-DM lead → audit fail.
+2. `[script]` Dedupe: match against silver contacts by email/phone/company.
+   Existing contact → link; else mark `new`. Never create silver rows here
+   (executor owns writes).
 3. `[sonnet]` Classify intent: `standard-inquiry` | `pricing-contract` |
    `support-misroute` | `complaint` | `spam`. Score ICP fit 1–5 per
    `icp.md`, one sentence of reasoning.
-4. `[haiku]` Record consent basis found (or `none`).
+4. `[script]` Record consent basis found (or `none`) from the ledger lookup.
 
 ## Outputs
 

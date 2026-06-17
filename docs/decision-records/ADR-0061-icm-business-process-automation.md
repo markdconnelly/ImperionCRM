@@ -26,11 +26,12 @@ needs agent automation that is auditable, human-steerable, and incrementally
 trustable. Ad-hoc prompts inside the orchestrator don't give us reviewable
 process definitions, staged human checkpoints, or a path from "drafts for
 approval" to "runs autonomously". The Interpreted Context Methodology
-(github.com/RinDig/Interpreted-Context-Methdology; Van Clief 2026,
-arXiv:2603.16021) provides exactly that shape: filesystem-defined staged
-pipelines, per-stage context contracts, plain-text artifacts, checkpoints.
-But ICM is natively a dev-machine pattern, and ADR-0042 says the backend owns
-all processes.
+(github.com/RinDig/Interpreted-Context-Methdology), as set out in the MWP paper
+*"Interpretable Context Methodology: Folder Structure as Agentic Architecture"*
+(Van Clief & McDermott, arXiv:2603.16021, 2026), provides exactly that shape:
+filesystem-defined staged pipelines, per-stage context contracts, plain-text
+artifacts, checkpoints. But ICM is natively a dev-machine pattern, and ADR-0042
+says the backend owns all processes.
 
 ## Options considered
 
@@ -90,10 +91,14 @@ all processes.
 
 ## Cost impact
 
-Per-stage scoped context is the cheap path (ICM measures 2–8k tokens/stage vs
-30–50k monolithic); mechanical stages run on the Haiku tier. Run volume is
-bounded by lead volume, and `draft` mode keeps a human in every loop while
-costs are characterized.
+Per-stage scoped context is the cheap path. The paper reports ~2–8k tokens/stage
+versus 30–50k for a monolithic prompt — but treat these as the **authors'
+observational figures, not a benchmark**: they come from their own runs (no
+controlled comparison, Claude-only) and are directional, not a guarantee for our
+workloads. The mechanism is sound regardless: load only a stage's Inputs table,
+and run deterministic steps as `[script]` code (no model call at all) rather than
+on a model tier. Run volume is bounded by lead volume, and `draft` mode keeps a
+human in every loop while costs are characterized against our own telemetry.
 
 ## Operational impact
 
