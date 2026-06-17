@@ -3293,6 +3293,10 @@ export type ChangeStatus =
  *  Distinct from `ChangeStatus` (the overall lifecycle); null = not yet requested. */
 export type ChangeApprovalStatus = "pending" | "approved" | "rejected";
 
+/** An approver's terminal decision on a change awaiting approval (#659). A subset of
+ *  `ChangeApprovalStatus` — `pending` is the awaiting state, never a decision. */
+export type ApprovalDecision = "approved" | "rejected";
+
 /** A change as a list row (`change_request`, migration 0135) — includes the live
  *  affected-CI count. The risk/approval/schedule fields are nullable until the
  *  downstream slices populate them. */

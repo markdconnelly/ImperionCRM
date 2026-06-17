@@ -8,6 +8,7 @@ import type {
   ChangeType,
   ChangeStatus,
   ChangeApprovalStatus,
+  ApprovalDecision,
   ConfigurationItem,
   CiRelationship,
   CiType,
@@ -64,6 +65,74 @@ export function asChangeType(value: string | undefined): ChangeType | null {
   return value && (CHANGE_TYPES as readonly string[]).includes(value)
     ? (value as ChangeType)
     : null;
+}
+
+// ── Lightweight approval state machine (#659, ADR-0079) ───────────────────────────────────
+// ADR-0079 chose a LIGHTWEIGHT, type-keyed approval — explicitly NOT the board/deputy
+// pattern. The flow is a pure function of `change_type`:
+//   • standard  — pre-authorized: auto-approved on create (no human action).
+//   • normal    — requires an approver to approve/reject.
+//   • emergency — expedited: still requires an approver action, but flagged urgent/fast-track.
+// Approval state is the (status, approvalStatus) pair on the change overlay. These helpers are
+// PURE so they unit-test cleanly and the same machine drives create + the approver action.
+
+/** The (lifecycle, approval) state pair the machine resolves to. */
+export interface ChangeApprovalState {
+  status: ChangeStatus;
+  approvalStatus: ChangeApprovalStatus;
+}
+
+/** True when a change of this type needs a human approver (normal + emergency). */
+export function requiresApproval(type: ChangeType): boolean {
+  return type !== "standard";
+}
+
+/** True when this type is an expedited/fast-track approval (emergency). Drives the urgent flag. */
+export function isExpedited(type: ChangeType): boolean {
+  return type === "emergency";
+}
+
+/**
+ * The state a freshly-created change lands in, keyed by type:
+ *   standard  → auto-approved   ({ approved, approved })   — pre-authorized, no human action.
+ *   normal    → awaiting        ({ pending_approval, pending })
+ *   emergency → awaiting (fast) ({ pending_approval, pending }) — flagged expedited in the UI.
+ * `draft` is never the initial persisted state: a standard change skips straight to approved,
+ * and an approval-requiring change opens directly as pending_approval so it surfaces in the queue.
+ */
+export function initialApprovalState(type: ChangeType): ChangeApprovalState {
+  return requiresApproval(type)
+    ? { status: "pending_approval", approvalStatus: "pending" }
+    : { status: "approved", approvalStatus: "approved" };
+}
+
+/** True when a change is awaiting an approver decision (drives the pending-approvals queue). */
+export function isAwaitingApproval(
+  status: ChangeStatus,
+  approvalStatus: ChangeApprovalStatus | null,
+): boolean {
+  return status === "pending_approval" && approvalStatus === "pending";
+}
+
+/**
+ * Apply an approver's decision to a change that is awaiting approval. Returns the new
+ * (status, approvalStatus) pair, or null when the change is NOT in a decidable state
+ * (only `pending_approval`/`pending` can be approved or rejected — guards the action against
+ * double-approving or acting on a standard/auto-approved change).
+ */
+export function applyApprovalDecision(
+  current: { status: ChangeStatus; approvalStatus: ChangeApprovalStatus | null },
+  decision: ApprovalDecision,
+): ChangeApprovalState | null {
+  if (!isAwaitingApproval(current.status, current.approvalStatus)) return null;
+  return decision === "approved"
+    ? { status: "approved", approvalStatus: "approved" }
+    : { status: "rejected", approvalStatus: "rejected" };
+}
+
+/** Narrow a posted string to a valid approver decision (action guard). */
+export function asApprovalDecision(value: string | undefined): ApprovalDecision | null {
+  return value === "approved" || value === "rejected" ? value : null;
 }
 
 /**

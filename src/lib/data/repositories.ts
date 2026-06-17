@@ -195,6 +195,7 @@ import type {
   ChangeRequestSummary,
   ChangeRequestDetail,
   ChangeRequestInput,
+  ApprovalDecision,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -2860,6 +2861,18 @@ export interface ChangesRepository {
   /** Set/clear the admin risk override (#658, `change:approve`). `override: null` clears
    *  it so effective risk falls back to the CMDB-derived score. */
   setChangeRiskOverride(id: string, override: number | null): Promise<void>;
+  /**
+   * Record an approver's lightweight approval decision (#659, `change:approve`). Only a
+   * change that is awaiting approval (`pending_approval`/`pending`) is decidable — the
+   * state machine (`applyApprovalDecision`) gates the move; a no-op (returns false) when
+   * the change is missing or not awaiting. Stamps `approved_by_user_id`/`approved_at` and
+   * writes an `audit_log` row attributing the actor. Returns true when the decision applied.
+   */
+  decideChangeApproval(
+    id: string,
+    decision: ApprovalDecision,
+    approverEmail: string,
+  ): Promise<boolean>;
   /** Delete a change (cascades its affected-CI links). */
   deleteChangeRequest(id: string): Promise<void>;
 }

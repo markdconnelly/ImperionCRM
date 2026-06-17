@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
-import { asChangeType } from "@/lib/change";
+import { asChangeType, asApprovalDecision } from "@/lib/change";
 import { asCiType } from "@/lib/cmdb/ci";
 import type { ChangeRequestInput, CiType } from "@/types";
 
@@ -20,6 +20,15 @@ import type { ChangeRequestInput, CiType } from "@/types";
 async function requireWriter(): Promise<string> {
   const roles = await requireCapability("change:write");
   void roles;
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!email) redirect("/login");
+  return email;
+}
+
+/** Approver gate (#659): admin-only `change:approve`, returning the actor email for audit. */
+async function requireApprover(): Promise<string> {
+  await requireCapability("change:approve");
   const session = await auth();
   const email = session?.user?.email;
   if (!email) redirect("/login");
@@ -97,6 +106,27 @@ export async function setChangeRiskOverrideAction(formData: FormData): Promise<v
   const { changes } = getRepositories();
   await changes.setChangeRiskOverride(id, override);
   revalidatePath("/changes");
+  revalidatePath(`/changes/${id}`);
+  redirect(`/changes/${id}`);
+}
+
+/**
+ * Approver decision on a change awaiting approval (#659). Gated by `change:approve`
+ * (admin-only — the lightweight CAB authority, same gate as the risk override #658) and
+ * audited in the repository (`change.approved`/`change.rejected`, attributed to the actor).
+ * The repo's state machine refuses anything not in `pending_approval`/`pending`, so a
+ * double-approve or a click on an auto-approved standard change is a safe no-op.
+ */
+export async function decideChangeApprovalAction(formData: FormData): Promise<void> {
+  const approverEmail = await requireApprover();
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) throw new Error("Missing change id.");
+  const decision = asApprovalDecision(String(formData.get("decision") ?? ""));
+  if (!decision) throw new Error("Invalid approval decision.");
+  const { changes } = getRepositories();
+  await changes.decideChangeApproval(id, decision, approverEmail);
+  revalidatePath("/changes");
+  revalidatePath("/changes/approvals");
   revalidatePath(`/changes/${id}`);
   redirect(`/changes/${id}`);
 }
