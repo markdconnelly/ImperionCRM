@@ -1,9 +1,26 @@
 # Semantic-layer docs-gate (CI)
 
+[← Operations](README.md) · [Documentation library](../README.md) ·
+[OKF semantic layer](../database/semantic-layer/)
+
+---
+
+**What this is — for an operator.** A CI safety net that stops the curated *meaning* of
+the silver data tier from drifting away from the schema it describes. When a pull request
+changes a silver table that already has an OKF concept file, this gate **fails the PR**
+unless the matching concept file is updated in the same change set. If you see the
+`semantic-layer` check red on a PR, this page tells you why and how to clear it.
+
 **Status:** active · **Owns:** ADR-0086 constraint 3 (near-term staleness) ·
 **Issue:** [#535](https://github.com/markdconnelly/ImperionCRM/issues/535) ·
 **Code:** `scripts/semantic-layer-gate.mjs` (+ `scripts/semantic-layer-gate.test.mjs`),
 CI job `semantic-layer` in `.github/workflows/ci.yml`.
+
+> Background: the OKF (Open Knowledge Format) semantic layer is the one curated
+> "what does this entity *mean* / which source wins / how does it join" surface, owned by
+> this GUI repo (it owns the schema). See the
+> [OKF bundle](../database/semantic-layer/) and the system-level `CLAUDE.md` §11 for the
+> binding cross-repo contract.
 
 ## What it does
 
@@ -16,6 +33,18 @@ also update that concept file in the same change set — at minimum bumping its
 This turns the OKF sync rule (system-level `CLAUDE.md` §11 / this repo's CLAUDE.md
 "Semantic layer (OKF canon)") from convention into mechanical enforcement, so the
 curated *meaning* layer cannot silently rot away from the schema it documents.
+
+```mermaid
+flowchart TD
+    PR["PR changes db/migrations/NNNN_*.sql"] --> SCAN["Strip SQL comments,<br/>scan for CREATE/ALTER/DROP<br/>of TABLE/VIEW &lt;entity&gt;"]
+    SCAN --> MATCH{"entity has a<br/>tables/&lt;entity&gt;.md<br/>concept file?"}
+    MATCH -- no --> PASS1["pass"]
+    MATCH -- yes --> UPD{"is that .md in<br/>the PR's changed files?"}
+    UPD -- yes --> PASS2["pass"]
+    UPD -- no --> ESC{"label<br/>semantic-layer-not-affected?"}
+    ESC -- yes --> PASS3["pass (justify in PR body)"]
+    ESC -- no --> FAIL["❌ fail the check"]
+```
 
 ## How it decides
 
@@ -67,8 +96,13 @@ CHANGED_FILES=$'db/migrations/0099_x.sql\ndocs/database/semantic-layer/tables/ex
   node scripts/semantic-layer-gate.mjs
 ```
 
+The gate is **PR-only** (`if: github.event_name == 'pull_request'` in `ci.yml`) — there
+is no base-branch or label context on a push to `main`.
+
 ## Security impact
 
 None. Reads only migration SQL and bundle filenames already in the repo; no secrets,
 no DB connection, no network. Reinforces the ADR-0086 PII boundary indirectly by
-keeping the curated (PII-free) layer honest.
+keeping the curated (PII-free) layer honest. (The unified security baseline is
+[`docs/security/unified-security-standard.md`](../security/unified-security-standard.md),
+referenced, never restated.)

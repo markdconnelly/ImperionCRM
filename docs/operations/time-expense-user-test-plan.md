@@ -1,5 +1,18 @@
 # Time & Expense — user-test readiness plan (target: 2026-06-14)
 
+[← Operations](README.md) · [Documentation library](../README.md) ·
+[Time-tracking UAT script](time-tracking-uat-script.md) ·
+[UAT seeding runbook](time-tracking-uat-seeding.md)
+
+---
+
+> **What this is.** The cross-repo *readiness plan* for taking **Imperion Business
+> Manager**'s employee time-tracking (ADR-0082) and expense (ADR-0083) features to
+> hands-on user testing — what is testable, what is stubbed, and the critical path. It is
+> the planning companion to the hands-on [UAT script](time-tracking-uat-script.md) and the
+> [seeding runbook](time-tracking-uat-seeding.md). Point-in-time (2026-06-13/14); verify
+> live state against git + the prod DB before relying on the tables below.
+
 Cross-repo plan to get **employee time tracking** (ADR-0082) and **employee
 expense** (ADR-0083) to hands-on user testing. Grounded in a 2026-06-13 survey of
 all four repos plus read-only introspection of the prod database.

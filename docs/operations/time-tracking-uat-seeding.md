@@ -1,5 +1,16 @@
 # Time-tracking UAT — seeding test employees (runbook)
 
+[← Operations](README.md) · [Documentation library](../README.md) ·
+[UAT script](time-tracking-uat-script.md) · [Readiness plan](time-expense-user-test-plan.md)
+
+---
+
+> **What this is.** A copy-paste runbook for `scripts/seed-time-uat.mjs` — the prerequisite
+> data seed for the **Imperion Business Manager** time-tracking UAT. **Mark runs it** (prod
+> writes are Mark-gated, system `CLAUDE.md` §2); the agent authors the script and never
+> executes it. **Test Entra users only — no client/employee PII** in the script, config, or
+> any issue/PR. Run the [UAT script](time-tracking-uat-script.md) once seeding lands.
+
 Runbook for `scripts/seed-time-uat.mjs` (issue #511). Seeds the minimal data the
 time-tracking UAT needs: a few **test** employees, each with an `employee_profile`
 and a `pay_rate`. Companion to the UAT script (`time-tracking-uat-script.md`, #512)
