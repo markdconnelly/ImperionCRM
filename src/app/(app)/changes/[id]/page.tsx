@@ -11,10 +11,16 @@ import {
   CHANGE_TYPE_LABEL,
   CHANGE_APPROVAL_LABEL,
   effectiveRisk,
+  riskBand,
+  RISK_BAND_LABEL,
 } from "@/lib/change";
 import { CI_TYPE_LABEL } from "@/lib/cmdb/ci";
 import { ChangeForm } from "../change-form";
-import { updateChangeAction, deleteChangeAction } from "../actions";
+import {
+  updateChangeAction,
+  deleteChangeAction,
+  setChangeRiskOverrideAction,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +39,7 @@ export default async function ChangeDetailPage({
   const roles = await getSessionRoles();
   if (!canSeeService(roles)) redirect("/");
   const canWrite = can(roles, "change:write");
+  const canOverrideRisk = can(roles, "change:approve");
 
   const { changes, crm } = getRepositories();
   const change = await changes.getChangeRequest(id);
@@ -73,7 +80,11 @@ export default async function ChangeDetailPage({
           {CHANGE_STATUS_LABEL[change.status]}
         </span>
         <span title={CHANGE_TYPE_LABEL[change.changeType]}>
-          Risk: {risk === null ? "not assessed" : risk}
+          Risk:{" "}
+          {risk === null
+            ? "not assessed"
+            : `${risk}/100 · ${RISK_BAND_LABEL[riskBand(risk)]}`}
+          {change.riskOverride !== null && " (override)"}
         </span>
         <span>
           Approval:{" "}
@@ -83,6 +94,65 @@ export default async function ChangeDetailPage({
         {change.requester && <span>· raised by {change.requester}</span>}
         {change.accountName && <span>· {change.accountName}</span>}
       </div>
+
+      <section className="flex flex-col gap-3 rounded-md border border-border bg-panel p-4">
+        <h2 className="text-sm font-medium">Risk</h2>
+        <div className="flex flex-wrap items-center gap-6 text-sm">
+          <div className="flex flex-col">
+            <span className="text-xs text-dim">CMDB-derived</span>
+            <span className="font-medium">
+              {change.riskDerived === null
+                ? "not assessed"
+                : `${change.riskDerived}/100 · ${RISK_BAND_LABEL[riskBand(change.riskDerived)]}`}
+            </span>
+            <span className="text-[11px] text-dim">
+              from {change.affectedCis.length} affected CI
+              {change.affectedCis.length === 1 ? "" : "s"} × CMDB impact
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs text-dim">Admin override</span>
+            <span className="font-medium">
+              {change.riskOverride === null
+                ? "—"
+                : `${change.riskOverride}/100 · ${RISK_BAND_LABEL[riskBand(change.riskOverride)]}`}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs text-dim">Effective</span>
+            <span className="font-medium text-text">
+              {risk === null
+                ? "not assessed"
+                : `${risk}/100 · ${RISK_BAND_LABEL[riskBand(risk)]}`}
+            </span>
+            <span className="text-[11px] text-dim">
+              {change.riskOverride !== null ? "override wins" : "derived"}
+            </span>
+          </div>
+        </div>
+        {canOverrideRisk && (
+          <form action={setChangeRiskOverrideAction} className="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="id" value={change.id} />
+            <label className="flex flex-col gap-1 text-xs text-dim">
+              Override risk (0–100, blank clears)
+              <input
+                type="number"
+                name="risk"
+                min={0}
+                max={100}
+                defaultValue={change.riskOverride ?? ""}
+                className="w-28 rounded-md border border-border bg-panel-2 px-2 py-1 text-sm text-text"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:border-accent hover:text-accent"
+            >
+              Save override
+            </button>
+          </form>
+        )}
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">

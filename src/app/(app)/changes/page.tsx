@@ -6,7 +6,13 @@ import { getSessionRoles } from "@/lib/auth/session";
 import { can } from "@/lib/auth/policy";
 import { canSeeService } from "@/lib/auth/roles";
 import { getRepositories } from "@/lib/data";
-import { CHANGE_STATUS_LABEL, CHANGE_TYPE_LABEL } from "@/lib/change";
+import {
+  CHANGE_STATUS_LABEL,
+  CHANGE_TYPE_LABEL,
+  effectiveRisk,
+  riskBand,
+  RISK_BAND_LABEL,
+} from "@/lib/change";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +75,15 @@ export default async function ChangesPage() {
                 <span title={CHANGE_TYPE_LABEL[c.changeType]}>
                   {c.affectedCiCount} affected CI{c.affectedCiCount === 1 ? "" : "s"}
                 </span>
+                {(() => {
+                  const risk = effectiveRisk(c.riskDerived, c.riskOverride);
+                  return risk === null ? null : (
+                    <span title={c.riskOverride !== null ? "admin override" : "CMDB-derived"}>
+                      · risk {risk}/100 · {RISK_BAND_LABEL[riskBand(risk)]}
+                      {c.riskOverride !== null ? " (override)" : ""}
+                    </span>
+                  );
+                })()}
                 {c.accountName && <span>· {c.accountName}</span>}
                 <Link
                   href={`/changes/${c.id}`}
