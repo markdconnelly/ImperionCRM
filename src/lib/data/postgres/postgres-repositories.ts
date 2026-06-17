@@ -1492,6 +1492,46 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    // The whole edge table — the n-hop input for impact analysis (#650). Small curated
+    // graph, so reading it whole is cheap; the traversal happens in-process (impact.ts).
+    async listAllCiRelationships(): Promise<CiRelationship[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listAllCiRelationships();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          from_ci_type: CiType;
+          from_ci_id: string;
+          to_ci_type: CiType;
+          to_ci_id: string;
+          relation_type: string;
+          source: CiRelationship["source"];
+          note: string | null;
+          created_at: Date;
+          updated_at: Date;
+        }>(
+          `SELECT id::text AS id, from_ci_type, from_ci_id, to_ci_type, to_ci_id,
+                  relation_type, source, note, created_at, updated_at
+             FROM ci_relationship
+            ORDER BY (source = 'manual') DESC, updated_at DESC`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          fromCiType: r.from_ci_type,
+          fromCiId: r.from_ci_id,
+          toCiType: r.to_ci_type,
+          toCiId: r.to_ci_id,
+          relationType: r.relation_type,
+          source: r.source,
+          note: r.note,
+          createdAt: fmtIso(r.created_at) ?? "",
+          updatedAt: fmtIso(r.updated_at) ?? "",
+        }));
+      } catch {
+        return mockRepositories.crm.listAllCiRelationships();
+      }
+    },
+
     async createCiRelationship(input: CiRelationshipInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.crm.createCiRelationship(input);

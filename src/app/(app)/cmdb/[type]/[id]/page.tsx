@@ -11,6 +11,8 @@ import { CiRelationships } from "@/components/cmdb/ci-relationships";
 import { CiCriticality } from "@/components/cmdb/ci-criticality";
 import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
 import { LifecycleBadge } from "@/components/cmdb/lifecycle-badge";
+import { ImpactPanel } from "@/components/cmdb/impact-panel";
+import { analyzeImpact } from "@/lib/cmdb/impact";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +47,11 @@ export default async function CiDetailPage({
     await crm.listCiRelationships(ciType, id),
     can(roles, "cmdb:write"),
   ];
+
+  // Impact analysis (#650): the n-hop blast radius needs the WHOLE edge graph (not just
+  // this CI's incident edges), traversed cycle-safe + depth-bounded against the CI set.
+  const allEdges = await crm.listAllCiRelationships();
+  const impact = analyzeImpact({ ciType, ciId: id }, items, allEdges);
 
   return (
     <div className="flex flex-col gap-4">
@@ -116,6 +123,8 @@ export default async function CiDetailPage({
       </div>
 
       <CiCriticality ci={ci} canWrite={canWrite} />
+
+      <ImpactPanel impact={impact} />
 
       <CiRelationships
         ci={ci}

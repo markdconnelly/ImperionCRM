@@ -763,6 +763,16 @@ export interface CrmRepository {
   listCiRelationships(ciType: CiType, ciId: string): Promise<CiRelationship[]>;
 
   /**
+   * EVERY CI relationship edge (the whole `ci_relationship` table, migration 0131) —
+   * the n-hop input for impact analysis (#650). A blast-radius walk needs the full edge
+   * graph, not just one CI's incident edges, so this is the un-scoped read the impact
+   * read-model (`analyzeImpact`, `src/lib/cmdb/impact.ts`) traverses. The edge set is
+   * small (the curated CMDB graph), so reading it whole is cheap and the traversal stays
+   * in-process. Mock / schema-lag fallback = `[]`.
+   */
+  listAllCiRelationships(): Promise<CiRelationship[]>;
+
+  /**
    * Insert a MANUAL CI relationship edge (cmdb:write, ADR-0045). Idempotent on the
    * `(from, to, relation_type, source='manual')` unique key — re-adding the same edge
    * is a no-op (ON CONFLICT DO NOTHING). Validates both endpoints exist in the CI union

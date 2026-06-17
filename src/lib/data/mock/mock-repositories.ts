@@ -385,6 +385,10 @@ export const mockRepositories: Repositories = {
     async listCiRelationships() {
       return [];
     },
+    // Impact analysis (#650) reads the whole edge set; none in mock mode (empty blast radius).
+    async listAllCiRelationships() {
+      return [];
+    },
     async createCiRelationship() {
       throw new Error("createCiRelationship requires a database connection.");
     },
