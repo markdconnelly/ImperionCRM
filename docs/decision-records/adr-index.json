@@ -1250,5 +1250,18 @@
     "file": "ADR-0097-cmdb-authority-model.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0098",
+    "title": "Change Enablement — Autotask is the change-record SoR via a gated write; Imperion is an app-native overlay (typed change, CMDB-derived risk, lightweight approval, calendar)",
+    "status": "proposed",
+    "date": "2026-06-17",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "Imperion models the change (type, affected CIs, CMDB-derived risk, lightweight approval, calendar) and routes it to Autotask change management via a gated write; Autotask is the change-record system of record and Imperion's approval + schedule are an app-native overlay keyed to the Autotask change id. Problem Management is out of scope. v1 = record + approval + calendar only, no automated execution.",
+    "file": "ADR-0098-change-enablement.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
