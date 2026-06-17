@@ -16,6 +16,7 @@ import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import { deriveCriticality } from "@/lib/cmdb/criticality";
 import { deriveLifecycle } from "@/lib/cmdb/lifecycle";
+import { deriveChangeRisk } from "@/lib/change";
 import { resolveMentions } from "@/lib/mentions";
 import {
   planInstantiation,
@@ -13907,14 +13908,15 @@ export const postgresRepositories: Repositories = {
       if (!pool) return mockRepositories.changes.createChangeRequest(input, requesterEmail);
       const requesterId = await resolveAppUserIdOrNull(pool, requesterEmail);
       const validCis = await filterValidCis(input.affectedCis);
+      const riskDerived = await computeChangeRiskDerived(validCis);
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
         const { rows } = await client.query<{ id: string }>(
-          `INSERT INTO change_request (change_type, title, description, requester_user_id, account_id)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO change_request (change_type, title, description, requester_user_id, account_id, risk_derived)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id`,
-          [input.changeType, input.title, input.description, requesterId, input.accountId],
+          [input.changeType, input.title, input.description, requesterId, input.accountId, riskDerived],
         );
         const changeId = rows[0].id;
         for (const ci of validCis) {
@@ -13939,14 +13941,19 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.changes.updateChangeRequest(id, input);
       const validCis = await filterValidCis(input.affectedCis);
+      // Re-derive risk from the (new) affected-CI set — the affected CIs are the input to
+      // CMDB-derived risk (#658), so any edit to that set recomputes `risk_derived`. The
+      // admin `risk_override` is untouched here (override-wins survives re-derivation).
+      const riskDerived = await computeChangeRiskDerived(validCis);
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
         await client.query(
           `UPDATE change_request
-              SET change_type = $2, title = $3, description = $4, account_id = $5, updated_at = now()
+              SET change_type = $2, title = $3, description = $4, account_id = $5,
+                  risk_derived = $6, updated_at = now()
             WHERE id = $1`,
-          [id, input.changeType, input.title, input.description, input.accountId],
+          [id, input.changeType, input.title, input.description, input.accountId, riskDerived],
         );
         // Replace the affected-CI set (the picker is authoritative on save).
         await client.query(`DELETE FROM change_affected_ci WHERE change_id = $1`, [id]);
@@ -13967,6 +13974,15 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async setChangeRiskOverride(id: string, override: number | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.setChangeRiskOverride(id, override);
+      await pool.query(
+        `UPDATE change_request SET risk_override = $2, updated_at = now() WHERE id = $1`,
+        [id, override],
+      );
+    },
+
     async deleteChangeRequest(id: string): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.changes.deleteChangeRequest(id);
@@ -13975,6 +13991,20 @@ export const postgresRepositories: Repositories = {
     },
   },
 };
+
+/** Compute a change's CMDB-derived risk (#658) from its (already-validated) affected-CI
+ *  set: reads the full CI union + edge set the impact read-model needs, then delegates the
+ *  scoring to the pure `deriveChangeRisk`. Returns 0 for an empty set (nothing to break). */
+async function computeChangeRiskDerived(
+  affected: { ciType: CiType; ciId: string }[],
+): Promise<number> {
+  if (affected.length === 0) return 0;
+  const [items, edges] = await Promise.all([
+    postgresRepositories.crm.listConfigurationItems(),
+    postgresRepositories.crm.listAllCiRelationships(),
+  ]);
+  return deriveChangeRisk(affected, items, edges);
+}
 
 /** CI key → CI, for resolving affected-CI display names (a CI is a projection — there is
  *  nothing to JOIN to, so the small union read-model is read in-process). */

@@ -2854,8 +2854,12 @@ export interface ChangesRepository {
    * supplied affected CIs (validated against the cmdb_ci union). Returns the new id.
    */
   createChangeRequest(input: ChangeRequestInput, requesterEmail: string): Promise<string>;
-  /** Update a change's type/title/description/account + replace its affected-CI set. */
+  /** Update a change's type/title/description/account + replace its affected-CI set.
+   *  Recomputes `risk_derived` from the new affected-CI set (#658). */
   updateChangeRequest(id: string, input: ChangeRequestInput): Promise<void>;
+  /** Set/clear the admin risk override (#658, `change:approve`). `override: null` clears
+   *  it so effective risk falls back to the CMDB-derived score. */
+  setChangeRiskOverride(id: string, override: number | null): Promise<void>;
   /** Delete a change (cascades its affected-CI links). */
   deleteChangeRequest(id: string): Promise<void>;
 }

@@ -8,7 +8,13 @@ import type {
   ChangeType,
   ChangeStatus,
   ChangeApprovalStatus,
+  ConfigurationItem,
+  CiRelationship,
+  CiType,
 } from "@/types";
+import { analyzeImpact, type CiRef } from "@/lib/cmdb/impact";
+import { CRITICALITY_WEIGHT, effectiveCriticality } from "@/lib/cmdb/criticality";
+import { ciKey } from "@/lib/cmdb/ci";
 
 /** The ITIL change types, in form/order. */
 export const CHANGE_TYPES: readonly ChangeType[] = [
@@ -69,4 +75,111 @@ export function effectiveRisk(
   override: number | null,
 ): number | null {
   return override ?? derived;
+}
+
+// ── CMDB-derived risk scoring (#658, ADR-0079; consumes #650 impact + #648 criticality) ──
+// A change's risk is a function of its CMDB blast radius: how much of the managed estate
+// its affected CIs touch, weighted by how business-critical that estate is. We reuse the
+// SAME read-models the CI impact panel uses — `analyzeImpact` (#650, n-hop reachability)
+// and `CRITICALITY_WEIGHT`/`effectiveCriticality` (#648) — so risk and impact never drift.
+
+/** Human risk band for a 0–100 score (badge text + tone). */
+export type RiskBand = "low" | "moderate" | "high" | "critical";
+
+/** Band thresholds (inclusive lower bound), highest → lowest. */
+const RISK_BANDS: readonly { band: RiskBand; min: number }[] = [
+  { band: "critical", min: 75 },
+  { band: "high", min: 50 },
+  { band: "moderate", min: 25 },
+  { band: "low", min: 0 },
+] as const;
+
+/** Map a 0–100 risk score to its band. */
+export function riskBand(score: number): RiskBand {
+  for (const { band, min } of RISK_BANDS) if (score >= min) return band;
+  return "low";
+}
+
+/** Label + design-token tone per band (mirrors the criticality badge tones). */
+export const RISK_BAND_LABEL: Record<RiskBand, string> = {
+  low: "Low",
+  moderate: "Moderate",
+  high: "High",
+  critical: "Critical",
+};
+export const RISK_BAND_TONE: Record<RiskBand, "red" | "amber" | "accent" | "dim"> = {
+  critical: "red",
+  high: "amber",
+  moderate: "accent",
+  low: "dim",
+};
+
+/**
+ * SCORING FORMULA (v1, deterministic — see ADR-0079 / #658).
+ *
+ * For each affected CI we score TWO contributions, both keyed on the #648 effective
+ * criticality weight (low=1 … critical=4):
+ *
+ *   1. SEED — the directly-changed CI itself contributes its own criticality weight.
+ *      Touching a `critical` server is inherently riskier than touching a `low` one,
+ *      even with no dependents.
+ *   2. BLAST — every DISTINCT CI reachable within `analyzeImpact`'s default depth
+ *      (undirected n-hop, #650) contributes its criticality weight DECAYED by hop
+ *      distance (÷ hops), so a direct dependent counts more than a 3-hop-away one.
+ *
+ * The blast set is DEDUPLICATED across all affected origins (and excludes the affected
+ * CIs themselves, which are already counted by the seed), so overlapping radii never
+ * double-count — a CI reached from two changed CIs counts once, at its shortest hop.
+ *
+ * The raw weighted sum is mapped onto 0–100 by a SATURATING curve
+ * `100 · (1 − e^(−raw / K))` (K = SATURATION_SCALE): small blasts move the needle a lot,
+ * huge blasts asymptote toward 100 rather than overflowing. A change with no affected
+ * CIs scores 0 (unassessed-but-zero is a valid "nothing to break" reading).
+ */
+export const SATURATION_SCALE = 12;
+
+export function deriveChangeRisk(
+  affected: { ciType: CiType; ciId: string }[],
+  allItems: ConfigurationItem[],
+  edges: CiRelationship[],
+): number {
+  if (affected.length === 0) return 0;
+
+  const byKey = new Map<string, ConfigurationItem>();
+  for (const c of allItems) byKey.set(ciKey(c), c);
+
+  const affectedKeys = new Set(affected.map((a) => ciKey({ ciType: a.ciType, ciId: a.ciId })));
+
+  // Best (shortest) hop at which each distinct blast CI is reached, across all origins.
+  const blastHops = new Map<string, number>();
+  let seed = 0;
+
+  for (const a of affected) {
+    const origin: CiRef = { ciType: a.ciType, ciId: a.ciId };
+    const ci = byKey.get(ciKey(origin));
+    // 1. SEED contribution — the changed CI's own effective criticality weight.
+    if (ci) {
+      seed += CRITICALITY_WEIGHT[effectiveCriticality(ci.derivedDefault, ci.override)];
+    }
+    // 2. BLAST — reachable dependents, deduped at their shortest hop across origins.
+    for (const hit of analyzeImpact(origin, allItems, edges).affected) {
+      const key = ciKey(hit.ci);
+      if (affectedKeys.has(key)) continue; // already in the seed set
+      const prev = blastHops.get(key);
+      if (prev === undefined || hit.hops < prev) blastHops.set(key, hit.hops);
+    }
+  }
+
+  let blast = 0;
+  for (const [key, hops] of blastHops) {
+    const ci = byKey.get(key);
+    if (!ci) continue;
+    const weight = CRITICALITY_WEIGHT[effectiveCriticality(ci.derivedDefault, ci.override)];
+    blast += weight / hops; // decay with distance
+  }
+
+  const raw = seed + blast;
+  const score = 100 * (1 - Math.exp(-raw / SATURATION_SCALE));
+  // Clamp + round to a stable 0–100 integer (the DB column is int).
+  return Math.max(0, Math.min(100, Math.round(score)));
 }

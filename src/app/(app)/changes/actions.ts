@@ -77,6 +77,30 @@ export async function updateChangeAction(formData: FormData): Promise<void> {
   redirect(`/changes/${id}`);
 }
 
+/**
+ * Set/clear the admin risk override (#658). Gated by `change:approve` — admin-only, the
+ * same gate as the CAB approval (#659): overriding the CMDB-derived risk is an authority
+ * call, not service-desk work (which `change:write` covers). Effective risk =
+ * override ?? derived; clearing (`risk` empty) falls back to the derived score. The score
+ * is clamped to [0, 100]; junk input clears the override rather than throwing.
+ */
+export async function setChangeRiskOverrideAction(formData: FormData): Promise<void> {
+  await requireCapability("change:approve");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) throw new Error("Missing change id.");
+  const raw = String(formData.get("risk") ?? "").trim();
+  let override: number | null = null;
+  if (raw.length > 0) {
+    const n = Number(raw);
+    if (Number.isFinite(n)) override = Math.max(0, Math.min(100, Math.round(n)));
+  }
+  const { changes } = getRepositories();
+  await changes.setChangeRiskOverride(id, override);
+  revalidatePath("/changes");
+  revalidatePath(`/changes/${id}`);
+  redirect(`/changes/${id}`);
+}
+
 export async function deleteChangeAction(formData: FormData): Promise<void> {
   await requireWriter();
   const id = String(formData.get("id") ?? "").trim();
