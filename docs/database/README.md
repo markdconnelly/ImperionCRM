@@ -1,88 +1,112 @@
 # 🗄️ Database
 
-A single **PostgreSQL 18 + `pgvector`** store serves as the system of record, the
-embedding store, and the agent memory layer (ADR-0003).
+A single **PostgreSQL 18 + `pgvector`** store is the system of record, the embedding
+store, and the agent memory layer for **Imperion Business Manager** (ADR-0003). One
+store, three jobs, one version of the truth — relational queries, semantic search, and
+agent reasoning all point at the same data.
 
-[← Documentation library](../README.md)
+[← Documentation library](../README.md) ·
+[System of systems](../architecture/system-of-systems.md) ·
+[Capability overview](../product/imperion-business-manager-overview.md)
 
-## What's here
+---
 
-| Doc | What it covers |
+## Start here
+
+```mermaid
+flowchart TD
+    Q(["What do you need?"]) --> SHAPE["🧭 Understand the shape of the DB"]
+    Q --> STRUCT["🧱 Look up a table / column / FK"]
+    Q --> MEANING["📖 What an entity *means* (source, joins, PII)"]
+    Q --> READ["🔌 How the app reads data"]
+    SHAPE --> SHAPE1["schema-guide.md"]
+    STRUCT --> STRUCT1["data-model.md (the ERD)"]
+    MEANING --> MEANING1["semantic-layer/ (governed OKF canon)"]
+    READ --> READ1["data-access-layer.md"]
+```
+
+| If you want… | Read |
 | --- | --- |
-| [**data-model**](data-model.md) | The **ERD** (five diagrams), every entity, the enumerations, and the vector-data design. **Updated on every schema change.** |
-| [data-access-layer](data-access-layer.md) | The repository abstraction the app talks to (ADR-0007) and how mock ↔ Postgres are swapped. |
-| [**semantic-layer/**](semantic-layer/index.md) | **OKF-format semantic layer** over the silver tier — per-concept business meaning, join paths, and source-of-record rules (ADR-0086). *Meaning*, not structure or data; PII-free (live DB answers row-level). Pilot: `time_record`, `expense_item`, `opportunity`. |
+| 🧭 **The narrative** — how the store is organized, the medallion tiers, the conventions, how to navigate, migration discipline | [**schema-guide.md**](schema-guide.md) — *read this first* |
+| 🧱 **The structure** — the ERD (five diagrams), every entity, every enum, the vector-data design | [**data-model.md**](data-model.md) — **updated on every schema change** |
+| 📖 **The meaning** — per silver entity: definition, source-of-record / authority, join paths, PII note | [**semantic-layer/**](semantic-layer/index.md) — **governed OKF canon** (ADR-0086) |
+| 🔌 **How the app reads** — the typed repository abstraction (ADR-0007), mock ↔ Postgres swap | [data-access-layer.md](data-access-layer.md) |
+| 🔑 **Company-credential schema status** | [credential-config-todo.md](credential-config-todo.md) |
 
-## The staged-enrichment idea
+> **Two kinds of database doc, kept apart on purpose.** The **narrative + ERD**
+> (`schema-guide.md` + `data-model.md`) describe *structure*. The **semantic layer**
+> (`semantic-layer/`) describes *meaning* and is **governed canon** under
+> [ADR-0086](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md) — it has
+> its own authoring rules and sync workflow. The narrative links to it; it never
+> restates a concept file's content.
 
-All external data flows through three layers before an agent reasons over it:
+---
+
+## The medallion in one picture
+
+All external data climbs three tiers before an agent reasons over it
+(`CLAUDE.md` §4, **[ADR-0092](../decision-records/ADR-0092-medallion-data-platform-consolidated.md)**):
 
 ```mermaid
 flowchart LR
-    BRONZE["🟤 Bronze<br/>raw payloads (JSONB)"] --> SILVER["⚪ Silver<br/>cleaned · normalized · deduped"]
-    SILVER --> GOLD["🟡 Gold<br/>summaries · embeddings · knowledge"]
-    GOLD --> AGENT["Agents read gold only"]
+    BRONZE["🟤 Bronze<br/>raw payloads (JSONB)<br/>one table per (source, entity)"] -->|"merge"| SILVER["⚪ Silver<br/>cleaned · normalized · deduped<br/>the record the app reads"]
+    SILVER -->|"distill + vectorize"| GOLD["🟡 Gold<br/>summaries · knowledge · embeddings"]
+    SILVER --> UI["Screens read silver"]
+    GOLD --> AGENT["Agents read gold"]
 ```
 
-## Conventions
+The full walk-through of each tier — the per-source physical bronze tables and union
+views, the silver merge + precedence, the pinned Voyage 1024-dim gold vector contract —
+is in [schema-guide.md §2](schema-guide.md#2-the-medallion-bronze--silver--gold).
 
-- All PKs are `uuid`; every row carries `created_at` / `updated_at` (trigger-maintained).
-- **Append-only where it's evidence:** interactions, consent events, and audit logs are
-  immutable; current state is *derived* (e.g. the `current_consent` view).
-- **External systems are referenced, not duplicated** — only an identity map + short
-  cache lives here (ADR-0012).
+---
+
+## Conventions (the rules every table obeys)
+
+- All PKs are `uuid`; every row carries `created_at` / `updated_at` (trigger-maintained);
+  soft-delete via `archived_at` where retention requires it.
+- **Append-only where it's evidence:** interactions, consent events, agent runs, and
+  audit logs are immutable; current state is *derived* (e.g. the `current_consent` view).
+- **External systems are referenced, not duplicated** — only an identity map
+  (`external_identity`) + a short cache lives here (ADR-0012).
+- **The schema is owned here.** This GUI repo is the single source of truth for the
+  schema; the three sibling repos consume it. A schema change is proposed **here**, never
+  in a sibling (`CLAUDE.md` §1, [ADR-0042](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md)).
+- **Secrets never live in the DB** — a connection stores `keyvault_secret_ref`, never a
+  token. The shared baseline is the
+  [unified security standard](../security/unified-security-standard.md). **Never commit
+  secrets.**
+
+The complete list, plus how to find any entity by structure / meaning / migration, is in
+[schema-guide.md §3](schema-guide.md#3-the-conventions-every-table-obeys) and
+[§5](schema-guide.md#5-how-to-find-an-entity).
+
+---
 
 ## Migrations
 
-Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in order with an
-Entra token — see [`db/README.md`](../../db/README.md). Current range: **0001–0058**
-applied in prod (verified 2026-06-10; 0056 agent core + board, 0057 composer read
-grants, 0058 project types as data + project/task columns per ADR-0052).
-Recent: 0044/0047/0048/0049/0051/0055 identity
-grants (local pipeline, backend functions, pipeline managed identity — 0055 adds the
-cloud MI's INSERT/UPDATE on `autotask_tickets` for the live webhook plus the local
-pipeline's per-source bronze writes); 0045/0046 gold
-`knowledge_object` vector store + drop of the never-populated legacy vector tables
-(ADR-0041/ADR-0043); 0050 silver `contract` + `ticket` from Autotask bronze (ADR-0044);
-0052 saved list views (ADR-0046); 0053 `device_inventory_all` view (ADR-0047); 0054
-`agent_settings` singleton (ADR-0048, backend ADR-0037); 0065 M365 mail/Teams bronze
-(`m365_mail_messages`, `m365_teams_chats`, `m365_teams_meetings` — #182, the local
-pipeline's communication collectors' landing tables + writer/reader grants); 0066
-`board_session` 'awaiting_ciso' status + `paused_at` (#208 — resumable deputy pause,
-ADR-0054 §4 / backend #64); 0068 `knowledge_object.status` draft convention + backend
-MI INSERT/UPDATE grant (#214 / backend #58 — documentation sub-agent drafts, no
-embeddings until human-approved + on-prem publish); 0069 `intune_managed_devices`
-bronze + merge-join indexes + grants (#225 / local #75 schema handoff, ADR-0051
-decision 6 — feeds the #162 device policy indicator); 0070 `event` +
-`event_registration` + `campaign.event_id` + the `event_registration` lead-hook kind
-(#228 / #109, ADR-0053 slice A — events as first-class objects); 0071 `campaign_send`
-(one schedulable blast: email|sms, audience or event registrants, absolute or
-event-relative schedule) + `campaign_platform` 'sms' + `connection_provider` 'acs' +
-backend executor grants (#236 / #110, ADR-0053 slice B); 0073 `campaign.workflow_id` +
-one-ACTIVE-enrollment-per-(workflow, contact) partial unique index (#112, ADR-0053
-slice D — auto-enroll responders/registrants; resolution path enrolls idempotently
-and audit-logs `workflow.auto_enroll`); 0074 `ticket.queue` + index (#219, ADR-0046
-update — raw Autotask queue_id as text, label lookup deferred; populated by the
-cloud pipeline's `mergeTicketSources`); 0076 `defender_incidents` + `defender_alerts`
-bronze + `defender_incident_ticket_link` (#256, ADR-0059 — Defender XDR layered with
-Autotask per incident; link PK = sync-back idempotency key); 0077 `entra_auth_methods`
-bronze (#258, ADR-0051 — per-user MFA registration state from Graph
-userRegistrationDetails; feeds the account posture card's MFA coverage badge,
-collector = local #140); 0078 `sharepoint_sites` bronze (#255, ADR-0051 join via
-`account_tenant` — SharePoint site inventory from Graph /sites, site METADATA only:
-Sites.Read.All, no file/drive columns ever — Files.Read.All was pruned; feeds the
-drillable SharePoint sites section on the Company 360; collector = local-pipeline
-companion issue); 0079 `m365_groups` + `m365_group_members` bronze (#257 — Entra
-groups + membership feeding the user object: `member_external_id` joins
-`m365_contacts.external_ref` to reach the silver contact; feeds the Directory
-groups section on the Contact 360; collector = local #139).
-The company-credentials migration is **0033** — see the
-[credential-config database to-do](credential-config-todo.md). 0033 extends
-`connection_provider` with `myitprocess`/`televy`/`quotemanager`/`gdap`, adds a `pending`
-status, and a per-company-provider unique index (ADR-0036).
+Raw SQL in [`db/migrations`](../../db/migrations) (ADR-0017), applied in filename order
+with a short-lived Entra token — **nothing secret is stored or printed** (see
+[`db/README.md`](../../db/README.md) for the `psql` and `scripts/migrate.mjs` paths).
 
-Governing decisions:
+- One migration per change; never edit an applied file — add a new one.
+- The **ERD ships in the same PR** as the migration; if a silver entity's shape, source,
+  or joins change, the matching OKF concept file + coverage-matrix row update in the same
+  PR too (ADR-0086, enforced by the `semantic-layer` docs-gate, #535).
+- **Numbers are claimed at merge, not at authoring** (concurrent branches collide on the
+  global counter — `CLAUDE.md` §10.3).
+
+The **repo holds migration files through `0125`**. The *prod-applied range* — and which
+recent additive sets remain gated pending credentials / consent — is tracked in
+[`CLAUDE.md`](../../CLAUDE.md) §6 and the project memory (the live operational truth).
+**Applying a migration to prod is Mark-gated** (`CLAUDE.md` §2). The migration-discipline
+narrative is [schema-guide.md §6](schema-guide.md#6-migration-discipline).
+
+---
+
+## Governing decisions
+
 [ADR-0003 pgvector store](../decision-records/ADR-0003-postgres-pgvector-unified-store.md) ·
-[ADR-0011 interaction timeline](../decision-records/ADR-0011-unified-interaction-timeline.md) ·
 [ADR-0017 raw SQL migrations](../decision-records/ADR-0017-raw-sql-migrations.md) ·
-[ADR-0025 enrichment dossier](../decision-records/ADR-0025-contact-360-enrichment-and-lawful-basis.md)
+[ADR-0086 OKF semantic layer](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md) ·
+**[ADR-0092 medallion data platform (consolidated dossier)](../decision-records/ADR-0092-medallion-data-platform-consolidated.md)**
