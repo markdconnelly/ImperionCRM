@@ -4,7 +4,7 @@ import { Field, TextInput, TextArea, Select } from "@/components/ui/form";
 import { submitFeedbackAction } from "./actions";
 
 /**
- * Feedback files an Autotask ticket in the app-dev queue (#100, ADR-0058 —
+ * Feedback files an Autotask ticket in the app-dev queue (#100, ADR-0078 —
  * supersedes ADR-0013's GitHub-issue coupling). The form carries a per-render
  * submission id: the backend's idempotency ledger (backend #19) makes a retried
  * post return the same ticket instead of filing twice.
@@ -21,7 +21,7 @@ export default async function FeedbackPage({
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Feedback"
-        description="Request features and report issues — filed to the app-dev queue (ADR-0058)."
+        description="Request features and report issues — filed to the app-dev queue (ADR-0078)."
       />
 
       {status === "filed" && (

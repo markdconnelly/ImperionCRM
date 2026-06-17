@@ -16,8 +16,11 @@ the file's first commit date. Also see `CLAUDE.md` §8 and the project standards
 > agent-layer architecture. Within this repo a bare "ADR-00XX" refers to this index;
 > **cross-repo references are always repo-qualified** ("backend ADR-0032",
 > "pipeline ADR-0002", "local-pipeline ADR-0009") — the same convention the
-> **Cross-references** metadata row uses. Note ADR-0029 (Agent layer runtime) lives at
-> the repo root, not in this folder, because it governs the backend.
+> **Cross-references** metadata row uses.
+>
+> **Gaps are expected.** Numbers are claimed at merge ([ADR-0084](./ADR-0084-merge-time-number-assignment.md)),
+> so some slots (e.g. **0079**) are abandoned collisions, not missing files. Each
+> number resolves to exactly one ADR in this folder.
 
 ## Index
 
@@ -38,7 +41,7 @@ authoritative record.
 | [0010](./ADR-0010-customer-data-model-dual-axis-stages.md) | Company-centric customer data model with dual-axis stages | Accepted | 2026-06-07 | `account` is the spine with dual-axis stages: `account.lifecycle_stage` plus per-`opportunity` sales stages. |
 | [0011](./ADR-0011-unified-interaction-timeline.md) | Unified interaction timeline with staged enrichment | Accepted | 2026-06-07 | A single append-only `interaction` table is the timeline, carrying bronze payloads, silver columns, and gold summaries. |
 | [0012](./ADR-0012-integration-identity-map-ingest-poll.md) | External integration identity map, ingest-vs-poll, and demand gen | Accepted | 2026-06-07 | An external-identity map plus an ingest-vs-poll policy per source — augment external clouds, don't duplicate them. |
-| [0013](./ADR-0013-feature-feedback-github.md) | Feature feedback coupled to GitHub | Superseded by 0058 | 2026-06-07 | `feature_request` intake/voting in-app; accepted requests create GitHub Issues with one-way status sync back. |
+| [0013](./ADR-0013-feature-feedback-github.md) | Feature feedback coupled to GitHub | Superseded by 0078 | 2026-06-07 | `feature_request` intake/voting in-app; accepted requests create GitHub Issues with one-way status sync back. |
 | [0014](./ADR-0014-consent-ledger-communications.md) | Append-only consent ledger and communications | Accepted | 2026-06-07 | An immutable `consent_event` ledger per contact × channel; outbound sends are blocked unless consent is current. |
 | [0015](./ADR-0015-agent-platform-and-board.md) | Agent platform persistence and the AI Board of Directors | Accepted | 2026-06-07 | Persist the full agent core (agents, tool grants, runs, messages, memory); agent actions inherit the acting user's permission scope. |
 | [0016](./ADR-0016-rbac-and-identity-model.md) | RBAC and identity model | Accepted | 2026-06-07 | `app_user` mirrors the Entra identity; roles derive from Entra group/app-role claims mapped to app permissions. |
@@ -54,7 +57,7 @@ authoritative record.
 | [0026](./ADR-0026-demand-gen-audiences-and-ad-consent.md) | Demand-gen audiences & ad-targeting consent | Accepted | 2026-06-07 | Campaign → ad → metric model with static/dynamic audiences; ad targeting filters on consent. |
 | [0027](./ADR-0027-pre-discovery-automation-and-agent-answer-approval.md) | Pre-discovery automation & agent-answer human approval | Accepted | 2026-06-07 | Agent/automation answers land as drafts; a salesperson confirms or rejects each before the discovery verdict locks. |
 | [0028](./ADR-0028-backend-topology-and-network-isolation.md) | Backend topology — separate repo, Functions on shared plan, network-isolated | Accepted | 2026-06-07 | The backend is a separate repo (`ImperionCRM_Backend`) of Azure Functions on the shared plan, isolated to the front end. |
-| [0029](../../ADR-0029-agent-layer-runtime.md) | Agent layer runtime | Accepted | 2026-06-07 | Own orchestrator over direct provider APIs — no Foundry Agent Service, no n8n (governs the backend; lives at the repo root). |
+| [0029](./ADR-0029-agent-layer-runtime.md) | Agent layer runtime | Accepted | 2026-06-07 | Own orchestrator over direct provider APIs — no Foundry Agent Service, no n8n (governs the backend). |
 | [0030](./ADR-0030-rbac-gui-restrictions.md) | Role-based access control & GUI restrictions from Entra groups | Accepted | 2026-06-08 | Role predicates derived from five Entra security groups gate nav, routes, and server-side revenue redaction. |
 | [0031](./ADR-0031-normalized-contact-lifecycle.md) | Normalized contact object & lifecycle pipeline | Accepted | 2026-06-08 | `contact.crm_stage` (audience → lead → prospect → client) normalizes one person across the lifecycle, two-axis with `lifecycle_status`. |
 | [0032](./ADR-0032-per-source-bronze-tiering.md) | Per-source bronze tables for contacts and companies | Superseded by ADR-0039 | 2026-06-08 | Enum-discriminated `contact_source`/`account_source` bronze tables — replaced by per-source physical tables in ADR-0039. |
@@ -79,7 +82,8 @@ authoritative record.
 | [0051](./ADR-0051-security-posture-model-imperion-secure-score.md) | Security posture model — tenant mapping, posture silver, Imperion Secure Score | Accepted | 2026-06-10 | Explicit admin-managed tenant mapping, pipeline-maintained posture silver, and a versioned pillar-based Imperion Secure Score snapshotted immutably per account. |
 | [0052](./ADR-0052-project-board-tasks-meetings-sales-activity.md) | Project board model — project types, unified tasks, meetings, sales activity | Accepted | 2026-06-10 | Project types become data (a table, not an enum); one task model gains `project_id`; easy-mode deploys verify-to-close; meetings link via `interaction.project_id`. |
 | [0053](./ADR-0053-campaign-builders-events-scheduled-sends.md) | Campaign builders — events, scheduled sends, and the provider set | Accepted | 2026-06-10 | Events become first-class objects campaigns promote; `campaign_send` adds schedulable blasts; builders are forms + preview on Meta + ACS + Teams. |
-| [0058](./ADR-0058-feedback-files-to-app-dev-queue.md) | Feedback files to the app-dev queue | Accepted | 2026-06-11 | The Feedback page files an idempotent Autotask ticket in the app-dev queue via backend #19, superseding the ADR-0013 GitHub coupling. |
+| [0058](./ADR-0058-composer-sends-via-approval-gated-backend-path.md) | Composer 1:1 sends via the backend's approval-gated send path | Accepted | 2026-06-11 | The contact composer executes 1:1 email/SMS through the backend's consent-re-asserted send path (employee's own M365 mailbox; ACS for SMS), degrading to a logged-to-timeline stub when unconfigured (#183). |
 | [0059](./ADR-0059-defender-incident-autotask-ticket-linkage.md) | Defender incident ↔ Autotask ticket linkage as a dedicated link table | Accepted | 2026-06-12 | A standalone `defender_incident_ticket_link` (never a bronze column) whose one-ticket-per-incident PK is the sync-back idempotency key. |
+| [0078](./ADR-0078-feedback-files-to-app-dev-queue.md) | Feedback files to the app-dev queue (supersedes ADR-0013) | Accepted | 2026-06-11 | The Feedback page files an idempotent Autotask ticket in the app-dev queue via backend #19, superseding the ADR-0013 GitHub coupling. Renumbered from a duplicate 0058 (claim-at-merge collision, ADR-0084). |
 | [0084](./ADR-0084-merge-time-number-assignment.md) | Claim migration & ADR numbers at merge, not authoring | Accepted | 2026-06-13 | Parallel sessions collide on self-allocated migration/ADR numbers; assign the real number at merge against current `main`. Issue/PR numbers stay GitHub-allocated. |
 | [0089](./ADR-0089-icm-budget-file-convention.md) | ICM least-privilege budget files (CONSTITUTION.yaml + domains/<d>/room.yaml) | Accepted | 2026-06-16 | Ratify the ICM budget-file convention — name/location/`{tools, okf_rooms}` shape of the two files, and the "absent budget ⇒ next-lower declared list" degradation rule; extends ADR-0088 §3. |
