@@ -1,7 +1,7 @@
 ---
 adr: 0097
 title: "CMDB authority model — silver inventory + IT Glue curated layer + gated write-back"
-status: proposed
+status: accepted
 date: 2026-06-17
 repo: frontend
 summary: "Silver is the CI inventory (what exists, multi-source merged); IT Glue is authoritative for the curated layer (relationships + criticality) via a round-trip; asset lifecycle is derived read-only; write-back to IT Glue is gated on Mark's explicit approval."
@@ -12,7 +12,7 @@ tags: [crm-parity]
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-17 |
 | **Relates to** | ADR-0042 (four-repo augment-not-replace contract), ADR-0018 (GUI-only; processes in the backend), ADR-0047 (read-only device/CI inventory), ADR-0077 (premium service-management boundary — the CMDB cluster's parent boundary), ADR-0059 (Defender incident → Autotask ticket linkage), ADR-0062 (BI hub), ADR-0030/ADR-0045/ADR-0095 (RBAC + write-capability gating), ADR-0084 (claim numbers at merge), #371 (premium service-management epic), #372 (CMDB epic), #645 (CI read-model + register — shipped), #647 (CI relationships), #648 (CI criticality), #649 (asset lifecycle — derived), #650 (impact analysis), #651 (IT Glue round-trip + gated write-back), #373 (ITIL change), #320 (incident triage) |
 
