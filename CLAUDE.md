@@ -12,21 +12,34 @@ when reporting information to me be extremley concise and sacrifice grammar for 
 
 ## 1. What this project is
 
-**Imperion CRM** — an internal, AI-enabled operations platform for a Managed Service
-Provider (MSP). It manages the full lifecycle of a managed-services customer:
-lead → qualification → proposal → onboarding → implementation → operational
-readiness → handoff → continuous customer success.
+**Imperion Business Manager** (this repo is the GUI; legacy slug `ImperionCRM`) — an
+internal, AI-enabled operations platform an MSP runs its **whole business** on. It is
+**not just a CRM**: it spans **CRM + ERP + extras + a full AI suite** on one surface,
+covering the full lifecycle of a managed-services customer (lead → qualification →
+proposal → onboarding → implementation → operational readiness → handoff → continuous
+customer success) **and** the internal operations behind it (delivery, projects,
+finance, support). The product name is **Imperion Business Manager**; the repo slug
+and `package.json` name stay `imperion-crm` (Mark-gated, out of scope to rename).
 
 It sits as an **operational intelligence layer above Microsoft 365 and Kaseya
 systems**, augmenting them rather than replacing them.
 
 ### Capabilities (target scope)
-CRM · sales pipeline · opportunity tracking · proposal lifecycle · client
-onboarding · implementation project tracking · operational readiness validation ·
-client handoff workflows · continuous customer success · AI-assisted operational
-intelligence · agentic workflow automation.
+- **CRM** — leads · contacts & Contact-360 · accounts · sales pipeline · opportunity
+  tracking · campaigns · journeys · events · the assessment-led lifecycle · proposals.
+- **ERP** — sale → delivery orchestration (ADR-0096) · projects & PM parity (ADR-0094) ·
+  time & expense + Monthly Close (ADR-0093) · AR collections · CMDB & assets · service
+  desk · QuickBooks Online / Autotask mirrors.
+- **Extras** — reporting / BI hub · connector marketplace · security posture · consent
+  & data governance · knowledge search.
+- **AI suite** — single orchestrator + sub-agents · ICM + autonomy dial · self-hosted
+  Managed Agents runtime · orchestration & observability matrix · agent rooms (OKF) ·
+  RAG knowledge layer · AI-assisted surfaces (ADR-0091).
+
+Full tour: [`docs/product/imperion-business-manager-overview.md`](docs/product/imperion-business-manager-overview.md).
 
 ### What it explicitly is NOT
+- NOT just a CRM — CRM is one quadrant of a CRM + ERP + extras + AI platform
 - NOT a Power Platform application
 - NOT a Dataverse-first application
 - NOT a Copilot Studio application
