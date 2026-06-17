@@ -206,6 +206,11 @@ function main() {
   const nextManifest = manifestJson(entries);
 
   if (checkMode) {
+    // Compare EOL-agnostically: with core.autocrlf=true the on-disk files are
+    // checked out as CRLF on Windows, but the generator emits LF — a raw string
+    // compare would false-fail even when content is identical (CI on Linux/LF
+    // passes). Normalize both sides so --check tracks content, not line endings.
+    const eolNorm = (s) => s.replace(/\r\n/g, "\n");
     const errors = [];
     if (dupes.length) {
       errors.push("Duplicate ADR numbers:");
@@ -215,7 +220,7 @@ function main() {
       errors.push("ADRs with missing/invalid frontmatter:");
       for (const m of missing) errors.push(`  - ${m}`);
     }
-    if (nextReadme !== currentReadme) {
+    if (eolNorm(nextReadme) !== eolNorm(currentReadme)) {
       errors.push(
         "README index is out of date (run `node scripts/adr-index.mjs` and commit)."
       );
@@ -223,7 +228,7 @@ function main() {
     const currentManifest = fs.existsSync(MANIFEST)
       ? fs.readFileSync(MANIFEST, "utf8")
       : "";
-    if (nextManifest !== currentManifest) {
+    if (eolNorm(nextManifest) !== eolNorm(currentManifest)) {
       errors.push(
         "adr-index.json is stale (run `node scripts/adr-index.mjs` and commit)."
       );
