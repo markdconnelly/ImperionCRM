@@ -315,6 +315,9 @@ import type {
   DashboardInput,
   DashboardItem,
   DashboardItemInput,
+  ConnectorInstance,
+  ConnectorInstanceInput,
+  ConnectorStatus,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -13079,6 +13082,121 @@ export const postgresRepositories: Repositories = {
       );
     },
   },
+
+  // ── Integration marketplace — connector instances (ADR-0076, #414) ───────────
+  connectors: {
+    async listConnectorInstances(): Promise<ConnectorInstance[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connectors.listConnectorInstances();
+      try {
+        const { rows } = await pool.query<ConnectorInstanceDbRow>(
+          `SELECT id, connector_key, account_scope, status, granted_scopes,
+                  cadence_override_minutes, last_sync_at, health
+           FROM connector_instance
+           ORDER BY COALESCE(last_sync_at, updated_at) DESC, connector_key`,
+        );
+        return rows.map(mapConnectorInstance);
+      } catch {
+        return mockRepositories.connectors.listConnectorInstances();
+      }
+    },
+
+    async getConnectorInstance(id: string): Promise<ConnectorInstance | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connectors.getConnectorInstance(id);
+      try {
+        const { rows } = await pool.query<ConnectorInstanceDbRow>(
+          `SELECT id, connector_key, account_scope, status, granted_scopes,
+                  cadence_override_minutes, last_sync_at, health
+           FROM connector_instance WHERE id = $1`,
+          [id],
+        );
+        return rows[0] ? mapConnectorInstance(rows[0]) : null;
+      } catch {
+        return mockRepositories.connectors.getConnectorInstance(id);
+      }
+    },
+
+    async getConnectorInstanceByKey(
+      connectorKey: string,
+      accountScope: string,
+    ): Promise<ConnectorInstance | null> {
+      const pool = getPool();
+      if (!pool) {
+        return mockRepositories.connectors.getConnectorInstanceByKey(connectorKey, accountScope);
+      }
+      try {
+        const { rows } = await pool.query<ConnectorInstanceDbRow>(
+          `SELECT id, connector_key, account_scope, status, granted_scopes,
+                  cadence_override_minutes, last_sync_at, health
+           FROM connector_instance WHERE connector_key = $1 AND account_scope = $2`,
+          [connectorKey, accountScope],
+        );
+        return rows[0] ? mapConnectorInstance(rows[0]) : null;
+      } catch {
+        return mockRepositories.connectors.getConnectorInstanceByKey(connectorKey, accountScope);
+      }
+    },
+
+    async enableConnector(input: ConnectorInstanceInput): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connectors.enableConnector(input);
+      // Upsert on the (connector_key, account_scope) UNIQUE: re-enabling refreshes the
+      // grant + cadence and resets the lifecycle to 'connecting' (ADR-0076 §3).
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO connector_instance
+           (connector_key, account_scope, status, granted_scopes, cadence_override_minutes)
+         VALUES ($1, $2, 'connecting', $3::jsonb, $4)
+         ON CONFLICT (connector_key, account_scope) DO UPDATE
+           SET status = 'connecting',
+               granted_scopes = EXCLUDED.granted_scopes,
+               cadence_override_minutes = EXCLUDED.cadence_override_minutes,
+               updated_at = now()
+         RETURNING id`,
+        [
+          input.connectorKey,
+          input.accountScope,
+          JSON.stringify(input.grantedScopes),
+          input.cadenceOverrideMinutes,
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async setConnectorStatus(
+      id: string,
+      status: ConnectorStatus,
+      health?: Record<string, unknown>,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connectors.setConnectorStatus(id, status, health);
+      // last_sync_at is stamped when a sync completes ('polling' after 'first_sync').
+      await pool.query(
+        `UPDATE connector_instance
+         SET status = $2,
+             health = COALESCE($3::jsonb, health),
+             last_sync_at = CASE WHEN $2 = 'polling' THEN now() ELSE last_sync_at END,
+             updated_at = now()
+         WHERE id = $1`,
+        [id, status, health !== undefined ? JSON.stringify(health) : null],
+      );
+    },
+
+    async setConnectorCadence(id: string, cadenceOverrideMinutes: number | null): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connectors.setConnectorCadence(id, cadenceOverrideMinutes);
+      await pool.query(
+        `UPDATE connector_instance SET cadence_override_minutes = $2, updated_at = now() WHERE id = $1`,
+        [id, cadenceOverrideMinutes],
+      );
+    },
+
+    async disableConnector(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connectors.disableConnector(id);
+      await pool.query(`DELETE FROM connector_instance WHERE id = $1`, [id]);
+    },
+  },
 };
 
 /** A select-type custom field carries an options list; the others store []. */
@@ -13582,6 +13700,33 @@ function mapDashboardItem(r: DashboardItemDbRow): DashboardItem {
     dashboardId: r.dashboard_id,
     reportDefinitionId: r.report_definition_id,
     position: r.position ?? {},
+  };
+}
+
+interface ConnectorInstanceDbRow {
+  id: string;
+  connector_key: string;
+  account_scope: string;
+  status: ConnectorStatus;
+  granted_scopes: string[] | null;
+  cadence_override_minutes: number | null;
+  last_sync_at: Date | string | null;
+  health: Record<string, unknown> | null;
+}
+
+function mapConnectorInstance(r: ConnectorInstanceDbRow): ConnectorInstance {
+  return {
+    id: r.id,
+    connectorKey: r.connector_key,
+    accountScope: r.account_scope,
+    status: r.status,
+    grantedScopes: r.granted_scopes ?? [],
+    cadenceOverrideMinutes: r.cadence_override_minutes,
+    lastSyncAt:
+      r.last_sync_at instanceof Date
+        ? r.last_sync_at.toISOString()
+        : (r.last_sync_at ?? null),
+    health: r.health ?? {},
   };
 }
 

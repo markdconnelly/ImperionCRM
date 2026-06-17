@@ -3218,3 +3218,42 @@ export interface DashboardItemInput {
   reportDefinitionId: string;
   position: Record<string, unknown>;
 }
+
+// ── Integration marketplace — connector instances (ADR-0076, #414) ────────────
+// The connector MANIFEST is in code (src/lib/integrations/connector-manifest.ts);
+// these types are the per-configuration INSTANCE persisted in connector_instance.
+
+/** The uniform connector lifecycle status (ADR-0076 §3). */
+export type ConnectorStatus =
+  | "available"
+  | "connecting"
+  | "connected"
+  | "first_sync"
+  | "polling"
+  | "error";
+
+/** One enabled connector, per account scope (`connector_instance`, ADR-0076 §2). */
+export interface ConnectorInstance {
+  id: string;
+  /** Manifest key this instance configures (validated against the in-code registry). */
+  connectorKey: string;
+  /** 'global' or a per-company scope key. */
+  accountScope: string;
+  status: ConnectorStatus;
+  /** Scopes actually granted at connect (subset of the manifest's declared scopes). */
+  grantedScopes: string[];
+  /** Override the manifest's default poll cadence in minutes (ADR-0038); null = use default. */
+  cadenceOverrideMinutes: number | null;
+  /** Last successful sync (set by the backend); null until first sync. */
+  lastSyncAt: string | null;
+  /** Last health probe blob (state/message/checked_at) — non-secret. */
+  health: Record<string, unknown>;
+}
+
+/** Enable/create payload for a connector instance (server resolves id + timestamps). */
+export interface ConnectorInstanceInput {
+  connectorKey: string;
+  accountScope: string;
+  grantedScopes: string[];
+  cadenceOverrideMinutes: number | null;
+}
