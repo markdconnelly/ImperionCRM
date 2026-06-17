@@ -28,7 +28,7 @@ const EXPECTED: Record<Exclude<AppRole, "admin">, Capability[]> = {
     "time:write",
     "expense:write",
   ],
-  support: ["tickets:write", "comms:write", "time:write", "expense:write"],
+  support: ["tickets:write", "comms:write", "time:write", "expense:write", "change:write"],
 };
 
 describe("RBAC capability matrix", () => {

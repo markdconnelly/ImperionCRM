@@ -79,6 +79,8 @@ import type {
   SegmentDetail,
   SegmentMemberRow,
   SegmentMemberSource,
+  ChangeRequestSummary,
+  ChangeRequestDetail,
   MessageTemplateRow,
   MessageTemplateOption,
   MessageTemplateInput,
@@ -2731,6 +2733,27 @@ export const mockRepositories: Repositories = {
     async removeSegmentMember(memberId: string): Promise<void> {
       const i = mockSegmentMembers.findIndex((m) => m.id === memberId);
       if (i !== -1) mockSegmentMembers.splice(i, 1);
+    },
+  },
+
+  // ── Change Enablement (ADR-0079, #656). No-DB dev surface: reads return []/null and the
+  // writes throw (there is no seeded store — the change board is empty until a DB is wired,
+  // matching the schema-lag-safe contract the page degrades against).
+  changes: {
+    async listChangeRequests(): Promise<ChangeRequestSummary[]> {
+      return [];
+    },
+    async getChangeRequest(): Promise<ChangeRequestDetail | null> {
+      return null;
+    },
+    async createChangeRequest(): Promise<string> {
+      throw new Error("Change Enablement requires a configured database (migration 0135).");
+    },
+    async updateChangeRequest(): Promise<void> {
+      throw new Error("Change Enablement requires a configured database (migration 0135).");
+    },
+    async deleteChangeRequest(): Promise<void> {
+      throw new Error("Change Enablement requires a configured database (migration 0135).");
     },
   },
 

@@ -350,6 +350,9 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   agents: canSeeAgentPages,
   board: canSeeAgentPages,
   cmdb: canSeeCmdb,
+  // Change Enablement (ADR-0079, #656) — the ITIL Service practice; admin∨support, the
+  // same gate as the Service group it lives in (and the CMDB it draws affected CIs from).
+  changes: canSeeService,
   connectors: canSeeConnectors,
   "time-admin": canAdministerTimesheets,
   "time-mappings": canManageEmployeeMappings,

@@ -89,6 +89,7 @@ export const navGroups: NavItem[] = [
     href: "#service",
     children: [
       { key: "tickets", label: "Tickets", icon: "Ticket", href: "/tickets" },
+      { key: "changes", label: "Changes", icon: "GitPullRequestArrow", href: "/changes" },
       { key: "service-desk-sla", label: "SLA dashboard", icon: "Timer", href: "/service-desk/sla" },
       { key: "knowledge", label: "Knowledgebase", icon: "BrainCircuit", href: "/knowledge" },
       { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },

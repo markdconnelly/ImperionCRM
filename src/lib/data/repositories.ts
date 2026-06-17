@@ -192,6 +192,9 @@ import type {
   SegmentMemberRow,
   SegmentMemberSource,
   SegmentInput,
+  ChangeRequestSummary,
+  ChangeRequestDetail,
+  ChangeRequestInput,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -2833,6 +2836,30 @@ export interface SegmentsRepository {
   removeSegmentMember(memberId: string): Promise<void>;
 }
 
+/**
+ * Change Enablement (ADR-0079, #656) — the app-native change WORKING object
+ * (`change_request`, migration 0135) + its affected-CI link (`change_affected_ci`).
+ * Imperion CREATES the change; Autotask is the eventual record SoR via the gated route
+ * #661. The risk/approval/schedule fields are owned by the downstream slices
+ * (#658/#659/#660); this repo creates the working object + manages the affected-CI set.
+ * Every read degrades to mock/[] / null when migration 0135 isn't applied (schema-lag-safe).
+ */
+export interface ChangesRepository {
+  /** All change requests, newest first, each with its live affected-CI count. */
+  listChangeRequests(): Promise<ChangeRequestSummary[]>;
+  /** One change with its affected-CI list, or null if missing / schema-lagged. */
+  getChangeRequest(id: string): Promise<ChangeRequestDetail | null>;
+  /**
+   * Create a change raised by `requesterEmail` (resolved to app_user), linking the
+   * supplied affected CIs (validated against the cmdb_ci union). Returns the new id.
+   */
+  createChangeRequest(input: ChangeRequestInput, requesterEmail: string): Promise<string>;
+  /** Update a change's type/title/description/account + replace its affected-CI set. */
+  updateChangeRequest(id: string, input: ChangeRequestInput): Promise<void>;
+  /** Delete a change (cascades its affected-CI links). */
+  deleteChangeRequest(id: string): Promise<void>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -2859,4 +2886,5 @@ export interface Repositories {
   reportBuilder: ReportBuilderRepository;
   connectors: ConnectorRepository;
   segments: SegmentsRepository;
+  changes: ChangesRepository;
 }
