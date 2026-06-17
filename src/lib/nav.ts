@@ -87,6 +87,12 @@ export const navSecondary: NavItem[] = [
 export const navTertiary: NavItem[] = [
   { key: "agents", label: "AI Agents", icon: "Bot", href: "/agents" },
   { key: "board", label: "Board of Directors", icon: "Users", href: "/board" },
+  // The connector catalog (ADR-0076 §4, #416) — the integration marketplace where
+  // org-wide data connectors are browsed, enabled and configured over the in-code
+  // manifest registry + connector_instance state. Admin-only (`canSeeConnectors`,
+  // nav-guarded + route-guarded, ADR-0030). Credentials are collected under Settings;
+  // this surface never stores a secret.
+  { key: "connectors", label: "Connectors", icon: "Plug", href: "/connectors" },
   { key: "settings", label: "Settings", icon: "Settings", href: "/settings" },
   { key: "feedback", label: "Feedback", icon: "Lightbulb", href: "/feedback" },
 ];

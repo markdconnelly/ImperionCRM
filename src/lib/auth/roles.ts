@@ -86,6 +86,17 @@ export function canSeeCmdb(roles: readonly AppRole[] | undefined): boolean {
 }
 
 /**
+ * The connector catalog (#416, ADR-0076 §4) is admin-only: it is the integration
+ * marketplace where org-wide data connectors are enabled, tuned and disabled — the
+ * same class as Settings → connections / company credentials (`settings:write`). So
+ * it rides the Settings/CMDB nav-visibility + route gate (ADR-0030) rather than a
+ * per-module capability. Mutations are additionally enforced by `settings:write`.
+ */
+export function canSeeConnectors(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles);
+}
+
+/**
  * Project-board writes — creating/editing projects and project types — belong
  * to delivery: admin | project_manager (ADR-0052 §8). This is the GUI-side
  * twin of the `delivery:write` capability the server actions enforce
@@ -268,6 +279,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   agents: canSeeAgentPages,
   board: canSeeAgentPages,
   cmdb: canSeeCmdb,
+  connectors: canSeeConnectors,
   "time-admin": canAdministerTimesheets,
   "time-mappings": canManageEmployeeMappings,
   "expense-admin": canAdministerExpenses,
