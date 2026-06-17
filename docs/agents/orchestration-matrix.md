@@ -1,14 +1,26 @@
 # 🛰️ Agent orchestration & observability matrix
 
-The single map of **every agent** in the platform — what it owns, how much autonomy it
-has, what context it loads, and which roles *watch* the system rather than act on it.
+The single map of **every agent** in Imperion Business Manager — what it owns, how
+much autonomy it has, what context it loads, and which roles *watch* the system
+rather than act on it. Where [agent-platform.md](agent-platform.md) covers the
+user-facing orchestrator and [icm.md](icm.md) covers the workflows, this is the
+*whole roster*.
 
-Governing decision: [ADR-0087](../decision-records/ADR-0087-agent-orchestration-and-observability-layer.md).
+Governing decision:
+[ADR-0091](../decision-records/ADR-0091-agent-icm-platform-consolidated.md) (from
+[ADR-0087](../decision-records/ADR-0087-agent-orchestration-and-observability-layer.md)).
 Grounded in [ICM (ADR-0061)](../decision-records/ADR-0061-icm-business-process-automation.md),
 the [data & automation doctrine](../architecture/data-and-automation-doctrine.md), and
 the [OKF semantic layer (ADR-0086)](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md).
 
-[← Agents](README.md)
+[← The AI suite](README.md)
+
+> **What's actually built (2026-06-16).** This matrix is the *target roster* — the
+> full taxonomy ADR-0091 (from ADR-0087) ratifies. Live today: the orchestrator +
+> Reporting/Sales executors, the Board personas, the `agent_run` ledger schema,
+> and the ICM `lead-response` workspace. Many Observe/Govern roles are the design
+> surface, not running code; the §"Reality check" and §"Dependencies" sections
+> below flag the genuine gaps (notably the missing AR/invoice entity, #668).
 
 > **One methodology, two planes.** This is the **Interpreted Context Methodology** (ICM,
 > Van Clief arXiv:2603.16021 — the same filesystem-as-orchestration pattern our `icm/`
@@ -172,11 +184,23 @@ flowchart LR
     class AR,ER blk
 ```
 
+## Related guides
+
+[agent-platform.md](agent-platform.md) (the orchestrator + surfaces) ·
+[icm.md](icm.md) (the workflows the Execute tier runs) ·
+[cma-runtime.md](cma-runtime.md) (how a run executes) ·
+[autonomy-dial.md](autonomy-dial.md) (the dial in detail) ·
+[agent-rooms-okf.md](agent-rooms-okf.md) (the OKF rooms) ·
+[knowledge-and-rag.md](knowledge-and-rag.md) (the gold store).
+
 ## Governing decisions
 
+[ADR-0091 agent & ICM platform (consolidated)](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)
+— from its members
 [ADR-0087 orchestration & observability](../decision-records/ADR-0087-agent-orchestration-and-observability-layer.md) ·
 [ADR-0061 ICM](../decision-records/ADR-0061-icm-business-process-automation.md) ·
-[ADR-0086 OKF](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md) ·
-[ADR-0048 AI Agents page](../decision-records/ADR-0048-ai-agents-operations-page.md) ·
-backend ADR-0036 (orchestrator runtime) · backend ADR-0039 (board) ·
+[ADR-0048 AI Agents page](../decision-records/ADR-0048-ai-agents-operations-page.md) —
+plus [ADR-0086 OKF](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md),
+backend ADR-0036 (orchestrator runtime, superseded for the loop by ADR-0088) ·
+backend ADR-0039 (board) ·
 [data & automation doctrine](../architecture/data-and-automation-doctrine.md)
