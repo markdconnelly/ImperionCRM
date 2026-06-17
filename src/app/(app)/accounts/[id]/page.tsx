@@ -268,6 +268,42 @@ export default async function AccountDetailPage({
           </Section>
         )}
 
+        {/* Security posture at a glance (#797) — relocated here off the Settings
+            Profile tab: posture is account-scoped context, not personal-profile
+            context. Always present on the account record so the at-a-glance read
+            is reachable even before any Customer Tenant is mapped (in which case
+            the rich Imperion Secure Score section above does not render). Reuses
+            the already-fetched account-scoped posture reads — no schema change. */}
+        {!imperionScore && (
+          <Section
+            title="Security posture at a glance"
+            icon="Shield"
+            hint="Account-scoped posture for this company (ADR-0051/0063). The Imperion Secure Score lights up once a Customer Tenant is mapped; the full posture view always works."
+            className="lg:col-span-3"
+          >
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-dim">
+              <span>
+                {tenantPostures.length === 0
+                  ? "No Customer Tenants mapped yet — map this company's tenants under Settings → Tenant mapping to compute the Imperion Secure Score."
+                  : "Mapped tenants are not classified yet — refresh posture to compute the score."}
+              </span>
+              {/* DNS posture is account-keyed (not tenant-mapped), so it can read
+                  at-a-glance even with no Imperion Secure Score yet. */}
+              {dnsDomains.length > 0 && (
+                <span className="rounded bg-panel-2 px-2 py-1 text-[11px]">
+                  {dnsDomains.length} domain{dnsDomains.length === 1 ? "" : "s"} tracked
+                </span>
+              )}
+              <Link
+                href={`/accounts/${id}/posture`}
+                className="ml-auto text-sm text-dim underline-offset-2 hover:text-text hover:underline"
+              >
+                Full posture view →
+              </Link>
+            </div>
+          </Section>
+        )}
+
         {/* DNS posture card (#309, ADR-0063 account amendment) — governance
             verdict, tracked-domain count, last captured. Account-keyed (not
             tenant-mapped), so it shows whenever the company tracks any domain;

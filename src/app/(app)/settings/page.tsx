@@ -145,19 +145,6 @@ export default async function SettingsPage({
         <AppearanceSettings />
       </Card>
 
-      <Card title="Security">
-        <p className="text-sm text-dim">
-          Posture at a glance — consent coverage, connection health, and the controls
-          behind them. Security is admin-only.
-        </p>
-        <Link
-          href="/security"
-          className="mt-3 inline-block rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
-        >
-          Open security posture
-        </Link>
-      </Card>
-
       <Card title="Platform">
         <p className="text-sm text-dim">
           AI features run on Claude (generation) and Voyage (embeddings) via the
