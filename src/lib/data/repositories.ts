@@ -177,6 +177,9 @@ import type {
   DashboardInput,
   DashboardItem,
   DashboardItemInput,
+  ConnectorInstance,
+  ConnectorInstanceInput,
+  ConnectorStatus,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -2654,6 +2657,41 @@ export interface ReportBuilderRepository {
   reorderDashboardItem(id: string, position: Record<string, unknown>): Promise<void>;
 }
 
+/**
+ * Connector instances for the integration marketplace (ADR-0076 §2, #414). The connector
+ * MANIFEST is in code (`connector-manifest.ts`); this layer stores/serves the per-scope
+ * INSTANCE (status, granted scopes, cadence override, health). `connectorKey` is validated
+ * against the in-code registry at the app layer (callers use `isKnownConnector`), not by a
+ * DB FK. NO secret material — credentials live in backend Key Vault (ADR-0034/0036). Mock
+ * returns an in-memory store.
+ */
+export interface ConnectorRepository {
+  /** All connector instances (catalog "connected" view), newest activity first. */
+  listConnectorInstances(): Promise<ConnectorInstance[]>;
+  /** One instance by id, or null. */
+  getConnectorInstance(id: string): Promise<ConnectorInstance | null>;
+  /** The instance for a connector in a scope, or null (the "is it enabled here?" lookup). */
+  getConnectorInstanceByKey(
+    connectorKey: string,
+    accountScope: string,
+  ): Promise<ConnectorInstance | null>;
+  /**
+   * Enable a connector: upsert the instance for (connectorKey, accountScope) and set it to
+   * 'connecting'. Returns the instance id. Re-enabling updates the existing row (ADR-0076 §3).
+   */
+  enableConnector(input: ConnectorInstanceInput): Promise<string>;
+  /** Advance the lifecycle status (+ optional health blob). Backend-orchestrated (ADR-0042). */
+  setConnectorStatus(
+    id: string,
+    status: ConnectorStatus,
+    health?: Record<string, unknown>,
+  ): Promise<void>;
+  /** Set/clear the per-instance poll-cadence override in minutes (ADR-0038; null = manifest default). */
+  setConnectorCadence(id: string, cadenceOverrideMinutes: number | null): Promise<void>;
+  /** Disable (remove) a connector instance. */
+  disableConnector(id: string): Promise<void>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -2677,4 +2715,5 @@ export interface Repositories {
   tags: TagsRepository;
   customFields: CustomFieldsRepository;
   reportBuilder: ReportBuilderRepository;
+  connectors: ConnectorRepository;
 }

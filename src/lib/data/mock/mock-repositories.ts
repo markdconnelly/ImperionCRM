@@ -72,6 +72,9 @@ import type {
   DashboardInput,
   DashboardItem,
   DashboardItemInput,
+  ConnectorInstance,
+  ConnectorInstanceInput,
+  ConnectorStatus,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { resolveMentions } from "@/lib/mentions";
@@ -176,6 +179,26 @@ const mockReportDefs: MockReportDef[] = [];
 const mockDashboards: MockDashboard[] = [];
 const mockDashboardItems: MockDashboardItem[] = [];
 let mockReportSeq = 0;
+
+// ── Connector instances (ADR-0076, #414) — in-memory store + seq ───────────────
+interface MockConnectorInstance extends ConnectorInstanceInput {
+  id: string;
+  status: ConnectorStatus;
+  lastSyncAt: string | null;
+  health: Record<string, unknown>;
+}
+const mockConnectorInstances: MockConnectorInstance[] = [];
+let mockConnectorSeq = 0;
+const toConnectorInstance = (c: MockConnectorInstance): ConnectorInstance => ({
+  id: c.id,
+  connectorKey: c.connectorKey,
+  accountScope: c.accountScope,
+  status: c.status,
+  grantedScopes: c.grantedScopes,
+  cadenceOverrideMinutes: c.cadenceOverrideMinutes,
+  lastSyncAt: c.lastSyncAt,
+  health: c.health,
+});
 
 const toReportDef = (r: MockReportDef, viewerEmail: string | null): ReportDefinition => ({
   id: r.id,
@@ -2470,6 +2493,67 @@ export const mockRepositories: Repositories = {
     async reorderDashboardItem(id: string, position: Record<string, unknown>): Promise<void> {
       const it = mockDashboardItems.find((x) => x.id === id);
       if (it) it.position = position;
+    },
+  },
+
+  // ── Integration marketplace — connector instances (ADR-0076, #414) ───────────
+  // In-memory store: enabling upserts by (connectorKey, accountScope); status +
+  // health are advanced by the backend (mock just mutates the row). No secrets.
+  connectors: {
+    async listConnectorInstances(): Promise<ConnectorInstance[]> {
+      return mockConnectorInstances.map(toConnectorInstance);
+    },
+    async getConnectorInstance(id: string): Promise<ConnectorInstance | null> {
+      const c = mockConnectorInstances.find((x) => x.id === id);
+      return c ? toConnectorInstance(c) : null;
+    },
+    async getConnectorInstanceByKey(
+      connectorKey: string,
+      accountScope: string,
+    ): Promise<ConnectorInstance | null> {
+      const c = mockConnectorInstances.find(
+        (x) => x.connectorKey === connectorKey && x.accountScope === accountScope,
+      );
+      return c ? toConnectorInstance(c) : null;
+    },
+    async enableConnector(input: ConnectorInstanceInput): Promise<string> {
+      // Upsert on (connectorKey, accountScope), mirroring the UNIQUE constraint.
+      const existing = mockConnectorInstances.find(
+        (x) => x.connectorKey === input.connectorKey && x.accountScope === input.accountScope,
+      );
+      if (existing) {
+        existing.grantedScopes = input.grantedScopes;
+        existing.cadenceOverrideMinutes = input.cadenceOverrideMinutes;
+        existing.status = "connecting";
+        return existing.id;
+      }
+      const id = `mock-connector-${++mockConnectorSeq}`;
+      mockConnectorInstances.push({
+        ...input,
+        id,
+        status: "connecting",
+        lastSyncAt: null,
+        health: {},
+      });
+      return id;
+    },
+    async setConnectorStatus(
+      id: string,
+      status: ConnectorStatus,
+      health?: Record<string, unknown>,
+    ): Promise<void> {
+      const c = mockConnectorInstances.find((x) => x.id === id);
+      if (!c) return;
+      c.status = status;
+      if (health !== undefined) c.health = health;
+    },
+    async setConnectorCadence(id: string, cadenceOverrideMinutes: number | null): Promise<void> {
+      const c = mockConnectorInstances.find((x) => x.id === id);
+      if (c) c.cadenceOverrideMinutes = cadenceOverrideMinutes;
+    },
+    async disableConnector(id: string): Promise<void> {
+      const i = mockConnectorInstances.findIndex((x) => x.id === id);
+      if (i !== -1) mockConnectorInstances.splice(i, 1);
     },
   },
 };

@@ -2377,6 +2377,32 @@ tables, not silver tier** (like `saved_view` / `status_def` / `custom_field_def`
 `REFERENCES app_user`. The builder GUI is #411 (next wave); this slice is schema +
 persistence accessors so #411 rides on them.
 
+## Integration marketplace — connector_instance (ADR-0076, migration 0125, #414)
+
+CRM-parity epic #322 adds a **declarative connector registry** (ADR-0076): connectors are
+described by a uniform **manifest** (auth type, scopes, default poll cadence, identity-map
+shape, capabilities) so the catalog (#416) can browse/enable/configure them consistently,
+replacing the bespoke per-integration wiring. The **manifest is a versioned CODE artifact**
+(`src/lib/integrations/connector-manifest.ts`), NOT a DB table — so this migration adds
+only the per-configuration **instance**:
+
+- **`connector_instance`** — one enabled connector per scope: `{ id, connector_key (the
+  manifest key — app-validated against the in-code registry, NOT a DB FK, mirroring
+  `report_definition.root_object`), account_scope ('global' or a per-company key), status
+  (CHECK `available|connecting|connected|first_sync|polling|error`), granted_scopes (jsonb),
+  cadence_override_minutes (int, ADR-0038; null = manifest default), last_sync_at, health
+  (jsonb), created_at, updated_at }` with **UNIQUE `(connector_key, account_scope)`** (re-
+  enabling upserts the existing row). Indexes on `connector_key` and `status`.
+
+Lifecycle is **backend-orchestrated** (ADR-0076 §3, ADR-0042): the web identity manages
+instances from the catalog GUI (SELECT/INSERT/UPDATE/DELETE), the **backend** advances
+status/health/last_sync (SELECT/UPDATE — #149), the **pipeline** reads cadence + last_sync
+to register the poll (SELECT — #116). **SECURITY:** NO secret material in the row —
+credentials are custodied in **backend Key Vault** (ADR-0034/0036/0043); this is non-secret
+config + status only, no client PII. **App-native config, not silver tier** — no
+semantic-layer concept file applies. The catalog GUI is #416 (W48); this slice is the
+manifest format + schema + persistence accessors so #416/#149/#116 ride on them.
+
 ## Conversational intelligence — call/meeting capture → transcribe → analyze (ADR-0068, migration 0112, #375)
 
 The voice channel of the customer 360 (ADR-0068, epic #315). A captured conversation —
