@@ -1,9 +1,11 @@
 # 🌐 System of systems — the four repositories as one platform
 
-Imperion CRM is **one product** built from **four repositories**. This is the one doc
-that explains them *together*: who owns what, how a fact crosses repo boundaries on its
-way from an external system to an answer on screen, where identity is enforced, and which
-repo is the single source of truth for each shared concern.
+**Imperion Business Manager** is **one product** built from **four repositories**. This
+is the one doc that explains them *together*: who owns what, how a fact crosses repo
+boundaries on its way from an external system to an answer on screen, where identity is
+enforced, and which repo is the single source of truth for each shared concern. (The
+product is "Imperion Business Manager"; "ImperionCRM" survives only as the GUI repo's
+slug — out of scope for the rebrand.)
 
 It is the cross-repo companion to the two repo-internal architecture docs:
 [system-architecture](system-architecture.md) narrates the **three data layers** (bronze ·
@@ -15,7 +17,8 @@ both — it is the map of the whole estate.
 > repos). This doc renders that contract as prose + diagrams; where they ever differ, the
 > system-level `CLAUDE.md` wins. Governing decision: **[ADR-0042](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md)** (four-repo division of labor, settled 2026-06-09).
 
-[← Architecture](README.md) · [← Documentation library](../README.md)
+[← Architecture](README.md) · [← Documentation library](../README.md) ·
+[Capability overview](../product/imperion-business-manager-overview.md)
 
 ---
 
@@ -229,7 +232,7 @@ drift. All four live in **this repo**:
 | **OKF semantic layer** (meaning of silver) | [`docs/database/semantic-layer/`](../database/semantic-layer/index.md) | Any repo changing a silver entity's shape / authority / joins updates the concept file + `coverage-matrix.md` row — in the same PR here, or via a filed issue here from a sibling ([ADR-0086](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md)). |
 | **Agent skills** | [`plugins/imperion-skills/`](../agents/skills.md) | One canon, in-repo `imperion` marketplace; one skill per micro-PR ([ADR-0060](../decision-records/ADR-0060-agent-skills-canon-plugin.md)). |
 | **Security baseline** | [`docs/security/unified-security-standard.md`](../security/unified-security-standard.md) | Every repo conforms; never forked or restated. |
-| **AI stack contract** | [ADR-0041](../decision-records/ADR-0041-gold-knowledge-vector-store.md) + ADR-0043 | Claude (Haiku/Sonnet) + Voyage `voyage-3-large` @ 1024d, one vector space; re-adding a provider is a new ADR. |
+| **AI stack contract** | [ADR-0092 Medallion dossier](../decision-records/ADR-0092-medallion-data-platform-consolidated.md) (consolidates [ADR-0041](../decision-records/ADR-0041-gold-knowledge-vector-store.md) + [ADR-0043](../decision-records/ADR-0043-settled-ai-stack-drop-legacy-vectors.md)) | Claude (Haiku/Sonnet) + Voyage `voyage-3-large` @ 1024d, one vector space; re-adding a provider is a new ADR. |
 
 ---
 
@@ -247,8 +250,11 @@ drift. All four live in **this repo**:
 [ADR-0042 four-repo division of labor](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md) ·
 [ADR-0018 GUI-only front end](../decision-records/ADR-0018-gui-only-frontend-external-functions.md) ·
 [ADR-0002 Entra as sole IdP](../decision-records/ADR-0002-entra-id-as-sole-idp.md) ·
-[ADR-0041 gold vector contract](../decision-records/ADR-0041-gold-knowledge-vector-store.md) ·
 [ADR-0086 OKF semantic layer](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md) ·
-[ADR-0060 skills canon](../decision-records/ADR-0060-agent-skills-canon-plugin.md) — plus the
+[ADR-0060 skills canon](../decision-records/ADR-0060-agent-skills-canon-plugin.md) — and the
+consolidated dossiers that carry the rest:
+[ADR-0091 Agent & ICM platform](../decision-records/ADR-0091-agent-icm-platform-consolidated.md) ·
+[ADR-0092 Medallion data platform](../decision-records/ADR-0092-medallion-data-platform-consolidated.md) ·
+[ADR-0095 Authorization & RBAC](../decision-records/ADR-0095-authorization-rbac-consolidated.md). Plus the
 sibling baselines: backend ADR-0035 (identity-gated functions), pipeline ADR-0011 (on-demand
 refresh) / ADR-0008 (poll cadence).

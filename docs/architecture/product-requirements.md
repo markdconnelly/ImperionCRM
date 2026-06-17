@@ -1,15 +1,26 @@
-# Imperion CRM — Product Requirements
+# Product Requirements (original design-intent record)
 
-- **Status:** Draft (decisions D1–D11 locked 2026-06-07)
+- **Status:** Historical design-intent record — decisions D1–D11 locked 2026-06-07.
+  The modules described here are **built and live** today; the product has since grown
+  well beyond this CRM-centric scope into a full **CRM + ERP + extras + AI** platform.
 - **Owner:** Mark Connelly (Imperion LLC)
-- **Related:** [data-model](../database/data-model.md), ADR-0010 … ADR-0016
+- **Related:** [data-model](../database/data-model.md), ADR-0010 … ADR-0016,
+  [capability overview](../product/imperion-business-manager-overview.md)
+  (the *current* shipped surface), [product-roadmap-v1-v3](product-roadmap-v1-v3.md)
 
-Imperion CRM is the internal operations platform for Imperion LLC (an MSP). It is the
-**single interface employees use to track the health of a customer across the
-entire lifecycle** — from an inbound lead, through the sales cycle, onboarding,
-implementation, operational readiness, handoff, and continuous managed-service
-success, then *cycling back* into new sales motions. It sits as an operational
-intelligence layer above Microsoft 365 and Kaseya (CLAUDE.md §1).
+> **Read this as the founding requirements doc, not the current scope.** It captures
+> the 2026-06-07 design interview that defined the CRM spine; everything in it shipped.
+> For what exists *now* — including the ERP backbone (sale→delivery, projects/PM,
+> time/expense, finance close, collections, CMDB, service desk) and the full AI suite
+> that postdate this interview — read the
+> [capability overview](../product/imperion-business-manager-overview.md).
+
+**Imperion Business Manager** is the internal operations platform for Imperion LLC (an
+MSP). It is the **single interface employees use to track the health of a customer
+across the entire lifecycle** — from an inbound lead, through the sales cycle,
+onboarding, implementation, operational readiness, handoff, and continuous
+managed-service success, then *cycling back* into new sales motions. It sits as an
+operational intelligence layer above Microsoft 365 and Kaseya (CLAUDE.md §1).
 
 This document captures the requirements elicited in the 2026-06-07 design
 interview. Each module below is a bounded context; the data model

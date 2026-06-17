@@ -1,10 +1,19 @@
-# Imperion CRM — go-live roadmap
+# Imperion Business Manager — go-live roadmap
 
 > **You are in: `ImperionCRM` — the CANONICAL copy.** Synced copies live in the three
-> sibling repos; update here and re-sync. **As of 2026-06-10.** Companion to the
+> sibling repos; update here and re-sync. Companion to the
 > [production-readiness plan](production-readiness-plan.md) — that doc tracks *what*
 > remains; this one sequences *how we get the app online*, phase by phase, with exit
-> criteria. Based on a fresh four-repo code review (2026-06-10, post build-sprint).
+> criteria. Based on a four-repo code review (2026-06-10, post build-sprint).
+>
+> **⚠️ Snapshot vintage: 2026-06-10.** The **phase sequencing and exit criteria below
+> remain the plan** (the unblocks are still operator configuration — Voyage key,
+> per-provider OAuth, GDAP, real-time webhooks, secret rotation, on-prem host). What has
+> changed is that the *feature build* has since expanded far past the modules named here
+> (the full ERP + AI surface now ships; migrations `0001–0101` are applied). Treat this
+> as the go-live *operations* track; the live capability picture is the
+> [capability overview](../product/imperion-business-manager-overview.md) and
+> [CLAUDE.md §6](../../CLAUDE.md).
 
 ## What "online" means (the go-live definition)
 
