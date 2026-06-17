@@ -172,6 +172,45 @@ export const agentService = {
       method: "PUT",
       body: JSON.stringify(input),
     }),
+
+  /**
+   * Resolve a parked ICM checkpoint (#278, ADR-0061): approve / edit-and-approve /
+   * reject a drafted lead-response artifact. The backend re-asserts consent at any
+   * send (ADR-0058) and records the human approver on the run. `editedDraft` is set
+   * only for an edit-and-approve. The run write itself is backend-owned (ADR-0042 —
+   * the web role has no INSERT/UPDATE on `agent_run`).
+   */
+  reviewApproval: (input: {
+    runId: string;
+    decision: "approve" | "reject";
+    editedDraft?: string;
+    approvedByUserId: string;
+  }) =>
+    callService<{ runId: string; status: string }>(
+      services.agent,
+      "/orchestration/icm/approvals",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
+    ),
+
+  /**
+   * Flip the per-workflow autonomy dial (#278, ADR-0087): set the rung
+   * (L0–L3) + mark-gated flag for an (agent, workflow) on the ICM plane. Admin-only
+   * upstream (`agents:operate`); the backend upserts `agent_autopilot_policy` and
+   * audits the change. Reversible — re-flipping is another call.
+   */
+  setAutonomy: (input: {
+    agentKey: string;
+    workflowKey: string;
+    rung: "L0" | "L1" | "L2" | "L3";
+    markGated: boolean;
+    note?: string;
+    actingUserId?: string;
+  }) =>
+    callService<{ agentKey: string; rung: string }>(
+      services.agent,
+      "/orchestration/icm/autonomy",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
+    ),
 };
 
 /**
