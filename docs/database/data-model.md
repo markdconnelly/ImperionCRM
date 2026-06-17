@@ -1561,6 +1561,70 @@ to prod for the feeds to populate.**
 > Both ship the expense-tracking ADR-0083 set; the existing column contracts satisfy the
 > requests, so #590/#592 were closed rather than re-authored.
 
+### Per-client Azure ARM cloud-resource bronze (migration 0130, #800; CMDB cloud-asset, #372/ADR-0078)
+
+Three bronze tables hold the **per-managed-client Azure ARM inventory** that backs the
+CMDB **cloud-asset CI type** (#372 / ADR-0078). The on-prem collector
+(`Get-ImperionCloudResource` → `Set-ImperionCloudResourceToBronze`, source key
+`azure_arm`, LocalPipeline #201/#216) is already authored against these names and merges
+**dormant** (fail-loud) until they exist; 0130 lands the schema dependency only.
+
+**Distinct from the `azure_*` posture set** (`azure_subscriptions` / `azure_resource_groups`
+/ `azure_resources`, migration 0038, ADR-0008). Those are the **partner-tenant**,
+security-scoped inventory (one tenant, Sentinel/Secure-Score scoped, not account-relatable).
+These `cloud_*` tables are **per-client**, CMDB-shaped, fanned out across client tenants, and
+account-relatable. They are kept separate on purpose — folding ARM CMDB inventory into the
+posture set would overload that set's meaning (a silver/OKF hazard).
+
+All-text local-pipeline lossless envelope (0080 contract: flat text columns, true types +
+lossless original in `raw_payload`), PK `(tenant_id, source, external_id)`, `content_hash`
+for change detection; bronze stays permissive (no CHECK / no FK). ARM `tags` is stored as
+`jsonb` (a small key→value map, like 0083 `knowledge_blob_refs`).
+
+```mermaid
+erDiagram
+    CLOUD_SUBSCRIPTIONS   ||--o{ CLOUD_RESOURCE_GROUPS : "subscription_id"
+    CLOUD_RESOURCE_GROUPS ||--o{ CLOUD_RESOURCES : "resource_group"
+    CLOUD_RESOURCES }o..|| CLOUD_ASSET : "silver CMDB stitch (#201, later slice)"
+    CLOUD_SUBSCRIPTIONS {
+      text external_id "subscriptionId"
+      text display_name
+      text state
+      text sub_tenant_id
+    }
+    CLOUD_RESOURCE_GROUPS {
+      text external_id "RG ARM id"
+      text name
+      text location
+      text subscription_id "parent"
+      text provisioning_state
+      jsonb tags "ARM tag map"
+    }
+    CLOUD_RESOURCES {
+      text external_id "resource ARM id"
+      text name
+      text type "VM/storage/app-service/SQL/network/…"
+      text location
+      text kind
+      text sku
+      text resource_group "parent"
+      text subscription_id "parent"
+      jsonb tags "ARM tag map"
+    }
+```
+
+`external_id` is the ARM **resource id** (`cloud_resources`), the **RG ARM id**
+(`cloud_resource_groups`), or the **`subscriptionId`** (`cloud_subscriptions`). The
+parent-id columns (`subscription_id`, `resource_group`) are indexed for the later silver
+walk (RG → subscription → resource). Writer: `imperion-localpipeline` (idempotent upsert,
+never DELETE). Web, backend, and cloud-pipeline roles read.
+
+> **Scope note (0130):** bronze tables only. The silver `cloud_asset` table, the CMDB CI
+> stitch, the OKF concept file, and a `cloud_resource_bronze_all` union view are all
+> **deferred** to the #201 silver-merge slice (which owns the shared projection it needs) +
+> its own front-end issue (system §11). **Apply 0130 to prod before the collector populates**
+> (it is dormant/fail-loud until then — Mark-gated apply).
+
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 
 Posture bronze is keyed by Microsoft tenant GUID; the app navigates by account.
