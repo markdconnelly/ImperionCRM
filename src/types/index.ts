@@ -3160,7 +3160,23 @@ export interface ConfigurationItem {
    */
   derivedDefault: Criticality;
   override: Criticality | null;
+  /**
+   * Derived, READ-ONLY asset lifecycle state (#649, ADR-0078). Computed from source
+   * signals (device `status`, `last_seen_at`, Intune enrollment) by `deriveLifecycle`
+   * in `src/lib/cmdb/lifecycle.ts` — NOT hand-edited and NOT persisted (no override
+   * twin; an asset's lifecycle is an observation, not an assertion). `account`/`user`
+   * CIs are not physical assets → always `unknown` (the badge is suppressed for them).
+   */
+  lifecycle: AssetLifecycle;
 }
+
+/**
+ * Derived asset lifecycle state (#649, ADR-0078), recomputed from source signals —
+ * never hand-edited. `unknown` is the graceful fallback (missing/ambiguous signal or
+ * a non-asset CI). Helpers (labels, tones, derive rule) live in
+ * `src/lib/cmdb/lifecycle.ts`.
+ */
+export type AssetLifecycle = "in-use" | "in-stock" | "retired" | "disposed" | "unknown";
 
 /**
  * CI criticality / business-impact scale (#648, the `ci_criticality` DB enum,

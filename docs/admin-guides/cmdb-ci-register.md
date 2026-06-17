@@ -117,6 +117,46 @@ Criticality is **derived + override**:
 The working copy is **app-native**: pushing criticality out to **IT Glue is a separate, gated
 slice**, not this surface.
 
+## Asset lifecycle (#649)
+
+Every asset CI also carries a **lifecycle state** — where the asset sits in its service
+life. It shows as a **badge** on the register (a column) and on the CI detail (header). Unlike
+criticality, lifecycle is **derived and read-only — never hand-edited and never persisted**
+(the grilled decision: lifecycle is an *observation* of source systems, not a human assertion,
+so there is no override twin and nothing to store on an overlay). It is **recomputed from
+current source signals on every read**.
+
+The states (highest-confidence signal first):
+
+| State | Meaning | Tone |
+| --- | --- | --- |
+| **In use** | Deployed / in service. | green |
+| **In stock** | Held, not yet deployed (spare, available, unassigned). | accent |
+| **Retired** | Decommissioned / out of service, or aged out (seen long ago, not enrolled). | amber |
+| **Disposed** | Scrapped / disposed / written off. | dim |
+| **Unknown** | Signals can't place it, or the CI is not a physical asset — **badge suppressed**. | — |
+
+**The derived rule (v1), device CIs only** — `account`/`user` CIs are not physical assets so
+they are always **Unknown** (the badge is hidden for them):
+
+1. **Autotask config-item / asset `status` wins** when it names a terminal/known state —
+   *disposed/scrapped* → **Disposed**; *retired/decommissioned/inactive* → **Retired**;
+   *in stock/spare/available/unassigned* → **In stock**; *active/deployed/in service* →
+   **In use**.
+2. Otherwise the **activity signal**: a live **Intune enrollment** (`management_state` or an
+   enrolled date) → **In use**; else a device **seen within 90 days** (silver `last_seen_at`)
+   → **In use**; a device **last seen longer ago** with no enrollment → **Retired** (aged out).
+3. **Missing / ambiguous signals → Unknown** — never a crash, never a guessed state. A device
+   with no status, never seen, and not enrolled reads **Unknown**.
+
+The register adds a **Lifecycle** filter (dropdown) alongside the type + account filters; all
+three compose. There is **no edit UI** — to change an asset's lifecycle, change it in the
+**source system** (Autotask / Intune) and it re-derives on the next read.
+
+Lifecycle joins cleanly from the signals the CI read already projects (device `status`,
+`last_seen_at`, and the latest Intune managed-device row by serial), so it is derived
+**entirely in code** (`src/lib/cmdb/lifecycle.ts`) — **no migration / no DB view** was added.
+
 ## Access
 
 The **register and device inventory are read-only** for admin∨support (`canSeeCmdb`,
@@ -147,6 +187,13 @@ UI. App-native only — there is **no IT Glue write path** here.
   (with an in-code derived fallback pre-apply); writes `crm.setCiCriticalityOverride` /
   `crm.deriveCiCriticality` via `cmdb:write`-gated server actions; UI in
   `src/components/cmdb/criticality-badge.tsx` (badge) + `ci-criticality.tsx` (detail panel).
+- Asset lifecycle (#649): **no migration / no persisted table** — derived entirely in code from
+  the source signals the CI read already projects. The rule + labels/tones live in pure helpers
+  `src/lib/cmdb/lifecycle.ts` (unit-tested, `lifecycle.test.ts`); the read folds it into
+  `crm.listConfigurationItems()` (the device arm projects `status`, `last_seen_at`, and the
+  latest Intune `management_state`/`enrolled_date_time` by serial); UI in
+  `src/components/cmdb/lifecycle-badge.tsx` (badge, suppressed on `unknown`) + the register's
+  Lifecycle filter. **`unknown` is the graceful fallback** for any missing signal.
 
 ## Security notes
 
