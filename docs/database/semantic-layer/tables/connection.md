@@ -4,7 +4,7 @@ title: connection
 description: OAuth/integration connection record — per-user or company-wide; tokens custodied in Key Vault by reference; carries the poll cadence.
 resource: ../../../decision-records/ADR-0024-per-user-personal-connections-and-lead-hooks.md
 tags: [silver, identity, connection, reference, config]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-17T00:00:00Z
 ---
 
 # connection
@@ -29,7 +29,7 @@ database or this doc. `scope` is `user` (per-user personal connection, `owner_us
 | `id` | uuid | PK |
 | `scope` | enum | `user` · `company` |
 | `owner_user_id` | uuid | FK → `app_user` (set for user scope; NULL for company; ON DELETE CASCADE) |
-| `provider` | enum | append-extended per integration: `m365` · `google` · `youtube` · `linkedin` · `facebook` · `plaud` · `autotask` · `itglue` (0020) · `apollo` (0031) · `myitprocess` · `televy` · `quotemanager` · `gdap` (0033) · `darkwebid` (0042) · `acs` (0071) · `qbo` (0093) |
+| `provider` | enum | append-extended per integration: `m365` · `google` · `youtube` · `linkedin` · `facebook` · `plaud` · `autotask` · `itglue` (0020) · `apollo` (0031) · `myitprocess` · `televy` · `quotemanager` · `gdap` (0033) · `darkwebid` (0042) · `acs` (0071) · `qbo` (0093) · `meta` (0127 — company FB/IG send credential, distinct from per-user `facebook` ingest) |
 | `display_name` | text | human label for the connection |
 | `status` | enum | `active` (default) · `pending` (0033) · `expired` · `revoked` · `error` |
 | `scopes` | text[] | granted OAuth scopes |
