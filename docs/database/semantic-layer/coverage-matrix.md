@@ -107,8 +107,9 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [workflow](tables/workflow.md) → step/enrollment | Marketing | B | ✅ | nurture executor |
 | [workflow](tables/workflow.md) kind=journey (definition jsonb) | Marketing | B | ✅ | journey runner (ADR-0073, #398) |
 | [lead_score](tables/lead_score.md) | Marketing | C | ✅ | lead scoring (rule; routing/journeys/forecast) |
+| [segment](tables/segment.md) → segment_member | Marketing | B | ✅ | journey enrollment / list-views (CRM contact set, distinct from ad audience) |
 | ad, campaign_metric, campaign_send | Marketing | B | ⏳ | campaign ops |
-| audience, audience_member | Marketing | B | ⏳ | segmentation |
+| audience, audience_member | Marketing | B | ⏳ | ad targeting (paid-media audience; distinct from segment) |
 | event, event_registration, lead_hook, lead_capture_event | Marketing | B | ⏳ | lead-response |
 | social_metric | Marketing | B | ⏳ | BI / reporting |
 
