@@ -1,11 +1,38 @@
 # Company credential configuration — wiring status & next steps
 
-Tracks the cross-repo rollout of the Settings → Company credentials feature
-(ADR-0036). Written 2026-06-08. **The UI is live; the secret-write path is secured
-but not yet functional end-to-end** — the remaining work is the front-end→backend
-authentication.
+[← Operations](README.md) · [Documentation library](../README.md) ·
+[Activate-credential-wiring runbook](../runbooks/activate-company-credential-wiring.md)
+
+---
+
+**What this is.** The cross-repo rollout tracker for the **Settings → Company
+credentials** and **Settings → Your connections** features of **Imperion Business
+Manager** (ADR-0036 / ADR-0038). It records the exact wiring state across all four repos,
+the concrete Azure identifiers for this environment, and the remaining steps to take each
+integration from "configured" to "live". Written 2026-06-08. **The UI is live; the
+secret-write path is secured but not yet functional end-to-end** — the remaining work is
+front-end→backend authentication and per-provider Azure/registration config.
+
+> **For the exact copy-paste activation keystrokes**, use the
+> [activate-company-credential-wiring runbook](../runbooks/activate-company-credential-wiring.md)
+> — this doc is the *status + plan*, that runbook is the *one-situation procedure*.
+
+## How it fits together
+
+The GUI never holds an integration secret (system `CLAUDE.md` §1). Saving a company
+credential is a *process*, so it flows GUI → backend → Key Vault.
+
+```mermaid
+flowchart LR
+    UI["Settings → Company credentials<br/>(web app, live)"] -- "external-client.ts<br/>+ MI bearer token" --> BE["Backend /api/credentials<br/>(Easy Auth + caller allowlist)"]
+    BE -- "setSecret" --> KV["Key Vault kv-imperioncrm-prd<br/>conn-company-&lt;provider&gt;"]
+    BE -- "writes status" --> ROW[("connection row<br/>status: active / error / pending")]
+```
 
 ## Concrete identifiers (this environment)
+
+> These are **public resource identifiers**, not secrets (no keys, no tokens). They are
+> safe to keep in the repo; secret *values* never are.
 
 | Thing | Value |
 | --- | --- |
@@ -61,6 +88,9 @@ preferred in the meantime, unset `INTEGRATION_SERVICE_URL` on the web app._
   (`5efd13c7…`, already set) — the web app MI is the token requester, so its client id is
   what appears. ✔
 
+> **Exact commands for step 1 + 2** are in the
+> [activate-company-credential-wiring runbook](../runbooks/activate-company-credential-wiring.md).
+
 ### 2. Front-end: attach an MI bearer token (repo `ImperionCRM`) — ✅ CODE DONE
 - ✅ `src/lib/services/external-client.ts` now acquires a managed-identity token via
   `@azure/identity` `ManagedIdentityCredential` (reusing `AZURE_MANAGED_IDENTITY_CLIENT_ID`,
@@ -86,7 +116,8 @@ preferred in the meantime, unset `INTEGRATION_SERVICE_URL` on the web app._
 - Register/confirm the partner multi-tenant app + GDAP relationship in Partner Center.
 - Set `GDAP_CLIENT_ID`, `GDAP_REDIRECT_URI`, `GDAP_TENANT` on the backend (the
   `/api/gdap/consent` 501 becomes a live consent URL), and build the web-app consent
-  callback that flips the `gdap` row to `active`.
+  callback that flips the `gdap` row to `active`. (The web-app callback at
+  `/api/gdap/callback` is already built — see the activate runbook §4.)
 
 ### 4b. Per-user OAuth connections (backend ADR-0038 ↔ front-end wiring, 2026-06-09)
 
@@ -123,3 +154,10 @@ configuration on the BACKEND Function App (`imperioncrmbackend`)**:
   deploy hangs, a Function App restart clears the lock. Consider serializing deploys.
 - ✅ Updated the ERD in `docs/database/data-model.md` for the extended enums + the
   `uq_connection_company_provider` index (ADR-0036).
+
+## Related
+
+- Rotating any of these credentials once live: [secrets-rotation-runbook](secrets-rotation-runbook.md)
+  (#5 company credentials, #6 per-user OAuth, #7 provider client secrets).
+- Cross-repo custody and the GUI-holds-no-secret rule:
+  [System of systems](../architecture/system-of-systems.md).

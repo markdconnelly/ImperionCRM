@@ -1,5 +1,16 @@
 # Time-tracking UAT script (employee → attest → admin approve → reopen)
 
+[← Operations](README.md) · [Documentation library](../README.md) ·
+[Readiness plan](time-expense-user-test-plan.md) ·
+[Seeding runbook](time-tracking-uat-seeding.md)
+
+---
+
+> **What this is.** The step-by-step, hands-on user-acceptance test for **Imperion
+> Business Manager**'s employee time tracking. Run it after seeding test data (see the
+> [seeding runbook](time-tracking-uat-seeding.md)); it walks one tester (plus a second
+> admin login) through every testable case and tells you exactly what to expect.
+
 Hands-on user-acceptance test for employee time tracking (ADR-0082, epic #458).
 Walks one tester (with a second admin login) through the **testable** path on the
 live app. Companion to the readiness plan (`time-expense-user-test-plan.md`,

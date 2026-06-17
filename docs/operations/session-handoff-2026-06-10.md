@@ -1,5 +1,15 @@
 # Session handoff — 2026-06-10 build sprint
 
+[← Operations](README.md) · [Documentation library](../README.md)
+
+---
+
+> **Historical record — read with care.** This is a **point-in-time** snapshot of the
+> 2026-06-10 build sprint for **Imperion Business Manager**, kept for the record. It can
+> lag the live system by days. For *current* state, verify against **git log + the prod
+> database**, not this file (see the working notes at the bottom). For the standing
+> operational picture start at [Operations](README.md).
+
 Condensed state for the next working session. Detail lives in the
 [production-readiness plan](../architecture/production-readiness-plan.md) (canonical,
 re-synced to all four repos this session) and the per-PR ADRs.
