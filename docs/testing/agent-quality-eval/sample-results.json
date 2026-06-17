@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "ranAt": "1970-01-01T00:00:00.000Z",
+  "adr": "ADR-0057",
+  "backendConfigured": false,
+  "checks": {
+    "criteriaWellFormed": {
+      "status": "pass",
+      "note": "Pure check: criteria total/consistent over the nine gold entity types."
+    },
+    "orchestratorNineTypes": {
+      "account": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "contact": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "device": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "contract": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "ticket": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "proposal": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "exposure": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "assessment": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" },
+      "posture": { "status": "pending_no_backend", "note": "orchestrator (/api/agent) not reachable" }
+    },
+    "boardSession": {
+      "status": "pending_no_backend",
+      "note": "board runtime (/api/board/sessions) not reachable"
+    },
+    "ragSpotChecks": {
+      "spot_0_contract": { "status": "pending_no_backend", "note": "RAG not reachable" },
+      "spot_1_posture": { "status": "pending_no_backend", "note": "RAG not reachable" },
+      "spot_2_ticket": { "status": "pending_no_backend", "note": "RAG not reachable" }
+    }
+  },
+  "summary": {
+    "pass": 1,
+    "fail": 0,
+    "pending": 13,
+    "note": "AGENT_EVAL_BASE_URL unset — live checks PENDING backend runtime (ADR-0057). Pure check ran."
+  }
+}

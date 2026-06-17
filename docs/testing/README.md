@@ -84,6 +84,10 @@ today — is in [testing-strategy](testing-strategy.md).
 
 ## See also
 
+- [Agent-quality eval](agent-quality-eval/README.md) — the scripted v1 acceptance gate
+  (ADR-0057): orchestrator across the nine gold entity types, a board session, and RAG
+  citation spot-checks. Pure checks run in CI; live checks are env-guarded (pending the
+  backend runtime).
 - [Testing strategy](testing-strategy.md) — the layered approach, conventions, and gaps.
 - [Deployment](../deployment/README.md) — the CI/CD pipeline these gates feed.
 - [Unified security standard](../security/unified-security-standard.md) — the security
