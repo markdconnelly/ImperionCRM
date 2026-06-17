@@ -14,7 +14,7 @@ tags: [reporting]
 | **Repo** | frontend |
 | **Status** | Accepted |
 | **Date** | 2026-06-12 |
-| **Cross-references** | ADR-0021 (reporting read model + Recharts), ADR-0012 (paid vs organic metric homes), ADR-0030 (revenue gate), ADR-0042 (GUI-only boundary), ADR-0051 (posture surfaces), ADR-0059 (Defender↔ticket links), pipeline ADR-0013 (Meta ingestion), ADR-0082 (employee time tracking — Time Efficiency section, #467) |
+| **Cross-references** | ADR-0021 (reporting read model + Recharts), ADR-0012 (paid vs organic metric homes), ADR-0030 (revenue gate), ADR-0042 (GUI-only boundary), ADR-0051 (posture surfaces), ADR-0059 (Defender↔ticket links), pipeline ADR-0013 (Meta ingestion), ADR-0082 (employee time tracking — Time Efficiency section, #467), ADR-0083 (employee expense tracking — Expense analytics report, #492) |
 
 ## Problem
 
@@ -102,6 +102,31 @@ desk, #291 security fleet, #292 dashboard strip).
      timesheets, and `pay_rate` carry rows (depends on seeding + pipeline/backend
      data flow, ADR-0082). Realization (billable revenue ÷ cost) is deferred — it
      needs a billed-revenue join not yet modeled.
+
+7. An **Expense analytics** report (`/reporting/expense`, added under ADR-0083
+   epic #482, issue #492) joins the per-domain Reports leaves (Wave-8 split:
+   Sales / Marketing / Service / Finance / …) as a **dedicated page** rather than
+   an inline hub anchor — consistent with the post-Wave-8 IA. Every figure is a
+   **comp-free aggregate** over the silver expense surface:
+   - **Spend** by category, by employee (display name only), and by month
+     (`item_date`, last 12 months); the **reimbursable vs non-reimbursable**
+     split and the **billable** rollup (reimbursable and billable are independent
+     legs, ADR-0083, so they sum separately); the **policy-violation** count by
+     severity (`expense_policy_violation`); the **report lifecycle** mix
+     (`expense_report.state`); and the **reimbursement-status** breakdown
+     (`expense_reconciliation.verdict`).
+   - **No comp value is ever read.** The mileage dollar amount arrives pre-derived
+     in `expense_item.amount` (the backend is the sole reader of the comp-gated
+     `mileage_rate`, ADR-0083); `reports.expenseAnalytics()` aggregates
+     `expense_item.amount` and never joins `mileage_rate` / `pay_rate` / any comp
+     store. Aggregates only — no merchant, description, or per-item row reaches the
+     surface (no row-level PII).
+   - The page is gated to **finance | admin** by the same `canSeeLaborCost`
+     predicate as Time Efficiency (server-side `redirect("/")` on entry; the nav
+     leaf `report-expense` rides `canSeeFinanceReport`, the same role set).
+   - Deploy-ahead: every figure is zero/empty until `expense_item` /
+     `expense_report` carry rows (the pipeline bronze→silver merge + backend
+     writes, ADR-0083). Empty tables render honest empty states, never fake zeros.
 
 ### The hub at a glance
 

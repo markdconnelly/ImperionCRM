@@ -243,9 +243,14 @@ describe("nav group guards + role labels (#794, ADR-0030)", () => {
     expect(canSeeFeature("report-projects", ["project_manager"])).toBe(true);
     expect(canSeeFeature("report-service", ["support"])).toBe(true);
     expect(canSeeFeature("report-finance", ["finance"])).toBe(true);
-    // A technician sees only the service report among the five.
+    // Expense analytics (#492) is comp-adjacent — rides the finance gate.
+    expect(canSeeFeature("report-expense", ["finance"])).toBe(true);
+    expect(canSeeFeature("report-expense", ["admin"])).toBe(true);
+    // A technician sees only the service report among the reports.
     expect(canSeeFeature("report-marketing", ["support"])).toBe(false);
     expect(canSeeFeature("report-finance", ["support"])).toBe(false);
+    expect(canSeeFeature("report-expense", ["support"])).toBe(false);
+    expect(canSeeFeature("report-expense", ["sales"])).toBe(false);
   });
 
   test("the default role surfaces as the 'Technician' label (key stays support)", () => {

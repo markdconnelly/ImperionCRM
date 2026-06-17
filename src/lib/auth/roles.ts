@@ -385,6 +385,9 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   "report-projects": canSeeProjectReport,
   "report-service": canSeeServiceReport,
   "report-finance": canSeeFinanceReport,
+  // Expense analytics (#492) is comp-adjacent — rides the finance|admin gate
+  // (same set as canSeeLaborCost, which the page enforces server-side).
+  "report-expense": canSeeFinanceReport,
 
   // ── Settings group sub-pages (#794) — all admin-only, same as the group.
   "settings-assessment-types": canSeeSettings,
