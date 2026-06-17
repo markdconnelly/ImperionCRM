@@ -1054,7 +1054,7 @@
     "summary": "Data model (per ADR-0039).",
     "file": "ADR-0082-employee-time-tracking-and-payroll-reconciliation.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0093"
   },
   {
     "adr": "0083",
@@ -1067,7 +1067,7 @@
     "summary": "Data model (per ADR-0039).",
     "file": "ADR-0083-employee-expense-tracking-and-reimbursement.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0093"
   },
   {
     "adr": "0084",
@@ -1093,7 +1093,7 @@
     "summary": "Keep Simple Start; re-target the authoritative payment fact from `BillPayment` to the",
     "file": "ADR-0085-qbo-payment-fact-purchase-simple-start.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0093"
   },
   {
     "adr": "0086",
@@ -1183,6 +1183,19 @@
     ],
     "summary": "Consolidated dossier of the Medallion (bronze→silver→gold) data-platform decisions: the external-identity map + ingest-vs-poll policy, per-source physical bronze tables read through union views, per-connection poll cadence, the silver contact/account/device/contract/ticket entities, and the unified gold knowledge store pinned to Voyage voyage-3-large @ 1024 dims (legacy 1536-dim tables dropped). Carries every member decision verbatim with a zero-loss traceability table; member ADRs are retained.",
     "file": "ADR-0092-medallion-data-platform-consolidated.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0093",
+    "title": "Employee finance — consolidated dossier",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "finance"
+    ],
+    "summary": "Consolidated dossier of the employee time + expense finance decisions: website-authoritative weekly timesheets and monthly expense reports normalized into silver `time_record`/`expense_item`, Autotask documentation writes, the unified Monthly Close, and the authoritative QuickBooks payment fact re-targeted from `BillPayment` to `Purchase` on Simple Start. Carries every member decision and amendment clause verbatim with a zero-loss traceability table; member ADRs are retained.",
+    "file": "ADR-0093-employee-finance-consolidated.md",
     "superseded_by": [],
     "consolidated_into": null
   }

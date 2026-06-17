@@ -6,8 +6,11 @@ date: 2026-06-13
 repo: frontend
 summary: "Data model (per ADR-0039)."
 tags: [finance]
+consolidated_into: ADR-0093
 ---
 # ADR-0082: Employee time tracking — website-authoritative timesheets, Autotask documentation, QuickBooks payment reconciliation
+
+> Consolidated into [ADR-0093](ADR-0093-employee-finance-consolidated.md). Retained for history.
 
 > **Amended by [ADR-0085](ADR-0085-qbo-payment-fact-purchase-simple-start.md) (2026-06-14):**
 > the QuickBooks payment fact for Reconciliation #2 is the **`Purchase`** entity (bronze

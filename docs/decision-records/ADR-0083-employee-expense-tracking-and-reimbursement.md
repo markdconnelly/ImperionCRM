@@ -6,8 +6,11 @@ date: 2026-06-13
 repo: frontend
 summary: "Data model (per ADR-0039)."
 tags: [finance]
+consolidated_into: ADR-0093
 ---
 # ADR-0083: Employee expense tracking — website-authoritative monthly expense reports, MileIQ mileage, Autotask documentation, QuickBooks reimbursement reconciliation
+
+> Consolidated into [ADR-0093](ADR-0093-employee-finance-consolidated.md). Retained for history.
 
 > **Amended by [ADR-0085](ADR-0085-qbo-payment-fact-purchase-simple-start.md) (2026-06-14):**
 > the QuickBooks reimbursement fact is the **`Purchase`** entity (bronze `qbo_purchases`,
