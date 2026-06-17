@@ -2873,6 +2873,14 @@ export interface ChangesRepository {
     decision: ApprovalDecision,
     approverEmail: string,
   ): Promise<boolean>;
+  /**
+   * Set/clear the planned schedule window (#660, `change:write`). `start`/`end` are ISO
+   * instants (already validated end ≥ start in the app), or both null to clear. Reflects the
+   * window onto status via the `approved ↔ scheduled` toggle (`nextScheduleStatus`) WITHOUT
+   * touching approval state — a change must be `approved` to become `scheduled`; clearing a
+   * `scheduled` change's window reverts it to `approved`. Other statuses are left unchanged.
+   */
+  setChangeSchedule(id: string, start: string | null, end: string | null): Promise<void>;
   /** Delete a change (cascades its affected-CI links). */
   deleteChangeRequest(id: string): Promise<void>;
 }

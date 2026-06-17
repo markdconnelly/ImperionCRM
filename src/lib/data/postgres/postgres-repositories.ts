@@ -16,7 +16,12 @@ import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import { deriveCriticality } from "@/lib/cmdb/criticality";
 import { deriveLifecycle } from "@/lib/cmdb/lifecycle";
-import { deriveChangeRisk, initialApprovalState, applyApprovalDecision } from "@/lib/change";
+import {
+  deriveChangeRisk,
+  initialApprovalState,
+  applyApprovalDecision,
+  nextScheduleStatus,
+} from "@/lib/change";
 import { resolveMentions } from "@/lib/mentions";
 import {
   planInstantiation,
@@ -14070,6 +14075,43 @@ export const postgresRepositories: Repositories = {
         );
         await client.query("COMMIT");
         return true;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+
+    async setChangeSchedule(
+      id: string,
+      start: string | null,
+      end: string | null,
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.setChangeSchedule(id, start, end);
+      const hasWindow = start !== null && end !== null;
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Read the current status under lock and let the SAME pure rule the tests cover decide
+        // the status move — scheduling only toggles approved ↔ scheduled, never approval state.
+        const { rows: cur } = await client.query<{ status: ChangeStatus }>(
+          `SELECT status FROM change_request WHERE id = $1 FOR UPDATE`,
+          [id],
+        );
+        if (!cur[0]) {
+          await client.query("ROLLBACK");
+          return;
+        }
+        const nextStatus = nextScheduleStatus(cur[0].status, hasWindow);
+        await client.query(
+          `UPDATE change_request
+              SET schedule_start = $2, schedule_end = $3, status = $4, updated_at = now()
+            WHERE id = $1`,
+          [id, start, end, nextStatus],
+        );
+        await client.query("COMMIT");
       } catch (err) {
         await client.query("ROLLBACK");
         throw err;

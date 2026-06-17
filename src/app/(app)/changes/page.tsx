@@ -42,6 +42,12 @@ export default async function ChangesPage() {
         description="ITIL Change Enablement — app-native change requests over the managed estate, typed standard / normal / emergency, with affected configuration items. Autotask is the eventual change record system of record (routed in a later slice)."
       >
         <Link
+          href="/changes/calendar"
+          className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:border-accent hover:text-accent"
+        >
+          Calendar
+        </Link>
+        <Link
           href="/changes/approvals"
           className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:border-accent hover:text-accent"
         >
@@ -105,6 +111,11 @@ export default async function ChangesPage() {
                   );
                 })()}
                 {c.accountName && <span>· {c.accountName}</span>}
+                {c.scheduleStart && (
+                  <span title="Planned schedule window">
+                    · scheduled {c.scheduleStart.slice(0, 16).replace("T", " ")}
+                  </span>
+                )}
                 <Link
                   href={`/changes/${c.id}`}
                   className="ml-auto text-accent transition-colors hover:underline"

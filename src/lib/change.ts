@@ -146,6 +146,136 @@ export function effectiveRisk(
   return override ?? derived;
 }
 
+// ── Scheduling (#660, ADR-0079) ───────────────────────────────────────────────────────────
+// A change carries an optional planned window (`schedule_start`/`schedule_end`, both
+// timestamptz, DB CHECK end ≥ start). v1 is basic coordination + visibility: set a window,
+// see upcoming changes on a calendar, and surface overlapping windows as CONTEXT (no hard
+// enforcement / freeze-period gating — that is a deliberate follow-up). These helpers are
+// PURE (ISO-string in, plain values out) so the same window/overlap/state rules unit-test
+// cleanly and drive the action + the calendar view alike.
+
+/** Outcome of validating a posted window: the parsed pair, or a human reason it is invalid. */
+export interface ScheduleWindowResult {
+  ok: boolean;
+  /** ISO start (or null when clearing the window). Only meaningful when `ok`. */
+  start: string | null;
+  /** ISO end (or null when clearing the window). Only meaningful when `ok`. */
+  end: string | null;
+  /** Why the window is invalid (only set when `!ok`). */
+  reason?: string;
+}
+
+/**
+ * Validate/normalise a posted schedule window. Both blank ⇒ CLEAR the window (ok, nulls).
+ * Both present ⇒ parse and require end ≥ start (mirrors the DB CHECK so the app refuses
+ * before the round-trip). Exactly one present, or an unparseable date ⇒ invalid with a
+ * reason. Accepts any `Date`-parseable string (the `datetime-local` input posts
+ * `yyyy-mm-ddThh:mm`); returns the normalised ISO instants.
+ */
+export function validateScheduleWindow(
+  rawStart: string | null | undefined,
+  rawEnd: string | null | undefined,
+): ScheduleWindowResult {
+  const s = (rawStart ?? "").trim();
+  const e = (rawEnd ?? "").trim();
+  if (!s && !e) return { ok: true, start: null, end: null };
+  if (!s || !e) {
+    return { ok: false, start: null, end: null, reason: "Set both a start and an end, or leave both blank to clear." };
+  }
+  const sd = new Date(s);
+  const ed = new Date(e);
+  if (Number.isNaN(sd.getTime()) || Number.isNaN(ed.getTime())) {
+    return { ok: false, start: null, end: null, reason: "The schedule window has an unparseable date." };
+  }
+  if (ed.getTime() < sd.getTime()) {
+    return { ok: false, start: null, end: null, reason: "The schedule end must be on or after the start." };
+  }
+  return { ok: true, start: sd.toISOString(), end: ed.toISOString() };
+}
+
+/**
+ * Resolve the lifecycle status after a schedule change, WITHOUT clobbering approval state.
+ * Scheduling is a planning act on an already-approved change, so the ONLY transitions this
+ * makes are the reversible pair `approved ↔ scheduled`:
+ *   • setting a window on an `approved` change → `scheduled`
+ *   • clearing the window on a `scheduled` change → back to `approved`
+ * Every other status (draft/pending_approval/rejected/completed/cancelled) is returned
+ * unchanged — a change still awaiting approval can carry a planned window without being
+ * promoted, and a rejected/closed change is never silently reopened.
+ */
+export function nextScheduleStatus(current: ChangeStatus, hasWindow: boolean): ChangeStatus {
+  if (hasWindow && current === "approved") return "scheduled";
+  if (!hasWindow && current === "scheduled") return "approved";
+  return current;
+}
+
+/** A change with a (possibly null) planned window, narrowed to what conflict-detection needs. */
+export interface SchedulableChange {
+  id: string;
+  scheduleStart: string | null;
+  scheduleEnd: string | null;
+  accountId: string | null;
+  affectedCis?: { ciType: CiType; ciId: string }[];
+}
+
+/** True when two half-open-ish [start, end] instant windows overlap (touching endpoints count). */
+export function windowsOverlap(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string,
+): boolean {
+  return new Date(aStart).getTime() <= new Date(bEnd).getTime() &&
+    new Date(bStart).getTime() <= new Date(aEnd).getTime();
+}
+
+/** Why two scheduled changes are flagged as a potential clash (context only, never enforced). */
+export type ScheduleConflictReason = "same_account" | "shared_ci";
+
+/** One surfaced scheduling conflict against the target change. */
+export interface ScheduleConflict {
+  change: SchedulableChange;
+  reasons: ScheduleConflictReason[];
+}
+
+/**
+ * Find OTHER scheduled changes whose window overlaps the target's AND that share context with
+ * it — the same owning account, or at least one affected CI in common. This is INFORMATIONAL
+ * (v1, ADR-0079 / #660): we surface clashes so a human can coordinate, we never block a save.
+ * Changes with no window, the target itself, and overlaps with no shared account/CI are
+ * excluded. Reasons are de-duplicated and ordered (account before CI) for stable rendering.
+ */
+export function findScheduleConflicts(
+  target: SchedulableChange,
+  others: readonly SchedulableChange[],
+): ScheduleConflict[] {
+  if (!target.scheduleStart || !target.scheduleEnd) return [];
+  const targetCis = new Set((target.affectedCis ?? []).map((c) => `${c.ciType}:${c.ciId}`));
+  const out: ScheduleConflict[] = [];
+  for (const other of others) {
+    if (other.id === target.id) continue;
+    if (!other.scheduleStart || !other.scheduleEnd) continue;
+    if (!windowsOverlap(target.scheduleStart, target.scheduleEnd, other.scheduleStart, other.scheduleEnd)) {
+      continue;
+    }
+    const reasons: ScheduleConflictReason[] = [];
+    if (target.accountId && other.accountId && target.accountId === other.accountId) {
+      reasons.push("same_account");
+    }
+    if (targetCis.size > 0 && (other.affectedCis ?? []).some((c) => targetCis.has(`${c.ciType}:${c.ciId}`))) {
+      reasons.push("shared_ci");
+    }
+    if (reasons.length > 0) out.push({ change: other, reasons });
+  }
+  return out;
+}
+
+/** Human label per conflict reason (badge/line text on the detail context block). */
+export const SCHEDULE_CONFLICT_REASON_LABEL: Record<ScheduleConflictReason, string> = {
+  same_account: "same account",
+  shared_ci: "shared configuration item",
+};
+
 // ── CMDB-derived risk scoring (#658, ADR-0079; consumes #650 impact + #648 criticality) ──
 // A change's risk is a function of its CMDB blast radius: how much of the managed estate
 // its affected CIs touch, weighted by how business-critical that estate is. We reuse the
