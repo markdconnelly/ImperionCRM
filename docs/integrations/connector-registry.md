@@ -4,8 +4,8 @@ The **connector registry** is the declarative, first-party marketplace foundatio
 (ADR-0076, epic #322): connectors are described by a uniform **manifest** so they can be
 browsed, enabled, and configured consistently — replacing the bespoke per-integration
 wiring. This page documents the **foundation slice (#414)**: the manifest format in code
-+ the `connector_instance` persistence. The catalog GUI is **#416** (W48); the
-backend connect/custody/first-sync is **#149**; pipeline poll registration is **#116**.
++ the `connector_instance` persistence, plus the **catalog GUI (#416)** built over them.
+The backend connect/custody/first-sync is **#149**; pipeline poll registration is **#116**.
 
 > First-party only (#314). No third-party connector publishing / external developer API —
 > that is the explicitly out-of-scope AppExchange-scale ecosystem (a future ADR if ever).
@@ -66,6 +66,29 @@ Data-layer accessors (`ConnectorRepository`, interface + postgres + mock):
 `enableConnector` (upsert→connecting), `setConnectorStatus`, `setConnectorCadence`,
 `disableConnector`.
 
+## Catalog GUI (#416, ADR-0076 §4)
+
+The catalog is the admin marketplace surface at **`/connectors`** (admin-only —
+`canSeeConnectors`, the same nav + route gate as Settings / CMDB, ADR-0030). It joins
+the in-code manifest registry (the "available" catalog) to the persisted
+`connector_instance` rows (the "connected" state) via the pure view-model
+`buildConnectorCatalog()` (`src/lib/integrations/connector-catalog.ts`), grouped by
+category. Each card shows the connector's status badge, capabilities, auth type,
+effective poll cadence, last sync and (non-secret) health.
+
+- **Enable** (available → records lifecycle intent): the `settings:write`-gated
+  `enableConnectorAction` upserts the instance to `connecting`. It does **not** collect a
+  credential — the backend completes the connect + Key Vault custody (#149), and the
+  credential itself is entered under **Settings → Company credentials** (`company-providers.ts`,
+  ADR-0036). A page notice states this explicitly.
+- **Configure** (connected): `setConnectorCadenceAction` sets/clears the per-instance
+  poll-cadence override (blank = manifest default, ADR-0038); `disableConnectorAction`
+  removes the instance.
+
+All three mutations are gated by `settings:write` (admin — the capability that owns
+connections, company credentials and poll cadence), enforced fail-closed in
+`src/app/(app)/connectors/actions.ts`. **No secret ever passes through this surface.**
+
 ## Security
 
 - **No secret material in the row** (ADR-0034/0036/0043) — credentials are custodied in
@@ -79,8 +102,8 @@ Data-layer accessors (`ConnectorRepository`, interface + postgres + mock):
 
 ## Status / not in this slice
 
-- Catalog GUI (browse available vs connected, enable/configure, health) — **#416**.
-- Backend connect → token custody → first sync — **#149**.
+- Catalog GUI (browse available vs connected, enable/configure, health) — **#416 (shipped)**.
+- Backend connect → token custody → first sync — **#149** (unblocked: migration 0125 prod-applied).
 - Pipeline poll registration from the manifest cadence — **#116**.
 - Migrating existing bespoke connectors onto the lifecycle — incremental (ADR-0076
   consequence: "the registry can launch with a subset and grow").

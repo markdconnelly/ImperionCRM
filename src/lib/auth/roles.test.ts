@@ -7,6 +7,7 @@ import {
   canSeeCollections,
   canSeeAgentPages,
   canSeeCmdb,
+  canSeeConnectors,
   canSeeLaborCost,
   canSeeRevenue,
   canSeeSettings,
@@ -95,6 +96,19 @@ describe("predicates", () => {
     // and the nav guard hides /cmdb for non-admins
     expect(canSeeFeature("cmdb", ["admin"])).toBe(true);
     expect(canSeeFeature("cmdb", ["support"])).toBe(false);
+  });
+
+  test("canSeeConnectors is admin-only (#416 — connector catalog matches the Settings gate)", () => {
+    expect(canSeeConnectors(["admin"])).toBe(true);
+    expect(canSeeConnectors(["support", "admin"])).toBe(true);
+    for (const r of ["finance", "sales", "project_manager", "support"] as const) {
+      expect(canSeeConnectors([r])).toBe(false);
+    }
+    expect(canSeeConnectors([])).toBe(false);
+    expect(canSeeConnectors(undefined)).toBe(false);
+    // and the nav guard hides /connectors for non-admins
+    expect(canSeeFeature("connectors", ["admin"])).toBe(true);
+    expect(canSeeFeature("connectors", ["support"])).toBe(false);
   });
 
   test("canManageProjects is admin | project_manager (ADR-0052 §8)", () => {
