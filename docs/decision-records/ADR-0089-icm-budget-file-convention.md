@@ -1,13 +1,16 @@
 ---
 adr: 0089
 title: "ICM least-privilege budget files (CONSTITUTION.yaml + domains/<d>/room.yaml)"
-status: accepted
+status: consolidated
 date: 2026-06-16
 repo: frontend
 summary: "Ratify the ICM budget-file convention — name/location/`{tools, okf_rooms}` shape of the two files, and the \"absent budget ⇒ next-lower declared list\" degradation rule; extends ADR-0088 §3."
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0089: ICM least-privilege budget files (CONSTITUTION.yaml + domains/<d>/room.yaml)
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

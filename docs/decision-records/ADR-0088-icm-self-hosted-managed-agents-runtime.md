@@ -1,13 +1,16 @@
 ---
 adr: 0088
 title: "ICM agent runtime on self-hosted Managed Agents + domain-tiered context"
-status: accepted
+status: consolidated
 date: 2026-06-16
 repo: frontend
 summary: "Adopt self-hosted Managed Agents as the ICM product-runtime executor, and"
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0088: ICM agent runtime on self-hosted Managed Agents + domain-tiered context
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

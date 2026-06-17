@@ -1,13 +1,16 @@
 ---
 adr: 0087
 title: "Agent orchestration & observability layer"
-status: accepted
+status: consolidated
 date: 2026-06-15
 repo: frontend
 summary: "Adopt a five-tier agent taxonomy documented in"
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0087: Agent orchestration & observability layer
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

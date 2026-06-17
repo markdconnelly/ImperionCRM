@@ -1,13 +1,16 @@
 ---
 adr: 0015
 title: "Agent platform persistence and the AI Board of Directors"
-status: accepted
+status: consolidated
 date: 2026-06-07
 repo: frontend
 summary: "Persist the full agent core (agents, tool grants, runs, messages, memory); agent actions inherit the acting user's permission scope."
 tags: [agent-icm]
+consolidated_into: ADR-0091
 ---
 # ADR-0015: Agent platform persistence and the AI Board of Directors
+
+> Consolidated into [ADR-0091](ADR-0091-agent-icm-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|
