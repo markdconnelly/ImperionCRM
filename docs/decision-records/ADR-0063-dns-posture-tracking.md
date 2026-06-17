@@ -1,3 +1,12 @@
+---
+adr: 0063
+title: "DNS posture tracking — per-customer DNS state capture, golden drift, and Azure-managed verification"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Two capture planes, one record store."
+tags: [security-posture]
+---
 # ADR-0063: DNS posture tracking — per-customer DNS state capture, golden drift, and Azure-managed verification
 
 | Field | Value |

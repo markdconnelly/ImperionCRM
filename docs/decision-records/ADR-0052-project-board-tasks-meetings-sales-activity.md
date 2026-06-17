@@ -1,3 +1,12 @@
+---
+adr: 0052
+title: "Project board model — project types, unified tasks, meetings linkage, sales activity"
+status: accepted
+date: 2026-06-10
+repo: frontend
+summary: "Project types become data (a table, not an enum); one task model gains `project_id`; easy-mode deploys verify-to-close; meetings link via `interaction.project_id`."
+tags: [surfaces]
+---
 # ADR-0052: Project board model — project types, unified tasks, meetings linkage, sales activity
 
 | Field | Value |

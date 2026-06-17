@@ -1,3 +1,12 @@
+---
+adr: 0049
+title: "Materialize the agent core + AI Board persistence (migration 0056)"
+status: accepted
+date: 2026-06-09
+repo: frontend
+summary: "Migration 0056 materializes the agent core and AI Board persistence; model routing is a tier hint resolved at runtime."
+tags: [agent-icm]
+---
 # ADR-0049: Materialize the agent core + AI Board persistence (migration 0056)
 
 | Field | Value |

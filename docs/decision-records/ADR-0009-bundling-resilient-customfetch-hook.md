@@ -1,3 +1,12 @@
+---
+adr: 0009
+title: "Bundling-resilient certificate `customFetch` hook"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "Wrap the Entra provider in a Proxy so the certificate `customFetch` hook survives production bundling."
+tags: [platform]
+---
 # ADR-0009: Bundling-resilient certificate `customFetch` hook
 
 | Field | Value |

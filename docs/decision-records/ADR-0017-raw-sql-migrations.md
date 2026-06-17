@@ -1,3 +1,12 @@
+---
+adr: 0017
+title: "Raw SQL migrations as the schema source of truth"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "Ordered, idempotent, transactional raw SQL migrations applied with short-lived Entra access tokens."
+tags: [platform]
+---
 # ADR-0017: Raw SQL migrations as the schema source of truth
 
 | Field | Value |

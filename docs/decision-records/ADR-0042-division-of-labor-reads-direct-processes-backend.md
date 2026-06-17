@@ -1,3 +1,12 @@
+---
+adr: 0042
+title: "Division of labor: direct reads OK, every process runs in the backend"
+status: accepted
+date: 2026-06-09
+repo: frontend
+summary: "The front end is strictly GUI: direct DB reads for rendering stay; every process runs through the backend API."
+tags: [topology]
+---
 # ADR-0042: Division of labor: direct reads OK, every process runs in the backend
 
 | Field | Value |

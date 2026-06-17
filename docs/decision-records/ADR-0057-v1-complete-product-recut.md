@@ -1,3 +1,12 @@
+---
+adr: 0057
+title: "v1 is the complete product — version recut (v1 Complete / v2 Refined / v3 TBD)"
+status: accepted
+date: 2026-06-11
+repo: frontend
+summary: "Option 3. The recut, locked 2026-06-11"
+tags: [meta]
+---
 # ADR-0057: v1 is the complete product — version recut (v1 Complete / v2 Refined / v3 TBD)
 
 | Field | Value |

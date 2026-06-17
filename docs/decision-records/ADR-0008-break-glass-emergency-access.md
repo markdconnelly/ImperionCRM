@@ -1,3 +1,12 @@
+---
+adr: 0008
+title: "Break-glass emergency access"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "A dedicated `/break-glass` Credentials provider gives one env-configured non-Entra account emergency access."
+tags: [authz]
+---
 # ADR-0008: Break-glass emergency access
 
 | Field | Value |

@@ -1,4 +1,18 @@
-# ADR-0058: Feedback files to the app-dev queue (supersedes ADR-0013)
+---
+adr: 0078
+title: "Feedback files to the app-dev queue (supersedes ADR-0013)"
+status: accepted
+date: 2026-06-11
+repo: frontend
+summary: "The Feedback page files an idempotent Autotask ticket in the app-dev queue via backend #19, superseding the ADR-0013 GitHub coupling."
+tags: [surfaces]
+---
+# ADR-0078: Feedback files to the app-dev queue (supersedes ADR-0013)
+
+> **Renumbered 2026-06-16 (was ADR-0058).** Two ADRs shared number 0058; this one was
+> reassigned to 0078 (the next free local number) per the claim-at-merge rule (ADR-0084)
+> as part of the ADR-ingestion overhaul (ADR-0090, #754). The heavily-referenced
+> approval-gated-send ADR keeps 0058. No decision content changed.
 
 | Field | Value |
 |---|---|

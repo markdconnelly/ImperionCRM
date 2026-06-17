@@ -1,3 +1,12 @@
+---
+adr: 0033
+title: "Assessment evidence (Televy), client-ready report & the 1:1 365 grant"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "Televy evidence plus analyst data entry produce the client-ready assessment report; the 365 grant is scoped 1:1."
+tags: [gtm]
+---
 # ADR-0033: Assessment evidence (Televy), client-ready report & the 1:1 365 grant
 
 | Field | Value |

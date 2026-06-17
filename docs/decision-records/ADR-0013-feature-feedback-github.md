@@ -1,11 +1,21 @@
+---
+adr: 0013
+title: "Feature feedback coupled to GitHub"
+status: superseded
+date: 2026-06-07
+repo: frontend
+summary: "`feature_request` intake/voting in-app; accepted requests create GitHub Issues with one-way status sync back."
+superseded_by: ["ADR-0078"]
+tags: [meta]
+---
 # ADR-0013: Feature feedback coupled to GitHub
 
 | Field | Value |
 |---|---|
 | **Repo** | frontend |
-| **Status** | Superseded by [ADR-0058](./ADR-0058-feedback-files-to-app-dev-queue.md) (2026-06-11) |
+| **Status** | Superseded by [ADR-0078](./ADR-0078-feedback-files-to-app-dev-queue.md) (2026-06-11; the superseding ADR was renumbered from 0058 to 0078, see its header) |
 | **Date** | 2026-06-07 |
-| **Cross-references** | Superseded by ADR-0058 — feedback now files an Autotask ticket in the app-dev queue (#100) |
+| **Cross-references** | Superseded by ADR-0078 (was 0058) — feedback now files an Autotask ticket in the app-dev queue (#100) |
 
 ## Problem
 

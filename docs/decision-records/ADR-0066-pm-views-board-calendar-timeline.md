@@ -1,3 +1,12 @@
+---
+adr: 0066
+title: "PM views — kanban board, calendar, timeline, multi-view"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Build an in-app view layer, prioritised within the theme"
+tags: [pm]
+---
 # ADR-0066: PM views — kanban board, calendar, timeline, multi-view
 
 | Field | Value |

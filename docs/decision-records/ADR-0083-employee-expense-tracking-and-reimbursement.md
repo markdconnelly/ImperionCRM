@@ -1,3 +1,12 @@
+---
+adr: 0083
+title: "Employee expense tracking — website-authoritative monthly expense reports, MileIQ mileage, Autotask documentation, QuickBooks reimbursement reconciliation"
+status: accepted
+date: 2026-06-13
+repo: frontend
+summary: "Data model (per ADR-0039)."
+tags: [finance]
+---
 # ADR-0083: Employee expense tracking — website-authoritative monthly expense reports, MileIQ mileage, Autotask documentation, QuickBooks reimbursement reconciliation
 
 > **Amended by [ADR-0085](ADR-0085-qbo-payment-fact-purchase-simple-start.md) (2026-06-14):**

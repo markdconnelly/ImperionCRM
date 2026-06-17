@@ -1,3 +1,12 @@
+---
+adr: 0041
+title: "Gold knowledge layer + unified vector store (pinned Voyage AI embeddings)"
+status: accepted
+date: 2026-06-09
+repo: frontend
+summary: "Unified `knowledge_object` → `knowledge_embedding` gold store pinned system-wide to Voyage `voyage-3-large` @ 1024 dims."
+tags: [medallion]
+---
 # ADR-0041: Gold knowledge layer + unified vector store (pinned Voyage AI embeddings)
 
 | Field | Value |

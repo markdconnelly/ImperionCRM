@@ -1,3 +1,13 @@
+---
+adr: 0067
+title: "CPQ — product/service catalog, price books, and guided quote → proposal"
+status: superseded
+date: 2026-06-12
+repo: frontend
+summary: "Catalog. `product` rows: SKU, name, description, `kind` (`recurring` | `one_off`), default unit cost, default unit price, default term months (recurring), active flag."
+superseded_by: ["ADR-0080"]
+tags: [crm-parity]
+---
 # ADR-0067: CPQ — product/service catalog, price books, and guided quote → proposal
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0036
+title: "Company credential configuration in Settings"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "A tabbed Settings page gains a Company credentials tab — one card per provider, secrets custodied in Key Vault."
+tags: [surfaces]
+---
 # ADR-0036: Company credential configuration in Settings
 
 | Field | Value |

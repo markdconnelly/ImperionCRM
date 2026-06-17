@@ -1,3 +1,12 @@
+---
+adr: 0081
+title: "Delivery provisioning — template model, human-triggered bridge, contract gate"
+status: proposed
+date: 2026-06-13
+repo: frontend
+summary: "Data-driven delivery templates. New frontend-owned schema (migration 0084)"
+tags: [sale-delivery]
+---
 # ADR-0081: Delivery provisioning — template model, human-triggered bridge, contract gate
 
 | Field | Value |

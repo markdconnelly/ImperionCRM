@@ -1,3 +1,12 @@
+---
+adr: 0026
+title: "Demand-gen audiences & ad-targeting consent"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "Campaign → ad → metric model with static/dynamic audiences; ad targeting filters on consent."
+tags: [gtm]
+---
 # ADR-0026: Demand-gen audiences & ad-targeting consent
 
 | Field | Value |

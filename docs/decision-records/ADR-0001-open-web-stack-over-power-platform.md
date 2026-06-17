@@ -1,3 +1,12 @@
+---
+adr: 0001
+title: "Open web stack over Power Platform"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "Build on the open web stack (Next.js/React/TypeScript); Microsoft provides identity, security, and ingestion — never the app framework."
+tags: [platform]
+---
 # ADR-0001: Open web stack over Power Platform
 
 | Field | Value |

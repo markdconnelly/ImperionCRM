@@ -1,3 +1,12 @@
+---
+adr: 0014
+title: "Append-only consent ledger and communications"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "An immutable `consent_event` ledger per contact × channel; outbound sends are blocked unless consent is current."
+tags: [crm-core]
+---
 # ADR-0014: Append-only consent ledger and communications
 
 | Field | Value |

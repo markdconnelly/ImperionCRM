@@ -1,3 +1,12 @@
+---
+adr: 0069
+title: "PM planning — time tracking, workload, goals, sprints, portfolio, baselines"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Adopt the following model; build per the phase column in the requirements set"
+tags: [pm]
+---
 # ADR-0069: PM planning — time tracking, workload, goals, sprints, portfolio, baselines
 
 | Field | Value |

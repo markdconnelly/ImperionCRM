@@ -1,3 +1,12 @@
+---
+adr: 0044
+title: "Silver `contract` and `ticket` entities"
+status: accepted
+date: 2026-06-09
+repo: frontend
+summary: "Migration 0050 adds typed silver `contract` + `ticket`, populated from bronze by the cloud pipeline's merge each sweep."
+tags: [medallion]
+---
 # ADR-0044: Silver `contract` and `ticket` entities
 
 | Field | Value |

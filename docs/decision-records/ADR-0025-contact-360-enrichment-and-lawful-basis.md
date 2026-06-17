@@ -1,3 +1,12 @@
+---
+adr: 0025
+title: "Contact-360 enrichment dossier & lawful-basis gating"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "`contact_enrichment` stores one row per discovered fact, each carrying a lawful basis that gates its use."
+tags: [gtm]
+---
 # ADR-0025: Contact-360 enrichment dossier & lawful-basis gating
 
 | Field | Value |

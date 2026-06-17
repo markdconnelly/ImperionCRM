@@ -1,3 +1,12 @@
+---
+adr: 0024
+title: "Per-user personal connections & lead-capture hooks"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "One `connection` table for user- and company-scope integrations; OAuth tokens live only in Azure Key Vault."
+tags: [gtm]
+---
 # ADR-0024: Per-user personal connections & lead-capture hooks
 
 | Field | Value |

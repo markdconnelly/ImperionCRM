@@ -1,3 +1,12 @@
+---
+adr: 0040
+title: "Dark Web ID + Televy ingestion (credential_exposure entity)"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "Dark Web ID compromises land in a new silver `credential_exposure`; Televy reports land as `assessment_artifact`."
+tags: [security-posture]
+---
 # ADR-0040: Dark Web ID + Televy ingestion (credential_exposure entity)
 
 | Field | Value |

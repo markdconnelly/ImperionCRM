@@ -1,3 +1,12 @@
+---
+adr: 0018
+title: "GUI-only frontend; logic in the database or external functions"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "This repository is the GUI; everything it \"does\" is either direct DB access via repositories or a call to external functions."
+tags: [topology]
+---
 # ADR-0018: GUI-only frontend; logic in the database or external functions
 
 | Field | Value |

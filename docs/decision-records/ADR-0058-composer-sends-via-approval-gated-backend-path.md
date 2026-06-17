@@ -1,3 +1,12 @@
+---
+adr: 0058
+title: "Composer 1:1 sends execute via the backend's approval-gated send path"
+status: accepted
+date: 2026-06-11
+repo: frontend
+summary: "Composer 1:1 sends reuse the single approval-gated execute path (one consent gate, one audit shape) rather than adding a second send endpoint."
+tags: [surfaces]
+---
 # ADR-0058: Composer 1:1 sends execute via the backend's approval-gated send path
 
 | Field | Value |

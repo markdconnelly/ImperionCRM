@@ -1,3 +1,12 @@
+---
+adr: 0056
+title: "Release versioning standard — coordinated human-declared majors, 3-digit semver, release-please everywhere"
+status: accepted
+date: 2026-06-10
+repo: frontend
+summary: "Option 3. The full normative standard lives in"
+tags: [meta]
+---
 # ADR-0056: Release versioning standard — coordinated human-declared majors, 3-digit semver, release-please everywhere
 
 | Field | Value |

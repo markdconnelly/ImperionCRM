@@ -1,3 +1,12 @@
+---
+adr: 0076
+title: "Integration marketplace — declarative connector registry"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Connectors are declared by a manifest (B)."
+tags: [crm-parity]
+---
 # ADR-0076: Integration marketplace — declarative connector registry
 
 | Field | Value |

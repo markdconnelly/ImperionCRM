@@ -1,3 +1,12 @@
+---
+adr: 0035
+title: "Apollo as the global contact & company enrichment provider"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "Apollo joins the provider enum as a company-scope connection and becomes the global enrichment source."
+tags: [gtm]
+---
 # ADR-0035: Apollo as the global contact & company enrichment provider
 
 | Field | Value |

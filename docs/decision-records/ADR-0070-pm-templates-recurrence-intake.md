@@ -1,3 +1,12 @@
+---
+adr: 0070
+title: "PM templates, recurring tasks, and form intake"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Editable templates (E1, v2) — `project_template{ id, name, project_type_id,"
+tags: [pm]
+---
 # ADR-0070: PM templates, recurring tasks, and form intake
 
 | Field | Value |

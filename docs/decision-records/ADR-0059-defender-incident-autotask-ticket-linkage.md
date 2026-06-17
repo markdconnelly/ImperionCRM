@@ -1,3 +1,12 @@
+---
+adr: 0059
+title: "Defender incident ↔ Autotask ticket linkage as a dedicated link table"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "A standalone `defender_incident_ticket_link` (never a bronze column) whose one-ticket-per-incident PK is the sync-back idempotency key."
+tags: [security-posture]
+---
 # ADR-0059: Defender incident ↔ Autotask ticket linkage as a dedicated link table
 
 | Field | Value |

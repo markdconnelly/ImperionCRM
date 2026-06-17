@@ -1,0 +1,1150 @@
+[
+  {
+    "adr": "0001",
+    "title": "Open web stack over Power Platform",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "platform"
+    ],
+    "summary": "Build on the open web stack (Next.js/React/TypeScript); Microsoft provides identity, security, and ingestion — never the app framework.",
+    "file": "ADR-0001-open-web-stack-over-power-platform.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0002",
+    "title": "Entra ID as sole identity provider",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "platform"
+    ],
+    "summary": "Entra ID is the mandatory, sole identity provider; no third-party IdP without a superseding ADR.",
+    "file": "ADR-0002-entra-id-as-sole-idp.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0003",
+    "title": "PostgreSQL + pgvector as the unified data store",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "platform"
+    ],
+    "summary": "One PostgreSQL + pgvector database serves as system of record, metadata store, embedding store, and agent memory.",
+    "file": "ADR-0003-postgres-pgvector-unified-store.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0004",
+    "title": "Single-orchestrator agent model",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Users interact with one orchestrator agent; specialized sub-agents never face the user directly.",
+    "file": "ADR-0004-single-orchestrator-agent-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0005",
+    "title": "Web auth via Auth.js with Entra certificate client assertion",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "platform"
+    ],
+    "summary": "Auth.js v5 + the Entra ID provider authenticating with a certificate client assertion (no client secret).",
+    "file": "ADR-0005-entra-auth-via-authjs-certificate.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0006",
+    "title": "Azure App Service as the hosting target",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "platform"
+    ],
+    "summary": "Host on Azure App Service (`imperioncrm`), deployed from `main` via the OIDC GitHub Actions workflow.",
+    "file": "ADR-0006-azure-app-service-hosting.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0007",
+    "title": "Repository abstraction for data access",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "topology"
+    ],
+    "summary": "Typed async repository contracts in `src/lib/data` with mock and PostgreSQL implementations behind one seam.",
+    "file": "ADR-0007-repository-data-access-abstraction.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0008",
+    "title": "Break-glass emergency access",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "authz"
+    ],
+    "summary": "A dedicated `/break-glass` Credentials provider gives one env-configured non-Entra account emergency access.",
+    "file": "ADR-0008-break-glass-emergency-access.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0009",
+    "title": "Bundling-resilient certificate `customFetch` hook",
+    "status": "accepted",
+    "date": "2026-06-06",
+    "tags": [
+      "platform"
+    ],
+    "summary": "Wrap the Entra provider in a Proxy so the certificate `customFetch` hook survives production bundling.",
+    "file": "ADR-0009-bundling-resilient-customfetch-hook.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0010",
+    "title": "Company-centric customer data model with dual-axis stages",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "crm-core"
+    ],
+    "summary": "`account` is the spine with dual-axis stages: `account.lifecycle_stage` plus per-`opportunity` sales stages.",
+    "file": "ADR-0010-customer-data-model-dual-axis-stages.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0011",
+    "title": "Unified interaction timeline with staged enrichment",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "crm-core"
+    ],
+    "summary": "A single append-only `interaction` table is the timeline, carrying bronze payloads, silver columns, and gold summaries.",
+    "file": "ADR-0011-unified-interaction-timeline.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0012",
+    "title": "External integration identity map, ingest-vs-poll, and demand gen",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "An external-identity map plus an ingest-vs-poll policy per source — augment external clouds, don't duplicate them.",
+    "file": "ADR-0012-integration-identity-map-ingest-poll.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0013",
+    "title": "Feature feedback coupled to GitHub",
+    "status": "superseded",
+    "date": "2026-06-07",
+    "tags": [
+      "meta"
+    ],
+    "summary": "`feature_request` intake/voting in-app; accepted requests create GitHub Issues with one-way status sync back.",
+    "file": "ADR-0013-feature-feedback-github.md",
+    "superseded_by": [
+      "ADR-0078"
+    ],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0014",
+    "title": "Append-only consent ledger and communications",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "crm-core"
+    ],
+    "summary": "An immutable `consent_event` ledger per contact × channel; outbound sends are blocked unless consent is current.",
+    "file": "ADR-0014-consent-ledger-communications.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0015",
+    "title": "Agent platform persistence and the AI Board of Directors",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Persist the full agent core (agents, tool grants, runs, messages, memory); agent actions inherit the acting user's permission scope.",
+    "file": "ADR-0015-agent-platform-and-board.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0016",
+    "title": "RBAC and identity model",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "authz"
+    ],
+    "summary": "`app_user` mirrors the Entra identity; roles derive from Entra group/app-role claims mapped to app permissions.",
+    "file": "ADR-0016-rbac-and-identity-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0017",
+    "title": "Raw SQL migrations as the schema source of truth",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "platform"
+    ],
+    "summary": "Ordered, idempotent, transactional raw SQL migrations applied with short-lived Entra access tokens.",
+    "file": "ADR-0017-raw-sql-migrations.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0018",
+    "title": "GUI-only frontend; logic in the database or external functions",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "topology"
+    ],
+    "summary": "This repository is the GUI; everything it \\\"does\\\" is either direct DB access via repositories or a call to external functions.",
+    "file": "ADR-0018-gui-only-frontend-external-functions.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0019",
+    "title": "Proposal lifecycle model",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "crm-core"
+    ],
+    "summary": "A `proposal` belongs to exactly one `opportunity` with a `draft → sent → accepted/declined` status lifecycle.",
+    "file": "ADR-0019-proposal-lifecycle-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0020",
+    "title": "Delivery project model (onboarding/implementation)",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "A `project` belongs to one `account`, optionally referencing the won opportunity it came from.",
+    "file": "ADR-0020-delivery-project-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0021",
+    "title": "Reporting read model and Recharts for visualization",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "reporting"
+    ],
+    "summary": "A dedicated read-only `reports` repository aggregating in SQL, rendered with Recharts.",
+    "file": "ADR-0021-reporting-read-model-and-recharts.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0022",
+    "title": "Assessment-led GTM and the AI Security Readiness Assessment model",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "The paid AI Security Readiness Assessment becomes a first-class `assessment` entity in the sales motion.",
+    "file": "ADR-0022-assessment-led-gtm-and-engagement-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0023",
+    "title": "Engagement capture & long-term-relationship data model",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "Versioned questionnaires as data (no migrations to edit questions) feeding engagement answers, evidence, and reviews.",
+    "file": "ADR-0023-engagement-capture-and-relationship-data-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0024",
+    "title": "Per-user personal connections & lead-capture hooks",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "One `connection` table for user- and company-scope integrations; OAuth tokens live only in Azure Key Vault.",
+    "file": "ADR-0024-per-user-personal-connections-and-lead-hooks.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0025",
+    "title": "Contact-360 enrichment dossier & lawful-basis gating",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "`contact_enrichment` stores one row per discovered fact, each carrying a lawful basis that gates its use.",
+    "file": "ADR-0025-contact-360-enrichment-and-lawful-basis.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0026",
+    "title": "Demand-gen audiences & ad-targeting consent",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "Campaign → ad → metric model with static/dynamic audiences; ad targeting filters on consent.",
+    "file": "ADR-0026-demand-gen-audiences-and-ad-consent.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0027",
+    "title": "Pre-discovery automation & agent-answer human approval",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "Agent/automation answers land as drafts; a salesperson confirms or rejects each before the discovery verdict locks.",
+    "file": "ADR-0027-pre-discovery-automation-and-agent-answer-approval.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0028",
+    "title": "Backend topology — separate repo, Azure Functions on the shared plan, network-isolated to the front end",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "topology"
+    ],
+    "summary": "The backend is a separate repo (`ImperionCRM_Backend`) of Azure Functions on the shared plan, isolated to the front end.",
+    "file": "ADR-0028-backend-topology-and-network-isolation.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0030",
+    "title": "Role-based access control & GUI restrictions from Entra groups",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "authz"
+    ],
+    "summary": "Role predicates derived from five Entra security groups gate nav, routes, and server-side revenue redaction.",
+    "file": "ADR-0030-rbac-gui-restrictions.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0031",
+    "title": "Normalized contact object & lifecycle pipeline",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "crm-core"
+    ],
+    "summary": "`contact.crm_stage` (audience → lead → prospect → client) normalizes one person across the lifecycle, two-axis with `lifecycle_status`.",
+    "file": "ADR-0031-normalized-contact-lifecycle.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0032",
+    "title": "Per-source bronze tables for contacts and companies",
+    "status": "superseded",
+    "date": "2026-06-08",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "Enum-discriminated `contact_source`/`account_source` bronze tables — replaced by per-source physical tables in ADR-0039.",
+    "file": "ADR-0032-per-source-bronze-tiering.md",
+    "superseded_by": [
+      "ADR-0039"
+    ],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0033",
+    "title": "Assessment evidence (Televy), client-ready report & the 1:1 365 grant",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "Televy evidence plus analyst data entry produce the client-ready assessment report; the 365 grant is scoped 1:1.",
+    "file": "ADR-0033-assessment-televy-and-365-permission.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0034",
+    "title": "Onboarding project-management dashboard, R/Y/G milestones & task categories",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "`task.category` plus `project_milestone` with R/Y/G health and auto-completion checks power the onboarding dashboard.",
+    "file": "ADR-0034-onboarding-pm-and-task-categories.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0035",
+    "title": "Apollo as the global contact & company enrichment provider",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "Apollo joins the provider enum as a company-scope connection and becomes the global enrichment source.",
+    "file": "ADR-0035-apollo-enrichment-integration.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0036",
+    "title": "Company credential configuration in Settings",
+    "status": "accepted",
+    "date": "2026-06-07",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "A tabbed Settings page gains a Company credentials tab — one card per provider, secrets custodied in Key Vault.",
+    "file": "ADR-0036-company-credential-configuration.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0037",
+    "title": "Standard onboarding playbook template & checklist",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "A 9-phase, ~90-step onboarding playbook template in code, instantiated into milestones + checklist steps per project.",
+    "file": "ADR-0037-onboarding-playbook-template.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0038",
+    "title": "Per-connection poll cadence",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "`connection.poll_interval_minutes` (0 = manual/paused) with an auto-saving cadence selector per connection card.",
+    "file": "ADR-0038-per-connection-poll-cadence.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0039",
+    "title": "Per-source physical bronze tables + union-view merge → silver",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "One physical bronze table per (source, entity) read through union views, plus a new silver `device` entity.",
+    "file": "ADR-0039-per-source-bronze-tables.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0040",
+    "title": "Dark Web ID + Televy ingestion (credential_exposure entity)",
+    "status": "accepted",
+    "date": "2026-06-08",
+    "tags": [
+      "security-posture"
+    ],
+    "summary": "Dark Web ID compromises land in a new silver `credential_exposure`; Televy reports land as `assessment_artifact`.",
+    "file": "ADR-0040-darkwebid-televy-ingestion.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0041",
+    "title": "Gold knowledge layer + unified vector store (pinned Voyage AI embeddings)",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "Unified `knowledge_object` → `knowledge_embedding` gold store pinned system-wide to Voyage `voyage-3-large` @ 1024 dims.",
+    "file": "ADR-0041-gold-knowledge-vector-store.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0042",
+    "title": "Division of labor: direct reads OK, every process runs in the backend",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "topology"
+    ],
+    "summary": "The front end is strictly GUI: direct DB reads for rendering stay; every process runs through the backend API.",
+    "file": "ADR-0042-division-of-labor-reads-direct-processes-backend.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0043",
+    "title": "Adopt the settled AI stack; drop the legacy 1536-dim vector tables",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "Claude + Voyage are settled system-wide; migration 0046 drops the never-populated 1536-dim embedding tables.",
+    "file": "ADR-0043-settled-ai-stack-drop-legacy-vectors.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0044",
+    "title": "Silver `contract` and `ticket` entities",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "Migration 0050 adds typed silver `contract` + `ticket`, populated from bronze by the cloud pipeline's merge each sweep.",
+    "file": "ADR-0044-silver-contracts-tickets.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0045",
+    "title": "Server-action authorization (write capabilities) & fail-closed bootstrap",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "authz"
+    ],
+    "summary": "Eight write capabilities gate every mutating server action via `requireCapability`; bootstrap fails closed.",
+    "file": "ADR-0045-server-action-authorization.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0046",
+    "title": "Ticket board filters & saved/shareable list views",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "A `saved_view` table provides per-user, shared, and default saved list views over URL-param filters.",
+    "file": "ADR-0046-saved-list-views.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0047",
+    "title": "Read-only device & cloud-asset inventory",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "A `device_inventory_all` view merges silver devices with IT Glue configurations for a read-only inventory page.",
+    "file": "ADR-0047-device-inventory.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0048",
+    "title": "AI Agents operations page (orchestrator settings + activity)",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "The AI Agents page reads/writes the backend's `/agent/settings` and surfaces `agent.turn` audit activity with tiered fallback.",
+    "file": "ADR-0048-ai-agents-operations-page.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0049",
+    "title": "Materialize the agent core + AI Board persistence (migration 0056)",
+    "status": "accepted",
+    "date": "2026-06-09",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Migration 0056 materializes the agent core and AI Board persistence; model routing is a tier hint resolved at runtime.",
+    "file": "ADR-0049-board-runtime-persistence.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0050",
+    "title": "AI pages are admin-only; Settings gains an AI tab",
+    "status": "accepted",
+    "date": "2026-06-10",
+    "tags": [
+      "authz"
+    ],
+    "summary": "`canSeeAgentPages` (admin-only) gates the AI Agents and Board pages at all layers; Settings gains an AI tab.",
+    "file": "ADR-0050-admin-only-ai-pages-settings-ai-tab.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0051",
+    "title": "Security posture model — tenant mapping, posture silver, and the Imperion Secure Score",
+    "status": "accepted",
+    "date": "2026-06-10",
+    "tags": [
+      "security-posture"
+    ],
+    "summary": "Explicit admin-managed tenant mapping, pipeline-maintained posture silver, and a versioned pillar-based Imperion Secure Score snapshotted immutably per account.",
+    "file": "ADR-0051-security-posture-model-imperion-secure-score.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0052",
+    "title": "Project board model — project types, unified tasks, meetings linkage, sales activity",
+    "status": "accepted",
+    "date": "2026-06-10",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "Project types become data (a table, not an enum); one task model gains `project_id`; easy-mode deploys verify-to-close; meetings link via `interaction.project_id`.",
+    "file": "ADR-0052-project-board-tasks-meetings-sales-activity.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0053",
+    "title": "Campaign builders — events, scheduled sends, and the provider set",
+    "status": "accepted",
+    "date": "2026-06-10",
+    "tags": [
+      "gtm"
+    ],
+    "summary": "Events become first-class objects campaigns promote; `campaign_send` adds schedulable blasts; builders are forms + preview on Meta + ACS + Teams.",
+    "file": "ADR-0053-campaign-builders-events-scheduled-sends.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0054",
+    "title": "Board of Directors — influence personas, packet grounding, facilitator, advisors, and recommendation review",
+    "status": "accepted",
+    "date": "2026-06-10",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Personas are influence profiles, never impersonations.",
+    "file": "ADR-0054-board-influence-personas-and-governance.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0055",
+    "title": "Tiered agent autonomy policy — automation earned by track record",
+    "status": "accepted",
+    "date": "2026-06-10",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "A four-tier action policy, applied to every agent capability across all four repos",
+    "file": "ADR-0055-tiered-agent-autonomy-policy.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0056",
+    "title": "Release versioning standard — coordinated human-declared majors, 3-digit semver, release-please everywhere",
+    "status": "accepted",
+    "date": "2026-06-10",
+    "tags": [
+      "meta"
+    ],
+    "summary": "Option 3. The full normative standard lives in",
+    "file": "ADR-0056-release-versioning-standard.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0057",
+    "title": "v1 is the complete product — version recut (v1 Complete / v2 Refined / v3 TBD)",
+    "status": "accepted",
+    "date": "2026-06-11",
+    "tags": [
+      "meta"
+    ],
+    "summary": "Option 3. The recut, locked 2026-06-11",
+    "file": "ADR-0057-v1-complete-product-recut.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0058",
+    "title": "Composer 1:1 sends execute via the backend's approval-gated send path",
+    "status": "accepted",
+    "date": "2026-06-11",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "Composer 1:1 sends reuse the single approval-gated execute path (one consent gate, one audit shape) rather than adding a second send endpoint.",
+    "file": "ADR-0058-composer-sends-via-approval-gated-backend-path.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0059",
+    "title": "Defender incident ↔ Autotask ticket linkage as a dedicated link table",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "security-posture"
+    ],
+    "summary": "A standalone `defender_incident_ticket_link` (never a bronze column) whose one-ticket-per-incident PK is the sync-back idempotency key.",
+    "file": "ADR-0059-defender-incident-autotask-ticket-linkage.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0060",
+    "title": "Agent skills canon — an in-repo Claude Code plugin marketplace",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "meta"
+    ],
+    "summary": "This repo is the canonical home for agent skills, packaged as the",
+    "file": "ADR-0060-agent-skills-canon-plugin.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0061",
+    "title": "Interpreted Context Methodology as the business-process automation framework",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "The factory lives in git; the product lives in the platform.",
+    "file": "ADR-0061-icm-business-process-automation.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0062",
+    "title": "Reporting page as the central business-intelligence hub",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "reporting"
+    ],
+    "summary": "`/reporting` becomes the central BI hub: anchored sections — Sales",
+    "file": "ADR-0062-reporting-bi-hub.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0063",
+    "title": "DNS posture tracking — per-customer DNS state capture, golden drift, and Azure-managed verification",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "security-posture"
+    ],
+    "summary": "Two capture planes, one record store.",
+    "file": "ADR-0063-dns-posture-tracking.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0064",
+    "title": "PM collaboration — comments, mentions, notifications, attachments",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "pm"
+    ],
+    "summary": "Adopt the polymorphic model and a backend-dispatched notification pipeline",
+    "file": "ADR-0064-pm-collaboration-comments-mentions-notifications-attachments.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0065",
+    "title": "PM task structure — hierarchy, dependencies, assignment, custom fields, statuses, tags",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "pm"
+    ],
+    "summary": "Extend the existing `task`/`project` model",
+    "file": "ADR-0065-pm-task-structure-hierarchy-fields-statuses.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0066",
+    "title": "PM views — kanban board, calendar, timeline, multi-view",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "pm"
+    ],
+    "summary": "Build an in-app view layer, prioritised within the theme",
+    "file": "ADR-0066-pm-views-board-calendar-timeline.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0067",
+    "title": "CPQ — product/service catalog, price books, and guided quote → proposal",
+    "status": "superseded",
+    "date": "2026-06-12",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "Catalog. `product` rows: SKU, name, description, `kind` (`recurring` | `one_off`), default unit cost, default unit price, default term months (recurring), active flag.",
+    "file": "ADR-0067-cpq-catalog-pricebooks-quote.md",
+    "superseded_by": [
+      "ADR-0080"
+    ],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0068",
+    "title": "Conversational intelligence — call/meeting transcription, AI analysis, and search",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [],
+    "summary": "Pipeline shape: capture → transcribe → analyze → embed → surface.",
+    "file": "ADR-0068-conversational-intelligence-pipeline.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0069",
+    "title": "PM planning — time tracking, workload, goals, sprints, portfolio, baselines",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "pm"
+    ],
+    "summary": "Adopt the following model; build per the phase column in the requirements set",
+    "file": "ADR-0069-pm-planning-time-workload-goals-portfolio.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0070",
+    "title": "PM templates, recurring tasks, and form intake",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "pm"
+    ],
+    "summary": "Editable templates (E1, v2) — `project_template{ id, name, project_type_id,",
+    "file": "ADR-0070-pm-templates-recurrence-intake.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0071",
+    "title": "E-signature — DocuSign integration contract",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "Auth: JWT grant, token in backend Key Vault (ADR-0034/0042).",
+    "file": "ADR-0071-esign-docusign-integration.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0072",
+    "title": "Revenue forecasting — categories, probability, quota, and snapshots",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "Add forecasting fields to the deal.",
+    "file": "ADR-0072-revenue-forecasting-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0073",
+    "title": "Marketing automation — journeys, A/B, and lead scoring",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "A journey is a single object on the existing workflow substrate (RATIFIED).",
+    "file": "ADR-0073-marketing-automation-journeys.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0074",
+    "title": "Service-desk depth — SLA, CSAT/NPS, live chat, chatbot deflection, routing",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "Autotask is the ticket SoR; Imperion documents back via the API (RATIFIED).",
+    "file": "ADR-0074-service-desk-depth.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0075",
+    "title": "Self-serve report builder — governed semantic model over the BI hub",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "reporting"
+    ],
+    "summary": "A governed semantic model is the only query surface.",
+    "file": "ADR-0075-self-serve-report-builder.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0076",
+    "title": "Integration marketplace — declarative connector registry",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "Connectors are declared by a manifest (B).",
+    "file": "ADR-0076-integration-marketplace.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0077",
+    "title": "Premium service-management boundary — CMDB, ITIL, and asset lifecycle on top of Autotask SoR",
+    "status": "accepted",
+    "date": "2026-06-12",
+    "tags": [
+      "crm-parity"
+    ],
+    "summary": "Adopt a premium service-management layer under epic #371, governed by these",
+    "file": "ADR-0077-premium-service-management-boundary.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0078",
+    "title": "Feedback files to the app-dev queue (supersedes ADR-0013)",
+    "status": "accepted",
+    "date": "2026-06-11",
+    "tags": [
+      "surfaces"
+    ],
+    "summary": "The Feedback page files an idempotent Autotask ticket in the app-dev queue via backend #19, superseding the ADR-0013 GitHub coupling.",
+    "file": "ADR-0078-feedback-files-to-app-dev-queue.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0080",
+    "title": "Sale → delivery orchestration (KQM quote → Autotask project/ticket spine)",
+    "status": "accepted",
+    "date": "2026-06-13",
+    "tags": [
+      "sale-delivery"
+    ],
+    "summary": "KQM is the read-only quote SoR; Imperion builds no native quote engine.",
+    "file": "ADR-0080-sale-to-delivery-orchestration.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0081",
+    "title": "Delivery provisioning — template model, human-triggered bridge, contract gate",
+    "status": "proposed",
+    "date": "2026-06-13",
+    "tags": [
+      "sale-delivery"
+    ],
+    "summary": "Data-driven delivery templates. New frontend-owned schema (migration 0084)",
+    "file": "ADR-0081-delivery-provisioning-template-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0082",
+    "title": "Employee time tracking — website-authoritative timesheets, Autotask documentation, QuickBooks payment reconciliation",
+    "status": "accepted",
+    "date": "2026-06-13",
+    "tags": [
+      "finance"
+    ],
+    "summary": "Data model (per ADR-0039).",
+    "file": "ADR-0082-employee-time-tracking-and-payroll-reconciliation.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0083",
+    "title": "Employee expense tracking — website-authoritative monthly expense reports, MileIQ mileage, Autotask documentation, QuickBooks reimbursement reconciliation",
+    "status": "accepted",
+    "date": "2026-06-13",
+    "tags": [
+      "finance"
+    ],
+    "summary": "Data model (per ADR-0039).",
+    "file": "ADR-0083-employee-expense-tracking-and-reimbursement.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0084",
+    "title": "Claim migration & ADR numbers at merge, not at authoring",
+    "status": "accepted",
+    "date": "2026-06-13",
+    "tags": [
+      "meta"
+    ],
+    "summary": "Parallel sessions collide on self-allocated migration/ADR numbers; assign the real number at merge against current `main`. Issue/PR numbers stay GitHub-allocated.",
+    "file": "ADR-0084-merge-time-number-assignment.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0085",
+    "title": "QuickBooks payment fact = `Purchase` on Simple Start (supersedes the `BillPayment` reconciliation source)",
+    "status": "accepted",
+    "date": "2026-06-14",
+    "tags": [
+      "finance"
+    ],
+    "summary": "Keep Simple Start; re-target the authoritative payment fact from `BillPayment` to the",
+    "file": "ADR-0085-qbo-payment-fact-purchase-simple-start.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0086",
+    "title": "OKF-format semantic layer over the silver tier",
+    "status": "accepted",
+    "date": "2026-06-14",
+    "tags": [
+      "meta"
+    ],
+    "summary": "Adopt the OKF v0.1 format as the standard for a semantic layer over the",
+    "file": "ADR-0086-okf-semantic-layer-over-silver.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0087",
+    "title": "Agent orchestration & observability layer",
+    "status": "accepted",
+    "date": "2026-06-15",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Adopt a five-tier agent taxonomy documented in",
+    "file": "ADR-0087-agent-orchestration-and-observability-layer.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0088",
+    "title": "ICM agent runtime on self-hosted Managed Agents + domain-tiered context",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Adopt self-hosted Managed Agents as the ICM product-runtime executor, and",
+    "file": "ADR-0088-icm-self-hosted-managed-agents-runtime.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0089",
+    "title": "ICM least-privilege budget files (CONSTITUTION.yaml + domains/<d>/room.yaml)",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "agent-icm"
+    ],
+    "summary": "Ratify the ICM budget-file convention — name/location/`{tools, okf_rooms}` shape of the two files, and the \\\"absent budget ⇒ next-lower declared list\\\" degradation rule; extends ADR-0088 §3.",
+    "file": "ADR-0089-icm-budget-file-convention.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0090",
+    "title": "ADR ingestion overhaul — frontmatter, generated index, and decision consolidation",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "meta"
+    ],
+    "summary": "Add machine-readable frontmatter to every ADR, generate the README index + adr-index.json from it (CI-linted), and consolidate related decisions into retained dossiers.",
+    "file": "ADR-0090-adr-ingestion-overhaul.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  }
+]

@@ -1,3 +1,12 @@
+---
+adr: 0072
+title: "Revenue forecasting — categories, probability, quota, and snapshots"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Add forecasting fields to the deal."
+tags: [crm-parity]
+---
 # ADR-0072: Revenue forecasting — categories, probability, quota, and snapshots
 
 | Field | Value |
