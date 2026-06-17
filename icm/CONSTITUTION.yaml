@@ -8,9 +8,11 @@
 # failure. This file is the only place a NEW capability enters the agent layer —
 # adding a tool/room here is a deliberate, reviewed unit of work.
 #
-# NOTE: the budget-file convention itself (this file + domains/<d>/room.yaml) is
-# introduced by the gate and is NOT yet ADR-ratified — ratification is a tracked
-# follow-up. The clauses it enforces ARE ratified (CONSTITUTION.md §3/§5).
+# The budget-file convention itself (this file + domains/<d>/room.yaml) — its
+# name, location, {tools, okf_rooms} shape, and the absent-tier degradation rule
+# (a missing budget falls back to the next-lower declared list) — is ratified by
+# ADR-0089 (consolidated into ADR-0091), extending ADR-0088 §3. The clauses it
+# enforces are ratified separately (CONSTITUTION.md §3/§5).
 #
 # No secrets, no client PII (these files replicate to every agent machine,
 # ADR-0060). Tool and room names are references, never values.
