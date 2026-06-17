@@ -96,14 +96,42 @@ and never mix with runtime skills.
 1. **Job** — one sentence; one stage, one job. If a stage needs "and", split it.
 2. **Inputs** — a table: `| Source | Location | Scope | Why |`. Load nothing
    that isn't listed (layered context loading is the cost model).
-3. **Process** — numbered steps. Mark the model tier: `[haiku]` mechanical,
-   `[sonnet]` judgment/drafting (ADR-0043 settled stack).
+3. **Process** — numbered steps. Mark how each step runs:
+   - `[script]` — **deterministic executor code, no model call.** Mechanical work
+     with a single correct answer: data fetch, field extraction by known key, file
+     ops, dedupe lookups, cadence/date math, schema-shaped record assembly. Per the
+     MWP paper's scripts-vs-AI split (arXiv:2603.16021, §below), if a step has one
+     right output for a given input it is a script, not a prompt — running it as
+     code is cheaper, faster, and exactly reproducible. Reserve model tiers for
+     genuine interpretation.
+   - `[haiku]` — mechanical work that still needs a model (light reading,
+     fuzzy/judgment-lite extraction the cheap tier handles).
+   - `[sonnet]` — judgment/drafting (ADR-0043 settled stack).
 4. **Outputs** — artifact name + format. Plain markdown; the next stage's
    input. Every output is editable by a human before the next stage runs.
 5. **Audit** — pass/fail checklist with unambiguous conditions. A failed audit
    parks the run, it never "best-efforts" forward.
 6. **Checkpoint** (only where present) — what the human approves, and what
    `auto` mode is allowed to self-approve.
+
+### Method note — scripts vs AI, and where checkpoints go
+
+The marker scheme and checkpoint placement follow the MWP paper that the upstream
+method draws on: Van Clief & McDermott, *"Interpretable Context Methodology: Folder
+Structure as Agentic Architecture"* (arXiv:2603.16021, 2026).
+
+- **Scripts-vs-AI split.** The paper separates deterministic mechanical work
+  (`[script]` here) from work that needs a model. A step belongs in code, not a
+  prompt, when its output is fully determined by its input — spending a model call
+  on it adds cost, latency, and a chance of drift for no interpretive gain. Mark
+  such steps `[script]`; reserve `[haiku]`/`[sonnet]` for steps that genuinely
+  interpret.
+- **U-shaped intervention finding.** The paper reports that human/checkpoint
+  intervention concentrates at the **start and end** of a pipeline (highest early,
+  where inputs are ambiguous, and at the final send/commit gate) and is lowest in
+  the middle — a U shape. This is supporting evidence for our checkpoint placement:
+  classification/triage scrutiny up front and an approval gate before any outbound
+  send (stage 04-class, ADR-0058), with mechanical mid-stages left to run.
 
 ## Rules
 
