@@ -1,13 +1,16 @@
 ---
 adr: 0039
 title: "Per-source physical bronze tables + union-view merge → silver"
-status: accepted
+status: consolidated
 date: 2026-06-08
 repo: frontend
 summary: "One physical bronze table per (source, entity) read through union views, plus a new silver `device` entity."
 tags: [medallion]
+consolidated_into: ADR-0092
 ---
 # ADR-0039: Per-source physical bronze tables + union-view merge → silver
+
+> Consolidated into [ADR-0092](ADR-0092-medallion-data-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

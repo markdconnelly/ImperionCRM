@@ -7,8 +7,11 @@ repo: frontend
 summary: "Enum-discriminated `contact_source`/`account_source` bronze tables — replaced by per-source physical tables in ADR-0039."
 superseded_by: ["ADR-0039"]
 tags: [medallion]
+consolidated_into: ADR-0092
 ---
 # ADR-0032: Per-source bronze tables for contacts and companies
+
+> Consolidated into [ADR-0092](ADR-0092-medallion-data-platform-consolidated.md) (status remains **Superseded** by ADR-0039). Retained for history.
 
 | Field | Value |
 |---|---|
