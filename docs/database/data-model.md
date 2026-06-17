@@ -1,8 +1,17 @@
-# Imperion CRM — Data Model
+# Imperion Business Manager — Data Model (ERD)
 
-- **Status:** Draft (decisions D1–D11 locked 2026-06-07)
-- **Related:** [product-requirements](../architecture/product-requirements.md),
-  ADR-0010 … ADR-0016, [data-access-layer](./data-access-layer.md)
+> **This is the structural reference** — every entity, column, FK, and enum, organized
+> into five `erdiagram` blocks. For the *narrative* (how the store is organized, the
+> medallion tiers, how to navigate, migration discipline) start at
+> [schema-guide.md](schema-guide.md); for the *meaning* of each silver entity
+> (source-of-record, joins, PII) see the governed
+> [OKF semantic layer](semantic-layer/index.md) (ADR-0086). **Updated on every schema
+> change** (CLAUDE.md §8).
+
+- **Related:** [database overview](README.md) · [schema-guide](schema-guide.md) ·
+  [data-access-layer](./data-access-layer.md) ·
+  [product-requirements](../architecture/product-requirements.md) ·
+  [ADR-0092 medallion data platform](../decision-records/ADR-0092-medallion-data-platform-consolidated.md)
 - **Store:** PostgreSQL + `pgvector` (ADR-0003), single unified store: system of
   record, embedding store, and agent memory.
 
