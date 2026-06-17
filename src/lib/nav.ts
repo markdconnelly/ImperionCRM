@@ -49,6 +49,7 @@ export const navGroups: NavItem[] = [
       { key: "segments", label: "Segments", icon: "Users", href: "/segments" },
       { key: "campaigns", label: "Campaigns", icon: "Megaphone", href: "/campaigns" },
       { key: "journeys", label: "Journeys", icon: "Waypoints", href: "/journeys" },
+      { key: "message-templates", label: "Message templates", icon: "Mail", href: "/message-templates" },
       { key: "events", label: "Events", icon: "CalendarDays", href: "/events" },
       { key: "service-desk-chat", label: "Live Chat", icon: "Headset", href: "/service-desk/chat" },
       { key: "service-desk", label: "Omnichannel queue", icon: "Inbox", href: "/service-desk" },

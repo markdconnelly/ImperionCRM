@@ -159,6 +159,9 @@ import type {
   JourneyRow,
   JourneyDetail,
   JourneyInput,
+  MessageTemplateRow,
+  MessageTemplateOption,
+  MessageTemplateInput,
   WorkParentType,
   WorkComment,
   WorkActivityEntry,
@@ -2288,6 +2291,24 @@ export interface WorkflowsRepository {
   saveJourney(id: string, input: JourneyInput): Promise<void>;
 }
 
+// ── Message templates — render-content store for journey sends (#731, ADR-0073) ──
+
+/** The render-content store a journey send step references by id (migration 0134). */
+export interface MessageTemplatesRepository {
+  /** All templates, newest first (the index page). */
+  listTemplates(): Promise<MessageTemplateRow[]>;
+  /** Lightweight {id,name,channel} options for the journey-builder picker. */
+  listTemplateOptions(): Promise<MessageTemplateOption[]>;
+  /** One template by id, or null. */
+  getTemplate(id: string): Promise<MessageTemplateRow | null>;
+  /** Create a template; returns its id. */
+  createTemplate(input: MessageTemplateInput, ownerEmail: string): Promise<string>;
+  /** Update an existing template. */
+  updateTemplate(id: string, input: MessageTemplateInput): Promise<void>;
+  /** Delete a template. */
+  deleteTemplate(id: string): Promise<void>;
+}
+
 // ── Knowledge search & security posture ──────────────────────────────────────
 
 /** Knowledge repository: search over the gold layer (summaries, dossier, contacts). */
@@ -2817,6 +2838,7 @@ export interface Repositories {
   events: EventsRepository;
   leads: LeadsRepository;
   workflows: WorkflowsRepository;
+  messageTemplates: MessageTemplatesRepository;
   knowledge: KnowledgeRepository;
   security: SecurityRepository;
   work: WorkRepository;
