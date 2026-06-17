@@ -42,7 +42,7 @@ control produces **evidence**, and the evidence is queryable after the fact.
 
 | Obligation | Driver | Control (where it's enforced) | Evidence |
 | --- | --- | --- | --- |
-| **Outreach** (email / SMS / calls) | TCPA · CAN-SPAM · GDPR | Outbound is **blocked unless `current_consent` for that channel is `opt_in`** — checked at draft *and* re-asserted at execution ([data-governance](../data-governance/README.md), ADR-0014). | `consent_event` append-only ledger; send records in `audit_log`. |
+| **Outreach** (email / SMS / calls) | TCPA · CAN-SPAM · GDPR | Outbound is **blocked unless `current_consent` for that channel is `opt_in`** — checked at draft *and* re-asserted at execution ([data-governance](../data-governance/README.md), ADR-0014). Inbound opt-in is captured on the public [`/opt-in` page](./public-opt-in-and-sms-consent.md) (the ACS toll-free SMS verification artifact). | `consent_event` append-only ledger; send records in `audit_log`; opt-in proof on the bronze `lead_capture_event`. |
 | **Profiling & enrichment** | GDPR lawful basis | Every enriched fact carries a **`lawful_basis`** (`consent \| legitimate_interest \| contract \| public_data`) + source (ADR-0025). | `contact_enrichment.lawful_basis` / `source` / `observed_at` / `expires_at`. |
 | **Ad targeting** | Consent | An **`ad_targeting`** consent gate filters non-consenting audience members rather than silently dropping them (ADR-0026). | `consent_event` (`ad_targeting`); audience-launch records. |
 | **Access & least privilege** | Least-privilege / insider risk | **Five-role RBAC** + a **fail-closed write-capability gate** on every mutating action, defaulting to the most-restricted role ([ADR-0095](../decision-records/ADR-0095-authorization-rbac-consolidated.md), from ADR-0016/0030/0045). | `audit_log`; the role × capability stress-test grid in CI. |
@@ -83,6 +83,7 @@ obligations ask for.
 
 ## See also
 
+[Public opt-in & SMS consent](./public-opt-in-and-sms-consent.md) ·
 [data-governance](../data-governance/README.md) ·
 [security](../security/README.md) ·
 [logging-and-monitoring](../security/logging-and-monitoring.md) ·
