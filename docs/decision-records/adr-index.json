@@ -1020,7 +1020,7 @@
   {
     "adr": "0080",
     "title": "Sale → delivery orchestration (KQM quote → Autotask project/ticket spine)",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-13",
     "tags": [
       "sale-delivery"
@@ -1028,7 +1028,7 @@
     "summary": "KQM is the read-only quote SoR; Imperion builds no native quote engine.",
     "file": "ADR-0080-sale-to-delivery-orchestration.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0096"
   },
   {
     "adr": "0081",
@@ -1041,7 +1041,7 @@
     "summary": "Data-driven delivery templates. New frontend-owned schema (migration 0084)",
     "file": "ADR-0081-delivery-provisioning-template-model.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0096"
   },
   {
     "adr": "0082",
@@ -1222,6 +1222,19 @@
     ],
     "summary": "Consolidated dossier of the authorization / RBAC / access-control cluster: the Entra-group-sourced identity + role model, GUI/route/field gating, the fail-closed write-capability matrix over every mutating server action, the admin-only AI surfaces, and break-glass emergency access. Carries every member decision and amendment clause verbatim with a zero-loss traceability table; member ADRs are retained. SECURITY-CRITICAL — every fail-closed/bootstrap/break-glass clause is preserved verbatim.",
     "file": "ADR-0095-authorization-rbac-consolidated.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0096",
+    "title": "Sale → delivery orchestration & provisioning — consolidated dossier",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "sale-delivery"
+    ],
+    "summary": "Consolidated dossier of the sale→delivery cluster: the KQM-quote-as-read-only-SoR orchestration spine (won quote → Autotask project/ticket execution record, idempotency via Imperion tracking tables) and the data-driven delivery-template / human-triggered-bridge / hard-contract-gate provisioning model. The orchestration spine (ADR-0080) is ACCEPTED; the provisioning model (ADR-0081) is PROPOSED — not yet ratified — and is labeled as such inline. Carries every member decision and amendment clause verbatim with a zero-loss traceability table; member ADRs are retained with their real statuses (0080 consolidated, 0081 PROPOSED preserved).",
+    "file": "ADR-0096-sale-delivery-consolidated.md",
     "superseded_by": [],
     "consolidated_into": null
   }

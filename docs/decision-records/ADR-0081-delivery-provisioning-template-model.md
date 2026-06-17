@@ -6,8 +6,11 @@ date: 2026-06-13
 repo: frontend
 summary: "Data-driven delivery templates. New frontend-owned schema (migration 0084)"
 tags: [sale-delivery]
+consolidated_into: ADR-0096
 ---
 # ADR-0081: Delivery provisioning — template model, human-triggered bridge, contract gate
+
+> Carried in the consolidated dossier [ADR-0096](ADR-0096-sale-delivery-consolidated.md) for zero-loss; retained for history. **Status preserved as Proposed — this decision is NOT yet ratified; consolidation did not promote it to accepted/consolidated.**
 
 | Field | Value |
 |---|---|

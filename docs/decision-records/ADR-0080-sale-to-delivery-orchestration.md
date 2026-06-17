@@ -1,13 +1,16 @@
 ---
 adr: 0080
 title: "Sale → delivery orchestration (KQM quote → Autotask project/ticket spine)"
-status: accepted
+status: consolidated
 date: 2026-06-13
 repo: frontend
 summary: "KQM is the read-only quote SoR; Imperion builds no native quote engine."
 tags: [sale-delivery]
+consolidated_into: ADR-0096
 ---
 # ADR-0080: Sale → delivery orchestration (KQM quote → Autotask project/ticket spine)
+
+> Consolidated into [ADR-0096](ADR-0096-sale-delivery-consolidated.md). Retained for history; the decision's status is preserved as **Accepted** (ratified by Mark, 2026-06-13).
 
 | Field | Value |
 |---|---|
