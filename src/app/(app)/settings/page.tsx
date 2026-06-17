@@ -10,12 +10,9 @@ import { OrchestratorSettingsCard } from "@/components/agent/orchestrator-settin
 import { getAgentSettingsState } from "@/lib/agent/settings-data";
 import { settingsSourceNote } from "@/lib/agent/settings";
 import { saveAgentSettingsAction } from "@/app/(app)/agents/actions";
-import { ConnectAccount } from "@/components/integrations/connect-account";
-import { ConnectionCard } from "@/components/integrations/connection-card";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { getRepositories } from "@/lib/data";
 import {
-  connectAction,
   connectQuickBooksAction,
   disconnectAction,
   grantGdapAction,
@@ -29,10 +26,6 @@ import {
   deleteTenantMappingAction,
   saveTenantMappingAction,
 } from "./tenant-mapping-actions";
-import {
-  CONNECT_RESULT_NOTICES,
-  isConnectResult,
-} from "@/lib/integrations/personal-oauth";
 import { QBO_CONNECT_NOTICES, isQboConnectResult } from "@/lib/integrations/qbo-connect";
 
 /** Human labels for the application roles. */
@@ -54,40 +47,11 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-/** Friendly names for the connect-flow notice (falls back to the raw key). */
-const PROVIDER_LABEL: Record<string, string> = {
-  m365: "Microsoft 365",
-  google: "Google",
-  youtube: "YouTube",
-  linkedin: "LinkedIn",
-  facebook: "Facebook",
-  plaud: "Plaud",
-};
-
 const NOTICE_TONE: Record<"success" | "warning" | "error", string> = {
   success: "border-green/40 text-green",
   warning: "border-amber/40 text-amber",
   error: "border-red/40 text-red",
 };
-
-/**
- * One-shot notice for an OAuth connect outcome (backend ADR-0038). The connect
- * action and the `/api/connections/[provider]/callback` route both land on
- * `/settings?tab=connections&connect=<result>`; this renders it.
- */
-function ConnectNotice({ connect, provider }: { connect?: string; provider?: string }) {
-  if (!connect || !isConnectResult(connect)) return null;
-  const notice = CONNECT_RESULT_NOTICES[connect];
-  const label = provider ? (PROVIDER_LABEL[provider] ?? provider) : "The account";
-  return (
-    <p
-      role="status"
-      className={`rounded-md border bg-panel-2 px-3 py-2 text-sm ${NOTICE_TONE[notice.tone]}`}
-    >
-      {notice.message(label)}
-    </p>
-  );
-}
 
 /**
  * One-shot notice for a QuickBooks company-connect outcome (#530). Both
@@ -122,13 +86,11 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{
     tab?: string;
-    connect?: string;
-    provider?: string;
     qbo?: string;
     qboStatus?: string;
   }>;
 }) {
-  const { tab, connect, provider: connectProvider, qbo, qboStatus } = await searchParams;
+  const { tab, qbo, qboStatus } = await searchParams;
   const session = await auth();
   const roles = session?.user?.roles ?? ["support"];
   // Settings is admin-only (ADR-0030). Middleware already redirects, but guard
@@ -140,9 +102,8 @@ export default async function SettingsPage({
   const rolesLabel = roles.map((r) => ROLE_LABEL[r] ?? r).join(", ");
 
   const { connections, crm, security } = getRepositories();
-  const [personal, company, agentSettings, tenantMappings, unmappedTenants, accounts] =
+  const [company, agentSettings, tenantMappings, unmappedTenants, accounts] =
     await Promise.all([
-      connections.listUserConnections(email),
       connections.listCompanyConnections(),
       getAgentSettingsState(),
       security.listTenantMappings(),
@@ -165,6 +126,19 @@ export default async function SettingsPage({
           Profile and roles come from Entra (ADR-0002/0016). To change them, update your
           Entra account — they sync on sign-in.
         </p>
+      </Card>
+
+      <Card title="Your connections">
+        <p className="text-sm text-dim">
+          Your personal 365 / social account connections moved to your profile (#796) —
+          they are yours, distinct from the company credentials below.
+        </p>
+        <Link
+          href="/profile"
+          className="mt-3 inline-block rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+        >
+          Open your profile
+        </Link>
       </Card>
 
       <Card title="Appearance">
@@ -229,40 +203,6 @@ export default async function SettingsPage({
         sourceNote={settingsSourceNote(agentSettings.source)}
         saveAction={saveAgentSettingsAction}
       />
-    </section>
-  );
-
-  // ── Your connections tab (personal, ADR-0024) ────────────────────────────────
-  const connectionsPanel = (
-    <section className="flex flex-col gap-3">
-      <div>
-        <h3 className="font-display text-sm font-semibold tracking-tight">
-          Your connected accounts
-        </h3>
-        <p className="mt-0.5 text-sm text-dim">
-          Connect your own 365 / social accounts so your communications flow into the
-          timeline — attributed first to you, then to the company. Tokens live in Key Vault.
-        </p>
-      </div>
-      <ConnectNotice connect={connect} provider={connectProvider} />
-      <ConnectAccount connectAction={connectAction} />
-      {personal.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {personal.map((c) => (
-            <ConnectionCard
-              key={c.id}
-              connection={c}
-              disconnectAction={disconnectAction}
-              pollAction={setPollIntervalAction}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-dim">No personal accounts connected yet.</p>
-      )}
-      <Link href="/consent" className="text-sm text-accent hover:underline">
-        Consent ledger →
-      </Link>
     </section>
   );
 
@@ -337,13 +277,12 @@ export default async function SettingsPage({
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Settings"
-        description="Your profile, connections, the company integration credentials, and configuration tools."
+        description="Your profile, the company integration credentials, and configuration tools."
       />
       <SettingsTabs
         initialTab={tab}
         profile={profile}
         ai={aiPanel}
-        connections={connectionsPanel}
         credentials={credentials}
         tenants={tenantsPanel}
         tools={toolsPanel}

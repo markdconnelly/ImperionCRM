@@ -5,8 +5,9 @@
  * `/connections/{provider}/{start,callback,disconnect}`); this module holds the
  * front end's pure decision logic so it can be unit-tested without a session:
  * which providers do live OAuth, how a provider callback's query string is
- * classified, and how flow outcomes round-trip through the Settings page URL
- * (`/settings?tab=connections&connect=<result>&provider=<p>`) as a notice.
+ * classified, and how flow outcomes round-trip through the Profile page URL
+ * (`/profile?connect=<result>&provider=<p>`) as a notice (#796: personal
+ * connections moved off admin-only Settings onto the all-auth Profile page).
  *
  * Deliberately NOT server-only: pure functions + constants, no secrets.
  */
@@ -100,13 +101,15 @@ export function isConnectResult(value: string): value is ConnectResult {
 }
 
 /**
- * Relative URL of the Settings connections tab carrying a flow outcome. Both the
- * connect action and the callback route land here; the page turns it into a notice.
+ * Relative URL of the Profile page carrying a flow outcome (#796). Both the
+ * connect action and the callback route land here; the page turns it into a
+ * notice. Personal connections live on `/profile` (all authenticated users),
+ * distinct from admin-only company credentials under Settings.
  */
-export function settingsConnectionsPath(result: ConnectResult, provider?: string): string {
-  const params = new URLSearchParams({ tab: "connections", connect: result });
+export function profileConnectionsPath(result: ConnectResult, provider?: string): string {
+  const params = new URLSearchParams({ connect: result });
   if (provider) params.set("provider", provider);
-  return `/settings?${params.toString()}`;
+  return `/profile?${params.toString()}`;
 }
 
 /** What the provider's redirect back to our callback route means. */

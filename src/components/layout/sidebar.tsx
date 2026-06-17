@@ -266,20 +266,30 @@ export function Sidebar({
             collapsed && "flex-col gap-2 px-0",
           )}
         >
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-panel-2 text-xs font-medium"
-            title={user.name}
+          {/* Avatar chip links to the user's profile (#796). The sign-out form
+              stays a sibling so its button keeps working. */}
+          <Link
+            href="/profile"
+            title="Your profile"
+            className={cn(
+              "flex min-w-0 items-center gap-3 rounded-md hover:bg-panel-2",
+              collapsed ? "justify-center" : "flex-1 px-1 py-0.5",
+            )}
           >
-            {initialsOf(user.name)}
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm">{user.name}</div>
-              <div className="truncate text-xs text-dim">
-                {user.email || "Entra · SSO"}
-              </div>
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-panel-2 text-xs font-medium"
+            >
+              {initialsOf(user.name)}
             </div>
-          )}
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm">{user.name}</div>
+                <div className="truncate text-xs text-dim">
+                  {user.email || "Entra · SSO"}
+                </div>
+              </div>
+            )}
+          </Link>
           <form action={signOutAction} className={cn(!collapsed && "shrink-0")}>
             <button
               type="submit"

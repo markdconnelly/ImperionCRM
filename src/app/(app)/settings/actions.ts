@@ -14,95 +14,13 @@ import { classifyServiceError, isBackendNotConfigured } from "@/lib/services/cal
 import { ServiceCallError } from "@/lib/services/external-client";
 import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
-import {
-  isConnectableProvider,
-  isPersonalOAuthProvider,
-  settingsConnectionsPath,
-  type ConnectResult,
-} from "@/lib/integrations/personal-oauth";
+import { isPersonalOAuthProvider } from "@/lib/integrations/personal-oauth";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 
-// Default OAuth scopes recorded on the STUB path only (backend unavailable / Plaud).
-// On a live connect the backend writes the real granted scopes (backend ADR-0038).
-const DEFAULT_SCOPES: Record<string, string[]> = {
-  m365: ["Mail.Read", "Calendars.Read", "Chat.Read"],
-  google: ["gmail.readonly", "calendar.readonly"],
-  youtube: ["youtube.readonly"],
-  linkedin: ["openid", "profile", "email"], // OIDC scopes — r_liteprofile is deprecated (backend ADR-0038)
-  facebook: ["public_profile", "pages_read_engagement"],
-  plaud: ["recordings.read"],
-};
-
-/**
- * Connect a personal external account (ADR-0024 + backend ADR-0038). For the live
- * OAuth providers this starts the backend's authorization-code flow (the backend
- * parks a one-time CSRF state in Key Vault and returns the provider's consent URL)
- * and redirects the browser there; the provider then redirects back to
- * `/api/connections/{provider}/callback`, which finishes the exchange server-side
- * and lands on Settings with a notice. When the backend (or the provider's app
- * registration) isn't configured yet — or for Plaud, which is key-based — this
- * degrades to the previous stub behavior: record the row locally and say so.
- */
-export async function connectAction(formData: FormData) {
-  const provider = String(formData.get("provider") ?? "");
-  const scope = String(formData.get("scope") ?? "user");
-  const displayName = String(formData.get("displayName") ?? "").trim() || null;
-  await requireCapability("settings:write");
-
-  // This action only connects PERSONAL accounts: the Settings buttons post
-  // scope="user" and a known provider. Anything else is a tampered/stale form —
-  // reject before any DB write so raw values never reach the connection enums (#194).
-  if (scope !== "user" || !isConnectableProvider(provider)) {
-    redirect(settingsConnectionsPath("error", provider || undefined));
-  }
-
-  // Fail closed when the signed-in employee can't be resolved to an app_user: a
-  // user-scope connection row must have an owner, never owner_user_id = NULL (#194).
-  const session = await auth();
-  const email = session?.user?.email ?? null;
-  const userId = email ? await resolveAppUserIdByEmail(email) : null;
-  if (!email || !userId) {
-    redirect(settingsConnectionsPath("error", provider));
-  }
-
-  // Live flow — only for the OAuth providers (Plaud is key-based, stub by design).
-  let authorizationUrl: string | null = null;
-  let failure: ConnectResult | null = null;
-  if (isPersonalOAuthProvider(provider)) {
-    try {
-      const res = await connectionsService.startOAuth(provider, {
-        userId,
-        displayName: displayName ?? email,
-      });
-      authorizationUrl = res.authorizationUrl;
-    } catch (err) {
-      if (!isBackendNotConfigured(err)) {
-        console.error(`connectAction(${provider}) backend start failed:`, err);
-        failure = "error";
-      }
-      // 501 / unset INTEGRATION_SERVICE_URL → fall through to the stub below.
-    }
-  }
-
-  // redirect() throws — keep it outside any try/catch. The backend callback writes
-  // the connection row; this action records nothing for the live path.
-  if (authorizationUrl) redirect(authorizationUrl);
-  if (failure) redirect(settingsConnectionsPath(failure, provider));
-
-  // Stub path: record the connection row locally so the card renders, and surface a
-  // notice that the flow isn't live yet. Validation above guarantees scope="user", an
-  // allowlisted provider, and a resolvable owner — no orphaned rows (#194).
-  const { connections } = getRepositories();
-  await connections.connect({
-    scope,
-    ownerEmail: email,
-    provider,
-    displayName: displayName ?? email,
-    scopes: DEFAULT_SCOPES[provider] ?? [],
-  });
-  revalidatePath("/settings");
-  redirect(settingsConnectionsPath("stubbed", provider));
-}
+// Personal connect (`connectAction`) moved to `profile/actions.ts` (#796) — personal
+// connections now live on the all-auth Profile page. The generic disconnect / poll
+// actions below stay here: they are shared by the company-credential cards (Settings)
+// and the personal connection cards (Profile), so they revalidate BOTH paths.
 
 /**
  * Disconnect a connection. For live per-user OAuth providers the backend is called
@@ -131,6 +49,7 @@ export async function disconnectAction(formData: FormData) {
           // deleting it and stranding a live token in Key Vault.
           console.error(`disconnectAction(${provider}) backend revoke failed:`, err);
           revalidatePath("/settings");
+          revalidatePath("/profile");
           return;
         }
       }
@@ -140,6 +59,7 @@ export async function disconnectAction(formData: FormData) {
   const { connections } = getRepositories();
   await connections.disconnect(id);
   revalidatePath("/settings");
+  revalidatePath("/profile");
 }
 
 /**
@@ -155,6 +75,7 @@ export async function setPollIntervalAction(formData: FormData) {
   const { connections } = getRepositories();
   await connections.setPollInterval(id, Math.floor(minutes));
   revalidatePath("/settings");
+  revalidatePath("/profile");
 }
 
 /**
