@@ -83,8 +83,11 @@ views (ADR-0039, which superseded the older single-enum-discriminated design ADR
 - **Devices:** `itglue_devices`, `m365_devices`, `website_devices`.
 - Plus the many feed-specific bronze tables — Meta business, Defender
   incidents/alerts, Entra auth-methods, SharePoint sites, Entra groups, DNS posture,
-  QuickBooks invoices/bills/purchases, and the on-prem security-posture set (Secure
-  Score, Sentinel, Entra/Intune policies, Autotask contracts/tickets, IT Glue export).
+  QuickBooks invoices/bills/purchases, the on-prem security-posture set (Secure
+  Score, Sentinel, Entra/Intune policies, Autotask contracts/tickets, IT Glue export),
+  and the per-client Azure ARM cloud-resource set (`cloud_subscriptions` /
+  `cloud_resource_groups` / `cloud_resources`, source `azure_arm`, migration 0130 — the
+  CMDB cloud-asset feed, distinct from the partner-tenant `azure_*` posture set).
 
 The `source` is **implicit in the table name** (`365` → `m365_*` because a SQL
 identifier can't start with a digit; the UI label stays "Microsoft 365"). Each bronze
