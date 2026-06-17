@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.20.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.19.0...imperion-crm-v0.20.0) (2026-06-17)
+
+
+### Features
+
+* **opt-in:** public SMS/email opt-in & consent capture page ([#217](https://github.com/markdconnelly/ImperionCRM/issues/217)) ([#848](https://github.com/markdconnelly/ImperionCRM/issues/848)) ([ceed90d](https://github.com/markdconnelly/ImperionCRM/commit/ceed90d48c5c44b0d0955024f558af6b0ebf8b46))
+* **reporting:** expense analytics report in the BI hub ([#492](https://github.com/markdconnelly/ImperionCRM/issues/492)) ([#846](https://github.com/markdconnelly/ImperionCRM/issues/846)) ([590d9ca](https://github.com/markdconnelly/ImperionCRM/commit/590d9ca82b040c111a07fc67721f779bd3623328))
+* **reporting:** finance domain report page ([#832](https://github.com/markdconnelly/ImperionCRM/issues/832)) ([#841](https://github.com/markdconnelly/ImperionCRM/issues/841)) ([7a5a2b2](https://github.com/markdconnelly/ImperionCRM/commit/7a5a2b21fe67b15df07e4fd9205a9522be632a26))
+* **reporting:** marketing domain report page ([#828](https://github.com/markdconnelly/ImperionCRM/issues/828)) ([#837](https://github.com/markdconnelly/ImperionCRM/issues/837)) ([b6a624b](https://github.com/markdconnelly/ImperionCRM/commit/b6a624bdf5f72f1f0901484420b13440a0b02539))
+* **reporting:** project domain report page ([#830](https://github.com/markdconnelly/ImperionCRM/issues/830)) ([#838](https://github.com/markdconnelly/ImperionCRM/issues/838)) ([5d1a708](https://github.com/markdconnelly/ImperionCRM/commit/5d1a7083e01a9268216ea3f35397e8ceae07e2fb))
+* **reporting:** sales domain report page ([#829](https://github.com/markdconnelly/ImperionCRM/issues/829)) ([#840](https://github.com/markdconnelly/ImperionCRM/issues/840)) ([6a0fd67](https://github.com/markdconnelly/ImperionCRM/commit/6a0fd6734becdbeeb68b29d7143baff8aadbc5a8))
+* **reporting:** service domain report page ([#831](https://github.com/markdconnelly/ImperionCRM/issues/831)) ([#839](https://github.com/markdconnelly/ImperionCRM/issues/839)) ([580a410](https://github.com/markdconnelly/ImperionCRM/commit/580a4109ea8789f49ff47c1ce45c98e221f32b11))
+* **security:** tenant hygiene posture — domains, app regs, role assignments bronze + benchmark ([#260](https://github.com/markdconnelly/ImperionCRM/issues/260)) ([#845](https://github.com/markdconnelly/ImperionCRM/issues/845)) ([1204d67](https://github.com/markdconnelly/ImperionCRM/commit/1204d67dea6c4682d2e1b0a0fed531df77974fe7))
+* **settings:** build out tenant-mapping, global connections, assessment templates, SLA overview ([#833](https://github.com/markdconnelly/ImperionCRM/issues/833)) ([#842](https://github.com/markdconnelly/ImperionCRM/issues/842)) ([46c450c](https://github.com/markdconnelly/ImperionCRM/commit/46c450c1768c199989e99be400523180041a482d))
+
 ## [0.19.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.18.0...imperion-crm-v0.19.0) (2026-06-17)
 
 
