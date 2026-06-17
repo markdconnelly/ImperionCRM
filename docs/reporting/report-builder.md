@@ -1,8 +1,13 @@
 # Self-serve report builder (UI + executor)
 
-The report builder lets a user pick a reportable object, choose fields,
-aggregations, grouping and filters, choose a visualization, and preview + save the
-result — all over the governed [semantic model](semantic-model.md) (ADR-0075 §1).
+[← Reporting](README.md) · [Semantic model](semantic-model.md) · [Dashboards](dashboards.md)
+
+The report builder is the **no-code, self-serve** reporting surface of **Imperion Business
+Manager**. A user picks a reportable object, chooses fields, aggregations, grouping and
+filters, chooses a visualization, and previews + saves the result — all over the governed
+[semantic model](semantic-model.md) (ADR-0075 §1). There is **no raw-SQL path**: a report
+can only ever scan a curated read the BI hub already runs.
+
 This note covers the **builder UI + executor** (#411); the persistence schema
 (`report_definition` / `dashboard` / `dashboard_item`, migration 0124) and accessors
 are #410, and the registry itself is the [semantic model](semantic-model.md) (#409).
@@ -25,6 +30,16 @@ ownership (the data layer enforces owner-only mutation) plus field-level RBAC.
 ADR-0075 §5: "the read model, not ad-hoc table scans, backs reports." So execution is
 **not** dynamic SQL. The flow:
 
+```mermaid
+flowchart TB
+    SEL["User selection<br/>(object · fields · aggs · group-by · filters · viz)"]
+    LOAD["Load<br/>curated-sources.ts -> ONE curated repo read"]
+    VAL["Validate + strip<br/>validateReportSelection (run-time RBAC)"]
+    SHAPE["Shape<br/>report-runner.ts (pure: project / group / aggregate)"]
+    RENDER["Render<br/>report-result-view.tsx (table + Recharts)"]
+    SEL --> LOAD --> VAL --> SHAPE --> RENDER
+```
+
 1. **Load** — [`curated-sources.ts`](../../src/lib/reporting/curated-sources.ts) maps
    each reportable object to ONE existing curated repository read (e.g. `account` →
    `crm.listAccounts()`) and projects its rows to a flat row set keyed by the
@@ -42,6 +57,9 @@ ADR-0075 §5: "the read model, not ad-hoc table scans, backs reports." So execut
    - **Aggregate mode** (any group-by, or any real aggregation): bucket by the group-by
      dimensions and roll up each measure (`count`/`sum`/`avg`/`min`/`max`). Exempt from
      the required-filter gate (a roll-up collapses the scan to bounded buckets).
+4. **Render** — [`report-result-view.tsx`](../../src/components/reporting/report-result-view.tsx)
+   shows a table always, plus a Recharts bar/line chart when the viz asks for one and
+   the result has a categorical dimension + a numeric measure (ADR-0021).
 
 ## Query-cost guardrails (#413, ADR-0075 §5)
 
@@ -63,9 +81,6 @@ controls, both honest (blocked/capped state is shown, never silent):
 Guardrails bound *cost*, not *access* — field RBAC stays in the grant path (below). To
 mark a new object large, add `guardrail: { requiresFilter: true }` (and/or a
 `maxDetailRows` override) to its registry entry; nothing else changes.
-4. **Render** — [`report-result-view.tsx`](../../src/components/reporting/report-result-view.tsx)
-   shows a table always, plus a Recharts bar/line chart when the viz asks for one and
-   the result has a categorical dimension + a numeric measure (ADR-0021).
 
 ## Security
 
@@ -79,6 +94,8 @@ mark a new object large, add `guardrail: { requiresFilter: true }` (and/or a
   enforces owner-only mutation (admins may delete a shared report). `report_definition`
   stores a staff-authored query *shape* (object/field names + filter values), never
   result rows or PII.
+
+Full posture: [unified security standard](../security/unified-security-standard.md).
 
 ## Limits / follow-ups
 

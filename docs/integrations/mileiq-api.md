@@ -1,5 +1,14 @@
 # MileIQ External API
 
+[← Integrations](README.md) ·
+[Capability overview](../product/imperion-business-manager-overview.md#33-time--expense-monthly-close)
+
+MileIQ is the **mileage source** behind Imperion Business Manager's employee expense
+tracking — the system of record for the *miles* an employee drove for business.
+This page is the onboarding-grade reference for the integration: what MileIQ is to the
+platform, how its API access is gated, the OAuth tiers, and the open questions that gate
+provisioning.
+
 Verified against the live MileIQ developer docs on **2026-06-14** (issue #522, supports
 ADR-0083 and gate #495). This records the access model and the open questions to resolve
 **before** credentials are requested. No secrets here — credentials are custodied in Key
