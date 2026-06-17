@@ -6,8 +6,11 @@ date: 2026-06-08
 repo: frontend
 summary: "Role predicates derived from five Entra security groups gate nav, routes, and server-side revenue redaction."
 tags: [authz]
+consolidated_into: ADR-0095
 ---
 # ADR-0030: Role-based access control & GUI restrictions from Entra groups
+
+> Consolidated into [ADR-0095](ADR-0095-authorization-rbac-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

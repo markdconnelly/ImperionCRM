@@ -6,8 +6,11 @@ date: 2026-06-07
 repo: frontend
 summary: "`app_user` mirrors the Entra identity; roles derive from Entra group/app-role claims mapped to app permissions."
 tags: [authz]
+consolidated_into: ADR-0095
 ---
 # ADR-0016: RBAC and identity model
+
+> Consolidated into [ADR-0095](ADR-0095-authorization-rbac-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

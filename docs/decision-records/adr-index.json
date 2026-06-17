@@ -101,7 +101,7 @@
     "summary": "A dedicated `/break-glass` Credentials provider gives one env-configured non-Entra account emergency access.",
     "file": "ADR-0008-break-glass-emergency-access.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0095"
   },
   {
     "adr": "0009",
@@ -207,7 +207,7 @@
     "summary": "`app_user` mirrors the Entra identity; roles derive from Entra group/app-role claims mapped to app permissions.",
     "file": "ADR-0016-rbac-and-identity-model.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0095"
   },
   {
     "adr": "0017",
@@ -389,7 +389,7 @@
     "summary": "Role predicates derived from five Entra security groups gate nav, routes, and server-side revenue redaction.",
     "file": "ADR-0030-rbac-gui-restrictions.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0095"
   },
   {
     "adr": "0031",
@@ -586,7 +586,7 @@
     "summary": "Eight write capabilities gate every mutating server action via `requireCapability`; bootstrap fails closed.",
     "file": "ADR-0045-server-action-authorization.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0095"
   },
   {
     "adr": "0046",
@@ -651,7 +651,7 @@
     "summary": "`canSeeAgentPages` (admin-only) gates the AI Agents and Board pages at all layers; Settings gains an AI tab.",
     "file": "ADR-0050-admin-only-ai-pages-settings-ai-tab.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0095"
   },
   {
     "adr": "0051",
@@ -1209,6 +1209,19 @@
     ],
     "summary": "Consolidated dossier of the project-management parity cluster: the in-app PM feature platform that closes the table-stakes gaps versus Asana/Jira/Monday — polymorphic collaboration (comments, @mentions, backend-dispatched notifications, attachments), extended task structure (subtasks, dependencies, multi-assignment, custom fields, configurable statuses, tags), an in-app multi-view layer (kanban, calendar, timeline), the planning model (time/estimates, workload, goals, sprints, portfolio, baselines), and user-editable templates + recurring tasks + form intake. Carries every member decision and amendment clause verbatim with a zero-loss traceability table; member ADRs are retained.",
     "file": "ADR-0094-pm-parity-consolidated.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0095",
+    "title": "Authorization & RBAC — consolidated dossier",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "authz"
+    ],
+    "summary": "Consolidated dossier of the authorization / RBAC / access-control cluster: the Entra-group-sourced identity + role model, GUI/route/field gating, the fail-closed write-capability matrix over every mutating server action, the admin-only AI surfaces, and break-glass emergency access. Carries every member decision and amendment clause verbatim with a zero-loss traceability table; member ADRs are retained. SECURITY-CRITICAL — every fail-closed/bootstrap/break-glass clause is preserved verbatim.",
+    "file": "ADR-0095-authorization-rbac-consolidated.md",
     "superseded_by": [],
     "consolidated_into": null
   }

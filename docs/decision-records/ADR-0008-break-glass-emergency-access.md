@@ -6,8 +6,11 @@ date: 2026-06-06
 repo: frontend
 summary: "A dedicated `/break-glass` Credentials provider gives one env-configured non-Entra account emergency access."
 tags: [authz]
+consolidated_into: ADR-0095
 ---
 # ADR-0008: Break-glass emergency access
+
+> Consolidated into [ADR-0095](ADR-0095-authorization-rbac-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

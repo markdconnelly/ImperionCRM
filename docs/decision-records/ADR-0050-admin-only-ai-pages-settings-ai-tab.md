@@ -6,8 +6,11 @@ date: 2026-06-10
 repo: frontend
 summary: "`canSeeAgentPages` (admin-only) gates the AI Agents and Board pages at all layers; Settings gains an AI tab."
 tags: [authz]
+consolidated_into: ADR-0095
 ---
 # ADR-0050: AI pages are admin-only; Settings gains an AI tab
+
+> Consolidated into [ADR-0095](ADR-0095-authorization-rbac-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|
