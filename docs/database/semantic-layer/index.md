@@ -64,6 +64,7 @@ subset; remaining entities are tracked for expansion
 | [`campaign`](tables/campaign.md) | single-SoR | website system of record | ADR-0053 |
 | [`workflow`](tables/workflow.md) | single-SoR | website system of record | ADR-0027 |
 | [`lead_score`](tables/lead_score.md) | derived ledger | website (backend/LP scoring pass) | ADR-0073 |
+| [`segment`](tables/segment.md) | single-SoR (app-native) | website system of record | ADR-0073 |
 | [`timesheet`](tables/timesheet.md) | single-SoR | website system of record | ADR-0082 |
 | [`expense_report`](tables/expense_report.md) | single-SoR | website system of record | ADR-0083 |
 | [`time_record`](tables/time_record.md) | merge | website attendance (Autotask corroborates) | ADR-0082 |

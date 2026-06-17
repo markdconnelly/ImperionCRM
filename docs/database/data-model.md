@@ -2586,6 +2586,43 @@ derived silver signal → new OKF concept
 + index rows. No new client PII (the score references the contact by id). The score is a
 shared signal for routing (ADR-0024), journeys (ADR-0073), and forecasting (#316).
 
+## CRM contact segments — a reusable contact set + membership (ADR-0073 decision 2, migration 0126, #420)
+
+The segmentation slice of the marketing-automation vertical (epic #319). A journey needs
+an **enrollment source** — a reusable set of contacts to draw from — and the CRM more
+broadly needs first-class contact grouping for comms, list views, and reporting. ADR-0073
+decision 2 names the missing build: a general-purpose **contact segment** (static/manual
+or dynamic/rule) + membership. Migration **0126** adds two new silver tables:
+
+- **`segment`** — one contact set. `type` is `manual` (a static set whose members are
+  added/removed explicitly) or `rule` (a dynamic set defined by `rule_json`, a predicate
+  over contact fields materialized into membership). `rule_json` is NULL for a manual
+  segment and present for a rule segment (a CHECK pairs the two). `owner_user_id` FK →
+  `app_user` (ON DELETE SET NULL) is who curates it. The rule shape is validated in the
+  app (`lib/segment.ts`), not the DB — one object to author/version (like
+  `workflow.definition` in 0115).
+- **`segment_member`** — a contact's membership. `UNIQUE(segment_id, contact_id)` makes
+  add idempotent and lets a rule recompute UPSERT. `source` (`manual` | `bulk` | `rule`)
+  records how the row got there so a rule recompute replaces only its own `rule`-sourced
+  rows and leaves manually pinned members alone. `added_by` FK → `app_user` (ON DELETE SET
+  NULL).
+
+**Distinct from an ad audience** (ADR-0026): an `audience` / `audience_member` is the
+paid-media targeting object that syncs OUT to ad platforms and carries a platform audience
+id; a `segment` is an INTERNAL set over our own [`contact`](semantic-layer/tables/contact.md)
+rows that never leaves the system. Separate tables, separate lifecycles.
+
+WHO writes it: the front end (ADR-0042) **authors** segments — create/edit, manual
+add/remove, bulk add — and **reads** membership; processes (backend / local-pipeline)
+read it to **enroll** contacts into journeys (the journey runner #398 reads
+`segment_member`) and to **recompute** a rule segment's membership. The
+[`workflow`](semantic-layer/tables/workflow.md) kind=journey `definition` holds source
+segment refs (held as data in 0115, an FK now that segment exists). `segment` is an
+app-native silver entity → new OKF concept
+[`segment`](semantic-layer/tables/segment.md) + coverage-matrix (Demand generation) +
+index rows. A segment is an internal grouping over contacts — no new client PII of its own
+(it references contacts by id). NOT prod-applied until Mark runs the migration.
+
 ## Service desk — native chat session + deflection telemetry (ADR-0074 §5, migration 0117, #403)
 
 ADR-0074 settles the service-desk-depth boundary: **Autotask is the ticket system of
