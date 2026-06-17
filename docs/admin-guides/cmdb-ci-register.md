@@ -157,6 +157,32 @@ Lifecycle joins cleanly from the signals the CI read already projects (device `s
 `last_seen_at`, and the latest Intune managed-device row by serial), so it is derived
 **entirely in code** (`src/lib/cmdb/lifecycle.ts`) — **no migration / no DB view** was added.
 
+## Impact analysis (#650)
+
+The CI detail answers **"what's affected?"** — if this CI changes or is removed, which other
+CIs are in the blast radius. The **Impact analysis panel** (below criticality, above the
+relationships panel) shows a weighted summary (affected count · blast weight · peak criticality)
+and then the affected CIs **grouped by type**, each row with its **hop distance** + criticality
+badge. Most-weighted group first; nearest-first within a group.
+
+**How it traverses.** Starting from the CI, it walks the `ci_relationship` graph **n hops**
+(default **3**, bounded — never runs away on a dense graph) and enumerates every reachable CI.
+The walk is **cycle-safe** (a visited-set; each CI is counted once, at its shortest hop, so
+cycles + diamonds terminate) and treats the graph as **undirected by default** — the
+conservative blast radius, since the curated relation vocabulary mixes orientations (a device
+`belongs-to` an account; an account `depends-on` a service). Each affected CI is **criticality-
+weighted** (`override ?? derived_default` → `critical 4 / high 3 / medium 2 / low 1`); the
+panel's **blast weight** is the sum over the affected set.
+
+**Reusable read-model.** The computation is a pure read-model (`analyzeImpact` →
+`CiImpact`) — not pre-rendered markup — so the later **change-risk (#373)** and
+**incident-triage (#320)** surfaces consume the SAME blast-radius (a change's risk ≈ its
+impact weight; an incident fans out to its affected CIs). A caller wanting a strict
+directional walk (downstream dependents only / upstream dependencies only) passes
+`direction`. Missing-edge endpoints (an edge to a CI not in the register) are skipped
+gracefully and never surface. **No migration** — the traversal is entirely app-layer over the
+existing `ci_relationship` reads.
+
 ## Access
 
 The **register and device inventory are read-only** for admin∨support (`canSeeCmdb`,
@@ -194,6 +220,12 @@ UI. App-native only — there is **no IT Glue write path** here.
   latest Intune `management_state`/`enrolled_date_time` by serial); UI in
   `src/components/cmdb/lifecycle-badge.tsx` (badge, suppressed on `unknown`) + the register's
   Lifecycle filter. **`unknown` is the graceful fallback** for any missing signal.
+- Impact analysis (#650): **no migration** — an app-layer n-hop traversal in pure helpers
+  `src/lib/cmdb/impact.ts` (`analyzeImpact` → `CiImpact`; cycle-safe visited-set, depth-bounded
+  default 3, criticality-weighted, grouped-by-type; unit-tested `impact.test.ts`). Fed the whole
+  edge set by a new un-scoped read `crm.listAllCiRelationships()` (mock `[]`); the detail page
+  computes the read-model server-side. UI in `src/components/cmdb/impact-panel.tsx`. The
+  `CiImpact` read-model is the reusable surface #373 (change-risk) + #320 (incident-triage) read.
 
 ## Security notes
 
