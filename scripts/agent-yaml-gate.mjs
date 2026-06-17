@@ -1,15 +1,24 @@
-// agent.yaml conformance gate (ADR-0088 / issue #699, part of epic #695).
+// agent.yaml conformance gate — the CI `icm-conformance` check
+// (ADR-0088 / issues #699 + #702, part of epic #695).
 //
 // Validates every workspace `agent.yaml` manifest the backend loader (Backend
-// #162) consumes against the CMA agent-object contract, and enforces the
-// least-privilege subset invariant the loader cannot get from one file alone:
+// #162) consumes against the CMA agent-object contract, and enforces the two
+// cross-file invariants a single manifest cannot express on its own:
 //
-//     workflow.tools     ⊆ domain.tools     ⊆ Constitution
-//     workflow.okf_rooms ⊆ domain.okf_rooms ⊆ Constitution
+//   1. The least-privilege subset (#699):
+//        workflow.tools     ⊆ domain.tools     ⊆ Constitution
+//        workflow.okf_rooms ⊆ domain.okf_rooms ⊆ Constitution
+//      (CONSTITUTION.md §3: "workflow ⊆ domain ⊆ Constitution"). The Constitution
+//      is the OUTER allow-list, the domain narrows it, the workflow narrows
+//      further; widening at any inner tier is a conformance failure.
 //
-// (CONSTITUTION.md §3: "workflow ⊆ domain ⊆ Constitution"). The Constitution is
-// the OUTER allow-list, the domain narrows it, the workflow narrows further;
-// widening at any inner tier is a conformance failure.
+//   2. OKF room resolution (#702): every `okf_rooms` entry — in a manifest AND in
+//      a domain's room.yaml budget — must resolve to a real row in the OKF
+//      coverage-matrix (docs/database/semantic-layer/coverage-matrix.md, ADR-0086)
+//      that (a) carries a `domain` value and (b) has a concept file (✅ IKF
+//      status). A room you may read must be a curated, meaning-bearing entity, not
+//      a typo or a phantom name. This turns the matrix's domain column from
+//      documentation into a gate (CONSTITUTION.md §3 okf_rooms clause).
 //
 // Design (mirrors scripts/semantic-layer-gate.mjs):
 // - Structural checks reimplement the few constraints in icm/agent.schema.json
@@ -31,6 +40,7 @@ import { join, dirname, relative, resolve } from "node:path";
 
 export const ICM_DIR = "icm";
 export const SCHEMA_FILE = "icm/agent.schema.json";
+export const COVERAGE_MATRIX = "docs/database/semantic-layer/coverage-matrix.md";
 
 export const VALID_MODELS = ["claude-opus-4-8", "claude-sonnet-4-5", "claude-haiku-4-5"];
 export const VALID_RUNGS = ["L0", "L1", "L2", "L3"];
@@ -156,6 +166,91 @@ export function checkSubset(dim, workflow, domain, constitution) {
   return errs;
 }
 
+// ── OKF room resolution against the coverage matrix (#702) ───────────────────
+// The matrix (docs/database/semantic-layer/coverage-matrix.md) is the canonical
+// object → domain → IKF-status map (ADR-0086). Every room an agent may read MUST
+// be a row there with a domain AND a concept file. We parse only the data we
+// need from the markdown tables; no markdown dependency.
+
+/**
+ * Parse the coverage-matrix markdown into a room → {domain, hasConcept} index.
+ * Recognised table shape: `| Object | Domain | Archetype | IKF | … |`.
+ *  - Object cell may be a markdown link `[name](tables/name.md)` or plain `name`;
+ *    the room key is the link text / plain text, lower-cased, first token only
+ *    (so `consent_event → current_consent` keys on `consent_event`, and
+ *    `[workflow](…) kind=journey` keys on `workflow`).
+ *  - hasConcept is true when the IKF cell contains ✅.
+ * Rows whose object is itself a markdown link to tables/<x>.md are always
+ * concept-bearing; the ✅ marker corroborates. Non-table lines are ignored.
+ * @param {string} md raw coverage-matrix.md contents
+ * @returns {Record<string,{domain:string,hasConcept:boolean}>}
+ */
+export function parseCoverageMatrix(md) {
+  const index = {};
+  for (const raw of md.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line.startsWith("|")) continue;
+    const cells = line
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((c) => c.trim());
+    if (cells.length < 4) continue;
+    const [objCell, domainCell, , ikfCell] = cells;
+    // Skip header (`Object`) and separator (`---`) rows.
+    if (/^-+$/.test(objCell) || /^object$/i.test(objCell)) continue;
+
+    // Extract the canonical object name from the first cell.
+    const linked = objCell.match(/\[([^\]]+)\]\([^)]*\)/);
+    let name = (linked ? linked[1] : objCell).trim();
+    // First identifier token only (drops `→ current_consent`, `kind=journey`, …
+    // and any comma-separated extras like `sbr_dimension_score, sbr_ticket` —
+    // the first is keyed; secondary names are ⏳ and not agent rooms).
+    const tok = name.match(/^[a-z0-9_]+/i);
+    if (!tok) continue;
+    name = tok[0].toLowerCase();
+
+    const domain = domainCell.trim();
+    if (!domain) continue;
+    const hasConcept = /✅/.test(ikfCell) || Boolean(linked);
+    // First definition wins (stable; the matrix lists each object once).
+    if (!(name in index)) index[name] = { domain, hasConcept };
+  }
+  return index;
+}
+
+/**
+ * Check a set of OKF rooms resolves against the coverage matrix.
+ * Enforces, per room: (1) it is a known matrix object, (2) the row has a concept
+ * file, (3) the row carries a domain. Domain-vertical fit is NOT re-checked here:
+ * the reviewed domain `room.yaml` budget is the authority for which verticals a
+ * domain may read (kernel/horizontal/cross-vertical seams are deliberate), and
+ * the subset check already binds the workflow to that budget.
+ * @param {string[]} rooms        room names to resolve
+ * @param {Record<string,{domain:string,hasConcept:boolean}>} matrix
+ * @returns {string[]} violation messages ([] == all resolve)
+ */
+export function checkRoomResolution(rooms, matrix) {
+  const errs = [];
+  for (const room of rooms) {
+    const row = matrix[room];
+    if (!row) {
+      errs.push(
+        `okf_room '${room}' does not resolve to a coverage-matrix object ` +
+          `(${COVERAGE_MATRIX}) — typo, or the room is not a curated OKF entity`,
+      );
+      continue;
+    }
+    if (!row.hasConcept) {
+      errs.push(
+        `okf_room '${room}' resolves to a coverage-matrix row with no concept file ` +
+          `(IKF status not ✅) — an agent may only read meaning-bearing entities`,
+      );
+    }
+  }
+  return errs;
+}
+
 /**
  * Whole-manifest evaluation. All inputs plain data.
  * @param {object} o
@@ -164,6 +259,8 @@ export function checkSubset(dim, workflow, domain, constitution) {
  * @param {string[]} o.domainRooms   the owning domain's okf_rooms budget
  * @param {string[]} o.constitutionTools  Constitution outer tool allow-list
  * @param {string[]} o.constitutionRooms  Constitution outer room allow-list
+ * @param {Record<string,{domain:string,hasConcept:boolean}>} [o.matrix]  parsed
+ *        coverage matrix; when provided, okf_rooms are resolved against it (#702)
  * @param {string} [o.label]         path/name for messages
  * @returns {{ ok: boolean, errors: string[] }}
  */
@@ -173,6 +270,7 @@ export function evaluateManifest({
   domainRooms,
   constitutionTools,
   constitutionRooms,
+  matrix,
   label = "agent.yaml",
 }) {
   const errors = validateShape(manifest).map((e) => `${label}: ${e}`);
@@ -186,6 +284,9 @@ export function evaluateManifest({
     errors.push(
       ...checkSubset("okf_rooms", manifest.okf_rooms, domainRooms, constitutionRooms).map((e) => `${label}: ${e}`),
     );
+    if (matrix) {
+      errors.push(...checkRoomResolution(manifest.okf_rooms, matrix).map((e) => `${label}: ${e}`));
+    }
   }
   return { ok: errors.length === 0, errors };
 }
@@ -295,12 +396,28 @@ function main() {
   const constitution =
     readBudget(join(icmRoot, "CONSTITUTION.yaml")) || { tools: null, okf_rooms: null };
 
+  // Coverage matrix (#702): resolve okf_rooms against the canonical OKF map. When
+  // absent (should not happen in this repo), room resolution is skipped — the
+  // shape + subset checks still run.
+  const matrixPath = join(repoRoot, COVERAGE_MATRIX);
+  const matrix = existsSync(matrixPath) ? parseCoverageMatrix(readFileSync(matrixPath, "utf8")) : null;
+  if (!matrix) {
+    console.log(`! ${COVERAGE_MATRIX} not found — skipping OKF room resolution (#702).`);
+  }
+
   const allErrors = [];
   for (const file of manifests) {
     const manifest = parseAgentYaml(readFileSync(file, "utf8"));
     // Domain budget: the manifest sits at icm/domains/<d>/<wf>/agent.yaml.
     const domainDir = dirname(dirname(file));
     const domain = readBudget(join(domainDir, "room.yaml")) || { tools: null, okf_rooms: null };
+
+    // The domain's own room.yaml rooms must also resolve (catches a typo in the
+    // budget itself, not only in a workflow that happens to narrow to it).
+    if (matrix && Array.isArray(domain.okf_rooms)) {
+      const domainLabel = relative(repoRoot, join(domainDir, "room.yaml")).replace(/\\/g, "/");
+      allErrors.push(...checkRoomResolution(domain.okf_rooms, matrix).map((e) => `${domainLabel}: ${e}`));
+    }
 
     // Undeclared upper tier => that tier's bound is the next-lower declared list
     // (no widening possible against an absent allow-list).
@@ -315,16 +432,21 @@ function main() {
       domainRooms: dRooms,
       constitutionTools: cTools ?? dTools,
       constitutionRooms: cRooms ?? dRooms,
+      matrix,
       label: relative(repoRoot, file).replace(/\\/g, "/"),
     });
     allErrors.push(...errors);
   }
 
   if (allErrors.length === 0) {
-    console.log(`✓ agent.yaml gate: ${manifests.length} manifest(s) conform (shape + workflow ⊆ domain ⊆ Constitution).`);
+    const roomNote = matrix ? " + okf_rooms resolve to the coverage matrix" : "";
+    console.log(
+      `✓ icm-conformance: ${manifests.length} manifest(s) conform ` +
+        `(shape + workflow ⊆ domain ⊆ Constitution${roomNote}).`,
+    );
     process.exit(0);
   }
-  const msg = "agent.yaml conformance failures (ADR-0088 §2-3):\n" + allErrors.map((e) => `  • ${e}`).join("\n");
+  const msg = "icm-conformance failures (ADR-0088 §2-3; #702):\n" + allErrors.map((e) => `  • ${e}`).join("\n");
   console.error(`::error::${msg.replace(/\n/g, "%0A")}`);
   console.error(msg);
   process.exit(1);

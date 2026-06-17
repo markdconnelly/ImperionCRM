@@ -72,11 +72,13 @@ jobs:
         run: node scripts/adr-index.mjs --check
 
   icm-conformance:
-    # agent.yaml conformance gate (ADR-0088, issue #699 / epic #695). Validates
-    # every workspace manifest under icm/ against icm/agent.schema.json (shape)
-    # and the workflow ⊆ domain ⊆ Constitution least-privilege invariant. The
-    # same pure-function checks the backend loader (#162) runs. No-ops cleanly
-    # while the domain tier is still unpopulated. Runs on PRs and push to main.
+    # ICM conformance gate (ADR-0088, issues #699 + #702 / epic #695). Validates
+    # every workspace manifest under icm/ against icm/agent.schema.json (shape),
+    # the workflow ⊆ domain ⊆ Constitution least-privilege invariant, AND that
+    # every okf_rooms entry resolves to a concept-bearing row in the OKF coverage
+    # matrix (docs/database/semantic-layer/coverage-matrix.md, #702). The same
+    # pure-function checks the backend loader (#162) runs. No-ops cleanly while
+    # the domain tier is still unpopulated. Runs on PRs and push to main.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

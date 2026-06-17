@@ -109,6 +109,29 @@ ADR-0089 §3); the gate still fully shape-checks every manifest regardless.
 > as the source of truth; the stale comment is a follow-up cleanup, not a real
 > gap.
 
+## OKF room resolution (#702)
+
+The subset invariant guarantees a manifest stays *within* its domain budget; it
+does not, on its own, guarantee the room **names are real**. The conformance gate
+closes that gap by resolving every `okf_rooms` entry — in a manifest **and** in a
+domain's `room.yaml` budget — against the canonical OKF map,
+[`docs/database/semantic-layer/coverage-matrix.md`](../database/semantic-layer/coverage-matrix.md)
+(ADR-0086). Per room, the gate requires:
+
+1. **Resolution** — the room is a known object in the coverage matrix (catches a
+   typo or a phantom room name that subset alone would wave through).
+2. **Concept-backing** — that matrix row has a concept file (IKF status `✅`). An
+   agent may only be granted read scope on a *meaning-bearing* silver entity, not
+   one that is still `⏳` planned.
+
+The matrix's **`domain` column** is what makes this a gate rather than prose: it
+is parsed, not just rendered. Vertical fit (which domain *owns* a room) is **not**
+re-checked here — the reviewed domain `room.yaml` budget is the authority for which
+verticals a domain may read (kernel / horizontal / deliberate cross-vertical seams
+like a sales workflow reading the Knowledge `interaction` room), and the subset
+check already binds every workflow to that budget. Resolution + concept-backing is
+the new, additive guarantee.
+
 ## How it is consumed
 
 - **Backend loader (#162):** validates the manifest against
@@ -117,10 +140,12 @@ ADR-0089 §3); the gate still fully shape-checks every manifest regardless.
   created once and **versioned on change**; the **session** is the per-run spin-up.
   Sends exit only via ADR-0058; secrets stay host-side (MCP creds in vaults). The
   end-to-end runtime is [cma-runtime.md](cma-runtime.md).
-- **CI gate (#702):** `node scripts/agent-yaml-gate.mjs` walks `icm/` and fails
-  the PR on any shape or subset violation. The pure functions in that module are
-  exported so the loader can import the **same** checks rather than reimplement
-  them — one contract, no drift.
+- **CI gate (`icm-conformance`, #699 + #702):** `node scripts/agent-yaml-gate.mjs`
+  walks `icm/` and fails the PR on any shape violation, subset (least-privilege)
+  violation, or unresolved/concept-less `okf_rooms` entry (resolved against the OKF
+  coverage matrix — see [OKF room resolution](#okf-room-resolution-702)). The pure
+  functions in that module are exported so the loader can import the **same** checks
+  rather than reimplement them — one contract, no drift.
 
 ## Security
 
