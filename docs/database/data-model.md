@@ -2586,14 +2586,13 @@ derived silver signal → new OKF concept
 + index rows. No new client PII (the score references the contact by id). The score is a
 shared signal for routing (ADR-0024), journeys (ADR-0073), and forecasting (#316).
 
-## CRM contact segments — a reusable contact set + membership (ADR-0073 decision 2, migration 9001, #420)
+## CRM contact segments — a reusable contact set + membership (ADR-0073 decision 2, migration 0126, #420)
 
 The segmentation slice of the marketing-automation vertical (epic #319). A journey needs
 an **enrollment source** — a reusable set of contacts to draw from — and the CRM more
 broadly needs first-class contact grouping for comms, list views, and reporting. ADR-0073
 decision 2 names the missing build: a general-purpose **contact segment** (static/manual
-or dynamic/rule) + membership. Migration **9001** (placeholder number; the real next-free
-number is claimed at merge, §10.3) adds two new silver tables:
+or dynamic/rule) + membership. Migration **0126** adds two new silver tables:
 
 - **`segment`** — one contact set. `type` is `manual` (a static set whose members are
   added/removed explicitly) or `rule` (a dynamic set defined by `rule_json`, a predicate

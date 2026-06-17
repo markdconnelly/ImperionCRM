@@ -15,8 +15,7 @@ are added/removed explicitly) or **rule** (a dynamic set defined by a `rule_json
 predicate over contact fields, materialized into membership). It is the **enrollment
 source** a marketing journey draws from (ADR-0073), and is reusable for comms, list
 views, and reporting — a first-class CRM grouping, not a one-off campaign list. Membership
-lives in the child [`segment_member`](#segment_member) table. Migration `9001`
-(placeholder; real number claimed at merge, §10.3).
+lives in the child [`segment_member`](#segment_member) table. Migration `0126`.
 
 **Distinct from an ad audience** (ADR-0026). An ad `audience` / `audience_member` is the
 paid-media targeting object that syncs OUT to ad platforms (Meta/Google) for delivery and

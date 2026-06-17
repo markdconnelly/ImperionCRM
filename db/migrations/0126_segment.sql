@@ -1,11 +1,10 @@
--- 9001 CRM contact segments — a general-purpose contact set + membership, the
+-- 0126 CRM contact segments — a general-purpose contact set + membership, the
 -- enrollment entry point for marketing journeys (ADR-0073 decision 2, ADR-0026
 -- boundary, issue #420, epic #319 · parent #314).
--- Migration number 9001 is a PLACEHOLDER (concurrency contract §10.3): the real
--- next-free number is claimed at MERGE — a rebased branch takes the next free slot
--- just before squash, renaming this file (rename is data-safe) and fixing the header
--- + the docs/database/data-model.md reference. Authored against 9001 so concurrent
--- branches do not collide on the live 01xx counter.
+-- Migration number 0126 claimed at merge (concurrency contract §10.3): authored
+-- against a 9001 placeholder, the rebased branch took the next free number just before
+-- squash (rename is data-safe). If another migration merges during the CI window,
+-- renumber the file again.
 --
 -- The missing build Mark named (#420): a reusable, general-purpose CONTACT SEGMENT
 -- (static/manual or dynamic/rule) plus its membership. ADR-0073 decision 2 makes the
@@ -72,7 +71,7 @@ CREATE TABLE IF NOT EXISTS segment (
   )
 );
 COMMENT ON TABLE segment IS
-  'A general-purpose CRM contact set (ADR-0073 decision 2, #420): manual (static, members added explicitly) or rule (dynamic, defined by rule_json over contact fields). The enrollment SOURCE for marketing journeys and reusable for comms / list views / reporting. DISTINCT from an ad audience (ADR-0026): a segment is an internal set over our own contacts and never syncs to an ad platform. Born silver, app system of record (ADR-0042) — the front end authors it; processes read/enroll/recompute. Migration 9001 (placeholder; real number claimed at merge §10.3).';
+  'A general-purpose CRM contact set (ADR-0073 decision 2, #420): manual (static, members added explicitly) or rule (dynamic, defined by rule_json over contact fields). The enrollment SOURCE for marketing journeys and reusable for comms / list views / reporting. DISTINCT from an ad audience (ADR-0026): a segment is an internal set over our own contacts and never syncs to an ad platform. Born silver, app system of record (ADR-0042) — the front end authors it; processes read/enroll/recompute. Migration 0126.';
 COMMENT ON COLUMN segment.type IS
   'manual = static set, members added/removed explicitly; rule = dynamic set whose membership is materialized from rule_json. CHECK-paired with rule_json.';
 COMMENT ON COLUMN segment.rule_json IS
