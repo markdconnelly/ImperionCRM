@@ -16,7 +16,7 @@ import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import { deriveCriticality } from "@/lib/cmdb/criticality";
 import { deriveLifecycle } from "@/lib/cmdb/lifecycle";
-import { deriveChangeRisk } from "@/lib/change";
+import { deriveChangeRisk, initialApprovalState, applyApprovalDecision } from "@/lib/change";
 import { resolveMentions } from "@/lib/mentions";
 import {
   planInstantiation,
@@ -341,6 +341,7 @@ import type {
   ChangeType,
   ChangeStatus,
   ChangeApprovalStatus,
+  ApprovalDecision,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -13909,16 +13910,46 @@ export const postgresRepositories: Repositories = {
       const requesterId = await resolveAppUserIdOrNull(pool, requesterEmail);
       const validCis = await filterValidCis(input.affectedCis);
       const riskDerived = await computeChangeRiskDerived(validCis);
+      // #659: the change opens in the approval state its TYPE dictates — standard is
+      // auto-approved (pre-authorized; system-attributed, approved_at = now), normal/emergency
+      // open awaiting an approver (pending_approval/pending). The state machine is the single
+      // source of this mapping (initialApprovalState), shared with the unit tests.
+      const init = initialApprovalState(input.changeType);
+      // Standard changes are auto-approved with no human actor (approved_by stays NULL =
+      // system-attributed); the timestamp records WHEN the auto-approval landed.
+      const autoApprovedAt = init.approvalStatus === "approved" ? new Date() : null;
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
         const { rows } = await client.query<{ id: string }>(
-          `INSERT INTO change_request (change_type, title, description, requester_user_id, account_id, risk_derived)
-           VALUES ($1, $2, $3, $4, $5, $6)
+          `INSERT INTO change_request
+             (change_type, title, description, requester_user_id, account_id, risk_derived,
+              status, approval_status, approved_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            RETURNING id`,
-          [input.changeType, input.title, input.description, requesterId, input.accountId, riskDerived],
+          [
+            input.changeType,
+            input.title,
+            input.description,
+            requesterId,
+            input.accountId,
+            riskDerived,
+            init.status,
+            init.approvalStatus,
+            autoApprovedAt,
+          ],
         );
         const changeId = rows[0].id;
+        // Audit the auto-approval of a standard change so the ledger shows WHY it skipped
+        // human approval (the approver action below audits the human decisions symmetrically).
+        if (init.approvalStatus === "approved") {
+          await client.query(
+            `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+             VALUES (NULL, 'change.auto_approved', 'change_request', $1::uuid,
+                     jsonb_build_object('changeType', $2::text, 'reason', 'standard change pre-authorized'))`,
+            [changeId, input.changeType],
+          );
+        }
         for (const ci of validCis) {
           await client.query(
             `INSERT INTO change_affected_ci (change_id, ci_type, ci_id)
@@ -13981,6 +14012,70 @@ export const postgresRepositories: Repositories = {
         `UPDATE change_request SET risk_override = $2, updated_at = now() WHERE id = $1`,
         [id, override],
       );
+    },
+
+    async decideChangeApproval(
+      id: string,
+      decision: ApprovalDecision,
+      approverEmail: string,
+    ): Promise<boolean> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.changes.decideChangeApproval(id, decision, approverEmail);
+      const approverId = await resolveAppUserIdOrNull(pool, approverEmail);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Read the current (status, approvalStatus) inside the txn and let the SAME pure state
+        // machine the tests cover decide the move — refuses anything not awaiting approval.
+        const { rows: cur } = await client.query<{
+          status: ChangeStatus;
+          approval_status: ChangeApprovalStatus | null;
+        }>(
+          `SELECT status, approval_status FROM change_request WHERE id = $1 FOR UPDATE`,
+          [id],
+        );
+        if (!cur[0]) {
+          await client.query("ROLLBACK");
+          return false;
+        }
+        const next = applyApprovalDecision(
+          { status: cur[0].status, approvalStatus: cur[0].approval_status },
+          decision,
+        );
+        if (!next) {
+          // Not in a decidable state (already decided / not pending) — no-op, no audit.
+          await client.query("ROLLBACK");
+          return false;
+        }
+        await client.query(
+          `UPDATE change_request
+              SET status = $2, approval_status = $3,
+                  approved_by_user_id = $4, approved_at = now(), updated_at = now()
+            WHERE id = $1`,
+          [id, next.status, next.approvalStatus, approverId],
+        );
+        // Audit the approver's decision (who/what/when) — the gated mutation leaves a ledger
+        // row exactly like the comment/expense mutations do.
+        await client.query(
+          `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, detail)
+           VALUES ($1, $2, 'change_request', $3::uuid,
+                   jsonb_build_object('approvalStatus', $4::text, 'status', $5::text))`,
+          [
+            approverId,
+            decision === "approved" ? "change.approved" : "change.rejected",
+            id,
+            next.approvalStatus,
+            next.status,
+          ],
+        );
+        await client.query("COMMIT");
+        return true;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
     },
 
     async deleteChangeRequest(id: string): Promise<void> {

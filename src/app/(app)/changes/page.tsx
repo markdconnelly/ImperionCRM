@@ -9,9 +9,11 @@ import { getRepositories } from "@/lib/data";
 import {
   CHANGE_STATUS_LABEL,
   CHANGE_TYPE_LABEL,
+  CHANGE_APPROVAL_LABEL,
   effectiveRisk,
   riskBand,
   RISK_BAND_LABEL,
+  isAwaitingApproval,
 } from "@/lib/change";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +33,7 @@ export default async function ChangesPage() {
 
   const { changes } = getRepositories();
   const rows = await changes.listChangeRequests();
+  const pendingCount = rows.filter((c) => isAwaitingApproval(c.status, c.approvalStatus)).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -38,6 +41,12 @@ export default async function ChangesPage() {
         title="Changes"
         description="ITIL Change Enablement — app-native change requests over the managed estate, typed standard / normal / emergency, with affected configuration items. Autotask is the eventual change record system of record (routed in a later slice)."
       >
+        <Link
+          href="/changes/approvals"
+          className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:border-accent hover:text-accent"
+        >
+          Pending approvals{pendingCount > 0 ? ` (${pendingCount})` : ""}
+        </Link>
         {canWrite && (
           <Link
             href="/changes/new"
@@ -72,6 +81,17 @@ export default async function ChangesPage() {
                 <span className="rounded bg-panel-2 px-1.5 py-0.5">
                   {CHANGE_STATUS_LABEL[c.status]}
                 </span>
+                {c.approvalStatus && (
+                  <span
+                    className={
+                      isAwaitingApproval(c.status, c.approvalStatus)
+                        ? "rounded bg-amber/10 px-1.5 py-0.5 text-amber"
+                        : "rounded bg-panel-2 px-1.5 py-0.5"
+                    }
+                  >
+                    Approval: {CHANGE_APPROVAL_LABEL[c.approvalStatus]}
+                  </span>
+                )}
                 <span title={CHANGE_TYPE_LABEL[c.changeType]}>
                   {c.affectedCiCount} affected CI{c.affectedCiCount === 1 ? "" : "s"}
                 </span>

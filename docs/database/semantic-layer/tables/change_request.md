@@ -4,7 +4,7 @@ title: change_request
 description: App-native ITIL 4 Change Enablement working object — a typed (standard|normal|emergency) change Imperion creates over the managed estate, with status, affected CMDB CIs, and nullable risk/approval/schedule columns the downstream slices populate. Autotask is the eventual change record SoR via a separate gated route (#661).
 resource: ../../../decision-records/ADR-0079-change-enablement.md
 tags: [silver, service-desk, change-enablement, itil, cmdb, overlay, archetype-d, app-native]
-timestamp: 2026-06-17T00:00:00Z
+timestamp: 2026-06-17T01:00:00Z
 ---
 
 # change_request
@@ -80,12 +80,22 @@ CASCADE) · `ci_type` text CHECK in (account|user|device) · `ci_id` text · uni
   `account_id` → [`account`](account.md).
 - **Consumers:** the `/changes` list/create/detail surface (this slice); CMDB-derived risk
   ([#658](https://github.com/markdconnelly/ImperionCRM/issues/658)) reads the affected-CI set
-  + [`cmdb_ci_overlay`](cmdb_ci_overlay.md) criticality; approval
-  ([#659](https://github.com/markdconnelly/ImperionCRM/issues/659)) and calendar
-  ([#660](https://github.com/markdconnelly/ImperionCRM/issues/660)) populate their columns.
+  + [`cmdb_ci_overlay`](cmdb_ci_overlay.md) criticality; the lightweight approval
+  ([#659](https://github.com/markdconnelly/ImperionCRM/issues/659)) writes
+  `status`/`approval_status`/`approved_by_user_id`/`approved_at` and the calendar
+  ([#660](https://github.com/markdconnelly/ImperionCRM/issues/660)) populates the schedule.
   Read accessors: `changes.listChangeRequests` / `getChangeRequest`; writes
-  `createChangeRequest` / `updateChangeRequest` / `deleteChangeRequest`. Pure helpers in
-  `src/lib/change.ts`.
+  `createChangeRequest` / `updateChangeRequest` / `setChangeRiskOverride` /
+  `decideChangeApproval` (#659) / `deleteChangeRequest`. Pure helpers in `src/lib/change.ts`.
+
+  **Lightweight approval (#659).** The flow is keyed to `change_type`: a **standard** change is
+  **pre-authorized** — `createChangeRequest` opens it `status=approved`/`approval_status=approved`,
+  system-attributed (`approved_by_user_id` NULL), audited `change.auto_approved`. **Normal** and
+  **emergency** open `pending_approval`/`pending` and require an approver
+  (`decideChangeApproval`, gated `change:approve`, audited `change.approved`/`change.rejected`);
+  **emergency is flagged expedited** (surfaced first in the `/changes/approvals` queue) but still
+  takes a human decision. The state machine (`initialApprovalState` / `applyApprovalDecision`,
+  `src/lib/change.ts`) refuses any decision on a change not in `pending_approval`/`pending`.
 
 ## Notes
 

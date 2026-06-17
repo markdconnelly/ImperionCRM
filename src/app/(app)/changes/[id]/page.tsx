@@ -13,6 +13,8 @@ import {
   effectiveRisk,
   riskBand,
   RISK_BAND_LABEL,
+  isAwaitingApproval,
+  isExpedited,
 } from "@/lib/change";
 import { CI_TYPE_LABEL } from "@/lib/cmdb/ci";
 import { ChangeForm } from "../change-form";
@@ -20,6 +22,7 @@ import {
   updateChangeAction,
   deleteChangeAction,
   setChangeRiskOverrideAction,
+  decideChangeApprovalAction,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +42,8 @@ export default async function ChangeDetailPage({
   const roles = await getSessionRoles();
   if (!canSeeService(roles)) redirect("/");
   const canWrite = can(roles, "change:write");
-  const canOverrideRisk = can(roles, "change:approve");
+  const canApprove = can(roles, "change:approve");
+  const canOverrideRisk = canApprove;
 
   const { changes, crm } = getRepositories();
   const change = await changes.getChangeRequest(id);
@@ -52,6 +56,8 @@ export default async function ChangeDetailPage({
 
   const risk = effectiveRisk(change.riskDerived, change.riskOverride);
   const initialAffectedKeys = change.affectedCis.map((c) => `${c.ciType}:${c.ciId}`);
+  const awaiting = isAwaitingApproval(change.status, change.approvalStatus);
+  const expedited = isExpedited(change.changeType);
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,10 +96,66 @@ export default async function ChangeDetailPage({
           Approval:{" "}
           {change.approvalStatus ? CHANGE_APPROVAL_LABEL[change.approvalStatus] : "not requested"}
         </span>
+        {expedited && awaiting && (
+          <span className="rounded bg-red/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red">
+            Expedited — emergency
+          </span>
+        )}
         {change.scheduleStart && <span>· scheduled {change.scheduleStart.slice(0, 10)}</span>}
         {change.requester && <span>· raised by {change.requester}</span>}
         {change.accountName && <span>· {change.accountName}</span>}
       </div>
+
+      <section
+        className={`flex flex-col gap-3 rounded-md border bg-panel p-4 ${
+          expedited && awaiting ? "border-red" : "border-border"
+        }`}
+      >
+        <h2 className="flex items-center gap-2 text-sm font-medium">
+          Approval
+          {expedited && awaiting && (
+            <span className="rounded bg-red/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red">
+              Expedited
+            </span>
+          )}
+        </h2>
+        <p className="text-sm text-dim">
+          {change.approvalStatus === "approved" &&
+            (change.changeType === "standard"
+              ? "Pre-authorized (standard change) — auto-approved."
+              : "Approved.")}
+          {change.approvalStatus === "rejected" && "Rejected."}
+          {awaiting &&
+            (expedited
+              ? "Emergency change — expedited approval requested. Needs an approver decision now."
+              : "Awaiting an approver decision.")}
+          {change.approvalStatus === null && "No approval requested."}
+        </p>
+        {canApprove && awaiting && (
+          <div className="flex flex-wrap items-center gap-2">
+            <form action={decideChangeApprovalAction}>
+              <input type="hidden" name="id" value={change.id} />
+              <input type="hidden" name="decision" value="approved" />
+              <button
+                type="submit"
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:border-accent hover:text-accent"
+              >
+                Approve
+              </button>
+            </form>
+            <form action={decideChangeApprovalAction}>
+              <input type="hidden" name="id" value={change.id} />
+              <input type="hidden" name="decision" value="rejected" />
+              <button
+                type="submit"
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:border-red hover:text-red"
+              >
+                Reject
+              </button>
+            </form>
+          </div>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3 rounded-md border border-border bg-panel p-4">
         <h2 className="text-sm font-medium">Risk</h2>

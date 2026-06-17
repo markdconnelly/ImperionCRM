@@ -9,6 +9,12 @@ import {
   deriveChangeRisk,
   riskBand,
   RISK_BAND_LABEL,
+  requiresApproval,
+  isExpedited,
+  initialApprovalState,
+  isAwaitingApproval,
+  applyApprovalDecision,
+  asApprovalDecision,
 } from "@/lib/change";
 import type { ConfigurationItem, CiRelationship, Criticality, CiType } from "@/types";
 
@@ -177,5 +183,80 @@ describe("CMDB-derived change risk (#658)", () => {
     for (const band of ["low", "moderate", "high", "critical"] as const) {
       expect(RISK_BAND_LABEL[band]).toBeTruthy();
     }
+  });
+});
+
+describe("lightweight approval state machine (#659)", () => {
+  it("standard is pre-approved and needs no approver", () => {
+    expect(requiresApproval("standard")).toBe(false);
+    expect(initialApprovalState("standard")).toEqual({
+      status: "approved",
+      approvalStatus: "approved",
+    });
+  });
+
+  it("normal requires approval and opens awaiting a decision", () => {
+    expect(requiresApproval("normal")).toBe(true);
+    expect(isExpedited("normal")).toBe(false);
+    expect(initialApprovalState("normal")).toEqual({
+      status: "pending_approval",
+      approvalStatus: "pending",
+    });
+  });
+
+  it("emergency requires approval, is expedited, and opens awaiting a decision", () => {
+    expect(requiresApproval("emergency")).toBe(true);
+    expect(isExpedited("emergency")).toBe(true);
+    expect(initialApprovalState("emergency")).toEqual({
+      status: "pending_approval",
+      approvalStatus: "pending",
+    });
+  });
+
+  it("only emergency is flagged expedited", () => {
+    expect(isExpedited("standard")).toBe(false);
+    expect(isExpedited("normal")).toBe(false);
+    expect(isExpedited("emergency")).toBe(true);
+  });
+
+  it("flags a change awaiting approval (pending_approval + pending)", () => {
+    expect(isAwaitingApproval("pending_approval", "pending")).toBe(true);
+    expect(isAwaitingApproval("approved", "approved")).toBe(false);
+    expect(isAwaitingApproval("pending_approval", null)).toBe(false);
+    expect(isAwaitingApproval("draft", "pending")).toBe(false);
+  });
+
+  it("approves a pending change → approved/approved", () => {
+    expect(
+      applyApprovalDecision({ status: "pending_approval", approvalStatus: "pending" }, "approved"),
+    ).toEqual({ status: "approved", approvalStatus: "approved" });
+  });
+
+  it("rejects a pending change → rejected/rejected", () => {
+    expect(
+      applyApprovalDecision({ status: "pending_approval", approvalStatus: "pending" }, "rejected"),
+    ).toEqual({ status: "rejected", approvalStatus: "rejected" });
+  });
+
+  it("refuses to decide a change that is not awaiting approval (no double-approve)", () => {
+    // Already approved (e.g. an auto-approved standard change) — not decidable.
+    expect(
+      applyApprovalDecision({ status: "approved", approvalStatus: "approved" }, "rejected"),
+    ).toBeNull();
+    // Draft with no approval requested — not decidable.
+    expect(
+      applyApprovalDecision({ status: "draft", approvalStatus: null }, "approved"),
+    ).toBeNull();
+    // Already rejected — terminal, not decidable again.
+    expect(
+      applyApprovalDecision({ status: "rejected", approvalStatus: "rejected" }, "approved"),
+    ).toBeNull();
+  });
+
+  it("narrows a valid approver decision and rejects junk", () => {
+    expect(asApprovalDecision("approved")).toBe("approved");
+    expect(asApprovalDecision("rejected")).toBe("rejected");
+    expect(asApprovalDecision("pending")).toBeNull();
+    expect(asApprovalDecision(undefined)).toBeNull();
   });
 });
