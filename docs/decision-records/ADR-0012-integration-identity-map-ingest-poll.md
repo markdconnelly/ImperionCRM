@@ -1,13 +1,16 @@
 ---
 adr: 0012
 title: "External integration identity map, ingest-vs-poll, and demand gen"
-status: accepted
+status: consolidated
 date: 2026-06-07
 repo: frontend
 summary: "An external-identity map plus an ingest-vs-poll policy per source — augment external clouds, don't duplicate them."
 tags: [medallion]
+consolidated_into: ADR-0092
 ---
 # ADR-0012: External integration identity map, ingest-vs-poll, and demand gen
+
+> Consolidated into [ADR-0092](ADR-0092-medallion-data-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

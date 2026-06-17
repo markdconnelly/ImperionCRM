@@ -145,7 +145,7 @@
   {
     "adr": "0012",
     "title": "External integration identity map, ingest-vs-poll, and demand gen",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-07",
     "tags": [
       "medallion"
@@ -153,7 +153,7 @@
     "summary": "An external-identity map plus an ingest-vs-poll policy per source — augment external clouds, don't duplicate them.",
     "file": "ADR-0012-integration-identity-map-ingest-poll.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0092"
   },
   {
     "adr": "0013",
@@ -417,7 +417,7 @@
     "superseded_by": [
       "ADR-0039"
     ],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0092"
   },
   {
     "adr": "0033",
@@ -487,7 +487,7 @@
   {
     "adr": "0038",
     "title": "Per-connection poll cadence",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-08",
     "tags": [
       "medallion"
@@ -495,12 +495,12 @@
     "summary": "`connection.poll_interval_minutes` (0 = manual/paused) with an auto-saving cadence selector per connection card.",
     "file": "ADR-0038-per-connection-poll-cadence.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0092"
   },
   {
     "adr": "0039",
     "title": "Per-source physical bronze tables + union-view merge → silver",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-08",
     "tags": [
       "medallion"
@@ -508,7 +508,7 @@
     "summary": "One physical bronze table per (source, entity) read through union views, plus a new silver `device` entity.",
     "file": "ADR-0039-per-source-bronze-tables.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0092"
   },
   {
     "adr": "0040",
@@ -526,7 +526,7 @@
   {
     "adr": "0041",
     "title": "Gold knowledge layer + unified vector store (pinned Voyage AI embeddings)",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-09",
     "tags": [
       "medallion"
@@ -534,7 +534,7 @@
     "summary": "Unified `knowledge_object` → `knowledge_embedding` gold store pinned system-wide to Voyage `voyage-3-large` @ 1024 dims.",
     "file": "ADR-0041-gold-knowledge-vector-store.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0092"
   },
   {
     "adr": "0042",
@@ -552,7 +552,7 @@
   {
     "adr": "0043",
     "title": "Adopt the settled AI stack; drop the legacy 1536-dim vector tables",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-09",
     "tags": [
       "medallion"
@@ -560,12 +560,12 @@
     "summary": "Claude + Voyage are settled system-wide; migration 0046 drops the never-populated 1536-dim embedding tables.",
     "file": "ADR-0043-settled-ai-stack-drop-legacy-vectors.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0092"
   },
   {
     "adr": "0044",
     "title": "Silver `contract` and `ticket` entities",
-    "status": "accepted",
+    "status": "consolidated",
     "date": "2026-06-09",
     "tags": [
       "medallion"
@@ -573,7 +573,7 @@
     "summary": "Migration 0050 adds typed silver `contract` + `ticket`, populated from bronze by the cloud pipeline's merge each sweep.",
     "file": "ADR-0044-silver-contracts-tickets.md",
     "superseded_by": [],
-    "consolidated_into": null
+    "consolidated_into": "ADR-0092"
   },
   {
     "adr": "0045",
@@ -1170,6 +1170,19 @@
     ],
     "summary": "Consolidated dossier of the agent/ICM platform decisions: single orchestrator, persisted agent core + AI Board, own-orchestrator runtime, AI Agents page, autonomy tiers, ICM framework, the orchestration matrix, and the self-hosted Managed Agents runtime + budget-file convention. Carries every member decision verbatim with a zero-loss traceability table; member ADRs are retained.",
     "file": "ADR-0091-agent-icm-platform-consolidated.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0092",
+    "title": "Medallion data platform — consolidated dossier",
+    "status": "accepted",
+    "date": "2026-06-16",
+    "tags": [
+      "medallion"
+    ],
+    "summary": "Consolidated dossier of the Medallion (bronze→silver→gold) data-platform decisions: the external-identity map + ingest-vs-poll policy, per-source physical bronze tables read through union views, per-connection poll cadence, the silver contact/account/device/contract/ticket entities, and the unified gold knowledge store pinned to Voyage voyage-3-large @ 1024 dims (legacy 1536-dim tables dropped). Carries every member decision verbatim with a zero-loss traceability table; member ADRs are retained.",
+    "file": "ADR-0092-medallion-data-platform-consolidated.md",
     "superseded_by": [],
     "consolidated_into": null
   }

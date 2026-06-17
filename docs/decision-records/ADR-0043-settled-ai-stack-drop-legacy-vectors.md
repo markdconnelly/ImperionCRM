@@ -1,13 +1,16 @@
 ---
 adr: 0043
 title: "Adopt the settled AI stack; drop the legacy 1536-dim vector tables"
-status: accepted
+status: consolidated
 date: 2026-06-09
 repo: frontend
 summary: "Claude + Voyage are settled system-wide; migration 0046 drops the never-populated 1536-dim embedding tables."
 tags: [medallion]
+consolidated_into: ADR-0092
 ---
 # ADR-0043: Adopt the settled AI stack; drop the legacy 1536-dim vector tables
+
+> Consolidated into [ADR-0092](ADR-0092-medallion-data-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

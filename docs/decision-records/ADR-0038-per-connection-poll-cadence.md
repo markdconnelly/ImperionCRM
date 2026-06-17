@@ -1,13 +1,16 @@
 ---
 adr: 0038
 title: "Per-connection poll cadence"
-status: accepted
+status: consolidated
 date: 2026-06-08
 repo: frontend
 summary: "`connection.poll_interval_minutes` (0 = manual/paused) with an auto-saving cadence selector per connection card."
 tags: [medallion]
+consolidated_into: ADR-0092
 ---
 # ADR-0038: Per-connection poll cadence
+
+> Consolidated into [ADR-0092](ADR-0092-medallion-data-platform-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|
