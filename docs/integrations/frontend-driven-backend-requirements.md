@@ -1,5 +1,12 @@
 # Front-end-driven back-end & pipeline requirements
 
+[← Integrations](README.md) · [System of systems](../architecture/system-of-systems.md)
+
+**Imperion Business Manager** is the GUI tier of a four-repo system (ADR-0042). This page
+is the **cross-repo to-do list**: the engines the GUI already *expects* from its siblings,
+each with current status. If you are onboarding to the integration surface, read it as
+"what the front end has wired up, and which sibling owes the engine behind it."
+
 This repo is the **source of truth for the schema** (ADR-0017/0028). The front-end work
 in ADR-0030–0035 created GUI and tables that *expect* back-end engines which are
 deliberately deferred. This document tracks what the **`ImperionCRM_Backend`** repo
@@ -7,7 +14,8 @@ deliberately deferred. This document tracks what the **`ImperionCRM_Backend`** r
 build, and the data-tiering pipelines those engines feed.
 
 The front end drives these requirements: every item below exists because a screen or a
-schema object in this repo already references it.
+schema object in this repo already references it. Propose any schema change **here** (this
+repo owns migrations, §1); the sibling repos are consumers.
 
 > **Status (v1 data loop — 2026-06-08).** The credential save path (§2) and the
 > contact/company **ingestion → bronze → unified-silver merge** (§3) are **implemented**

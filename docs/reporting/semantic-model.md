@@ -1,7 +1,12 @@
 # Reporting semantic model (governance layer)
 
-The governed semantic model is the **only query surface** for the self-serve report
-builder (ADR-0075 decision §1). It lives in code at
+[← Reporting](README.md) · [Report builder](report-builder.md) · [Dashboards](dashboards.md)
+
+The semantic model is the **governance layer** for self-serve reporting in **Imperion
+Business Manager**: a curated, in-code registry of *what can be reported on* and *who may
+see each field*. It is the **only query surface** for the self-serve report builder
+(ADR-0075 decision §1) — there is no way to reach an unmodelled table, join, or column. It
+lives in code at
 [`src/lib/reporting/semantic-model.ts`](../../src/lib/reporting/semantic-model.ts),
 versioned with the app — there is **no raw-SQL path**. The builder (#411) and the
 report persistence/executor (#410) can only reference what this registry declares.
@@ -23,6 +28,20 @@ covers the registry's shape and how to extend it; the ADR is normative.
   `requiresFilter` (a detail report on a high-cardinality object — currently `contact`,
   `ticket` — must carry a filter, else it is blocked). Bounds *cost*, not *access* — see
   [report-builder.md](report-builder.md) → Query-cost guardrails.
+
+### The v1 registry (verified against source)
+
+| Object (`root_object`) | Guardrail | Notable gated fields (`grant: revenue`) |
+|---|---|---|
+| `account` | — | `mrr` |
+| `contact` | `requiresFilter` | (none gated) |
+| `opportunity` | — | `dealValue`, `weighted` |
+| `ticket` | `requiresFilter` | (none gated) |
+| `campaign` | — | `budget`, `spend` |
+
+Every other declared field is broadly readable (`grant: null`). The `labor_cost` grant
+(`canSeeLaborCost`) is defined and available for comp-derived figures; no v1 field carries
+it yet.
 
 ## RBAC — enforced at build AND run (ADR-0075 §2)
 
