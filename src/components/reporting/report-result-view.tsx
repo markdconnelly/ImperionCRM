@@ -54,6 +54,16 @@ export function ReportResultView({
   result: ReportResult;
   viz: string;
 }) {
+  // Guardrail block (ADR-0075 §5, #413) takes precedence over the empty-rows message: the
+  // report was NOT run because it would scan an unfiltered high-cardinality object.
+  if (result.guardrail.blockedReason) {
+    return (
+      <p className="rounded-lg border border-amber/40 bg-amber/10 p-8 text-center text-sm text-amber">
+        {result.guardrail.blockedReason}
+      </p>
+    );
+  }
+
   if (result.rows.length === 0) {
     return (
       <p className="rounded-lg border border-border bg-panel p-8 text-center text-sm text-dim">

@@ -60,6 +60,28 @@ export interface ReportableField {
   grant: FieldGrant | null;
 }
 
+/**
+ * Per-object query-cost guardrail (ADR-0075 §5, #413). Governance metadata that bounds
+ * how expensive a report over this object may get — declared in the registry next to the
+ * object, exactly like a field's `grant` (the registry is the one governance surface;
+ * there is no other query path). The runner reads it via {@link objectGuardrail}; omitted
+ * fields fall back to the registry defaults.
+ */
+export interface ObjectGuardrail {
+  /**
+   * Detail-mode row cap before output is truncated (with a visible flag — never silently;
+   * ADR-0075 §5). Overrides {@link DEFAULT_MAX_DETAIL_ROWS} for a higher- or lower-volume object.
+   */
+  maxDetailRows: number;
+  /**
+   * When true, a DETAIL (ungrouped) report over this object MUST carry at least one filter
+   * on a selected field — an unfiltered full scan is BLOCKED (high-cardinality object; e.g.
+   * contact, ticket). Aggregate (group_by / measure) reports are exempt: aggregation collapses
+   * the scan to a bounded set of buckets, so the expensive *detail-dump* shape never arises.
+   */
+  requiresFilter: boolean;
+}
+
 /** A reportable object (one root the builder can root a report on). */
 export interface ReportableObject {
   /** Stable root_object key — persisted in `report_definition.root_object` (#410). */
@@ -69,6 +91,11 @@ export interface ReportableObject {
   /** Short description of the read surface this object reports over. */
   description: string;
   fields: readonly ReportableField[];
+  /**
+   * Query-cost guardrail overrides (ADR-0075 §5, #413). Omit for the registry defaults
+   * (`maxDetailRows` = {@link DEFAULT_MAX_DETAIL_ROWS}, `requiresFilter` = false).
+   */
+  guardrail?: Partial<ObjectGuardrail>;
 }
 
 /** Aggregations that make sense for a numeric/currency measure. */
@@ -107,6 +134,9 @@ export const SEMANTIC_MODEL: readonly ReportableObject[] = [
     key: "contact",
     label: "Contact",
     description: "Silver contact records joined to their account.",
+    // High-cardinality (every client end-user across all accounts) — block an unfiltered
+    // detail dump; require a filter (e.g. account/name) before a detail scan runs (ADR-0075 §5).
+    guardrail: { requiresFilter: true },
     fields: [
       { key: "fullName", label: "Full name", type: "string", aggregations: DIMENSION_AGGS, grant: null },
       { key: "email", label: "Email", type: "string", aggregations: DIMENSION_AGGS, grant: null },
@@ -134,6 +164,9 @@ export const SEMANTIC_MODEL: readonly ReportableObject[] = [
     key: "ticket",
     label: "Ticket",
     description: "Silver ticket records (service desk) joined to their account.",
+    // Highest-volume object (service-desk history) — same gate as contact: a detail report
+    // must be filtered (e.g. by account/status/priority); aggregate rollups stay open.
+    guardrail: { requiresFilter: true },
     fields: [
       { key: "number", label: "Ticket number", type: "string", aggregations: DIMENSION_AGGS, grant: null },
       { key: "title", label: "Title", type: "string", aggregations: DIMENSION_AGGS, grant: null },
@@ -177,6 +210,23 @@ function hasGrant(grant: FieldGrant | null, roles: readonly AppRole[] | undefine
 /** The object's definition, or `undefined` if it is not in the registry. */
 export function getReportableObject(objectKey: string): ReportableObject | undefined {
   return OBJECT_BY_KEY.get(objectKey);
+}
+
+/** Default detail-row cap for an object that declares no override (ADR-0075 §5, #413). */
+export const DEFAULT_MAX_DETAIL_ROWS = 1000;
+
+/**
+ * The effective query-cost guardrail for `objectKey` (ADR-0075 §5, #413): the object's
+ * declared overrides merged onto the registry defaults. An unknown object resolves to the
+ * defaults (the runner only ever calls this for a registry-validated selection). Pure /
+ * RBAC-independent — guardrails bound *cost*, not access; field RBAC stays in the grant path.
+ */
+export function objectGuardrail(objectKey: string): ObjectGuardrail {
+  const g = OBJECT_BY_KEY.get(objectKey)?.guardrail;
+  return {
+    maxDetailRows: g?.maxDetailRows ?? DEFAULT_MAX_DETAIL_ROWS,
+    requiresFilter: g?.requiresFilter ?? false,
+  };
 }
 
 /**
