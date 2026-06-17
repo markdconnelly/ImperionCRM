@@ -180,6 +180,11 @@ import type {
   ConnectorInstance,
   ConnectorInstanceInput,
   ConnectorStatus,
+  SegmentSummary,
+  SegmentDetail,
+  SegmentMemberRow,
+  SegmentMemberSource,
+  SegmentInput,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -2692,6 +2697,45 @@ export interface ConnectorRepository {
   disableConnector(id: string): Promise<void>;
 }
 
+/**
+ * CRM contact segments (ADR-0073 decision 2, migration 0126, #420/#421). A `segment` is
+ * a general-purpose contact set — `manual` (static, explicit members) or `rule` (dynamic,
+ * a `rule_json` predicate over contact fields). Membership lives in `segment_member`, with
+ * `source` (manual | bulk | rule) so a rule recompute can replace only its own rows. Born
+ * silver, app system of record (ADR-0042) — the front end authors; processes enroll /
+ * recompute. DISTINCT from an ad audience (ADR-0026). Reads degrade to empty/null on
+ * schema lag (the migration is dormant until applied). The rule EVALUATOR is a backend /
+ * pipeline process; this layer stores the rule and the materialized membership.
+ */
+export interface SegmentsRepository {
+  /** All segments, newest first, each with its live member count. */
+  listSegments(): Promise<SegmentSummary[]>;
+  /** One segment with its rule definition, or null if missing. */
+  getSegment(id: string): Promise<SegmentDetail | null>;
+  /** Create a segment owned by `ownerEmail`; returns the new id. */
+  createSegment(input: SegmentInput, ownerEmail: string): Promise<string>;
+  /** Update a segment's name/description/type/rule. */
+  updateSegment(id: string, input: SegmentInput): Promise<void>;
+  /** Delete a segment (cascades its membership). */
+  deleteSegment(id: string): Promise<void>;
+
+  /** The members of a segment (joined to contact), newest first. */
+  listSegmentMembers(segmentId: string): Promise<SegmentMemberRow[]>;
+  /**
+   * Add contacts to a segment idempotently (UNIQUE(segment_id, contact_id) — re-adding is
+   * a no-op). `source` records how they were added (manual | bulk | rule). Returns the
+   * number of NEW members added. `addedByEmail` resolves to app_user (null = system).
+   */
+  addSegmentMembers(
+    segmentId: string,
+    contactIds: readonly string[],
+    source: SegmentMemberSource,
+    addedByEmail: string | null,
+  ): Promise<number>;
+  /** Remove a single member by member-row id. */
+  removeSegmentMember(memberId: string): Promise<void>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -2716,4 +2760,5 @@ export interface Repositories {
   customFields: CustomFieldsRepository;
   reportBuilder: ReportBuilderRepository;
   connectors: ConnectorRepository;
+  segments: SegmentsRepository;
 }

@@ -75,6 +75,11 @@ import type {
   ConnectorInstance,
   ConnectorInstanceInput,
   ConnectorStatus,
+  SegmentSummary,
+  SegmentDetail,
+  SegmentMemberRow,
+  SegmentMemberSource,
+  SegmentInput,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { resolveMentions } from "@/lib/mentions";
@@ -179,6 +184,37 @@ const mockReportDefs: MockReportDef[] = [];
 const mockDashboards: MockDashboard[] = [];
 const mockDashboardItems: MockDashboardItem[] = [];
 let mockReportSeq = 0;
+
+// ── CRM contact segments (ADR-0073 decision 2, #420/#421) — in-memory store + seq ──
+interface MockSegment {
+  id: string;
+  name: string;
+  description: string | null;
+  type: "manual" | "rule";
+  ownerEmail: string;
+  ruleJson: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+const mockSegments: MockSegment[] = [];
+const mockSegmentMembers: SegmentMemberRow[] = [];
+let mockSegmentSeq = 0;
+
+function toSegmentSummary(s: MockSegment): SegmentSummary {
+  return {
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    type: s.type,
+    owner: s.ownerEmail,
+    memberCount: mockSegmentMembers.filter((m) => m.segmentId === s.id).length,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+  };
+}
+function toSegmentDetail(s: MockSegment): SegmentDetail {
+  return { ...toSegmentSummary(s), ruleJson: s.ruleJson };
+}
 
 // ── Connector instances (ADR-0076, #414) — in-memory store + seq ───────────────
 interface MockConnectorInstance extends ConnectorInstanceInput {
@@ -2554,6 +2590,90 @@ export const mockRepositories: Repositories = {
     async disableConnector(id: string): Promise<void> {
       const i = mockConnectorInstances.findIndex((x) => x.id === id);
       if (i !== -1) mockConnectorInstances.splice(i, 1);
+    },
+  },
+
+  // CRM contact segments (ADR-0073 decision 2, #420/#421) — in-memory store mirroring the
+  // Postgres semantics: newest-first list with a live member count, idempotent member add
+  // (no duplicate (segment_id, contact_id)), member-row delete, and segment delete cascading
+  // its membership.
+  segments: {
+    async listSegments(): Promise<SegmentSummary[]> {
+      return mockSegments
+        .map(toSegmentSummary)
+        .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    },
+    async getSegment(id: string): Promise<SegmentDetail | null> {
+      const s = mockSegments.find((x) => x.id === id);
+      return s ? toSegmentDetail(s) : null;
+    },
+    async createSegment(input: SegmentInput, ownerEmail: string): Promise<string> {
+      const id = `mock-segment-${++mockSegmentSeq}`;
+      const now = new Date().toISOString();
+      mockSegments.push({
+        id,
+        name: input.name,
+        description: input.description,
+        type: input.type,
+        ownerEmail,
+        ruleJson: input.type === "rule" ? input.ruleJson : null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return id;
+    },
+    async updateSegment(id: string, input: SegmentInput): Promise<void> {
+      const s = mockSegments.find((x) => x.id === id);
+      if (!s) return;
+      s.name = input.name;
+      s.description = input.description;
+      s.type = input.type;
+      s.ruleJson = input.type === "rule" ? input.ruleJson : null;
+      s.updatedAt = new Date().toISOString();
+    },
+    async deleteSegment(id: string): Promise<void> {
+      const i = mockSegments.findIndex((x) => x.id === id);
+      if (i === -1) return;
+      mockSegments.splice(i, 1);
+      for (let j = mockSegmentMembers.length - 1; j >= 0; j--) {
+        if (mockSegmentMembers[j].segmentId === id) mockSegmentMembers.splice(j, 1);
+      }
+    },
+    async listSegmentMembers(segmentId: string): Promise<SegmentMemberRow[]> {
+      return mockSegmentMembers
+        .filter((m) => m.segmentId === segmentId)
+        .sort((a, b) => (b.addedAt ?? "").localeCompare(a.addedAt ?? ""));
+    },
+    async addSegmentMembers(
+      segmentId: string,
+      contactIds: readonly string[],
+      source: SegmentMemberSource,
+      addedByEmail: string | null,
+    ): Promise<number> {
+      let added = 0;
+      for (const contactId of contactIds) {
+        const exists = mockSegmentMembers.some(
+          (m) => m.segmentId === segmentId && m.contactId === contactId,
+        );
+        if (exists) continue; // UNIQUE(segment_id, contact_id) — idempotent
+        added++;
+        mockSegmentMembers.push({
+          id: `mock-segment-member-${++mockSegmentSeq}`,
+          segmentId,
+          contactId,
+          contactName: contactId,
+          contactEmail: null,
+          account: null,
+          source,
+          addedBy: addedByEmail,
+          addedAt: new Date().toISOString(),
+        });
+      }
+      return added;
+    },
+    async removeSegmentMember(memberId: string): Promise<void> {
+      const i = mockSegmentMembers.findIndex((m) => m.id === memberId);
+      if (i !== -1) mockSegmentMembers.splice(i, 1);
     },
   },
 };

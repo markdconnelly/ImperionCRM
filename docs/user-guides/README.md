@@ -78,6 +78,9 @@ half of the platform; the full motion is the
 - **[Sales Activity — the Sales Queue](sales-activity.md)** — work your open sales
   tasks by due date and deal; create and complete them in place, and log a sales
   meeting.
+- **[Segments](segments.md)** — build reusable CRM contact sets (manual, bulk, or
+  rule-based) — the enrollment source for journeys and a building block for comms and
+  list views. Marketing-gated; distinct from ad audiences.
 
 ## ERP — running the work and the money
 

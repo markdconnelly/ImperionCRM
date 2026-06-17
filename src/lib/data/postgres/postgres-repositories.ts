@@ -318,6 +318,11 @@ import type {
   ConnectorInstance,
   ConnectorInstanceInput,
   ConnectorStatus,
+  SegmentSummary,
+  SegmentDetail,
+  SegmentMemberRow,
+  SegmentMemberSource,
+  SegmentInput,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -13197,6 +13202,152 @@ export const postgresRepositories: Repositories = {
       await pool.query(`DELETE FROM connector_instance WHERE id = $1`, [id]);
     },
   },
+
+  // CRM contact segments (ADR-0073 decision 2, migration 0126, #420/#421). Reads degrade
+  // to empty/null on schema lag — segment/segment_member is dormant until Mark applies the
+  // migration, so an undefined_table error is not an outage (the #301 isSchemaLagError
+  // pattern). Writes resolve the acting user to app_user; membership add is idempotent.
+  segments: {
+    async listSegments(): Promise<SegmentSummary[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.segments.listSegments();
+      try {
+        const { rows } = await pool.query<SegmentDbRow>(
+          `SELECT s.id, s.name, s.description, s.type, u.display_name AS owner,
+                  s.rule_json, s.created_at, s.updated_at,
+                  (SELECT count(*) FROM segment_member m WHERE m.segment_id = s.id) AS member_count
+             FROM segment s
+             LEFT JOIN app_user u ON u.id = s.owner_user_id
+            ORDER BY s.created_at DESC`,
+        );
+        return rows.map(mapSegmentSummary);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.segments.listSegments();
+      }
+    },
+
+    async getSegment(id: string): Promise<SegmentDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.segments.getSegment(id);
+      try {
+        const { rows } = await pool.query<SegmentDbRow>(
+          `SELECT s.id, s.name, s.description, s.type, u.display_name AS owner,
+                  s.rule_json, s.created_at, s.updated_at,
+                  (SELECT count(*) FROM segment_member m WHERE m.segment_id = s.id) AS member_count
+             FROM segment s
+             LEFT JOIN app_user u ON u.id = s.owner_user_id
+            WHERE s.id = $1`,
+          [id],
+        );
+        return rows[0] ? mapSegmentDetail(rows[0]) : null;
+      } catch (err) {
+        if (isSchemaLagError(err)) return null;
+        return mockRepositories.segments.getSegment(id);
+      }
+    },
+
+    async createSegment(input: SegmentInput, ownerEmail: string): Promise<string> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.segments.createSegment(input, ownerEmail);
+      const ownerId = await resolveAppUserId(pool, ownerEmail);
+      const ruleJson = input.type === "rule" ? input.ruleJson : null;
+      const { rows } = await pool.query<{ id: string }>(
+        `INSERT INTO segment (name, description, type, owner_user_id, rule_json)
+         VALUES ($1, $2, $3, $4, $5::jsonb)
+         RETURNING id`,
+        [
+          input.name,
+          input.description,
+          input.type,
+          ownerId,
+          ruleJson !== null ? JSON.stringify(ruleJson) : null,
+        ],
+      );
+      return rows[0].id;
+    },
+
+    async updateSegment(id: string, input: SegmentInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.segments.updateSegment(id, input);
+      const ruleJson = input.type === "rule" ? input.ruleJson : null;
+      await pool.query(
+        `UPDATE segment
+            SET name = $2, description = $3, type = $4, rule_json = $5::jsonb, updated_at = now()
+          WHERE id = $1`,
+        [
+          id,
+          input.name,
+          input.description,
+          input.type,
+          ruleJson !== null ? JSON.stringify(ruleJson) : null,
+        ],
+      );
+    },
+
+    async deleteSegment(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.segments.deleteSegment(id);
+      // segment_member.segment_id CASCADEs, so membership cleans up automatically.
+      await pool.query(`DELETE FROM segment WHERE id = $1`, [id]);
+    },
+
+    async listSegmentMembers(segmentId: string): Promise<SegmentMemberRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.segments.listSegmentMembers(segmentId);
+      try {
+        const { rows } = await pool.query<SegmentMemberDbRow>(
+          `SELECT m.id, m.segment_id, m.contact_id,
+                  c.full_name AS contact_name, c.email AS contact_email,
+                  a.name AS account, m.source, u.display_name AS added_by, m.added_at
+             FROM segment_member m
+             JOIN contact c ON c.id = m.contact_id
+             LEFT JOIN account a ON a.id = c.account_id
+             LEFT JOIN app_user u ON u.id = m.added_by
+            WHERE m.segment_id = $1
+            ORDER BY m.added_at DESC`,
+          [segmentId],
+        );
+        return rows.map(mapSegmentMember);
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.segments.listSegmentMembers(segmentId);
+      }
+    },
+
+    async addSegmentMembers(
+      segmentId: string,
+      contactIds: readonly string[],
+      source: SegmentMemberSource,
+      addedByEmail: string | null,
+    ): Promise<number> {
+      const pool = getPool();
+      if (!pool)
+        return mockRepositories.segments.addSegmentMembers(
+          segmentId,
+          contactIds,
+          source,
+          addedByEmail,
+        );
+      if (contactIds.length === 0) return 0;
+      const addedBy = addedByEmail ? await resolveAppUserIdOrNull(pool, addedByEmail) : null;
+      // Idempotent bulk insert: UNIQUE(segment_id, contact_id) makes re-adds no-ops; the
+      // RETURNING count reflects only NEW rows (ON CONFLICT DO NOTHING skips dupes).
+      const { rowCount } = await pool.query(
+        `INSERT INTO segment_member (segment_id, contact_id, source, added_by)
+         SELECT $1, cid, $3, $4 FROM unnest($2::uuid[]) AS cid
+         ON CONFLICT (segment_id, contact_id) DO NOTHING`,
+        [segmentId, Array.from(contactIds), source, addedBy],
+      );
+      return rowCount ?? 0;
+    },
+
+    async removeSegmentMember(memberId: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.segments.removeSegmentMember(memberId);
+      await pool.query(`DELETE FROM segment_member WHERE id = $1`, [memberId]);
+    },
+  },
 };
 
 /** A select-type custom field carries an options list; the others store []. */
@@ -13741,6 +13892,73 @@ async function resolveAppUserId(pool: Pool, ownerEmail: string): Promise<string>
     throw new Error(`No app_user for ${ownerEmail} — sign in once so the identity is mirrored.`);
   }
   return id;
+}
+
+/** Like resolveAppUserId but returns null instead of throwing (for nullable audit FKs). */
+async function resolveAppUserIdOrNull(pool: Pool, email: string): Promise<string | null> {
+  const { rows } = await pool.query<{ id: string }>(
+    `SELECT id FROM app_user WHERE email = $1 ORDER BY updated_at DESC LIMIT 1`,
+    [email],
+  );
+  return rows[0]?.id ?? null;
+}
+
+// ── Segment row mappers (migration 0126) ───────────────────────────────────────────
+interface SegmentDbRow {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  owner: string | null;
+  rule_json: Record<string, unknown> | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+  member_count: string; // count(*) comes back as a string from pg
+}
+
+interface SegmentMemberDbRow {
+  id: string;
+  segment_id: string;
+  contact_id: string;
+  contact_name: string;
+  contact_email: string | null;
+  account: string | null;
+  source: string;
+  added_by: string | null;
+  added_at: Date | null;
+}
+
+function mapSegmentSummary(r: SegmentDbRow): SegmentSummary {
+  return {
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    type: r.type === "rule" ? "rule" : "manual",
+    owner: r.owner,
+    memberCount: Number(r.member_count ?? 0),
+    createdAt: r.created_at ? r.created_at.toISOString() : null,
+    updatedAt: r.updated_at ? r.updated_at.toISOString() : null,
+  };
+}
+
+function mapSegmentDetail(r: SegmentDbRow): SegmentDetail {
+  return { ...mapSegmentSummary(r), ruleJson: r.rule_json };
+}
+
+function mapSegmentMember(r: SegmentMemberDbRow): SegmentMemberRow {
+  const source: SegmentMemberSource =
+    r.source === "bulk" ? "bulk" : r.source === "rule" ? "rule" : "manual";
+  return {
+    id: r.id,
+    segmentId: r.segment_id,
+    contactId: r.contact_id,
+    contactName: r.contact_name,
+    contactEmail: r.contact_email,
+    account: r.account,
+    source,
+    addedBy: r.added_by,
+    addedAt: r.added_at ? r.added_at.toISOString() : null,
+  };
 }
 
 function mapConnection(r: ConnectionDbRow): ConnectionRow {
