@@ -8,7 +8,7 @@ import {
   isConnectResult,
   isPersonalOAuthProvider,
   PERSONAL_OAUTH_PROVIDERS,
-  settingsConnectionsPath,
+  profileConnectionsPath,
   type ConnectResult,
 } from "./personal-oauth";
 
@@ -54,20 +54,18 @@ describe("classifyOAuthCallback", () => {
   });
 });
 
-describe("settingsConnectionsPath", () => {
-  it("targets the connections tab with the result flag", () => {
-    expect(settingsConnectionsPath("ok", "m365")).toBe(
-      "/settings?tab=connections&connect=ok&provider=m365",
-    );
+describe("profileConnectionsPath", () => {
+  it("targets the profile page with the result flag", () => {
+    expect(profileConnectionsPath("ok", "m365")).toBe("/profile?connect=ok&provider=m365");
   });
 
   it("omits the provider when not given", () => {
-    expect(settingsConnectionsPath("forbidden")).toBe("/settings?tab=connections&connect=forbidden");
+    expect(profileConnectionsPath("forbidden")).toBe("/profile?connect=forbidden");
   });
 
   it("URL-encodes hostile provider values (never trusts the query string)", () => {
-    const path = settingsConnectionsPath("error", "a&connect=ok");
-    expect(path).toBe("/settings?tab=connections&connect=error&provider=a%26connect%3Dok");
+    const path = profileConnectionsPath("error", "a&connect=ok");
+    expect(path).toBe("/profile?connect=error&provider=a%26connect%3Dok");
   });
 });
 

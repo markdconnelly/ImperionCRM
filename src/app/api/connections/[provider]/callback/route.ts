@@ -8,8 +8,8 @@
  * `code` + `state` to the backend server-side via the services layer
  * (managed-identity bearer — the browser never talks to the backend, and no token
  * material ever passes through here: the backend exchanges the code and writes the
- * token set straight to Key Vault). It then bounces back to Settings → Your
- * connections with a `connect=<result>` flag the page renders as a notice.
+ * token set straight to Key Vault). It then bounces back to Profile → Your
+ * connections (#796) with a `connect=<result>` flag the page renders as a notice.
  *
  * Security (CLAUDE.md §5 — Zero Trust):
  *  - Requires an authenticated session with `settings:write` (same capability as
@@ -28,19 +28,19 @@ import { DEFAULT_ROLE } from "@/lib/auth/roles";
 import {
   classifyOAuthCallback,
   isPersonalOAuthProvider,
-  settingsConnectionsPath,
+  profileConnectionsPath,
   type ConnectResult,
 } from "@/lib/integrations/personal-oauth";
 import { connectionsService } from "@/lib/services";
 import { ServiceCallError, ServiceNotConfiguredError } from "@/lib/services/external-client";
 
-function settingsRedirect(
+function profileRedirect(
   req: NextRequest,
   result: ConnectResult,
   provider?: string,
 ): NextResponse {
   return NextResponse.redirect(
-    new URL(settingsConnectionsPath(result, provider), req.nextUrl.origin),
+    new URL(profileConnectionsPath(result, provider), req.nextUrl.origin),
   );
 }
 
@@ -49,7 +49,7 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> },
 ): Promise<NextResponse> {
   const { provider } = await params;
-  if (!isPersonalOAuthProvider(provider)) return settingsRedirect(req, "error");
+  if (!isPersonalOAuthProvider(provider)) return profileRedirect(req, "error");
 
   // 1. Only a signed-in employee with settings-write authority may complete a
   //    connect (the same guard connectAction enforces, ADR-0045).
@@ -58,14 +58,14 @@ export async function GET(
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
   if (!can(session.user.roles ?? [DEFAULT_ROLE], "settings:write")) {
-    return settingsRedirect(req, "forbidden", provider);
+    return profileRedirect(req, "forbidden", provider);
   }
 
   // 2. Classify what the provider sent back. error= → the user cancelled; the
   //    backend's one-time state stays unconsumed and expires on its own.
   const classified = classifyOAuthCallback(req.nextUrl.searchParams);
-  if (classified.kind === "cancelled") return settingsRedirect(req, "cancelled", provider);
-  if (classified.kind === "invalid") return settingsRedirect(req, "invalid_state", provider);
+  if (classified.kind === "cancelled") return profileRedirect(req, "cancelled", provider);
+  if (classified.kind === "invalid") return profileRedirect(req, "invalid_state", provider);
 
   // 3. Forward code+state to the backend, which consumes the one-time state,
   //    exchanges the code, custodies the tokens in Key Vault, and upserts the
@@ -97,7 +97,7 @@ export async function GET(
     }
   }
 
-  // The backend wrote/updated the connection row — make Settings re-read it.
-  revalidatePath("/settings");
-  return settingsRedirect(req, result, provider);
+  // The backend wrote/updated the connection row — make Profile re-read it.
+  revalidatePath("/profile");
+  return profileRedirect(req, result, provider);
 }

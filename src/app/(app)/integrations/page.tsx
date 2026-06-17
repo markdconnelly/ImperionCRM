@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 
 /**
- * Integrations moved under Settings (ADR-0036): personal connects live on the
- * "Your connections" tab and company credentials on "Company credentials".
+ * Personal (per-user) connections moved to the all-auth Profile page (#796);
+ * company credentials live under Settings → Company credentials (ADR-0036, admin-only).
+ * This legacy `/integrations` entry point now lands on the personal connections.
  */
 export default function IntegrationsPage() {
-  redirect("/settings?tab=connections");
+  redirect("/profile");
 }
