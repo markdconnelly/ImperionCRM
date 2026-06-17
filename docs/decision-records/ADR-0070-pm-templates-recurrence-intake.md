@@ -1,13 +1,16 @@
 ---
 adr: 0070
 title: "PM templates, recurring tasks, and form intake"
-status: accepted
+status: consolidated
 date: 2026-06-12
 repo: frontend
 summary: "Editable templates (E1, v2) — `project_template{ id, name, project_type_id,"
 tags: [pm]
+consolidated_into: ADR-0094
 ---
 # ADR-0070: PM templates, recurring tasks, and form intake
+
+> Consolidated into [ADR-0094](ADR-0094-pm-parity-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|

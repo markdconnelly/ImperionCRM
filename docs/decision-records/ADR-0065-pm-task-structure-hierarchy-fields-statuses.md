@@ -1,13 +1,16 @@
 ---
 adr: 0065
 title: "PM task structure — hierarchy, dependencies, assignment, custom fields, statuses, tags"
-status: accepted
+status: consolidated
 date: 2026-06-12
 repo: frontend
 summary: "Extend the existing `task`/`project` model"
 tags: [pm]
+consolidated_into: ADR-0094
 ---
 # ADR-0065: PM task structure — hierarchy, dependencies, assignment, custom fields, statuses, tags
+
+> Consolidated into [ADR-0094](ADR-0094-pm-parity-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|
