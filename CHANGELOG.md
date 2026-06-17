@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.18.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.17.0...imperion-crm-v0.18.0) (2026-06-17)
+
+
+### Features
+
+* **cmdb:** derived asset lifecycle states ([#649](https://github.com/markdconnelly/ImperionCRM/issues/649)) ([#817](https://github.com/markdconnelly/ImperionCRM/issues/817)) ([62428e6](https://github.com/markdconnelly/ImperionCRM/commit/62428e6cb01426a5b416e1a97451ba20c718d6c4))
+* **cmdb:** impact analysis n-hop read-model + panel ([#650](https://github.com/markdconnelly/ImperionCRM/issues/650)) ([#821](https://github.com/markdconnelly/ImperionCRM/issues/821)) ([b7eca04](https://github.com/markdconnelly/ImperionCRM/commit/b7eca04403ba63dd75c8db963091fccbaf5b7e53))
+* **icm:** glass-box run viewer + approval queue + autonomy dial ([#278](https://github.com/markdconnelly/ImperionCRM/issues/278)) ([#818](https://github.com/markdconnelly/ImperionCRM/issues/818)) ([b381f84](https://github.com/markdconnelly/ImperionCRM/commit/b381f844a12d04373e16434c884f051a7a79f3fb))
+* **marketing:** message-template store + composer ([#731](https://github.com/markdconnelly/ImperionCRM/issues/731)) ([#819](https://github.com/markdconnelly/ImperionCRM/issues/819)) ([ea192dc](https://github.com/markdconnelly/ImperionCRM/commit/ea192dc33caf47327456af7e565c77766e2a40c4))
+
 ## [0.17.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.16.0...imperion-crm-v0.17.0) (2026-06-17)
 
 
