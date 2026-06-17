@@ -1,3 +1,12 @@
+---
+adr: 0062
+title: "Reporting page as the central business-intelligence hub"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "`/reporting` becomes the central BI hub: anchored sections — Sales"
+tags: [reporting]
+---
 # ADR-0062: Reporting page as the central business-intelligence hub
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0023
+title: "Engagement capture & long-term-relationship data model"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "Versioned questionnaires as data (no migrations to edit questions) feeding engagement answers, evidence, and reviews."
+tags: [gtm]
+---
 # ADR-0023: Engagement capture & long-term-relationship data model
 
 | Field | Value |

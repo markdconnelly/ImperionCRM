@@ -1,3 +1,12 @@
+---
+adr: 0051
+title: "Security posture model — tenant mapping, posture silver, and the Imperion Secure Score"
+status: accepted
+date: 2026-06-10
+repo: frontend
+summary: "Explicit admin-managed tenant mapping, pipeline-maintained posture silver, and a versioned pillar-based Imperion Secure Score snapshotted immutably per account."
+tags: [security-posture]
+---
 # ADR-0051: Security posture model — tenant mapping, posture silver, and the Imperion Secure Score
 
 | Field | Value |

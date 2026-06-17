@@ -1,3 +1,12 @@
+---
+adr: 0085
+title: "QuickBooks payment fact = `Purchase` on Simple Start (supersedes the `BillPayment` reconciliation source)"
+status: accepted
+date: 2026-06-14
+repo: frontend
+summary: "Keep Simple Start; re-target the authoritative payment fact from `BillPayment` to the"
+tags: [finance]
+---
 # ADR-0085: QuickBooks payment fact = `Purchase` on Simple Start (supersedes the `BillPayment` reconciliation source)
 
 | | |

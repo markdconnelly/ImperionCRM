@@ -1,3 +1,12 @@
+---
+adr: 0084
+title: "Claim migration & ADR numbers at merge, not at authoring"
+status: accepted
+date: 2026-06-13
+repo: frontend
+summary: "Parallel sessions collide on self-allocated migration/ADR numbers; assign the real number at merge against current `main`. Issue/PR numbers stay GitHub-allocated."
+tags: [meta]
+---
 # ADR-0084: Claim migration & ADR numbers at merge, not at authoring
 
 | Field | Value |

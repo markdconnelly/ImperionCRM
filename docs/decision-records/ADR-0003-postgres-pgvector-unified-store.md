@@ -1,3 +1,12 @@
+---
+adr: 0003
+title: "PostgreSQL + pgvector as the unified data store"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "One PostgreSQL + pgvector database serves as system of record, metadata store, embedding store, and agent memory."
+tags: [platform]
+---
 # ADR-0003: PostgreSQL + pgvector as the unified data store
 
 | Field | Value |

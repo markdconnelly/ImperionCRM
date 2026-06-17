@@ -1,3 +1,12 @@
+---
+adr: 0074
+title: "Service-desk depth — SLA, CSAT/NPS, live chat, chatbot deflection, routing"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Autotask is the ticket SoR; Imperion documents back via the API (RATIFIED)."
+tags: [crm-parity]
+---
 # ADR-0074: Service-desk depth — SLA, CSAT/NPS, live chat, chatbot deflection, routing
 
 | Field | Value |

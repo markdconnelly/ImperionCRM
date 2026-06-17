@@ -1,3 +1,12 @@
+---
+adr: 0065
+title: "PM task structure — hierarchy, dependencies, assignment, custom fields, statuses, tags"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Extend the existing `task`/`project` model"
+tags: [pm]
+---
 # ADR-0065: PM task structure — hierarchy, dependencies, assignment, custom fields, statuses, tags
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0054
+title: "Board of Directors — influence personas, packet grounding, facilitator, advisors, and recommendation review"
+status: accepted
+date: 2026-06-10
+repo: frontend
+summary: "Personas are influence profiles, never impersonations."
+tags: [agent-icm]
+---
 # ADR-0054: Board of Directors — influence personas, packet grounding, facilitator, advisors, and recommendation review
 
 | Field | Value |

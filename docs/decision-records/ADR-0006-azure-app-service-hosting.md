@@ -1,3 +1,12 @@
+---
+adr: 0006
+title: "Azure App Service as the hosting target"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "Host on Azure App Service (`imperioncrm`), deployed from `main` via the OIDC GitHub Actions workflow."
+tags: [platform]
+---
 # ADR-0006: Azure App Service as the hosting target
 
 | Field | Value |

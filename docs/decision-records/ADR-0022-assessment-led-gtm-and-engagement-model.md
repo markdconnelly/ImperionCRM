@@ -1,3 +1,12 @@
+---
+adr: 0022
+title: "Assessment-led GTM and the AI Security Readiness Assessment model"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "The paid AI Security Readiness Assessment becomes a first-class `assessment` entity in the sales motion."
+tags: [gtm]
+---
 # ADR-0022: Assessment-led GTM and the AI Security Readiness Assessment model
 
 | Field | Value |

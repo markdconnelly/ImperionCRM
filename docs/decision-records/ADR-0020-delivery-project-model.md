@@ -1,3 +1,12 @@
+---
+adr: 0020
+title: "Delivery project model (onboarding/implementation)"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "A `project` belongs to one `account`, optionally referencing the won opportunity it came from."
+tags: [surfaces]
+---
 # ADR-0020: Delivery project model (onboarding/implementation)
 
 | Field | Value |

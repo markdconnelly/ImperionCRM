@@ -1,3 +1,13 @@
+---
+adr: 0013
+title: "Feature feedback coupled to GitHub"
+status: superseded
+date: 2026-06-07
+repo: frontend
+summary: "`feature_request` intake/voting in-app; accepted requests create GitHub Issues with one-way status sync back."
+superseded_by: ["ADR-0078"]
+tags: [meta]
+---
 # ADR-0013: Feature feedback coupled to GitHub
 
 | Field | Value |

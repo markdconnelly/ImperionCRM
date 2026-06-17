@@ -1,3 +1,12 @@
+---
+adr: 0077
+title: "Premium service-management boundary — CMDB, ITIL, and asset lifecycle on top of Autotask SoR"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Adopt a premium service-management layer under epic #371, governed by these"
+tags: [crm-parity]
+---
 # ADR-0077: Premium service-management boundary — CMDB, ITIL, and asset lifecycle on top of Autotask SoR
 
 | Field | Value |

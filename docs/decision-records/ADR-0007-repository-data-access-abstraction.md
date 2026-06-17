@@ -1,3 +1,12 @@
+---
+adr: 0007
+title: "Repository abstraction for data access"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "Typed async repository contracts in `src/lib/data` with mock and PostgreSQL implementations behind one seam."
+tags: [topology]
+---
 # ADR-0007: Repository abstraction for data access
 
 | Field | Value |

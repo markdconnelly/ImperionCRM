@@ -1,3 +1,11 @@
+---
+adr: 0068
+title: "Conversational intelligence — call/meeting transcription, AI analysis, and search"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Pipeline shape: capture → transcribe → analyze → embed → surface."
+---
 # ADR-0068: Conversational intelligence — call/meeting transcription, AI analysis, and search
 
 | Field | Value |

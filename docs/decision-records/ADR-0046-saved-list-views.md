@@ -1,3 +1,12 @@
+---
+adr: 0046
+title: "Ticket board filters & saved/shareable list views"
+status: accepted
+date: 2026-06-09
+repo: frontend
+summary: "A `saved_view` table provides per-user, shared, and default saved list views over URL-param filters."
+tags: [surfaces]
+---
 # ADR-0046: Ticket board filters & saved/shareable list views
 
 | Field | Value |

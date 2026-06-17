@@ -1,3 +1,12 @@
+---
+adr: 0034
+title: "Onboarding project-management dashboard, R/Y/G milestones & task categories"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "`task.category` plus `project_milestone` with R/Y/G health and auto-completion checks power the onboarding dashboard."
+tags: [surfaces]
+---
 # ADR-0034: Onboarding project-management dashboard, R/Y/G milestones & task categories
 
 | Field | Value |

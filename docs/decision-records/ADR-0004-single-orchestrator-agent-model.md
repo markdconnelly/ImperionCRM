@@ -1,3 +1,12 @@
+---
+adr: 0004
+title: "Single-orchestrator agent model"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "Users interact with one orchestrator agent; specialized sub-agents never face the user directly."
+tags: [agent-icm]
+---
 # ADR-0004: Single-orchestrator agent model
 
 | Field | Value |

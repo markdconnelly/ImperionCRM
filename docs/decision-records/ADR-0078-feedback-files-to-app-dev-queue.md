@@ -1,3 +1,12 @@
+---
+adr: 0078
+title: "Feedback files to the app-dev queue (supersedes ADR-0013)"
+status: accepted
+date: 2026-06-11
+repo: frontend
+summary: "The Feedback page files an idempotent Autotask ticket in the app-dev queue via backend #19, superseding the ADR-0013 GitHub coupling. Renumbered from a duplicate 0058 (claim-at-merge collision, ADR-0084)."
+tags: [surfaces]
+---
 # ADR-0078: Feedback files to the app-dev queue (supersedes ADR-0013)
 
 | Field | Value |

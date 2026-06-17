@@ -1,3 +1,12 @@
+---
+adr: 0048
+title: "AI Agents operations page (orchestrator settings + activity)"
+status: accepted
+date: 2026-06-09
+repo: frontend
+summary: "The AI Agents page reads/writes the backend's `/agent/settings` and surfaces `agent.turn` audit activity with tiered fallback."
+tags: [agent-icm]
+---
 # ADR-0048: AI Agents operations page (orchestrator settings + activity)
 
 | Field | Value |

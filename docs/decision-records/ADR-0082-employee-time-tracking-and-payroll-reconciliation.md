@@ -1,3 +1,12 @@
+---
+adr: 0082
+title: "Employee time tracking — website-authoritative timesheets, Autotask documentation, QuickBooks payment reconciliation"
+status: accepted
+date: 2026-06-13
+repo: frontend
+summary: "Data model (per ADR-0039)."
+tags: [finance]
+---
 # ADR-0082: Employee time tracking — website-authoritative timesheets, Autotask documentation, QuickBooks payment reconciliation
 
 > **Amended by [ADR-0085](ADR-0085-qbo-payment-fact-purchase-simple-start.md) (2026-06-14):**

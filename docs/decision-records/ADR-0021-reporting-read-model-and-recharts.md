@@ -1,3 +1,12 @@
+---
+adr: 0021
+title: "Reporting read model and Recharts for visualization"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "A dedicated read-only `reports` repository aggregating in SQL, rendered with Recharts."
+tags: [reporting]
+---
 # ADR-0021: Reporting read model and Recharts for visualization
 
 | Field | Value |

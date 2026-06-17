@@ -1,3 +1,12 @@
+---
+adr: 0005
+title: "Web auth via Auth.js with Entra certificate client assertion"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "Auth.js v5 + the Entra ID provider authenticating with a certificate client assertion (no client secret)."
+tags: [platform]
+---
 # ADR-0005: Web auth via Auth.js with Entra certificate client assertion
 
 | Field | Value |

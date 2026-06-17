@@ -1,3 +1,12 @@
+---
+adr: 0075
+title: "Self-serve report builder — governed semantic model over the BI hub"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "A governed semantic model is the only query surface."
+tags: [reporting]
+---
 # ADR-0075: Self-serve report builder — governed semantic model over the BI hub
 
 | Field | Value |

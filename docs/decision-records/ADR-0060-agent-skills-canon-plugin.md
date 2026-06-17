@@ -1,3 +1,12 @@
+---
+adr: 0060
+title: "Agent skills canon — an in-repo Claude Code plugin marketplace"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "This repo is the canonical home for agent skills, packaged as the"
+tags: [meta]
+---
 # ADR-0060: Agent skills canon — an in-repo Claude Code plugin marketplace
 
 | Field | Value |

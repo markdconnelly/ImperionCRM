@@ -1,3 +1,12 @@
+---
+adr: 0028
+title: "Backend topology — separate repo, Azure Functions on the shared plan, network-isolated to the front end"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "The backend is a separate repo (`ImperionCRM_Backend`) of Azure Functions on the shared plan, isolated to the front end."
+tags: [topology]
+---
 # ADR-0028: Backend topology — separate repo, Azure Functions on the shared plan, network-isolated to the front end
 
 | Field | Value |

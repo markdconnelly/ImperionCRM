@@ -1,3 +1,12 @@
+---
+adr: 0047
+title: "Read-only device & cloud-asset inventory"
+status: accepted
+date: 2026-06-09
+repo: frontend
+summary: "A `device_inventory_all` view merges silver devices with IT Glue configurations for a read-only inventory page."
+tags: [surfaces]
+---
 # ADR-0047: Read-only device & cloud-asset inventory
 
 | Field | Value |
