@@ -4,7 +4,7 @@ title: interaction
 description: Unified multi-channel timeline event — one row per email/message/call/meeting/social, carrying bronze+silver+gold in one record.
 resource: ../../../decision-records/ADR-0011-unified-interaction-timeline.md
 tags: [silver, engagement, interaction, timeline]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-17T00:00:00Z
 ---
 
 # interaction
@@ -30,7 +30,7 @@ the gold text on the row, while the retrieval **vector** lives out-of-row in
 |---|---|---|
 | `id` | uuid | PK |
 | `account_id` / `contact_id` / `opportunity_id` | uuid | subjects (nullable); `account_id` CASCADE, `contact_id` / `opportunity_id` SET NULL |
-| `source` | enum `interaction_source` | `m365_email` · `m365_teams` · `plaud` · `sms` · `email` · `facebook` · `system` (0001) · `youtube` · `linkedin` · `whatsapp` · `phone_call` · `in_person` · `meeting` · `web_form` (0018) · `instagram` (0075) |
+| `source` | enum `interaction_source` | `m365_email` · `m365_teams` · `plaud` · `sms` · `email` · `facebook` · `system` (0001) · `youtube` · `linkedin` · `whatsapp` · `phone_call` · `in_person` · `meeting` · `web_form` (0018) · `instagram` (0075) · `m365_call` (0127, ADR-0049 call-records path) |
 | `channel` | text | free-form sub-channel label |
 | `kind` | text | comm shape: `email` · `message` · `call` · `meeting` · `transcript` · `summary` · `social_post` · `social_comment` · `dm` · `ad_engagement` · `note` |
 | `direction` | enum `interaction_direction` | `inbound` · `outbound` · `internal` |

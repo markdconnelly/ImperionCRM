@@ -1680,8 +1680,10 @@ domain match, independent of Tenant Mapping).
 - `lawful_basis`: `consent | legitimate_interest | contract | public_data` (ADR-0025)
 - `connection.scope`: `user | company` (ADR-0024)
 - `connection.provider`: `m365 | google | youtube | linkedin | facebook | plaud |
-  autotask | itglue | apollo | myitprocess | televy | quotemanager | gdap` (apollo by
-  ADR-0035; myitprocess/televy/quotemanager/gdap by ADR-0036)
+  autotask | itglue | apollo | myitprocess | televy | quotemanager | gdap | darkwebid |
+  acs | qbo | meta` (apollo by ADR-0035; myitprocess/televy/quotemanager/gdap by
+  ADR-0036; darkwebid/acs/qbo added in migrations 0042/0071/0093; meta = company FB/IG
+  send credential, migration 0127, #603)
 - `connection.status`: `active | expired | revoked | error | pending` (pending added by
   ADR-0036 for credentials recorded before the backend writes the secret)
 - **Uniqueness:** `uq_connection_company_provider` — partial unique index on
