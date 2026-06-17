@@ -88,6 +88,35 @@ Edges come from two sources:
 The working copy is **app-native**: pushing edges out to **IT Glue is a separate, gated
 round-trip slice**, not this surface.
 
+## Criticality / business impact (#648)
+
+Every CI carries a **criticality** rating — its business impact, and the weighting input for
+impact analysis (#650). It shows as a **badge** on the register (a column) and on the CI
+detail (header + a dedicated **Criticality** panel), stored on the app-native
+`cmdb_ci_overlay` table (migration `0132`).
+
+Criticality is **derived + override**:
+
+- **Derived default** — computed from the silver attributes the CI already carries (no new
+  ingest):
+  - **Account** → relationship × lifecycle: a live managed customer (`customer` &
+    `managed_active`) → **High**; a customer mid-lifecycle or a `partner` → **Medium**; a
+    `prospect`/unknown → **Low**.
+  - **Device** → device role: `server`/`network` infrastructure → **High**;
+    `workstation`/`mobile` endpoint → **Medium**; untyped → **Low**.
+  - **End-user** → **Medium** baseline (silver carries no seniority/role signal today; an
+    override is the escape hatch).
+  The derived rule **never** assigns **Critical** — that level is reserved for an explicit
+  admin override (a machine shouldn't silently declare a CI business-critical). The
+  **Re-derive** button recomputes the defaults from current silver on demand.
+- **Override** — an admin (`cmdb:write`) sets an explicit level on the CI detail, or chooses
+  *Inherit derived default* to clear it. **The effective criticality = override ?? derived
+  default**, and **an override survives re-derivation** (the derivation only ever rewrites the
+  derived default). A badge with a ring + "·set" marks a CI whose criticality is an override.
+
+The working copy is **app-native**: pushing criticality out to **IT Glue is a separate, gated
+slice**, not this surface.
+
 ## Access
 
 The **register and device inventory are read-only** for admin∨support (`canSeeCmdb`,
@@ -112,6 +141,12 @@ UI. App-native only — there is **no IT Glue write path** here.
   `src/app/(app)/cmdb/actions.ts` (all `cmdb:write`-gated); pure helpers in
   `src/lib/cmdb/relationship.ts`; UI in `src/components/cmdb/ci-relationships.tsx`
   (panel + SVG dependency graph).
+- Criticality overlay (#648): `cmdb_ci_overlay` table (migration `0132`); the derived default
+  + effective resolution live in pure helpers `src/lib/cmdb/criticality.ts` (unit-tested,
+  the same rule the migration seed encodes); read folded into `crm.listConfigurationItems()`
+  (with an in-code derived fallback pre-apply); writes `crm.setCiCriticalityOverride` /
+  `crm.deriveCiCriticality` via `cmdb:write`-gated server actions; UI in
+  `src/components/cmdb/criticality-badge.tsx` (badge) + `ci-criticality.tsx` (detail panel).
 
 ## Security notes
 

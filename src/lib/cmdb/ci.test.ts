@@ -18,6 +18,8 @@ const account = (over: Partial<ConfigurationItem> = {}): ConfigurationItem => ({
   accountName: "Northwind",
   displayName: "Northwind",
   attributes: [],
+  derivedDefault: "medium",
+  override: null,
   ...over,
 });
 
@@ -52,9 +54,9 @@ describe("staff / internal exclusion (acceptance criterion)", () => {
 
   test("toConfigurationItems drops account-less rows and stamps the account id", () => {
     const out = toConfigurationItems([
-      { ciType: "user", ciId: "u1", accountId: "a1", accountName: "N", displayName: "Dana", attributes: [] },
+      { ciType: "user", ciId: "u1", accountId: "a1", accountName: "N", displayName: "Dana", attributes: [], derivedDefault: "medium", override: null },
       // account-less row → an Imperion staff / unlinked identity → EXCLUDED
-      { ciType: "user", ciId: "u2", accountId: null, accountName: null, displayName: "Staffer", attributes: [] },
+      { ciType: "user", ciId: "u2", accountId: null, accountName: null, displayName: "Staffer", attributes: [], derivedDefault: "medium", override: null },
     ]);
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ ciId: "u1", accountId: "a1" });

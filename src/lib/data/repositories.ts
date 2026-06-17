@@ -152,6 +152,7 @@ import type {
   CiType,
   CiRelationship,
   CiRelationshipInput,
+  CiCriticalityOverrideInput,
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
@@ -790,6 +791,25 @@ export interface CrmRepository {
    * count after the recompute. cmdb:write. Mock fallback = 0 (no DB, nothing to derive).
    */
   deriveCiRelationships(): Promise<number>;
+
+  // ── CMDB criticality overlay (#648, epic #372, ADR-0078) ────────────────────
+  /**
+   * Set or clear an admin CRITICALITY override on a CI (the `cmdb_ci_overlay` table,
+   * migration 0132; `cmdb:write`, ADR-0045). UPSERTs the overlay row touching ONLY the
+   * `override` (+ its audit) — `override: null` clears it (effective falls back to the
+   * derived default). Validates the CI exists in the union read-model first. The
+   * override SURVIVES re-derivation (the derivation never touches it). Mock throws (no DB).
+   */
+  setCiCriticalityOverride(input: CiCriticalityOverrideInput): Promise<void>;
+
+  /**
+   * Recompute the DERIVED-DEFAULT criticality for every CI from current silver attributes
+   * (account relationship × lifecycle, device_type — the same rule the migration seed +
+   * `deriveCriticality` encode), rewriting ONLY `derived_default`. Admin OVERRIDES survive
+   * untouched. Idempotent / re-runnable. Returns the overlay row count after the recompute.
+   * cmdb:write. Mock fallback = 0 (no DB, nothing to derive).
+   */
+  deriveCiCriticality(): Promise<number>;
 
   /**
    * Read-only AR/invoice MIRROR over bronze `qbo_invoices` (the `invoice_mirror` view,
