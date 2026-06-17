@@ -127,6 +127,30 @@ are in [autonomy-dial.md](autonomy-dial.md).
 nurture), then project management, then service desk (the backup-failure monitor
 is the canonical draft→auto example).
 
+### The GUI surface (#278) — `/workflows/runs`
+
+The glass-box view of the run ledger lives at **`/workflows/runs`** (linked from
+the Workflows page). It is read-first and GUI-only — every *process* still calls
+the backend (ADR-0042). Three panels:
+
+- **Run viewer** — the `agent_run` ledger as a list (workflow, status, stage
+  count, cost, acting user), each linking to **`/workflows/runs/[id]`** where the
+  ordered stage artifacts (`agent_message` rows: role · content · tool calls) are
+  inspectable plain text. "Editable between stages" is the parked-checkpoint path,
+  surfaced as the approval queue below; the run write itself is backend-owned.
+- **Approval queue** — each parked checkpoint surfaces the drafted artifact + the
+  agent's **rationale** + the **triage class** + the **consent basis** (ADR-0058),
+  with approve / edit-and-approve / reject. Decisions route through the backend
+  approval-gated send path; consent is re-asserted at execution.
+- **Autonomy dial** — reads the current rung (L0–L3) + Mark-gate flag from
+  `agent_autopilot_policy` (migration 0123) for the workflow and flips it through
+  the backend. Admin-only (`agents:operate`, ADR-0050), audited, reversible. The
+  safe default when no row exists is L1 (draft), mark-gated — every workflow starts
+  in draft (ADR-0061).
+
+All three degrade like the rest of the app: no DB → sample rows; unwired executor
+endpoint → an honest "not wired yet" notice instead of a failure.
+
 ---
 
 ## 5. The live reference workspace: `sales/lead-response`

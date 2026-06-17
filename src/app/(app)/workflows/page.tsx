@@ -19,12 +19,20 @@ export default async function WorkflowsPage() {
           title="Workflows"
           description="Nurture and pre-discovery automation. Steps run in-app; Power Automate only fires the send/notify."
         >
-          <Link
-            href="/workflows/new"
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
-          >
-            + New workflow
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/workflows/runs"
+              className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-accent/50"
+            >
+              ICM runs
+            </Link>
+            <Link
+              href="/workflows/new"
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+            >
+              + New workflow
+            </Link>
+          </div>
         </PageHeader>
         <WorkflowsTable workflows={list} />
       </section>
