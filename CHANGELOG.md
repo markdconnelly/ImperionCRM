@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.19.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.18.0...imperion-crm-v0.19.0) (2026-06-17)
+
+
+### Features
+
+* **change:** change calendar / scheduling ([#660](https://github.com/markdconnelly/ImperionCRM/issues/660)) ([#827](https://github.com/markdconnelly/ImperionCRM/issues/827)) ([818926c](https://github.com/markdconnelly/ImperionCRM/commit/818926c54e8a04dbf2f15898addf7f0a00b5ab58))
+* **change:** change request core — schema + /changes CRUD ([#656](https://github.com/markdconnelly/ImperionCRM/issues/656)) ([#823](https://github.com/markdconnelly/ImperionCRM/issues/823)) ([78224e9](https://github.com/markdconnelly/ImperionCRM/commit/78224e90a7bf034e96ad8f28fad7fcf92b295ca6))
+* **change:** CMDB-derived risk + manual override ([#658](https://github.com/markdconnelly/ImperionCRM/issues/658)) ([#825](https://github.com/markdconnelly/ImperionCRM/issues/825)) ([3d9b8a1](https://github.com/markdconnelly/ImperionCRM/commit/3d9b8a19823f96974080b85c3e4f30266b3bc9c1))
+* **change:** lightweight approval flow by change type ([#659](https://github.com/markdconnelly/ImperionCRM/issues/659)) ([#826](https://github.com/markdconnelly/ImperionCRM/issues/826)) ([dd1eac4](https://github.com/markdconnelly/ImperionCRM/commit/dd1eac4d72dfdf02bc3caacdc5ac7c0122d947a4))
+
 ## [0.18.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.17.0...imperion-crm-v0.18.0) (2026-06-17)
 
 
