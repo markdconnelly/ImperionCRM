@@ -36,10 +36,33 @@ ADR-0075 §5: "the read model, not ad-hoc table scans, backs reports." So execut
 3. **Shape** — [`report-runner.ts`](../../src/lib/reporting/report-runner.ts) (pure,
    edge-safe, unit-tested) does projection / grouping / aggregation in memory:
    - **Detail mode** (no group-by and every aggregation is `none`): project selected
-     fields, one row per source row, capped at `MAX_DETAIL_ROWS` (1000) with an honest
-     `truncated` flag (no silent truncation, ADR-0075 §5).
+     fields, one row per source row, capped at the object's `maxDetailRows` (default
+     `MAX_DETAIL_ROWS` = 1000) with an honest `truncated` flag (no silent truncation,
+     ADR-0075 §5). Subject to the **required-filter gate** below.
    - **Aggregate mode** (any group-by, or any real aggregation): bucket by the group-by
-     dimensions and roll up each measure (`count`/`sum`/`avg`/`min`/`max`).
+     dimensions and roll up each measure (`count`/`sum`/`avg`/`min`/`max`). Exempt from
+     the required-filter gate (a roll-up collapses the scan to bounded buckets).
+
+## Query-cost guardrails (#413, ADR-0075 §5)
+
+Guardrails are **per-object registry metadata** (`ObjectGuardrail` in
+[`semantic-model.ts`](../../src/lib/reporting/semantic-model.ts)) read by the runner via
+`objectGuardrail(objectKey)` — never an arbitrary limit baked into the runner. Two
+controls, both honest (blocked/capped state is shown, never silent):
+
+- **Detail-row cap** (`maxDetailRows`, default 1000) — detail output is capped per object
+  and `truncated` is flagged when the source set exceeds it.
+- **Required-filter gate** (`requiresFilter`) — a high-cardinality object (currently
+  **contact** and **ticket**) BLOCKS an *unfiltered detail* scan: the runner returns an
+  empty, `blockedReason`-carrying result **without scanning** (`sourceCount` = 0). An
+  "effective" filter is one whose field is in the selection (a filter on an unselected
+  field is a no-op and does **not** satisfy the gate). The viewer sees the block notice in
+  [`report-result-view.tsx`](../../src/components/reporting/report-result-view.tsx) — in
+  both the builder preview and dashboard tiles. Aggregate reports are exempt.
+
+Guardrails bound *cost*, not *access* — field RBAC stays in the grant path (below). To
+mark a new object large, add `guardrail: { requiresFilter: true }` (and/or a
+`maxDetailRows` override) to its registry entry; nothing else changes.
 4. **Render** — [`report-result-view.tsx`](../../src/components/reporting/report-result-view.tsx)
    shows a table always, plus a Recharts bar/line chart when the viz asks for one and
    the result has a categorical dimension + a numeric measure (ADR-0021).
@@ -61,8 +84,9 @@ ADR-0075 §5: "the read model, not ad-hoc table scans, backs reports." So execut
 
 - v1 is single-root-object (no cross-object joins, ADR-0075 §4). Pre-modelled relations
   are a future ADR-0075 item.
-- Query-cost guardrails (row/time limits, required filters on large objects) are the
-  **#413** follow-up; v1 ships the `MAX_DETAIL_ROWS` cap only.
+- Query-cost guardrails (per-object row cap + required-filter gate on large objects)
+  shipped in **#413** — see the section above. Time-budget limits remain a future item
+  (the in-memory runner over a single curated read has no per-query timeout surface yet).
 - Dashboards composing saved reports are **#412**.
 
 ## Extending

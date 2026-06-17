@@ -134,3 +134,85 @@ describe("runReport — filters", () => {
     expect(res.rowCount).toBe(3); // filter on unselected field is a no-op
   });
 });
+
+/**
+ * Query-cost guardrails (ADR-0075 §5, #413). `ticket` is a `requiresFilter` object in the
+ * registry, so an unfiltered DETAIL scan is blocked; `opportunity` is not, so it runs freely.
+ * Aggregate reports are always exempt from the gate. Rows keyed by `ticket` field keys.
+ */
+const ticketRows: ReportRow[] = [
+  { number: "T-1", title: "VPN down", account: "Acme", status: "open", priority: "high", opened: "2026-06-01" },
+  { number: "T-2", title: "Slow email", account: "Acme", status: "closed", priority: "low", opened: "2026-06-02" },
+  { number: "T-3", title: "New laptop", account: "Globex", status: "open", priority: "medium", opened: "2026-06-03" },
+];
+
+describe("runReport — query-cost guardrails (#413)", () => {
+  it("blocks an unfiltered detail report on a requiresFilter object without scanning", () => {
+    const sel: ReportSelection = {
+      root_object: "ticket",
+      fields: [
+        { field: "number", aggregation: "none" },
+        { field: "title", aggregation: "none" },
+      ],
+    };
+    const res = runReport(sel, ticketRows);
+    expect(res.guardrail.requiresFilter).toBe(true);
+    expect(res.guardrail.blockedReason).toContain("must include at least one filter");
+    expect(res.rows).toHaveLength(0);
+    expect(res.rowCount).toBe(0);
+    expect(res.sourceCount).toBe(0); // proves it never scanned
+    expect(res.columns.map((c) => c.key)).toEqual(["number", "title"]); // intended shape still shown
+  });
+
+  it("runs a detail report on a requiresFilter object once a filter on a selected field is present", () => {
+    const sel: ReportSelection = {
+      root_object: "ticket",
+      fields: [
+        { field: "account", aggregation: "none" },
+        { field: "status", aggregation: "none" },
+      ],
+    };
+    const res = runReport(sel, ticketRows, [{ field: "account", op: "eq", value: "Acme" }]);
+    expect(res.guardrail.blockedReason).toBeNull();
+    expect(res.rowCount).toBe(2);
+    expect(res.rows.every((r) => r.account === "Acme")).toBe(true);
+  });
+
+  it("still blocks when the only filter targets an unselected field (not an effective filter)", () => {
+    const sel: ReportSelection = {
+      root_object: "ticket",
+      fields: [{ field: "number", aggregation: "none" }],
+    };
+    // Filter is on `status`, which is not in the selection → not effective → gate still trips.
+    const res = runReport(sel, ticketRows, [{ field: "status", op: "eq", value: "open" }]);
+    expect(res.guardrail.blockedReason).not.toBeNull();
+    expect(res.rowCount).toBe(0);
+  });
+
+  it("exempts aggregate reports on a requiresFilter object from the gate", () => {
+    const sel: ReportSelection = {
+      root_object: "ticket",
+      fields: [
+        { field: "status", aggregation: "none" },
+        { field: "number", aggregation: "count" },
+      ],
+      group_by: ["status"],
+    };
+    const res = runReport(sel, ticketRows); // no filter — still allowed (collapses to buckets)
+    expect(res.guardrail.blockedReason).toBeNull();
+    expect(res.rowCount).toBe(2); // open + closed
+    expect(res.rows.find((r) => r.status === "open")?.number__count).toBe(2);
+  });
+
+  it("reports an unfiltered, non-gated object freely with default cap and no block", () => {
+    const sel: ReportSelection = {
+      root_object: "opportunity",
+      fields: [{ field: "name", aggregation: "none" }],
+    };
+    const res = runReport(sel, oppRows);
+    expect(res.guardrail.requiresFilter).toBe(false);
+    expect(res.guardrail.maxDetailRows).toBe(MAX_DETAIL_ROWS);
+    expect(res.guardrail.blockedReason).toBeNull();
+    expect(res.rowCount).toBe(3);
+  });
+});

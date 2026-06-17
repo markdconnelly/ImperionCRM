@@ -12,15 +12,26 @@
  *
  * The runner takes the selection **after** `validateReportSelection` has RBAC-stripped
  * it (ADR-0075 §2), so every field it sees is one the caller may read — it never
- * re-checks grants. Query-cost guardrails (row/time limits, required filters) are the
- * #413 follow-up; v1 caps detail output at {@link MAX_DETAIL_ROWS} and flags truncation
- * (never silently — ADR-0075 §5).
+ * re-checks grants.
+ *
+ * Query-cost guardrails (ADR-0075 §5, #413) are enforced here, read from the per-object
+ * {@link objectGuardrail} registry metadata — never an arbitrary limit baked into the runner:
+ *   - **Detail-row cap** — detail output is capped at the object's `maxDetailRows` (default
+ *     {@link MAX_DETAIL_ROWS}) and flagged `truncated` (never silently — ADR-0075 §5).
+ *   - **Required-filter gate** — a high-cardinality object (e.g. contact, ticket) BLOCKS an
+ *     unfiltered detail scan: with no effective filter the runner returns an empty, blocked
+ *     result *without scanning*. Aggregate (group_by / measure) reports are exempt — they
+ *     collapse the scan to bounded buckets, so the expensive detail-dump shape never arises.
  *
  * PURE / edge-safe: imports only the registry (no pg, no node:*, no env), so it is
  * unit-tested directly — mirroring `semantic-model.ts` and `policy.ts`.
  */
 import type { Aggregation, ReportSelection } from "@/lib/reporting/semantic-model";
-import { getReportableObject } from "@/lib/reporting/semantic-model";
+import {
+  getReportableObject,
+  objectGuardrail,
+  DEFAULT_MAX_DETAIL_ROWS,
+} from "@/lib/reporting/semantic-model";
 
 /** A scalar cell in a loaded/aggregated report row. */
 export type ReportCellValue = string | number | null;
@@ -38,6 +49,19 @@ export interface ReportColumn {
   numeric: boolean;
 }
 
+/** The guardrail state applied to a run (ADR-0075 §5, #413) — surfaced so the UI is honest. */
+export interface ReportGuardrailState {
+  /** The effective per-object detail-row cap that was in force. */
+  maxDetailRows: number;
+  /** Whether this object requires a filter for a detail report (high-cardinality). */
+  requiresFilter: boolean;
+  /**
+   * Set when the run was BLOCKED before scanning (the required-filter gate tripped); `null`
+   * when the report ran. A blocked result carries the intended columns but zero rows.
+   */
+  blockedReason: string | null;
+}
+
 /** The executed result: typed columns + shaped rows, with an honest truncation flag. */
 export interface ReportResult {
   columns: ReportColumn[];
@@ -46,12 +70,14 @@ export interface ReportResult {
   rowCount: number;
   /** Source rows scanned (before grouping) — surfaced so the UI can show "of N". */
   sourceCount: number;
-  /** True when detail output was capped at {@link MAX_DETAIL_ROWS} (no silent truncation). */
+  /** True when detail output was capped at the object's `maxDetailRows` (no silent truncation). */
   truncated: boolean;
+  /** Guardrail state for this run (ADR-0075 §5, #413) — caps applied + any block reason. */
+  guardrail: ReportGuardrailState;
 }
 
-/** v1 detail-row cap (ADR-0075 §5 — real guardrails are #413). */
-export const MAX_DETAIL_ROWS = 1000;
+/** Default detail-row cap when an object declares no per-object override (ADR-0075 §5). */
+export const MAX_DETAIL_ROWS = DEFAULT_MAX_DETAIL_ROWS;
 
 /** A filter the builder may apply: equality / contains / numeric & date comparisons. */
 export type FilterOp = "eq" | "contains" | "gt" | "lt";
@@ -134,7 +160,10 @@ function aggregate(agg: Aggregation, cells: ReportCellValue[]): ReportCellValue 
  *   - **Aggregate** (group_by present, or any field aggregation ≠ `none`): group by the
  *     group_by dimensions and roll up each measure. Columns = dimensions then measures.
  *   - **Detail** (no group_by and every aggregation is `none`): project the selected
- *     fields per row, capped at {@link MAX_DETAIL_ROWS}.
+ *     fields per row, capped at the object's `maxDetailRows`.
+ *
+ * Guardrails (ADR-0075 §5, #413): a detail report over a `requiresFilter` object with no
+ * effective filter is BLOCKED before scanning; detail output is capped per-object and flagged.
  *
  * `selection` MUST be the registry-validated, RBAC-stripped selection
  * (`validateReportSelection(...).selection`) — every field is assumed allowed.
@@ -152,11 +181,13 @@ export function runReport(
     return t === "number" || t === "currency";
   };
 
-  // Filter first — only filters on selected fields are honoured (the builder offers no others).
+  const { maxDetailRows, requiresFilter } = objectGuardrail(selection.root_object);
+
+  // Only filters on selected fields are honoured (the builder offers no others) — so an
+  // "effective" filter is one whose field is in the selection. That same set decides both
+  // the actual row filtering and the required-filter gate below.
   const selectedKeys = new Set(selection.fields.map((f) => f.field));
-  const rows = sourceRows.filter((r) =>
-    filters.every((f) => (selectedKeys.has(f.field) ? rowMatchesFilter(r, f) : true)),
-  );
+  const effectiveFilters = filters.filter((f) => selectedKeys.has(f.field));
 
   const groupBy = selection.group_by ?? [];
   const measures = selection.fields.filter((f) => f.aggregation !== "none");
@@ -170,7 +201,26 @@ export function runReport(
       aggregation: "none",
       numeric: isMeasureType(f.field),
     }));
-    const capped = rows.slice(0, MAX_DETAIL_ROWS);
+
+    // Required-filter gate: block an unfiltered full detail scan of a high-cardinality
+    // object — return empty + a reason WITHOUT scanning (ADR-0075 §5: blocked, visible).
+    if (requiresFilter && effectiveFilters.length === 0) {
+      return {
+        columns,
+        rows: [],
+        rowCount: 0,
+        sourceCount: 0,
+        truncated: false,
+        guardrail: {
+          maxDetailRows,
+          requiresFilter,
+          blockedReason: `A detail report on ${obj?.label ?? selection.root_object} must include at least one filter — an unfiltered scan is blocked. Add a filter, or group/aggregate instead.`,
+        },
+      };
+    }
+
+    const rows = sourceRows.filter((r) => effectiveFilters.every((f) => rowMatchesFilter(r, f)));
+    const capped = rows.slice(0, maxDetailRows);
     const outRows = capped.map((r) => {
       const out: ReportRow = {};
       for (const f of selection.fields) out[f.field] = r[f.field] ?? null;
@@ -181,9 +231,13 @@ export function runReport(
       rows: outRows,
       rowCount: outRows.length,
       sourceCount: rows.length,
-      truncated: rows.length > MAX_DETAIL_ROWS,
+      truncated: rows.length > maxDetailRows,
+      guardrail: { maxDetailRows, requiresFilter, blockedReason: null },
     };
   }
+
+  // Aggregate mode — exempt from the required-filter gate (rows collapse to bounded buckets).
+  const rows = sourceRows.filter((r) => effectiveFilters.every((f) => rowMatchesFilter(r, f)));
 
   // Aggregate mode — dimensions = group_by; measures = fields with a real aggregation.
   const dimColumns: ReportColumn[] = groupBy.map((k) => ({
@@ -240,5 +294,6 @@ export function runReport(
     rowCount: outRows.length,
     sourceCount: rows.length,
     truncated: false,
+    guardrail: { maxDetailRows, requiresFilter, blockedReason: null },
   };
 }

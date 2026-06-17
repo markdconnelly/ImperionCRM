@@ -18,6 +18,11 @@ covers the registry's shape and how to extend it; the ADR is normative.
 - **Reportable fields** — each field has a stable `key`, label, `type`
   (`string | number | currency | date | enum | boolean`), the `aggregations` the
   builder may offer (`none | count | sum | avg | min | max`), and a `grant`.
+- **Per-object guardrail** (optional `guardrail`, #413) — query-cost metadata the runner
+  reads via `objectGuardrail(key)`: `maxDetailRows` (detail-row cap, default 1000) and
+  `requiresFilter` (a detail report on a high-cardinality object — currently `contact`,
+  `ticket` — must carry a filter, else it is blocked). Bounds *cost*, not *access* — see
+  [report-builder.md](report-builder.md) → Query-cost guardrails.
 
 ## RBAC — enforced at build AND run (ADR-0075 §2)
 
