@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-16T03:00:00Z
+timestamp: 2026-06-16T18:00:00Z
 ---
 
 # Master coverage matrix
@@ -165,9 +165,11 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 |---|---|---|---|---|
 | [app_user](tables/app_user.md) | horizontal | H | ✅ | n/a (Identity / RBAC) |
 | [connection](tables/connection.md) | horizontal | H | ✅ | n/a (Data Platform / sync config) |
+| connector_instance | horizontal | H | ⏳ | n/a (Data Platform / connector catalog — #416/#747, migration 0125) |
 | agent, agent_tool_grant, agent_settings | horizontal | H | ⏳ | n/a (Governance / agent config) |
 | [agent_autopilot_policy](tables/agent_autopilot_policy.md) | horizontal | H | ✅ | the autonomy dial — every tier reads its rung (#721, ADR-0087) |
 | account_tenant, saved_view | horizontal | H | ⏳ | n/a |
+| report_definition, dashboard, dashboard_item | horizontal | B/H | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
 
 ## Audit / governance
 
