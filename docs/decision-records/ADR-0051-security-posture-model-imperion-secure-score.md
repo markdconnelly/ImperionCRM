@@ -145,3 +145,32 @@ same shape as the secure-score control golden list).
   DDL + the collector; the front-end migration to land that bronze is tracked by follow-up
   issue #575. Until both land, every account renders the honest "absent" state. No silver entity
   shape/authority/join changes, so the semantic-layer gate is not engaged.
+
+## Addendum (#260): tenant-hygiene surface — domains, app registrations, role assignments
+
+Mark's per-source review extended the hygiene surface to **Entra verified domains**, **app
+registrations** (credential expiry), and **directory role assignments** (privileged-role
+sprawl) — surfaced *concisely* on the posture page and benchmarked against the MSP standard
+(the §3 golden-baseline pattern, same shape as the secure-score control golden list and the
+#259 CSA benchmark).
+
+- **Read surface + benchmark (this PR, #260).** `src/lib/security/tenant-hygiene.ts` joins three
+  bronze feeds — `entra_domains`, `entra_app_registrations`, `entra_role_assignments` — through
+  `account_tenant` and routes through the optional-enrichment seam: a not-yet-migrated table →
+  **empty result, not a blanked page**. Like #259 it is a self-contained server-only read off
+  `getPool()` and adds nothing to the repository barrel. Two pure benchmark functions:
+  `benchmarkRoleAssignments()` (DISTINCT privileged principals vs the
+  `maxPrivilegedPrincipals = 4` cap — ok ≤ cap, warn ≤ 2×, fail beyond) and
+  `benchmarkAppCredentials()` (any expired credential → fail; expiring within
+  `credentialExpiryWarningDays = 30` → warn). The standard lives in code
+  (`TENANT_HYGIENE_STANDARD`), not the DB.
+- **Concise card.** `TenantHygieneCard` renders three at-a-glance verdict rows (verified
+  domains, privileged role-assignment sprawl, app-credential expiry) — no exhaustive table. It
+  lives in the tenants-mapped branch, below the information-protection card.
+- **Bronze ownership.** Unlike #259, this PR **authors the front-end bronze migration**
+  (`0136_entra_tenant_hygiene_bronze.sql`, three tables on the 0077/0080 envelope: flat text
+  columns, `tenant_id/source/external_id/collected_at/raw_payload/content_hash`, PK, least-
+  privilege grants). The **on-prem collector that populates them is NOT in this PR** — so prod
+  tables are EMPTY and the benchmark degrades to grey until the collector lands. These are bronze
+  tables, not silver entities, so no OKF concept file / coverage-matrix row and no semantic-layer
+  gate.

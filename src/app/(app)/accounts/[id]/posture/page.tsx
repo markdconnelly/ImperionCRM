@@ -4,7 +4,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { getRepositories } from "@/lib/data";
 import { listSensitivityCsaForAccount } from "@/lib/security/sensitivity-csa";
+import { listTenantHygieneForAccount } from "@/lib/security/tenant-hygiene";
 import { SensitivityCsaCard } from "@/components/accounts/sensitivity-csa-card";
+import { TenantHygieneCard } from "@/components/accounts/tenant-hygiene-card";
 import { DnsDomainRows, DnsRecordDriftList } from "@/components/accounts/dns-posture-card";
 import { refreshPostureAction, snapshotPostureAction } from "../../actions";
 
@@ -84,6 +86,7 @@ export default async function AccountPosturePage({
     controls,
     exposures,
     sensitivityCsa,
+    tenantHygiene,
     dnsDomains,
     dnsRecordDrift,
   ] = await Promise.all([
@@ -93,6 +96,7 @@ export default async function AccountPosturePage({
     security.listSecureScoreControlsForAccount(id),
     security.listCredentialExposuresForAccount(id),
     listSensitivityCsaForAccount(id),
+    listTenantHygieneForAccount(id),
     security.listDnsDomainsForAccount(id),
     security.listDnsRecordDriftForAccount(id),
   ]);
@@ -343,6 +347,8 @@ export default async function AccountPosturePage({
           </Section>
 
           <SensitivityCsaCard data={sensitivityCsa} />
+
+          <TenantHygieneCard data={tenantHygiene} />
         </>
       )}
 
