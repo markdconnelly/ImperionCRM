@@ -8,6 +8,7 @@ One interface. One agent. Every customer's whole story — from the first ad the
 to the quarterly business review years later — in one place.
 
 [Documentation library](docs/README.md) ·
+[System of systems](docs/architecture/system-of-systems.md) ·
 [Architecture](docs/architecture/README.md) ·
 [Customer lifecycle](docs/architecture/customer-lifecycle.md) ·
 [Decision records](docs/decision-records/README.md)

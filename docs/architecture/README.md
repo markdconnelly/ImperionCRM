@@ -24,6 +24,7 @@ runs in external functions. Everything shares one store: **PostgreSQL + pgvector
 
 | Doc | What it covers |
 | --- | --- |
+| [system-of-systems](system-of-systems.md) | **The four repositories as one platform** — who owns what, how a fact crosses repo boundaries (bronze → silver → gold), the GUI-reads-vs-backend-processes boundary, identity across the estate, and the canon-ownership rules. Start here for the cross-repo view. |
 | [system-architecture](system-architecture.md) | **The three layers in one place** — Medallion data lake · Model Workspace Protocol agent framework · OKF knowledge layer — and how a fact travels source → bronze → silver → gold → agent → employee. Start here for the whole-system view. |
 | [data-and-automation-doctrine](data-and-automation-doctrine.md) | **The deeper builder + stakeholder doctrine** — the eight implementation archetypes every data object falls into, a worked example each, a master object → archetype → IKF → ICM map, and the "possible vs not possible" use-case triage. |
 | [application-boundary](application-boundary.md) | **What lives in this repo vs. in external functions** — the single most important boundary to understand before changing code. |
