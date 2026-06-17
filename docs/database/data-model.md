@@ -797,7 +797,7 @@ erDiagram
 > record points back to the engagement that produced it — the engagement's data is never
 > copied forward.
 
-### SLA breach read-model — `ticket_sla_breach` view (ADR-0074 §2, migration 0118)
+### SLA breach read-model — `ticket_sla_breach` view (ADR-0074 §2, migrations 0118 + 0128)
 
 SLA breach is a **read-model PROJECTION over silver `ticket`, not an authoritative
 `sla_state` store** (ADR-0074 §2 — Autotask is the ticket system of record; Imperion keeps
@@ -814,19 +814,24 @@ SLA apply, via the account's `contract.sla_id`, mig 0050), `first_response_due_a
 `resolution_time_remaining` (interval; negative = overrun), and an `sla_state` worklist
 bucket (`breached` > `at_risk` (open, <25% of budget left) > `ok` > `unknown`).
 
-**SLA targets — the honest part (ADR-0074 §2, ADR-0044):** the ADR allows targets from
-"Autotask SLA fields pulled into silver, OR computed against contract terms where absent."
-Today the typed Autotask SLA timestamps (`dueDateTime` / `firstResponseDateTime` /
-`resolvedDateTime`) live **only in bronze `autotask_tickets`** (mig 0038, all-text envelope)
-and were **not** promoted to typed columns on silver `ticket` (mig 0050 added
-`last_activity_at` / `description` / `resolution` / `sub_issue_type` / `ticket_type`, no SLA
-columns). So the view takes the **contract-term fallback branch**: it derives due timestamps
-from `opened_at` + a priority-keyed default policy (critical/high/medium/low). **Follow-up
-(pipeline-owned, file as a sibling-repo issue per CLAUDE.md §1):** promote the bronze
-SLA timestamps to silver `ticket`, then `COALESCE(real, derived)` in this view. The
-projection is correct now; it sharpens when the real targets land. Read via
-`src/lib/sla-breach.ts` (typed `TicketSlaBreachRow`, worklist sort + breach summary).
-PII-free: the view selects no ticket title/description/resolution text.
+**SLA targets — real Autotask targets now preferred (ADR-0074 §2, ADR-0044):** the ADR allows
+targets from "Autotask SLA fields pulled into silver, OR computed against contract terms where
+absent." **Migration 0128 (#666)** promotes the typed Autotask SLA-target timestamps
+(`dueDateTime` / `firstResponseDateTime` / `resolvedDateTime`) — previously bronze-only
+(`autotask_tickets.due_date_time` / `first_response_date_time` / `resolved_date_time`, mig 0038,
+all-text) — to typed `timestamptz` columns on silver `ticket`: `sla_due_at` /
+`sla_first_response_due_at` / `sla_resolved_at`. The view now `COALESCE`s the real targets
+ahead of the derived policy — `COALESCE(t.sla_first_response_due_at, opened_at +
+first_response_target)` and `COALESCE(t.sla_due_at, opened_at + resolution_target)` — feeding
+those instants into the breach booleans, `resolution_time_remaining` and the `sla_state`
+bucket, and uses `sla_resolved_at` to stop the first-response clock at the actual resolution
+instant. The priority-keyed contract-term policy (critical/high/medium/low) is now only the
+**fallback** used where a real target is NULL. **Sibling-repo follow-up (must land for this to
+do anything, sequenced after this merges per CLAUDE.md §1):** the cloud pipeline's
+`mergeTicketSources` must parse the three bronze text fields into the new typed columns. Until
+then the columns are NULL and every `COALESCE` falls through to the derived policy — output is
+unchanged, no regression. Read via `src/lib/sla-breach.ts` (typed `TicketSlaBreachRow`, worklist
+sort + breach summary). PII-free: the view selects no ticket title/description/resolution text.
 
 ### AR/invoice mirror read-model — `invoice_mirror` view (ADR-0085 / ADR-0044, migration 0121, #668)
 
