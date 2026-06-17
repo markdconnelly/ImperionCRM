@@ -1,7 +1,7 @@
 ---
 adr: 0098
 title: "Change Enablement — Autotask is the change-record SoR via a gated write; Imperion is an app-native overlay (typed change, CMDB-derived risk, lightweight approval, calendar)"
-status: proposed
+status: accepted
 date: 2026-06-17
 repo: frontend
 summary: "Imperion models the change (type, affected CIs, CMDB-derived risk, lightweight approval, calendar) and routes it to Autotask change management via a gated write; Autotask is the change-record system of record and Imperion's approval + schedule are an app-native overlay keyed to the Autotask change id. Problem Management is out of scope. v1 = record + approval + calendar only, no automated execution."
@@ -12,7 +12,7 @@ tags: [crm-parity]
 | Field | Value |
 |---|---|
 | **Repo** | frontend (schema owner; the Autotask write *process* lands in the backend per ADR-0042/ADR-0018) |
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-17 |
 | **Relates to** | ADR-0042 (four-repo augment-not-replace contract), ADR-0018 (GUI-only; processes in the backend), ADR-0077 (premium service-management boundary — the parent boundary), ADR-0097 (CMDB authority model — supplies the impact/criticality this ADR's risk consumes), ADR-0058 (composer sends via an approval-gated backend path — the gated-external-write pattern reused here), ADR-0091 (Agent/ICM platform — board/deputy governance + tiered autonomy; **explicitly NOT** the approval model here), ADR-0095 (RBAC + write-capability gating), ADR-0084 (claim numbers at merge), #373 (ITIL Change Enablement epic), #372 (CMDB epic), #650 (CMDB impact analysis), #645 (CI register / affected-CI picker), #426 (Autotask write-back spike), backend #150 (Autotask write-back client — built), #320 (incident/service-desk depth), #656 (change-request core), #658 (CMDB-derived risk + override), #659 (lightweight approval), #660 (change calendar), #661 (route → Autotask, gated write) |
 
