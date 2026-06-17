@@ -45,15 +45,25 @@ pure, edge-safe `src/lib/auth/roles.ts`:
 
 | Role | Source group | What it broadly holds |
 | --- | --- | --- |
-| `admin` | `…Admins` | **Everything** — holds every capability implicitly; the only role that sees Settings, Security, the AI surfaces, and the CMDB. |
+| `admin` | `…Admins` | **Everything** — holds every capability implicitly; the only role that sees Settings, Board, the AI surfaces, and (with the technician) the CMDB + Service tier. |
 | `finance` | `…Finance` | Contracts/billing, payroll & expense finance-approval, collections, labour-cost analytics. |
 | `project_manager` | `…ProjectManager` | Delivery — projects, onboarding, tasks, business reviews, capacity. |
-| `sales` | `…Sales` | CRM core, opportunities/proposals/discovery/assessments, campaigns. |
-| `support` | `…Support` | Tickets and a narrow comms write; **the default / most-restricted role**. |
+| `sales` | `…Sales` | CRM core, opportunities/proposals/discovery/assessments, campaigns, marketing. |
+| `support` | `…Support` | Tickets, CMDB and the Service tier, a narrow comms write; **the default / most-restricted role**. Surfaced in the UI as **"Technician"** (the role key + Entra group stay `support`). |
 
 **`DEFAULT_ROLE = 'support'`** — a user whose claims resolve to no recognized group
 falls back to the *least*-privileged role. This is the fail-closed default
-(ADR-0095, from ADR-0030/0045).
+(ADR-0095, from ADR-0030/0045). The default role's **display label is "Technician"**
+(`ROLE_LABEL`/`roleLabel`, #794) — the key and the source group are unchanged.
+
+> **Nav IA (#794, ADR-0030).** The sidebar is the consolidated, role-driven,
+> *hide-entirely* IA: a flat **Top** band (Dashboard · Global Reporting · Accounts ·
+> Contacts · CMDB), collapsible **Mid** groups (Employee · Marketing · Sales · Projects
+> · Service · Finance), and a **Bottom** band (Board · Reports · Feedback · Settings).
+> A group whose `grp-*` guard the role lacks is hidden header-and-all. Matrix:
+> Top + Employee → all roles · CMDB + Service → admin|technician · Marketing + Sales →
+> admin|sales · Projects → admin|project_manager · Finance → admin|finance ·
+> Board + Settings → admin · Reports leaves ride their domain group's gate.
 
 > **As-built (ADR-0095, #139/#169):** the live Entra configuration emits **group
 > object-id GUIDs in the `roles` claim** (`emit_as_roles`); `rolesFromClaims` resolves
@@ -67,9 +77,11 @@ falls back to the *least*-privileged role. This is the fail-closed default
 Pure predicates in `roles.ts` drive three things, all defaulting to the most-restricted
 role:
 
-- **Nav filtering** — `canSeeFeature(navKey, roles)` hides nav items a role cannot use
-  (`settings`, `security`, `agents`, `board`, `cmdb`, `connectors`, the time/expense
-  admin surfaces, `collections`, …).
+- **Nav filtering** — `canSeeFeature(navKey, roles)` hides nav items a role cannot use:
+  both the collapsible **group headers** (`grp-marketing`, `grp-sales`, `grp-projects`,
+  `grp-service`, `grp-finance`, `grp-settings` — a group hides header-and-all, #794) and
+  individual leaves (`settings`, `security`, `agents`, `board`, `cmdb`, `connectors`, the
+  per-domain `report-*` leaves, the time/expense admin surfaces, `collections`, …).
 - **Route redirects** — the edge `authorized` callback and per-page server redirects
   send non-admins away from `/settings` and `/security` (and the AI surfaces — layer 4).
 - **Server-side revenue & comp redaction** — `canSeeRevenue` is **false when the only

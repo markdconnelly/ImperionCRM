@@ -43,6 +43,13 @@ export interface NavItem {
   label: string;
   icon: string; // lucide-react icon name
   href: string;
+  /**
+   * When present, this item is a COLLAPSIBLE GROUP HEADER (not a link): `href`
+   * is unused for navigation and `children` are the routes the group expands to.
+   * Group-level visibility is keyed off the group's `key` via `canSeeFeature`
+   * (the whole group hides when the role lacks it). A leaf item has no `children`.
+   */
+  children?: NavItem[];
 }
 
 /** A row in the Pipeline board (an opportunity). */

@@ -24,6 +24,25 @@ export type AppRole = (typeof APP_ROLES)[number];
 export const DEFAULT_ROLE: AppRole = "support";
 
 /**
+ * Human-facing display label for each role (#794). The role KEY and the Entra
+ * security-group name stay `support` (renaming the group is Mark-gated); only
+ * the surfaced label differs — the baseline role is shown as "Technician".
+ * Use `roleLabel()` wherever a role is rendered to a user.
+ */
+export const ROLE_LABEL: Record<AppRole, string> = {
+  admin: "Admin",
+  finance: "Finance",
+  project_manager: "Project Manager",
+  sales: "Sales",
+  support: "Technician",
+};
+
+/** Display label for a role key (#794) — falls back to the key if unknown. */
+export function roleLabel(role: string): string {
+  return ROLE_LABEL[role as AppRole] ?? role;
+}
+
+/**
  * Entra group display name / App-Role value → AppRole. Used when the token
  * carries human-readable role strings (the App-Role `roles` claim, recommended)
  * rather than raw group GUIDs. GUID→role mapping lives in env (`roleEnv`).
@@ -82,7 +101,7 @@ export function canSeeAgentPages(roles: readonly AppRole[] | undefined): boolean
  * capability is added (mirrors `canSeeAgentPages`).
  */
 export function canSeeCmdb(roles: readonly AppRole[] | undefined): boolean {
-  return isAdmin(roles);
+  return isAdmin(roles) || hasRole(roles, "support");
 }
 
 /**
@@ -272,6 +291,58 @@ export function redactMoney(
   return canSeeRevenue(roles) ? value : REDACTED_MONEY;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * GROUP-LEVEL nav guards (#794, ADR-0030). The new IA (`src/lib/nav.ts`) renders
+ * collapsible groups; a role that lacks a group's guard never sees the group OR
+ * its children (hide-entirely). These are nav-visibility only — defense-in-depth;
+ * each page still enforces its own server-side gate. Matrix per issue #794:
+ *   Top + Employee → all roles · CMDB + Service → admin|support(Technician) ·
+ *   Marketing + Sales → admin|sales · Projects → admin|project_manager ·
+ *   Finance → admin|finance · Board + Settings → admin. Reports split below.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** The Marketing group — admin | sales (mirrors `canManageCampaigns`). */
+export function canSeeMarketing(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "sales");
+}
+
+/** The Sales group — admin | sales (mirrors `canManageSales`). */
+export function canSeeSales(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "sales");
+}
+
+/** The Projects group — admin | project_manager (mirrors `canManageProjects`). */
+export function canSeeProjects(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "project_manager");
+}
+
+/** The Service group — admin | support(Technician). Mirrors `canSeeCmdb`. */
+export function canSeeService(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "support");
+}
+
+/** The Finance group — admin | finance (mirrors `canSeeCollections`). */
+export function canSeeFinance(roles: readonly AppRole[] | undefined): boolean {
+  return isAdmin(roles) || hasRole(roles, "finance");
+}
+
+/** Per-domain Reports leaves (#794): each report rides its domain's group gate. */
+export function canSeeMarketingReport(roles: readonly AppRole[] | undefined): boolean {
+  return canSeeMarketing(roles);
+}
+export function canSeeSalesReport(roles: readonly AppRole[] | undefined): boolean {
+  return canSeeSales(roles);
+}
+export function canSeeProjectReport(roles: readonly AppRole[] | undefined): boolean {
+  return canSeeProjects(roles);
+}
+export function canSeeServiceReport(roles: readonly AppRole[] | undefined): boolean {
+  return canSeeService(roles);
+}
+export function canSeeFinanceReport(roles: readonly AppRole[] | undefined): boolean {
+  return canSeeFinance(roles);
+}
+
 /** Per-nav-key capability guards. Keys absent here are visible to everyone. */
 const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) => boolean>> = {
   settings: canSeeSettings,
@@ -292,6 +363,36 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   // The collections / AR-dunning worklist (#678) is the finance gate — finance∨admin
   // (`collections:read`). The UI lands in a follow-up; the nav guard is wired now.
   collections: canSeeCollections,
+
+  // ── Collapsible GROUP headers (#794). A group hides entirely (header + all
+  // children) when the role lacks its guard. Employee has no entry → all roles.
+  "grp-marketing": canSeeMarketing,
+  "grp-sales": canSeeSales,
+  "grp-projects": canSeeProjects,
+  "grp-service": canSeeService,
+  "grp-finance": canSeeFinance,
+  "grp-settings": canSeeSettings,
+  // The Reports group header itself is unguarded; the sidebar hides the whole
+  // group when none of its per-domain leaves (below) are visible for the role.
+  "grp-reports": () => true,
+
+  // ── Per-domain Reports leaves (#794) — each report rides its domain gate.
+  "report-marketing": canSeeMarketingReport,
+  "report-sales": canSeeSalesReport,
+  "report-projects": canSeeProjectReport,
+  "report-service": canSeeServiceReport,
+  "report-finance": canSeeFinanceReport,
+
+  // ── Settings group sub-pages (#794) — all admin-only, same as the group.
+  "settings-assessment-types": canSeeSettings,
+  "settings-tenant-mapping": canSeeSettings,
+  "settings-connections": canSeeSettings,
+  "settings-sla": canSeeSettings,
+  consent: canSeeSettings,
+  questions: canSeeSettings,
+  workflows: canSeeSettings,
+  "custom-fields": canSeeSettings,
+  statuses: canSeeSettings,
 };
 
 /** Whether a nav item (by `key`) should be shown for the given roles. */

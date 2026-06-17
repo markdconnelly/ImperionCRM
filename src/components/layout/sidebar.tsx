@@ -1,10 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { navPrimary, navSecondary, navTertiary, isActivePath } from "@/lib/nav";
+import {
+  navTop,
+  navGroups,
+  navBottom,
+  isActivePath,
+  isGroupActive,
+} from "@/lib/nav";
 import { canSeeFeature } from "@/lib/auth/roles";
+import type { AppRole } from "@/lib/auth/roles";
 import { signOutAction } from "@/lib/auth/actions";
 import { Icon } from "@/components/ui/icon";
 import type { NavItem, SessionUser } from "@/types";
@@ -21,10 +29,12 @@ function NavRow({
   item,
   active,
   collapsed,
+  nested = false,
 }: {
   item: NavItem;
   active: boolean;
   collapsed: boolean;
+  nested?: boolean;
 }) {
   return (
     <Link
@@ -33,6 +43,7 @@ function NavRow({
       className={cn(
         "group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
         collapsed && "justify-center px-0",
+        nested && !collapsed && "pl-7",
         active
           ? "bg-panel-2 text-text"
           : "text-dim hover:bg-panel-2 hover:text-text",
@@ -48,6 +59,123 @@ function NavRow({
   );
 }
 
+/**
+ * A collapsible group: a header row that expands/collapses its children. The
+ * whole group is hidden when the role lacks the group's guard OR no child is
+ * visible. When collapsed (icon-rail), children render as a flat list under the
+ * group icon so every link stays reachable. The active trail keeps the group open.
+ */
+function NavGroup({
+  group,
+  collapsed,
+  roles,
+  pathname,
+}: {
+  group: NavItem;
+  collapsed: boolean;
+  roles: readonly AppRole[] | undefined;
+  pathname: string;
+}) {
+  const groupVisible = canSeeFeature(group.key, roles);
+  const children = (group.children ?? []).filter((c) => canSeeFeature(c.key, roles));
+  const trailActive = isGroupActive(group, pathname);
+  // Open by default if the active route is inside this group; otherwise collapsed.
+  const [open, setOpen] = useState<boolean>(trailActive);
+
+  if (!groupVisible || children.length === 0) return null;
+
+  // Icon-rail mode: no headers, just the leaf icons (each still gated above).
+  if (collapsed) {
+    return (
+      <>
+        {children.map((child) => (
+          <NavRow
+            key={child.key}
+            item={child}
+            collapsed
+            active={isActivePath(child.href, pathname)}
+          />
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={cn(
+          "group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
+          trailActive
+            ? "text-text"
+            : "text-dim hover:bg-panel-2 hover:text-text",
+        )}
+      >
+        <Icon
+          name={group.icon}
+          size={18}
+          className={cn(
+            trailActive ? "text-accent" : "text-dim group-hover:text-text",
+          )}
+        />
+        <span className="flex-1 truncate text-left font-medium">{group.label}</span>
+        <Icon
+          name={open ? "ChevronDown" : "ChevronRight"}
+          size={14}
+          className="text-dim"
+        />
+      </button>
+      {open && (
+        <div className="mt-0.5 flex flex-col gap-0.5">
+          {children.map((child) => (
+            <NavRow
+              key={child.key}
+              item={child}
+              nested
+              collapsed={false}
+              active={isActivePath(child.href, pathname)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Render one band item: a collapsible group (has children) or a flat leaf link. */
+function BandItem({
+  item,
+  collapsed,
+  roles,
+  pathname,
+}: {
+  item: NavItem;
+  collapsed: boolean;
+  roles: readonly AppRole[] | undefined;
+  pathname: string;
+}) {
+  if (item.children) {
+    return (
+      <NavGroup
+        group={item}
+        collapsed={collapsed}
+        roles={roles}
+        pathname={pathname}
+      />
+    );
+  }
+  if (!canSeeFeature(item.key, roles)) return null;
+  return (
+    <NavRow
+      item={item}
+      collapsed={collapsed}
+      active={isActivePath(item.href, pathname)}
+    />
+  );
+}
+
 export function Sidebar({
   collapsed,
   onExpand,
@@ -58,11 +186,10 @@ export function Sidebar({
   user: SessionUser;
 }) {
   const pathname = usePathname();
+  const roles = user.roles;
 
-  // Role-gated nav: non-admins lose Settings + Security (canSeeFeature).
-  const primary = navPrimary.filter((item) => canSeeFeature(item.key, user.roles));
-  const secondary = navSecondary.filter((item) => canSeeFeature(item.key, user.roles));
-  const tertiary = navTertiary.filter((item) => canSeeFeature(item.key, user.roles));
+  // Top band — flat links, role-gated (canSeeFeature).
+  const top = navTop.filter((item) => canSeeFeature(item.key, roles));
 
   return (
     <aside
@@ -88,7 +215,7 @@ export function Sidebar({
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
-        {primary.map((item) => (
+        {top.map((item) => (
           <NavRow
             key={item.key}
             item={item}
@@ -96,22 +223,28 @@ export function Sidebar({
             active={isActivePath(item.href, pathname)}
           />
         ))}
+
         <div className="my-2 border-t border-border" />
-        {secondary.map((item) => (
-          <NavRow
-            key={item.key}
-            item={item}
+
+        {navGroups.map((group) => (
+          <BandItem
+            key={group.key}
+            item={group}
             collapsed={collapsed}
-            active={isActivePath(item.href, pathname)}
+            roles={roles}
+            pathname={pathname}
           />
         ))}
-        {tertiary.length > 0 && <div className="my-2 border-t border-border" />}
-        {tertiary.map((item) => (
-          <NavRow
+
+        <div className="my-2 border-t border-border" />
+
+        {navBottom.map((item) => (
+          <BandItem
             key={item.key}
             item={item}
             collapsed={collapsed}
-            active={isActivePath(item.href, pathname)}
+            roles={roles}
+            pathname={pathname}
           />
         ))}
 
