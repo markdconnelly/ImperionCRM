@@ -1,13 +1,15 @@
 <div align="center">
 
-# Imperion CRM
+# Imperion Business Manager
 
 **The operational brain for a modern Managed Service Provider.**
 
-One interface. One agent. Every customer's whole story — from the first ad they see
-to the quarterly business review years later — in one place.
+One interface. One agent. The whole business — every customer from the first ad they
+see to the quarterly business review years later, and every internal process from a
+won quote to a paid expense report — in one place.
 
 [Documentation library](docs/README.md) ·
+[Capability overview](docs/product/imperion-business-manager-overview.md) ·
 [System of systems](docs/architecture/system-of-systems.md) ·
 [Architecture](docs/architecture/README.md) ·
 [Customer lifecycle](docs/architecture/customer-lifecycle.md) ·
@@ -17,127 +19,119 @@ to the quarterly business review years later — in one place.
 
 ---
 
-## The problem we're solving
+## What this is
 
-Running an MSP means knowing your customers cold — their people, their risk, their
-history, their next move. In practice that knowledge is **scattered and decaying**:
+**Imperion Business Manager** is the single operational platform an MSP runs its
+business on. It is **not just a CRM** — it spans the full operating surface:
 
-- A prospect's story lives in **ten disconnected places** — email, Teams, a text
-  thread, a Plaud recording from a coffee chat, a LinkedIn comment, an Autotask
-  ticket, someone's memory — and **no one can see all of it at once**.
-- Salespeople walk into discovery calls **cold**, burning hours on manual research
-  and data entry that an agent could have done overnight.
-- Marketing runs ads in **a silo** — leads aren't attributed, and you can't aim a
-  campaign at the profiles you already know best.
-- Every text, call recording, and profile you build is a **compliance liability**
-  unless you can prove consent — and most CRMs can't.
-- The whole team juggles **Microsoft 365 + Kaseya + spreadsheets**, re-keying the
-  same facts, with no single source of truth and no AI that understands the business.
+- **CRM** — leads, contacts, accounts, the unified communications timeline, the
+  sales pipeline, opportunities, segments, marketing campaigns + journeys, events,
+  and the assessment-led customer lifecycle.
+- **ERP** — the operational and finance backbone: sale → delivery orchestration,
+  projects/tasks with full PM-tool parity, time & expense tracking, the unified
+  Monthly Close, AR collections, the CMDB and device/asset register, and read-only
+  QuickBooks Online + Autotask mirrors.
+- **Extras** — the reporting / BI hub, the connector marketplace, security posture,
+  and the consent + data-governance surface that makes outreach defensible.
+- **A full AI suite** — a single orchestrator agent the user talks to, an internal
+  fleet of specialized sub-agents, the ICM business-process framework with a tiered
+  autonomy dial, the self-hosted Managed Agents runtime, an orchestration &
+  observability matrix, agent rooms over a curated semantic layer, and a
+  vectorized RAG knowledge layer over everything the business knows.
 
-The cost is real: slower sales, weaker positioning, missed expansion, and risk that
-only shows up when something goes wrong.
+It sits as an **intelligence layer above Microsoft 365 and Kaseya** — augmenting
+them, never replacing them — and gives every employee **one place to work** and
+**one agent to ask**.
 
-## What Imperion CRM does
+### What it is NOT
 
-Imperion CRM is an **AI-enabled operations platform** that sits as an *intelligence
-layer above Microsoft 365 and Kaseya* — augmenting them, never replacing them. It
-manages the entire lifecycle of a managed-services customer and gives every employee
-**one place to work** and **one agent to ask**.
+- **NOT just a CRM.** CRM is one quadrant of a CRM + ERP + extras + AI platform.
+- **NOT a Power Platform / Dataverse / Copilot Studio application.** It is a modern
+  web app on open web technology (CLAUDE.md §1).
+- **NOT a replacement** for Microsoft 365, Kaseya/Autotask, IT Glue, or QuickBooks
+  Online — it augments and orchestrates them, and treats those systems as the
+  source of record where they own the fact.
+- **NOT a multi-tenant SaaS.** It is the internal operations platform for one MSP.
+- **NOT the place AI keys or integration secrets live.** The front end holds no
+  provider key and no OAuth token (ADR-0042 / ADR-0043); those live with the
+  backend and the on-prem pipeline behind Azure Key Vault.
 
-```mermaid
-flowchart LR
-    subgraph SOURCES["Sources (ingested or polled)"]
-      M365["M365 email / Teams"]
-      SOCIAL["LinkedIn · YouTube · Facebook"]
-      PLAUD["Plaud calls / in-person"]
-      KASEYA["Autotask · IT Glue"]
-    end
-    SOURCES --> PIPE["Bronze → Silver → Gold<br/>enrichment pipeline"]
-    PIPE --> CORE["PostgreSQL + pgvector<br/>system of record · embeddings · agent memory"]
-    CORE --> APP["Imperion CRM<br/>three-column web app"]
-    CORE --> AGENT["Single orchestrator agent<br/>(scoped to your Entra permissions)"]
-    APP <--> AGENT
-    APP --> USER(["MSP employee"])
-    AGENT --> USER
-```
+## What problem it solves
 
-It turns each scattered problem into a capability:
-
-| The problem | How Imperion CRM solves it (when complete) |
-| --- | --- |
-| Customer knowledge is scattered | **One unified communications timeline** per contact — every email, message, call, meeting transcript, in-person note, and social touch, attributed first to the employee, then the company. |
-| Sales walk in cold | A **contact-360 "dossier"** assembled *before* the call (employer, role, interests, tech stack, social presence) plus **pre-discovery automation** that gathers the discovery answers for the rep to simply **confirm and stamp**. |
-| Demand-gen is a silo | **Campaigns + audiences built over your aggregated profiles**, with leads attributed back to spend and **lead-capture hooks** that pull a new person in and start a profile automatically. |
-| Outreach & profiling are a legal risk | An **append-only consent ledger** with lawful-basis tracking; outbound sends and ad targeting are **blocked unless consent is current** — defensible under TCPA / CAN-SPAM / GDPR. |
-| Tool sprawl, no single pane | **One web app** above M365 + Kaseya, and **one orchestrator agent** that routes to specialized sub-agents — the user never juggles tools. |
-| The assessment-led motion isn't operationalized | The **paid AI Security Readiness Assessment** is a first-class entity: six scored dimensions, remediation roadmap, conversion to managed services, and recurring **Strategic Business Reviews**. |
-
-## How a customer moves through it
-
-The defining motion is **assessment-led**: a *paid* AI Security Readiness Assessment
-is the wedge that earns the access and evidence to win a multi-year managed-services
-contract. (Full detail: [customer-lifecycle](docs/architecture/customer-lifecycle.md).)
-
-```mermaid
-flowchart TD
-    A["Audience<br/>(ads / organic video)"] --> L["Lead<br/>(hook captures, profile starts)"]
-    L --> NUR["Nurture<br/>(segmented, consent-gated)"]
-    NUR --> DISC["Discovery call<br/>(agents pre-fill · human confirms · verdict)"]
-    DISC -->|Fit| ASMT["AI Security Readiness Assessment<br/>(paid · fee credited to onboarding)"]
-    DISC -->|Not a fit| NUR
-    ASMT --> SCORE["Six-dimension scorecard<br/>+ remediation roadmap"]
-    SCORE --> MSO["Managed Services<br/>(2–5 yr contract · MRR)"]
-    MSO --> ONB["Onboard + remediate"]
-    ONB --> ACTIVE["Managed-active<br/>(quarterly SBRs)"]
-    ACTIVE -->|expansion| MSO
-```
-
-## Where it is today
-
-The app is **live on Azure App Service** (`imperioncrm.azurewebsites.net`, Entra SSO
-required). This repository is the **web app** (the authoritative interface, ADR-0018):
-it renders the UI, reads/writes PostgreSQL through a typed data-access layer, and calls
-external functions for heavy/integration work.
-
-| Area | Status |
-| --- | --- |
-| Entra ID SSO (certificate client auth), middleware gate, break-glass | ✅ Live |
-| PostgreSQL 18 + pgvector on Azure (managed-identity auth, no stored password) | ✅ Live |
-| Full schema — CRM core, engagements, **comms / contact-360 / connections / demand-gen / automation / per-source bronze + devices / security ingestion / Meta · Defender · SharePoint · Entra-groups bronze** | ✅ Applied (`db/migrations` 0001–0079) |
-| Dashboard, accounts, pipeline (interactive), proposals, onboarding, assessments, discovery, SBRs | ✅ Built |
-| **Reporting BI hub** (ADR-0062 — marketing/social, service-desk, security-fleet) + Dashboard cross-domain intelligence strip | ✅ Built |
-| **Contact-360 + unified comms, integrations/consent, campaigns/audiences (+ builders), workflows (+ builder), lead hooks** | ✅ Built (UI + data layer) |
-| Knowledge search, Security posture, Settings, Feedback, global search | ✅ Built (UI + data layer) |
-| Single orchestrator agent runtime + AI Agents / AI Board pages (backend ADR-0036/0039) | ✅ Live |
-| Per-user OAuth flows (Key Vault custody) + real consent-gated 1:1 email/SMS sends (ADR-0058); Meta (FB/IG) ingestion | ✅ Live-wired |
-| Remaining ingestion engines (Graph mail/Teams activation, YouTube/LinkedIn/Plaud), embeddings/vector search | 🟡 Next phase |
-
-> **Built (UI + data layer)** means the screens are real and the data layer reads and
-> writes PostgreSQL through typed repositories. The agent runtime, per-user OAuth
-> custody, consent-gated 1:1 sends, and Meta (FB/IG) ingestion are now **live-wired**;
-> the *remaining* integrations (Graph mail/Teams activation, YouTube/LinkedIn/Plaud,
-> embeddings/vector search) are deferred to a later phase. Until a source is wired,
-> those flows degrade to an honest stub (e.g. a "send" logs to the timeline) and never
-> fail the page.
+Running an MSP means knowing your customers cold **and** running every internal
+process cleanly — sales, delivery, finance, support. In practice that knowledge and
+that work are **scattered across a dozen tools** (M365, Kaseya, QuickBooks,
+spreadsheets, someone's memory), re-keyed by hand, with no single source of truth
+and no AI that understands the business. Imperion Business Manager turns that sprawl
+into one operating surface with one agent on top of it.
 
 ## Architecture at a glance
 
-- **Frontend:** Next.js (App Router) · React · TypeScript (strict) · Tailwind CSS.
-- **Data:** PostgreSQL 18 + `pgvector` (Azure Flexible Server) — a single unified
-  store for system-of-record, embeddings, and agent memory, fed by a
-  **bronze → silver → gold** enrichment pipeline.
+This repository is the **GUI** — the authoritative web interface (ADR-0018 /
+ADR-0042). It renders the UI, reads PostgreSQL directly through a typed data-access
+layer for display, and routes **every process** (sends, enrichment, write-backs,
+orchestration) to the backend. It is one of **four repositories** that make up the
+product; see [system-of-systems](docs/architecture/system-of-systems.md) for the
+whole estate.
+
+```mermaid
+flowchart TB
+    subgraph EXT["External systems"]
+      M365["Microsoft 365 / Entra / Defender"]
+      KASEYA["Kaseya — Autotask · IT Glue"]
+      FIN["QuickBooks Online · MileIQ"]
+      SOCIAL["Meta (FB/IG) · social · DocuSign · KQM"]
+    end
+
+    subgraph PIPE["Pipelines (siblings)"]
+      LP["LocalPipeline (on-prem)<br/>bulk ingest · ALL vectorization"]
+      PL["Pipeline (Azure)<br/>webhooks · bronze→silver merge"]
+    end
+
+    subgraph DB["🗄️ PostgreSQL + pgvector — ONE store"]
+      BRONZE["🥉 Bronze"] --> SILVER["🥈 Silver"] --> GOLD["🥇 Gold + embeddings"]
+    end
+
+    subgraph BE["🧠 Backend (Azure Functions, identity-gated)"]
+      ORCH["Orchestrator + sub-agents · ICM runtime"]
+      VAULT["🔑 OAuth + AI keys (Key Vault)"]
+    end
+
+    subgraph FE["🖼️ Imperion Business Manager (this repo — Next.js GUI)"]
+      UI["Three-column shell + agent panel"]
+    end
+
+    USER(["MSP employee"])
+
+    EXT --> LP --> BRONZE
+    EXT --> PL --> SILVER
+    SILVER -. read .-> LP
+    LP --> GOLD
+    UI -- "direct reads (render)" --> DB
+    UI -- "every process" --> BE
+    GOLD --> ORCH
+    ORCH <--> UI
+    VAULT -. tokens/keys .-> BE
+    USER -. "Entra ID SSO" .-> FE
+    UI <--> USER
+```
+
+- **Frontend:** Next.js (App Router) · React · TypeScript (strict) · Tailwind CSS ·
+  shadcn/ui.
+- **Data:** PostgreSQL 18 + `pgvector` (Azure Flexible Server) — one unified store
+  for system-of-record, embeddings, and agent memory, fed by a **bronze → silver →
+  gold** medallion pipeline (ADR-0092).
 - **Identity:** Microsoft **Entra ID** is the sole identity provider (certificate
-  client auth). Personal-account *data* connections (M365/LinkedIn/YouTube/…) are
-  OAuth links whose tokens live only in **Azure Key Vault** — never in the database.
-- **AI:** the settled stack — **Claude** for generation, **Voyage** for embeddings
-  (ADR-0043 / backend ADR-0034) — behind a **single orchestrator agent**; many
-  specialized sub-agents exist internally but the user only ever talks to one.
-- **Principles:** UX first · single agent experience · Microsoft for identity ·
-  open web over Power Platform · security as a product feature.
+  client auth; ADR-0002 / ADR-0095). Personal-account data connections are OAuth
+  links whose tokens live only in **Azure Key Vault** — never in the database.
+- **AI:** the settled stack — **Claude** for generation, **Voyage `voyage-3-large`
+  @ 1024 dims** for embeddings (ADR-0092 / ADR-0043) — behind a **single
+  orchestrator agent** (ADR-0091); many specialized sub-agents exist internally but
+  the user only ever talks to one.
 
 See [`CLAUDE.md`](CLAUDE.md) for the full principles and
 [`docs/architecture/application-boundary.md`](docs/architecture/application-boundary.md)
-for what lives here vs. in external functions.
+for what lives here vs. in the external functions.
 
 ## Develop
 
@@ -156,18 +150,40 @@ On Windows, exclude the repo + npm cache from Defender if `npm install` fails wi
 Runtime: Node 24, **Next.js 15.1.12** (patched for CVE-2025-66478; kept on the 15.1
 line to preserve the version-sensitive Entra `customFetch` hook, ADR-0009).
 
+> When running several Claude Code sessions at once, each works in its **own git
+> worktree** on its own port (system-level `CLAUDE.md` §10) — never share a working
+> tree with another session.
+
 ## Database & deploy
 
 - **Migrations:** raw SQL in [`db/migrations`](db/migrations) (ADR-0017), applied in
-  order with an Entra token — see [`db/README.md`](db/README.md). Update the ERD in
+  order with an Entra token — see [`db/README.md`](db/README.md). **This repo is the
+  single source of truth for the schema**; the three sibling repos consume it
+  (ADR-0042). Update the ERD in
   [`docs/database/data-model.md`](docs/database/data-model.md) on every schema change.
 - **Deploy:** Azure App Service (Linux, Node 24) via GitHub Actions on merge to
   `main` — a Next.js standalone bundle (ADR-0006). Config lives in App Service
-  settings; secrets in Key Vault.
+  settings; secrets in Key Vault. The app is **live** at
+  `imperioncrm.azurewebsites.net` (Entra SSO required).
+
+## The four-repo system
+
+Imperion Business Manager is one product built from four repositories with a settled
+division of labor (ADR-0042). Full map:
+[system-of-systems](docs/architecture/system-of-systems.md).
+
+| Repo | Role |
+| --- | --- |
+| **`ImperionCRM`** (this repo) | **GUI.** Next.js front end; owns the DB schema, the OKF semantic layer, the skills canon, and the unified security standard. |
+| [`ImperionCRM_Backend`](https://github.com/markdconnelly/ImperionCRM_Backend) | **All processes.** Azure Functions, identity-gated; orchestrator runtime + OAuth/AI-key custody. |
+| [`ImperionCRM_Pipeline`](https://github.com/markdconnelly/ImperionCRM_Pipeline) | **Live data.** Webhooks, bronze→silver merge, on-demand refresh. |
+| [`ImperionCRM_LocalPipelineEnrichment`](https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment) | **Heavy lifting.** On-prem PowerShell: bulk ingestion, IT Glue hub, ALL vectorization. |
 
 ## Documentation
 
-Everything — architecture, security, agents, integrations, data model, runbooks, and
-every decision we've made and why — lives in the **[documentation library](docs/README.md)**.
-Documentation is a required deliverable and a security control: code without docs is
-considered incomplete (CLAUDE.md §8).
+Everything — the full capability overview, architecture, security, the AI suite,
+integrations, the data model, runbooks, and every decision we've made and why —
+lives in the **[documentation library](docs/README.md)**. Documentation is a required
+deliverable and a security control: code without docs is considered incomplete
+(CLAUDE.md §8). The shared cross-repo security baseline is
+[`docs/security/unified-security-standard.md`](docs/security/unified-security-standard.md).
