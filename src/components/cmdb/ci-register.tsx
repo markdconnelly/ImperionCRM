@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { CI_TYPE_LABEL, CI_TYPE_ICON, CI_TYPES, ciKey } from "@/lib/cmdb/ci";
 import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
-import type { CiType, ConfigurationItem } from "@/types";
+import { LifecycleBadge } from "@/components/cmdb/lifecycle-badge";
+import { LIFECYCLE_LABEL, LIFECYCLE_STATES } from "@/lib/cmdb/lifecycle";
+import type { AssetLifecycle, CiType, ConfigurationItem } from "@/types";
 
 /**
  * The CMDB CI register (#645) — client-side list + filter over the union read-model.
@@ -16,6 +18,7 @@ import type { CiType, ConfigurationItem } from "@/types";
 export function CiRegister({ items }: { items: ConfigurationItem[] }) {
   const [ciType, setCiType] = useState<CiType | "">("");
   const [accountId, setAccountId] = useState<string>("");
+  const [lifecycle, setLifecycle] = useState<AssetLifecycle | "">("");
 
   // Account filter options — distinct owning accounts present in the CI set.
   const accounts = useMemo(() => {
@@ -33,9 +36,10 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
       items.filter(
         (i) =>
           (!ciType || i.ciType === ciType) &&
-          (!accountId || i.accountId === accountId),
+          (!accountId || i.accountId === accountId) &&
+          (!lifecycle || i.lifecycle === lifecycle),
       ),
-    [items, ciType, accountId],
+    [items, ciType, accountId, lifecycle],
   );
 
   return (
@@ -80,6 +84,19 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
           ))}
         </select>
 
+        <select
+          value={lifecycle}
+          onChange={(e) => setLifecycle(e.target.value as AssetLifecycle | "")}
+          className="rounded-md border border-border bg-panel px-2.5 py-1.5 text-xs text-text outline-none focus:border-accent"
+        >
+          <option value="">All lifecycle states</option>
+          {LIFECYCLE_STATES.map((s) => (
+            <option key={s} value={s}>
+              {LIFECYCLE_LABEL[s]}
+            </option>
+          ))}
+        </select>
+
         <span className="ml-auto text-xs text-dim">
           {filtered.length} of {items.length} CI{items.length === 1 ? "" : "s"}
         </span>
@@ -95,6 +112,7 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
                 <th className="px-4 py-2 font-medium">Type</th>
                 <th className="px-4 py-2 font-medium">Account</th>
                 <th className="px-4 py-2 font-medium">Criticality</th>
+                <th className="px-4 py-2 font-medium">Lifecycle</th>
                 <th className="px-4 py-2 font-medium">Key attributes</th>
                 <th className="px-4 py-2 font-medium" />
               </tr>
@@ -102,7 +120,7 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-dim">
+                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-dim">
                     No configuration items{items.length > 0 ? " match the filters" : " yet"}.
                   </td>
                 </tr>
@@ -129,6 +147,13 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
                         override={ci.override}
                         size="xs"
                       />
+                    </td>
+                    <td className="px-4 py-2">
+                      {ci.lifecycle === "unknown" ? (
+                        <span className="text-xs text-dim">—</span>
+                      ) : (
+                        <LifecycleBadge lifecycle={ci.lifecycle} size="xs" />
+                      )}
                     </td>
                     <td className="px-4 py-2 text-dim">
                       <span className="line-clamp-1">

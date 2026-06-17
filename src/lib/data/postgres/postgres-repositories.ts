@@ -15,6 +15,7 @@ import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import { deriveCriticality } from "@/lib/cmdb/criticality";
+import { deriveLifecycle } from "@/lib/cmdb/lifecycle";
 import { resolveMentions } from "@/lib/mentions";
 import {
   planInstantiation,
@@ -1286,6 +1287,11 @@ export const postgresRepositories: Repositories = {
         // reads (account relationship/lifecycle, device_type) so the in-code rule
         // (`deriveCriticality`, #648) computes a meaningful default even before the
         // `cmdb_ci_overlay` table (migration 0132) is applied (it is DORMANT until then).
+        // The device arm also projects the source signals the lifecycle rule reads
+        // (#649): the Autotask config-item `status`, silver `last_seen_at`, and the
+        // latest Intune managed-device row (joined by serial, like the inventory read)
+        // for the enrollment signal. `deriveLifecycle` (in-code) maps them; an absent
+        // signal degrades to `unknown`. No new ingest, no schema change.
         const { rows } = await pool.query<{
           ci_type: ConfigurationItem["ciType"];
           ci_id: string;
@@ -1296,9 +1302,14 @@ export const postgresRepositories: Repositories = {
           relationship: string | null;
           lifecycle_stage: string | null;
           device_type: string | null;
+          device_status: string | null;
+          last_seen_at: string | null;
+          intune_management_state: string | null;
+          intune_enrolled_at: string | null;
         }>(
           `SELECT ci_type, ci_id, account_id, account_name, display_name, attributes,
-                  relationship, lifecycle_stage, device_type
+                  relationship, lifecycle_stage, device_type,
+                  device_status, last_seen_at, intune_management_state, intune_enrolled_at
              FROM (
                SELECT 'account'::text AS ci_type,
                       a.id::text       AS ci_id,
@@ -1308,6 +1319,10 @@ export const postgresRepositories: Repositories = {
                       a.relationship::text AS relationship,
                       a.lifecycle_stage::text AS lifecycle_stage,
                       NULL::text       AS device_type,
+                      NULL::text       AS device_status,
+                      NULL::text       AS last_seen_at,
+                      NULL::text       AS intune_management_state,
+                      NULL::text       AS intune_enrolled_at,
                       jsonb_build_array(
                         jsonb_build_object('label','Lifecycle','value',replace(a.lifecycle_stage::text,'_',' ')),
                         jsonb_build_object('label','Relationship','value',coalesce(a.relationship,'—')),
@@ -1322,6 +1337,10 @@ export const postgresRepositories: Repositories = {
                       c.account_id::text,
                       a.name,
                       c.full_name,
+                      NULL::text,
+                      NULL::text,
+                      NULL::text,
+                      NULL::text,
                       NULL::text,
                       NULL::text,
                       NULL::text,
@@ -1343,6 +1362,10 @@ export const postgresRepositories: Repositories = {
                       NULL::text,
                       NULL::text,
                       d.device_type,
+                      d.status,
+                      d.last_seen_at::text,
+                      imd.management_state,
+                      imd.enrolled_date_time,
                       jsonb_build_array(
                         jsonb_build_object('label','Type','value',coalesce(d.device_type,'—')),
                         jsonb_build_object('label','Make / model','value',trim(both ' ' from concat_ws(' ', d.manufacturer, d.model))),
@@ -1351,6 +1374,13 @@ export const postgresRepositories: Repositories = {
                       )
                  FROM device d
                  JOIN account a ON a.id = d.account_id
+                 LEFT JOIN LATERAL (
+                   SELECT i.management_state, i.enrolled_date_time
+                   FROM intune_managed_devices i
+                   WHERE i.serial_number = d.serial_number AND i.serial_number <> ''
+                   ORDER BY i.collected_at DESC
+                   LIMIT 1
+                 ) imd ON d.serial_number IS NOT NULL
                 WHERE d.account_id IS NOT NULL
              ) ci
             ORDER BY account_name NULLS LAST, ci_type, display_name`,
@@ -1402,6 +1432,14 @@ export const postgresRepositories: Repositories = {
                 deviceType: r.device_type,
               }),
             override: o?.override ?? null,
+            // Derived, read-only asset lifecycle (#649) — recomputed from source
+            // signals every read; never persisted, never overridden.
+            lifecycle: deriveLifecycle(r.ci_type, {
+              deviceStatus: r.device_status,
+              lastSeenAt: r.last_seen_at,
+              intuneManagementState: r.intune_management_state,
+              intuneEnrolledAt: r.intune_enrolled_at,
+            }),
           };
         });
       } catch {

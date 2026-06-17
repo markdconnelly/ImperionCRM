@@ -10,6 +10,7 @@ import { CI_TYPE_LABEL, CI_TYPE_ICON, asCiType } from "@/lib/cmdb/ci";
 import { CiRelationships } from "@/components/cmdb/ci-relationships";
 import { CiCriticality } from "@/components/cmdb/ci-criticality";
 import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
+import { LifecycleBadge } from "@/components/cmdb/lifecycle-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +79,10 @@ export default async function CiDetailPage({
               {CI_TYPE_LABEL[ci.ciType]} · CI id {ci.ciId}
             </p>
           </div>
-          <CriticalityBadge derivedDefault={ci.derivedDefault} override={ci.override} />
+          <div className="flex items-center gap-2">
+            <LifecycleBadge lifecycle={ci.lifecycle} />
+            <CriticalityBadge derivedDefault={ci.derivedDefault} override={ci.override} />
+          </div>
         </div>
 
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
