@@ -2273,6 +2273,16 @@ export interface LeadsRepository {
   listCaptureEvents(): Promise<LeadCaptureEventRow[]>;
   /** Resolve a capture into a contact (starts a profile); returns the contact id. */
   resolveEvent(eventId: string): Promise<string>;
+  /**
+   * Append-only bronze capture from the PUBLIC, unauthenticated /opt-in page
+   * (#217). Lands the raw form payload as a `lead_capture_event` under a
+   * standing `web_form` hook (ADR-0024) — status `new`, awaiting backend
+   * resolution into a contact + consent event (ADR-0028: the backend owns the
+   * consent ledger; the front end never writes `consent_event` directly). The
+   * payload jsonb carries the consent proof (language version, channels,
+   * timestamps, source URL) for the ACS toll-free SMS verification submission.
+   */
+  recordWebFormCapture(payload: Record<string, unknown>): Promise<void>;
 }
 
 // ── Automation workflows (ADR-0014/0027) ─────────────────────────────────────

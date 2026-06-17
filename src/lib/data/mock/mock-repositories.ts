@@ -1730,6 +1730,9 @@ export const mockRepositories: Repositories = {
     async resolveEvent() {
       throw new Error(NO_DB);
     },
+    // Public opt-in capture (#217): no-op in mock mode so the unauthenticated
+    // /opt-in page still confirms. The real append-only bronze write needs a DB.
+    async recordWebFormCapture() {},
   },
   workflows: {
     async listWorkflows() {

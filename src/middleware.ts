@@ -19,9 +19,12 @@ export const config = {
    * deliberately public build-story page (#248) — static marketing content
    * under public/story, no app data; the `(?:$|/)` anchor (non-capturing —
    * Next matchers reject capturing groups) keeps the exclusion from leaking
-   * onto other routes that merely start with "story".
+   * onto other routes that merely start with "story". `/opt-in` is the public
+   * SMS/email opt-in & consent capture page (#217) — its submit writes only an
+   * append-only bronze `lead_capture_event` (ADR-0024), never the consent
+   * ledger; same anchor so it cannot leak onto sibling routes.
    */
   matcher: [
-    "/((?!api/auth|login|break-glass|story(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|login|break-glass|story(?:$|/)|opt-in(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

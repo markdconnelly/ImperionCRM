@@ -11553,6 +11553,35 @@ export const postgresRepositories: Repositories = {
       }
       return contactId;
     },
+
+    async recordWebFormCapture(payload: Record<string, unknown>): Promise<void> {
+      const pool = getPool();
+      // No DB configured (mock/dev): the public opt-in page must still render its
+      // confirmation, so silently no-op rather than throwing at an anonymous caller.
+      if (!pool) return mockRepositories.leads.recordWebFormCapture(payload);
+      // Find-or-create the standing public-opt-in web_form hook (idempotent — the
+      // page is unauthenticated, so we never create from a user; the hook anchors
+      // every public capture). Then append the raw payload as a bronze event.
+      const { rows } = await pool.query<{ id: string }>(
+        `WITH existing AS (
+           SELECT id FROM lead_hook
+           WHERE kind = 'web_form' AND name = 'Public opt-in page'
+           LIMIT 1
+         ), created AS (
+           INSERT INTO lead_hook (name, kind, active)
+           SELECT 'Public opt-in page', 'web_form', true
+           WHERE NOT EXISTS (SELECT 1 FROM existing)
+           RETURNING id
+         )
+         SELECT id FROM existing UNION ALL SELECT id FROM created`,
+      );
+      const hookId = rows[0]?.id ?? null;
+      await pool.query(
+        `INSERT INTO lead_capture_event (hook_id, payload_bronze, status)
+         VALUES ($1, $2::jsonb, 'new')`,
+        [hookId, JSON.stringify(payload)],
+      );
+    },
   },
 
   // ── Automation workflows (ADR-0014/0027) ──────────────────────────────────
