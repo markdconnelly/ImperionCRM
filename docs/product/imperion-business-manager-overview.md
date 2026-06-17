@@ -179,8 +179,7 @@ rate) is gated and never visible to employee / agent / client roles.
 
 | Capability | What it does | Where |
 | --- | --- | --- |
-| **Devices & Assets** | The device/asset register over per-source bronze (IT Glue / M365 / website) merged to the silver `device` entity. | `/devices` |
-| **CMDB** | A read-only union over silver inventory (client accounts, end-user identities, devices) as one Configuration-Item surface. Admin-only. | `/cmdb` |
+| **CMDB** | A read-only surface over silver inventory: a CI register (client accounts, end-user identities, devices) plus the **Device inventory** tab — the device/asset register over per-source bronze (IT Glue / M365 / website) merged to the silver `device` entity. CMDB is the single hardware/asset home (admin\|technician); `/devices` redirects here (#795). | `/cmdb` |
 
 The medallion data platform underneath all of this — per-source physical bronze read
 through union views, merged to silver entities — is **ADR-0092**; details in
