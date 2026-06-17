@@ -1970,6 +1970,46 @@ export interface TimeEfficiencyReport {
   } | null;
 }
 
+// ── Reporting BI hub — Expense analytics section (ADR-0083 / ADR-0062, #492) ─
+
+/**
+ * Expense-analytics rollup for the BI hub (#492). Every figure is a
+ * **comp-free aggregate** over the silver `expense_item` / `expense_report`
+ * surface (ADR-0083) plus the derived `expense_policy_violation` view and the
+ * `expense_reconciliation` verdict — **no row-level PII** and **no comp value**.
+ * The mileage dollar amount arrives pre-derived in `expense_item.amount` (the
+ * backend is the sole reader of `mileage_rate`); this read NEVER touches
+ * `mileage_rate` or any pay/comp store, so the whole section rides the same
+ * finance | admin gate as Time Efficiency (`canSeeLaborCost`).
+ *
+ * All zero/empty until `expense_item` / `expense_report` carry rows
+ * (build-ahead, deploy-ahead of the pipeline merge + backend writes).
+ *
+ * `amount` figures are whole dollars (rounded) for chart axes.
+ */
+export interface ExpenseAnalyticsReport {
+  /** Total reimbursable-leg spend (Σ amount where reimbursable), whole dollars. */
+  totalReimbursable: number;
+  /** Total billable-leg spend (Σ amount where billable) — independent of reimbursable. */
+  totalBillable: number;
+  /** Total spend across every item, whole dollars. */
+  totalSpend: number;
+  /** Reimbursable vs non-reimbursable split (labels: reimbursable | non-reimbursable). */
+  reimbursableSplit: CountDatum[];
+  /** Spend by expense category (label = category display name, count = dollars). */
+  byCategory: CountDatum[];
+  /** Spend by employee (label = employee name, count = dollars). */
+  byEmployee: CountDatum[];
+  /** Spend by month (label = YYYY-MM of item_date, count = dollars), last 12 months. */
+  byMonth: CountDatum[];
+  /** Report count per lifecycle state (open|submitted|approved|finance_approved|reimbursed|rejected). */
+  reportsByState: CountDatum[];
+  /** Open policy violations by severity (labels: hard | soft) — the memory-jogger rollup. */
+  violationsBySeverity: CountDatum[];
+  /** Reimbursement reconciliation verdict counts (labels: matched | mismatch | pending). */
+  reconciliationByVerdict: CountDatum[];
+}
+
 // ── Dashboard cross-domain intelligence strip (ADR-0062, #292) ───────────────
 
 /**

@@ -238,6 +238,7 @@ import type {
   SecurityFleetReport,
   ServiceDeskReport,
   TimeEfficiencyReport,
+  ExpenseAnalyticsReport,
   SbrDetail,
   SbrRow,
   SocialIdentityRow,
@@ -8761,6 +8762,113 @@ export const postgresRepositories: Repositories = {
         return { utilization, laborCost };
       } catch {
         return mockRepositories.reports.timeEfficiency(includeLaborCost);
+      }
+    },
+
+    async expenseAnalytics(): Promise<ExpenseAnalyticsReport> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.reports.expenseAnalytics();
+      try {
+        // COMP-FREE: every figure is an aggregate of expense_item.amount (already
+        // the reimbursement dollar — mileage amount is pre-derived by the backend,
+        // the sole reader of mileage_rate). This read NEVER joins mileage_rate /
+        // pay_rate / any comp store, and never selects a row-level person/merchant.
+        // The GUI gates the whole section to finance|admin (canSeeLaborCost), like
+        // Time Efficiency. Build-ahead: empty/zero until expense_item carries rows.
+
+        // Totals + the reimbursable/billable split. Reimbursable and billable are
+        // INDEPENDENT legs (ADR-0083) — an item can be both — so they sum separately.
+        const totals = await pool.query<{
+          reimbursable: string;
+          billable: string;
+          total: string;
+          non_reimbursable: string;
+        }>(
+          `SELECT coalesce(sum(amount) FILTER (WHERE reimbursable), 0)      AS reimbursable,
+                  coalesce(sum(amount) FILTER (WHERE billable), 0)          AS billable,
+                  coalesce(sum(amount), 0)                                  AS total,
+                  coalesce(sum(amount) FILTER (WHERE NOT reimbursable), 0)  AS non_reimbursable
+             FROM expense_item`,
+        );
+        const t = totals.rows[0];
+        const totalReimbursable = Math.round(Number(t.reimbursable));
+        const totalBillable = Math.round(Number(t.billable));
+        const totalSpend = Math.round(Number(t.total));
+        const reimbursableSplit: CountDatum[] = [
+          { label: "reimbursable", count: totalReimbursable },
+          { label: "non-reimbursable", count: Math.round(Number(t.non_reimbursable)) },
+        ];
+
+        // Spend by category — the clean website-facing category display name
+        // (uncategorized rows fold into an "uncategorized" bucket). No comp data.
+        const byCategoryRows = await pool.query<{ label: string; spend: string }>(
+          `SELECT coalesce(c.display_name, 'uncategorized') AS label,
+                  coalesce(sum(ei.amount), 0)               AS spend
+             FROM expense_item ei
+             LEFT JOIN expense_category c ON c.id = ei.category_id
+            GROUP BY coalesce(c.display_name, 'uncategorized')
+            ORDER BY spend DESC`,
+        );
+
+        // Spend by employee — display name only (display_name|email), aggregate
+        // dollars. This is a NAME label, not row-level PII (no merchant/desc/amount
+        // per item). Mirrors the time-tracking employee_name idiom.
+        const byEmployeeRows = await pool.query<{ label: string; spend: string }>(
+          `SELECT coalesce(u.display_name, u.email) AS label,
+                  coalesce(sum(ei.amount), 0)        AS spend
+             FROM expense_item ei
+             JOIN app_user u ON u.id = ei.app_user_id
+            GROUP BY coalesce(u.display_name, u.email)
+            ORDER BY spend DESC`,
+        );
+
+        // Spend by month (item_date month), last 12 months.
+        const byMonthRows = await pool.query<{ label: string; spend: string }>(
+          `SELECT to_char(date_trunc('month', item_date), 'YYYY-MM') AS label,
+                  coalesce(sum(amount), 0)                            AS spend
+             FROM expense_item
+            WHERE item_date >= (date_trunc('month', CURRENT_DATE) - interval '11 months')
+            GROUP BY date_trunc('month', item_date)
+            ORDER BY date_trunc('month', item_date)`,
+        );
+
+        // Report count per lifecycle state.
+        const stateRows = await pool.query<{ label: string; c: string }>(
+          `SELECT state AS label, count(*) AS c FROM expense_report GROUP BY state`,
+        );
+
+        // Open policy violations by severity (the memory-jogger rollup) — derived
+        // view over expense_item + caps + active rules. Pre-attest signal only.
+        const violationRows = await pool.query<{ label: string; c: string }>(
+          `SELECT severity AS label, count(*) AS c
+             FROM expense_policy_violation GROUP BY severity`,
+        );
+
+        // Reimbursement reconciliation verdict counts.
+        const verdictRows = await pool.query<{ label: string; c: string }>(
+          `SELECT verdict AS label, count(*) AS c
+             FROM expense_reconciliation GROUP BY verdict`,
+        );
+
+        const toSpend = (rows: { label: string; spend: string }[]): CountDatum[] =>
+          rows.map((r) => ({ label: r.label, count: Math.round(Number(r.spend)) }));
+        const toCount = (rows: { label: string; c: string }[]): CountDatum[] =>
+          rows.map((r) => ({ label: r.label, count: Number(r.c) }));
+
+        return {
+          totalReimbursable,
+          totalBillable,
+          totalSpend,
+          reimbursableSplit,
+          byCategory: toSpend(byCategoryRows.rows),
+          byEmployee: toSpend(byEmployeeRows.rows),
+          byMonth: toSpend(byMonthRows.rows),
+          reportsByState: toCount(stateRows.rows),
+          violationsBySeverity: toCount(violationRows.rows),
+          reconciliationByVerdict: toCount(verdictRows.rows),
+        };
+      } catch {
+        return mockRepositories.reports.expenseAnalytics();
       }
     },
   },

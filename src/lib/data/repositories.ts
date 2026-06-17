@@ -89,6 +89,7 @@ import type {
   SecurityFleetReport,
   ServiceDeskReport,
   TimeEfficiencyReport,
+  ExpenseAnalyticsReport,
   SecurityPosture,
   OpportunityRow,
   OpportunityDetailRow,
@@ -1950,6 +1951,15 @@ export interface ReportsRepository {
    * callers — when false the comp query never runs and `laborCost` is `null`.
    */
   timeEfficiency(includeLaborCost: boolean): Promise<TimeEfficiencyReport>;
+  /**
+   * Expense analytics BI-hub section (ADR-0083, #492): comp-free aggregates over
+   * the silver expense surface — spend by category/employee/month, reimbursable
+   * vs non-reimbursable, the billable rollup, policy-violation counts, and the
+   * reimbursement-status breakdown. Reads NO comp/pay value (mileage dollars
+   * arrive pre-derived in `expense_item.amount`); the whole section is gated to
+   * finance | admin in the GUI, matching Time Efficiency.
+   */
+  expenseAnalytics(): Promise<ExpenseAnalyticsReport>;
 }
 
 // ── Communications (ADR-0011) ────────────────────────────────────────────────

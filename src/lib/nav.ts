@@ -123,6 +123,7 @@ export const navBottom: NavItem[] = [
       { key: "report-projects", label: "Project", icon: "FolderKanban", href: "/reporting/projects" },
       { key: "report-service", label: "Service", icon: "LifeBuoy", href: "/reporting/service" },
       { key: "report-finance", label: "Finance", icon: "Banknote", href: "/reporting/finance" },
+      { key: "report-expense", label: "Expense", icon: "ReceiptText", href: "/reporting/expense" },
     ],
   },
   { key: "feedback", label: "Feedback", icon: "Lightbulb", href: "/feedback" },

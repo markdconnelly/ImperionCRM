@@ -382,6 +382,95 @@ describe("projectsByStatus category rollup (#615 — ADR-0065 B5)", () => {
   });
 });
 
+describe("Expense analytics BI section (#492 — ADR-0083)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPool.mockReturnValue({ query });
+    query.mockImplementation(async (sql: string) => {
+      // The totals query is the only one selecting the reimbursable/billable split.
+      if (sql.includes("AS non_reimbursable"))
+        return {
+          rows: [
+            { reimbursable: "8420", billable: "3150", total: "9980", non_reimbursable: "1560" },
+          ],
+        };
+      if (sql.includes("FROM expense_category") || sql.includes("expense_category c ON"))
+        return { rows: [{ label: "Mileage", spend: "4120" }] };
+      if (sql.includes("JOIN app_user u ON u.id = ei.app_user_id"))
+        return { rows: [{ label: "Avery Stone", spend: "3640" }] };
+      if (sql.includes("date_trunc('month', item_date)"))
+        return { rows: [{ label: "2026-05", spend: "2980" }] };
+      if (sql.includes("FROM expense_report"))
+        return { rows: [{ label: "reimbursed", c: "6" }] };
+      if (sql.includes("FROM expense_policy_violation"))
+        return { rows: [{ label: "soft", c: "4" }] };
+      if (sql.includes("FROM expense_reconciliation"))
+        return { rows: [{ label: "matched", c: "5" }] };
+      return { rows: [] };
+    });
+  });
+
+  it("maps comp-free aggregate totals, the legs, and the breakdowns", async () => {
+    const r = await reports.expenseAnalytics();
+    expect(r.totalReimbursable).toBe(8420);
+    expect(r.totalBillable).toBe(3150);
+    expect(r.totalSpend).toBe(9980);
+    expect(r.reimbursableSplit).toEqual([
+      { label: "reimbursable", count: 8420 },
+      { label: "non-reimbursable", count: 1560 },
+    ]);
+    expect(r.byCategory).toEqual([{ label: "Mileage", count: 4120 }]);
+    expect(r.byEmployee).toEqual([{ label: "Avery Stone", count: 3640 }]);
+    expect(r.byMonth).toEqual([{ label: "2026-05", count: 2980 }]);
+    expect(r.reportsByState).toEqual([{ label: "reimbursed", count: 6 }]);
+    expect(r.violationsBySeverity).toEqual([{ label: "soft", count: 4 }]);
+    expect(r.reconciliationByVerdict).toEqual([{ label: "matched", count: 5 }]);
+  });
+
+  it("never reads comp/pay data — no query touches mileage_rate or pay_rate", async () => {
+    await reports.expenseAnalytics();
+    const sqls = query.mock.calls.map((c) => c[0] as string);
+    expect(sqls.length).toBeGreaterThan(0);
+    for (const s of sqls) {
+      expect(s).not.toMatch(/mileage_rate|pay_rate|salaried_annual|hourly_rate/);
+    }
+  });
+
+  it("aggregates only — by-employee selects a name + summed dollars, never a row-level item", async () => {
+    await reports.expenseAnalytics();
+    const empSql = query.mock.calls
+      .map((c) => c[0] as string)
+      .find((s) => s.includes("JOIN app_user u ON u.id = ei.app_user_id"))!;
+    expect(empSql).toContain("sum(ei.amount)");
+    expect(empSql).toContain("GROUP BY");
+    // No per-item identifiers (merchant/description) leak into the projection.
+    expect(empSql).not.toMatch(/ei\.merchant|ei\.description|ei\.id\b/);
+  });
+
+  it("returns empty/zero (build-ahead) when the expense tables are empty", async () => {
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("AS non_reimbursable"))
+        return {
+          rows: [{ reimbursable: "0", billable: "0", total: "0", non_reimbursable: "0" }],
+        };
+      return { rows: [] };
+    });
+    const r = await reports.expenseAnalytics();
+    expect(r.totalSpend).toBe(0);
+    expect(r.totalReimbursable).toBe(0);
+    expect(r.byCategory).toEqual([]);
+    expect(r.byEmployee).toEqual([]);
+    expect(r.reportsByState).toEqual([]);
+  });
+
+  it("falls back to the mock when no pool is configured", async () => {
+    getPool.mockReturnValue(null);
+    const r = await reports.expenseAnalytics();
+    expect(r.totalSpend).toBeGreaterThan(0);
+    expect(query).not.toHaveBeenCalled();
+  });
+});
+
 describe("Dashboard intelligence strip (#292 — ADR-0062)", () => {
   beforeEach(() => {
     vi.clearAllMocks();

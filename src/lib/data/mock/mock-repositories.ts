@@ -1945,6 +1945,55 @@ export const mockRepositories: Repositories = {
           : null,
       };
     },
+    async expenseAnalytics() {
+      // Comp-free aggregate sample (no DB) — exercises the chart shapes. Mirrors the
+      // postgres reader: dollars in counts, reimbursable & billable as independent
+      // legs. No comp/pay value, no row-level PII.
+      return {
+        totalReimbursable: 8_420,
+        totalBillable: 3_150,
+        totalSpend: 9_980,
+        reimbursableSplit: [
+          { label: "reimbursable", count: 8_420 },
+          { label: "non-reimbursable", count: 1_560 },
+        ],
+        byCategory: [
+          { label: "Mileage", count: 4_120 },
+          { label: "Meals", count: 2_380 },
+          { label: "Travel", count: 1_900 },
+          { label: "Software", count: 1_580 },
+        ],
+        byEmployee: [
+          { label: "Avery Stone", count: 3_640 },
+          { label: "Jordan Reyes", count: 2_910 },
+          { label: "Sam Okafor", count: 2_180 },
+          { label: "Riley Chen", count: 1_250 },
+        ],
+        byMonth: [
+          { label: "2026-03", count: 2_240 },
+          { label: "2026-04", count: 3_410 },
+          { label: "2026-05", count: 2_980 },
+          { label: "2026-06", count: 1_350 },
+        ],
+        reportsByState: [
+          { label: "open", count: 3 },
+          { label: "submitted", count: 2 },
+          { label: "approved", count: 4 },
+          { label: "finance_approved", count: 2 },
+          { label: "reimbursed", count: 6 },
+          { label: "rejected", count: 1 },
+        ],
+        violationsBySeverity: [
+          { label: "hard", count: 1 },
+          { label: "soft", count: 4 },
+        ],
+        reconciliationByVerdict: [
+          { label: "matched", count: 5 },
+          { label: "pending", count: 2 },
+          { label: "mismatch", count: 1 },
+        ],
+      };
+    },
   },
   knowledge: {
     async search(query) {
