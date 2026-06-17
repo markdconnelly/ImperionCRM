@@ -4,7 +4,7 @@ title: change_request
 description: App-native ITIL 4 Change Enablement working object — a typed (standard|normal|emergency) change Imperion creates over the managed estate, with status, affected CMDB CIs, and nullable risk/approval/schedule columns the downstream slices populate. Autotask is the eventual change record SoR via a separate gated route (#661).
 resource: ../../../decision-records/ADR-0079-change-enablement.md
 tags: [silver, service-desk, change-enablement, itil, cmdb, overlay, archetype-d, app-native]
-timestamp: 2026-06-17T01:00:00Z
+timestamp: 2026-06-17T15:00:00Z
 ---
 
 # change_request
@@ -86,7 +86,8 @@ CASCADE) · `ci_type` text CHECK in (account|user|device) · `ci_id` text · uni
   ([#660](https://github.com/markdconnelly/ImperionCRM/issues/660)) populates the schedule.
   Read accessors: `changes.listChangeRequests` / `getChangeRequest`; writes
   `createChangeRequest` / `updateChangeRequest` / `setChangeRiskOverride` /
-  `decideChangeApproval` (#659) / `deleteChangeRequest`. Pure helpers in `src/lib/change.ts`.
+  `decideChangeApproval` (#659) / `setChangeSchedule` (#660) / `deleteChangeRequest`. Pure
+  helpers in `src/lib/change.ts`.
 
   **Lightweight approval (#659).** The flow is keyed to `change_type`: a **standard** change is
   **pre-authorized** — `createChangeRequest` opens it `status=approved`/`approval_status=approved`,
@@ -96,6 +97,19 @@ CASCADE) · `ci_type` text CHECK in (account|user|device) · `ci_id` text · uni
   **emergency is flagged expedited** (surfaced first in the `/changes/approvals` queue) but still
   takes a human decision. The state machine (`initialApprovalState` / `applyApprovalDecision`,
   `src/lib/change.ts`) refuses any decision on a change not in `pending_approval`/`pending`.
+
+  **Scheduling + calendar (#660).** `setChangeSchedule` (gated `change:write`) sets/clears the
+  planned window (`schedule_start`/`schedule_end`, validated end ≥ start in-app via
+  `validateScheduleWindow`, mirroring the DB CHECK; both blank clears it). The window is
+  reflected onto `status` by the **reversible `approved ↔ scheduled` toggle** (`nextScheduleStatus`):
+  setting a window on an `approved` change promotes it to `scheduled`; clearing a `scheduled`
+  change's window reverts to `approved`. Every other status (draft/pending_approval/rejected/
+  completed/cancelled) is left untouched — scheduling **never clobbers approval state**. The
+  `/changes/calendar` route lays scheduled changes on a month grid (reusing the pure
+  `buildMonth`/`bucketByDay` calendar helpers, #342), filterable by account / type / risk band.
+  Overlapping windows that share an account or affected CI are surfaced as **context** on the
+  change detail (`findScheduleConflicts`) — informational only, **no hard enforcement in v1**
+  (freeze-period gating is a deliberate follow-up).
 
 ## Notes
 

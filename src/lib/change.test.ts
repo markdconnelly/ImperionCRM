@@ -15,6 +15,11 @@ import {
   isAwaitingApproval,
   applyApprovalDecision,
   asApprovalDecision,
+  validateScheduleWindow,
+  nextScheduleStatus,
+  windowsOverlap,
+  findScheduleConflicts,
+  type SchedulableChange,
 } from "@/lib/change";
 import type { ConfigurationItem, CiRelationship, Criticality, CiType } from "@/types";
 
@@ -258,5 +263,144 @@ describe("lightweight approval state machine (#659)", () => {
     expect(asApprovalDecision("rejected")).toBe("rejected");
     expect(asApprovalDecision("pending")).toBeNull();
     expect(asApprovalDecision(undefined)).toBeNull();
+  });
+});
+
+describe("change scheduling (#660)", () => {
+  describe("validateScheduleWindow", () => {
+    it("clears the window when both fields are blank", () => {
+      expect(validateScheduleWindow("", "")).toEqual({ ok: true, start: null, end: null });
+      expect(validateScheduleWindow(null, undefined)).toEqual({ ok: true, start: null, end: null });
+    });
+
+    it("accepts a valid window (end ≥ start) and normalises to ISO", () => {
+      const r = validateScheduleWindow("2026-06-20T14:00", "2026-06-20T16:00");
+      expect(r.ok).toBe(true);
+      expect(r.start).toBe(new Date("2026-06-20T14:00").toISOString());
+      expect(r.end).toBe(new Date("2026-06-20T16:00").toISOString());
+    });
+
+    it("accepts an instantaneous window (end === start)", () => {
+      expect(validateScheduleWindow("2026-06-20T14:00", "2026-06-20T14:00").ok).toBe(true);
+    });
+
+    it("rejects end before start (mirrors the DB CHECK)", () => {
+      const r = validateScheduleWindow("2026-06-20T16:00", "2026-06-20T14:00");
+      expect(r.ok).toBe(false);
+      expect(r.reason).toMatch(/on or after/i);
+    });
+
+    it("rejects exactly one field present", () => {
+      expect(validateScheduleWindow("2026-06-20T14:00", "").ok).toBe(false);
+      expect(validateScheduleWindow("", "2026-06-20T16:00").ok).toBe(false);
+    });
+
+    it("rejects an unparseable date", () => {
+      expect(validateScheduleWindow("not-a-date", "2026-06-20T16:00").ok).toBe(false);
+    });
+  });
+
+  describe("nextScheduleStatus (no approval clobbering)", () => {
+    it("promotes an approved change to scheduled when a window is set", () => {
+      expect(nextScheduleStatus("approved", true)).toBe("scheduled");
+    });
+
+    it("reverts a scheduled change to approved when the window is cleared", () => {
+      expect(nextScheduleStatus("scheduled", false)).toBe("approved");
+    });
+
+    it("leaves approval-in-flight and terminal statuses untouched", () => {
+      // A pending_approval change can carry a planned window without being promoted.
+      expect(nextScheduleStatus("pending_approval", true)).toBe("pending_approval");
+      expect(nextScheduleStatus("draft", true)).toBe("draft");
+      // Clearing a window never reopens a rejected/closed change.
+      expect(nextScheduleStatus("rejected", false)).toBe("rejected");
+      expect(nextScheduleStatus("completed", false)).toBe("completed");
+      expect(nextScheduleStatus("cancelled", true)).toBe("cancelled");
+    });
+
+    it("is a no-op when setting a window on an already-scheduled change", () => {
+      expect(nextScheduleStatus("scheduled", true)).toBe("scheduled");
+    });
+  });
+
+  describe("windowsOverlap", () => {
+    it("detects overlapping windows (touching endpoints count)", () => {
+      expect(
+        windowsOverlap("2026-06-20T10:00Z", "2026-06-20T12:00Z", "2026-06-20T11:00Z", "2026-06-20T13:00Z"),
+      ).toBe(true);
+      // Touching at the boundary still overlaps.
+      expect(
+        windowsOverlap("2026-06-20T10:00Z", "2026-06-20T12:00Z", "2026-06-20T12:00Z", "2026-06-20T14:00Z"),
+      ).toBe(true);
+    });
+
+    it("returns false for disjoint windows", () => {
+      expect(
+        windowsOverlap("2026-06-20T10:00Z", "2026-06-20T11:00Z", "2026-06-20T12:00Z", "2026-06-20T13:00Z"),
+      ).toBe(false);
+    });
+  });
+
+  describe("findScheduleConflicts (context only)", () => {
+    const mk = (over: Partial<SchedulableChange>): SchedulableChange => ({
+      id: "x",
+      scheduleStart: "2026-06-20T10:00Z",
+      scheduleEnd: "2026-06-20T12:00Z",
+      accountId: "acct-1",
+      affectedCis: [],
+      ...over,
+    });
+
+    it("returns [] when the target has no window", () => {
+      const target = mk({ id: "t", scheduleStart: null, scheduleEnd: null });
+      expect(findScheduleConflicts(target, [mk({ id: "o" })])).toEqual([]);
+    });
+
+    it("flags an overlapping change on the same account", () => {
+      const target = mk({ id: "t", accountId: "acct-1" });
+      const conflicts = findScheduleConflicts(target, [
+        mk({ id: "o", accountId: "acct-1", scheduleStart: "2026-06-20T11:00Z", scheduleEnd: "2026-06-20T13:00Z" }),
+      ]);
+      expect(conflicts).toHaveLength(1);
+      expect(conflicts[0].change.id).toBe("o");
+      expect(conflicts[0].reasons).toContain("same_account");
+    });
+
+    it("flags an overlapping change sharing an affected CI", () => {
+      const target = mk({
+        id: "t",
+        accountId: "acct-1",
+        affectedCis: [{ ciType: "device", ciId: "s1" }],
+      });
+      const conflicts = findScheduleConflicts(target, [
+        mk({
+          id: "o",
+          accountId: "acct-2",
+          affectedCis: [{ ciType: "device", ciId: "s1" }],
+        }),
+      ]);
+      expect(conflicts).toHaveLength(1);
+      expect(conflicts[0].reasons).toContain("shared_ci");
+    });
+
+    it("excludes overlaps with no shared account/CI, the target itself, and unscheduled others", () => {
+      const target = mk({
+        id: "t",
+        accountId: "acct-1",
+        affectedCis: [{ ciType: "device", ciId: "s1" }],
+      });
+      const conflicts = findScheduleConflicts(target, [
+        // overlaps in time but different account + no shared CI → not a conflict
+        mk({ id: "noshare", accountId: "acct-2", affectedCis: [{ ciType: "device", ciId: "s2" }] }),
+        // the target itself → excluded
+        mk({ id: "t", accountId: "acct-1" }),
+        // unscheduled → excluded
+        mk({ id: "unsched", accountId: "acct-1", scheduleStart: null, scheduleEnd: null }),
+        // disjoint window, same account → excluded (no time overlap)
+        mk({ id: "disjoint", accountId: "acct-1", scheduleStart: "2026-06-21T10:00Z", scheduleEnd: "2026-06-21T12:00Z" }),
+      ]);
+      expect(conflicts).toEqual([]);
+    });
   });
 });

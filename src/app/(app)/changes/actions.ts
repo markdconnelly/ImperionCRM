@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
-import { asChangeType, asApprovalDecision } from "@/lib/change";
+import { asChangeType, asApprovalDecision, validateScheduleWindow } from "@/lib/change";
 import { asCiType } from "@/lib/cmdb/ci";
 import type { ChangeRequestInput, CiType } from "@/types";
 
@@ -127,6 +127,30 @@ export async function decideChangeApprovalAction(formData: FormData): Promise<vo
   await changes.decideChangeApproval(id, decision, approverEmail);
   revalidatePath("/changes");
   revalidatePath("/changes/approvals");
+  revalidatePath(`/changes/${id}`);
+  redirect(`/changes/${id}`);
+}
+
+/**
+ * Set/clear a change's planned schedule window (#660). Gated by `change:write` (admin∨support
+ * — scheduling is an edit to the change, the ITIL Service-desk practice, not the CAB authority
+ * `change:approve` covers). The window is validated end ≥ start in-app (mirroring the DB CHECK)
+ * before the round-trip; both blank clears it. The repository reflects it onto status via the
+ * `approved ↔ scheduled` toggle without touching approval state.
+ */
+export async function setChangeScheduleAction(formData: FormData): Promise<void> {
+  await requireWriter();
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) throw new Error("Missing change id.");
+  const result = validateScheduleWindow(
+    String(formData.get("scheduleStart") ?? ""),
+    String(formData.get("scheduleEnd") ?? ""),
+  );
+  if (!result.ok) throw new Error(result.reason ?? "Invalid schedule window.");
+  const { changes } = getRepositories();
+  await changes.setChangeSchedule(id, result.start, result.end);
+  revalidatePath("/changes");
+  revalidatePath("/changes/calendar");
   revalidatePath(`/changes/${id}`);
   redirect(`/changes/${id}`);
 }

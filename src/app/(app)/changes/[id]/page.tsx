@@ -15,6 +15,8 @@ import {
   RISK_BAND_LABEL,
   isAwaitingApproval,
   isExpedited,
+  findScheduleConflicts,
+  SCHEDULE_CONFLICT_REASON_LABEL,
 } from "@/lib/change";
 import { CI_TYPE_LABEL } from "@/lib/cmdb/ci";
 import { ChangeForm } from "../change-form";
@@ -23,7 +25,20 @@ import {
   deleteChangeAction,
   setChangeRiskOverrideAction,
   decideChangeApprovalAction,
+  setChangeScheduleAction,
 } from "../actions";
+
+/** Format an ISO instant for a `datetime-local` input value (`yyyy-mm-ddThh:mm`, local-ish). */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  return iso.slice(0, 16);
+}
+
+/** Friendly window label for display (e.g. "2026-06-20 14:00 → 2026-06-20 16:00"). */
+function fmtWindow(start: string | null, end: string | null): string {
+  if (!start || !end) return "Not scheduled";
+  return `${start.slice(0, 16).replace("T", " ")} → ${end.slice(0, 16).replace("T", " ")}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -49,15 +64,36 @@ export default async function ChangeDetailPage({
   const change = await changes.getChangeRequest(id);
   if (!change) notFound();
 
-  const [cis, accounts] = await Promise.all([
+  const [cis, accounts, allChanges] = await Promise.all([
     crm.listConfigurationItems(),
     crm.listAccounts(),
+    changes.listChangeRequests(),
   ]);
 
   const risk = effectiveRisk(change.riskDerived, change.riskOverride);
   const initialAffectedKeys = change.affectedCis.map((c) => `${c.ciType}:${c.ciId}`);
   const awaiting = isAwaitingApproval(change.status, change.approvalStatus);
   const expedited = isExpedited(change.changeType);
+  const scheduled = Boolean(change.scheduleStart && change.scheduleEnd);
+  // Conflicts (#660, context only — no enforcement): overlapping windows that share this
+  // change's account or one of its affected CIs. The summary list lacks affected-CI sets, so
+  // account-overlap is detected list-wide; shared-CI clashes use this change's own CIs only.
+  const conflicts = findScheduleConflicts(
+    {
+      id: change.id,
+      scheduleStart: change.scheduleStart,
+      scheduleEnd: change.scheduleEnd,
+      accountId: change.accountId,
+      affectedCis: change.affectedCis,
+    },
+    allChanges.map((c) => ({
+      id: c.id,
+      scheduleStart: c.scheduleStart,
+      scheduleEnd: c.scheduleEnd,
+      accountId: c.accountId,
+    })),
+  );
+  const changeTitleById = new Map(allChanges.map((c) => [c.id, c.title]));
 
   return (
     <div className="flex flex-col gap-6">
@@ -212,6 +248,80 @@ export default async function ChangeDetailPage({
             >
               Save override
             </button>
+          </form>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-md border border-border bg-panel p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">Schedule</h2>
+          <Link href="/changes/calendar" className="text-xs text-accent hover:underline">
+            View calendar →
+          </Link>
+        </div>
+        <div className="text-sm">
+          <span className="text-xs text-dim">Planned window</span>
+          <div className="font-medium">{fmtWindow(change.scheduleStart, change.scheduleEnd)}</div>
+          {scheduled && change.status === "scheduled" && (
+            <span className="text-[11px] text-dim">Status reflects the window (scheduled).</span>
+          )}
+          {scheduled && change.status !== "scheduled" && (
+            <span className="text-[11px] text-dim">
+              Window set; status stays {CHANGE_STATUS_LABEL[change.status]} until the change is approved.
+            </span>
+          )}
+        </div>
+
+        {conflicts.length > 0 && (
+          <div className="flex flex-col gap-1 rounded-md border border-amber/40 bg-amber/5 p-3">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-amber">
+              <Icon name="TriangleAlert" size={13} />
+              {conflicts.length} overlapping change{conflicts.length === 1 ? "" : "s"} in this window
+              (context — not enforced)
+            </span>
+            <ul className="flex flex-col gap-1 text-xs text-dim">
+              {conflicts.map((c) => (
+                <li key={c.change.id}>
+                  <Link href={`/changes/${c.change.id}`} className="hover:text-accent">
+                    {changeTitleById.get(c.change.id) ?? c.change.id}
+                  </Link>{" "}
+                  · {c.change.scheduleStart?.slice(0, 16).replace("T", " ")} →{" "}
+                  {c.change.scheduleEnd?.slice(0, 16).replace("T", " ")} ·{" "}
+                  {c.reasons.map((r) => SCHEDULE_CONFLICT_REASON_LABEL[r]).join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {canWrite && (
+          <form action={setChangeScheduleAction} className="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="id" value={change.id} />
+            <label className="flex flex-col gap-1 text-xs text-dim">
+              Start
+              <input
+                type="datetime-local"
+                name="scheduleStart"
+                defaultValue={toLocalInput(change.scheduleStart)}
+                className="rounded-md border border-border bg-panel-2 px-2 py-1 text-sm text-text"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-dim">
+              End
+              <input
+                type="datetime-local"
+                name="scheduleEnd"
+                defaultValue={toLocalInput(change.scheduleEnd)}
+                className="rounded-md border border-border bg-panel-2 px-2 py-1 text-sm text-text"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-md border border-border px-3 py-1.5 text-sm text-dim transition-colors hover:border-accent hover:text-accent"
+            >
+              Save schedule
+            </button>
+            <span className="text-[11px] text-dim">Clear both fields to unschedule.</span>
           </form>
         )}
       </section>

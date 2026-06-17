@@ -2758,6 +2758,9 @@ export const mockRepositories: Repositories = {
     async decideChangeApproval(): Promise<boolean> {
       throw new Error("Change Enablement requires a configured database (migration 0135).");
     },
+    async setChangeSchedule(): Promise<void> {
+      throw new Error("Change Enablement requires a configured database (migration 0135).");
+    },
     async deleteChangeRequest(): Promise<void> {
       throw new Error("Change Enablement requires a configured database (migration 0135).");
     },
