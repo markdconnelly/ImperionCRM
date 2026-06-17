@@ -878,6 +878,34 @@ Unique `(tenant_id, qbo_invoice_id)`. Gated by `collections:read` / `collections
 follow-up (#678). PII-free: no amounts/balances (read live from the mirror), no customer
 contact data, no personal identifiers.
 
+### CMDB relationship layer — `ci_relationship` table (ADR-0078, migration 0131, #647)
+
+The CMDB's first **persisted** table: a typed, directional **edge** between two Configuration
+Items (#647, parent #372; CMDB authority ADR authored in parallel under #646). The CI register
+(#645) is a READ-ONLY `cmdb_ci` UNION over silver `account` / `contact` / `device` (no
+`cmdb_ci` table), so a CI is a polymorphic `(ci_type, ci_id)` pair; this table stores the
+**edges between those pairs**. **Archetype D (app-native overlay)** — the twin of
+`collections_activity` — but the IT Glue write-back is a **separate gated slice**, not here.
+
+One row per edge: `(from_ci_type, from_ci_id) -[relation_type]-> (to_ci_type, to_ci_id)`.
+Endpoints are CI **business keys** (text + CHECK on `account|user|device`), **not FKs** — a CI
+is a projection, there is no `cmdb_ci` table, and `ci_id` is unique only within a `ci_type`
+(the app validates both endpoints in the CI union before insert). `relation_type` is a loose
+oriented vocabulary string (`belongs-to`, `assigned-to`, `depends-on`, …), not an enum, so new
+types need no migration. `source` (`ci_relation_source` enum) = **derived** (recomputed from
+silver FKs — `device`/`contact` `account_id` → `belongs-to`; recomputable via
+`crm.deriveCiRelationships()`) or **manual** (human-authored, `cmdb:write`). **Manual edges
+survive re-derivation:** the derivation deletes + reinserts ONLY `source='derived'` rows, and
+`source` is part of the unique key `(from, to, relation_type, source)` so a manual edge of the
+same shape coexists. A self-loop CHECK forbids an edge to the same CI. Indexed on both
+endpoints (neighbourhood lookups query `from OR to`) and on `source` (the re-derivation delete).
+
+Gated by `cmdb:write` (admin-only, ADR-0045) on every write; the register stays admin∨support
+read (`canSeeCmdb`). Read via `crm.listCiRelationships(ciType, ciId)` (both directions); pure
+helpers in `src/lib/cmdb/relationship.ts`. Backs the CI-detail "Relationships" panel + the
+neighbourhood dependency-graph view. PII-free: an edge is two CI business keys + a relation +
+an optional internal note; CI names/attributes resolve live from the read-only register.
+
 ### Agent autonomy dial — `agent_autopilot_policy` table (ADR-0087, migration 0123, #721)
 
 The data-driven **autonomy dial** for orchestration agents: one CURRENT autonomy rung per

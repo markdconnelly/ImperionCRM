@@ -39,6 +39,7 @@ export const CAPABILITIES = [
   "expense:mileage-rate", // set the effective-dated system mileage rate — COMP DATA, gated like Pay Rate (ADR-0083; finance∨admin)
   "delivery:capacity", // set per-user weekly capacity hours for the workload view (ADR-0069 D2, #591; admin∨project_manager)
   "collections:write", // dunning/collections overlay on the read-only invoice mirror (ADR-0085/0087, #677; admin∨finance — app-native, NEVER writes QBO)
+  "cmdb:write", // CMDB relationship curation — author/edit/remove MANUAL CI edges + run on-demand derivation (ADR-0078, #647; admin-only — app-native overlay, IT Glue write-back is a separate gated slice)
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -102,6 +103,13 @@ export const CAPABILITY_ROLES: Record<Capability, readonly AppRole[]> = {
   // mirror is finance work; admin holds it implicitly. App-native overlay — it NEVER writes QBO.
   // Mirrors `contracts:write` (the other finance-owned money surface).
   "collections:write": ["finance"],
+  // CMDB relationship curation (ADR-0078, #647) — admin-only (admin holds all caps
+  // implicitly, so the explicit list is empty). The CMDB *register* is visible to
+  // admin∨support (`canSeeCmdb`, read-only), but AUTHORING the relationship overlay —
+  // manual edges + running the derivation — is a curation act reserved for admins, the
+  // same conservative posture as the read-only CMDB surface itself. App-native overlay;
+  // there is NO IT Glue write path here (that is a separate gated slice).
+  "cmdb:write": [],
 };
 
 /** Whether the given roles may exercise a capability. `admin` always may. */

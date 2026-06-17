@@ -5,7 +5,9 @@ import { Icon } from "@/components/ui/icon";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeCmdb } from "@/lib/auth/roles";
+import { can } from "@/lib/auth/policy";
 import { CI_TYPE_LABEL, CI_TYPE_ICON, asCiType } from "@/lib/cmdb/ci";
+import { CiRelationships } from "@/components/cmdb/ci-relationships";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,13 @@ export default async function CiDetailPage({
   const items = await crm.listConfigurationItems();
   const ci = items.find((c) => c.ciType === ciType && c.ciId === id);
   if (!ci) notFound();
+
+  // The relationship layer (#647): every edge touching this CI (both directions) +
+  // whether the viewer may author manual edges (`cmdb:write`, admin-only).
+  const [edges, canWrite] = [
+    await crm.listCiRelationships(ciType, id),
+    can(roles, "cmdb:write"),
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -98,6 +107,13 @@ export default async function CiDetailPage({
           its source system — the CMDB never writes.
         </p>
       </div>
+
+      <CiRelationships
+        ci={ci}
+        edges={edges}
+        allItems={items}
+        canWrite={canWrite}
+      />
     </div>
   );
 }

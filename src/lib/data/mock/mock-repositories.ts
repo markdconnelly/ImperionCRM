@@ -352,6 +352,23 @@ export const mockRepositories: Repositories = {
     async listConfigurationItems() {
       return [];
     },
+    // CMDB relationship layer (#647) — no edges in mock mode; the panel + graph render
+    // empty (never crash), and the writes throw (no DB) like the other overlay writes.
+    async listCiRelationships() {
+      return [];
+    },
+    async createCiRelationship() {
+      throw new Error("createCiRelationship requires a database connection.");
+    },
+    async updateCiRelationship() {
+      throw new Error("updateCiRelationship requires a database connection.");
+    },
+    async deleteCiRelationship() {
+      throw new Error("deleteCiRelationship requires a database connection.");
+    },
+    async deriveCiRelationships() {
+      return 0;
+    },
     async listInvoices() {
       return [];
     },
