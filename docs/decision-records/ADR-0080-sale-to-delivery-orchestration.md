@@ -1,3 +1,12 @@
+---
+adr: 0080
+title: "Sale → delivery orchestration (KQM quote → Autotask project/ticket spine)"
+status: accepted
+date: 2026-06-13
+repo: frontend
+summary: "KQM is the read-only quote SoR; Imperion builds no native quote engine."
+tags: [sale-delivery]
+---
 # ADR-0080: Sale → delivery orchestration (KQM quote → Autotask project/ticket spine)
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0011
+title: "Unified interaction timeline with staged enrichment"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "A single append-only `interaction` table is the timeline, carrying bronze payloads, silver columns, and gold summaries."
+tags: [crm-core]
+---
 # ADR-0011: Unified interaction timeline with staged enrichment
 
 | Field | Value |

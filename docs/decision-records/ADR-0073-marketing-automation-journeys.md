@@ -1,3 +1,12 @@
+---
+adr: 0073
+title: "Marketing automation — journeys, A/B, and lead scoring"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "A journey is a single object on the existing workflow substrate (RATIFIED)."
+tags: [crm-parity]
+---
 # ADR-0073: Marketing automation — journeys, A/B, and lead scoring
 
 | Field | Value |

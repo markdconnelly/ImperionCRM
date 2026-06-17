@@ -1,3 +1,12 @@
+---
+adr: 0086
+title: "OKF-format semantic layer over the silver tier"
+status: accepted
+date: 2026-06-14
+repo: frontend
+summary: "Adopt the OKF v0.1 format as the standard for a semantic layer over the"
+tags: [meta]
+---
 # ADR-0086: OKF-format semantic layer over the silver tier
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0064
+title: "PM collaboration — comments, mentions, notifications, attachments"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Adopt the polymorphic model and a backend-dispatched notification pipeline"
+tags: [pm]
+---
 # ADR-0064: PM collaboration — comments, mentions, notifications, attachments
 
 | Field | Value |

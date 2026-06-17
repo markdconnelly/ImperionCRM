@@ -1,3 +1,12 @@
+---
+adr: 0053
+title: "Campaign builders — events, scheduled sends, and the provider set"
+status: accepted
+date: 2026-06-10
+repo: frontend
+summary: "Events become first-class objects campaigns promote; `campaign_send` adds schedulable blasts; builders are forms + preview on Meta + ACS + Teams."
+tags: [gtm]
+---
 # ADR-0053: Campaign builders — events, scheduled sends, and the provider set
 
 | Field | Value |

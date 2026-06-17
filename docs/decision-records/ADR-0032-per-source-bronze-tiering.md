@@ -1,3 +1,13 @@
+---
+adr: 0032
+title: "Per-source bronze tables for contacts and companies"
+status: superseded
+date: 2026-06-08
+repo: frontend
+summary: "Enum-discriminated `contact_source`/`account_source` bronze tables — replaced by per-source physical tables in ADR-0039."
+superseded_by: ["ADR-0039"]
+tags: [medallion]
+---
 # ADR-0032: Per-source bronze tables for contacts and companies
 
 | Field | Value |

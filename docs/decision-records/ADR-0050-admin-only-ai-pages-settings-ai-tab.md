@@ -1,3 +1,12 @@
+---
+adr: 0050
+title: "AI pages are admin-only; Settings gains an AI tab"
+status: accepted
+date: 2026-06-10
+repo: frontend
+summary: "`canSeeAgentPages` (admin-only) gates the AI Agents and Board pages at all layers; Settings gains an AI tab."
+tags: [authz]
+---
 # ADR-0050: AI pages are admin-only; Settings gains an AI tab
 
 | Field | Value |

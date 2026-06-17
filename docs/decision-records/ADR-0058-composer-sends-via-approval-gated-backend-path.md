@@ -1,3 +1,12 @@
+---
+adr: 0058
+title: "Composer 1:1 sends execute via the backend's approval-gated send path"
+status: accepted
+date: 2026-06-11
+repo: frontend
+summary: "The contact composer executes 1:1 email/SMS through the backend's consent-re-asserted send path (employee's own M365 mailbox; ACS for SMS), degrading to a logged-to-timeline stub when unconfigured (#183)."
+tags: [surfaces]
+---
 # ADR-0058: Composer 1:1 sends execute via the backend's approval-gated send path
 
 | Field | Value |

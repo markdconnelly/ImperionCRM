@@ -1,3 +1,12 @@
+---
+adr: 0071
+title: "E-signature — DocuSign integration contract"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "Auth: JWT grant, token in backend Key Vault (ADR-0034/0042)."
+tags: [crm-parity]
+---
 # ADR-0071: E-signature — DocuSign integration contract
 
 | Field | Value |

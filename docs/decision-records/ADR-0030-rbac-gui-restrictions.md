@@ -1,3 +1,12 @@
+---
+adr: 0030
+title: "Role-based access control & GUI restrictions from Entra groups"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "Role predicates derived from five Entra security groups gate nav, routes, and server-side revenue redaction."
+tags: [authz]
+---
 # ADR-0030: Role-based access control & GUI restrictions from Entra groups
 
 | Field | Value |

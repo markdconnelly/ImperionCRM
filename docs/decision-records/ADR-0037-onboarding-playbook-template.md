@@ -1,3 +1,12 @@
+---
+adr: 0037
+title: "Standard onboarding playbook template & checklist"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "A 9-phase, ~90-step onboarding playbook template in code, instantiated into milestones + checklist steps per project."
+tags: [surfaces]
+---
 # ADR-0037: Standard onboarding playbook template & checklist
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0055
+title: "Tiered agent autonomy policy — automation earned by track record"
+status: accepted
+date: 2026-06-10
+repo: frontend
+summary: "A four-tier action policy, applied to every agent capability across all four repos"
+tags: [agent-icm]
+---
 # ADR-0055: Tiered agent autonomy policy — automation earned by track record
 
 | Field | Value |

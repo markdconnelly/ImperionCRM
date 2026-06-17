@@ -1,3 +1,12 @@
+---
+adr: 0010
+title: "Company-centric customer data model with dual-axis stages"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "`account` is the spine with dual-axis stages: `account.lifecycle_stage` plus per-`opportunity` sales stages."
+tags: [crm-core]
+---
 # ADR-0010: Company-centric customer data model with dual-axis stages
 
 | Field | Value |

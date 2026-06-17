@@ -1,3 +1,12 @@
+---
+adr: 0061
+title: "Interpreted Context Methodology as the business-process automation framework"
+status: accepted
+date: 2026-06-12
+repo: frontend
+summary: "The factory lives in git; the product lives in the platform."
+tags: [agent-icm]
+---
 # ADR-0061: Interpreted Context Methodology as the business-process automation framework
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0087
+title: "Agent orchestration & observability layer"
+status: accepted
+date: 2026-06-15
+repo: frontend
+summary: "Adopt a five-tier agent taxonomy documented in"
+tags: [agent-icm]
+---
 # ADR-0087: Agent orchestration & observability layer
 
 | Field | Value |

@@ -1,3 +1,12 @@
+---
+adr: 0002
+title: "Entra ID as sole identity provider"
+status: accepted
+date: 2026-06-06
+repo: frontend
+summary: "Entra ID is the mandatory, sole identity provider; no third-party IdP without a superseding ADR."
+tags: [platform]
+---
 # ADR-0002: Entra ID as sole identity provider
 
 | Field | Value |

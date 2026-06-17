@@ -51,6 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
       - name: Required /docs structure exists
         run: |
           required=(architecture security agents integrations database api \
@@ -65,6 +68,8 @@ jobs:
             fi
           done
           exit $missing
+      - name: ADR index is generated, deduped, and frontmatter-complete (ADR-0090)
+        run: node scripts/adr-index.mjs --check
 
   icm-conformance:
     # agent.yaml conformance gate (ADR-0088, issue #699 / epic #695). Validates

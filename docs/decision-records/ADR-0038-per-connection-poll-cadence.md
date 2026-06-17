@@ -1,3 +1,12 @@
+---
+adr: 0038
+title: "Per-connection poll cadence"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "`connection.poll_interval_minutes` (0 = manual/paused) with an auto-saving cadence selector per connection card."
+tags: [medallion]
+---
 # ADR-0038: Per-connection poll cadence
 
 | Field | Value |

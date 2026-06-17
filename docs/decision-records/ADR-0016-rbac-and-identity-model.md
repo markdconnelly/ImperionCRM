@@ -1,3 +1,12 @@
+---
+adr: 0016
+title: "RBAC and identity model"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "`app_user` mirrors the Entra identity; roles derive from Entra group/app-role claims mapped to app permissions."
+tags: [authz]
+---
 # ADR-0016: RBAC and identity model
 
 | Field | Value |

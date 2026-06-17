@@ -1,3 +1,12 @@
+---
+adr: 0031
+title: "Normalized contact object & lifecycle pipeline"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "`contact.crm_stage` (audience → lead → prospect → client) normalizes one person across the lifecycle, two-axis with `lifecycle_status`."
+tags: [crm-core]
+---
 # ADR-0031: Normalized contact object & lifecycle pipeline
 
 | Field | Value |

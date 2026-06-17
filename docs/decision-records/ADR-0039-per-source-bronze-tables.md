@@ -1,3 +1,12 @@
+---
+adr: 0039
+title: "Per-source physical bronze tables + union-view merge → silver"
+status: accepted
+date: 2026-06-08
+repo: frontend
+summary: "One physical bronze table per (source, entity) read through union views, plus a new silver `device` entity."
+tags: [medallion]
+---
 # ADR-0039: Per-source physical bronze tables + union-view merge → silver
 
 | Field | Value |

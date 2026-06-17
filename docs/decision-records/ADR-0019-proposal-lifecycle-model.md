@@ -1,3 +1,12 @@
+---
+adr: 0019
+title: "Proposal lifecycle model"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "A `proposal` belongs to exactly one `opportunity` with a `draft → sent → accepted/declined` status lifecycle."
+tags: [crm-core]
+---
 # ADR-0019: Proposal lifecycle model
 
 | Field | Value |

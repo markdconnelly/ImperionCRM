@@ -1,3 +1,12 @@
+---
+adr: 0027
+title: "Pre-discovery automation & agent-answer human approval"
+status: accepted
+date: 2026-06-07
+repo: frontend
+summary: "Agent/automation answers land as drafts; a salesperson confirms or rejects each before the discovery verdict locks."
+tags: [gtm]
+---
 # ADR-0027: Pre-discovery automation & agent-answer human approval
 
 | Field | Value |
