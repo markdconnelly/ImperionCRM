@@ -1,17 +1,27 @@
-# Imperion CRM — Customer Lifecycle (assessment-led GTM)
+# Customer Lifecycle (assessment-led GTM)
 
 - **Status:** Accepted (2026-06-07)
 - **Related:** ADR-0010 (dual-axis stages), ADR-0019 (proposals), ADR-0020
   (delivery projects), ADR-0022 (assessment-led GTM & engagement model),
+  [ADR-0096 sale → delivery dossier](../decision-records/ADR-0096-sale-delivery-consolidated.md)
+  (what happens once a deal is *won*),
   [sales & marketing reference assets](../reference/sales-marketing/README.md),
-  [data-model](../database/data-model.md)
+  [data-model](../database/data-model.md),
+  [capability overview](../product/imperion-business-manager-overview.md)
 
-This is the canonical description of how Imperion acquires, qualifies, converts, and
-grows a managed-services customer. The CRM models this motion; the dashboard and the
-per-module pages are views over it. The defining trait is that it is
-**assessment-led**: a *paid* AI Security Readiness Assessment is the wedge that earns
-the legal access and the evidence needed to win a long-term managed-services contract.
-"We begin every relationship with an AI Security Readiness Assessment."
+This is the canonical description of how **Imperion Business Manager** acquires,
+qualifies, converts, and grows a managed-services customer. The CRM modules model this
+motion; the dashboard and the per-module pages are views over it. The defining trait is
+that it is **assessment-led**: a *paid* AI Security Readiness Assessment is the wedge
+that earns the legal access and the evidence needed to win a long-term managed-services
+contract. "We begin every relationship with an AI Security Readiness Assessment."
+
+> This doc covers the *customer-facing* motion (lead → managed-active). What happens
+> **after** a deal is won — turning the quote into a provisioned delivery project — is
+> the sale→delivery orchestration ([ADR-0096](../decision-records/ADR-0096-sale-delivery-consolidated.md)),
+> and the ongoing operational/financial backbone (projects, time/expense, finance,
+> support) is the ERP surface in the
+> [capability overview](../product/imperion-business-manager-overview.md#3-erp--the-operational--financial-backbone).
 
 ## The funnel
 

@@ -4,7 +4,7 @@
 |---|---|
 | **Scope** | Cross-repo: `ImperionCRM` · `ImperionCRM_Backend` · `ImperionCRM_Pipeline` · `ImperionCRM_LocalPipelineEnrichment` |
 | **Status** | Adopted 2026-06-10 (decisions locked with Mark; ADR-0056, issue #130) |
-| **Companions** | `product-roadmap-v1-v3.md` (what gates each major) · ADR-0056 (the decision record) |
+| **Companions** | [`product-roadmap-v1-v3.md`](product-roadmap-v1-v3.md) (what gates each major) · ADR-0056 (the decision record) · [← Architecture index](README.md) |
 
 This is the normative standard for what version numbers mean, who cuts releases, and
 how the tooling is wired. Like `docs/security/unified-security-standard.md`, it is

@@ -1,12 +1,20 @@
 # 🏛️ System architecture — three layers, three open standards
 
-How a fact travels through Imperion: from a raw record in someone else's system, to
-something an agent can reason over, to an answer in front of an employee. This doc is
-the **one place** that ties the three layers together. It narrates and diagrams; it
-does **not** restate the decisions — each layer's authority lives in its ADRs, linked
-inline.
+How a fact travels through **Imperion Business Manager**: from a raw record in someone
+else's system, to something an agent can reason over, to an answer in front of an
+employee. This doc is the **one place** that ties the three layers together. It
+narrates and diagrams; it does **not** restate the decisions — each layer's authority
+lives in its ADRs, linked inline.
 
-[← Architecture](README.md) · [← Documentation library](../README.md)
+[← Architecture](README.md) · [← Documentation library](../README.md) ·
+[Capability overview](../product/imperion-business-manager-overview.md)
+
+> **Scope note.** This doc describes the *system shape* — the three layers every
+> capability rides on. The full capability surface (CRM · ERP · extras · the AI suite)
+> is the [capability overview](../product/imperion-business-manager-overview.md); the
+> cross-repo estate is [system-of-systems](system-of-systems.md). Every capability —
+> the customer-facing motion *and* the operational/financial backbone (delivery,
+> projects, finance, support) — rides on the same three layers below.
 
 Imperion bets on three emerging open standards, one per layer (the same three named on
 the public [/story](../../public/story/index.html) page, "Betting on the frontier"):
@@ -72,7 +80,7 @@ not folders — they are tables in one Postgres, with the schema owned solely by
 | Tier | Contract | Example | Authority |
 | --- | --- | --- | --- |
 | 🥉 **Bronze** | raw source payload, **one physical table per (source, entity)**, lossless `raw_payload`, no transforms | `autotask_contacts`, `website_time_entry`, `qbo_purchases` | [ADR-0039](../decision-records/ADR-0039-per-source-bronze-tables.md) |
-| 🥈 **Silver** | normalized + deduped + classified entities, read by the app | `contact`, `time_record`, `expense_item`, `opportunity` | [ADR-0044](../decision-records/ADR-0044-silver-contracts-tickets.md) |
+| 🥈 **Silver** | normalized + deduped + classified entities, read by the app | `contact`, `account`, `device`, `opportunity`, `time_record`, `expense_item`, `ticket`, `project`, `task` | [ADR-0044](../decision-records/ADR-0044-silver-contracts-tickets.md) |
 | 🥇 **Gold** | AI-ready: summaries, **embeddings**, knowledge objects | `knowledge_object` + `knowledge_embedding` | [ADR-0041](../decision-records/ADR-0041-gold-knowledge-vector-store.md) |
 
 - **The vector contract is pinned:** Voyage `voyage-3-large` @ 1024 dims, one vector
@@ -142,12 +150,12 @@ falls into and a master object → archetype → IKF → ICM map — see
 
 ## Governing decisions (single source of truth)
 
-Data lake: [ADR-0039](../decision-records/ADR-0039-per-source-bronze-tables.md) ·
-[ADR-0044](../decision-records/ADR-0044-silver-contracts-tickets.md) ·
-[ADR-0041](../decision-records/ADR-0041-gold-knowledge-vector-store.md) — AI framework:
-[ADR-0004](../decision-records/ADR-0004-single-orchestrator-agent-model.md) ·
-[ADR-0061](../decision-records/ADR-0061-icm-business-process-automation.md) ·
-[ADR-0060](../decision-records/ADR-0060-agent-skills-canon-plugin.md) — Knowledge:
-[ADR-0086](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md) — Boundary:
-[ADR-0042](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md) (four-repo division of labor) ·
-[ADR-0018](../decision-records/ADR-0018-gui-only-frontend-external-functions.md) (GUI-only front end).
+The individual ADRs below are the authority for each clause; they are also gathered
+into **consolidated dossiers** (member ADRs retained verbatim with a zero-loss
+traceability table) — cite the dossier for the cluster, the member ADR for a specific
+clause:
+
+- **Data lake → [ADR-0092 Medallion data platform](../decision-records/ADR-0092-medallion-data-platform-consolidated.md)** (consolidates [ADR-0039](../decision-records/ADR-0039-per-source-bronze-tables.md) bronze · [ADR-0044](../decision-records/ADR-0044-silver-contracts-tickets.md) silver · [ADR-0041](../decision-records/ADR-0041-gold-knowledge-vector-store.md) gold/vector · [ADR-0043](../decision-records/ADR-0043-settled-ai-stack-drop-legacy-vectors.md) settled AI stack).
+- **AI framework → [ADR-0091 Agent & ICM platform](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)** (consolidates [ADR-0004](../decision-records/ADR-0004-single-orchestrator-agent-model.md) single orchestrator · [ADR-0061](../decision-records/ADR-0061-icm-business-process-automation.md) ICM · autonomy tiers · the orchestration matrix · the Managed Agents runtime). Skills canon: [ADR-0060](../decision-records/ADR-0060-agent-skills-canon-plugin.md).
+- **Knowledge → [ADR-0086 OKF semantic layer](../decision-records/ADR-0086-okf-semantic-layer-over-silver.md).**
+- **Boundary → [ADR-0042 four-repo division of labor](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md)** · [ADR-0018 GUI-only front end](../decision-records/ADR-0018-gui-only-frontend-external-functions.md).

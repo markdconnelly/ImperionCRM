@@ -1,10 +1,16 @@
 # Application boundary — what lives in this repo
 
 - **Status:** Active (ADR-0018)
-- **Related:** [product-requirements](./product-requirements.md), ADR-0007, ADR-0018
+- **Related:** [product-requirements](./product-requirements.md),
+  [system-of-systems](./system-of-systems.md) (the cross-repo view),
+  ADR-0007, [ADR-0018](../decision-records/ADR-0018-gui-only-frontend-external-functions.md),
+  [ADR-0042](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md)
 
-**This repository is the GUI for Imperion CRM.** It renders the interface and does
-exactly two kinds of work; anything else is hosted elsewhere.
+**This repository is the GUI for Imperion Business Manager.** It renders the interface
+and does exactly two kinds of work; anything else is hosted elsewhere. This is the
+*single most important boundary* in the codebase — internalize it before changing code.
+For where this repo sits among the four (and how a process actually reaches the
+backend), read [system-of-systems](./system-of-systems.md).
 
 ## In this repo (the GUI)
 
@@ -25,18 +31,25 @@ Heavy, long-running, integration-heavy, or secret-bearing work runs as external
 functions/APIs (Azure Functions, container apps, …) and is reached via the service
 clients:
 
-| Service client (`src/lib/services`) | Hosts | Base-URL env |
-| --- | --- | --- |
-| `agentService` | Orchestrator + sub-agents (ADR-0015) | `AGENT_SERVICE_URL` |
-| `integrationService` | M365 / Autotask / IT Glue / Plaud / Facebook sync (ADR-0012) | `INTEGRATION_SERVICE_URL` |
-| `enrichmentService` | Web-scrape lead intel (ADR-0012) | `ENRICHMENT_SERVICE_URL` |
-| `commsService` | Email/SMS sends + nurture (ADR-0014) | `COMMS_SERVICE_URL` |
-| `campaignService` | Facebook campaigns + analytics (ADR-0012) | `CAMPAIGN_SERVICE_URL` |
-| `boardService` | AI Board of Directors sessions (ADR-0015) | `BOARD_SERVICE_URL` |
+The typed clients live in [`src/lib/services`](../../src/lib/services); the
+implementations are in the backend / pipeline. Each client is bound to a base-URL env
+var — until that var is set, the client reports **not_configured** and the UI degrades
+gracefully (so the GUI can ship ahead of the backends).
 
-Until a service's base-URL env var is set, its client throws
-`ServiceNotConfiguredError` and the UI degrades gracefully — so the GUI can ship
-ahead of the backends.
+| Service client (`src/lib/services`) | What it calls | Base-URL env |
+| --- | --- | --- |
+| `agentService`, `boardService` | Orchestrator + sub-agents + AI Board sessions (ADR-0091) | `AGENT_SERVICE_URL` |
+| `integrationService`, `ticketsService` | M365 / Autotask / IT Glue / Plaud / social sync; Autotask ticket reads (ADR-0092) | `INTEGRATION_SERVICE_URL` |
+| `connectionsService`, `credentialsService` | Per-user OAuth connect/callback/disconnect + credential custody (backend ADR-0038) | `INTEGRATION_SERVICE_URL` |
+| `enrichmentService` | Web-scrape lead intel (ADR-0092) | `ENRICHMENT_SERVICE_URL` |
+| `commsService` | Approval-gated email/SMS sends + nurture, consent re-asserted (ADR-0058) | `COMMS_SERVICE_URL` |
+| `campaignService` | Ad campaigns + analytics | `CAMPAIGN_SERVICE_URL` |
+| `pipelineService` | On-demand bronze→silver refresh / merge nudge (pipeline ADR-0011) | `PIPELINE_SERVICE_URL` |
+| `timeReconciliationService`, `payrollReconciliationService` | Employee-finance reconciliation reads (ADR-0093) | `INTEGRATION_SERVICE_URL` |
+
+(The exact env binding is the source of truth — see the service registry in
+[`src/lib/services/index.ts`](../../src/lib/services/index.ts). Several clients share
+`INTEGRATION_SERVICE_URL` because they call the same backend Function App.)
 
 ## Decision flow for new functionality
 

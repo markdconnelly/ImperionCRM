@@ -4,12 +4,17 @@ The three big data-architecture bets, why they were made, and **how every data o
 in the system is actually implemented** under them. This is the builder's recipe and the
 stakeholder's explainer.
 
-[← Architecture](README.md) · [← Documentation library](../README.md)
+[← Architecture](README.md) · [← Documentation library](../README.md) ·
+[Capability overview](../product/imperion-business-manager-overview.md)
 
 This doc goes **deeper** than [system-architecture](system-architecture.md): that doc
 narrates the three layers at altitude; this one gives the **eight implementation
 archetypes** every object falls into, a worked example each, and a master map of every
-silver/bronze/gold object → archetype → IKF status → acting ICM workflow.
+silver/bronze/gold object → archetype → IKF status → acting ICM workflow. The decisions
+it builds on are gathered in the
+[ADR-0092 Medallion data platform](../decision-records/ADR-0092-medallion-data-platform-consolidated.md)
+and [ADR-0091 Agent & ICM platform](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)
+dossiers (member ADRs cited inline below).
 
 ---
 

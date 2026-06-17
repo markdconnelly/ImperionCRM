@@ -1,6 +1,19 @@
-# Imperion CRM — cross-repo production-readiness plan
+# Imperion Business Manager — cross-repo production-readiness plan
 
-> **You are in: `ImperionCRM` — the CANONICAL copy.** Synced copies live in the three sibling repos; update here and re-sync. **As of 2026-06-10 (post build-sprint).** This repo's section is marked **← this repo** below.
+> **You are in: `ImperionCRM` — the CANONICAL copy.** Synced copies live in the three
+> sibling repos; update here and re-sync. This repo's section is marked **← this repo**
+> below.
+>
+> **⚠️ Snapshot vintage: 2026-06-10 (the post-build-sprint readiness review).** It is
+> kept as the authoritative *operator-unblock* checklist — the remaining go-live work is
+> still operator configuration, exactly as listed. **But the build has moved on since:**
+> the front end now serves the full CRM + ERP + extras + AI surface (sale→delivery,
+> projects/PM parity, time/expense + Monthly Close, collections, CMDB, service desk,
+> the connector marketplace), and **migrations `0001–0101` are applied to prod** (the
+> "`0001–0058`" below reflects the 2026-06-10 vintage only). For the live module/state
+> picture read [CLAUDE.md §6](../../CLAUDE.md) and the
+> [capability overview](../product/imperion-business-manager-overview.md); for roadmap
+> framing read [product-roadmap-v1-v3](product-roadmap-v1-v3.md).
 
 ## TL;DR
 
