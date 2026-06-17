@@ -1,5 +1,12 @@
 # Agent skills — where they live and how they change
 
+> **Scope.** This is a **developer-skill** convention for the engineering agents
+> that build Imperion Business Manager (Claude Code). It is distinct from the ICM
+> **runtime** skills the agent workforce loads at run time — see
+> [icm.md §6](icm.md). Don't mix the two.
+
+[← The AI suite](README.md) · Governing decision: ADR-0060.
+
 Canonical home: [`plugins/imperion-skills/`](../../plugins/imperion-skills/README.md)
 in this repo, served as the `imperion-skills` plugin of the in-repo `imperion`
 marketplace (ADR-0060). The README there has the per-machine enablement snippet

@@ -1,10 +1,15 @@
 # `agent.yaml` — the ICM workspace manifest
 
-The declarative, per-workspace manifest that defines an ICM worker (ADR-0088,
-amending ADR-0061). It is the single artifact the **backend loader** (Backend
-#162) turns into a **CMA agent object**, and the artifact the **CI conformance
-gate** (`icm-conformance`, #702) validates. One `agent.yaml` lives beside each
-workflow's prose at `icm/domains/<domain>/<workflow>/agent.yaml`.
+The declarative, per-workspace manifest that defines an ICM worker. It is the
+single artifact the **backend loader** (Backend #162) turns into a **CMA agent
+object**, and the artifact the **CI conformance gate** (`icm-conformance`, #702)
+validates. One `agent.yaml` lives beside each workflow's prose at
+`icm/domains/<domain>/<workflow>/agent.yaml`.
+
+[← The AI suite](README.md) · Governing decision:
+[ADR-0091](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)
+(from ADR-0088, amending ADR-0061; budget files ratified by ADR-0089). Sibling
+guides: [icm.md](icm.md) · [cma-runtime.md](cma-runtime.md).
 
 - **Machine contract:** [`icm/agent.schema.json`](../../icm/agent.schema.json) (JSON
   Schema, draft-07).
@@ -73,6 +78,10 @@ mcp_servers:
     vault_secret_ref: kv://docusign-oauth   # a reference, never a value
 ```
 
+> The live reference manifest is
+> [`icm/domains/sales/lead-response/agent.yaml`](../../icm/domains/sales/lead-response/agent.yaml)
+> (`model: claude-sonnet-4-5`, `autonomy_rung: L1`).
+
 ## The invariant: `workflow ⊆ domain ⊆ Constitution`
 
 Least-privilege is **structural**, not prose. For both `tools` and `okf_rooms`:
@@ -88,12 +97,17 @@ The **Constitution is the outer allow-list**, the **domain narrows it**, the
 Constitution permits domain-wide. The domain and Constitution budgets live in
 sibling **budget files** (`icm/domains/<d>/room.yaml`, `icm/CONSTITUTION.yaml`) —
 their naming, location, `{tools, okf_rooms}` shape, and the absent-tier
-degradation rule below are ratified in **ADR-0089** (the budget-file convention),
-extending ADR-0088 §3. Until those files land with the domain tier, the gate
-still fully shape-checks every manifest and applies the invariant wherever a
-budget is declared; when an upper tier's budget is absent, its bound is the
+degradation rule are ratified in **ADR-0089** (the budget-file convention),
+extending ADR-0088 §3. When an upper tier's budget is absent, its bound is the
 next-lower declared list (so an absent budget can never be widened past — see
-ADR-0089 §3).
+ADR-0089 §3); the gate still fully shape-checks every manifest regardless.
+
+> **Doc-vs-comment note (2026-06-16).** A header comment in
+> `icm/CONSTITUTION.yaml` still says the budget-file convention is "NOT yet
+> ADR-ratified." That comment predates **ADR-0089**, which *does* ratify it; the
+> clauses themselves were always ratified (CONSTITUTION.md §3/§5). Treat ADR-0089
+> as the source of truth; the stale comment is a follow-up cleanup, not a real
+> gap.
 
 ## How it is consumed
 
@@ -101,7 +115,8 @@ ADR-0089 §3).
   `icm/agent.schema.json`, runs the subset invariant, composes `system` from
   `system_compose`, and creates/versions the CMA agent object. The agent object is
   created once and **versioned on change**; the **session** is the per-run spin-up.
-  Sends exit only via ADR-0058; secrets stay host-side (MCP creds in vaults).
+  Sends exit only via ADR-0058; secrets stay host-side (MCP creds in vaults). The
+  end-to-end runtime is [cma-runtime.md](cma-runtime.md).
 - **CI gate (#702):** `node scripts/agent-yaml-gate.mjs` walks `icm/` and fails
   the PR on any shape or subset violation. The pure functions in that module are
   exported so the loader can import the **same** checks rather than reimplement
