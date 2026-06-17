@@ -276,6 +276,9 @@ import type {
   ContractRow,
   DeviceInventoryRow,
   ConfigurationItem,
+  CiType,
+  CiRelationship,
+  CiRelationshipInput,
   InvoiceMirrorRow,
   InvoiceAgingBucket,
   CollectionsActivity,
@@ -1342,6 +1345,159 @@ export const postgresRepositories: Repositories = {
         }));
       } catch {
         return mockRepositories.crm.listConfigurationItems();
+      }
+    },
+
+    // ── CMDB relationship layer (#647, migration 0131) ─────────────────────────
+    async listCiRelationships(ciType: CiType, ciId: string): Promise<CiRelationship[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listCiRelationships(ciType, ciId);
+      try {
+        // Every edge touching this CI in BOTH directions (from OR to). CIs are
+        // polymorphic (type,id) pairs, so we match on the pair on each end. Manual
+        // edges sort first (the curated layer), then most-recent.
+        const { rows } = await pool.query<{
+          id: string;
+          from_ci_type: CiType;
+          from_ci_id: string;
+          to_ci_type: CiType;
+          to_ci_id: string;
+          relation_type: string;
+          source: CiRelationship["source"];
+          note: string | null;
+          created_at: Date;
+          updated_at: Date;
+        }>(
+          `SELECT id::text AS id, from_ci_type, from_ci_id, to_ci_type, to_ci_id,
+                  relation_type, source, note, created_at, updated_at
+             FROM ci_relationship
+            WHERE (from_ci_type = $1 AND from_ci_id = $2)
+               OR (to_ci_type = $1 AND to_ci_id = $2)
+            ORDER BY (source = 'manual') DESC, updated_at DESC`,
+          [ciType, ciId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          fromCiType: r.from_ci_type,
+          fromCiId: r.from_ci_id,
+          toCiType: r.to_ci_type,
+          toCiId: r.to_ci_id,
+          relationType: r.relation_type,
+          source: r.source,
+          note: r.note,
+          createdAt: fmtIso(r.created_at) ?? "",
+          updatedAt: fmtIso(r.updated_at) ?? "",
+        }));
+      } catch {
+        return mockRepositories.crm.listCiRelationships(ciType, ciId);
+      }
+    },
+
+    async createCiRelationship(input: CiRelationshipInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.createCiRelationship(input);
+      // Validate BOTH endpoints exist in the CI union before inserting — a CI is a
+      // projection over silver (#645), so there is no FK to enforce this. Re-add of the
+      // same manual edge is a no-op (ON CONFLICT on the (from,to,relation,source) key).
+      const items = await this.listConfigurationItems();
+      const exists = (t: CiType, id: string) =>
+        items.some((c) => c.ciType === t && c.ciId === id);
+      if (!exists(input.fromCiType, input.fromCiId)) {
+        throw new Error("Source CI not found in the configuration item register.");
+      }
+      if (!exists(input.toCiType, input.toCiId)) {
+        throw new Error("Target CI not found in the configuration item register.");
+      }
+      if (
+        input.fromCiType === input.toCiType &&
+        input.fromCiId === input.toCiId
+      ) {
+        throw new Error("A relationship cannot point a CI at itself.");
+      }
+      await pool.query(
+        `INSERT INTO ci_relationship
+           (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source, note)
+         VALUES ($1, $2, $3, $4, $5, 'manual', $6)
+         ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+         DO NOTHING`,
+        [
+          input.fromCiType,
+          input.fromCiId,
+          input.toCiType,
+          input.toCiId,
+          input.relationType,
+          input.note,
+        ],
+      );
+    },
+
+    async updateCiRelationship(
+      id: string,
+      patch: { relationType: string; note: string | null },
+    ): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.updateCiRelationship(id, patch);
+      // Only MANUAL edges are editable — a derived edge is recomputable, so the UPDATE
+      // is scoped to source='manual' (it no-ops on a derived row).
+      await pool.query(
+        `UPDATE ci_relationship
+            SET relation_type = $2, note = $3, updated_at = now()
+          WHERE id = $1 AND source = 'manual'`,
+        [id, patch.relationType, patch.note],
+      );
+    },
+
+    async deleteCiRelationship(id: string): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deleteCiRelationship(id);
+      // Only MANUAL edges are deletable — deleting a derived edge would just reappear on
+      // the next re-derivation, so the DELETE is scoped to source='manual'.
+      await pool.query(
+        `DELETE FROM ci_relationship WHERE id = $1 AND source = 'manual'`,
+        [id],
+      );
+    },
+
+    async deriveCiRelationships(): Promise<number> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deriveCiRelationships();
+      // The same recompute the migration's seed runs, on demand: replace ONLY the
+      // derived edges from current silver FKs; manual edges are never touched. Done in
+      // one transaction so a partial recompute never leaves the graph half-derived.
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(`DELETE FROM ci_relationship WHERE source = 'derived'`);
+        // device belongs-to account
+        await client.query(
+          `INSERT INTO ci_relationship
+             (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           SELECT 'device', d.id::text, 'account', d.account_id::text, 'belongs-to', 'derived'
+             FROM device d
+            WHERE d.account_id IS NOT NULL
+           ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           DO NOTHING`,
+        );
+        // user belongs-to account
+        await client.query(
+          `INSERT INTO ci_relationship
+             (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           SELECT 'user', c.id::text, 'account', c.account_id::text, 'belongs-to', 'derived'
+             FROM contact c
+            WHERE c.account_id IS NOT NULL
+           ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           DO NOTHING`,
+        );
+        const { rows } = await client.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM ci_relationship WHERE source = 'derived'`,
+        );
+        await client.query("COMMIT");
+        return Number(rows[0]?.count ?? 0);
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
       }
     },
 

@@ -149,6 +149,9 @@ import type {
   ContractRow,
   DeviceInventoryRow,
   ConfigurationItem,
+  CiType,
+  CiRelationship,
+  CiRelationshipInput,
   UnmappedTenant,
   WorkflowDetail,
   WorkflowRow,
@@ -744,6 +747,49 @@ export interface CrmRepository {
    * Mock / schema-lag fallback = `[]` (the register renders empty, never crashes).
    */
   listConfigurationItems(): Promise<ConfigurationItem[]>;
+
+  // ── CMDB relationship layer (#647, epic #372, ADR-0078) ─────────────────────
+  /**
+   * Every CI relationship edge touching a CI (the `ci_relationship` table, migration
+   * 0131) in BOTH directions — `from_ci = (type,id) OR to_ci = (type,id)`. Backs the
+   * CI-detail "Relationships" panel and the neighbourhood dependency-graph view. Edges
+   * are derived (recomputed from silver FKs) or manual (human-authored, cmdb:write).
+   * Mock / schema-lag fallback = `[]`.
+   */
+  listCiRelationships(ciType: CiType, ciId: string): Promise<CiRelationship[]>;
+
+  /**
+   * Insert a MANUAL CI relationship edge (cmdb:write, ADR-0045). Idempotent on the
+   * `(from, to, relation_type, source='manual')` unique key — re-adding the same edge
+   * is a no-op (ON CONFLICT DO NOTHING). Validates both endpoints exist in the CI union
+   * before insert (CIs are projections, not rows). Mock fallback throws (no DB).
+   */
+  createCiRelationship(input: CiRelationshipInput): Promise<void>;
+
+  /**
+   * Edit a MANUAL CI relationship edge by id — relation type + note (the endpoints are
+   * fixed; re-point = delete + re-create). Only `source='manual'` rows are editable;
+   * a derived row is recomputable and the UPDATE no-ops on it. cmdb:write. Mock throws.
+   */
+  updateCiRelationship(
+    id: string,
+    patch: { relationType: string; note: string | null },
+  ): Promise<void>;
+
+  /**
+   * Remove a MANUAL CI relationship edge by id. Only `source='manual'` rows are
+   * deletable — derived edges are managed by the derivation (deleting one would just
+   * reappear on re-derivation), so the DELETE is scoped to manual. cmdb:write. Mock throws.
+   */
+  deleteCiRelationship(id: string): Promise<void>;
+
+  /**
+   * Recompute the DERIVED CI relationship edges from current silver FKs (the same seed
+   * the migration runs): delete ONLY `source='derived'` rows, reinsert from silver.
+   * MANUAL edges survive untouched. Idempotent / re-runnable. Returns the derived-edge
+   * count after the recompute. cmdb:write. Mock fallback = 0 (no DB, nothing to derive).
+   */
+  deriveCiRelationships(): Promise<number>;
 
   /**
    * Read-only AR/invoice MIRROR over bronze `qbo_invoices` (the `invoice_mirror` view,

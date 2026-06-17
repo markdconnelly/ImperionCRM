@@ -3151,6 +3151,43 @@ export interface ConfigurationItem {
   attributes: { label: string; value: string }[];
 }
 
+// ── CMDB relationship layer (#647, epic #372, ADR-0078) ──────────────────────
+// The CMDB's first PERSISTED table (migration 0131): a typed, directional EDGE
+// between two CIs. A CI is a polymorphic `(ciType, ciId)` pair over the read-only
+// `cmdb_ci` union (#645), so an edge's endpoints are those pairs (text, no FK).
+
+/** How a CI relationship edge got into the store. `derived` is recomputed from
+ *  silver FKs (replaceable); `manual` is human-authored (cmdb:write) and sticky. */
+export type CiRelationshipSource = "derived" | "manual";
+
+/** One typed, directional edge between two Configuration Items (`ci_relationship`,
+ *  migration 0131). `relationType` is read FROM → TO (e.g. a device `belongs-to`
+ *  an account). A loose vocabulary string, not an enum — the app supplies the
+ *  pick-list. `source` distinguishes auto-derived from human-authored edges. */
+export interface CiRelationship {
+  id: string;
+  fromCiType: CiType;
+  fromCiId: string;
+  toCiType: CiType;
+  toCiId: string;
+  relationType: string;
+  source: CiRelationshipSource;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Create/update payload for a MANUAL CI relationship edge (cmdb:write). Derived
+ *  edges are never authored through this — they are recomputed by the derivation. */
+export interface CiRelationshipInput {
+  fromCiType: CiType;
+  fromCiId: string;
+  toCiType: CiType;
+  toCiId: string;
+  relationType: string;
+  note: string | null;
+}
+
 // ── Self-serve report builder (ADR-0075, #410) ───────────────────────────────
 // Persistence shapes for the governed report builder. `report_definition` is a
 // generalised saved view (ADR-0046): owner-scoped, private|shared, jsonb query

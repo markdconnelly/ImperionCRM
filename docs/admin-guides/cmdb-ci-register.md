@@ -61,13 +61,42 @@ account is **dropped rather than shown**.
 - Click any CI to open its **detail view** — the owning account (links to the
   Account 360) plus the CI's key attributes.
 
+## Relationships (the CMDB edge layer, #647)
+
+Each CI detail view carries a **Relationships** panel and a **dependency-graph** view of
+the CI's neighbourhood — the relationship layer of the CMDB (epic **#372**, **ADR-0078**;
+the CMDB authority ADR is authored in parallel under **#646**). Unlike the register, this
+layer **is persisted** — it is curated knowledge (derived *and* manually authored) that has
+nowhere in silver to live (`ci_relationship` table, migration `0131`).
+
+An edge is **directional and typed**: `from -[relation_type]-> to`, where each endpoint is a
+CI `(type, id)` pair (e.g. a **device** `belongs-to` an **account**). The panel lists every
+edge touching the CI in **both** directions and resolves each neighbour to its name + drill
+link; the graph renders the same neighbourhood radially.
+
+Edges come from two sources:
+
+- **derived** — auto-seeded from the silver foreign keys the inventory already carries
+  (`device belongs-to account`, `user belongs-to account`). The **Re-derive** button
+  recomputes them from current silver on demand (the same seed the migration runs).
+  *(The issue also names `device assigned-to user`; silver `device` carries no assigned-user
+  FK today, so that derivation is omitted until such a link is added to silver.)*
+- **manual** — authored, edited, and removed by an admin (**Add edge** / inline edit / remove).
+
+**Manual edges survive re-derivation** — the derivation only ever replaces `derived` rows.
+
+The working copy is **app-native**: pushing edges out to **IT Glue is a separate, gated
+round-trip slice**, not this surface.
+
 ## Access
 
-Admin-only (ADR-0030), the same gate as Settings and AI Agents (`canSeeCmdb`). The
-nav entry is hidden and the route redirects for non-admins. The register is
-**read-only** — there is **no write path**, so no `policy.ts` capability is added
-(it mirrors `canSeeAgentPages`). Manage each item in its **source system**; the CMDB
-never writes.
+The **register and device inventory are read-only** for admin∨support (`canSeeCmdb`,
+ADR-0030) — the nav entry is hidden and the route redirects for others; manage each item in
+its **source system**. The **relationship layer** adds the CMDB's first write path: authoring
+manual edges and running the derivation is gated by **`cmdb:write`** (ADR-0045, **admin-only**
+— curation is an admin act, the conservative posture matching the read surface) and re-asserted
+server-side in every action (`requireCapability`), so the server never trusts the hidden-control
+UI. App-native only — there is **no IT Glue write path** here.
 
 ## Implementation (for the curious)
 
@@ -77,6 +106,12 @@ never writes.
 - Pure helpers + the staff-exclusion rule: `src/lib/cmdb/ci.ts` (unit-tested).
 - Surface: `src/app/(app)/cmdb/` (register + `[type]/[id]` detail),
   `src/components/cmdb/ci-register.tsx`.
+- Relationship layer (#647): `ci_relationship` table (migration `0131`); read/derive/write
+  accessors `crm.listCiRelationships` / `deriveCiRelationships` / `createCiRelationship` /
+  `updateCiRelationship` / `deleteCiRelationship`; server actions in
+  `src/app/(app)/cmdb/actions.ts` (all `cmdb:write`-gated); pure helpers in
+  `src/lib/cmdb/relationship.ts`; UI in `src/components/cmdb/ci-relationships.tsx`
+  (panel + SVG dependency graph).
 
 ## Security notes
 

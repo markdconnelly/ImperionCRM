@@ -174,6 +174,7 @@ orientation map so you know which of its five diagrams to open.
 | **Enrichment dossier** | `contact_enrichment`, `contact_social_identity`, `meeting_action_item` | Diagram 5 | ADR-0025 |
 | **Employee finance** | `timesheet`, `time_record`, `expense_item`, `expense_report`, comp data (`pay_rate`) | (in migrations) | ADR-0082/0083 (consolidated **ADR-0093**) |
 | **AR & service ops** | `invoice_mirror` (view), `collections_activity`, `ticket_sla_breach` (view), `chat_session` | Diagram 4 | ADR-0044/0074/0085 |
+| **CMDB** | `cmdb_ci` (union read-model, #645), `ci_relationship` (edge layer, #647) | Diagram 4 | ADR-0078 (#372) |
 | **Gold knowledge** | `knowledge_object`, `knowledge_embedding` | (vector design) | ADR-0041/0043 |
 
 > **As-built note:** the ERD's Diagram 2 is the original *design* sketch; the tables
