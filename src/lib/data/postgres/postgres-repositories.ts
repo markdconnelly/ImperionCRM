@@ -14,6 +14,7 @@ import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
+import { deriveCriticality } from "@/lib/cmdb/criticality";
 import { resolveMentions } from "@/lib/mentions";
 import {
   planInstantiation,
@@ -279,6 +280,8 @@ import type {
   CiType,
   CiRelationship,
   CiRelationshipInput,
+  Criticality,
+  CiCriticalityOverrideInput,
   InvoiceMirrorRow,
   InvoiceAgingBucket,
   CollectionsActivity,
@@ -1275,6 +1278,10 @@ export const postgresRepositories: Repositories = {
         // identities) — Imperion staff/admin are `app_user`, a different table never
         // joined here. Every arm also requires a non-null `account_id`, so an
         // account-less/internal row can never enter the set.
+        // Each arm also carries the raw silver signals the criticality derived rule
+        // reads (account relationship/lifecycle, device_type) so the in-code rule
+        // (`deriveCriticality`, #648) computes a meaningful default even before the
+        // `cmdb_ci_overlay` table (migration 0132) is applied (it is DORMANT until then).
         const { rows } = await pool.query<{
           ci_type: ConfigurationItem["ciType"];
           ci_id: string;
@@ -1282,14 +1289,21 @@ export const postgresRepositories: Repositories = {
           account_name: string | null;
           display_name: string;
           attributes: { label: string; value: string }[] | null;
+          relationship: string | null;
+          lifecycle_stage: string | null;
+          device_type: string | null;
         }>(
-          `SELECT ci_type, ci_id, account_id, account_name, display_name, attributes
+          `SELECT ci_type, ci_id, account_id, account_name, display_name, attributes,
+                  relationship, lifecycle_stage, device_type
              FROM (
                SELECT 'account'::text AS ci_type,
                       a.id::text       AS ci_id,
                       a.id::text       AS account_id,
                       a.name           AS account_name,
                       a.name           AS display_name,
+                      a.relationship::text AS relationship,
+                      a.lifecycle_stage::text AS lifecycle_stage,
+                      NULL::text       AS device_type,
                       jsonb_build_array(
                         jsonb_build_object('label','Lifecycle','value',replace(a.lifecycle_stage::text,'_',' ')),
                         jsonb_build_object('label','Relationship','value',coalesce(a.relationship,'—')),
@@ -1304,6 +1318,9 @@ export const postgresRepositories: Repositories = {
                       c.account_id::text,
                       a.name,
                       c.full_name,
+                      NULL::text,
+                      NULL::text,
+                      NULL::text,
                       jsonb_build_array(
                         jsonb_build_object('label','Email','value',coalesce(c.email,'—')),
                         jsonb_build_object('label','Phone','value',coalesce(c.phone,'—'))
@@ -1319,6 +1336,9 @@ export const postgresRepositories: Repositories = {
                       d.account_id::text,
                       a.name,
                       coalesce(d.name, d.serial_number, 'Unnamed device'),
+                      NULL::text,
+                      NULL::text,
+                      d.device_type,
                       jsonb_build_array(
                         jsonb_build_object('label','Type','value',coalesce(d.device_type,'—')),
                         jsonb_build_object('label','Make / model','value',trim(both ' ' from concat_ws(' ', d.manufacturer, d.model))),
@@ -1331,18 +1351,55 @@ export const postgresRepositories: Repositories = {
              ) ci
             ORDER BY account_name NULLS LAST, ci_type, display_name`,
         );
-        return rows.map((r) => ({
-          ciType: r.ci_type,
-          ciId: r.ci_id,
-          accountId: r.account_id,
-          accountName: r.account_name,
-          displayName: r.display_name,
-          attributes: (r.attributes ?? []).map((kv) => ({
-            label: kv.label,
-            // Empty make/model concat collapses to '' — normalise to the dash.
-            value: kv.value && kv.value.length > 0 ? kv.value : "—",
-          })),
-        }));
+
+        // The criticality overlay (#648, migration 0132) is fetched SEPARATELY and
+        // merged in code — so a dormant overlay (table absent pre-apply) degrades to
+        // the in-code derived default rather than emptying the whole register. Keyed
+        // by `${ci_type}:${ci_id}`; stored derived_default wins over the in-code one
+        // (they agree by construction), and `override ?? derived` is the effective value.
+        const overlay = new Map<string, { derived: Criticality | null; override: Criticality | null }>();
+        try {
+          const { rows: ovl } = await pool.query<{
+            ci_type: string;
+            ci_id: string;
+            derived_default: Criticality;
+            override: Criticality | null;
+          }>(
+            `SELECT ci_type, ci_id, derived_default, override FROM cmdb_ci_overlay`,
+          );
+          for (const o of ovl) {
+            overlay.set(`${o.ci_type}:${o.ci_id}`, {
+              derived: o.derived_default,
+              override: o.override,
+            });
+          }
+        } catch {
+          // Overlay table not applied yet (dormant) — fall back to in-code derivation.
+        }
+
+        return rows.map((r) => {
+          const o = overlay.get(`${r.ci_type}:${r.ci_id}`);
+          return {
+            ciType: r.ci_type,
+            ciId: r.ci_id,
+            accountId: r.account_id,
+            accountName: r.account_name,
+            displayName: r.display_name,
+            attributes: (r.attributes ?? []).map((kv) => ({
+              label: kv.label,
+              // Empty make/model concat collapses to '' — normalise to the dash.
+              value: kv.value && kv.value.length > 0 ? kv.value : "—",
+            })),
+            derivedDefault:
+              o?.derived ??
+              deriveCriticality(r.ci_type, {
+                accountRelationship: r.relationship,
+                accountLifecycleStage: r.lifecycle_stage,
+                deviceType: r.device_type,
+              }),
+            override: o?.override ?? null,
+          };
+        });
       } catch {
         return mockRepositories.crm.listConfigurationItems();
       }
@@ -1490,6 +1547,84 @@ export const postgresRepositories: Repositories = {
         );
         const { rows } = await client.query<{ count: string }>(
           `SELECT count(*)::text AS count FROM ci_relationship WHERE source = 'derived'`,
+        );
+        await client.query("COMMIT");
+        return Number(rows[0]?.count ?? 0);
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+
+    // ── CMDB criticality overlay (#648, migration 0132) ─────────────────────────
+    async setCiCriticalityOverride(input: CiCriticalityOverrideInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.setCiCriticalityOverride(input);
+      // Validate the CI exists in the union read-model first (a CI is a projection over
+      // silver, #645 — there is no FK to enforce this). Then UPSERT the overlay row,
+      // touching ONLY the override (+ its audit). If the row is new we must also stamp a
+      // derived_default so the NOT NULL holds — recompute it in code from the same rule.
+      const items = await this.listConfigurationItems();
+      const ci = items.find((c) => c.ciType === input.ciType && c.ciId === input.ciId);
+      if (!ci) throw new Error("CI not found in the configuration item register.");
+      await pool.query(
+        `INSERT INTO cmdb_ci_overlay (ci_type, ci_id, derived_default, override, override_at)
+         VALUES ($1, $2, $3::ci_criticality, $4::ci_criticality, CASE WHEN $4 IS NULL THEN NULL ELSE now() END)
+         ON CONFLICT (ci_type, ci_id)
+         DO UPDATE SET override = EXCLUDED.override,
+                       override_at = CASE WHEN EXCLUDED.override IS NULL THEN NULL ELSE now() END,
+                       updated_at = now()`,
+        [input.ciType, input.ciId, ci.derivedDefault, input.override],
+      );
+    },
+
+    async deriveCiCriticality(): Promise<number> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.deriveCiCriticality();
+      // Recompute derived_default for every CI from current silver (the same rule the
+      // migration seed runs), rewriting ONLY derived_default; override (+ audit) is
+      // preserved. One transaction so a partial recompute never half-derives the overlay.
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          `INSERT INTO cmdb_ci_overlay (ci_type, ci_id, derived_default)
+           SELECT 'account', a.id::text,
+                  (CASE
+                     WHEN a.relationship::text = 'customer' AND a.lifecycle_stage::text = 'managed_active' THEN 'high'
+                     WHEN a.relationship::text = 'customer' THEN 'medium'
+                     WHEN a.relationship::text = 'partner' THEN 'medium'
+                     ELSE 'low'
+                   END)::ci_criticality
+             FROM account a
+           ON CONFLICT (ci_type, ci_id)
+           DO UPDATE SET derived_default = EXCLUDED.derived_default, updated_at = now()`,
+        );
+        await client.query(
+          `INSERT INTO cmdb_ci_overlay (ci_type, ci_id, derived_default)
+           SELECT 'device', d.id::text,
+                  (CASE
+                     WHEN lower(d.device_type) IN ('server', 'network') THEN 'high'
+                     WHEN lower(d.device_type) IN ('workstation', 'mobile', 'laptop', 'desktop') THEN 'medium'
+                     ELSE 'low'
+                   END)::ci_criticality
+             FROM device d
+            WHERE d.account_id IS NOT NULL
+           ON CONFLICT (ci_type, ci_id)
+           DO UPDATE SET derived_default = EXCLUDED.derived_default, updated_at = now()`,
+        );
+        await client.query(
+          `INSERT INTO cmdb_ci_overlay (ci_type, ci_id, derived_default)
+           SELECT 'user', c.id::text, 'medium'::ci_criticality
+             FROM contact c
+            WHERE c.account_id IS NOT NULL
+           ON CONFLICT (ci_type, ci_id)
+           DO UPDATE SET derived_default = EXCLUDED.derived_default, updated_at = now()`,
+        );
+        const { rows } = await client.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM cmdb_ci_overlay`,
         );
         await client.query("COMMIT");
         return Number(rows[0]?.count ?? 0);

@@ -906,6 +906,35 @@ helpers in `src/lib/cmdb/relationship.ts`. Backs the CI-detail "Relationships" p
 neighbourhood dependency-graph view. PII-free: an edge is two CI business keys + a relation +
 an optional internal note; CI names/attributes resolve live from the read-only register.
 
+### CMDB criticality overlay — `cmdb_ci_overlay` table (ADR-0078/0097, migration 0132, #648)
+
+The CMDB's per-CI **criticality / business-impact** overlay: one row per Configuration Item
+(#648, parent #372; CMDB authority ADR authored in parallel under #646 / PR #812). Where
+`ci_relationship` (0131) is the **edge** overlay, this is the **attribute** twin — both
+**archetype D (app-native overlay)** hung off the read-only `cmdb_ci` union (#645), keyed by
+the polymorphic CI **business key** `(ci_type, ci_id)` (text + CHECK on `account|user|device`,
+PRIMARY KEY), **not FKs** (a CI is a projection; `ci_id` is unique only within a `ci_type`; the
+app validates the CI in the union before an UPSERT). A separate table, not a column on
+`ci_relationship` — different grain (one CI vs one edge).
+
+Each row carries `derived_default` + a nullable `override` (both `ci_criticality` enum =
+`critical|high|medium|low`). **Effective criticality = `override ?? derived_default`** — the
+weighting input for impact analysis (#650). The **derived_default** is computed from EXISTING
+silver attributes (account `relationship` × `lifecycle_stage`; device `device_type`) and
+recomputable via `crm.deriveCiCriticality()` (the same rule the migration seed and
+`src/lib/cmdb/criticality.ts::deriveCriticality` encode, so SQL and code never diverge); it
+**never** assigns `critical` (reserved for an explicit human override). The **override** is an
+admin's rating (`cmdb:write`, with `override_by`/`override_at` audit) that **survives
+re-derivation** — the derivation rewrites ONLY `derived_default`, never `override` (the same
+survival pattern manual edges use). Indexed on `override` and `derived_default`.
+
+Gated by `cmdb:write` (admin-only, ADR-0045) on writes (`crm.setCiCriticalityOverride` /
+`crm.deriveCiCriticality`); read folded into `crm.listConfigurationItems()` (merged in code,
+with an in-code derived fallback so the badge is meaningful before the overlay is seeded).
+Backs the criticality badge on the CI register + the CI-detail criticality panel. PII-free: a
+row is a CI business key + a rating + an admin/timestamp audit; CI names/attributes resolve
+live from the read-only register. App-native — IT Glue write-back is a **separate gated slice**.
+
 ### Agent autonomy dial — `agent_autopilot_policy` table (ADR-0087, migration 0123, #721)
 
 The data-driven **autonomy dial** for orchestration agents: one CURRENT autonomy rung per

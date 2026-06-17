@@ -3149,6 +3149,33 @@ export interface ConfigurationItem {
   accountName: string | null;
   displayName: string;
   attributes: { label: string; value: string }[];
+  /**
+   * Per-CI criticality / business-impact overlay (#648, `cmdb_ci_overlay`, migration
+   * 0132). `derivedDefault` is computed from silver attributes (recomputable);
+   * `override` is an admin's sticky rating (null = none). The EFFECTIVE criticality —
+   * what the badge + impact analysis (#650) use — is `override ?? derivedDefault`
+   * (resolve via `effectiveCriticality` in `src/lib/cmdb/criticality.ts`). Defaults
+   * apply even before the overlay table is seeded (the read path falls back to the
+   * derived rule), so these are always present on a CI.
+   */
+  derivedDefault: Criticality;
+  override: Criticality | null;
+}
+
+/**
+ * CI criticality / business-impact scale (#648, the `ci_criticality` DB enum,
+ * migration 0132), highest → lowest. `critical` is reserved for an explicit admin
+ * override — the derived rule never auto-assigns it. Helpers (labels, weights,
+ * derive + effective resolution) live in `src/lib/cmdb/criticality.ts`.
+ */
+export type Criticality = "critical" | "high" | "medium" | "low";
+
+/** Set/clear an admin criticality override on a CI (`cmdb:write`). `override: null`
+ *  clears it (effective falls back to the derived default). */
+export interface CiCriticalityOverrideInput {
+  ciType: CiType;
+  ciId: string;
+  override: Criticality | null;
 }
 
 // ── CMDB relationship layer (#647, epic #372, ADR-0078) ──────────────────────

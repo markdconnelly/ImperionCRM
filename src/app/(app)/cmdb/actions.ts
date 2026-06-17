@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { asCiType } from "@/lib/cmdb/ci";
+import { asCriticality } from "@/lib/cmdb/criticality";
 import type { CiType } from "@/types";
 
 /**
@@ -95,4 +96,44 @@ export async function deriveCiRelationshipsAction(formData: FormData): Promise<v
   const ciType = asCiType(String(formData.get("ciType") ?? ""));
   const ciId = String(formData.get("ciId") ?? "").trim();
   if (ciType && ciId) revalidateCi(ciType, ciId);
+}
+
+/**
+ * Set or clear the admin CRITICALITY override on a CI (#648, `cmdb_ci_overlay`,
+ * migration 0132). `cmdb:write`, re-asserted server-side. An empty/`"inherit"` value
+ * clears the override (effective criticality falls back to the derived default). The
+ * override SURVIVES re-derivation — only the derived default is ever recomputed. Both
+ * the CI detail and the register show the badge, so both are revalidated.
+ */
+export async function setCiCriticalityOverrideAction(formData: FormData): Promise<void> {
+  await requireCapability("cmdb:write");
+  const ciType = readCiType(formData, "ciType");
+  const ciId = String(formData.get("ciId") ?? "").trim();
+  if (!ciId) throw new Error("Missing CI id.");
+  // Empty string / "inherit" → clear the override; otherwise narrow to a known level.
+  const raw = String(formData.get("override") ?? "").trim();
+  const override = raw === "" || raw === "inherit" ? null : asCriticality(raw);
+  if (raw !== "" && raw !== "inherit" && override === null) {
+    throw new Error("Invalid criticality level.");
+  }
+
+  const { crm } = getRepositories();
+  await crm.setCiCriticalityOverride({ ciType, ciId, override });
+  revalidateCi(ciType, ciId);
+  revalidatePath("/cmdb");
+}
+
+/**
+ * Recompute the DERIVED-DEFAULT criticality for every CI from current silver (on demand).
+ * Admin overrides are untouched. `cmdb:write`. Re-runnable; the authoritative scheduled
+ * recompute can also be a backend/pipeline job (ADR-0042) — this is the GUI trigger.
+ */
+export async function deriveCiCriticalityAction(formData: FormData): Promise<void> {
+  await requireCapability("cmdb:write");
+  const { crm } = getRepositories();
+  await crm.deriveCiCriticality();
+  const ciType = asCiType(String(formData.get("ciType") ?? ""));
+  const ciId = String(formData.get("ciId") ?? "").trim();
+  if (ciType && ciId) revalidateCi(ciType, ciId);
+  revalidatePath("/cmdb");
 }

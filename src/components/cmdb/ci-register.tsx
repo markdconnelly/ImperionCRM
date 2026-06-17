@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { CI_TYPE_LABEL, CI_TYPE_ICON, CI_TYPES, ciKey } from "@/lib/cmdb/ci";
+import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
 import type { CiType, ConfigurationItem } from "@/types";
 
 /**
@@ -93,6 +94,7 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
                 <th className="px-4 py-2 font-medium">CI</th>
                 <th className="px-4 py-2 font-medium">Type</th>
                 <th className="px-4 py-2 font-medium">Account</th>
+                <th className="px-4 py-2 font-medium">Criticality</th>
                 <th className="px-4 py-2 font-medium">Key attributes</th>
                 <th className="px-4 py-2 font-medium" />
               </tr>
@@ -100,7 +102,7 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-dim">
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-dim">
                     No configuration items{items.length > 0 ? " match the filters" : " yet"}.
                   </td>
                 </tr>
@@ -121,6 +123,13 @@ export function CiRegister({ items }: { items: ConfigurationItem[] }) {
                     </td>
                     <td className="px-4 py-2 text-dim">{CI_TYPE_LABEL[ci.ciType]}</td>
                     <td className="px-4 py-2 text-dim">{ci.accountName ?? "—"}</td>
+                    <td className="px-4 py-2">
+                      <CriticalityBadge
+                        derivedDefault={ci.derivedDefault}
+                        override={ci.override}
+                        size="xs"
+                      />
+                    </td>
                     <td className="px-4 py-2 text-dim">
                       <span className="line-clamp-1">
                         {ci.attributes.map((a) => `${a.label}: ${a.value}`).join(" · ")}

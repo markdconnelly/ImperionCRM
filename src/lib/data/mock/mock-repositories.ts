@@ -369,6 +369,14 @@ export const mockRepositories: Repositories = {
     async deriveCiRelationships() {
       return 0;
     },
+    // CMDB criticality overlay (#648) — no overlay in mock mode; the write throws (no
+    // DB) like the other overlay writes, and the derivation is a 0-row no-op.
+    async setCiCriticalityOverride() {
+      throw new Error("setCiCriticalityOverride requires a database connection.");
+    },
+    async deriveCiCriticality() {
+      return 0;
+    },
     async listInvoices() {
       return [];
     },

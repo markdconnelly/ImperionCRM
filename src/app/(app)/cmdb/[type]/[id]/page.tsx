@@ -8,6 +8,8 @@ import { canSeeCmdb } from "@/lib/auth/roles";
 import { can } from "@/lib/auth/policy";
 import { CI_TYPE_LABEL, CI_TYPE_ICON, asCiType } from "@/lib/cmdb/ci";
 import { CiRelationships } from "@/components/cmdb/ci-relationships";
+import { CiCriticality } from "@/components/cmdb/ci-criticality";
+import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -70,12 +72,13 @@ export default async function CiDetailPage({
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-panel-2 text-dim">
             <Icon name={CI_TYPE_ICON[ci.ciType]} size={18} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-text">{ci.displayName}</p>
             <p className="text-xs text-dim">
               {CI_TYPE_LABEL[ci.ciType]} · CI id {ci.ciId}
             </p>
           </div>
+          <CriticalityBadge derivedDefault={ci.derivedDefault} override={ci.override} />
         </div>
 
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
@@ -107,6 +110,8 @@ export default async function CiDetailPage({
           its source system — the CMDB never writes.
         </p>
       </div>
+
+      <CiCriticality ci={ci} canWrite={canWrite} />
 
       <CiRelationships
         ci={ci}
