@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-16T18:00:00Z
+timestamp: 2026-06-17T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -222,4 +222,7 @@ Expansion of remaining ⏳ concepts is tracked in
 ([#535](https://github.com/markdconnelly/ImperionCRM/issues/535)) is **live**: a PR
 changing a silver table with a ✅ concept file must update that file in the same PR
 (see [semantic-layer-gate](../../operations/semantic-layer-gate.md)). The domain column
-feeds the planned `icm-conformance` check ([#702](https://github.com/markdconnelly/ImperionCRM/issues/702)).
+feeds the **live** `icm-conformance` check ([#702](https://github.com/markdconnelly/ImperionCRM/issues/702)):
+every ICM `okf_rooms` entry must resolve to a concept-bearing (✅) row here, else the
+gate fails the PR (`scripts/agent-yaml-gate.mjs`; see
+[agent-yaml-schema](../../agents/agent-yaml-schema.md)).

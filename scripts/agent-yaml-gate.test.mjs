@@ -4,6 +4,8 @@ import {
   checkSubset,
   evaluateManifest,
   parseAgentYaml,
+  parseCoverageMatrix,
+  checkRoomResolution,
   VALID_MODELS,
 } from "./agent-yaml-gate.mjs";
 
@@ -147,6 +149,107 @@ describe("evaluateManifest", () => {
     expect(r.ok).toBe(false);
     expect(r.errors.some((e) => e.includes("settled-stack model"))).toBe(true);
     expect(r.errors.some((e) => e.includes("graph.send"))).toBe(true);
+  });
+});
+
+// A trimmed coverage-matrix fixture covering each shape the parser must handle:
+// linked object cells, plain (unlinked) cells, `→` / comma suffixes, ✅ vs ⏳.
+const MATRIX_MD = [
+  "# Master coverage matrix",
+  "",
+  "| Object | Domain | Archetype | IKF | Acting ICM workflow |",
+  "|---|---|---|---|---|",
+  "| [account](tables/account.md) | kernel | A | ✅ | research |",
+  "| [contact](tables/contact.md) | kernel | A | ✅ | lead-response |",
+  "| [opportunity](tables/opportunity.md) | Sales | A | ✅ | sale→delivery |",
+  "| [interaction](tables/interaction.md) | Knowledge | B (+ gold) | ✅ | research |",
+  "| [consent_event](tables/consent_event.md) → current_consent | horizontal | C → F | ✅ | gates sends |",
+  "| [lead_score](tables/lead_score.md) | Marketing | C | ✅ | lead scoring |",
+  "| [campaign](tables/campaign.md) | Marketing | B | ✅ | lead-response |",
+  "| external_identity | horizontal | H | ⏳ | identity resolution |",
+  "| sbr_dimension_score, sbr_ticket | Customer Success | B | ⏳ | SBR-prep |",
+].join("\n");
+
+describe("parseCoverageMatrix", () => {
+  const m = parseCoverageMatrix(MATRIX_MD);
+
+  it("indexes linked objects with domain and concept status", () => {
+    expect(m.account).toEqual({ domain: "kernel", hasConcept: true });
+    expect(m.interaction).toEqual({ domain: "Knowledge", hasConcept: true });
+  });
+
+  it("keys a `→`-suffixed object on its first identifier", () => {
+    expect(m.consent_event).toEqual({ domain: "horizontal", hasConcept: true });
+    expect(m.current_consent).toBeUndefined();
+  });
+
+  it("keys a comma-list object on the first name only", () => {
+    expect(m.sbr_dimension_score).toEqual({ domain: "Customer Success", hasConcept: false });
+    expect(m.sbr_ticket).toBeUndefined();
+  });
+
+  it("marks a plain (unlinked) ⏳ object as concept-less", () => {
+    expect(m.external_identity).toEqual({ domain: "horizontal", hasConcept: false });
+  });
+
+  it("does not index the header or separator rows", () => {
+    expect(m.object).toBeUndefined();
+  });
+});
+
+describe("checkRoomResolution", () => {
+  const m = parseCoverageMatrix(MATRIX_MD);
+
+  it("passes when every room resolves to a concept-bearing matrix row", () => {
+    expect(checkRoomResolution(["contact", "account", "interaction"], m)).toEqual([]);
+  });
+
+  it("FAILS an okf_room that does not resolve to any matrix object (typo/phantom)", () => {
+    const errs = checkRoomResolution(["contact", "contactt"], m);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toContain("'contactt' does not resolve");
+  });
+
+  it("FAILS an okf_room whose matrix row has no concept file (IKF ≠ ✅)", () => {
+    const errs = checkRoomResolution(["external_identity"], m);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toContain("no concept file");
+  });
+});
+
+describe("evaluateManifest — room resolution (#702)", () => {
+  const matrix = parseCoverageMatrix(MATRIX_MD);
+  const budgets = {
+    domainTools: ["pg.read"],
+    domainRooms: ["contact", "account", "interaction", "made_up_room"],
+    constitutionTools: ["pg.read"],
+    constitutionRooms: ["contact", "account", "interaction", "made_up_room"],
+  };
+  const manifest = () => ({
+    name: "lead-response",
+    model: "claude-sonnet-4-5",
+    system_compose: ["../../../CONSTITUTION.md", "../room.md", "./prose.md"],
+    tools: ["pg.read"],
+    okf_rooms: ["contact", "account", "interaction"],
+    autonomy_rung: "L1",
+  });
+
+  it("passes when all rooms resolve in the matrix", () => {
+    const r = evaluateManifest({ manifest: manifest(), ...budgets, matrix, label: "wf/agent.yaml" });
+    expect(r).toEqual({ ok: true, errors: [] });
+  });
+
+  it("FAILS a room that is in-budget but does not resolve in the matrix", () => {
+    const mft = manifest();
+    mft.okf_rooms = ["contact", "made_up_room"]; // in the domain budget, absent from matrix
+    const r = evaluateManifest({ manifest: mft, ...budgets, matrix, label: "wf/agent.yaml" });
+    expect(r.ok).toBe(false);
+    expect(r.errors.some((e) => e.includes("wf/agent.yaml") && e.includes("made_up_room"))).toBe(true);
+  });
+
+  it("skips room resolution when no matrix is supplied (back-compat)", () => {
+    const r = evaluateManifest({ manifest: manifest(), ...budgets, label: "wf/agent.yaml" });
+    expect(r).toEqual({ ok: true, errors: [] });
   });
 });
 
