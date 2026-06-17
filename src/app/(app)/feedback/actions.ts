@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { ticketsService } from "@/lib/services";
 
 /**
- * Feedback files an Autotask ticket in the app-dev queue (#100, ADR-0058 —
+ * Feedback files an Autotask ticket in the app-dev queue (#100, ADR-0078 —
  * supersedes ADR-0013's GitHub-issue coupling).
  *
  * - Open to every signed-in employee (no capability gate by design — feedback
