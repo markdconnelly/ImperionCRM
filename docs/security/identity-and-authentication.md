@@ -1,12 +1,17 @@
 # Identity & Authentication
 
-How Imperion CRM authenticates users. Implements ADR-0002 (Entra ID as sole IdP) and
-ADR-0005 (Auth.js + certificate client assertion).
+How **Imperion Business Manager** authenticates users. Implements ADR-0002 (Entra ID as
+sole IdP) and ADR-0005 (Auth.js + certificate client assertion). For *authorization* —
+who can do what *after* sign-in — see [authorization-model](authorization-model.md) and
+the canonical [ADR-0095](../decision-records/ADR-0095-authorization-rbac-consolidated.md).
 
-> **Status:** implementation on branch `feat/entra-auth`, pending build/sign-in
-> verification (the dev host had Node network-blocked by an Intune firewall
-> policy during authoring; see runbooks). Do not treat as production-ready until
-> `npm run typecheck`/`build` and a real sign-in pass.
+[← Security](README.md) · [Documentation library](../README.md) ·
+[unified-security-standard](unified-security-standard.md)
+
+> **Status:** **live.** Entra SSO (certificate client assertion) is deployed and
+> serving on Azure App Service (`imperioncrm.azurewebsites.net`); break-glass is wired
+> (CLAUDE.md §6). The interim note about a Node-network-blocked dev host is resolved —
+> see the [runbook](../runbooks/dev-node-blocked-by-intune-firewall.md) if it recurs.
 
 ## What it is
 Server-side OpenID Connect sign-in against Microsoft Entra ID. Entra is the only
