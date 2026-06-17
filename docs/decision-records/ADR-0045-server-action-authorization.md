@@ -6,8 +6,11 @@ date: 2026-06-09
 repo: frontend
 summary: "Eight write capabilities gate every mutating server action via `requireCapability`; bootstrap fails closed."
 tags: [authz]
+consolidated_into: ADR-0095
 ---
 # ADR-0045: Server-action authorization (write capabilities) & fail-closed bootstrap
+
+> Consolidated into [ADR-0095](ADR-0095-authorization-rbac-consolidated.md). Retained for history.
 
 | Field | Value |
 |---|---|
