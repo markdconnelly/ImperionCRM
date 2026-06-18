@@ -152,9 +152,16 @@ bodies + audit `detail` JSON, so on top of the middleware sign-in gate it (a) va
 `parentId` is a well-formed UUID and (b) requires a **provisioned acting user**
 (`resolveActingUser`), failing closed to an empty feed for unprovisioned / non-employee
 sessions — exactly as the notifications route does. It does **not** enforce
-object/account-scoped visibility; whether reads should become object-scoped (a
-`canReadWorkParent`-style predicate over the task→project→account chain) is the open
-decision tracked in **#884**.
+object/account-scoped visibility.
+
+Whether reads should become object-scoped (a `canReadWorkParent`-style predicate over the
+task→project→account chain) was the open question in **#884**; it is now **decided**.
+**[ADR-0100](../decision-records/ADR-0100-broad-employee-read-visibility-v1.md)** accepts
+broad-employee-read as the v1 posture — single trusted tenant, global roles, no
+account-visibility model to filter against — keeping the #883 defense-in-depth as the
+pattern for sensitive read feeds. Object/account-scoped visibility is deferred to v2,
+triggered only by a real driver (compartmented clients, restricted-access contractors, or
+a least-privilege compliance requirement).
 
 ---
 
