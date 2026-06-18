@@ -995,12 +995,15 @@ erDiagram
 
     CONNECTION {
       uuid id PK
-      text scope "user|company"
-      uuid owner_user_id FK "null for company"
+      text scope "user(personal)|company|client (ADR-0103)"
+      uuid owner_user_id FK "null for company/client"
+      uuid account_id FK "owning account for client scope; null otherwise (ADR-0103)"
       text provider "m365|youtube|linkedin|facebook|autotask|itglue|myitprocess|televy|quotemanager|gdap|…"
       text status "active|pending|expired|revoked|error"
       text[] scopes
-      text keyvault_secret_ref "token ref only — never the token"
+      text keyvault_secret_ref "KV secret NAME — never the token/secret value"
+      text auth_method "certificate|secret (enterprise app); null for OAuth (ADR-0103)"
+      text cert_thumbprint "cert when auth_method=certificate (ADR-0103)"
       jsonb sync_cursor
       timestamptz last_sync_at
       int poll_interval_minutes "pipeline poll cadence; 0 = manual/paused (ADR-0038)"
