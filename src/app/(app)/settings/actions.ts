@@ -10,8 +10,13 @@ import { requireCapability } from "@/lib/auth/guard";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
 import { connectionsService, credentialsService, pipelineService } from "@/lib/services";
-import { classifyServiceError, isBackendNotConfigured } from "@/lib/services/call-guard";
+import {
+  callServiceWithFallback,
+  classifyServiceError,
+  isBackendNotConfigured,
+} from "@/lib/services/call-guard";
 import { ServiceCallError } from "@/lib/services/external-client";
+import { docusignTestResult, type DocusignTestResult } from "@/lib/integrations/docusign-test";
 import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
 import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
 import { isPersonalOAuthProvider } from "@/lib/integrations/personal-oauth";
@@ -246,6 +251,26 @@ export async function connectDocusignAction(formData: FormData) {
 
   // redirect() throws — keep it last, outside the try/catch.
   if (consentUrl) redirect(consentUrl);
+}
+
+/**
+ * Test the DocuSign connection from the GUI (#867). Calls the backend status probe
+ * (backend #143) via the web app's managed identity — boundary-clean, the browser
+ * never touches the backend (ADR-0028/0035) — and maps the outcome to a renderable
+ * result. The probe mints a token as the consent check, so a green result means
+ * DocuSign is genuinely ready to send envelopes (DocuSign #318, go-live runbook
+ * #850). Gated on `settings:write`; returns a value (the card renders it inline).
+ */
+export async function testDocusignConnectionAction(): Promise<DocusignTestResult> {
+  await requireCapability("settings:write");
+  const outcome = await callServiceWithFallback(() => connectionsService.docusignStatus(), {
+    label: "testDocusignConnectionAction",
+    notConfigured: "DocuSign is not configured in this environment yet.",
+    failed: "DocuSign status check failed.",
+  });
+  return outcome.ok
+    ? docusignTestResult({ ok: true, body: outcome.value })
+    : docusignTestResult({ ok: false, kind: outcome.kind, status: outcome.status });
 }
 
 /**

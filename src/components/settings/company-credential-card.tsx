@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { PollFrequency } from "@/components/integrations/poll-frequency";
 import { credentialCardState } from "@/lib/integrations/credential-card-state";
@@ -8,6 +8,7 @@ import {
   providerIsPollable,
   type CompanyProvider,
 } from "@/lib/integrations/company-providers";
+import type { DocusignTestResult, DocusignTestTone } from "@/lib/integrations/docusign-test";
 import type { ConnectionRow } from "@/types";
 
 const STATUS_TONE: Record<string, string> = {
@@ -16,6 +17,13 @@ const STATUS_TONE: Record<string, string> = {
   expired: "text-amber",
   revoked: "text-red",
   error: "text-red",
+};
+
+const TEST_TONE: Record<DocusignTestTone, string> = {
+  green: "text-green",
+  amber: "text-amber",
+  red: "text-red",
+  dim: "text-dim",
 };
 
 /**
@@ -35,6 +43,7 @@ export function CompanyCredentialCard({
   refreshAction,
   refreshable = false,
   consentAction,
+  testAction,
 }: {
   provider: CompanyProvider;
   connection: ConnectionRow | null;
@@ -47,6 +56,8 @@ export function CompanyCredentialCard({
   refreshable?: boolean;
   /** Admin-consent action for an `adminConsent` credential provider (DocuSign). */
   consentAction?: (formData: FormData) => void | Promise<void>;
+  /** Live readiness probe for an `adminConsent` provider (DocuSign, #867). */
+  testAction?: () => Promise<DocusignTestResult>;
 }) {
   const configured = connection != null;
   // A row with a failed/never-completed save must not hide the entry form (#176).
@@ -59,6 +70,10 @@ export function CompanyCredentialCard({
   // can be rotated one-at-a-time. The generic providers store ONE JSON blob, so a partial
   // submit would clobber the unentered fields — they must always re-enter everything.
   const partialRotation = provider.adminConsent === true;
+  // Live "Test connection" probe state (#867) — calls the backend status endpoint
+  // through the server action and renders the mapped result inline on the card.
+  const [testResult, setTestResult] = useState<DocusignTestResult | null>(null);
+  const [testing, startTest] = useTransition();
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-panel p-4">
@@ -229,6 +244,46 @@ export function CompanyCredentialCard({
             Grant admin consent
           </button>
         </form>
+      )}
+
+      {/* Live readiness probe (#867) — calls the backend status endpoint via the web
+          app's managed identity (boundary-clean) and verifies a token actually mints. */}
+      {provider.adminConsent && testAction && (
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            disabled={testing}
+            onClick={() => startTest(async () => setTestResult(await testAction()))}
+            className="inline-flex items-center gap-1.5 self-start rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:border-accent hover:text-text disabled:opacity-50"
+            title="Call the backend and verify DocuSign admin consent + token mint"
+          >
+            <Icon
+              name={testing ? "Loader2" : "PlugZap"}
+              size={14}
+              className={testing ? "animate-spin" : undefined}
+            />
+            {testing ? "Testing…" : "Test connection"}
+          </button>
+          {testResult && (
+            <p className={`text-xs leading-relaxed ${TEST_TONE[testResult.tone]}`}>
+              <span className="font-medium">{testResult.label}.</span>{" "}
+              <span className="text-dim">{testResult.detail}</span>
+              {testResult.consentUrl && (
+                <>
+                  {" "}
+                  <a
+                    href={testResult.consentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent underline hover:text-text"
+                  >
+                    Grant consent
+                  </a>
+                </>
+              )}
+            </p>
+          )}
+        </div>
       )}
 
       {configured && (
