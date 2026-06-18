@@ -103,7 +103,7 @@ Verified against source.
 | `/api/qbo/callback` | GET | Intuit (QuickBooks) OAuth redirect target — forwards `code`+`realmId`+`state` to the backend, bounces to Settings with `qbo=<result>` | Session + `settings:write` (admin only); CSRF via the backend's one-time state |
 | `/api/gdap/callback` | GET | Microsoft GDAP admin-consent redirect target — finalizes delegated-admin consent state | Session + `settings:write` (admin only) |
 | `/api/notifications` | GET | The signed-in user's in-app notifications — `?unread=1` filters to unread, `?limit` (1–100, default 30) paginates; returns `{ notifications, unreadCount }` | Session (returns an empty payload when unauthenticated); read-only |
-| `/api/work/{parentType}/{parentId}/activity` | GET | Work-object activity feed (ADR-0064 A1, #330) — `?comments=1` comments-only, `?limit`/`?offset` paginate; returns `{ entries }` newest-first (comments ∪ audit events). Soft-deleted comment bodies never surface | Session (middleware-gated); read-only |
+| `/api/work/{parentType}/{parentId}/activity` | GET | Work-object activity feed (ADR-0064 A1, #330) — `?comments=1` comments-only, `?limit`/`?offset` paginate; returns `{ entries }` newest-first (comments ∪ audit events). Soft-deleted comment bodies never surface | Session (middleware-gated) + UUID-validated `parentId` + provisioned acting user, else empty (#883); read-only |
 | `/api/auth/[...nextauth]` | (NextAuth) | Entra ID auth handler (sign-in / callback / session). | Managed by NextAuth + Entra (ADR-0005) |
 
 ---
