@@ -12,7 +12,7 @@ import {
   buildConnectorCatalog,
   GLOBAL_SCOPE,
 } from "@/lib/integrations/connector-catalog";
-import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
+import { isRefreshable } from "@/lib/integrations/connector-registry";
 import { QBO_CONNECT_NOTICES, isQboConnectResult } from "@/lib/integrations/qbo-connect";
 import {
   connectDocusignAction,
@@ -123,7 +123,7 @@ export default async function ConnectionsPage({
               disconnectAction={disconnectAction}
               pollAction={setPollIntervalAction}
               refreshAction={refreshNowAction}
-              refreshable={p.key in REFRESH_SOURCES}
+              refreshable={isRefreshable(p.key)}
             />
           ))}
         </div>
