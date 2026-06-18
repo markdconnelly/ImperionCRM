@@ -18,7 +18,7 @@ import {
 import { ServiceCallError } from "@/lib/services/external-client";
 import { docusignTestResult, type DocusignTestResult } from "@/lib/integrations/docusign-test";
 import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
-import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
+import { connectorFor } from "@/lib/integrations/connector-registry";
 import { isPersonalOAuthProvider } from "@/lib/integrations/personal-oauth";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 
@@ -93,7 +93,7 @@ export async function setPollIntervalAction(formData: FormData) {
 export async function refreshNowAction(formData: FormData) {
   await requireCapability("settings:write");
   const providerKey = String(formData.get("provider") ?? "");
-  const source = REFRESH_SOURCES[providerKey];
+  const source = connectorFor(providerKey).refresh;
   if (!source) return;
 
   try {
