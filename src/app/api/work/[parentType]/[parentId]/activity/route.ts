@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRepositories } from "@/lib/data";
+import { resolveActingUser } from "@/lib/services/acting-user";
 import type { WorkParentType } from "@/types";
 
 /**
@@ -9,11 +10,20 @@ import type { WorkParentType } from "@/types";
  *
  * Returns the comments-∪-audit-events feed newest-first, paginated. This is the
  * read surface the in-app feed polls for "post without a full reload" (the form
- * post itself goes through the server action). Auth is enforced by middleware —
- * every /api route except /api/auth requires a signed-in session. Read-only; it
- * never returns soft-deleted comment bodies (the view excludes them).
+ * post itself goes through the server action). Read-only; it never returns
+ * soft-deleted comment bodies (the view excludes them).
+ *
+ * Authz (#883, defense-in-depth): middleware gates a signed-in session, and on
+ * top of that this handler validates `parentId` is a well-formed UUID and
+ * requires a *provisioned* acting user (`app_user` row) — an unprovisioned /
+ * non-employee session fails closed to an empty feed (house style, mirrors the
+ * notifications route) rather than dumping comment bodies + audit detail JSON.
+ * It does NOT yet enforce object/account-scoped visibility: the app has no
+ * account-visibility model and reads are intentionally broad for employees;
+ * whether that should change is the deferred ADR (#884).
  */
 const PARENT_TYPES: readonly WorkParentType[] = ["task", "project", "milestone"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(
   request: Request,
@@ -22,6 +32,15 @@ export async function GET(
   const { parentType, parentId } = await params;
   if (!(PARENT_TYPES as readonly string[]).includes(parentType)) {
     return NextResponse.json({ error: "invalid parentType" }, { status: 400 });
+  }
+  if (!UUID_RE.test(parentId)) {
+    return NextResponse.json({ error: "invalid parentId" }, { status: 400 });
+  }
+  // Beyond the middleware sign-in gate: only a provisioned employee may read the
+  // feed. Unprovisioned / non-employee sessions get an empty feed (#883, #884).
+  const acting = await resolveActingUser();
+  if (!acting.ok) {
+    return NextResponse.json({ entries: [] });
   }
   const url = new URL(request.url);
   const commentsOnly = url.searchParams.get("comments") === "1";

@@ -1,3 +1,4 @@
+import { safeHttpUrl } from "@/lib/safe-url";
 import type { SharePointSiteRow } from "@/types";
 
 // Drillable SharePoint site inventory for the Company 360 (#255, ADR-0051
@@ -48,6 +49,9 @@ export function SharePointSites({ sites }: { sites: SharePointSiteRow[] }) {
       {sites.map((s) => {
         const title = s.displayName ?? s.webUrl ?? s.externalId;
         const used = toBytes(s.storageUsedBytes);
+        // webUrl is integration-sourced bronze (untrusted) — only link http(s),
+        // anything else (javascript:/data:/…) renders as nothing (#883).
+        const siteHref = safeHttpUrl(s.webUrl);
         return (
           <details
             key={`${s.tenantId}:${s.externalId}`}
@@ -82,9 +86,9 @@ export function SharePointSites({ sites }: { sites: SharePointSiteRow[] }) {
                 </div>
               )}
               <div className="col-span-2 flex flex-wrap items-center gap-x-4 gap-y-1 md:col-span-4">
-                {s.webUrl && (
+                {siteHref && (
                   <a
-                    href={s.webUrl}
+                    href={siteHref}
                     target="_blank"
                     rel="noreferrer"
                     className="text-sm text-accent underline-offset-2 hover:underline"

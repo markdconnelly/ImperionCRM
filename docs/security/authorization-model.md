@@ -138,6 +138,26 @@ bootstrap while Entra App Roles are assigned — marked **not-for-prod**; break-
 
 ---
 
+## Read access — broad for employees, with defense-in-depth on sensitive feeds
+
+Writes are capability-gated (layer 3); **reads are intentionally broad** — any signed-in
+employee may read most data, with the server-side **revenue/comp redaction** above as the
+notable exception. The app has **no account-scoped visibility model** (roles are global,
+not per-account), so there is currently nothing to filter an object read against.
+
+Where a read surface is sensitive enough to warrant more than the sign-in gate, the route
+adds **defense-in-depth** without inventing account-scoping. The work-activity feed
+(`/api/work/{parentType}/{parentId}/activity`, #883) is the pattern: it returns comment
+bodies + audit `detail` JSON, so on top of the middleware sign-in gate it (a) validates
+`parentId` is a well-formed UUID and (b) requires a **provisioned acting user**
+(`resolveActingUser`), failing closed to an empty feed for unprovisioned / non-employee
+sessions — exactly as the notifications route does. It does **not** enforce
+object/account-scoped visibility; whether reads should become object-scoped (a
+`canReadWorkParent`-style predicate over the task→project→account chain) is the open
+decision tracked in **#884**.
+
+---
+
 ## Layer 4 — AI surfaces are admin-only end to end
 
 `canSeeAgentPages` (admin-only) gates the **AI Agents** and **Board of Directors** pages
