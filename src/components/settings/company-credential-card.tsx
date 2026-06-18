@@ -22,6 +22,8 @@ const STATUS_TONE: Record<string, string> = {
  * One company system's credential card (ADR-0036). Renders either a write-only
  * credential form or the GDAP admin-consent button. Stored secrets are NEVER shown
  * — only the Key Vault reference and status. Re-submitting rotates the credential.
+ * A `provider.adminConsent` credential (DocuSign, #862) renders BOTH: the secret
+ * form AND a separate "Grant admin consent" button (`consentAction`).
  */
 export function CompanyCredentialCard({
   provider,
@@ -32,6 +34,7 @@ export function CompanyCredentialCard({
   pollAction,
   refreshAction,
   refreshable = false,
+  consentAction,
 }: {
   provider: CompanyProvider;
   connection: ConnectionRow | null;
@@ -42,6 +45,8 @@ export function CompanyCredentialCard({
   /** On-demand pipeline sync (pipeline ADR-0011); only rendered when `refreshable`. */
   refreshAction?: (formData: FormData) => void | Promise<void>;
   refreshable?: boolean;
+  /** Admin-consent action for an `adminConsent` credential provider (DocuSign). */
+  consentAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const configured = connection != null;
   // A row with a failed/never-completed save must not hide the entry form (#176).
@@ -50,6 +55,10 @@ export function CompanyCredentialCard({
   // Poll cadence + on-demand refresh are only meaningful for polled sources (#531,
   // ADR-0038 / pollDue()); consent/OAuth providers (QBO, GDAP) have nothing polling them.
   const pollable = providerIsPollable(provider);
+  // DocuSign's store writes each field to its own Key Vault secret, so a stored secret
+  // can be rotated one-at-a-time. The generic providers store ONE JSON blob, so a partial
+  // submit would clobber the unentered fields — they must always re-enter everything.
+  const partialRotation = provider.adminConsent === true;
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-panel p-4">
@@ -158,11 +167,23 @@ export function CompanyCredentialCard({
                     </option>
                   ))}
                 </select>
+              ) : f.type === "textarea" ? (
+                <textarea
+                  name={f.name}
+                  required={f.required && !(stored && partialRotation)}
+                  rows={4}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={
+                    f.secret && stored ? "•••••••• (stored — paste to rotate)" : f.placeholder
+                  }
+                  className="rounded-md border border-border bg-panel-2 px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-accent"
+                />
               ) : (
                 <input
                   type={f.secret ? "password" : "text"}
                   name={f.name}
-                  required={f.required}
+                  required={f.required && !(f.secret && stored && partialRotation)}
                   autoComplete="off"
                   placeholder={
                     f.secret && stored ? "•••••••• (stored — enter to rotate)" : f.placeholder
@@ -191,6 +212,22 @@ export function CompanyCredentialCard({
               </button>
             )}
           </div>
+        </form>
+      )}
+
+      {/* DocuSign-style credential that ALSO needs a one-time admin grant (#862) — the
+          form above stores the secrets; this grants JWT impersonation consent. */}
+      {provider.adminConsent && consentAction && (
+        <form action={consentAction} className="border-t border-border pt-2">
+          <input type="hidden" name="provider" value={provider.key} />
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:border-accent hover:text-text"
+            title="Open DocuSign to grant the one-time admin impersonation consent (per environment)"
+          >
+            <Icon name="ShieldCheck" size={14} />
+            Grant admin consent
+          </button>
         </form>
       )}
 

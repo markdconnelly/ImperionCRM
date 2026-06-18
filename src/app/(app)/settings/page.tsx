@@ -13,6 +13,7 @@ import { saveAgentSettingsAction } from "@/app/(app)/agents/actions";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { getRepositories } from "@/lib/data";
 import {
+  connectDocusignAction,
   connectQuickBooksAction,
   disconnectAction,
   grantGdapAction,
@@ -212,6 +213,7 @@ export default async function SettingsPage({
             connection={companyByProvider.get(p.key) ?? null}
             saveAction={saveCredentialAction}
             gdapAction={p.key === "qbo" ? connectQuickBooksAction : grantGdapAction}
+            consentAction={p.key === "docusign" ? connectDocusignAction : undefined}
             disconnectAction={disconnectAction}
             pollAction={setPollIntervalAction}
             refreshAction={refreshNowAction}
