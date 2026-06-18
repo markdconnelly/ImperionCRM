@@ -1,3 +1,12 @@
+---
+adr: 0103
+title: "Connection credential registry — client scope + account linkage + cert-or-secret auth (extend connection, not a new table)"
+status: accepted
+date: 2026-06-18
+repo: frontend
+summary: "Resolves #904 (epic #903). Every Key-Vault-custodied credential becomes legible + governed: the GUI lists each secret's NAME (never value) under a human-readable naming standard (conn-<scope>-<provider>[-<tenantId|userId>]), classified by scope — user=personal, company=Imperion-as-its-own-client, client=managed customer — and linked to the account object where it belongs to a customer (many connections → one account; M365 ties to account via account_tenant). Extends the existing connection model (migration 0141: client scope + account_id + auth_method/cert_thumbprint) rather than a duplicate registry table. The M365 enterprise app authenticates by certificate OR secret. GUI = Settings catalog (#905) + account-page panel (#906) + account_tenant UI (#907); siblings = backend custody (BE #217) + LP estate discovery (LP #234)."
+tags: [connections, security]
+---
 # ADR-0103: Connection credential registry — scope taxonomy, account linkage, cert-or-secret
 
 | Field | Value |
