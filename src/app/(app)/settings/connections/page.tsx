@@ -22,6 +22,7 @@ import {
   refreshNowAction,
   saveCredentialAction,
   setPollIntervalAction,
+  testDocusignConnectionAction,
 } from "../actions";
 
 export const dynamic = "force-dynamic"; // live credential + instance state, never prerendered
@@ -118,6 +119,7 @@ export default async function ConnectionsPage({
               saveAction={saveCredentialAction}
               gdapAction={p.key === "qbo" ? connectQuickBooksAction : grantGdapAction}
               consentAction={p.key === "docusign" ? connectDocusignAction : undefined}
+              testAction={p.key === "docusign" ? testDocusignConnectionAction : undefined}
               disconnectAction={disconnectAction}
               pollAction={setPollIntervalAction}
               refreshAction={refreshNowAction}

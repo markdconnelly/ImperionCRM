@@ -545,6 +545,22 @@ export const connectionsService = {
       "/connections/docusign/consent",
       { method: "POST", body: JSON.stringify({}) },
     ),
+  /**
+   * Probe DocuSign readiness (#867; backend #143, GET /connections/docusign/status).
+   * The backend mints a JWT-impersonation token as the consent check and returns
+   * `consentGranted` (200), `consentGranted:false + consentUrl` when the one-time
+   * admin grant is pending (200), 501 when the secrets aren't configured, or 502
+   * when minting fails. No secret/token/key is ever returned (backend ADR-0056).
+   */
+  docusignStatus: () =>
+    callService<{
+      configured: boolean;
+      environment?: string;
+      accountId?: string;
+      consentGranted?: boolean;
+      consentUrl?: string;
+      detail?: string;
+    }>(services.integration, "/connections/docusign/status"),
 };
 
 /**
