@@ -16,7 +16,7 @@
  * `src/lib/expenses`. Comp-free: it never sees the mileage rate.
  */
 
-import type { ExpenseItemRow } from "@/types";
+import type { ExpenseCategoryRow, ExpenseItemRow } from "@/types";
 
 /** The report's calendar month an item is checked against. */
 export interface ReportPeriod {
@@ -37,27 +37,47 @@ function isInPeriod(itemDate: string, period: ReportPeriod): boolean {
   return year === period.year && month === period.month;
 }
 
+/** The three HARD rules an item can trip (the `expense_policy_violation` hard rows). */
+export type HardViolationReason = "dated_outside_month" | "missing_receipt" | "over_category_cap";
+
+/** Short, employee/admin-facing label per hard rule — shared by the surfaces that flag rows. */
+export const HARD_VIOLATION_LABEL: Record<HardViolationReason, string> = {
+  missing_receipt: "Missing receipt",
+  over_category_cap: "Over category cap",
+  dated_outside_month: "Dated outside month",
+};
+
 /**
- * Does a single item trip a HARD policy rule? Out-of-pocket items must have a receipt
- * and stay within the category hard cap; every item must be dated within the report
- * month. Mileage items are receipt-exempt (their $ is backend-derived) but still must
- * fall in the month. Mirrors the `expense_policy_violation` hard rows.
+ * Which HARD rule (if any) a single item trips — the single source of the per-item rule,
+ * returning the specific reason so surfaces can tell the employee *why* a row blocks the
+ * attest, not just that it does. Out-of-pocket items must have a receipt and stay within
+ * the category hard cap; every item must be dated within the report month. Mileage items
+ * are receipt-exempt (their $ is backend-derived) but still must fall in the month.
  */
+export function itemHardViolationReason(
+  item: ExpenseItemRow,
+  period: ReportPeriod,
+  caps: CategoryHardCaps = new Map(),
+): HardViolationReason | null {
+  // dated_outside_month (covers future_dated too — a future date is outside the month).
+  if (!isInPeriod(item.itemDate, period)) return "dated_outside_month";
+  if (item.kind === "out_of_pocket") {
+    // missing_receipt — out-of-pocket only (mileage is exempt).
+    if (!item.hasReceipt) return "missing_receipt";
+    // over_category_cap — only when the category carries a hard cap.
+    const cap = item.categoryName ? caps.get(item.categoryName) : null;
+    if (cap != null && item.amount > cap) return "over_category_cap";
+  }
+  return null;
+}
+
+/** Does a single item trip a HARD policy rule? Boolean view of `itemHardViolationReason`. */
 export function itemHasHardViolation(
   item: ExpenseItemRow,
   period: ReportPeriod,
   caps: CategoryHardCaps = new Map(),
 ): boolean {
-  // dated_outside_month (covers future_dated too — a future date is outside the month).
-  if (!isInPeriod(item.itemDate, period)) return true;
-  if (item.kind === "out_of_pocket") {
-    // missing_receipt — out-of-pocket only (mileage is exempt).
-    if (!item.hasReceipt) return true;
-    // over_category_cap — only when the category carries a hard cap.
-    const cap = item.categoryName ? caps.get(item.categoryName) : null;
-    if (cap != null && item.amount > cap) return true;
-  }
-  return false;
+  return itemHardViolationReason(item, period, caps) !== null;
 }
 
 /**
@@ -71,4 +91,29 @@ export function hasHardViolation(
   caps: CategoryHardCaps = new Map(),
 ): boolean {
   return items.some((i) => itemHasHardViolation(i, period, caps));
+}
+
+/**
+ * The ids of the items that trip a HARD rule — so the surfaces can highlight exactly
+ * which rows block the attest (employee page + admin review), not just that the report
+ * is blocked. Keeps the per-item rule in one place (`itemHasHardViolation`).
+ */
+export function hardViolationItemIds(
+  items: ExpenseItemRow[],
+  period: ReportPeriod,
+  caps: CategoryHardCaps = new Map(),
+): Set<string> {
+  return new Set(items.filter((i) => itemHasHardViolation(i, period, caps)).map((i) => i.id));
+}
+
+/**
+ * Build the `CategoryHardCaps` lookup the gate needs from the category catalog
+ * (`listExpenseCategories`). Keyed by `displayName` — the field `ExpenseItemRow.categoryName`
+ * carries — so the action, the employee page, and the admin review all resolve caps the
+ * same way without restating the mapping.
+ */
+export function capsFromCategories(
+  categories: Pick<ExpenseCategoryRow, "displayName" | "hardCap">[],
+): CategoryHardCaps {
+  return new Map(categories.map((c) => [c.displayName, c.hardCap]));
 }

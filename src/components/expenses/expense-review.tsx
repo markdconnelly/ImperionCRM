@@ -1,5 +1,12 @@
+import { cn } from "@/lib/cn";
 import { fmtUsd, periodLabel, STATE_LABEL } from "@/lib/expenses/overview";
 import { diffAgainstSnapshot } from "@/lib/expenses/corrections";
+import {
+  capsFromCategories,
+  itemHardViolationReason,
+  HARD_VIOLATION_LABEL,
+  type HardViolationReason,
+} from "@/lib/expenses/policy";
 import type { AdminExpenseReview, ExpenseCategoryRow, ExpenseItemRow } from "@/types";
 
 /**
@@ -119,6 +126,18 @@ export function ExpenseReview({
   // added/edited badge and we can list anything removed since the attest.
   const diff = diffAgainstSnapshot(detail.items, detail.attestedSnapshot);
 
+  // Residual hard-policy violations (ADR-0083, #895): the same gate the employee's attest
+  // enforces, recomputed on the live (post-correction) items so the admin sees what still
+  // breaks a hard rule before approving — and whether their corrections cleared it.
+  const caps = capsFromCategories(categories);
+  const period = { year: detail.periodYear, month: detail.periodMonth };
+  const violations = new Map<string, HardViolationReason>();
+  for (const it of detail.items) {
+    const reason = itemHardViolationReason(it, period, caps);
+    if (reason) violations.set(it.id, reason);
+  }
+  const hasViolations = violations.size > 0;
+
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-panel p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -131,6 +150,14 @@ export function ExpenseReview({
           {diff.changed && <span className="ml-2 text-amber">· corrected vs attest</span>}
         </div>
       </div>
+
+      {hasViolations && (
+        <p className="rounded-md border border-red/40 bg-red/10 px-2.5 py-2 text-xs text-red">
+          {violations.size} item{violations.size === 1 ? "" : "s"} still break a hard policy rule
+          (flagged below) — these would have blocked the employee&apos;s attest. Correct them before
+          approving.
+        </p>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-border">
         <table className="w-full text-sm">
@@ -157,9 +184,17 @@ export function ExpenseReview({
               detail.items.map((it) => {
                 const status = diff.status.get(it.id);
                 const correctable = it.kind === "out_of_pocket";
+                const reason = violations.get(it.id);
                 return (
-                  <tr key={it.id} className="bg-panel align-top">
-                    <td className="px-3 py-2">{it.itemDate}</td>
+                  <tr key={it.id} className={cn("bg-panel align-top", reason && "bg-red/5")}>
+                    <td className="px-3 py-2">
+                      {it.itemDate}
+                      {reason && (
+                        <span className="ml-2 inline-flex items-center rounded border border-red/40 bg-red/10 px-1.5 py-0.5 text-[11px] font-medium text-red">
+                          {HARD_VIOLATION_LABEL[reason]}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-dim">
                       {it.kind === "mileage" ? "Mileage" : (it.categoryName ?? "—")}
                     </td>

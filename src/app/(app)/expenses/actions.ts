@@ -8,6 +8,7 @@ import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 import { requireCapability } from "@/lib/auth/guard";
 import { str } from "@/lib/form-data";
 import { parsePeriod } from "@/lib/expenses/overview";
+import { capsFromCategories, hasHardViolation } from "@/lib/expenses/policy";
 
 /**
  * Employee expense actions (ADR-0083, #547). Every write is gated by the
@@ -58,6 +59,12 @@ export async function attestExpenseReportAction(formData: FormData) {
   const { crm } = getRepositories();
   const report = await crm.getExpenseReportForPeriod(employeeId, period.year, period.month);
   if (!report || report.state !== "open") return;
+  // Hard-gate (ADR-0083, mirrors the timesheet `hasHardDeviation` attest guard): refuse
+  // server-side while any item is missing a receipt / over a category hard cap / dated
+  // outside the report month. The employee UI disables Attest + flags the rows; this is
+  // the authoritative enforcement so the gate can't be bypassed by a stale/forged submit.
+  const caps = capsFromCategories(await crm.listExpenseCategories());
+  if (hasHardViolation(report.items, period, caps)) return;
   await crm.submitExpenseReport(report.id, employeeId);
   revalidatePath("/expenses");
   redirect(`/expenses?period=${str(formData, "period")}`);
