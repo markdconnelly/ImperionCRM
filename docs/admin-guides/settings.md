@@ -38,7 +38,6 @@ flowchart TB
     SET --> PROF["Profile<br/>identity · appearance · links"]
     SET --> AI["AI<br/>orchestrator preset · budget · spend"]
     SET --> CONN["Your connections<br/>personal OAuth accounts"]
-    SET --> CRED["Company systems<br/>org-wide credentials"]
     SET --> TEN["Tenant mapping<br/>customer tenant GUID → account"]
     SET --> TOOLS["Tools & configuration<br/>statuses · questions · custom fields · …"]
 ```
@@ -89,59 +88,13 @@ timeline (attributed first to the person, then to the company).
 > it is the same connection model as the standalone
 > [Integrations](../integrations/README.md) page, surfaced here for convenience.
 
-### Company systems (company credentials)
+### Company credentials → moved to Connections (#864)
 
-**The most security-sensitive tab.** Org-wide credentials for the integration
-engines, rendered from `COMPANY_PROVIDERS` (`src/lib/integrations/company-providers.ts`).
-
-How a credential is handled:
-
-- **Secrets are write-only.** Secret fields are password inputs that are **never
-  pre-filled or echoed back**. What you type is POSTed to the backend, which writes
-  it to **Key Vault**; only a *reference* is stored in this repo's connection row —
-  **never the secret itself** (CLAUDE.md §5).
-- Two collection styles:
-  - **`credential`** — a field form (API key / username / secret / region, etc.).
-  - **`consent`** — an admin-consent connect button, no key to paste (GDAP, and the
-    QuickBooks OAuth connect).
-  - **`credential` + `adminConsent`** — DocuSign needs BOTH: a secret form **and** a
-    one-time admin grant. The card renders the form *and* a **Grant admin consent**
-    button (`connectDocusignAction` → backend `/connections/docusign/consent`).
-- **Poll cadence + Refresh now** appear only for *pollable* providers
-  (`providerIsPollable` — `kind: "credential"`, not send-capable, not `adminConsent`).
-  Consent/OAuth providers (GDAP, QBO), the send-capable Meta token, and DocuSign are
-  not polled, so they get no cadence selector. Cadence is honoured by the pipeline via
-  `pollDue()` (ADR-0038).
-
-The configured company providers (verified against source):
-
-| Provider (key) | Kind | Purpose |
-| --- | --- | --- |
-| Microsoft GDAP (`gdap`) | consent | Granular Delegated Admin Privileges for Imperion's partner tenant — established by Microsoft admin consent. |
-| Autotask PSA (`autotask`) | credential | Kaseya Autotask REST — tickets, contracts, company records. |
-| IT Glue (`itglue`) | credential | IT Glue API key + region (US/EU/AU). |
-| My IT Process (`myitprocess`) | credential | My IT Process API key. |
-| Kaseya Quote Manager (`quotemanager`) | credential | Quote Manager API key + tenant/account id. |
-| Televy (`televy`) | credential | Assessment-report ingestion API key. |
-| QuickBooks Online (`qbo`) | consent | QuickBooks company connect (OAuth) — read-only financial facts. |
-| Dark Web ID (`darkwebid`) | credential | Compromised-credential exposure API key. |
-| Meta — Facebook / Instagram (`meta`) | credential, **send-capable** | Page access token + Page id. |
-| DocuSign (`docusign`) | credential, **adminConsent** | Integration key + RSA private key (PEM) + impersonated user → 3 named Key Vault secrets; then Grant admin consent. Account id + environment are ops App Settings. |
-
-> **The Meta token is special.** It is `sendCapable` — it grants **outbound** action
-> (DM replies), not just read/ingest. Entering it is a **Mark-approved security
-> event**, and it is never treated as a routine pollable ingest source. The UI marks
-> it accordingly.
-
-**GDAP** and **QuickBooks** use distinct connect actions (`grantGdapAction`,
-`connectQuickBooksAction`); the QBO connect outcome renders a specific reason notice
-on `/settings?tab=credentials&qbo=<result>`.
-
-**DocuSign** enters its three secrets via the form (stored by the backend to the named
-Key Vault secrets the JWT engine reads, backend #192), then the **Grant admin consent**
-button (`connectDocusignAction`) redirects the admin to DocuSign to grant one-time JWT
-impersonation consent per environment (demo → production). Its secrets rotate one-at-a-time
-(each is its own Key Vault secret), unlike the single-blob providers.
+Org-wide integration credentials are **no longer a Settings tab**. They moved to the
+consolidated **Connections** page (`/settings/connections`), which now holds the
+interactive credential / consent cards **and** the connector catalog in one place. See
+the [Connections admin guide](connectors.md) for the provider list, collection styles
+(`credential` / `consent` / `credential` + `adminConsent`), and the DocuSign flow.
 
 ### Tenant mapping
 

@@ -48,7 +48,7 @@ export async function disconnectAction(formData: FormData) {
           // Token custody was NOT revoked — keep the row visible rather than
           // deleting it and stranding a live token in Key Vault.
           console.error(`disconnectAction(${provider}) backend revoke failed:`, err);
-          revalidatePath("/settings");
+          revalidatePath("/settings/connections");
           revalidatePath("/profile");
           return;
         }
@@ -58,7 +58,7 @@ export async function disconnectAction(formData: FormData) {
 
   const { connections } = getRepositories();
   await connections.disconnect(id);
-  revalidatePath("/settings");
+  revalidatePath("/settings/connections");
   revalidatePath("/profile");
 }
 
@@ -74,7 +74,7 @@ export async function setPollIntervalAction(formData: FormData) {
   if (!id || !Number.isFinite(minutes) || minutes < 0) return;
   const { connections } = getRepositories();
   await connections.setPollInterval(id, Math.floor(minutes));
-  revalidatePath("/settings");
+  revalidatePath("/settings/connections");
   revalidatePath("/profile");
 }
 
@@ -101,7 +101,7 @@ export async function refreshNowAction(formData: FormData) {
       console.error(`refreshNowAction(${source}) failed:`, err);
     }
   }
-  revalidatePath("/settings");
+  revalidatePath("/settings/connections");
 }
 
 /**
@@ -144,7 +144,7 @@ export async function saveCredentialAction(formData: FormData) {
     keyvaultSecretRef,
     status,
   });
-  revalidatePath("/settings");
+  revalidatePath("/settings/connections");
 }
 
 /**
@@ -183,7 +183,7 @@ export async function grantGdapAction(formData: FormData) {
     keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
     status,
   });
-  revalidatePath("/settings");
+  revalidatePath("/settings/connections");
 
   // Only arm the callback when we actually have somewhere to send the admin. Store the
   // backend's `state` nonce as the cookie value so the callback can match it (CSRF guard).
@@ -242,7 +242,7 @@ export async function connectDocusignAction(formData: FormData) {
     // hasn't been applied yet, a cosmetic row write must not block the consent redirect.
     console.error("connectDocusignAction: record row failed (migration pending?):", err);
   }
-  revalidatePath("/settings");
+  revalidatePath("/settings/connections");
 
   // redirect() throws — keep it last, outside the try/catch.
   if (consentUrl) redirect(consentUrl);
@@ -297,11 +297,11 @@ export async function connectQuickBooksAction(formData: FormData) {
     keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
     status,
   });
-  revalidatePath("/settings");
+  revalidatePath("/settings/connections");
 
   // redirect() throws — keep redirects last, outside the try/catch.
   if (authorizationUrl) redirect(authorizationUrl);
-  const params = new URLSearchParams({ tab: "credentials", qbo: result });
+  const params = new URLSearchParams({ qbo: result });
   if (httpStatus) params.set("qboStatus", String(httpStatus));
-  redirect(`/settings?${params.toString()}`);
+  redirect(`/settings/connections?${params.toString()}`);
 }

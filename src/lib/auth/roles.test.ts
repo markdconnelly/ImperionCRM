@@ -115,9 +115,13 @@ describe("predicates", () => {
     }
     expect(canSeeConnectors([])).toBe(false);
     expect(canSeeConnectors(undefined)).toBe(false);
-    // and the nav guard hides /connectors for non-admins
-    expect(canSeeFeature("connectors", ["admin"])).toBe(true);
-    expect(canSeeFeature("connectors", ["support"])).toBe(false);
+  });
+
+  test("the consolidated Connections nav (#864) is admin-only", () => {
+    // /connectors + the Company-credentials tab folded into /settings/connections,
+    // which now collects credentials so it carries the Settings gate.
+    expect(canSeeFeature("settings-connections", ["admin"])).toBe(true);
+    expect(canSeeFeature("settings-connections", ["support"])).toBe(false);
   });
 
   test("canManageProjects is admin | project_manager (ADR-0052 §8)", () => {

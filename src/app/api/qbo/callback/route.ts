@@ -26,8 +26,8 @@ import { classifyServiceError } from "@/lib/services/call-guard";
 import { ServiceCallError } from "@/lib/services/external-client";
 
 function settingsRedirect(req: NextRequest, result: string, status?: number): NextResponse {
-  const url = new URL("/settings", req.nextUrl.origin);
-  url.searchParams.set("tab", "credentials"); // so the company-credentials notice renders (#530)
+  // Land on the consolidated Connections page so the QBO connect notice renders (#530/#864).
+  const url = new URL("/settings/connections", req.nextUrl.origin);
   url.searchParams.set("qbo", result);
   if (status) url.searchParams.set("qboStatus", String(status));
   return NextResponse.redirect(url);
