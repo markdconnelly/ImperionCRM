@@ -13,6 +13,12 @@ import {
   periodLabel,
   STATE_LABEL,
 } from "@/lib/expenses/overview";
+import {
+  capsFromCategories,
+  itemHardViolationReason,
+  HARD_VIOLATION_LABEL,
+  type HardViolationReason,
+} from "@/lib/expenses/policy";
 import type { ExpenseItemRow, ExpenseReportState } from "@/types";
 import {
   attestExpenseReportAction,
@@ -70,6 +76,19 @@ export default async function ExpensesPage({
     const report = await crm.getExpenseReportForPeriod(employeeId, parsed.year, parsed.month);
     const state: ExpenseReportState = report?.state ?? "open";
     const items: ExpenseItemRow[] = report?.items ?? [];
+
+    // Hard-policy gate (ADR-0083, #895): while the report is Open, flag the items that block
+    // attestation (missing receipt / over cap / out-of-month) so the employee sees exactly
+    // which rows to fix; the server action enforces the same gate authoritatively.
+    const violations = new Map<string, HardViolationReason>();
+    if (state === "open" && items.length > 0) {
+      const caps = capsFromCategories(await crm.listExpenseCategories());
+      for (const it of items) {
+        const reason = itemHardViolationReason(it, parsed, caps);
+        if (reason) violations.set(it.id, reason);
+      }
+    }
+    const hasViolations = violations.size > 0;
 
     return (
       <div className="flex flex-col gap-6">
@@ -141,9 +160,18 @@ export default async function ExpensesPage({
                       </td>
                     </tr>
                   ) : (
-                    items.map((it) => (
-                      <tr key={it.id} className="bg-panel">
-                        <td className="px-4 py-2">{it.itemDate}</td>
+                    items.map((it) => {
+                      const reason = violations.get(it.id);
+                      return (
+                      <tr key={it.id} className={cn("bg-panel", reason && "bg-red/5")}>
+                        <td className="px-4 py-2">
+                          {it.itemDate}
+                          {reason && (
+                            <span className="ml-2 inline-flex items-center rounded border border-red/40 bg-red/10 px-1.5 py-0.5 text-[11px] font-medium text-red">
+                              {HARD_VIOLATION_LABEL[reason]}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-2 text-dim">
                           {it.kind === "mileage" ? "Mileage" : (it.categoryName ?? "—")}
                         </td>
@@ -154,7 +182,8 @@ export default async function ExpensesPage({
                         <td className="px-4 py-2 text-dim">{it.reimbursable ? "Yes" : "No"}</td>
                         <td className="px-4 py-2 text-dim">{it.billable ? "Yes" : "No"}</td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -162,15 +191,29 @@ export default async function ExpensesPage({
 
             {/* Lifecycle controls — only the employee's own pre-submit / rejected states act here. */}
             {report.state === "open" && (
-              <form action={attestExpenseReportAction} className="w-fit">
-                <input type="hidden" name="period" value={period} />
-                <button
-                  type="submit"
-                  className="inline-flex items-center rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
-                >
-                  Attest &amp; submit
-                </button>
-              </form>
+              <div className="flex flex-col gap-2">
+                {hasViolations && (
+                  <p className="w-fit rounded-md border border-red/40 bg-red/10 px-2.5 py-2 text-xs text-red">
+                    Some items break a hard policy rule (missing receipt, over the category cap, or
+                    dated outside {periodLabel(parsed)}). Fix the flagged rows before you can attest.
+                  </p>
+                )}
+                <form action={attestExpenseReportAction} className="w-fit">
+                  <input type="hidden" name="period" value={period} />
+                  <button
+                    type="submit"
+                    disabled={hasViolations}
+                    className={cn(
+                      "inline-flex items-center rounded-md px-4 py-2 text-sm font-medium transition-opacity",
+                      hasViolations
+                        ? "cursor-not-allowed bg-panel-2 text-dim"
+                        : "bg-accent text-bg hover:opacity-90",
+                    )}
+                  >
+                    Attest &amp; submit
+                  </button>
+                </form>
+              </div>
             )}
             {report.state === "rejected" && (
               <form action={reopenExpenseReportAction} className="w-fit">

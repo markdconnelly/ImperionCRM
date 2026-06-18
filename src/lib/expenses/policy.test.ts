@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  capsFromCategories,
+  hardViolationItemIds,
   hasHardViolation,
   itemHasHardViolation,
   type CategoryHardCaps,
@@ -103,5 +105,34 @@ describe("hasHardViolation (report attest gate, ADR-0083 #486)", () => {
   test("over-cap item blocks the report when a cap is supplied", () => {
     const caps: CategoryHardCaps = new Map([["Meals", 20]]);
     expect(hasHardViolation([oop({ amount: 21 })], PERIOD, caps)).toBe(true);
+  });
+});
+
+describe("hardViolationItemIds (surface highlighting, #895)", () => {
+  test("returns only the ids of the offending items", () => {
+    const items = [
+      oop({ id: "clean" }),
+      oop({ id: "no-receipt", hasReceipt: false }),
+      mileage({ id: "ok-mileage" }),
+      oop({ id: "outside", itemDate: "2026-05-30" }),
+    ];
+    expect(hardViolationItemIds(items, PERIOD)).toEqual(new Set(["no-receipt", "outside"]));
+  });
+
+  test("a clean report yields an empty set", () => {
+    expect(hardViolationItemIds([oop(), mileage()], PERIOD).size).toBe(0);
+  });
+});
+
+describe("capsFromCategories (#895)", () => {
+  test("keys the hard caps by displayName (what ExpenseItemRow.categoryName carries)", () => {
+    const caps = capsFromCategories([
+      { displayName: "Meals", hardCap: 50 },
+      { displayName: "Lodging", hardCap: null },
+    ]);
+    expect(caps.get("Meals")).toBe(50);
+    expect(caps.get("Lodging")).toBeNull();
+    // Resolves against an item's categoryName end-to-end.
+    expect(itemHasHardViolation(oop({ amount: 60 }), PERIOD, caps)).toBe(true);
   });
 });

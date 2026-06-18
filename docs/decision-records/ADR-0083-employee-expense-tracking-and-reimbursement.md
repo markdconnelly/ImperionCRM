@@ -119,6 +119,18 @@ category set are **admin-configurable in-app** (not hardcoded); each violation *
 the canonical company expense policy in IT Glue** (authored separately — a business
 deliverable).
 
+> **Amendment 2026-06-18 (#895): the hard gate is enforced server-side at attest.**
+> The hard-violation rules above are computed in `src/lib/expenses/policy.ts`
+> (`itemHardViolationReason` / `hasHardViolation`) and the **`attestExpenseReportAction`
+> server action refuses the Open → Submitted transition while any hard violation is
+> present** — the authoritative enforcement, not just a memory-jogger. This mirrors
+> **ADR-0082's shared attestation-gate pattern** (the timesheet attest refuses while
+> `hasHardDeviation` is true). The employee surface (`/expenses`) disables Attest and
+> flags the offending rows; the admin review (`expense-review.tsx`) recomputes the gate
+> on the live post-correction items and flags residual violations before approval. Prior
+> to this fix the gate was unwired (the helper existed but no caller invoked it), so a
+> report could be attested with hard violations present.
+
 **Categories — hard-linked to QuickBooks.** The chart of accounts in QuickBooks is the
 category SoR. `qbo_expense_account` is **read** and synced to bronze; an admin
 **maps** each QuickBooks account to a clean, user-facing `expense_category` (hard FK to
