@@ -1,0 +1,27 @@
+{
+  "contractName": "imperion-vector-contract",
+  "contractVersion": "1.0.0",
+  "description": "The single pinned vector contract for the Imperion gold knowledge store. Every embedding WRITE stamps the (embeddingModel, dimension, chunkingVersion) triple and every similarity QUERY filters on exactly that triple, so model/chunking changes are versioned re-embeds and vector spaces can never silently mix. This file is the ONE machine-readable home; the backend and both pipelines consume it (see db/contracts/README.md). A change here is a system-wide event: bump chunkingVersion (or embeddingModel) and run a versioned re-embed — never edit values in place against existing rows.",
+  "adr": "ADR-0041 (gold knowledge vector store; consolidated into ADR-0092). Contract-home decision: see the ADR cited in db/contracts/README.md.",
+  "schema": {
+    "table": "knowledge_embedding",
+    "migration": "db/migrations/0045_gold_knowledge_vectors.sql",
+    "embeddingColumn": "embedding",
+    "embeddingColumnType": "vector(1024)"
+  },
+  "embeddingModel": "voyage-3-large",
+  "dimension": 1024,
+  "chunkingVersion": "v1",
+  "chunking": {
+    "maxChunkChars": 6000,
+    "overlapChars": 500,
+    "policy": "v1: ~1,500 tokens per chunk at a 4-chars/token heuristic, with overlap so context spanning a boundary is retrievable from either side. Chunks prefer paragraph boundaries."
+  },
+  "provider": {
+    "name": "voyage",
+    "baseUri": "https://api.voyageai.com/v1/embeddings",
+    "batchSize": 64,
+    "usdPerMillionTokens": 0.18,
+    "secretRef": "Provider keys live in Key Vault (backend) / SecretStore (local pipeline); never in this file or any repo."
+  }
+}
