@@ -9681,6 +9681,14 @@ export const postgresRepositories: Repositories = {
           params.push(Math.floor(filter.openedWithinDays));
           where.push(`t.opened_at >= now() - make_interval(days => $${params.length}::int)`);
         }
+        // Free-text search (#852): case-insensitive across number, title, account name.
+        // Parameterized — the % wrapping happens in the bound value, never the SQL text.
+        if (filter?.query && filter.query.trim()) {
+          params.push(`%${filter.query.trim()}%`);
+          where.push(
+            `(t.number ILIKE $${params.length} OR t.title ILIKE $${params.length} OR a.name ILIKE $${params.length})`,
+          );
+        }
         const { rows } = await pool.query<{
           id: string;
           account: string;
