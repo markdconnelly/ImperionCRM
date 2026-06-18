@@ -118,15 +118,50 @@ export function docusignTestResult(probe: DocusignProbe): DocusignTestResult {
     };
   }
 
+  // 401/403 — caller-identity / allowlist guidance
+  if (
+    probe.kind === "rejected" &&
+    probe.status !== undefined &&
+    (probe.status === 401 || probe.status === 403)
+  ) {
+    return {
+      state: "rejected",
+      ready: false,
+      tone: "red",
+      label: "Backend rejected the check",
+      detail: `The backend refused the status check (HTTP ${probe.status}) — usually the web app's caller identity isn't allow-listed yet (ADR-0035).`,
+      environment: null,
+      consentUrl: null,
+    };
+  }
+
+  // 5xx — backend error guidance
+  if (
+    probe.kind === "rejected" &&
+    probe.status !== undefined &&
+    probe.status >= 500 &&
+    probe.status < 600
+  ) {
+    return {
+      state: "rejected",
+      ready: false,
+      tone: "red",
+      label: "Backend errored",
+      detail: `The backend errored (HTTP ${probe.status}) — likely a malformed or unreadable DocuSign secret in Key Vault; check the backend logs (BE #196).`,
+      environment: null,
+      consentUrl: null,
+    };
+  }
+
   if (probe.kind === "rejected") {
     return {
       state: "rejected",
       ready: false,
       tone: "red",
       label: "Backend rejected the check",
-      detail: `The backend refused the status check${
-        probe.status ? ` (HTTP ${probe.status})` : ""
-      } — usually the web app’s caller identity isn’t allow-listed yet (ADR-0035).`,
+      detail: probe.status
+        ? `The backend refused the status check (HTTP ${probe.status}).`
+        : "The backend refused the status check — usually the web app's caller identity isn't allow-listed yet (ADR-0035).",
       environment: null,
       consentUrl: null,
     };
