@@ -1,10 +1,10 @@
 ---
 type: Silver Table
 title: device
-description: Unified asset/endpoint — one row per device, merged from three bronze sources by precedence.
+description: Unified asset/endpoint — one row per device, merged from per-source bronze by precedence (incl. Datto RMM) + BCDR backup-posture field merge.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, device, merge]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-17T00:00:00Z
 ---
 
 # device
@@ -16,12 +16,28 @@ The silver asset record for a client's endpoint/hardware. Governed by
 
 ## Source of record / authority
 
-Three bronze sources merge; **precedence `website` > `itglue` > `m365`**. Matched
-primarily by serial number, then name within an account; website rows are pre-linked
-(resurrection guard).
+Per-source device bronze merges by **precedence
+`website` > `datto_rmm` > `m365` > `itglue`** (#683, proposed from LocalPipeline #195 /
+LP ADR-0018). Matched primarily by serial number, then name within an account; website
+rows are pre-linked (resurrection guard — `website` stays highest, untouched).
 
-- `website_devices` (manual, highest) · `itglue_devices` (documentation) ·
-  `m365_devices` (Intune/Graph directory; precedence label `m365_synced`, lowest).
+- `website_devices` (manual, highest) · `datto_rmm_devices` (RMM managed-estate:
+  device-existence + live-state — online, OS, patch/AV; bronze `0119`) · `m365_devices`
+  (Intune/Graph directory, enrolled-only; precedence label `m365_synced`) ·
+  `itglue_devices` (documentation, lowest).
+
+**Authority note (#683):** Datto RMM is a strong machine authority (it actually sees the
+endpoint live), so it sits above `m365` (enrolled-only) and `itglue` (documentation).
+This also drops `itglue` **below** `m365` — a reorder of the two pre-existing sources
+(was `itglue` > `m365`): live Intune enrolment now outranks IT Glue documentation.
+
+**Backup posture (BCDR) is a field-scoped merge, not identity precedence.**
+`datto_bcdr_backups` (bronze `0119`) contributes backup-posture fields
+(`backup_protected`, `last_backup_at`, `last_good_backup_at`) onto the unified device,
+joined on Datto `device_uid` (carried as `datto_device_uid`); it does **not** compete to
+own device identity. `myitprocess_recommendations` (bronze `0119`) is account-advisory,
+not device data — it does not feed `device` (candidate for its own account-scoped concept,
+expansion #536).
 
 ## Bronze match / merge
 
@@ -37,8 +53,16 @@ Runs on 0 rows until device data lands (ADR-0039 — device pulls deferred):
    are pre-linked (resurrection guard).
 
 Once linked, each device is **recomputed** from all its linked source rows by the
-precedence above; merged fields = `name`, `device_type`, `manufacturer`, `model`,
-`serial_number`, `os`, `status`.
+precedence above; merged identity fields = `name`, `device_type`, `manufacturer`,
+`model`, `serial_number`, `os`, `status`.
+
+Separately, the matcher resolves the device's Datto `device_uid` (from
+`datto_rmm_devices` / a serial cross-walk) and copies BCDR backup posture from
+`datto_bcdr_backups` onto the same row (`backup_protected`, `last_backup_at`,
+`last_good_backup_at`) — a field merge keyed by `datto_device_uid`, independent of
+identity precedence. The cloud-Pipeline `device-matcher` wiring for both the new
+precedence and the BCDR merge is a separate `ImperionCRM_Pipeline` PR; these columns
+run null until it lands.
 
 ## Schema
 
@@ -52,10 +76,16 @@ precedence above; merged fields = `name`, `device_type`, `manufacturer`, `model`
 | `os` | text | |
 | `status` | text | free-text, e.g. `active` · `retired` |
 | `last_seen_at` | timestamptz | |
+| `datto_device_uid` | text | Datto RMM/BCDR join key (`0140`); set by the matcher |
+| `backup_protected` | boolean | BCDR posture: protected / unprotected / unknown (null) |
+| `last_backup_at` | timestamptz | BCDR last backup (`0140`) |
+| `last_good_backup_at` | timestamptz | BCDR last verified-good backup (`0140`) |
 
 ## Joins
 
 - `account_id` → `account` (ON DELETE SET NULL). Bronze origins via `device_bronze_all`.
+- `datto_device_uid` → `datto_rmm_devices.device_uid` / `datto_bcdr_backups.device_uid`
+  (bronze `0119`) — the join carrying RMM live-state refresh and BCDR backup posture.
 - Security-posture context (Intune/Defender managed-device feeds) is keyed by tenant, not
   FK'd here — see `tenant_posture` / posture bronze.
 
