@@ -1303,5 +1303,19 @@
     "file": "ADR-0101-minimalist-code-generation.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0102",
+    "title": "The pinned vector contract lives in one machine-readable home; siblings consume it",
+    "status": "accepted",
+    "date": "2026-06-18",
+    "tags": [
+      "medallion",
+      "ai-stack"
+    ],
+    "summary": "Resolves #892 (architecture-deepening review). The vector contract (voyage-3-large / 1024 / chunking v1, plus chunking + Voyage-API shaping) was re-declared as executable copies in three repos: backend model-router.ts VECTOR_CONTRACT, local-pipeline Get-ImperionVectorContract.ps1, and migration 0045's vector(1024). A bump meant three coordinated, easily-forgotten edits. This repo (which owns the schema/contracts, §1) now publishes ONE machine-readable home, db/contracts/vector-contract.json, with a typed front-end loader that fails loud if absent and a drift test that asserts it matches migration 0045. Siblings vendor a committed copy (no cross-repo runtime dependency) and a CI step verifies the vendored copy against the canonical raw URL, failing the build on drift. Consumer cutovers are separate sibling micro-PRs (backend + local-pipeline). Honours ADR-0041 / ADR-0043 / backend ADR-0034 / ADR-0042.",
+    "file": "ADR-0102-vector-contract-single-home.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
