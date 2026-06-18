@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Imperion CRM — the build story</title>
-<meta name="description" content="How a CRM idea became Imperion CRM: the operational brain for an MSP, built across four repos by AI agents and now live on Azure." />
+<title>Imperion Business Manager — the build story</title>
+<meta name="description" content="How a CRM idea became Imperion Business Manager: the operational brain for an MSP — CRM + ERP + AI suite — built across four repos by AI agents and now live on Azure." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -240,7 +240,7 @@
   <div class="nav-inner">
     <a class="brand" href="#top">
       <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-      Imperion CRM
+      Imperion Business Manager
     </a>
     <nav class="nav-links">
       <a href="#system">system</a>
@@ -260,16 +260,16 @@
 
 <a id="top"></a>
 <section class="hero">
-  <span class="eyebrow reveal in">// imperion crm · an autonomous build story</span>
+  <span class="eyebrow reveal in">// imperion business manager · an autonomous build story</span>
   <h1 class="reveal in d1">The <span class="glow">Moonshot</span></h1>
-  <p class="lede reveal in d2">How a CRM idea became <b>Imperion CRM</b> — <span class="accent">the operational brain for an MSP</span> — built across four repositories by AI agents, and now running in production.</p>
+  <p class="lede reveal in d2">How a CRM idea became <b>Imperion Business Manager</b> — <span class="accent">the operational brain for an MSP</span>, a single surface for CRM + ERP + AI — built across four repositories by AI agents, and now running in production.</p>
   <div class="badge-live reveal in d2"><span class="pulse"></span> Live on Azure App Service <span class="u">·&nbsp; imperioncrm.azurewebsites.net · Entra SSO</span></div>
   <div class="meta reveal in d3"><span class="dot"></span> Mark Connelly &nbsp;·&nbsp; Imperion &nbsp;·&nbsp; Champaign, IL</div>
   <div class="hero-stats reveal in d3">
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
-    <div class="hs"><div class="n" id="hero-commits">850+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="120"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n" id="hero-commits">950+</div><div class="l">commits</div></div>
+    <div class="hs"><div class="n"><span data-count="136"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -304,7 +304,7 @@
     <div class="node reveal">03</div>
     <div class="ch-eyebrow reveal">What it is</div>
     <h2 class="reveal d1">One place to work. One agent to ask.</h2>
-    <p class="say reveal d1">Imperion CRM is an AI-enabled operations platform that sits as an <b>intelligence layer above Microsoft 365 and Kaseya</b> — augmenting them, never replacing them. It manages the whole lifecycle of a managed-services customer, from the first ad they see to the quarterly business review years later: lead → qualification → proposal → onboarding → implementation → operational readiness → continuous success.</p>
+    <p class="say reveal d1">It started as a CRM and didn't stay one. <b>Imperion Business Manager</b> is the AI-enabled platform an MSP runs its <em>whole business</em> on — <b>CRM + ERP + a full AI suite</b> on one surface — sitting as an <b>intelligence layer above Microsoft 365 and Kaseya</b>, augmenting them, never replacing them. It manages the whole lifecycle of a managed-services customer, from the first ad they see to the quarterly business review years later: lead → qualification → proposal → onboarding → implementation → operational readiness → continuous success — and the internal operations behind it: projects, delivery, time &amp; expense, finance, and the service desk.</p>
     <p class="say reveal d2">The promise is two-sided. <b>One place to work</b> — every account, contact, ticket, and conversation on one surface instead of ten. And <b>one agent to ask</b> — a single orchestrator that routes to specialist sub-agents behind the scenes, so the user never has to know which system an answer came from.</p>
     <p class="say reveal d3">The defining go-to-market motion is <em>assessment-led</em>: a paid AI Security Readiness Assessment — six scored dimensions and a remediation roadmap — is the wedge that turns a cold prospect into a multi-year managed-services contract.</p>
   </article>
@@ -317,27 +317,27 @@
     <p class="say reveal d1">A deliberate division of labor: <b>front end = GUI · backend = processes · cloud pipeline = live data · on-prem = heavy lifting.</b></p>
     <div class="repos reveal d2">
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.12.0</span></div>
+        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.19.0</span></div>
         <div class="role">Front end · the GUI</div>
-        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration, plus the reporting BI hub that reads the whole gold layer.</p>
+        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration (now past <b>0136</b>), plus the self-serve reporting BI hub that reads the whole gold layer.</p>
         <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 428 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.5.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.8.0</span></div>
         <div class="role">Backend · every process</div>
-        <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the AI Board of Directors, OAuth token custody, consent-gated sends, M365 mail/calendar ingestion, and per-process cost metering.</p>
+        <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the AI Board of Directors, the self-hosted Managed-Agents runtime + ICM glass-box approval, OAuth token custody, consent-gated sends, the AR-dunning agent, and per-process cost metering.</p>
         <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 112 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Pipeline" rel="noopener">
         <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.6.0</span></div>
         <div class="role">Cloud · live data</div>
-        <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, a source-schema registry that fails loudly on drift, and the bronze→silver merge.</p>
+        <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, manifest-driven poll registration from the connector catalog, a source-schema registry that fails loudly on drift, and the bronze→silver merge.</p>
         <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 91 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-built">Built · v0.9.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-built">Built · v0.10.0</span></div>
         <div class="role">On-prem · heavy lifting</div>
-        <p>PowerShell 7 scheduled tasks on a home server. Collectors for ten+ sources, the medallion transforms, and all vectorization — 700+ tests green, awaiting server bringup.</p>
+        <p>PowerShell 7 scheduled tasks on a home server. Collectors for ten+ sources (now incl. per-client Azure ARM cloud-resource inventory), the medallion transforms, and all vectorization — 700+ tests green, awaiting server bringup.</p>
         <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 224 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
       </a>
     </div>
@@ -555,20 +555,20 @@
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.12.0</span></div>
-        <p>Running on Azure with Entra SSO. The schema runs to <b>0120</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer, with a cross-domain summary strip on the dashboard). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the CRM-parity verticals that broke ground overnight have since <b>shipped</b> as schema + surface: <b>conversational intelligence, opportunity forecasting, e-signature, a service desk (SLA, live chat, omnichannel queue), customer journeys with A/B and lead scoring, and agile reporting</b>. The build now advances as a <b>four-lane wave train</b> across all four repos. <b>Employee time and expense tracking are both now live on real data</b> — weekly timesheets, mileage and out-of-pocket capture through to reimbursement, with Autotask/QuickBooks reconciliation. All real screens over a typed data layer.</p>
+        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.19.0</span></div>
+        <p>Running on Azure with Entra SSO. The schema runs past <b>0136</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the verticals that were merely <em>designed &amp; queued</em> a day ago have since <b>shipped as schema + surface</b>: <b>premium service management</b> (an asset/identity <b>CMDB</b> with derived relationships, criticality, lifecycle states and n-hop impact analysis, plus <b>ITIL change enablement</b> — change requests, CMDB-derived risk, type-based approval and a change calendar), an <b>AR collections agent</b> (aging worklist, dunning panel, gated reminder sends), a <b>self-serve report builder</b> over a governed semantic model with shareable dashboards and per-domain report pages, a <b>connector marketplace</b> (catalog GUI + manifest registry), and <b>marketing journeys, segments and a message-template composer</b>. The <b>ICM glass-box</b> — run viewer, approval queue and autonomy dial — is live. <b>Employee time and expense tracking are both live on real data</b>, with Autotask/QuickBooks reconciliation. All real screens over a typed data layer, behind a new role-driven grouped navigation.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.5.0</span></div>
-        <p>The orchestrator and its specialist sub-agents (Autotask, IT Glue, CRM, M365, documentation, advisors), the board runtime with resumable deputy sessions, M365 mail/calendar ingestion, Autotask ticket creation, lead capture, contact enrichment, and per-process cost metering.</p>
+        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.8.0</span></div>
+        <p>The orchestrator and its specialist sub-agents (Autotask, IT Glue, CRM, M365, documentation, advisors), the board runtime with resumable deputy sessions, the <b>self-hosted Managed-Agents worker</b> (agent.yaml manifests, event-mirrored to the run ledger) with <b>ICM glass-box approval + autonomy endpoints</b>, the journey runner, the AR-dunning detect→draft agent, M365 mail/calendar ingestion, Autotask ticket creation, lead capture, contact enrichment, and per-process cost metering.</p>
       </div>
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.6.0</span></div>
         <p>Autotask ticket webhooks are live in production. Per-tenant Graph subscription upkeep (per-client app model, ADR-0018), a source-schema registry that fails loudly on drift, the 5-minute bronze→silver merge, and on-demand posture snapshots.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-built">Built · v0.9.0</span></div>
-        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 700+ tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
+        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-built">Built · v0.10.0</span></div>
+        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, per-client <b>Azure ARM cloud-resource inventory</b>, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 700+ tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
       </div>
     </div>
     <div class="deferred reveal d2">
@@ -624,7 +624,8 @@
       <li class="tlrow"><span class="tldate">Jun 13</span><div class="tlbody"><b>One evening → ten sessions</b><span>Time tracking built end-to-end in a single evening; that night a concurrency contract turned one session into ten.</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 13–14</span><div class="tlbody"><b>The unattended day</b><span>~60 reviewed pull requests overnight — a near-complete project-management suite, the expense loop, and five new verticals — with no one at the keyboard.</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 14–15</span><div class="tlbody"><b>CRM parity wave</b><span>Conversational intelligence, opportunity forecasting, e-signature, marketing journeys, and a service desk shipped as schema + surface.</span></div></li>
-      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time, with premium service management (asset/identity CMDB · ITIL change enablement) and an accounts-receivable collections agent designed and queued.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 16–17</span><div class="tlbody"><b>From CRM to Business Manager</b><span>The queued frontier shipped — premium service management (asset/identity CMDB + ITIL change enablement), an AR collections agent, a self-serve report builder, a connector marketplace, marketing journeys, and ICM glass-box autonomy. The platform was rebranded <b>Imperion Business Manager</b> (CRM + ERP + AI) with an onboarding-grade docs hub across all four repos.</span></div></li>
+      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time. The self-hosted Managed-Agents runtime is live, and the remaining gates are activation settings and the on-prem server bringup, not missing code.</span></div></li>
     </ol>
 
     <!-- capability tracker (checked as it ships) -->
@@ -643,12 +644,14 @@
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>Opportunity forecasting</b><small>SHIPPED · GATED</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>E-signature</b><small>SHIPPED · GATED</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>Sale→delivery orchestration</b><small>SHIPPED · GATED</small></div></div>
-      <div class="tk"><span class="tkc tk-dev">◐</span><div><b>Marketing automation · journeys</b><small>IN BUILD</small></div></div>
-      <div class="tk"><span class="tkc tk-plan">○</span><div><b>Self-serve report builder</b><small>DESIGNED · QUEUED</small></div></div>
-      <div class="tk"><span class="tkc tk-plan">○</span><div><b>Integration marketplace</b><small>DESIGNED · QUEUED</small></div></div>
-      <div class="tk"><span class="tkc tk-plan">○</span><div><b>Asset &amp; identity CMDB</b><small>DESIGNED · QUEUED</small></div></div>
-      <div class="tk"><span class="tkc tk-plan">○</span><div><b>ITIL change enablement</b><small>DESIGNED · QUEUED</small></div></div>
-      <div class="tk"><span class="tkc tk-plan">○</span><div><b>AR · collections agent</b><small>DESIGNED · QUEUED</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Self-serve report builder</b><small>LIVE</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Asset &amp; identity CMDB</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>ITIL change enablement</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>AR · collections agent</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Integration marketplace</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Marketing automation · journeys</b><small>SHIPPED · GATED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>ICM glass-box · autonomy dial</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Self-hosted Managed Agents</b><small>SHIPPED</small></div></div>
     </div>
     <p class="tracknote reveal d2"><span><span class="tkc tk-live">✓</span> live on real data</span><span><span class="tkc tk-built">✓</span> shipped, activation-gated</span><span><span class="tkc tk-dev">◐</span> in build</span><span><span class="tkc tk-plan">○</span> designed &amp; queued</span></p>
   </article>
@@ -671,7 +674,7 @@
 </section>
 
 <footer>
-  <span>Imperion CRM — the build story</span>
+  <span>Imperion Business Manager — the build story</span>
   <span>Grounded in the repos · <span id="yr"></span><span id="liveflag"></span></span>
 </footer>
 
