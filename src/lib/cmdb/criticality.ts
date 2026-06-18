@@ -86,6 +86,8 @@ export interface CiCriticalityInputs {
   accountLifecycleStage?: string | null;
   /** device CI — `device.device_type` (workstation|server|network|mobile|…) */
   deviceType?: string | null;
+  /** cloud CI — `cloud_asset.category` (compute|storage|network|database|identity|…) */
+  cloudCategory?: string | null;
 }
 
 /**
@@ -100,6 +102,8 @@ export function deriveCriticality(ciType: CiType, inputs: CiCriticalityInputs): 
       return deriveAccountCriticality(inputs);
     case "device":
       return deriveDeviceCriticality(inputs);
+    case "cloud":
+      return deriveCloudCriticality(inputs);
     case "user":
       // No seniority/role signal in silver `contact` today — a flat baseline; an
       // admin override is the escape hatch until such a signal is added (a future
@@ -134,6 +138,19 @@ function deriveDeviceCriticality(inputs: CiCriticalityInputs): Criticality {
   if (t === "workstation" || t === "mobile" || t === "laptop" || t === "desktop") {
     return "medium";
   }
+  return "low";
+}
+
+/**
+ * cloud → category. Data and identity planes carry the most business risk
+ * (`database`, `identity`, `security` → high); the run/connectivity plane is mid
+ * (`compute`, `network` → medium); supporting/peripheral resources are low. As with
+ * the other arms, `critical` is never auto-derived (admin override only).
+ */
+function deriveCloudCriticality(inputs: CiCriticalityInputs): Criticality {
+  const c = (inputs.cloudCategory ?? "").toLowerCase();
+  if (c === "database" || c === "identity" || c === "security") return "high";
+  if (c === "compute" || c === "network") return "medium";
   return "low";
 }
 

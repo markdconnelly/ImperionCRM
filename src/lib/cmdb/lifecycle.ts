@@ -15,16 +15,18 @@
  * projects (device `status`, `last_seen_at`, Intune `management_state`/enrollment)
  * feed `deriveLifecycle`; an absent signal degrades to `unknown`, never a crash.
  *
- * THE DERIVED RULE (v1), in priority order, evaluated only for `device` CIs:
- *   1. An Autotask config-item/asset `status` that names a terminal state wins —
- *      `disposed` (scrapped/disposed) or `retired` (retired/inactive/decommissioned).
- *   2. A `status` that names stock (in stock / available / spare) → `in-stock`.
- *   3. Otherwise, the activity signal: an Intune-enrolled device, OR a device seen
- *      recently (within the activity window), is `in-use`; a device last seen long
+ * THE DERIVED RULE (v1), in priority order, evaluated for the ASSET CIs (`device`,
+ * `cloud`):
+ *   1. A `status` that names a terminal state wins — `disposed` (scrapped/disposed, or
+ *      a deleted cloud resource) or `retired` (retired/inactive/decommissioned).
+ *   2. A `status` that names stock / provisioned-but-idle (in stock / available /
+ *      spare; cloud: stopped / deallocated) → `in-stock`.
+ *   3. Otherwise, the activity signal: an Intune-enrolled device, OR an asset seen
+ *      recently (within the activity window), is `in-use`; an asset last seen long
  *      ago with no enrollment is `retired` (aged out); anything we cannot vouch for
- *      is `unknown`.
- * `account` and `user` CIs are not physical assets — they have no asset lifecycle —
- * so they always resolve to `unknown` (the badge is then suppressed by the UI).
+ *      is `unknown`. (`cloud` has no Intune signal — `status` + `last_seen_at` carry it.)
+ * `account` and `user` CIs are not assets — they have no asset lifecycle — so they
+ * always resolve to `unknown` (the badge is then suppressed by the UI).
  */
 
 import type { CiType } from "@/types";
@@ -76,14 +78,14 @@ export function asLifecycle(value: string | null | undefined): AssetLifecycle | 
  */
 export const STALE_SEEN_DAYS = 90;
 
-/** Autotask config-item/asset `status` tokens that mean a terminal/disposed state. */
-const DISPOSED_TOKENS = ["disposed", "scrapped", "destroyed", "written off", "write-off"];
+/** `status` tokens that mean a terminal/disposed state (asset scrapped or cloud resource deleted). */
+const DISPOSED_TOKENS = ["disposed", "scrapped", "destroyed", "written off", "write-off", "deleted", "deleting"];
 /** `status` tokens that mean retired/decommissioned (out of service, not destroyed). */
 const RETIRED_TOKENS = ["retired", "decommissioned", "inactive", "end of life", "eol"];
-/** `status` tokens that mean held in stock / not yet deployed. */
-const IN_STOCK_TOKENS = ["in stock", "in-stock", "stock", "available", "spare", "new", "unassigned"];
-/** `status` tokens that explicitly mean deployed / in service. */
-const IN_USE_TOKENS = ["active", "in use", "in-use", "deployed", "in service", "in-service", "online"];
+/** `status` tokens that mean held in stock / provisioned-but-not-running (cloud: stopped/deallocated). */
+const IN_STOCK_TOKENS = ["in stock", "in-stock", "stock", "available", "spare", "new", "unassigned", "deallocated", "stopped"];
+/** `status` tokens that explicitly mean deployed / in service (cloud: running/succeeded). */
+const IN_USE_TOKENS = ["active", "in use", "in-use", "deployed", "in service", "in-service", "online", "running", "succeeded"];
 
 /** Intune `management_state` values that mean the device is actively managed/enrolled. */
 const ENROLLED_STATES = new Set(["managed", "retrypending", "wipepending", "discovered"]);
@@ -110,15 +112,18 @@ function hasAny(haystack: string, tokens: string[]): boolean {
 
 /**
  * Compute the DERIVED lifecycle state for a CI from its source signals. Deterministic
- * and side-effect-free. Only `device` CIs carry an asset lifecycle; `account`/`user`
- * are not physical assets and always resolve to `unknown`.
+ * and side-effect-free. Only the ASSET CIs (`device`, `cloud`) carry a lifecycle;
+ * `account`/`user` are not physical/cloud assets and always resolve to `unknown`.
+ * For `cloud` the same status+activity rule applies (the Intune signal is simply
+ * absent — `status` is the provider provisioning/power state, `last_seen_at` the last
+ * merge), so a cloud resource recently seen reads `in-use`, a deleted one `disposed`.
  */
 export function deriveLifecycle(
   ciType: CiType,
   inputs: CiLifecycleInputs,
   now: Date = new Date(),
 ): AssetLifecycle {
-  if (ciType !== "device") return "unknown";
+  if (ciType !== "device" && ciType !== "cloud") return "unknown";
 
   const status = (inputs.deviceStatus ?? "").trim().toLowerCase();
 
