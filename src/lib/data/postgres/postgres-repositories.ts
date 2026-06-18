@@ -1340,7 +1340,7 @@ export const postgresRepositories: Repositories = {
                       NULL::text       AS intune_enrolled_at,
                       jsonb_build_array(
                         jsonb_build_object('label','Lifecycle','value',replace(a.lifecycle_stage::text,'_',' ')),
-                        jsonb_build_object('label','Relationship','value',coalesce(a.relationship,'—')),
+                        jsonb_build_object('label','Relationship','value',coalesce(a.relationship::text,'—')),
                         jsonb_build_object('label','Active','value',CASE WHEN a.is_active THEN 'Yes' ELSE 'No' END)
                       ) AS attributes
                  FROM account a
