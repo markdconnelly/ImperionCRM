@@ -247,6 +247,7 @@
       <a href="#architecture">architecture</a>
       <a href="#builders">build</a>
       <a href="#velocity">velocity</a>
+      <a href="#deepening">deepening</a>
       <a href="#frontier">frontier</a>
       <a href="#status">status</a>
       <a href="#timeline">timeline</a>
@@ -269,7 +270,7 @@
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
     <div class="hs"><div class="n" id="hero-commits">950+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="136"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n"><span data-count="140"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -319,7 +320,7 @@
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener">
         <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.19.0</span></div>
         <div class="role">Front end · the GUI</div>
-        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration (now past <b>0136</b>), plus the self-serve reporting BI hub that reads the whole gold layer.</p>
+        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration (now past <b>0140</b>), plus the self-serve reporting BI hub that reads the whole gold layer.</p>
         <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 428 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
@@ -547,16 +548,34 @@
     </div>
   </article>
 
-  <!-- 13 status -->
-  <article class="chapter" id="status">
+  <!-- 13 the build turns inward -->
+  <article class="chapter" id="deepening">
     <div class="node reveal">13</div>
+    <div class="ch-eyebrow reveal">The method turns inward</div>
+    <h2 class="reveal d1">Then it audited its own foundation</h2>
+    <p class="say reveal d1">Shipping fast leaves a tax: the same shape gets written four slightly-different times in four repos, and a year later that's where the bugs live. So the method was pointed at <em>itself</em>. An automated architecture pass read all four repositories and surfaced <b>nine</b> places where a near-identical pattern had been copied at a seam — candidates to collapse into one deep, well-tested module with the variants behind config.</p>
+    <p class="say reveal d2">The interesting part wasn't the consolidating — it was the <em>restraint</em>. Each candidate was treated as a <b>hypothesis, not a fact</b>: a survey agent catalogued the real duplication before a line was changed. <b>Seven held up and were built</b> — the idempotency invariant that guards every state machine pulled into one shared transitioner, the pinned vector contract given a single machine-readable home with CI that fails the other repos on drift, the secret resolvers, the connector registry, the snapshot-diff. <b>Two were refused</b>: on inspection the "duplication" was three debuggable units that a merge would have turned into one bloated monolith, so they were closed with the reasons written down. A dead-code bug the audit turned up got fixed in the same pass.</p>
+    <p class="say reveal d3">And the lesson was made reusable, not just remembered: the <em>deliberation ladder</em> that decides when consolidating is worth it — and when leaving things alone is the better engineering — was committed as a first-class agent skill (ADR-0101), so the next session inherits the judgment instead of relearning it.</p>
+    <div class="deferred reveal d2">
+      <b>What disciplined autonomy looks like</b>
+      <span>Nine consolidation candidates, surfaced automatically across four repos. <b>Seven built, two deliberately refused</b> — every public name kept as a thin adapter so not a single call site had to change, and every "no" recorded with its reasoning. The point of the pass wasn't to refactor everything; it was to know the difference between concentration that pays and abstraction that costs.</span>
+    </div>
+    <div class="flow-note reveal d2">
+      <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M22 2 12 12"/><path d="M16 2h6v6"/></svg></div>
+      <p><b>The hardest call an autonomous builder makes is <i>not</i> building.</b> A model that only ever says yes will over-engineer a codebase as fast as it ships features. Knowing which two of nine to walk away from — and writing down why — is the same governance that lets the rest run unattended.</p>
+    </div>
+  </article>
+
+  <!-- 14 status -->
+  <article class="chapter" id="status">
+    <div class="node reveal">14</div>
     <div class="ch-eyebrow reveal">Where it is today</div>
     <h2 class="reveal d1">Honest about what's done</h2>
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.19.0</span></div>
-        <p>Running on Azure with Entra SSO. The schema runs past <b>0136</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the verticals that were merely <em>designed &amp; queued</em> a day ago have since <b>shipped as schema + surface</b>: <b>premium service management</b> (an asset/identity <b>CMDB</b> with derived relationships, criticality, lifecycle states and n-hop impact analysis, plus <b>ITIL change enablement</b> — change requests, CMDB-derived risk, type-based approval and a change calendar), an <b>AR collections agent</b> (aging worklist, dunning panel, gated reminder sends), a <b>self-serve report builder</b> over a governed semantic model with shareable dashboards and per-domain report pages, a <b>connector marketplace</b> (catalog GUI + manifest registry), and <b>marketing journeys, segments and a message-template composer</b>. The <b>ICM glass-box</b> — run viewer, approval queue and autonomy dial — is live. <b>Employee time and expense tracking are both live on real data</b>, with Autotask/QuickBooks reconciliation. All real screens over a typed data layer, behind a new role-driven grouped navigation.</p>
+        <p>Running on Azure with Entra SSO. The schema runs past <b>0140</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the verticals that were merely <em>designed &amp; queued</em> a day ago have since <b>shipped as schema + surface</b>: <b>premium service management</b> (an asset/identity <b>CMDB</b> with derived relationships, criticality, lifecycle states and n-hop impact analysis, plus <b>ITIL change enablement</b> — change requests, CMDB-derived risk, type-based approval and a change calendar), an <b>AR collections agent</b> (aging worklist, dunning panel, gated reminder sends), a <b>self-serve report builder</b> over a governed semantic model with shareable dashboards and per-domain report pages, a <b>connector marketplace</b> (catalog GUI + manifest registry), and <b>marketing journeys, segments and a message-template composer</b>. The <b>ICM glass-box</b> — run viewer, approval queue and autonomy dial — is live. <b>Employee time and expense tracking are both live on real data</b>, with Autotask/QuickBooks reconciliation — expense now covering out-of-pocket entry with a policy memory-jogger and a hard attestation gate alongside mileage. All real screens over a typed data layer, behind a new role-driven grouped navigation.</p>
       </div>
       <div class="lrow">
         <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.8.0</span></div>
@@ -577,9 +596,9 @@
     </div>
   </article>
 
-  <!-- 14 frontier / pioneering standards -->
+  <!-- 15 frontier / pioneering standards -->
   <article class="chapter" id="frontier">
-    <div class="node reveal">14</div>
+    <div class="node reveal">15</div>
     <div class="ch-eyebrow reveal">Betting on the frontier</div>
     <h2 class="reveal d1">Pioneering by default — three open standards, three layers</h2>
     <p class="say reveal d1">The point of this project was never just to ship fast; it was to <em>find the edge of what's possible</em>. So at each layer of the platform — data, AI, and now knowledge — Imperion adopted an emerging open standard early, before it was the safe consensus choice. Three layers, three bets, all in the open and auditable.</p>
@@ -609,9 +628,9 @@
     </div>
   </article>
 
-  <!-- 15 build timeline + release tracker -->
+  <!-- 16 build timeline + release tracker -->
   <article class="chapter" id="timeline">
-    <div class="node reveal">15</div>
+    <div class="node reveal">16</div>
     <div class="ch-eyebrow reveal">The timeline</div>
     <h2 class="reveal d1">From a spark to a rolling release train</h2>
     <p class="say reveal d1">The whole arc, compressed: a foundation in days, the first feature in an evening, ten parallel sessions overnight, and now a steady <b>wave train</b> shipping capability across all four repos. The dates are the git history, not a press release.</p>
@@ -625,7 +644,8 @@
       <li class="tlrow"><span class="tldate">Jun 13–14</span><div class="tlbody"><b>The unattended day</b><span>~60 reviewed pull requests overnight — a near-complete project-management suite, the expense loop, and five new verticals — with no one at the keyboard.</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 14–15</span><div class="tlbody"><b>CRM parity wave</b><span>Conversational intelligence, opportunity forecasting, e-signature, marketing journeys, and a service desk shipped as schema + surface.</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 16–17</span><div class="tlbody"><b>From CRM to Business Manager</b><span>The queued frontier shipped — premium service management (asset/identity CMDB + ITIL change enablement), an AR collections agent, a self-serve report builder, a connector marketplace, marketing journeys, and ICM glass-box autonomy. The platform was rebranded <b>Imperion Business Manager</b> (CRM + ERP + AI) with an onboarding-grade docs hub across all four repos.</span></div></li>
-      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time. The self-hosted Managed-Agents runtime is live, and the remaining gates are activation settings and the on-prem server bringup, not missing code.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 18</span><div class="tlbody"><b>The build audits itself</b><span>An automated architecture pass swept all four repos for copied patterns — nine candidates, seven consolidated and two deliberately refused — while the expense and CMDB verticals deepened (out-of-pocket entry, Azure cloud-asset merge).</span></div></li>
+      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time, now also deepening the foundation under itself. The self-hosted Managed-Agents runtime is live, and the remaining gates are activation settings and the on-prem server bringup, not missing code.</span></div></li>
     </ol>
 
     <!-- capability tracker (checked as it ships) -->
