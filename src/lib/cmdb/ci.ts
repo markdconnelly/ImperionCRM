@@ -2,12 +2,13 @@
  * CMDB Configuration Item (CI) read-model helpers (#645, epic #372, ADR-0078).
  *
  * The CMDB CI register is a READ-ONLY projection over EXISTING silver inventory —
- * no new ingest, no new bronze, no schema change. v1 recognises three CI types,
+ * no new ingest, no new bronze, no schema change. It recognises four CI types,
  * each projected over one silver entity:
  *
- *   account → silver `account`  (the managed client itself)
- *   user    → silver `contact`  (a managed-estate end-user identity)
+ *   account → silver `account`     (the managed client itself)
+ *   user    → silver `contact`     (a managed-estate end-user identity)
  *   device  → silver `device`
+ *   cloud   → silver `cloud_asset` (a provider-agnostic cloud resource — #874/#875)
  *
  * STAFF EXCLUSION (acceptance criterion). The CI set is the CLIENT managed estate
  * only — Imperion staff/admin identities are EXCLUDED. The internal employees who
@@ -24,13 +25,14 @@
 
 import type { CiType, ConfigurationItem } from "@/types";
 
-export const CI_TYPES: readonly CiType[] = ["account", "user", "device"] as const;
+export const CI_TYPES: readonly CiType[] = ["account", "user", "device", "cloud"] as const;
 
 /** Human label per CI type (filter chips + detail header). */
 export const CI_TYPE_LABEL: Record<CiType, string> = {
   account: "Account",
   user: "End-user",
   device: "Device",
+  cloud: "Cloud",
 };
 
 /** Lucide icon name per CI type — mirrors the nav/aesthetic vocabulary. */
@@ -38,6 +40,7 @@ export const CI_TYPE_ICON: Record<CiType, string> = {
   account: "Building2",
   user: "Contact",
   device: "MonitorSmartphone",
+  cloud: "Cloud",
 };
 
 /** Narrow an arbitrary string to a known CI type (route param guard). */

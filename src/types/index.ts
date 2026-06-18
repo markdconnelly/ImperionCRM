@@ -3208,8 +3208,10 @@ export interface QueueSummary {
  *  - `user`     → silver `contact` scoped to a client account (a managed-estate
  *                 end-user identity; Imperion staff/admin = `app_user`, EXCLUDED)
  *  - `device`   → silver `device`
+ *  - `cloud`    → silver `cloud_asset` (a provider-agnostic cloud resource — azure
+ *                 now, aws/gcp later; #874/#875, owning client via `account_tenant`)
  */
-export type CiType = "account" | "user" | "device";
+export type CiType = "account" | "user" | "device" | "cloud";
 
 /**
  * One Configuration Item in the `cmdb_ci` union read-model (#645). A CI is a

@@ -1321,10 +1321,12 @@ export const postgresRepositories: Repositories = {
           last_seen_at: string | null;
           intune_management_state: string | null;
           intune_enrolled_at: string | null;
+          cloud_category: string | null;
         }>(
           `SELECT ci_type, ci_id, account_id, account_name, display_name, attributes,
                   relationship, lifecycle_stage, device_type,
-                  device_status, last_seen_at, intune_management_state, intune_enrolled_at
+                  device_status, last_seen_at, intune_management_state, intune_enrolled_at,
+                  cloud_category
              FROM (
                SELECT 'account'::text AS ci_type,
                       a.id::text       AS ci_id,
@@ -1338,6 +1340,7 @@ export const postgresRepositories: Repositories = {
                       NULL::text       AS last_seen_at,
                       NULL::text       AS intune_management_state,
                       NULL::text       AS intune_enrolled_at,
+                      NULL::text       AS cloud_category,
                       jsonb_build_array(
                         jsonb_build_object('label','Lifecycle','value',replace(a.lifecycle_stage::text,'_',' ')),
                         jsonb_build_object('label','Relationship','value',coalesce(a.relationship::text,'—')),
@@ -1352,6 +1355,7 @@ export const postgresRepositories: Repositories = {
                       c.account_id::text,
                       a.name,
                       c.full_name,
+                      NULL::text,
                       NULL::text,
                       NULL::text,
                       NULL::text,
@@ -1381,6 +1385,7 @@ export const postgresRepositories: Repositories = {
                       d.last_seen_at::text,
                       imd.management_state,
                       imd.enrolled_date_time,
+                      NULL::text,
                       jsonb_build_array(
                         jsonb_build_object('label','Type','value',coalesce(d.device_type,'—')),
                         jsonb_build_object('label','Make / model','value',trim(both ' ' from concat_ws(' ', d.manufacturer, d.model))),
@@ -1397,6 +1402,38 @@ export const postgresRepositories: Repositories = {
                    LIMIT 1
                  ) imd ON d.serial_number IS NOT NULL
                 WHERE d.account_id IS NOT NULL
+
+               UNION ALL
+
+               -- cloud CI arm: silver cloud_asset (provider-agnostic; #874/#875). Owning
+               -- account required (staff/internal exclusion — a tenant-unmapped asset has a
+               -- NULL account_id and is dropped here, like the device arm). device_status +
+               -- last_seen_at carry the lifecycle signal; cloud_category the criticality one.
+               SELECT 'cloud'::text,
+                      ca.id::text,
+                      ca.account_id::text,
+                      a.name,
+                      coalesce(ca.name, ca.external_id, 'Cloud resource'),
+                      NULL::text,
+                      NULL::text,
+                      NULL::text,
+                      ca.status,
+                      ca.last_seen_at::text,
+                      NULL::text,
+                      NULL::text,
+                      ca.category::text,
+                      jsonb_build_array(
+                        jsonb_build_object('label','Provider','value',
+                          CASE ca.provider WHEN 'azure' THEN 'Azure' WHEN 'aws' THEN 'AWS'
+                                           WHEN 'gcp' THEN 'GCP' ELSE 'Other' END),
+                        jsonb_build_object('label','Type','value',coalesce(ca.native_type,'—')),
+                        jsonb_build_object('label','Region','value',coalesce(ca.region,'—')),
+                        jsonb_build_object('label','Resource group','value',coalesce(ca.resource_group,'—')),
+                        jsonb_build_object('label','Subscription','value',coalesce(ca.subscription_ref,'—'))
+                      )
+                 FROM cloud_asset ca
+                 JOIN account a ON a.id = ca.account_id
+                WHERE ca.account_id IS NOT NULL
              ) ci
             ORDER BY account_name NULLS LAST, ci_type, display_name`,
         );
@@ -1445,6 +1482,7 @@ export const postgresRepositories: Repositories = {
                 accountRelationship: r.relationship,
                 accountLifecycleStage: r.lifecycle_stage,
                 deviceType: r.device_type,
+                cloudCategory: r.cloud_category,
               }),
             override: o?.override ?? null,
             // Derived, read-only asset lifecycle (#649) — recomputed from source

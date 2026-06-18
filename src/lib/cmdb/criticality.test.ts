@@ -86,11 +86,29 @@ describe("deriveCriticality — user", () => {
   });
 });
 
+describe("deriveCriticality — cloud (category)", () => {
+  test("data/identity/security plane is high", () => {
+    expect(deriveCriticality("cloud", { cloudCategory: "database" })).toBe("high");
+    expect(deriveCriticality("cloud", { cloudCategory: "identity" })).toBe("high");
+    expect(deriveCriticality("cloud", { cloudCategory: "security" })).toBe("high");
+  });
+  test("run/connectivity plane is medium", () => {
+    expect(deriveCriticality("cloud", { cloudCategory: "compute" })).toBe("medium");
+    expect(deriveCriticality("cloud", { cloudCategory: "network" })).toBe("medium");
+  });
+  test("supporting/unknown categories are low", () => {
+    expect(deriveCriticality("cloud", { cloudCategory: "storage" })).toBe("low");
+    expect(deriveCriticality("cloud", { cloudCategory: null })).toBe("low");
+    expect(deriveCriticality("cloud", {})).toBe("low");
+  });
+});
+
 describe("deriveCriticality never auto-assigns critical", () => {
   test("no input combination yields critical (reserved for override)", () => {
     const combos = [
       deriveCriticality("account", { accountRelationship: "customer", accountLifecycleStage: "managed_active" }),
       deriveCriticality("device", { deviceType: "server" }),
+      deriveCriticality("cloud", { cloudCategory: "database" }),
       deriveCriticality("user", {}),
     ];
     expect(combos).not.toContain("critical");

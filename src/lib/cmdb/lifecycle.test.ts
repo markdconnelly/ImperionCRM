@@ -131,3 +131,23 @@ describe("deriveLifecycle — missing signals are graceful (never crash, → unk
     );
   });
 });
+
+describe("deriveLifecycle — cloud (same status+activity rule, no Intune)", () => {
+  test("provider power/provisioning states map via the shared tokens", () => {
+    expect(deriveLifecycle("cloud", { deviceStatus: "Running" }, NOW)).toBe("in-use");
+    expect(deriveLifecycle("cloud", { deviceStatus: "Succeeded" }, NOW)).toBe("in-use");
+    expect(deriveLifecycle("cloud", { deviceStatus: "Deallocated" }, NOW)).toBe("in-stock");
+    expect(deriveLifecycle("cloud", { deviceStatus: "Deleting" }, NOW)).toBe("disposed");
+  });
+
+  test("falls back to last_seen_at when status is silent", () => {
+    expect(deriveLifecycle("cloud", { lastSeenAt: recent(5) }, NOW)).toBe("in-use");
+    expect(
+      deriveLifecycle("cloud", { lastSeenAt: recent(STALE_SEEN_DAYS + 1) }, NOW),
+    ).toBe("retired");
+  });
+
+  test("no signal → unknown (graceful)", () => {
+    expect(deriveLifecycle("cloud", {}, NOW)).toBe("unknown");
+  });
+});
