@@ -5,29 +5,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { canSeeSettings, type AppRole } from "@/lib/auth/roles";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
-import { CompanyCredentialCard } from "@/components/settings/company-credential-card";
 import { OrchestratorSettingsCard } from "@/components/agent/orchestrator-settings-card";
 import { getAgentSettingsState } from "@/lib/agent/settings-data";
 import { settingsSourceNote } from "@/lib/agent/settings";
 import { saveAgentSettingsAction } from "@/app/(app)/agents/actions";
-import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { getRepositories } from "@/lib/data";
-import {
-  connectDocusignAction,
-  connectQuickBooksAction,
-  disconnectAction,
-  grantGdapAction,
-  refreshNowAction,
-  saveCredentialAction,
-  setPollIntervalAction,
-} from "./actions";
-import { REFRESH_SOURCES } from "@/lib/integrations/pipeline-refresh";
 import { TenantMappingPanel } from "@/components/settings/tenant-mapping-panel";
 import {
   deleteTenantMappingAction,
   saveTenantMappingAction,
 } from "./tenant-mapping-actions";
-import { QBO_CONNECT_NOTICES, isQboConnectResult } from "@/lib/integrations/qbo-connect";
 
 /** Human labels for the application roles. */
 const ROLE_LABEL: Record<AppRole, string> = {
@@ -48,31 +35,6 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-const NOTICE_TONE: Record<"success" | "warning" | "error", string> = {
-  success: "border-green/40 text-green",
-  warning: "border-amber/40 text-amber",
-  error: "border-red/40 text-red",
-};
-
-/**
- * One-shot notice for a QuickBooks company-connect outcome (#530). Both
- * `connectQuickBooksAction` and `/api/qbo/callback` land on
- * `/settings?tab=credentials&qbo=<result>` (with optional `&qboStatus=<httpStatus>`);
- * this renders a specific reason instead of the row's bare "error".
- */
-function QboConnectNotice({ qbo, status }: { qbo?: string; status?: string }) {
-  if (!qbo || !isQboConnectResult(qbo)) return null;
-  const notice = QBO_CONNECT_NOTICES[qbo];
-  return (
-    <p
-      role="status"
-      className={`rounded-md border bg-panel-2 px-3 py-2 text-sm ${NOTICE_TONE[notice.tone]}`}
-    >
-      {notice.message(status)}
-    </p>
-  );
-}
-
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
@@ -85,13 +47,9 @@ function Row({ label, value }: { label: string; value: string }) {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    tab?: string;
-    qbo?: string;
-    qboStatus?: string;
-  }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const { tab, qbo, qboStatus } = await searchParams;
+  const { tab } = await searchParams;
   const session = await auth();
   const roles = session?.user?.roles ?? ["support"];
   // Settings is admin-only (ADR-0030). Middleware already redirects, but guard
@@ -102,16 +60,14 @@ export default async function SettingsPage({
   const email = session?.user?.email ?? "—";
   const rolesLabel = roles.map((r) => ROLE_LABEL[r] ?? r).join(", ");
 
-  const { connections, crm, security } = getRepositories();
-  const [company, agentSettings, tenantMappings, unmappedTenants, accounts] =
+  const { crm, security } = getRepositories();
+  const [agentSettings, tenantMappings, unmappedTenants, accounts] =
     await Promise.all([
-      connections.listCompanyConnections(),
       getAgentSettingsState(),
       security.listTenantMappings(),
       security.listUnmappedTenants(),
       crm.listAccounts(),
     ]);
-  const companyByProvider = new Map(company.map((c) => [c.provider, c]));
 
   // ── Profile tab ────────────────────────────────────────────────────────────
   const profile = (
@@ -131,8 +87,12 @@ export default async function SettingsPage({
 
       <Card title="Your connections">
         <p className="text-sm text-dim">
-          Your personal 365 / social account connections moved to your profile (#796) —
-          they are yours, distinct from the company credentials below.
+          Your personal 365 / social account connections live on your profile (#796) —
+          they are yours, distinct from the org-wide company connections under{" "}
+          <Link href="/settings/connections" className="text-accent hover:underline">
+            Connections
+          </Link>
+          .
         </p>
         <Link
           href="/profile"
@@ -194,36 +154,6 @@ export default async function SettingsPage({
     </section>
   );
 
-  // ── Company credentials tab (ADR-0036) ───────────────────────────────────────
-  const credentials = (
-    <section className="flex flex-col gap-3">
-      <div>
-        <h3 className="font-display text-sm font-semibold tracking-tight">Company systems</h3>
-        <p className="mt-0.5 text-sm text-dim">
-          Org-wide credentials for the integration engines. Secrets are written to Key
-          Vault by the backend — only a reference is stored here, never the secret itself.
-        </p>
-      </div>
-      <QboConnectNotice qbo={qbo} status={qboStatus} />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {COMPANY_PROVIDERS.map((p) => (
-          <CompanyCredentialCard
-            key={p.key}
-            provider={p}
-            connection={companyByProvider.get(p.key) ?? null}
-            saveAction={saveCredentialAction}
-            gdapAction={p.key === "qbo" ? connectQuickBooksAction : grantGdapAction}
-            consentAction={p.key === "docusign" ? connectDocusignAction : undefined}
-            disconnectAction={disconnectAction}
-            pollAction={setPollIntervalAction}
-            refreshAction={refreshNowAction}
-            refreshable={p.key in REFRESH_SOURCES}
-          />
-        ))}
-      </div>
-    </section>
-  );
-
   // ── Tenant Mapping tab (ADR-0051, #150) ─────────────────────────────────────
   const tenantsPanel = (
     <TenantMappingPanel
@@ -266,13 +196,12 @@ export default async function SettingsPage({
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Settings"
-        description="Your profile, the company integration credentials, and configuration tools."
+        description="Your profile, AI configuration, tenant mapping, and configuration tools. Company integration credentials live under Connections."
       />
       <SettingsTabs
         initialTab={tab}
         profile={profile}
         ai={aiPanel}
-        credentials={credentials}
         tenants={tenantsPanel}
         tools={toolsPanel}
       />

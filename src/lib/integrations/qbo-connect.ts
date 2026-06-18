@@ -2,10 +2,10 @@
  * QuickBooks Online company-connect outcomes (#530, ADR-0048/0085).
  *
  * Both the start action (`connectQuickBooksAction`) and the callback route
- * (`/api/qbo/callback`) land on `/settings?tab=credentials&qbo=<result>` with an
+ * (`/api/qbo/callback`) land on `/settings/connections?qbo=<result>` with an
  * optional `&qboStatus=<httpStatus>` carrying the backend's HTTP code. This module is
- * the single vocabulary + human notice for those outcomes, so the company-credentials
- * tab surfaces a specific, actionable reason instead of the connection row's bare
+ * the single vocabulary + human notice for those outcomes, so the Connections page
+ * surfaces a specific, actionable reason instead of the connection row's bare
  * "error". No secrets and no token material — these are result codes only.
  */
 export type QboConnectResult =
