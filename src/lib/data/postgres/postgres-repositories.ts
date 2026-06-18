@@ -10850,6 +10850,31 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async listAccountConnections(accountId: string): Promise<ConnectionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listAccountConnections(accountId);
+      try {
+        // Connections linked to one account (ADR-0103) — the account-page credentials panel.
+        // Secret NAMES only.
+        const { rows } = await pool.query<ConnectionDbRow>(
+          `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
+                  cn.status::text AS status, cn.scopes, u.display_name AS owner,
+                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at, cn.poll_interval_minutes,
+                  cn.account_id::text AS account_id, a.name AS account_name,
+                  cn.auth_method, cn.cert_thumbprint
+             FROM connection cn
+             LEFT JOIN app_user u ON u.id = cn.owner_user_id
+             LEFT JOIN account a ON a.id = cn.account_id
+            WHERE cn.account_id = $1
+            ORDER BY cn.provider, cn.display_name`,
+          [accountId],
+        );
+        return rows.map(mapConnection);
+      } catch {
+        return mockRepositories.connections.listAccountConnections(accountId);
+      }
+    },
+
     async connect(input: ConnectionInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.connections.connect(input);

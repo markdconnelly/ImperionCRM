@@ -41,4 +41,15 @@ describe("listAllConnections (credential registry)", () => {
       expect(c.keyvaultSecretRef).toMatch(/^conn-/);
     }
   });
+
+  it("listAccountConnections returns only this account's connections (account-page panel)", async () => {
+    const all = await conns.listAllConnections();
+    const linked = all.find((c) => c.accountId);
+    expect(linked?.accountId).toBeTruthy();
+    const forAccount = await conns.listAccountConnections(linked!.accountId!);
+    expect(forAccount.length).toBeGreaterThan(0);
+    expect(forAccount.every((c) => c.accountId === linked!.accountId)).toBe(true);
+    // An unknown account has none.
+    expect(await conns.listAccountConnections("acc_nonexistent")).toEqual([]);
+  });
 });

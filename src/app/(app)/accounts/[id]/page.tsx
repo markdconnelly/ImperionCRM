@@ -8,6 +8,7 @@ import { SourceRecords } from "@/components/comms/source-records";
 import { SharePointSites } from "@/components/accounts/sharepoint-sites";
 import { DnsPostureCard } from "@/components/accounts/dns-posture-card";
 import { IntegrationHealth } from "@/components/comms/integration-health";
+import { CredentialsCatalog } from "@/components/settings/credentials-catalog";
 import { getRepositories } from "@/lib/data";
 import { computeImperionScore } from "@/lib/security/imperion-score";
 import { refreshPostureAction } from "../actions";
@@ -77,7 +78,7 @@ export default async function AccountDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { crm, comms, security } = getRepositories();
+  const { crm, comms, security, connections } = getRepositories();
   const [
     account,
     timeline,
@@ -89,6 +90,7 @@ export default async function AccountDetailPage({
     sharePointSites,
     dnsDomains,
     conversations,
+    accountConnections,
   ] = await Promise.all([
     crm.getAccount(id),
     comms.listInteractionsByAccount(id),
@@ -100,6 +102,7 @@ export default async function AccountDetailPage({
     security.listSharePointSitesForAccount(id),
     security.listDnsDomainsForAccount(id),
     crm.listConversationsForAccount(id),
+    connections.listAccountConnections(id),
   ]);
   if (!account) notFound();
 
@@ -182,6 +185,17 @@ export default async function AccountDetailPage({
         >
           <IntegrationHealth sources={sources} />
         </Section>
+
+        {accountConnections.length > 0 && (
+          <Section
+            title="Credentials"
+            icon="KeyRound"
+            hint="Connections custodied for this account (ADR-0103). Key Vault secret names only — never values."
+            className="lg:col-span-3"
+          >
+            <CredentialsCatalog connections={accountConnections} />
+          </Section>
+        )}
 
         {imperionScore && (
           <Section
