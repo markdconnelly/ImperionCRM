@@ -13,6 +13,7 @@ import {
   campaigns,
   captureEvents,
   companyConnections,
+  clientConnections,
   contacts,
   enrollments,
   interactions,
@@ -1620,6 +1621,10 @@ export const mockRepositories: Repositories = {
     async listCompanyConnections() {
       return companyConnections;
     },
+    async listAllConnections() {
+      // The credential registry (ADR-0103): every scope, client first. Names only.
+      return [...clientConnections, ...companyConnections, ...userConnections];
+    },
     async connect() {
       throw new Error(NO_DB);
     },
@@ -1644,6 +1649,10 @@ export const mockRepositories: Repositories = {
           lastSync: null,
           connectedAt: null,
           pollIntervalMinutes: 60,
+          accountId: null,
+          accountName: null,
+          authMethod: null,
+          certThumbprint: null,
         });
       }
     },

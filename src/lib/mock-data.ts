@@ -220,16 +220,24 @@ export function mockCurrentConsent(id: string): CurrentConsentRow[] {
 
 // ── Connections (ADR-0012/0024) ──────────────────────────────────────────────
 
+const NO_CRED = { accountId: null, accountName: null, authMethod: null, certThumbprint: null };
+
 export const userConnections: ConnectionRow[] = [
-  { id: "cn_01", scope: "user", provider: "m365", displayName: "a.reyes@imperion.example", status: "active", scopes: ["Mail.Read", "Calendars.Read", "Chat.Read"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_01", lastSync: "2026-06-06 07:00", connectedAt: "2026-04-12", pollIntervalMinutes: 15 },
-  { id: "cn_02", scope: "user", provider: "linkedin", displayName: "Alex Reyes", status: "active", scopes: ["r_liteprofile", "r_organization_social"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_02", lastSync: "2026-06-05 22:00", connectedAt: "2026-04-12", pollIntervalMinutes: 360 },
-  { id: "cn_03", scope: "user", provider: "youtube", displayName: "Reyes MSP", status: "expired", scopes: ["youtube.readonly"], owner: "A. Reyes", keyvaultSecretRef: "kv://imperion/conn/cn_03", lastSync: "2026-05-19 09:00", connectedAt: "2026-04-20", pollIntervalMinutes: 0 },
+  { id: "cn_01", scope: "user", provider: "m365", displayName: "a.reyes@imperion.example", status: "active", scopes: ["Mail.Read", "Calendars.Read", "Chat.Read"], owner: "A. Reyes", keyvaultSecretRef: "conn-user-areyes-m365", lastSync: "2026-06-06 07:00", connectedAt: "2026-04-12", pollIntervalMinutes: 15, ...NO_CRED },
+  { id: "cn_02", scope: "user", provider: "linkedin", displayName: "Alex Reyes", status: "active", scopes: ["r_liteprofile", "r_organization_social"], owner: "A. Reyes", keyvaultSecretRef: "conn-user-areyes-linkedin", lastSync: "2026-06-05 22:00", connectedAt: "2026-04-12", pollIntervalMinutes: 360, ...NO_CRED },
+  { id: "cn_03", scope: "user", provider: "youtube", displayName: "Reyes MSP", status: "expired", scopes: ["youtube.readonly"], owner: "A. Reyes", keyvaultSecretRef: "conn-user-areyes-youtube", lastSync: "2026-05-19 09:00", connectedAt: "2026-04-20", pollIntervalMinutes: 0, ...NO_CRED },
 ];
 
 export const companyConnections: ConnectionRow[] = [
-  { id: "cn_10", scope: "company", provider: "autotask", displayName: "Imperion Autotask", status: "active", scopes: ["tickets:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/autotask", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 30 },
-  { id: "cn_11", scope: "company", provider: "itglue", displayName: "Imperion IT Glue", status: "active", scopes: ["assets:read", "docs:read"], owner: null, keyvaultSecretRef: "kv://imperion/conn/itglue", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 720 },
-  { id: "cn_12", scope: "company", provider: "apollo", displayName: "Apollo — enrichment", status: "active", scopes: ["contacts:enrich", "companies:enrich"], owner: null, keyvaultSecretRef: "kv://imperion/conn/apollo", lastSync: null, connectedAt: "2026-06-08", pollIntervalMinutes: 1440 },
+  { id: "cn_10", scope: "company", provider: "autotask", displayName: "Imperion Autotask", status: "active", scopes: ["tickets:read"], owner: null, keyvaultSecretRef: "conn-company-autotask", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 30, ...NO_CRED },
+  { id: "cn_11", scope: "company", provider: "itglue", displayName: "Imperion IT Glue", status: "active", scopes: ["assets:read", "docs:read"], owner: null, keyvaultSecretRef: "conn-company-itglue", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 720, ...NO_CRED },
+  { id: "cn_12", scope: "company", provider: "apollo", displayName: "Apollo — enrichment", status: "active", scopes: ["contacts:enrich", "companies:enrich"], owner: null, keyvaultSecretRef: "conn-company-apollo", lastSync: null, connectedAt: "2026-06-08", pollIntervalMinutes: 1440, ...NO_CRED },
+  { id: "cn_13", scope: "company", provider: "m365", displayName: "Imperion M365 (enterprise app)", status: "active", scopes: ["Directory.Read.All"], owner: null, keyvaultSecretRef: "conn-company-m365", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 1440, accountId: null, accountName: null, authMethod: "certificate", certThumbprint: "A1B2C3D4E5F6…" },
+];
+
+/** Client-scope connections (ADR-0103) — a managed customer's credential, linked to its account. */
+export const clientConnections: ConnectionRow[] = [
+  { id: "cn_20", scope: "client", provider: "m365", displayName: "Contoso M365 (tenant 1)", status: "active", scopes: ["Directory.Read.All"], owner: null, keyvaultSecretRef: "conn-client-contoso-t1-m365", lastSync: "2026-06-06 05:00", connectedAt: "2026-05-01", pollIntervalMinutes: 1440, accountId: "acc_contoso", accountName: "Contoso Ltd", authMethod: "secret", certThumbprint: null },
 ];
 
 // ── Demand generation (ADR-0012/0026) ────────────────────────────────────────

@@ -2162,6 +2162,8 @@ export interface ConnectionsRepository {
   /** Personal connections for the signed-in employee, resolved by email (ADR-0024). */
   listUserConnections(userEmail: string): Promise<ConnectionRow[]>;
   listCompanyConnections(): Promise<ConnectionRow[]>;
+  /** The credential registry (ADR-0103): every connection across scopes, with linked account names; secret NAMES only. */
+  listAllConnections(): Promise<ConnectionRow[]>;
   connect(input: ConnectionInput): Promise<void>;
   /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;

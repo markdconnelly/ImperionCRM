@@ -2559,16 +2559,21 @@ export interface CurrentConsentRow {
 /** A connected external account (personal or company-wide). */
 export interface ConnectionRow {
   id: string;
-  scope: string; // user|company
+  scope: string; // user(personal)|company|client (ADR-0103)
   provider: string;
   displayName: string | null;
   status: string; // active|expired|revoked|error
   scopes: string[];
   owner: string | null; // employee, for user-scope
-  keyvaultSecretRef: string | null; // reference string only — never a secret
+  keyvaultSecretRef: string | null; // Key Vault secret NAME only — never a secret value
   lastSync: string | null;
   connectedAt: string | null;
   pollIntervalMinutes: number; // how often the pipeline polls; 0 = manual/paused (ADR-0038)
+  // Credential-registry fields (ADR-0103): client-scope account linkage + cert-or-secret auth.
+  accountId: string | null; // owning account for client scope (null otherwise)
+  accountName: string | null; // resolved account name, for display
+  authMethod: string | null; // certificate|secret (enterprise app); null for OAuth
+  certThumbprint: string | null; // cert id when authMethod=certificate (public, not a secret)
 }
 
 /** A row in an account's external identity map. */
