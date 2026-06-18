@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import type { DeviceInventoryRow } from "@/types";
 
@@ -26,9 +27,9 @@ const POLICY_BADGE: Record<string, { label: string; className: string }> = {
  * Devices are managed in their source systems (IT Glue, Intune, UniFi); this
  * view only reports. Editing happens at the source, never here.
  *
- * Extracted from the former `/devices` page (#795) so device inventory surfaces
- * as a tab inside CMDB (ADR-0078) without duplicating the read or the markup.
- * The route `/devices` now redirects here.
+ * Extracted from the former `/devices` page (#795); it is now the **Devices** view
+ * of the unified CMDB asset surface (#876, `CmdbAssets`) — the route `/devices`
+ * redirects to CMDB. Silver-merged rows link to their device CI detail.
  */
 export function DeviceInventory({ devices }: { devices: DeviceInventoryRow[] }) {
   return (
@@ -64,7 +65,16 @@ export function DeviceInventory({ devices }: { devices: DeviceInventoryRow[] }) 
               const make = [d.manufacturer, d.model].filter(Boolean).join(" ");
               return (
                 <tr key={`${d.origin}-${d.id}`} className="border-t border-border hover:bg-panel-2">
-                  <td className="px-4 py-3 font-medium">{d.name ?? "—"}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {d.origin === "silver" ? (
+                      // Silver-merged rows are device CIs → drill to the CI detail.
+                      <Link href={`/cmdb/device/${d.id}`} className="text-text hover:text-accent">
+                        {d.name ?? "—"}
+                      </Link>
+                    ) : (
+                      d.name ?? "—"
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-dim">{d.deviceType ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">{d.account ?? "Unlinked"}</td>
                   <td className="px-4 py-3 text-dim">{make || "—"}</td>
