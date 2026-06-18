@@ -88,6 +88,7 @@ import type {
   IntakeSubmissionRow,
   IntakeSubmitResult,
   ExpenseItemInput,
+  MileageItemInput,
   ExpenseCorrection,
   ExpenseCategoryMappingInput,
   ExpenseCategoryAdminRow,
@@ -7197,6 +7198,56 @@ export const postgresRepositories: Repositories = {
             input.billable,
             input.autotaskCompanyId,
             input.receiptId,
+          ],
+        );
+        await client.query("COMMIT");
+        return rows[0].id;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async addMileageItem(input: MileageItemInput): Promise<string | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.addMileageItem(input);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Same self-scoping as addExpenseItem: lock the report and re-check it is Open AND
+        // owned by the session employee (never trust the form). Manual mileage (#853) goes to
+        // the website_mileage bronze — miles only; the reimbursement $ is backend-derived
+        // (the comp reader), so the comp-gated rate is never read on this path.
+        const { rows: rep } = await client.query<{ state: string }>(
+          `SELECT state FROM expense_report
+            WHERE id = $1 AND app_user_id = $2 FOR UPDATE`,
+          [input.expenseReportId, input.employeeId],
+        );
+        if (!rep[0] || rep[0].state !== "open") {
+          await client.query("ROLLBACK");
+          return null;
+        }
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO website_mileage
+             (expense_report_id, app_user_id, item_date, miles, origin, destination,
+              reimbursable, billable, autotask_company_id, ticket_ref, project_ref, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           RETURNING id`,
+          [
+            input.expenseReportId,
+            input.employeeId,
+            input.itemDate,
+            input.miles,
+            nullIfEmpty(input.origin),
+            nullIfEmpty(input.destination),
+            input.reimbursable,
+            input.billable,
+            input.autotaskCompanyId,
+            nullIfEmpty(input.ticketRef),
+            nullIfEmpty(input.projectRef),
+            nullIfEmpty(input.notes),
           ],
         );
         await client.query("COMMIT");
