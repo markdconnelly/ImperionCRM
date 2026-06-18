@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExpensesOverview } from "@/components/expenses/expenses-overview";
+import { PolicyJogger } from "@/components/expenses/policy-jogger";
 import { getRepositories } from "@/lib/data";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 import {
@@ -25,6 +26,7 @@ import {
   createExpenseReportAction,
   reopenExpenseReportAction,
 } from "./actions";
+import { deleteExpenseItemAction } from "./out-of-pocket/actions";
 
 const STATE_TONE: Record<ExpenseReportState, string> = {
   open: "text-dim",
@@ -55,8 +57,9 @@ function UnmappedEmployee() {
  * lazy), the full table of the employee's monthly reports, and a bottom lifecycle ledger
  * tracking each submitted month through admin approval → finance approval → reimbursed.
  * Drilling into a month (`?period=YYYY-MM`) shows a read-only items view with the attest /
- * reopen lifecycle controls. Adding/editing items is the entry GUI (#487). Self-scoped:
- * the employee id is the signed-in user's.
+ * reopen lifecycle controls plus the entry GUI (#487): add out-of-pocket items / mileage,
+ * remove a line, and the policy memory-jogger panel. Self-scoped: the employee id is the
+ * signed-in user's.
  */
 export default async function ExpensesPage({
   searchParams,
@@ -89,6 +92,13 @@ export default async function ExpensesPage({
       }
     }
     const hasViolations = violations.size > 0;
+
+    // Memory-jogger (ADR-0083, #487): the full derived violation set (hard + soft) from
+    // the `expense_policy_violation` view, surfaced as a pre-attest nudge panel while the
+    // report is Open. Soft rows (over soft threshold, uncategorized, suspected duplicate)
+    // only nudge; hard rows are also flagged inline and block attest.
+    const policyViolations =
+      report && state === "open" ? await crm.listExpensePolicyViolations(report.id) : [];
 
     return (
       <div className="flex flex-col gap-6">
@@ -129,8 +139,18 @@ export default async function ExpensesPage({
               </div>
             )}
 
+            {report.state === "open" && policyViolations.length > 0 && (
+              <PolicyJogger violations={policyViolations} />
+            )}
+
             {report.state === "open" && (
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Link
+                  href={`/expenses/out-of-pocket/new?period=${period}`}
+                  className="inline-flex items-center rounded-md border border-border bg-panel-2 px-3 py-1.5 text-sm text-text transition-colors hover:border-accent"
+                >
+                  + Add expense
+                </Link>
                 <Link
                   href={`/expenses/mileage/new?period=${period}`}
                   className="inline-flex items-center rounded-md border border-border bg-panel-2 px-3 py-1.5 text-sm text-text transition-colors hover:border-accent"
@@ -150,13 +170,14 @@ export default async function ExpensesPage({
                     <th className="px-4 py-2 font-medium">Amount</th>
                     <th className="px-4 py-2 font-medium">Reimbursable</th>
                     <th className="px-4 py-2 font-medium">Billable</th>
+                    {report.state === "open" && <th className="px-4 py-2" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {items.length === 0 ? (
                     <tr className="bg-panel">
-                      <td colSpan={6} className="px-4 py-6 text-center text-dim">
-                        No items yet. Use “Add mileage” above to log a drive; out-of-pocket entry is the entry GUI (#487).
+                      <td colSpan={report.state === "open" ? 7 : 6} className="px-4 py-6 text-center text-dim">
+                        No items yet — use “Add expense” for an out-of-pocket item or “Add mileage” to log a drive.
                       </td>
                     </tr>
                   ) : (
@@ -181,6 +202,21 @@ export default async function ExpensesPage({
                         <td className="px-4 py-2">{fmtUsd(it.amount)}</td>
                         <td className="px-4 py-2 text-dim">{it.reimbursable ? "Yes" : "No"}</td>
                         <td className="px-4 py-2 text-dim">{it.billable ? "Yes" : "No"}</td>
+                        {report.state === "open" && (
+                          <td className="px-4 py-2 text-right">
+                            <form action={deleteExpenseItemAction}>
+                              <input type="hidden" name="period" value={period} />
+                              <input type="hidden" name="itemId" value={it.id} />
+                              <button
+                                type="submit"
+                                aria-label="Remove item"
+                                className="text-dim transition-colors hover:text-red"
+                              >
+                                Remove
+                              </button>
+                            </form>
+                          </td>
+                        )}
                       </tr>
                       );
                     })
