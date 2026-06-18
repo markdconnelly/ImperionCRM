@@ -533,6 +533,18 @@ export const connectionsService = {
       "/connections/qbo/callback",
       { method: "POST", body: JSON.stringify(input) },
     ),
+  /**
+   * Begin the one-time DocuSign admin-consent flow (#862, backend #192). Company-scoped;
+   * the backend builds the consent URL for the configured environment's OAuth host
+   * (`account-d` demo / `account` prod). JWT-grant impersonation refuses every mint until
+   * an admin grants this consent once per environment.
+   */
+  startDocusignConsent: () =>
+    callService<{ consentUrl: string; environment: string }>(
+      services.integration,
+      "/connections/docusign/consent",
+      { method: "POST", body: JSON.stringify({}) },
+    ),
 };
 
 /**

@@ -202,6 +202,53 @@ export async function grantGdapAction(formData: FormData) {
 }
 
 /**
+ * Begin the one-time DocuSign admin-consent flow (#862, backend #192). DocuSign is a
+ * `kind: "credential"` provider (its secrets are entered via the form + stored by the
+ * backend) that ALSO needs a one-time JWT-impersonation admin grant — this action fetches
+ * the consent URL and redirects the admin to DocuSign. No cookie: unlike GDAP/QBO there is
+ * no auth-code callback into our app (JWT grant is 2-legged); DocuSign's redirect lands on
+ * its own site. When the backend isn't configured yet we record the intent and stay put.
+ */
+export async function connectDocusignAction(formData: FormData) {
+  await requireCapability("settings:write");
+  const providerKey = String(formData.get("provider") ?? "");
+  const provider = COMPANY_PROVIDERS.find((p) => p.key === providerKey);
+  if (!provider || provider.adminConsent !== true) return;
+
+  let consentUrl: string | null = null;
+  let status = "pending";
+  try {
+    const res = await connectionsService.startDocusignConsent();
+    consentUrl = res.consentUrl ?? null;
+    if (!consentUrl) status = "error";
+  } catch (err) {
+    if (!isBackendNotConfigured(err)) {
+      console.error("connectDocusignAction: consent start failed:", err);
+      status = "error";
+    }
+  }
+
+  const { connections } = getRepositories();
+  try {
+    await connections.saveCompanyCredential({
+      provider: provider.key,
+      displayName: `Imperion ${provider.label}`,
+      scopes: provider.scopes,
+      keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
+      status,
+    });
+  } catch (err) {
+    // The `docusign` connection_provider enum value ships in this PR's migration; if it
+    // hasn't been applied yet, a cosmetic row write must not block the consent redirect.
+    console.error("connectDocusignAction: record row failed (migration pending?):", err);
+  }
+  revalidatePath("/settings");
+
+  // redirect() throws — keep it last, outside the try/catch.
+  if (consentUrl) redirect(consentUrl);
+}
+
+/**
  * Begin the company-wide QuickBooks Online connect flow (#117/#528). Unlike GDAP this
  * needs no cookie: the backend parks a one-time CSRF `state` in Key Vault and embeds it
  * in the Intuit consent URL, then validates it on the callback (same posture as the

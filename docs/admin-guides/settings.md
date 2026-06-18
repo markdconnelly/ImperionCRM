@@ -104,11 +104,14 @@ How a credential is handled:
   - **`credential`** — a field form (API key / username / secret / region, etc.).
   - **`consent`** — an admin-consent connect button, no key to paste (GDAP, and the
     QuickBooks OAuth connect).
+  - **`credential` + `adminConsent`** — DocuSign needs BOTH: a secret form **and** a
+    one-time admin grant. The card renders the form *and* a **Grant admin consent**
+    button (`connectDocusignAction` → backend `/connections/docusign/consent`).
 - **Poll cadence + Refresh now** appear only for *pollable* providers
-  (`providerIsPollable` — `kind: "credential"` and not send-capable). Consent/OAuth
-  providers (GDAP, QBO) and the send-capable Meta token are not polled, so they get
-  no cadence selector. Cadence is honoured by the pipeline via `pollDue()`
-  (ADR-0038).
+  (`providerIsPollable` — `kind: "credential"`, not send-capable, not `adminConsent`).
+  Consent/OAuth providers (GDAP, QBO), the send-capable Meta token, and DocuSign are
+  not polled, so they get no cadence selector. Cadence is honoured by the pipeline via
+  `pollDue()` (ADR-0038).
 
 The configured company providers (verified against source):
 
@@ -123,6 +126,7 @@ The configured company providers (verified against source):
 | QuickBooks Online (`qbo`) | consent | QuickBooks company connect (OAuth) — read-only financial facts. |
 | Dark Web ID (`darkwebid`) | credential | Compromised-credential exposure API key. |
 | Meta — Facebook / Instagram (`meta`) | credential, **send-capable** | Page access token + Page id. |
+| DocuSign (`docusign`) | credential, **adminConsent** | Integration key + RSA private key (PEM) + impersonated user → 3 named Key Vault secrets; then Grant admin consent. Account id + environment are ops App Settings. |
 
 > **The Meta token is special.** It is `sendCapable` — it grants **outbound** action
 > (DM replies), not just read/ingest. Entering it is a **Mark-approved security
@@ -132,6 +136,12 @@ The configured company providers (verified against source):
 **GDAP** and **QuickBooks** use distinct connect actions (`grantGdapAction`,
 `connectQuickBooksAction`); the QBO connect outcome renders a specific reason notice
 on `/settings?tab=credentials&qbo=<result>`.
+
+**DocuSign** enters its three secrets via the form (stored by the backend to the named
+Key Vault secrets the JWT engine reads, backend #192), then the **Grant admin consent**
+button (`connectDocusignAction`) redirects the admin to DocuSign to grant one-time JWT
+impersonation consent per environment (demo → production). Its secrets rotate one-at-a-time
+(each is its own Key Vault secret), unlike the single-blob providers.
 
 ### Tenant mapping
 

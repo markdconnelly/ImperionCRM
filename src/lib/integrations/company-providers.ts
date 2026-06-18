@@ -8,7 +8,7 @@
  * credential store, which writes them to Key Vault (CLAUDE.md §5).
  */
 
-export type CredentialFieldType = "text" | "password" | "select";
+export type CredentialFieldType = "text" | "password" | "select" | "textarea";
 
 export interface CredentialField {
   /** Form field name (also the key sent to the backend). */
@@ -44,6 +44,14 @@ export interface CompanyProvider {
    * polling it — the cadence selector would be meaningless).
    */
   sendCapable?: boolean;
+  /**
+   * A `kind: "credential"` provider that ALSO needs a one-time admin-consent step
+   * after its secrets are stored (DocuSign JWT impersonation, #318/#392). Unlike a
+   * `kind: "consent"` provider (no secret to paste, GDAP/QBO), DocuSign needs both:
+   * the secrets entered via the form AND an admin grant. When set, the card renders a
+   * "Grant admin consent" button alongside the credential form.
+   */
+  adminConsent?: boolean;
 }
 
 /**
@@ -56,12 +64,17 @@ export interface CompanyProvider {
  * on-prem pipeline, and GDAP is delegated admin consent. Rendering a poll cadence
  * for them is meaningless, so it is gated out here. A `sendCapable` credential
  * (Meta DM token) is likewise not an ingest source — nothing polls it — so it is
- * excluded too.
+ * excluded too. An `adminConsent` credential (DocuSign) is a send/consent integration
+ * with nothing polling it either, so it is excluded as well.
  */
 export function providerIsPollable(
-  provider: Pick<CompanyProvider, "kind" | "sendCapable">,
+  provider: Pick<CompanyProvider, "kind" | "sendCapable" | "adminConsent">,
 ): boolean {
-  return provider.kind === "credential" && provider.sendCapable !== true;
+  return (
+    provider.kind === "credential" &&
+    provider.sendCapable !== true &&
+    provider.adminConsent !== true
+  );
 }
 
 export const COMPANY_PROVIDERS: CompanyProvider[] = [
@@ -228,6 +241,49 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
         required: true,
         placeholder: "1234567890",
         help: "The Facebook Page id the Instagram account is linked to.",
+      },
+    ],
+  },
+  {
+    key: "docusign",
+    label: "DocuSign (e-signature)",
+    icon: "FileSignature",
+    kind: "credential",
+    // Also needs a one-time admin grant after the secrets are stored — the card
+    // renders a "Grant admin consent" button (JWT impersonation, #318/#392).
+    adminConsent: true,
+    description:
+      "DocuSign JWT-grant service integration — sends proposal/contract envelopes for " +
+      "signature (ADR-0071 / backend ADR-0056). Enter the integration key, RSA private key, " +
+      "and impersonated API user; the backend custodies each in Key Vault. Account id + " +
+      "environment (demo/production) are set in App Settings. After saving, click Grant admin " +
+      "consent once per environment.",
+    scopes: ["signature", "impersonation"],
+    fields: [
+      {
+        name: "integrationKey",
+        label: "Integration key (client id)",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "The DocuSign app's Integration Key (GUID) — the JWT issuer / OAuth client id.",
+      },
+      {
+        name: "rsaPrivateKey",
+        label: "RSA private key (PEM)",
+        secret: true,
+        type: "textarea",
+        required: true,
+        placeholder: "-----BEGIN RSA PRIVATE KEY-----",
+        help: "The RSA keypair's PRIVATE key for the integration. Written to Key Vault, never the DB.",
+      },
+      {
+        name: "impersonatedUserId",
+        label: "Impersonated API user (GUID)",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "The DocuSign user the service acts as — the JWT `sub`.",
       },
     ],
   },

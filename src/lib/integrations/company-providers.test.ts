@@ -30,10 +30,39 @@ describe("providerIsPollable", () => {
     expect(providerIsPollable(byKey("meta"))).toBe(false);
   });
 
-  it("only non-send-capable credential providers are pollable across the whole catalog", () => {
+  it("DocuSign (adminConsent credential) is not pollable — nothing polls a send integration", () => {
+    const docusign = COMPANY_PROVIDERS.find((p) => p.key === "docusign");
+    expect(docusign?.kind).toBe("credential");
+    expect(providerIsPollable(docusign!)).toBe(false);
+  });
+
+  it("only non-send-capable, non-consent credential providers are pollable across the whole catalog", () => {
     for (const p of COMPANY_PROVIDERS) {
-      expect(providerIsPollable(p)).toBe(p.kind === "credential" && p.sendCapable !== true);
+      expect(providerIsPollable(p)).toBe(
+        p.kind === "credential" && p.sendCapable !== true && p.adminConsent !== true,
+      );
     }
+  });
+});
+
+describe("COMPANY_PROVIDERS — DocuSign provider (#862)", () => {
+  const docusign = COMPANY_PROVIDERS.find((p) => p.key === "docusign");
+
+  it("is a credential provider that also needs admin consent", () => {
+    expect(docusign).toBeDefined();
+    expect(docusign?.kind).toBe("credential");
+    expect(docusign?.adminConsent).toBe(true);
+  });
+
+  it("collects the three JWT secrets the backend store maps to named Key Vault secrets", () => {
+    const fieldNames = docusign?.fields?.map((f) => f.name) ?? [];
+    expect(fieldNames).toEqual(["integrationKey", "rsaPrivateKey", "impersonatedUserId"]);
+    // Every field is a write-only secret; the RSA key is a multiline textarea.
+    expect(docusign?.fields?.every((f) => f.secret)).toBe(true);
+    expect(docusign?.fields?.find((f) => f.name === "rsaPrivateKey")?.type).toBe("textarea");
+    // Account id + environment are NOT entered via the form (ops App Settings).
+    expect(fieldNames).not.toContain("accountId");
+    expect(fieldNames).not.toContain("environment");
   });
 });
 
