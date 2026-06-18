@@ -14,9 +14,12 @@ ADR-0083 and gate #495). This records the access model and the open questions to
 **before** credentials are requested. No secrets here — credentials are custodied in Key
 Vault by the backend.
 
-> **Status: NOT YET PROVISIONED.** No credentials exist. Access is request-gated and the
-> MileIQ account is owned by Mark's business partner — converting it and applying for
-> access is a human-coordination prerequisite (see *Open dependencies*).
+> **Status: DEFERRED TO v2 (ADR-0099).** No credentials exist; access is request-gated and
+> the MileIQ account is owned by Mark's business partner — converting it and applying is a
+> human-coordination prerequisite (gate #495, see *Open dependencies*). Because that is a
+> paid/partner gate, **v1 ships [manual mileage entry](#v1-manual-entry--scaffolding) instead**;
+> the MileIQ API contract below + the front-end scaffolding (`mileiqService`) are ready so the
+> v2 build is a wiring change, not a re-architecture.
 
 ## What it is
 
@@ -26,6 +29,25 @@ Imperion can land them in bronze (`mileiq_drive`) → silver `expense_item(kind=
 MileIQ is authoritative for the **miles** fact only; the dollar value is derived by the
 backend from the Imperion-owned, comp-gated mileage rate (ADR-0083). Personal drives never
 enter.
+
+## v1 manual entry & scaffolding
+
+While the MileIQ API is paywalled (gate #495 → v2, ADR-0099), **v1 ships manual mileage
+entry**: an employee logs a drive (date, miles, from/to, billable + client, optional Autotask
+ticket link) on their open monthly report. It writes the `website_mileage` bronze (migration
+`0137`, #851) as `(source='website', kind='mileage')` — alongside the MileIQ (`mileiq_drive`)
+and out-of-pocket (`website_expense_item`) sources, all normalized into silver `expense_item`
+by the cloud-pipeline merge (ImperionCRM_Pipeline#124). Miles are entered; the reimbursement
+dollar is derived backend-side (the rate is comp data), so no dollar figure is shown to the
+employee. Entry form #853, ticket picker #852.
+
+**Front-end scaffolding (ready for v2).** `src/lib/services/index.ts` declares `mileiqService`:
+`startConnect` / `completeConnect` (per-user OAuth 2.1 authorization-code, mirroring
+`connectionsService`) + `listBusinessDrives` → `MileIqDriveWire[]` (the `mileiq_drive` bronze
+shape). The front end holds **no MileIQ key** (ADR-0043) — every method calls the backend via
+`callService`, so it no-ops with `ServiceNotConfiguredError` until backend #109 +
+`INTEGRATION_SERVICE_URL` are set. Wiring v2 = ship backend #109 + LocalPipeline #167 + set the
+env, no FE re-architecture.
 
 ## Access is request-gated (the real gate)
 
@@ -90,7 +112,10 @@ Vault (backend #109), never in the DB — same pattern as the per-user OAuth flo
 ## Related work
 
 - ADR-0083 — employee expense tracking & reimbursement (the deciding record).
-- Gate **#495** — apply for MileIQ External API credentials (Mark/human).
-- Backend **#109** — MileIQ OAuth custody + callback (token → Key Vault).
+- **ADR-0099** — manual mileage as the v1 interim; full MileIQ API deferred to v2.
+- Gate **#495** — apply for MileIQ External API credentials (Mark/human) — **v2 milestone**.
+- Backend **#109** — MileIQ OAuth custody + callback (token → Key Vault) — **v2 milestone**.
 - LocalPipeline **#167** — scheduled MileIQ drive pull → `mileiq_drive` bronze.
 - Pipeline **#105** — bronze → silver `expense_item` merge.
+- **#851/#852/#853** — v1 manual mileage: `website_mileage` bronze · Autotask ticket picker · entry form.
+- **ImperionCRM_Pipeline#124** — `website_mileage` → silver `expense_item` merge.
