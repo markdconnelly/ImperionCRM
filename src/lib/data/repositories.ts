@@ -2164,6 +2164,8 @@ export interface ConnectionsRepository {
   listCompanyConnections(): Promise<ConnectionRow[]>;
   /** The credential registry (ADR-0103): every connection across scopes, with linked account names; secret NAMES only. */
   listAllConnections(): Promise<ConnectionRow[]>;
+  /** Connections linked to one account (ADR-0103) — the account-page credentials panel; secret NAMES only. */
+  listAccountConnections(accountId: string): Promise<ConnectionRow[]>;
   connect(input: ConnectionInput): Promise<void>;
   /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;

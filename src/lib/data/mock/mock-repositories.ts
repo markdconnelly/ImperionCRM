@@ -1625,6 +1625,10 @@ export const mockRepositories: Repositories = {
       // The credential registry (ADR-0103): every scope, client first. Names only.
       return [...clientConnections, ...companyConnections, ...userConnections];
     },
+    async listAccountConnections(accountId: string) {
+      // Connections linked to one account (ADR-0103) — the account-page panel. Names only.
+      return [...clientConnections, ...companyConnections].filter((c) => c.accountId === accountId);
+    },
     async connect() {
       throw new Error(NO_DB);
     },
