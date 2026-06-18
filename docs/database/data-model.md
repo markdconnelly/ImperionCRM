@@ -1642,7 +1642,25 @@ for change detection; bronze stays permissive (no CHECK / no FK). ARM `tags` is 
 erDiagram
     CLOUD_SUBSCRIPTIONS   ||--o{ CLOUD_RESOURCE_GROUPS : "subscription_id"
     CLOUD_RESOURCE_GROUPS ||--o{ CLOUD_RESOURCES : "resource_group"
-    CLOUD_RESOURCES }o..|| CLOUD_ASSET : "silver CMDB stitch (#201, later slice)"
+    CLOUD_RESOURCES }o..|| CLOUD_ASSET : "bronze→silver merge (Pipeline #126)"
+    CLOUD_ASSET }o--o| ACCOUNT : "account_id (via account_tenant; NULL when unmapped)"
+    CLOUD_ASSET {
+      uuid id PK
+      uuid account_id "FK→account, ON DELETE SET NULL"
+      cloud_provider provider "azure|aws|gcp|other"
+      text external_id "provider-native id; UNIQUE(provider,external_id)"
+      text name
+      text native_type "raw, e.g. Microsoft.Compute/virtualMachines"
+      cloud_asset_category category "compute/storage/network/database/…"
+      text region
+      text resource_group
+      text subscription_ref
+      text status
+      text sku
+      jsonb tags
+      text tenant_id "re-resolve account via account_tenant"
+      timestamptz last_seen_at
+    }
     CLOUD_SUBSCRIPTIONS {
       text external_id "subscriptionId"
       text display_name
@@ -1676,11 +1694,13 @@ parent-id columns (`subscription_id`, `resource_group`) are indexed for the late
 walk (RG → subscription → resource). Writer: `imperion-localpipeline` (idempotent upsert,
 never DELETE). Web, backend, and cloud-pipeline roles read.
 
-> **Scope note (0130):** bronze tables only. The silver `cloud_asset` table, the CMDB CI
-> stitch, the OKF concept file, and a `cloud_resource_bronze_all` union view are all
-> **deferred** to the #201 silver-merge slice (which owns the shared projection it needs) +
-> its own front-end issue (system §11). **Apply 0130 to prod before the collector populates**
-> (it is dormant/fail-loud until then — Mark-gated apply).
+> **Scope note (0130 → 0139):** 0130 landed the bronze tables only. The silver **`cloud_asset`**
+> table (provider-agnostic), the `cloud_resource_bronze_all` projection, and the OKF concept file
+> now land in **migration 0139** (#874) — see [`semantic-layer/tables/cloud_asset.md`](semantic-layer/tables/cloud_asset.md).
+> The bronze→silver merge is the cloud **Pipeline**'s ([Pipeline #126](https://github.com/markdconnelly/ImperionCRM_Pipeline/issues/126));
+> ARM ingest + `account_tenant` population is the **LocalPipeline**'s (#201). The CMDB `cloud` CI
+> arm that projects `cloud_asset` is #875. **Apply 0130 + 0139 to prod before the collector
+> populates** (the merge runs on 0 rows until then).
 
 ## Diagram 6d — Tenant Mapping (ADR-0051, migration 0061)
 

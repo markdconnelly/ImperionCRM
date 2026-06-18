@@ -40,6 +40,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [account](tables/account.md) | kernel | A | ✅ | research / QBR-prep; lead dedupe |
 | [contact](tables/contact.md) | kernel | A | ✅ | research; lead-response |
 | [device](tables/device.md) | Service Desk | A | ✅ | asset/security context |
+| [cloud_asset](tables/cloud_asset.md) | Service Desk | A | ✅ | CMDB cloud-asset CI (#874, ADR-0097) |
 | external_identity | horizontal | H | ⏳ | identity resolution |
 | contact_social_identity | kernel | B | ⏳ | enrichment |
 | contact_enrichment | kernel | B | ⏳ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
