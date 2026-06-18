@@ -39,7 +39,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 |---|---|---|---|---|
 | [account](tables/account.md) | kernel | A | ✅ | research / QBR-prep; lead dedupe |
 | [contact](tables/contact.md) | kernel | A | ✅ | research; lead-response |
-| [device](tables/device.md) | Service Desk | A | ✅ | asset/security context |
+| [device](tables/device.md) | Service Desk | A | ✅ | asset/security context (Datto RMM precedence + BCDR backup posture, #683) |
 | [cloud_asset](tables/cloud_asset.md) | Service Desk | A | ✅ | CMDB cloud-asset CI (#874, ADR-0097) |
 | external_identity | horizontal | H | ⏳ | identity resolution |
 | contact_social_identity | kernel | B | ⏳ | enrichment |
@@ -192,7 +192,7 @@ of its own — it inherits the domain of the silver entity it feeds.
 
 | Feeds | Bronze tables |
 |---|---|
-| account / contact / device (A) | `{autotask,apollo,itglue,m365,website}_contacts` · `{autotask,apollo,itglue,website}_companies` · `{itglue,m365,website}_devices` |
+| account / contact / device (A) | `{autotask,apollo,itglue,m365,website}_contacts` · `{autotask,apollo,itglue,website}_companies` · `{itglue,m365,website}_devices` · `datto_rmm_devices` · `datto_bcdr_backups` (backup-posture field merge, #683) |
 | opportunity (A) | `kqm_opportunities` (+lines/+sections/+sales_orders) · `autotask_opportunities` · `website_opportunities` |
 | contract / ticket (B) | `autotask_contracts` · `docusign_contracts` · `autotask_tickets` |
 | time_record (A) | `website_time_entry` · `autotask_time_entry` |
