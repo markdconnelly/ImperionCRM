@@ -6,7 +6,7 @@ description: Imperion's minimalist-code discipline (vendored from the open-sourc
 # Imperion: minimalist-code discipline ("ponytail")
 
 Vendored from the MIT-licensed **ponytail** ruleset (DietrichGebert/ponytail) and tuned
-to this four-repo system (ADR-0100). We keep the *idea*, not the dependency: this is an
+to this four-repo system (ADR-0101). We keep the *idea*, not the dependency: this is an
 on-demand skill inside the skills canon (ADR-0060), not the upstream auto-injecting plugin.
 The goal is the house bottleneck — **review, not typing** (CLAUDE.md §10.4). Less generated
 code = smaller diff = fewer Codex round-trips = it fits the ~400-line micro-PR budget (§3.2).
