@@ -1893,6 +1893,11 @@ export interface TicketFilter {
   queue?: string;
   /** Only tickets opened within the last N days. */
   openedWithinDays?: number;
+  /**
+   * Free-text search (#852) — case-insensitive match across ticket number, title,
+   * and account name. Backs the ticket-link typeahead (e.g. manual mileage → ticket).
+   */
+  query?: string;
 }
 
 /** Distinct values present in the data, to populate the filter selects. */
