@@ -10825,6 +10825,31 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async listAllConnections(): Promise<ConnectionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listAllConnections();
+      try {
+        // The credential registry (ADR-0103): every custodied connection across scopes,
+        // with the linked account name resolved. Renders the KV secret NAME + metadata —
+        // NEVER a secret value. Ordered scope (client→company→user) then provider.
+        const { rows } = await pool.query<ConnectionDbRow>(
+          `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
+                  cn.status::text AS status, cn.scopes, u.display_name AS owner,
+                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at, cn.poll_interval_minutes,
+                  cn.account_id::text AS account_id, a.name AS account_name,
+                  cn.auth_method, cn.cert_thumbprint
+             FROM connection cn
+             LEFT JOIN app_user u ON u.id = cn.owner_user_id
+             LEFT JOIN account a ON a.id = cn.account_id
+            ORDER BY CASE cn.scope WHEN 'client' THEN 0 WHEN 'company' THEN 1 ELSE 2 END,
+                     cn.provider, cn.display_name`,
+        );
+        return rows.map(mapConnection);
+      } catch {
+        return mockRepositories.connections.listAllConnections();
+      }
+    },
+
     async connect(input: ConnectionInput): Promise<void> {
       const pool = getPool();
       if (!pool) return mockRepositories.connections.connect(input);
@@ -14780,6 +14805,11 @@ interface ConnectionDbRow {
   last_sync_at: Date | null;
   connected_at: Date | null;
   poll_interval_minutes: number | null;
+  // Credential-registry fields (ADR-0103); absent from the legacy SELECTs → undefined → null.
+  account_id?: string | null;
+  account_name?: string | null;
+  auth_method?: string | null;
+  cert_thumbprint?: string | null;
 }
 
 /**
@@ -15091,6 +15121,10 @@ function mapConnection(r: ConnectionDbRow): ConnectionRow {
     lastSync: fmtDateTime(r.last_sync_at),
     connectedAt: fmtDate(r.connected_at),
     pollIntervalMinutes: r.poll_interval_minutes ?? 60,
+    accountId: r.account_id ?? null,
+    accountName: r.account_name ?? null,
+    authMethod: r.auth_method ?? null,
+    certThumbprint: r.cert_thumbprint ?? null,
   };
 }
 
