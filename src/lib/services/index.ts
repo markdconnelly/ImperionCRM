@@ -52,6 +52,15 @@ const services = {
     baseUrlEnv: "PIPELINE_SERVICE_URL",
     audienceEnv: "PIPELINE_SERVICE_AUDIENCE",
   },
+  // MileIQ External API custody (#854/ADR-0099): the OAuth token lives in Key Vault on
+  // the backend (#109), same host as the other per-user connections, so it shares the
+  // integration base URL + Easy Auth audience. No-op (ServiceNotConfiguredError) until
+  // backend #109 + creds #495 land — full MileIQ integration is v2; v1 is manual entry.
+  mileiq: {
+    name: "MileIQ mileage",
+    baseUrlEnv: "INTEGRATION_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
+  },
 } satisfies Record<string, ServiceDescriptor>;
 
 /** The orchestrator's reply shape (backend ADR-0032/0036 wire contract). */
@@ -548,5 +557,61 @@ export const credentialsService = {
     callService<{ consentUrl: string; state: string }>(services.credentials, "/gdap/consent", {
       method: "POST",
       body: JSON.stringify({}),
+    }),
+};
+
+/**
+ * One business-classified MileIQ drive (External API wire contract — see
+ * docs/integrations/mileiq-api.md). Maps to the `mileiq_drive` bronze (migration 0089):
+ * `driveId` is MileIQ's idempotent key; MileIQ is authoritative for the MILES fact only —
+ * the reimbursement dollar is DERIVED backend-side from the comp-gated mileage rate
+ * (ADR-0083), never carried here. Personal drives are never returned.
+ */
+export interface MileIqDriveWire {
+  driveId: string;
+  driveDate: string; // yyyy-mm-dd
+  miles: number;
+  origin: string | null;
+  destination: string | null;
+  purpose: string | null;
+}
+
+/**
+ * MileIQ External API client SCAFFOLDING (#854, ADR-0099). The contract the future v2
+ * build codes against — per-user OAuth 2.1 authorization-code connect (token custodied in
+ * Key Vault by backend #109) + a business-drive pull that the on-prem pipeline lands in
+ * `mileiq_drive` bronze (LocalPipeline #167). The front end holds NO MileIQ key (ADR-0043):
+ * every method calls the backend via `callService`, so until backend #109 ships and
+ * `INTEGRATION_SERVICE_URL` is set these throw `ServiceNotConfiguredError` and callers
+ * degrade gracefully — exactly the `connectionsService` pattern. **v1 ships manual mileage
+ * entry instead (#853); wiring these to a live MileIQ tenant is v2 (gate #495).** No live
+ * network call happens in v1.
+ */
+export const mileiqService = {
+  /** Begin the per-user MileIQ connect for the acting employee (`app_user.id`). Returns the
+   *  MileIQ authorization URL + CSRF `state`; the backend parks the state + custodies the
+   *  token in Key Vault on callback (#109). */
+  startConnect: (input: { userId: string }) =>
+    callService<{ authorizationUrl: string; state: string }>(
+      services.mileiq,
+      "/mileiq/connect/start",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+  /** Forward MileIQ's redirect (code + state) for the one-time token exchange; the backend
+   *  resolves and records the employee's `mileiq_user_id` (employee_profile, migration 0088). */
+  completeConnect: (input: { code: string; state: string }) =>
+    callService<{ connected: boolean; mileiqUserId: string | null }>(
+      services.mileiq,
+      "/mileiq/connect/callback",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+  /** Pull the acting employee's business-classified drives since a date (yyyy-mm-dd). The
+   *  pull/ingest into `mileiq_drive` bronze is the on-prem pipeline's job (LocalPipeline
+   *  #167); this seam is the on-demand variant. */
+  listBusinessDrives: (input: { userId: string; since: string }) =>
+    callService<{ drives: MileIqDriveWire[] }>(services.mileiq, "/mileiq/drives", {
+      method: "POST",
+      body: JSON.stringify(input),
+      timeoutMs: 30_000,
     }),
 };
