@@ -195,7 +195,7 @@ of its own — it inherits the domain of the silver entity it feeds.
 | opportunity (A) | `kqm_opportunities` (+lines/+sections/+sales_orders) · `autotask_opportunities` · `website_opportunities` |
 | contract / ticket (B) | `autotask_contracts` · `docusign_contracts` · `autotask_tickets` |
 | time_record (A) | `website_time_entry` · `autotask_time_entry` |
-| expense_item (A) | `website_expense_item` · `mileiq_drive` · `qbo_purchases` (match) |
+| expense_item (A) | `website_expense_item` · `website_mileage` (manual, #851) · `mileiq_drive` · `qbo_purchases` (match) |
 | invoice (B, QBO read-only mirror) | `qbo_invoices` (+ `qbo_customers` join; `qbo_payments` future match) |
 | credential_exposure / assessment_artifact (A/B) | `darkwebid_exposures` · `televy_reports` |
 | interaction (B) | `m365_mail_messages` · `m365_teams_chats/_meetings` · `facebook_posts/_comments/_messages` · `instagram_media/_comments` |

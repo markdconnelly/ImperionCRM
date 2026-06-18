@@ -4,7 +4,7 @@ title: expense_item
 description: Unified employee expense surface — one row per source fact; out-of-pocket amount entered, mileage amount derived (miles × rate) by the backend.
 resource: ../../../decision-records/ADR-0083-employee-expense-tracking-and-reimbursement.md
 tags: [silver, expense-tracking, reimbursement]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-17T00:00:00Z
 ---
 
 # expense_item
@@ -22,6 +22,11 @@ migration `0089` (not prod-applied — Mark-gated, #494).
 - **MileIQ is authoritative for the MILES fact only** (`source = 'mileiq'`,
   `kind = 'mileage'`); the **dollar amount is Imperion's** — derived by the backend
   as `miles × effective Mileage Rate`, never hand-typed.
+- **Manual mileage** (`source = 'website'`, `kind = 'mileage'`; migration `0137`,
+  #851) is the **v1 interim** while the MileIQ API is paywalled (→ v2). The employee
+  enters miles by hand on their open report (`website_mileage` bronze); miles are
+  authoritative, the dollar is derived the same way. Optional `ticket_ref` links an
+  Autotask ticket (required when billable, GUI rule #853).
 - **Reimbursable** and **billable** are independent legs: an item can be one,
   both, or neither. The billable leg carries the client via `autotask_company_id`.
 
@@ -29,9 +34,10 @@ migration `0089` (not prod-applied — Mark-gated, #494).
 
 A **union-by-fact** merge (cloud pipeline bronze→silver), mirroring
 [`time_record`](time_record.md) — not a field-precedence collapse like
-[`account`](account.md). The two sources never contend for the same field. The
-`source ↔ kind` pair is **fixed by CHECK** — `website→out_of_pocket`,
-`mileiq→mileage`.
+[`account`](account.md). The sources never contend for the same field. The
+`source ↔ kind` pair is **constrained by CHECK** — `website` may be
+`out_of_pocket` (out-of-pocket) **or** `mileage` (manual mileage, #851);
+`mileiq` is `mileage`-only.
 
 1. **Employee resolution.** A `website_expense_item` is already keyed to its employee
    (and its monthly `expense_report`). A `mileiq_drive` resolves to an `app_user`
@@ -71,9 +77,10 @@ A **union-by-fact** merge (cloud pipeline bronze→silver), mirroring
 ## Joins
 
 - `app_user_id` → `app_user`; `expense_report_id` → `expense_report`.
-- `source_ref` → bronze: `website_expense_item` (out-of-pocket, authoritative) or
-  `mileiq_drive` (miles authoritative, $ derived). The `expense_item_all` view unions
-  the two bronze sources side-by-side (read surface; silver is the true unification).
+- `source_ref` → bronze: `website_expense_item` (out-of-pocket, authoritative),
+  `website_mileage` (manual miles authoritative, $ derived — #851), or `mileiq_drive`
+  (MileIQ miles authoritative, $ derived). The `expense_item_all` view unions the
+  three bronze sources side-by-side (read surface; silver is the true unification).
 - `category_id` → `expense_category`; `receipt_id` → `receipt_attachment`.
 - Feeds the monthly expense report flow (attest → admin-approve → finance-approve →
   Reimbursed) and the read-only QBO bill-payment match (ADR-0083).
