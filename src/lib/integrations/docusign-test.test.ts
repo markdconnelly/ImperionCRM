@@ -46,11 +46,29 @@ describe("docusignTestResult", () => {
     expect(r.detail).toContain("502");
   });
 
-  it("other rejection (e.g. 403 caller not allow-listed) → rejected, red, shows status", () => {
+  it("401/403 → rejected, red, shows allowlist guidance", () => {
     const r = docusignTestResult({ ok: false, kind: "rejected", status: 403 });
     expect(r.state).toBe("rejected");
     expect(r.tone).toBe("red");
     expect(r.detail).toContain("403");
+    expect(r.detail).toContain("allow-listed");
+  });
+
+  it("5xx → rejected, red, shows backend error guidance", () => {
+    const r = docusignTestResult({ ok: false, kind: "rejected", status: 500 });
+    expect(r.state).toBe("rejected");
+    expect(r.tone).toBe("red");
+    expect(r.label).toBe("Backend errored");
+    expect(r.detail).toContain("500");
+    expect(r.detail).toContain("Key Vault");
+  });
+
+  it("other 4xx (non-401/403) → rejected, red, shows status", () => {
+    const r = docusignTestResult({ ok: false, kind: "rejected", status: 400 });
+    expect(r.state).toBe("rejected");
+    expect(r.tone).toBe("red");
+    expect(r.detail).toContain("400");
+    expect(r.detail).not.toContain("allow-listed");
   });
 
   it("rejection without a status still renders", () => {
@@ -72,6 +90,7 @@ describe("docusignTestResult", () => {
       docusignTestResult({ ok: false, kind: "not_configured" }),
       docusignTestResult({ ok: false, kind: "rejected", status: 502 }),
       docusignTestResult({ ok: false, kind: "rejected", status: 401 }),
+      docusignTestResult({ ok: false, kind: "rejected", status: 500 }),
       docusignTestResult({ ok: false, kind: "unreachable" }),
     ];
     expect(notReady.every((r) => r.ready === false)).toBe(true);
