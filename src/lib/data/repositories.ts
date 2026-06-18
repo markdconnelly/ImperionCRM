@@ -643,6 +643,30 @@ export interface ExpenseItemInput {
 }
 
 /**
+ * A new manual mileage item (ADR-0083, #853) — the v1 interim while the MileIQ API is
+ * paywalled (full MileIQ → v2). Written to the `website_mileage` bronze (migration 0137).
+ * MILES are authoritative; the reimbursement $ is DERIVED by the backend (miles ×
+ * effective Mileage Rate, the comp reader) — never entered here, so the comp-gated rate
+ * is never exposed to the employee. `employeeId` is the session OWNER (re-verified
+ * server-side; the owning report's Open lock is re-checked on write). `ticketRef` links
+ * an Autotask ticket — required when billable (enforced in the action), optional otherwise.
+ */
+export interface MileageItemInput {
+  expenseReportId: string;
+  employeeId: string; // the owning app_user (from session; re-verified server-side)
+  itemDate: string; // yyyy-mm-dd
+  miles: number; // > 0 (the authoritative fact; $ derived downstream)
+  origin: string | null;
+  destination: string | null;
+  reimbursable: boolean; // owed back to the employee (default true)
+  billable: boolean; // independent leg — also invoiced to the client
+  autotaskCompanyId: number | null; // the client leg (companyID) when billable
+  ticketRef: string | null; // linked Autotask ticket (required when billable)
+  projectRef: string | null;
+  notes: string | null;
+}
+
+/**
  * The editable fields of one out-of-pocket expense item under an admin correction
  * (ADR-0083 #488). The owning report/employee is NEVER trusted from the caller — it's
  * taken from the locked Submitted report. Mirrors `TimeEntryFields` (#477). Mileage items
@@ -1530,6 +1554,11 @@ export interface CrmRepository {
   /** Delete an out-of-pocket item from the employee's OWN Open report. Returns false if
    *  the item isn't on an Open report owned by `employeeId` (lock + ownership re-check). */
   deleteExpenseItem(id: string, employeeId: string): Promise<boolean>;
+  /** Add a MANUAL mileage item to the employee's OWN Open report (ADR-0083, #853) — the
+   *  v1 interim while MileIQ is paywalled. Writes the `website_mileage` bronze; returns the
+   *  new id, or null if the report isn't Open or isn't owned by `employeeId` (lock re-check).
+   *  Miles only — the reimbursement $ is backend-derived (comp reader), never entered here. */
+  addMileageItem(input: MileageItemInput): Promise<string | null>;
 
   /** ADMIN inline correction of a SUBMITTED report's out-of-pocket items (ADR-0083 #488),
    *  gated by `expense:approve`. Add / edit-in-place / delete a `website_expense_item`; the

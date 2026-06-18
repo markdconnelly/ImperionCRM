@@ -110,6 +110,17 @@ export default async function ExpensesPage({
               </div>
             )}
 
+            {report.state === "open" && (
+              <div className="flex justify-end">
+                <Link
+                  href={`/expenses/mileage/new?period=${period}`}
+                  className="inline-flex items-center rounded-md border border-border bg-panel-2 px-3 py-1.5 text-sm text-text transition-colors hover:border-accent"
+                >
+                  + Add mileage
+                </Link>
+              </div>
+            )}
+
             <div className="overflow-hidden rounded-lg border border-border">
               <table className="w-full text-sm">
                 <thead className="bg-panel-2 text-left text-xs text-dim">
@@ -126,7 +137,7 @@ export default async function ExpensesPage({
                   {items.length === 0 ? (
                     <tr className="bg-panel">
                       <td colSpan={6} className="px-4 py-6 text-center text-dim">
-                        No items yet. Adding mileage + out-of-pocket items is the entry GUI (#487).
+                        No items yet. Use “Add mileage” above to log a drive; out-of-pocket entry is the entry GUI (#487).
                       </td>
                     </tr>
                   ) : (
