@@ -1,3 +1,12 @@
+---
+adr: 0100
+title: "Minimalist-code generation discipline (vendored \"ponytail\")"
+status: proposed
+date: 2026-06-18
+repo: frontend
+summary: "Vendor the MIT-licensed ponytail ruleset into a new on-demand skill (imperion-minimal-code) in the imperion-skills canon rather than installing the upstream marketplace plugin. Agents run a stack-tuned deliberation ladder (YAGNI -> reuse what exists -> native platform -> installed dependency -> one line -> minimum) before writing non-trivial code, with a non-negotiable list (trust-boundary validation, error handling, security baseline, executor idempotency, accessibility, explicit requests) that overrides minimalism. Cuts generated code -> smaller diffs -> less review, the bottleneck per CLAUDE.md section 10.4."
+tags: [agents, skills]
+---
 # ADR-0100: Minimalist-code generation discipline (vendored "ponytail")
 
 | Field | Value |
