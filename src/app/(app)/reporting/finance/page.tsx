@@ -14,20 +14,6 @@ const fmtCount = new Intl.NumberFormat("en-US");
 /** Hours from minutes, rounded, with the "h" suffix the hub uses. */
 const fmtHours = (min: number) => `${fmtCount.format(Math.round(min / 60))}h`;
 
-/**
- * Pull the numeric magnitude out of a pre-formatted money string ("$12,500/mo").
- * The data layer only hands the finance figures back formatted (RevenueSplit is
- * strings, by design), so the total tile re-derives a sum from the digits. Returns
- * null when the string carries no number — the caller then omits the total rather
- * than printing a misleading $0.
- */
-function parseMoney(formatted: string): number | null {
-  const digits = formatted.replace(/[^0-9.]/g, "");
-  if (!digits) return null;
-  const n = Number(digits);
-  return Number.isFinite(n) ? n : null;
-}
-
 const usd = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -93,11 +79,11 @@ export default async function FinanceReportPage() {
     showLaborCost ? reports.timeEfficiency(true) : reports.timeEfficiency(false),
   ]);
 
-  // RevenueSplit is formatted strings; re-derive a numeric total when both parse.
-  const recurringNum = parseMoney(revenue.recurring);
-  const oneTimeNum = parseMoney(revenue.oneTime);
-  const total =
-    recurringNum != null && oneTimeNum != null ? recurringNum + oneTimeNum : null;
+  // RevenueSplit now exposes numeric values alongside the formatted strings (#844);
+  // the total tile sums them directly instead of re-parsing the formatted text.
+  const recurringNum = revenue.recurringValue;
+  const oneTimeNum = revenue.oneTimeValue;
+  const total = recurringNum + oneTimeNum;
 
   // Utilization split (comp-free) → a categorical chart over attended minutes.
   const util = timeEff.utilization;
@@ -140,8 +126,8 @@ export default async function FinanceReportPage() {
         />
         <StatTile
           label="Total revenue"
-          value={total != null ? usd.format(total) : "—"}
-          hint={total != null ? "recurring + one-time" : "no revenue recorded yet"}
+          value={total > 0 ? usd.format(total) : "—"}
+          hint={total > 0 ? "recurring + one-time" : "no revenue recorded yet"}
         />
       </div>
 
@@ -149,11 +135,11 @@ export default async function FinanceReportPage() {
         title="Revenue split"
         subtitle="Recurring managed services vs one-time assessment fees"
       >
-        {total != null && total > 0 ? (
+        {total > 0 ? (
           <StatusBarChart
             data={[
-              { label: "recurring", count: recurringNum ?? 0 },
-              { label: "one-time", count: oneTimeNum ?? 0 },
+              { label: "recurring", count: recurringNum },
+              { label: "one-time", count: oneTimeNum },
             ]}
             color="#3FBF8F"
           />
