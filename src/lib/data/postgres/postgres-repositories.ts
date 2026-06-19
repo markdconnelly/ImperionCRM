@@ -1680,6 +1680,17 @@ export const postgresRepositories: Repositories = {
            ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
            DO NOTHING`,
         );
+        // cloud-asset belongs-to account (cloud_asset.account_id, #653). cloud→device/service
+        // is intentionally omitted — silver carries no such FK today (see migration 0131/0144).
+        await client.query(
+          `INSERT INTO ci_relationship
+             (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           SELECT 'cloud', ca.id::text, 'account', ca.account_id::text, 'belongs-to', 'derived'
+             FROM cloud_asset ca
+            WHERE ca.account_id IS NOT NULL
+           ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           DO NOTHING`,
+        );
         const { rows } = await client.query<{ count: string }>(
           `SELECT count(*)::text AS count FROM ci_relationship WHERE source = 'derived'`,
         );
@@ -1755,6 +1766,21 @@ export const postgresRepositories: Repositories = {
            SELECT 'user', c.id::text, 'medium'::ci_criticality
              FROM contact c
             WHERE c.account_id IS NOT NULL
+           ON CONFLICT (ci_type, ci_id)
+           DO UPDATE SET derived_default = EXCLUDED.derived_default, updated_at = now()`,
+        );
+        // cloud → category (mirrors deriveCloudCriticality in src/lib/cmdb/criticality.ts:
+        // database/identity/security → high; compute/network → medium; else low, #653).
+        await client.query(
+          `INSERT INTO cmdb_ci_overlay (ci_type, ci_id, derived_default)
+           SELECT 'cloud', ca.id::text,
+                  (CASE
+                     WHEN ca.category::text IN ('database', 'identity', 'security') THEN 'high'
+                     WHEN ca.category::text IN ('compute', 'network') THEN 'medium'
+                     ELSE 'low'
+                   END)::ci_criticality
+             FROM cloud_asset ca
+            WHERE ca.account_id IS NOT NULL
            ON CONFLICT (ci_type, ci_id)
            DO UPDATE SET derived_default = EXCLUDED.derived_default, updated_at = now()`,
         );

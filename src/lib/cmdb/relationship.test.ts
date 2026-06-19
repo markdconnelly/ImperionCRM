@@ -80,6 +80,38 @@ describe("buildNeighbourhoodGraph", () => {
   });
 });
 
+describe("cloud CI is first-class in the relationship graph (#653)", () => {
+  // The cloud belongs-to account edge derived from cloud_asset.account_id (migration 0144).
+  const cloudEdge = edge({
+    id: "ce1",
+    fromCiType: "cloud",
+    fromCiId: "c1",
+    toCiType: "account",
+    toCiId: "a1",
+  });
+
+  test("a cloud→account edge re-orients from the cloud CI's point of view", () => {
+    const [n] = neighbourEdges({ ciType: "cloud", ciId: "c1" }, [cloudEdge]);
+    expect(n.direction).toBe("outgoing");
+    expect(n.neighbour).toEqual({ ciType: "account", ciId: "a1" });
+  });
+
+  test("the same edge reads as incoming from the account (impact neighbourhood)", () => {
+    const [n] = neighbourEdges({ ciType: "account", ciId: "a1" }, [cloudEdge]);
+    expect(n.direction).toBe("incoming");
+    expect(n.neighbour).toEqual({ ciType: "cloud", ciId: "c1" });
+  });
+
+  test("graph shapes the cloud node + keeps the stored orientation", () => {
+    const { nodes, edges } = buildNeighbourhoodGraph(
+      { ciType: "cloud", ciId: "c1" },
+      [cloudEdge],
+    );
+    expect(nodes.find((n) => n.key === "cloud:c1")?.isCentre).toBe(true);
+    expect(edges[0]).toMatchObject({ fromKey: "cloud:c1", toKey: "account:a1" });
+  });
+});
+
 describe("CI_RELATION_TYPES", () => {
   test("offers belongs-to (the derived relation) in the manual pick-list", () => {
     expect(CI_RELATION_TYPES).toContain("belongs-to");
