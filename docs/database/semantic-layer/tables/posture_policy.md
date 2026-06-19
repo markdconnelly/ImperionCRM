@@ -3,10 +3,10 @@ type: Silver Table
 title: posture_policy
 entity: posture_policy
 archetype: E
-description: Per-policy security drift verdict for a tenant — observed M365 policy vs human-approved golden baseline across five policy families, classified compliant/drift/ungoverned/missing.
+description: Per-policy security drift verdict for a tenant — observed M365 policy vs human-approved golden baseline across six policy families, classified compliant/drift/ungoverned/missing.
 resource: ../../../decision-records/ADR-0051-security-posture-model-imperion-secure-score.md
 tags: [silver, security, posture, policy, drift, golden]
-timestamp: 2026-06-19T00:00:00Z
+timestamp: 2026-06-19T12:00:00Z
 ---
 
 # posture_policy
@@ -16,8 +16,9 @@ detail behind the per-state counts rolled up in `tenant_posture`. One row per
 `(tenant_id, policy_family, policy_id)`: the orchestrator's MSSP **drift-monitor** agent
 grounds on this entity to decide whether a policy is in its approved state or has drifted.
 Governed by [ADR-0051](../../../decision-records/ADR-0051-security-posture-model-imperion-secure-score.md)
-§3; migration `0062` (pipeline-maintained silver, not a view). The five-family golden
-baselines it joins against (`*_golden`) land via migration `0038`.
+§3; migration `0062` (pipeline-maintained silver, not a view). The golden baselines it joins
+against (`*_golden`) land via migration `0038` (the original five families) and `0119`
+(`purview_compliance`, admitted to the silver write by migration `0146` / #687).
 
 ## Source of record / authority
 
@@ -29,11 +30,13 @@ SoR; both inputs are external.
 - **Observed side** — the policy as actually configured in the client tenant, collected
   per family into the bronze observed tables (`entra_conditional_access_policies`,
   `intune_security_policies`, `device_configuration_policies`, `autopilot_policies`,
-  `defender_xdr_security_policies`); `observed_hash` is its content hash.
+  `defender_xdr_security_policies`, `purview_compliance_policies`); `observed_hash` is its
+  content hash.
 - **Golden side** — the **operator-approved** baseline, one `*_golden` table per family
   (`conditional_access_policies_golden`, `intune_security_policies_golden`,
   `device_configuration_policies_golden`, `autopilot_policies_golden`,
-  `defender_xdr_security_policies_golden`). The system of record here is **human approval**
+  `defender_xdr_security_policies_golden`, `purview_compliance_golden`). The system of record
+  here is **human approval**
   (each golden row carries `approved_by` / `approved_at`), not any captured feed — a policy
   has no `drift` meaning until a golden is approved for it. Same pattern as
   [`dns_golden`](dns_golden.md) is for [`dns_domain`](dns_domain.md).
@@ -54,7 +57,7 @@ per-policy detail.
 | Column | Type | Notes |
 |---|---|---|
 | `tenant_id` | text | M365 tenant GUID; part of PK |
-| `policy_family` | text | part of PK. CHECK ∈ `conditional_access` · `intune_security` · `device_configuration` · `autopilot` · `defender_xdr` (purview_compliance pending — #687) |
+| `policy_family` | text | part of PK. CHECK ∈ `conditional_access` · `intune_security` · `device_configuration` · `autopilot` · `defender_xdr` · `purview_compliance` (the sixth family, admitted by migration `0146` / #687) |
 | `policy_id` | text | source policy id; part of PK |
 | `policy_name` | text | display name (nullable) |
 | `classification` | text | the verdict. CHECK ∈ `compliant` · `drift` · `ungoverned` · `missing` |
