@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: campaign
+entity: campaign
+archetype: B
 description: Marketing campaign across platforms — website system of record; parents ads, metrics, and lead attribution.
 resource: ../../../decision-records/ADR-0053-campaign-builders-events-scheduled-sends.md
 tags: [silver, marketing, campaign, demand-gen]

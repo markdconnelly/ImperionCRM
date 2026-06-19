@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: chat_session
+entity: chat_session
+archetype: B
 description: An Imperion-native pre-ticket live-chat / bot session plus deflection telemetry — the only service-desk data Imperion stores natively (everything ticket-resident round-trips through Autotask). Website system of record (backend chat process).
 resource: ../../../decision-records/ADR-0074-service-desk-depth.md
 tags: [silver, service-desk, chat, deflection, native]

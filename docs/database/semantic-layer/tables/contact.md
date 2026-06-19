@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: contact
+entity: contact
+archetype: A
 description: Unified person — one row per individual, merged from five bronze sources by precedence; the CRM 360 subject.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, contact, merge]

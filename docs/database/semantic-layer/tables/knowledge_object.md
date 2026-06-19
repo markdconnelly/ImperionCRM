@@ -1,6 +1,8 @@
 ---
 type: Gold Table
 title: knowledge_object
+entity: knowledge_object
+archetype: G
 description: AI-ready gold text over any silver entity — on-prem produced; chunked + embedded into Voyage vectors; content-hash-idempotent, versioned re-embed.
 resource: ../../../decision-records/ADR-0041-gold-knowledge-vector-store.md
 tags: [gold, knowledge, retrieval, rag]

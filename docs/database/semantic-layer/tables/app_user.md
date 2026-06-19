@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: app_user
+entity: app_user
+archetype: H
 description: Internal employee/user identity — sourced from Entra ID; roles drive RBAC; payroll/comp extensions are segregated and gated.
 resource: ../../../decision-records/ADR-0016-rbac-and-identity-model.md
 tags: [silver, identity, rbac, reference]

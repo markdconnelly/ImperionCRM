@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: meeting
+entity: meeting
+archetype: B
 description: Structured meeting object (Teams Copilot recap / Plaud summary) 1:1 with an interaction of kind 'meeting'; the drill-down behind a meeting in the timeline.
 resource: ../../../decision-records/ADR-0011-unified-interaction-timeline.md
 tags: [silver, communications, meeting, teams, plaud]

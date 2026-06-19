@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: ci_relationship
+entity: ci_relationship
+archetype: D
 description: App-native CMDB relationship layer — a typed, directional edge between two Configuration Items (polymorphic ci_type+ci_id pairs over the read-only cmdb_ci union). Edges are derived (recomputed from silver FKs) or manual (human-authored, cmdb:write). IT Glue write-back is a separate gated slice.
 resource: ../../../decision-records/ADR-0047-device-inventory.md
 tags: [silver, service-desk, cmdb, relationship, overlay, archetype-d, app-native]

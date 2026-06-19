@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: discovery_call
+entity: discovery_call
+archetype: B
 description: Sales discovery engagement with a fit verdict — website system of record; anchors the SBR cadence.
 resource: ../../../decision-records/ADR-0023-engagement-capture-and-relationship-data-model.md
 tags: [silver, sales, discovery, engagement]

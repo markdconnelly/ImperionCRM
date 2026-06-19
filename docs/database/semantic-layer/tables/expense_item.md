@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: expense_item
+entity: expense_item
+archetype: A
 description: Unified employee expense surface — one row per source fact; out-of-pocket amount entered, mileage amount derived (miles × rate) by the backend.
 resource: ../../../decision-records/ADR-0083-employee-expense-tracking-and-reimbursement.md
 tags: [silver, expense-tracking, reimbursement]

@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: posture_snapshot
+entity: posture_snapshot
+archetype: C
 description: Immutable Imperion Secure Score capture for an account — append-only; the grade is stored at capture and never recomputed.
 resource: ../../../decision-records/ADR-0051-security-posture-model-imperion-secure-score.md
 tags: [silver, security, posture, secure-score, append-only]

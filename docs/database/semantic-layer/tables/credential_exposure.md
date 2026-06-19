@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: credential_exposure
+entity: credential_exposure
+archetype: A
 description: Breached/exposed credential surfaced from Dark Web ID — matched to contact/account by email+domain; status workflow.
 resource: ../../../decision-records/ADR-0040-darkwebid-televy-ingestion.md
 tags: [silver, security, exposure, darkwebid, merge]

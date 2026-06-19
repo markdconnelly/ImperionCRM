@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: dns_domain
+entity: dns_domain
+archetype: E
 description: Per-domain DNS silver rollup — a governance verdict (manageability ladder) plus per-record drift counts against a human-approved golden; account_domain is the domain system of record.
 resource: ../../../decision-records/ADR-0063-dns-posture-tracking.md
 tags: [silver, security, dns, drift, golden]

@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: esign_envelope
+entity: esign_envelope
+archetype: B
 description: One DocuSign e-signature envelope against a proposal — the signature event made first-class; backend sends (JWT, Key Vault), pipeline upserts status from Connect webhooks, the proposal/contract carry a status mirror.
 resource: ../../../decision-records/ADR-0071-esign-docusign-integration.md
 tags: [silver, sales, esign, docusign, signature]

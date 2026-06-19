@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: expense_report
+entity: expense_report
+archetype: B
 description: Monthly employee expense container — website system of record; drives idempotent Autotask ExpenseReport and the QBO reimbursement match.
 resource: ../../../decision-records/ADR-0083-employee-expense-tracking-and-reimbursement.md
 tags: [silver, expense-tracking, reimbursement]
