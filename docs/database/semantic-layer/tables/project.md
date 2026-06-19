@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: project
+entity: project
+archetype: B
 description: Delivery/onboarding workstream for an account — website system of record; one board across all project types.
 resource: ../../../decision-records/ADR-0020-delivery-project-model.md
 tags: [silver, delivery, project]

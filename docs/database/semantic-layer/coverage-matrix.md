@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-18T00:00:00Z
+timestamp: 2026-06-19T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -142,7 +142,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | Object | Domain | Archetype | IKF | Acting ICM workflow |
 |---|---|---|---|---|
 | [invoice](tables/invoice.md) | Finance | B (QBO read-only mirror) | ✅ | collections / AR-dunning; reconciliation-assurance (#667) |
-| [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | ⏳ | collections / AR-dunning (#677/#678) |
+| [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | ✅ | collections / AR-dunning (#677/#678) |
 
 ## Security / MSSP
 

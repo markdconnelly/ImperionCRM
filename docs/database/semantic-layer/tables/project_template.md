@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: project_template
+entity: project_template
+archetype: B
 description: Admin-editable project playbook (milestones + steps/tasks, kept in template_item) instantiated as a snapshot onto new projects — website system of record.
 resource: ../../../decision-records/ADR-0070-pm-templates-recurrence-intake.md
 tags: [silver, delivery, project, template, pm]

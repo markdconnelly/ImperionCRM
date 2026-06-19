@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: workflow
+entity: workflow
+archetype: B
 description: Automation sequence (nurture / pre-discovery / re-engagement / journey) — website system of record; legacy kinds parent steps + enrollments, journeys are a single object.
 resource: ../../../decision-records/ADR-0027-pre-discovery-automation-and-agent-answer-approval.md
 tags: [silver, automation, workflow, nurture, journey]

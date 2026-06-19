@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: contract
+entity: contract
+archetype: B
 description: Managed-services contract — Autotask is the external system of record, fetched to silver; the commercial frame a delivery hangs off.
 resource: ../../../decision-records/ADR-0044-silver-contracts-tickets.md
 tags: [silver, service, contract, autotask]

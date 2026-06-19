@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: time_record
+entity: time_record
+archetype: A
 description: Unified employee time timeline — one row per source fact, website attendance authoritative, Autotask allocation corroborates.
 resource: ../../../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md
 tags: [silver, time-tracking, payroll]

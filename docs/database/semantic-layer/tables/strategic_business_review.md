@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: strategic_business_review
+entity: strategic_business_review
+archetype: B
 description: Periodic account re-benchmark against a prior assessment — website system of record; drives expansion.
 resource: ../../../decision-records/ADR-0022-assessment-led-gtm-and-engagement-model.md
 tags: [silver, success, sbr, engagement]

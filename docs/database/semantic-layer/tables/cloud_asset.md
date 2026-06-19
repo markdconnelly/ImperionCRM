@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: cloud_asset
+entity: cloud_asset
+archetype: A
 description: Provider-agnostic cloud resource — one row per cloud asset, merged from per-provider bronze and discriminated by provider.
 resource: ../../../decision-records/ADR-0097-cmdb-authority-model.md
 tags: [silver, service-desk, cmdb, cloud, asset, merge]

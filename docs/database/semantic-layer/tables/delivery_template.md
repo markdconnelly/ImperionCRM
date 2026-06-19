@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: delivery_template
+entity: delivery_template
+archetype: B
 description: Reusable delivery playbook (phases → tasks) instantiated into projects — website system of record.
 resource: ../../../decision-records/ADR-0081-delivery-provisioning-template-model.md
 tags: [silver, delivery, template]

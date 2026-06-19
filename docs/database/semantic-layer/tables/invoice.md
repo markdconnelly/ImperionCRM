@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: invoice
+entity: invoice
+archetype: B
 description: Read-only AR/invoice MIRROR over QuickBooks — observability only; aging derived in-view, no app-side AR object, no write path to QBO.
 resource: ../../../decision-records/ADR-0085-qbo-payment-fact-purchase-simple-start.md
 tags: [silver, finance, invoice, accounts-receivable, mirror, archetype-b]

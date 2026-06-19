@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: quota
+entity: quota
+archetype: B
 description: A revenue target for a sales owner or team over a period; the denominator of forecast attainment — website system of record.
 resource: ../../../decision-records/ADR-0072-revenue-forecasting-model.md
 tags: [silver, sales, forecast, quota, revenue]

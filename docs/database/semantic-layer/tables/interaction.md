@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: interaction
+entity: interaction
+archetype: B
 description: Unified multi-channel timeline event — one row per email/message/call/meeting/social, carrying bronze+silver+gold in one record.
 resource: ../../../decision-records/ADR-0011-unified-interaction-timeline.md
 tags: [silver, engagement, interaction, timeline]

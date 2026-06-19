@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: lead_score
+entity: lead_score
+archetype: C
 description: A rule-based (and later predicted) lead score per contact — fit + weighted engagement → 0..100 with an explainable breakdown. A shared signal for routing, journeys, and forecasting. Website system of record (backend/LP scoring pass).
 resource: ../../../decision-records/ADR-0073-marketing-automation-journeys.md
 tags: [silver, marketing, lead, scoring, routing]

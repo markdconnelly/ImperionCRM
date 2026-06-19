@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: ticket
+entity: ticket
+archetype: B
 description: Support/service ticket — Autotask is the external system of record, fetched to silver; provenance to the engagement that opened it.
 resource: ../../../decision-records/ADR-0044-silver-contracts-tickets.md
 tags: [silver, service, ticket, autotask]

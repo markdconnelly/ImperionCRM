@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: device
+entity: device
+archetype: A
 description: Unified asset/endpoint — one row per device, merged from per-source bronze by precedence (incl. Datto RMM) + BCDR backup-posture field merge.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, device, merge]

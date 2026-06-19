@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: tenant_posture
+entity: tenant_posture
+archetype: E
 description: Per-M365-tenant security rollup — current Secure Score plus policy drift classification counts; keyed by tenant, surfaces unmapped.
 resource: ../../../decision-records/ADR-0051-security-posture-model-imperion-secure-score.md
 tags: [silver, security, posture, tenant, drift]

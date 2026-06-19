@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: change_request
+entity: change_request
+archetype: D
 description: App-native ITIL 4 Change Enablement working object — a typed (standard|normal|emergency) change Imperion creates over the managed estate, with status, affected CMDB CIs, and nullable risk/approval/schedule columns the downstream slices populate. Autotask is the eventual change record SoR via a separate gated route (#661).
 resource: ../../../decision-records/ADR-0079-change-enablement.md
 tags: [silver, service-desk, change-enablement, itil, cmdb, overlay, archetype-d, app-native]

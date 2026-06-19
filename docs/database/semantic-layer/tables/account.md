@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: account
+entity: account
+archetype: A
 description: Unified client/prospect company — one row per organization, merged from four bronze sources by precedence; the CRM hub everything joins to.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, account, merge]

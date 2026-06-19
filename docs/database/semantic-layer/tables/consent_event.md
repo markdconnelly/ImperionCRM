@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: consent_event
+entity: consent_event
+archetype: C
 description: Append-only consent ledger — immutable per-channel opt-in/opt-out facts with lawful basis; the gate on every send and ad.
 resource: ../../../decision-records/ADR-0014-consent-ledger-communications.md
 tags: [silver, consent, compliance, ledger]

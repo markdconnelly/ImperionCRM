@@ -1,6 +1,8 @@
 ---
 type: Control Table
 title: agent_autopilot_policy
+entity: agent_autopilot_policy
+archetype: H
 description: The data-driven autonomy dial — one current autonomy rung (L0–L3) + Mark-gate flag per (agent · workflow · plane). Archetype H app-native governance/config; ramping a rung is a data change, not a code change.
 resource: ../../../decision-records/ADR-0087-agent-orchestration-and-observability-layer.md
 tags: [config, governance, agents, autonomy, orchestration, archetype-h, app-native, horizontal]

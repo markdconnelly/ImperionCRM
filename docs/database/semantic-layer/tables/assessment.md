@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: assessment
+entity: assessment
+archetype: B
 description: Paid security/readiness assessment — website system of record, scored across six pillars; anchor of the assessment-led GTM.
 resource: ../../../decision-records/ADR-0022-assessment-led-gtm-and-engagement-model.md
 tags: [silver, sales, assessment, security]

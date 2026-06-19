@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: timesheet
+entity: timesheet
+archetype: B
 description: Weekly Mon–Sun employee timesheet container — website system of record; drives the idempotent Autotask Time Ticket and payroll match.
 resource: ../../../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md
 tags: [silver, time-tracking, payroll]

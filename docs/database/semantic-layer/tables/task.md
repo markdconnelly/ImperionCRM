@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: task
+entity: task
+archetype: B
 description: Single unified task model across sales/project/onboarding/general — website system of record.
 resource: ../../../decision-records/ADR-0052-project-board-tasks-meetings-sales-activity.md
 tags: [silver, delivery, task]

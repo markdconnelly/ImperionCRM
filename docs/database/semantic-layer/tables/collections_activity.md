@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: collections_activity
+entity: collections_activity
+archetype: D
 description: App-native dunning/collections workflow overlay keyed to the read-only invoice mirror by QBO invoice id. Archetype D sidecar but app-native — agents READ the mirror, WRITE here, NEVER write QuickBooks.
 resource: ../../../decision-records/ADR-0085-qbo-payment-fact-purchase-simple-start.md
 tags: [silver, finance, accounts-receivable, collections, dunning, overlay, archetype-d, app-native]

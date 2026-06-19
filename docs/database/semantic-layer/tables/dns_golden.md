@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: dns_golden
+entity: dns_golden
+archetype: E
 description: The human-approved per-domain DNS baseline — the operator-approved snapshot that dns_domain drift is classified against; system of record is operator approval, not any external feed.
 resource: ../../../decision-records/ADR-0063-dns-posture-tracking.md
 tags: [silver, security, dns, golden, baseline]

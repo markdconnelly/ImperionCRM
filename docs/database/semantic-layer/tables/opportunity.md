@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: opportunity
+entity: opportunity
+archetype: A
 description: Merged silver opportunity from three bronze sources (KQM quote header, Autotask, website manual); the object the app uses.
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, sales, opportunity, kqm, autotask, forecast]

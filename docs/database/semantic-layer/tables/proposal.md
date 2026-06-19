@@ -1,6 +1,8 @@
 ---
 type: Silver Table
 title: proposal
+entity: proposal
+archetype: B
 description: Quote/proposal for an opportunity — website system of record, versioned status lifecycle.
 resource: ../../../decision-records/ADR-0019-proposal-lifecycle-model.md
 tags: [silver, sales, proposal]
