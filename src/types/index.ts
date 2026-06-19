@@ -1851,6 +1851,8 @@ export interface StageValueDatum {
 export interface RevenueSplit {
   oneTime: string; // formatted one-time assessment fees
   recurring: string; // formatted recurring MRR "$X/mo"
+  oneTimeValue: number; // numeric one-time assessment fees (dollars)
+  recurringValue: number; // numeric recurring MRR (dollars/mo)
 }
 
 /** Assessment → managed-services conversion. */

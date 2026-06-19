@@ -8542,9 +8542,13 @@ export const postgresRepositories: Repositories = {
                WHERE sales_stage = 'won')                       AS recurring`,
         );
         const r = rows[0];
+        const oneTimeValue = Number(r.one_time);
+        const recurringValue = Number(r.recurring);
         return {
-          oneTime: fmtUsdCompact(Number(r.one_time)),
-          recurring: `${fmtUsdCompact(Number(r.recurring))}/mo`,
+          oneTime: fmtUsdCompact(oneTimeValue),
+          recurring: `${fmtUsdCompact(recurringValue)}/mo`,
+          oneTimeValue,
+          recurringValue,
         };
       } catch {
         return mockRepositories.reports.revenueSplit();

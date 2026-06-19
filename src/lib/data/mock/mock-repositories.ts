@@ -1860,7 +1860,12 @@ export const mockRepositories: Repositories = {
       ];
     },
     async revenueSplit() {
-      return { oneTime: "$48K", recurring: "$326K/mo" };
+      return {
+        oneTime: "$48K",
+        recurring: "$326K/mo",
+        oneTimeValue: 48000,
+        recurringValue: 326000,
+      };
     },
     async assessmentConversion() {
       return { delivered: 14, converted: 9, rate: "64%" };
