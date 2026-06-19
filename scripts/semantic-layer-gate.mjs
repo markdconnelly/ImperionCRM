@@ -33,6 +33,14 @@ export const COVERAGE_MATRIX = "docs/database/semantic-layer/coverage-matrix.md"
 export const MIGRATIONS_DIR = "db/migrations";
 export const ESCAPE_HATCH_LABEL = "semantic-layer-not-affected";
 
+// ADR-0104 decision 6, layer 1 (b): the source→skill registry is `source_skill`,
+// whose schema changes are already covered by the migration rule above (it has a
+// concept file). The remaining surface is "a referenced skill": a skill RENAME or
+// REMOVAL can orphan a `source_skill` row's sanctioned-skill pointer. We flag only
+// removals/renames (a deleted SKILL.md) — a pure skill edit is not a pointer risk.
+export const SOURCE_SKILL_CONCEPT = `${CONCEPTS_DIR}/source_skill.md`;
+export const SKILL_MANIFEST_RE = /^plugins\/imperion-skills\/skills\/([^/]+)\/SKILL\.md$/;
+
 const MIGRATION_RE = /^db\/migrations\/\d+_.*\.sql$/;
 
 /** Strip `-- line` and block comments so prose never triggers a DDL match. */
@@ -128,17 +136,64 @@ export function evaluateGate({ changedFiles, migrationSql, conceptEntities, hasE
   };
 }
 
+/**
+ * Skill-pointer rule (ADR-0104 decision 6, layer 1 (b)). A skill removed or renamed
+ * under plugins/imperion-skills/skills/ can orphan a `source_skill` sanctioned-skill
+ * pointer. If any skill manifest was DELETED in the PR, require the source_skill
+ * concept file to be touched (prompting a review of the map) or the escape hatch.
+ * Pure skill edits (manifest still present) are not flagged.
+ * @param {object} o
+ * @param {string[]} o.removedFiles  repo-relative paths DELETED in the PR
+ * @param {string[]} o.changedFiles  repo-relative paths changed in the PR
+ * @param {boolean} o.hasEscapeHatch PR carries the escape-hatch label
+ * @returns {{ ok: boolean, removedSkills: string[], message: string }}
+ */
+export function evaluateSkillRule({ removedFiles = [], changedFiles = [], hasEscapeHatch }) {
+  const removedSkills = removedFiles
+    .map((f) => f.match(SKILL_MANIFEST_RE))
+    .filter(Boolean)
+    .map((m) => m[1])
+    .sort();
+
+  if (removedSkills.length === 0) {
+    return { ok: true, removedSkills, message: "No skill removed/renamed." };
+  }
+  const touchedRegistry = new Set(changedFiles).has(SOURCE_SKILL_CONCEPT);
+  if (touchedRegistry || hasEscapeHatch) {
+    return {
+      ok: true,
+      removedSkills,
+      message: hasEscapeHatch
+        ? `Escape hatch '${ESCAPE_HATCH_LABEL}' present — skill removal(s) (${removedSkills.join(", ")}) not gated.`
+        : `Skill(s) removed/renamed (${removedSkills.join(", ")}); ${SOURCE_SKILL_CONCEPT} touched — pointer map reviewed.`,
+    };
+  }
+  return {
+    ok: false,
+    removedSkills,
+    message:
+      `Skill(s) removed/renamed (${removedSkills.join(", ")}) but ${SOURCE_SKILL_CONCEPT} was not updated.\n` +
+      `A source_skill registry pointer may now dangle (ADR-0104 decision 2). Review the sanctioned-skill\n` +
+      `map and bump ${SOURCE_SKILL_CONCEPT} (and reconcile any registry rows), OR add the\n` +
+      `'${ESCAPE_HATCH_LABEL}' label with justification in the PR body.`,
+  };
+}
+
 // ── CLI ──────────────────────────────────────────────────────────────────────
 // Inputs from env (set by the CI workflow):
 //   CHANGED_FILES      newline-separated repo-relative changed paths
+//   REMOVED_FILES      newline-separated repo-relative DELETED paths (diff-filter=D)
 //   HAS_ESCAPE_HATCH   "true" when the PR carries the escape-hatch label
 //   GITHUB_WORKSPACE   repo root (defaults to cwd)
 function main() {
   const repoRoot = process.env.GITHUB_WORKSPACE || process.cwd();
-  const changedFiles = (process.env.CHANGED_FILES || "")
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const splitLines = (v) =>
+    (v || "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  const changedFiles = splitLines(process.env.CHANGED_FILES);
+  const removedFiles = splitLines(process.env.REMOVED_FILES);
   const hasEscapeHatch = (process.env.HAS_ESCAPE_HATCH || "").toLowerCase() === "true";
 
   const conceptEntities = listConceptEntities(repoRoot);
@@ -153,12 +208,19 @@ function main() {
   }
 
   const result = evaluateGate({ changedFiles, migrationSql, conceptEntities, hasEscapeHatch });
-  if (result.ok) {
-    console.log(`✓ semantic-layer gate: ${result.message}`);
-    process.exit(0);
+  const skill = evaluateSkillRule({ removedFiles, changedFiles, hasEscapeHatch });
+
+  for (const r of [result, skill]) {
+    if (r.ok) console.log(`✓ semantic-layer gate: ${r.message}`);
   }
-  console.error(`::error::${result.message.replace(/\n/g, "%0A")}`);
-  console.error(result.message);
+  if (result.ok && skill.ok) process.exit(0);
+
+  for (const r of [result, skill]) {
+    if (!r.ok) {
+      console.error(`::error::${r.message.replace(/\n/g, "%0A")}`);
+      console.error(r.message);
+    }
+  }
   process.exit(1);
 }
 
