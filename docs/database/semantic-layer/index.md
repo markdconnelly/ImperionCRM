@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-16T03:00:00Z
+timestamp: 2026-06-19T00:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -80,6 +80,12 @@ subset; remaining entities are tracked for expansion
 | [`app_user`](tables/app_user.md) | reference | Entra ID identity | ADR-0016 |
 | [`connection`](tables/connection.md) | reference | sync config; tokens in Key Vault (by ref) | ADR-0024 |
 | [`agent_autopilot_policy`](tables/agent_autopilot_policy.md) | control/config (app-native) | website (autonomy dial; agents read their rung) | ADR-0087 |
+| [`agent_tool_grant`](tables/agent_tool_grant.md) | reference (tool-routing) | website (per-agent tool allow-list; ADR-0104 points here) | ADR-0087 |
+| [`project_provisioning`](tables/project_provisioning.md) | write-back sidecar | front end requests; backend executor writes (DocuSign-gated) | ADR-0080 |
+| [`task_ticket_fire`](tables/task_ticket_fire.md) | write-back sidecar | front end requests; backend executor fires (JIT) | ADR-0080 |
+| [`time_ticket`](tables/time_ticket.md) | write-back sidecar | front end requests; backend executor writes (idempotent weekly) | ADR-0082 |
+| [`autotask_expense_report`](tables/autotask_expense_report.md) | write-back sidecar | front end requests; backend executor writes (idempotent monthly) | ADR-0083 |
+| [`defender_incident_ticket_link`](tables/defender_incident_ticket_link.md) | write-back sidecar | PK = sync-back idempotency key (one ticket per incident) | ADR-0059 |
 
 Enrichment-agent sync and vectorization of this bundle are tracked as follow-ups
 (LocalPipelineEnrichment #175 / #176).

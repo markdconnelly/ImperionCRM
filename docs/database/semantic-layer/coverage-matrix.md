@@ -67,8 +67,8 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [sprint](tables/sprint.md) | Delivery | B | ✅ | provisioning / delivery (iteration planning) |
 | [project_baseline](tables/project_baseline.md) | Delivery | B | ✅ | provisioning / delivery (planned-vs-actual) |
 | [project_template](tables/project_template.md) | Delivery | B | ✅ | provisioning / delivery (project instantiation) |
-| project_provisioning | Delivery | D | ⏳ | provisioning executor (autonomy-dialed) |
-| task_ticket_fire | Delivery | D | ⏳ | JIT ticket-fire executor |
+| [project_provisioning](tables/project_provisioning.md) | Delivery | D | ✅ | provisioning executor (autonomy-dialed) |
+| [task_ticket_fire](tables/task_ticket_fire.md) | Delivery | D | ✅ | JIT ticket-fire executor |
 | project_milestone, delivery_template_phase/_task, onboarding_step, meeting_action_item | Delivery | B | ⏳ | provisioning / onboarding |
 | project_type | Delivery | H | ⏳ | n/a (reference) |
 
@@ -123,7 +123,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 |---|---|---|---|---|
 | [time_record](tables/time_record.md) | Finance | A | ✅ | monthly-close |
 | [timesheet](tables/timesheet.md) | Finance | B | ✅ | time-approval |
-| time_ticket | Finance | D | ⏳ | Time Ticket writer (→ Autotask) |
+| [time_ticket](tables/time_ticket.md) | Finance | D | ✅ | Time Ticket writer (→ Autotask) |
 | employee_profile, pay_rate | People | H | ⏳ | n/a (comp-gated) |
 
 ## Expense
@@ -132,7 +132,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 |---|---|---|---|---|
 | [expense_item](tables/expense_item.md) | Finance | A | ✅ | monthly-close |
 | [expense_report](tables/expense_report.md) | Finance | B | ✅ | expense-approval |
-| autotask_expense_report | Finance | D | ⏳ | ExpenseReport writer (→ Autotask) |
+| [autotask_expense_report](tables/autotask_expense_report.md) | Finance | D | ✅ | ExpenseReport writer (→ Autotask) |
 | expense_reconciliation | Finance | F | ⏳ | monthly-close (QBO match) |
 | receipt_attachment | Finance | B | ⏳ | receipt handling |
 | expense_category, qbo_expense_account, mileage_rate | Finance | H | ⏳ | n/a (config; rate comp-gated) |
@@ -155,7 +155,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | posture_policy, *_golden (CA / Intune / Autopilot / device-config / Defender XDR) | Security | E | ⏳ | drift-monitor (autonomy-dialed) |
 | account_domain | Security | H | ⏳ | domain registry (operator-curated) |
 | defender_incidents, defender_alerts | Security | B | ⏳ | incident triage |
-| defender_incident_ticket_link | Security | D | ⏳ | incident→ticket (ADR-0059) |
+| [defender_incident_ticket_link](tables/defender_incident_ticket_link.md) | Security | D | ✅ | incident→ticket (ADR-0059) |
 
 ## Knowledge (gold)
 
@@ -171,7 +171,8 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [app_user](tables/app_user.md) | horizontal | H | ✅ | n/a (Identity / RBAC) |
 | [connection](tables/connection.md) | horizontal | H | ✅ | n/a (Data Platform / sync config) |
 | connector_instance | horizontal | H | ⏳ | n/a (Data Platform / connector catalog — #416/#747, migration 0125) |
-| agent, agent_tool_grant, agent_settings | horizontal | H | ⏳ | n/a (Governance / agent config) |
+| [agent_tool_grant](tables/agent_tool_grant.md) | horizontal | H | ✅ | the tool-routing authority (ADR-0104; OKF grounds, this grants) |
+| agent, agent_settings | horizontal | H | ⏳ | n/a (Governance / agent config) |
 | [agent_autopilot_policy](tables/agent_autopilot_policy.md) | horizontal | H | ✅ | the autonomy dial — every tier reads its rung (#721, ADR-0087) |
 | account_tenant, saved_view | horizontal | H | ⏳ | n/a |
 | report_definition, dashboard, dashboard_item | horizontal | B/H | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
