@@ -183,6 +183,27 @@ describe("analyzeImpact — direction", () => {
   });
 });
 
+describe("cloud CIs enter the impact blast radius (#653)", () => {
+  test("an account's neighbourhood includes its cloud assets, criticality-weighted", () => {
+    const items = [
+      ci("account", "a1"),
+      ci("cloud", "c-db", crit("high")), // a database cloud asset → weight 3
+      ci("cloud", "c-net", crit("medium")), // a network cloud asset → weight 2
+    ];
+    // cloud belongs-to account edges (derived from cloud_asset.account_id, migration 0144).
+    const edges = [
+      edge(["cloud", "c-db"], ["account", "a1"]),
+      edge(["cloud", "c-net"], ["account", "a1"]),
+    ];
+    const r = analyzeImpact({ ciType: "account", ciId: "a1" }, items, edges);
+    expect(r.affected.map((a) => a.ci.ciId).sort()).toEqual(["c-db", "c-net"]);
+    expect(r.totalWeight).toBe(5);
+    expect(r.peakCriticality).toBe("high");
+    const groups = groupByType(r.affected);
+    expect(groups.find((g) => g.ciType === "cloud")?.items).toHaveLength(2);
+  });
+});
+
 describe("groupByType", () => {
   test("groups non-empty types, most-weighted group first", () => {
     const affected: AffectedCi[] = [

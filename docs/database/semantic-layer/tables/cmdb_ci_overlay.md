@@ -6,7 +6,7 @@ archetype: D
 description: App-native per-CI criticality / business-impact overlay — one row per Configuration Item (polymorphic ci_type+ci_id pair over the read-only cmdb_ci union) carrying a derived_default (computed from silver attributes) and a nullable admin override. Effective criticality = override ?? derived_default; the weighting input for impact analysis. IT Glue write-back is a separate gated slice.
 resource: ../../../decision-records/ADR-0047-device-inventory.md
 tags: [silver, service-desk, cmdb, criticality, business-impact, overlay, archetype-d, app-native]
-timestamp: 2026-06-17T00:00:00Z
+timestamp: 2026-06-18T00:00:00Z
 ---
 
 # cmdb_ci_overlay
@@ -43,6 +43,8 @@ separate, gated round-trip slice** (a later
     - **user** → **medium** baseline (silver `contact` carries no seniority/role signal
       today; an admin override is the escape hatch until such a signal lands — a future
       front-end schema change, ADR-0042).
+    - **cloud** → `cloud_asset.category`: `database` | `identity` | `security` → **high**;
+      `compute` | `network` → **medium**; else → **low** (#653).
     The derived rule **never** assigns `critical` — a machine should not silently declare a
     CI business-critical; that level is reserved for an explicit human override. The
     IDENTICAL rule is encoded in `src/lib/cmdb/criticality.ts::deriveCriticality` (the
@@ -63,7 +65,7 @@ separate, gated round-trip slice** (a later
 
 | Column | Type | Notes |
 |---|---|---|
-| `ci_type` | text | `account` \| `user` \| `device` (CHECK); part of the PK |
+| `ci_type` | text | `account` \| `user` \| `device` \| `cloud` (CHECK); part of the PK |
 | `ci_id` | text | CI business key within `ci_type`; part of the PK |
 | `derived_default` | `ci_criticality` enum | computed from silver attributes; recomputed by the derivation (rewrites THIS column only); never `critical` |
 | `override` | `ci_criticality` enum | admin's explicit rating; NULL = use `derived_default`; survives re-derivation |
@@ -76,7 +78,8 @@ PRIMARY KEY `(ci_type, ci_id)` — one overlay row per CI.
 ## Joins
 
 - `(ci_type, ci_id)` → the `cmdb_ci` union read-model (#645) — i.e. silver
-  [`account`](account.md), [`contact`](contact.md) (the `user` CI), or [`device`](device.md).
+  [`account`](account.md), [`contact`](contact.md) (the `user` CI), [`device`](device.md),
+  or [`cloud_asset`](cloud_asset.md) (the `cloud` CI).
   Business-key join, **not an FK** (the register is a union/projection).
 - **Consumers:** the CI register badge + CI-detail criticality panel (`/cmdb`,
   `/cmdb/<type>/<id>`); later CMDB impact analysis
