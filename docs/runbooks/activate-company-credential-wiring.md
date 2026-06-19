@@ -100,29 +100,12 @@ az keyvault secret list --vault-name kv-imperioncrm-prd \
 4. Re-saving the same provider should **rotate in place** (one row per provider —
    `uq_connection_company_provider`), not create a duplicate.
 
-## 4. (Later) GDAP admin consent
+## 4. (Retired) GDAP admin consent
 
-The front-end callback at `/api/gdap/callback` is built and flips the `gdap` row to
-`active` on a successful return. It stays dormant until the backend hands back a real
-consent URL. To light it up:
-
-- Register/confirm the partner multi-tenant app + GDAP relationship in **Partner Center**.
-- On the **backend**, set `GDAP_CLIENT_ID`, `GDAP_REDIRECT_URI`
-  (`https://imperioncrm.azurewebsites.net/api/gdap/callback`), `GDAP_TENANT` so
-  `/api/gdap/consent` returns a live URL.
-- (Optional, recommended) pin the returning tenant on the **web app**. Pinning fails
-  closed (#192): when set, a consent callback must echo exactly this tenant — a missing
-  `tenant` parameter is rejected as `tenant_mismatch`, never accepted.
-
-```bash
-az webapp config appsettings set \
-  --resource-group Imperion_CRM --name imperioncrm \
-  --settings GDAP_EXPECTED_TENANT="49307c12-1bb7-42e4-9c7c-43d2850bd8c6"
-```
-
-- TODO(backend): once the `state` embedded in the consent URL is finalized, match it in
-  the callback (currently the callback guards with an auth session + the
-  `gdap_consent_pending` cookie).
+**GDAP was scrapped — superseded by the per-client M365 app (ADR-0018), the only Graph
+access model.** The former front-end consent path (`/api/gdap/callback`, the `gdap`
+company provider, and the `GDAP_*` backend settings) was removed in #932; there is no
+GDAP connect action to activate here.
 
 ## Rollback
 

@@ -2,7 +2,7 @@
  * Company-wide integration providers configured under Settings → Company
  * credentials (ADR-0036). Each entry describes how its credential is collected:
  * either a set of `fields` (the secret ones are write-only password inputs, never
- * echoed back) or an admin-consent `kind: "consent"` flow (GDAP).
+ * echoed back) or an admin-consent `kind: "consent"` flow (QBO).
  *
  * This is metadata only — no secrets. The values entered are POSTed to the backend
  * credential store, which writes them to Key Vault (CLAUDE.md §5).
@@ -29,7 +29,7 @@ export interface CompanyProvider {
   key: string; // matches connection_provider enum
   label: string;
   icon: string; // lucide name resolved by <Icon />
-  /** "credential" = field form; "consent" = admin-consent connect button (GDAP). */
+  /** "credential" = field form; "consent" = admin-consent connect button (QBO). */
   kind: "credential" | "consent";
   description: string;
   /** Scopes recorded on the connection row (display/audit only). */
@@ -47,7 +47,7 @@ export interface CompanyProvider {
   /**
    * A `kind: "credential"` provider that ALSO needs a one-time admin-consent step
    * after its secrets are stored (DocuSign JWT impersonation, #318/#392). Unlike a
-   * `kind: "consent"` provider (no secret to paste, GDAP/QBO), DocuSign needs both:
+   * `kind: "consent"` provider (no secret to paste, QBO), DocuSign needs both:
    * the secrets entered via the form AND an admin grant. When set, the card renders a
    * "Grant admin consent" button alongside the credential form.
    */
@@ -59,9 +59,9 @@ export interface CompanyProvider {
  *
  * Only polled data sources (`kind: "credential"` — Autotask, IT Glue, …) are
  * scraped on a cadence, so only they get the cadence selector and the on-demand
- * "Refresh now" control. Consent/OAuth providers (QBO, GDAP — `kind: "consent"`)
+ * "Refresh now" control. Consent/OAuth providers (QBO — `kind: "consent"`)
  * have nothing polling them: QBO refreshes on-demand and is bulk-pulled by the
- * on-prem pipeline, and GDAP is delegated admin consent. Rendering a poll cadence
+ * on-prem pipeline. Rendering a poll cadence
  * for them is meaningless, so it is gated out here. A `sendCapable` credential
  * (Meta DM token) is likewise not an ingest source — nothing polls it — so it is
  * excluded too. An `adminConsent` credential (DocuSign) is a send/consent integration
@@ -78,16 +78,6 @@ export function providerIsPollable(
 }
 
 export const COMPANY_PROVIDERS: CompanyProvider[] = [
-  {
-    key: "gdap",
-    label: "Microsoft GDAP (Imperion)",
-    icon: "ShieldCheck",
-    kind: "consent",
-    description:
-      "Granular Delegated Admin Privileges for Imperion's Microsoft partner tenant. " +
-      "Establishes delegated admin access via Microsoft admin consent — there is no key to paste.",
-    scopes: ["DelegatedAdmin.ReadWrite.All"],
-  },
   {
     key: "autotask",
     label: "Autotask (PSA)",

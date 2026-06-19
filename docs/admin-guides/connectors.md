@@ -49,7 +49,7 @@ flowchart LR
 
 - **Enter / rotate a credential** (Company systems) — write-only secret fields,
   POSTed to the backend → **Key Vault**; only a reference lands on the connection row.
-- **Grant admin consent** (Company systems) — for DocuSign / QuickBooks / GDAP.
+- **Grant admin consent** (Company systems) — for DocuSign / QuickBooks.
 - **Enable** a connector (catalog) — records the lifecycle *intent* to run it.
 - **Tune** its poll cadence — how often the pipeline scrapes it (ADR-0038, `pollDue()`).
 - **Disable** a connector (catalog) — stops it.
@@ -63,7 +63,7 @@ backend, which writes it to **Key Vault**, and only a *reference* lands on the
 connection row — never the secret itself (CLAUDE.md §5). Three collection styles:
 
 - **`credential`** — a field form (API key / username / secret / region, etc.).
-- **`consent`** — an admin-consent connect button, no key to paste (GDAP, QuickBooks).
+- **`consent`** — an admin-consent connect button, no key to paste (QuickBooks).
 - **`credential` + `adminConsent`** — DocuSign needs BOTH: a secret form **and** a
   one-time admin grant. The card renders the form *and* a **Grant admin consent**
   button (`connectDocusignAction` → backend `/connections/docusign/consent`).
@@ -73,7 +73,6 @@ Poll cadence + Refresh now appear only for *pollable* providers (`providerIsPoll
 
 | Provider (key) | Kind | Purpose |
 | --- | --- | --- |
-| Microsoft GDAP (`gdap`) | consent | Granular Delegated Admin Privileges for Imperion's partner tenant. |
 | Autotask PSA (`autotask`) | credential | Kaseya Autotask REST — tickets, contracts, company records. |
 | IT Glue (`itglue`) | credential | IT Glue API key + region (US/EU/AU). |
 | My IT Process (`myitprocess`) | credential | My IT Process API key. |
@@ -85,7 +84,7 @@ Poll cadence + Refresh now appear only for *pollable* providers (`providerIsPoll
 | DocuSign (`docusign`) | credential, **adminConsent** | Integration key + RSA private key (PEM) + impersonated user → 3 named Key Vault secrets; then Grant admin consent. Account id + environment are ops App Settings. |
 
 > **Meta** is `sendCapable` (outbound DM replies) — entering it is a Mark-approved
-> security event. **GDAP / QuickBooks** use distinct connect actions; the QBO outcome
+> security event. **QuickBooks** uses a consent connect action; the QBO outcome
 > renders a notice on `/settings/connections?qbo=<result>`. **DocuSign** enters its
 > three secrets via the form (backend #192), then **Grant admin consent** redirects to
 > DocuSign for one-time JWT impersonation consent per environment; its secrets rotate

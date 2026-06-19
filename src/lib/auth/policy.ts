@@ -26,7 +26,7 @@ export const CAPABILITIES = [
   "tickets:write", // ticket + meeting-action-item handling (Support's allowed write)
   "comms:write", // outbound sends + consent ledger
   "catalog:write", // discovery/assessment question + template configuration
-  "settings:write", // connections, company credentials, GDAP, poll cadence
+  "settings:write", // connections, company credentials, poll cadence
   "agents:operate", // convene the AI board / operate the agent layer (ADR-0050: admin-only, spends model budget)
   "time:write", // own weekly timesheet — enter/attest time (ADR-0082; every employee, own row only)
   "time:approve", // admin correctness approval of a submitted timesheet (ADR-0082; admin-only)

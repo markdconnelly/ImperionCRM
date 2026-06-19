@@ -28,5 +28,4 @@ export const REFRESH_SOURCES: Record<string, RefreshSource> = {
   itglue: "itglue",
   darkwebid: "darkwebid",
   televy: "televy",
-  gdap: "m365",
 };

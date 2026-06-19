@@ -21,14 +21,7 @@ describe("connectorFor — composes the three concern-modules by key", () => {
     const def = connectorFor("m365");
     expect(def.manifest?.key).toBe("m365");
     expect(def.provider).toBeUndefined();
-    expect(def.refresh).toBeUndefined(); // m365 refresh is triggered via the gdap provider
-  });
-
-  it("gdap is a consent provider whose refresh triggers the m365 source (no manifest)", () => {
-    const def = connectorFor("gdap");
-    expect(def.manifest).toBeUndefined();
-    expect(def.provider?.kind).toBe("consent");
-    expect(def.refresh).toBe("m365");
+    expect(def.refresh).toBeUndefined();
   });
 
   it("myitprocess is a credential provider with no catalog entry and no refresh", () => {

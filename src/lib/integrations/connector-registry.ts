@@ -11,9 +11,8 @@
  * Those three stay the source of truth for their own concern — they are deliberately NOT
  * merged into one list, because the concerns are distinct and the key sets only partially
  * overlap: marketplace-only connectors (apollo), consent-only providers intentionally absent
- * from the catalog (qbo, gdap, docusign), credential providers with no refresh yet
- * (myitprocess, quotemanager), and the `gdap` provider whose refresh triggers the `m365`
- * source. This module is the one place a caller can ask "give me the whole picture for key X"
+ * from the catalog (qbo, docusign), and credential providers with no refresh yet
+ * (myitprocess, quotemanager). This module is the one place a caller can ask "give me the whole picture for key X"
  * via `connectorFor(key)` instead of importing and cross-referencing all three.
  *
  * SCOPES — two distinct, intentionally-different concepts (do NOT force them equal):

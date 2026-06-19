@@ -17,7 +17,7 @@ describe("providerIsPollable", () => {
     expect(providerIsPollable({ kind: "credential", sendCapable: true })).toBe(false);
   });
 
-  it("Autotask and IT Glue are pollable; QBO, GDAP, and Meta are not", () => {
+  it("Autotask and IT Glue are pollable; QBO and Meta are not", () => {
     const byKey = (key: string) => {
       const p = COMPANY_PROVIDERS.find((cp) => cp.key === key);
       if (!p) throw new Error(`missing provider ${key}`);
@@ -26,7 +26,6 @@ describe("providerIsPollable", () => {
     expect(providerIsPollable(byKey("autotask"))).toBe(true);
     expect(providerIsPollable(byKey("itglue"))).toBe(true);
     expect(providerIsPollable(byKey("qbo"))).toBe(false);
-    expect(providerIsPollable(byKey("gdap"))).toBe(false);
     expect(providerIsPollable(byKey("meta"))).toBe(false);
   });
 
