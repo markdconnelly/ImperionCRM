@@ -79,6 +79,7 @@ subset; remaining entities are tracked for expansion
 | [`knowledge_object`](tables/knowledge_object.md) | gold | on-prem produced; Voyage 1024d | ADR-0041 |
 | [`app_user`](tables/app_user.md) | reference | Entra ID identity | ADR-0016 |
 | [`connection`](tables/connection.md) | reference | sync config; tokens in Key Vault (by ref) | ADR-0024 |
+| [`source_skill`](tables/source_skill.md) | reference (tool-routing) | website (per-provider sanctioned fetch/validate skill) | ADR-0104 |
 | [`agent_autopilot_policy`](tables/agent_autopilot_policy.md) | control/config (app-native) | website (autonomy dial; agents read their rung) | ADR-0087 |
 | [`agent_tool_grant`](tables/agent_tool_grant.md) | reference (tool-routing) | website (per-agent tool allow-list; ADR-0104 points here) | ADR-0087 |
 | [`project_provisioning`](tables/project_provisioning.md) | write-back sidecar | front end requests; backend executor writes (DocuSign-gated) | ADR-0080 |

@@ -170,6 +170,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 |---|---|---|---|---|
 | [app_user](tables/app_user.md) | horizontal | H | ✅ | n/a (Identity / RBAC) |
 | [connection](tables/connection.md) | horizontal | H | ✅ | n/a (Data Platform / sync config) |
+| [source_skill](tables/source_skill.md) | horizontal | H | ✅ | the tool-routing hop OKF points at (per-provider sanctioned skill; ADR-0104) |
 | connector_instance | horizontal | H | ⏳ | n/a (Data Platform / connector catalog — #416/#747, migration 0125) |
 | [agent_tool_grant](tables/agent_tool_grant.md) | horizontal | H | ✅ | the tool-routing authority (ADR-0104; OKF grounds, this grants) |
 | agent, agent_settings | horizontal | H | ⏳ | n/a (Governance / agent config) |
