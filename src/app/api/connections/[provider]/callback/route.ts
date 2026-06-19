@@ -33,14 +33,16 @@ import {
 } from "@/lib/integrations/personal-oauth";
 import { connectionsService } from "@/lib/services";
 import { ServiceCallError, ServiceNotConfiguredError } from "@/lib/services/external-client";
+import { requestOrigin } from "@/lib/integrations/request-origin";
 
 function profileRedirect(
   req: NextRequest,
   result: ConnectResult,
   provider?: string,
 ): NextResponse {
+  // Resolve the public origin from the proxy headers, not the internal bind host (#931).
   return NextResponse.redirect(
-    new URL(profileConnectionsPath(result, provider), req.nextUrl.origin),
+    new URL(profileConnectionsPath(result, provider), requestOrigin(req)),
   );
 }
 
@@ -55,7 +57,7 @@ export async function GET(
   //    connect (the same guard connectAction enforces, ADR-0045).
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
+    return NextResponse.redirect(new URL("/login", requestOrigin(req)));
   }
   if (!can(session.user.roles ?? [DEFAULT_ROLE], "settings:write")) {
     return profileRedirect(req, "forbidden", provider);

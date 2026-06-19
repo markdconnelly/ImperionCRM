@@ -24,10 +24,12 @@ import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { connectionsService } from "@/lib/services";
 import { classifyServiceError } from "@/lib/services/call-guard";
 import { ServiceCallError } from "@/lib/services/external-client";
+import { requestOrigin } from "@/lib/integrations/request-origin";
 
 function settingsRedirect(req: NextRequest, result: string, status?: number): NextResponse {
   // Land on the consolidated Connections page so the QBO connect notice renders (#530/#864).
-  const url = new URL("/settings/connections", req.nextUrl.origin);
+  // Resolve the public origin from the proxy headers, not the internal bind host (#931).
+  const url = new URL("/settings/connections", requestOrigin(req));
   url.searchParams.set("qbo", result);
   if (status) url.searchParams.set("qboStatus", String(status));
   return NextResponse.redirect(url);
@@ -36,7 +38,7 @@ function settingsRedirect(req: NextRequest, result: string, status?: number): Ne
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
+    return NextResponse.redirect(new URL("/login", requestOrigin(req)));
   }
   if (!can(session.user.roles ?? [DEFAULT_ROLE], "settings:write")) {
     return settingsRedirect(req, "forbidden");
