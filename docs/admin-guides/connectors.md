@@ -120,6 +120,19 @@ produces **gold**. Enabling and tuning connectors here controls the *intake* end
 that flow. For the cross-repo picture see
 [System of systems](../architecture/system-of-systems.md).
 
+## Troubleshooting: OAuth connect lands on `0.0.0.0:8080`
+
+The OAuth callback routes (`/api/qbo/callback`, `/api/connections/[provider]/callback`)
+build their "back to the app" redirect from the **public** origin via `requestOrigin()`
+(`src/lib/integrations/request-origin.ts`, #931). Behind the App Service reverse proxy,
+the raw `req.nextUrl.origin` is the internal bind host (`https://0.0.0.0:8080`), so a
+connect that *succeeds* would otherwise strand the browser there. `requestOrigin()`
+resolves the host from `x-forwarded-host`/`x-forwarded-proto` (the same source NextAuth
+trusts via `trustHost: true`), falling back to `nextUrl.origin` for local dev.
+
+If a callback still lands on a wrong host, set the **`APP_PUBLIC_ORIGIN`** app setting
+(e.g. `https://imperioncrm.azurewebsites.net`) — it overrides header detection.
+
 ## Security notes
 
 - **Secrets are write-only and never persisted in the app.** The Company-systems
