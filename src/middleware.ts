@@ -22,9 +22,12 @@ export const config = {
    * onto other routes that merely start with "story". `/opt-in` is the public
    * SMS/email opt-in & consent capture page (#217) — its submit writes only an
    * append-only bronze `lead_capture_event` (ADR-0024), never the consent
-   * ledger; same anchor so it cannot leak onto sibling routes.
+   * ledger; same anchor so it cannot leak onto sibling routes. `/legal` is the
+   * public legal surface (#934/#497) — the EULA + Privacy Policy must be reachable
+   * without an Entra login (Intuit's QuickBooks production-app review fetches the
+   * URLs anonymously); same `(?:$|/)` anchor so it cannot leak onto sibling routes.
    */
   matcher: [
-    "/((?!api/auth|login|break-glass|story(?:$|/)|opt-in(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|login|break-glass|story(?:$|/)|opt-in(?:$|/)|legal(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
