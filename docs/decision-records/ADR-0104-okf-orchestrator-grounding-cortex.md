@@ -1,5 +1,5 @@
 ---
-adr: XXXX
+adr: 0104
 title: "OKF as the orchestrator grounding cortex — routing keys, deterministic load, enforced freshness"
 status: proposed
 date: 2026-06-18
@@ -7,11 +7,7 @@ repo: frontend
 summary: "How the OKF semantic bundle serves the single orchestrator: grounding-only scope, source-scoped tool pointers, deterministic Layer-3 load, two routing frontmatter keys, and freshness as a correctness control."
 tags: [meta]
 ---
-# ADR-XXXX: OKF as the orchestrator grounding cortex
-
-> **Placeholder number.** Per CLAUDE.md §10.3 the ADR number is claimed at merge,
-> not at authoring. Rename `ADR-XXXX-*` → the next free number and fix references
-> in the final rebase before squash-merge.
+# ADR-0104: OKF as the orchestrator grounding cortex
 
 | Field | Value |
 |---|---|
@@ -185,11 +181,47 @@ in each sibling. The reconciliation agent (LP #175) rides existing on-prem budge
 - A concept-file → acting-workflow round-trip check (decision 1's pointer integrity)
   could later be added to the reconciliation agent.
 
+## Coverage state and sequenced expansion plan
+
+This ADR makes coverage a **correctness** concern, not just a completeness one:
+deterministic Layer-3 grounding only works on a concept-bearing (✅) entity, so an
+uncovered entity the orchestrator must act on cannot be grounded at all. As of
+2026-06-18 the bundle is **~46 ✅ of ~110+ objects** (coverage-matrix.md): the
+high-value silver A/B/C/E entities are mostly covered; the gaps below are now
+prioritised by *what the brain needs to act faithfully*, not by domain order. The
+expansion track is [#536](https://github.com/markdconnelly/ImperionCRM/issues/536);
+each tier is one micro-PR per batch following AUTHORING.md.
+
+**Tier 1 — act-path prerequisites (do first).** The orchestrator grounds *then acts*;
+these are the entities it acts *on/through*:
+- **D-archetype write-back sidecars** — `project_provisioning`, `task_ticket_fire`,
+  `time_ticket`, `autotask_expense_report`, `collections_activity`,
+  `defender_incident_ticket_link`. (The autonomy dial executes here; ungrounded =
+  unsafe to dial up.)
+- **`agent_tool_grant`** (+ `agent`, `agent_settings`) — decision 1 names
+  `agent_tool_grant` as the tool-routing authority, yet it has no concept file. The
+  registry table from decision 2 (extends ADR-0103) lands as its own concept update
+  to `connection`.
+
+**Tier 2 — MSSP depth.** `posture_policy` + the `*_golden` policy tables
+(CA / Intune / Autopilot / device-config / Defender XDR — the drift engine);
+`defender_incidents` / `defender_alerts`.
+
+**Tier 3 — completeness.** Marketing leaves (`ad`, `audience`, `event`, `lead_hook`,
+`social_metric`); reconciliation views (`expense_reconciliation`, …); reference/config
+(`connector_instance`, `account_tenant`, `saved_view`, `report_definition` / `dashboard`,
+`project_type`, comp tables).
+
+**Matrix-drift fixed in this PR:** `ci_relationship` and `cmdb_ci_overlay` already have
+at-bar concept files under `tables/` but `coverage-matrix.md` still marked them ⏳ —
+flipped to ✅ here.
+
 ## Follow-up issues (to file on merge)
 
-- Backfill `entity` + `archetype` frontmatter across the bundle (batched).
+- Backfill `entity` + `archetype` frontmatter across the ~46 existing files (batched).
 - Source→sanctioned-skill registry extending ADR-0103 (schema + `connection` concept update).
 - Extend the #535 gate to skills/registry changes.
 - Sibling-repo `okf-sync` CI link-check (Pipeline / LocalPipeline) + label.
 - ICM stage-Inputs-must-list-concept enforcement (CONVENTIONS + lint).
 - LocalPipeline #175 reconciliation: diff live merge/ingestion behaviour vs prose authority.
+- Tier-1/2/3 concept-file expansion under #536, sequenced as above.

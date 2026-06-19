@@ -1331,5 +1331,18 @@
     "file": "ADR-0103-connection-credential-registry.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0104",
+    "title": "OKF as the orchestrator grounding cortex — routing keys, deterministic load, enforced freshness",
+    "status": "proposed",
+    "date": "2026-06-18",
+    "tags": [
+      "meta"
+    ],
+    "summary": "How the OKF semantic bundle serves the single orchestrator: grounding-only scope, source-scoped tool pointers, deterministic Layer-3 load, two routing frontmatter keys, and freshness as a correctness control.",
+    "file": "ADR-0104-okf-orchestrator-grounding-cortex.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

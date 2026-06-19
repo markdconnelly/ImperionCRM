@@ -14,11 +14,11 @@ tags: [meta]
 | **Repo** | frontend |
 | **Status** | Accepted |
 | **Date** | 2026-06-14 |
-| **Amended by** | ADR-XXXX (OKF as the orchestrator grounding cortex — routing keys, deterministic load, enforced freshness; placeholder number, claimed at merge) |
+| **Amended by** | [ADR-0104](ADR-0104-okf-orchestrator-grounding-cortex.md) (OKF as the orchestrator grounding cortex — routing keys, deterministic load, enforced freshness) |
 | **Cross-references** | ADR-0041 (vector contract) · ADR-0044 (silver merge pattern) · ADR-0082 (time) · ADR-0083 (expense) · ADR-0080 (opportunity merge) · CLAUDE.md §4 (bronze/silver/gold), §8 (read-only DB MCP / PII) |
 
-> **Amended by ADR-XXXX (2026-06-18).** This ADR establishes *that* the bundle exists
-> and *what* it may contain. ADR-XXXX specifies *how the single orchestrator uses it*:
+> **Amended by ADR-0104 (2026-06-18).** This ADR establishes *that* the bundle exists
+> and *what* it may contain. ADR-0104 specifies *how the single orchestrator uses it*:
 > grounding-only scope, source-scoped tool pointers (via the ADR-0103 registry),
 > deterministic Layer-3 load as the spine (RAG for discovery), two routing frontmatter
 > keys (`entity`, `archetype`) with the authority rule kept as prose, stage-Inputs

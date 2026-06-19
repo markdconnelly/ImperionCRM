@@ -4,7 +4,7 @@ title: Concept-file authoring standard
 description: The required shape, depth bar, and archetype-keyed sections every OKF concept file under tables/ must follow. Codifies ADR-0086 conformance.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [semantic-layer, okf, authoring, standard, conformance]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-18T00:00:00Z
 ---
 
 # Concept-file authoring standard
@@ -43,7 +43,7 @@ Gold-standard exemplars: [`account`](tables/account.md), [`contact`](tables/cont
    > rule, so they create no drift surface. The authority rule itself stays prose (read
    > natively by the LLM consumer) — never promote it to a structured frontmatter block
    > ("human-readable = machine-readable; no translation layer to drift"). See
-   > ADR-XXXX (OKF orchestrator grounding cortex).
+   > ADR-0104 (OKF orchestrator grounding cortex).
 2. **`# <entity>` + definition** — one short paragraph: what the entity *means* (the thing
    the app reasons over), the governing ADR link, and a pointer to its union view /
    migration / child tables.
@@ -85,7 +85,7 @@ schema. If any of those needs a trip to the migrations, the file is below bar.
 
 These files are the orchestrator's **grounding cortex** — the layer that gives it the
 right context to act *faithfully, with consistency* (ADR-0004 single orchestrator;
-ADR-XXXX). Authoring rules that follow from that role:
+ADR-0104). Authoring rules that follow from that role:
 
 - **Grounding only.** A concept file answers *meaning / authority / joins*. It does **not**
   select tools. To reach the **sanctioned skill** for a source, the orchestrator resolves
@@ -109,7 +109,7 @@ Changing a concept file is a normal unit of work (issue → worktree → micro-P
 changes a silver entity's shape / source-of-record / joins updates the matching file
 (≥ `timestamp`) **and** its `coverage-matrix.md` row in the **same** PR.
 
-**Freshness is a correctness control, not docs hygiene** (ADR-XXXX): because the
+**Freshness is a correctness control, not docs hygiene** (ADR-0104): because the
 orchestrator deterministically grounds on the authority rule, a stale rule silently
 corrupts every action. Enforced in three layers, strongest where cheapest:
 
