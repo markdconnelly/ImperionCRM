@@ -22,7 +22,7 @@ describe("isPersonalOAuthProvider", () => {
   });
 
   it("rejects company providers and junk", () => {
-    for (const p of ["autotask", "itglue", "gdap", "", "M365", "google ", "../etc"]) {
+    for (const p of ["autotask", "itglue", "", "M365", "google ", "../etc"]) {
       expect(isPersonalOAuthProvider(p)).toBe(false);
     }
   });

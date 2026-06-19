@@ -28,7 +28,7 @@ const TEST_TONE: Record<DocusignTestTone, string> = {
 
 /**
  * One company system's credential card (ADR-0036). Renders either a write-only
- * credential form or the GDAP admin-consent button. Stored secrets are NEVER shown
+ * credential form or the consent-connect button (QBO). Stored secrets are NEVER shown
  * — only the Key Vault reference and status. Re-submitting rotates the credential.
  * A `provider.adminConsent` credential (DocuSign, #862) renders BOTH: the secret
  * form AND a separate "Grant admin consent" button (`consentAction`).
@@ -37,7 +37,7 @@ export function CompanyCredentialCard({
   provider,
   connection,
   saveAction,
-  gdapAction,
+  connectAction,
   disconnectAction,
   pollAction,
   refreshAction,
@@ -48,7 +48,8 @@ export function CompanyCredentialCard({
   provider: CompanyProvider;
   connection: ConnectionRow | null;
   saveAction: (formData: FormData) => void | Promise<void>;
-  gdapAction: (formData: FormData) => void | Promise<void>;
+  /** Consent-connect action for a `kind: "consent"` provider (QuickBooks OAuth). */
+  connectAction: (formData: FormData) => void | Promise<void>;
   disconnectAction: (formData: FormData) => void | Promise<void>;
   pollAction: (formData: FormData) => void | Promise<void>;
   /** On-demand pipeline sync (pipeline ADR-0011); only rendered when `refreshable`. */
@@ -64,7 +65,7 @@ export function CompanyCredentialCard({
   const { stored, defaultOpen, statusLabel } = credentialCardState(connection);
   const [open, setOpen] = useState(defaultOpen);
   // Poll cadence + on-demand refresh are only meaningful for polled sources (#531,
-  // ADR-0038 / pollDue()); consent/OAuth providers (QBO, GDAP) have nothing polling them.
+  // ADR-0038 / pollDue()); consent/OAuth providers (QBO) have nothing polling them.
   const pollable = providerIsPollable(provider);
   // DocuSign's store writes each field to its own Key Vault secret, so a stored secret
   // can be rotated one-at-a-time. The generic providers store ONE JSON blob, so a partial
@@ -131,22 +132,16 @@ export function CompanyCredentialCard({
         </form>
       )}
 
-      {/* Consent / OAuth-connect flow (GDAP admin consent, QuickBooks OAuth) — no secret fields */}
+      {/* Consent / OAuth-connect flow (QuickBooks OAuth) — no secret fields */}
       {provider.kind === "consent" ? (
-        <form action={gdapAction} className="flex items-center gap-3">
+        <form action={connectAction} className="flex items-center gap-3">
           <input type="hidden" name="provider" value={provider.key} />
           <button
             type="submit"
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:border-accent hover:text-text"
           >
-            <Icon name={provider.key === "qbo" ? "Plug" : "ShieldCheck"} size={14} />
-            {provider.key === "qbo"
-              ? configured
-                ? "Reconnect QuickBooks"
-                : "Connect QuickBooks"
-              : configured
-                ? "Re-grant admin consent"
-                : "Grant admin consent"}
+            <Icon name="Plug" size={14} />
+            {configured ? "Reconnect QuickBooks" : "Connect QuickBooks"}
           </button>
         </form>
       ) : stored && !open ? (

@@ -112,12 +112,10 @@ preferred in the meantime, unset `INTEGRATION_SERVICE_URL` on the web app._
   - re-saving rotates (one row per provider via `uq_connection_company_provider`).
 - `az keyvault secret list --vault-name kv-imperioncrm-prd` should show `conn-company-*`.
 
-### 4. GDAP real admin-consent flow
-- Register/confirm the partner multi-tenant app + GDAP relationship in Partner Center.
-- Set `GDAP_CLIENT_ID`, `GDAP_REDIRECT_URI`, `GDAP_TENANT` on the backend (the
-  `/api/gdap/consent` 501 becomes a live consent URL), and build the web-app consent
-  callback that flips the `gdap` row to `active`. (The web-app callback at
-  `/api/gdap/callback` is already built — see the activate runbook §4.)
+### 4. GDAP real admin-consent flow — RETIRED
+GDAP was scrapped, superseded by the per-client M365 app (ADR-0018, the only Graph access
+model). The web-app connect path (`/api/gdap/callback`, the `gdap` provider, the `GDAP_*`
+backend settings) was removed in #932 — there is nothing to wire here.
 
 ### 4b. Per-user OAuth connections (backend ADR-0038 ↔ front-end wiring, 2026-06-09)
 

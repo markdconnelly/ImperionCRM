@@ -18,7 +18,6 @@ import {
   connectDocusignAction,
   connectQuickBooksAction,
   disconnectAction,
-  grantGdapAction,
   refreshNowAction,
   saveCredentialAction,
   setPollIntervalAction,
@@ -35,7 +34,7 @@ export const dynamic = "force-dynamic"; // live credential + instance state, nev
  * interactive page, per Mark (2026-06-17):
  *
  *   1. **Company systems** — the interactive credential cards (`COMPANY_PROVIDERS`,
- *      ADR-0036): enter/rotate secrets, grant admin consent (DocuSign/QBO/GDAP), tune
+ *      ADR-0036): enter/rotate secrets, grant admin consent (DocuSign/QBO), tune
  *      poll cadence, refresh on demand. Secrets are written to Key Vault by the backend;
  *      only a reference lands on the company `connection` row — never the secret (§5).
  *   2. **Connector catalog** — the marketplace grid (`ConnectorCatalog`, ADR-0076 §4):
@@ -117,7 +116,7 @@ export default async function ConnectionsPage({
               provider={p}
               connection={companyByProvider.get(p.key) ?? null}
               saveAction={saveCredentialAction}
-              gdapAction={p.key === "qbo" ? connectQuickBooksAction : grantGdapAction}
+              connectAction={connectQuickBooksAction}
               consentAction={p.key === "docusign" ? connectDocusignAction : undefined}
               testAction={p.key === "docusign" ? testDocusignConnectionAction : undefined}
               disconnectAction={disconnectAction}

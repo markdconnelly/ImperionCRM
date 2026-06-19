@@ -1,14 +1,11 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
-import { GDAP_CONSENT_COOKIE } from "@/lib/integrations/gdap";
 import { connectionsService, credentialsService, pipelineService } from "@/lib/services";
 import {
   callServiceWithFallback,
@@ -153,64 +150,10 @@ export async function saveCredentialAction(formData: FormData) {
 }
 
 /**
- * Begin Microsoft GDAP admin consent for Imperion (ADR-0036). The backend returns
- * the admin-consent URL to visit; we record a pending row and redirect there. Until
- * the backend is wired we record the pending intent without redirecting.
- *
- * Before redirecting we set a short-lived, httpOnly, SameSite=Lax cookie holding a
- * nonce. Microsoft redirects back to `/api/gdap/callback` as a top-level GET, which
- * Lax cookies accompany; the callback requires this cookie (plus an authenticated
- * session) before it will flip the row to `active`. Once the backend finalizes the
- * `state` it embeds in the consent URL, the callback should additionally match it.
- */
-export async function grantGdapAction(formData: FormData) {
-  await requireCapability("settings:write");
-  const providerKey = String(formData.get("provider") ?? "");
-  const provider = COMPANY_PROVIDERS.find((p) => p.key === providerKey);
-  if (!provider || provider.kind !== "consent") return;
-
-  let consentUrl: string | null = null;
-  let consentState: string | null = null;
-  let status = "pending";
-  try {
-    const res = await credentialsService.beginGdapConsent();
-    consentUrl = res.consentUrl;
-    consentState = res.state;
-  } catch (err) {
-    if (!isBackendNotConfigured(err)) status = "error";
-  }
-
-  const { connections } = getRepositories();
-  await connections.saveCompanyCredential({
-    provider: provider.key,
-    displayName: `Imperion ${provider.label}`,
-    scopes: provider.scopes,
-    keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
-    status,
-  });
-  revalidatePath("/settings/connections");
-
-  // Only arm the callback when we actually have somewhere to send the admin. Store the
-  // backend's `state` nonce as the cookie value so the callback can match it (CSRF guard).
-  if (consentUrl) {
-    (await cookies()).set(GDAP_CONSENT_COOKIE, consentState ?? randomUUID(), {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 15, // 15 minutes to complete consent
-    });
-  }
-
-  // redirect() throws — keep it last, outside the try/catch.
-  if (consentUrl) redirect(consentUrl);
-}
-
-/**
  * Begin the one-time DocuSign admin-consent flow (#862, backend #192). DocuSign is a
  * `kind: "credential"` provider (its secrets are entered via the form + stored by the
  * backend) that ALSO needs a one-time JWT-impersonation admin grant — this action fetches
- * the consent URL and redirects the admin to DocuSign. No cookie: unlike GDAP/QBO there is
+ * the consent URL and redirects the admin to DocuSign. No cookie: unlike QBO there is
  * no auth-code callback into our app (JWT grant is 2-legged); DocuSign's redirect lands on
  * its own site. When the backend isn't configured yet we record the intent and stay put.
  */
@@ -274,8 +217,8 @@ export async function testDocusignConnectionAction(): Promise<DocusignTestResult
 }
 
 /**
- * Begin the company-wide QuickBooks Online connect flow (#117/#528). Unlike GDAP this
- * needs no cookie: the backend parks a one-time CSRF `state` in Key Vault and embeds it
+ * Begin the company-wide QuickBooks Online connect flow (#117/#528). It needs no cookie:
+ * the backend parks a one-time CSRF `state` in Key Vault and embeds it
  * in the Intuit consent URL, then validates it on the callback (same posture as the
  * per-user OAuth flow). We record a pending `qbo` company row, then redirect the admin to
  * Intuit. When the backend isn't configured yet the row is recorded and we stay put

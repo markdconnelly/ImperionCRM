@@ -71,7 +71,7 @@ flowchart LR
 
 | Doc | What it is | Read it when… |
 | --- | --- | --- |
-| [credential-wiring-next-steps](credential-wiring-next-steps.md) | The cross-repo wiring status + remaining steps for **Settings → Company credentials / Your connections** (ADR-0036 / ADR-0038): the secret-write path, Easy Auth, MI bearer token, GDAP, per-user OAuth. | You are turning a configured-but-not-yet-live integration **on**, or want the exact config state and the named follow-ups. |
+| [credential-wiring-next-steps](credential-wiring-next-steps.md) | The cross-repo wiring status + remaining steps for **Settings → Company credentials / Your connections** (ADR-0036 / ADR-0038): the secret-write path, Easy Auth, MI bearer token, per-user OAuth. | You are turning a configured-but-not-yet-live integration **on**, or want the exact config state and the named follow-ups. |
 | [secrets-rotation-runbook](secrets-rotation-runbook.md) | The **complete inventory** of every secret in the four-repo system — owner, location, rotation procedure, cadence — plus a compromise quick-reference. | Doing the pre-go-live rotation pass, responding to a suspected compromise, or onboarding a new secret. |
 | [semantic-layer-gate](semantic-layer-gate.md) | How the **`semantic-layer` CI docs-gate** keeps the OKF meaning layer in sync with the schema (ADR-0086, #535), how it decides, and how to satisfy or escape it. | A migration trips the gate, or you need to understand the OKF sync contract operationally. |
 | [public-story-page](public-story-page.md) | How the **unauthenticated** `/story` marketing page is served (middleware bypass, rewrite, deploy) and its security posture. | Editing, deploying, or taking down `/story`. |

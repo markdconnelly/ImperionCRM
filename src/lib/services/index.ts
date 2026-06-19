@@ -577,15 +577,6 @@ export const credentialsService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  /**
-   * Begin the Microsoft GDAP admin-consent flow. Returns the consent URL to visit and the
-   * CSRF `state` nonce embedded in it (stored in a cookie and matched on the callback).
-   */
-  beginGdapConsent: () =>
-    callService<{ consentUrl: string; state: string }>(services.credentials, "/gdap/consent", {
-      method: "POST",
-      body: JSON.stringify({}),
-    }),
 };
 
 /**

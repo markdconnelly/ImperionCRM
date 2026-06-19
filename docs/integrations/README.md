@@ -92,7 +92,7 @@ A single `connection` table models two scopes:
   then to the contact/account it concerns.
 - **`scope = 'company'` — org-wide systems.** The organization's shared integrations:
   Autotask, IT Glue, My IT Process, QuickBooks Online, Dark Web ID, Televy, Kaseya Quote
-  Manager, Meta, and the org Microsoft Graph app (via GDAP).
+  Manager, and Meta. (Microsoft Graph access is the per-client M365 app, ADR-0018.)
 
 `external_identity` is the identity map that correlates an Imperion account/contact to
 its identifiers across every system — the principle is **augment, don't duplicate**
@@ -121,7 +121,7 @@ column; the `ImperionCRM_Pipeline` repo reads it and must honour `0` as paused
 
 Only true *polled* sources expose a cadence selector and a "Refresh now" control —
 `providerIsPollable()` (`src/lib/integrations/company-providers.ts`) gates it out for
-consent / OAuth providers (QBO, GDAP) and for send-capable credentials (Meta), because
+consent / OAuth providers (QBO) and for send-capable credentials (Meta), because
 nothing polls them.
 
 ### 4.3 Secrets — never in this repo
@@ -202,7 +202,6 @@ the authoritative list (verified against source):
 
 | Provider (`connection_provider`) | Kind | Fields collected |
 |---|---|---|
-| `gdap` | Admin consent | none — "Grant admin consent" (Microsoft GDAP for Imperion's partner tenant) |
 | `autotask` | Credential | API user, API secret\*, API integration (tracking) code\* |
 | `itglue` | Credential | API key\*, region (US / EU / AU) |
 | `myitprocess` | Credential | API key\* — My IT Process (vCIO / strategic roadmap) |
@@ -239,7 +238,7 @@ lists stay in sync.
 ### 6.2 QuickBooks Online connect (`qbo`, OAuth — ADR-0048 / ADR-0085)
 
 A **read-only** connection to Imperion's *own* QBO company — the authoritative payment
-fact for time + expense reconciliation. `kind: "consent"`, but unlike GDAP it is a full
+fact for time + expense reconciliation. `kind: "consent"` — a full
 OAuth authorization-code flow handled by the backend (the app never writes to
 QuickBooks):
 
