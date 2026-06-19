@@ -46,6 +46,12 @@ export const VALID_MODELS = ["claude-opus-4-8", "claude-sonnet-4-5", "claude-hai
 export const VALID_RUNGS = ["L0", "L1", "L2", "L3"];
 const NAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+// ADR-0104 decision 5: a stage that grounds on OKF entity E lists it in its Inputs
+// table with an `okf:E` marker (the runtime-load guarantee — the authority rule is in
+// context before the stage acts). A grounded entity must be within the workflow's
+// declared okf_rooms allow-list (no grounding outside what the manifest permits).
+export const STAGE_OKF_MARKER_RE = /\bokf:([a-z0-9_]+)/g;
+
 // ── Structural validation ──────────────────────────────────────────────────
 // Reimplements icm/agent.schema.json's load-bearing constraints. Returns an
 // array of human-readable error strings ([] == valid).
@@ -291,6 +297,41 @@ export function evaluateManifest({
   return { ok: errors.length === 0, errors };
 }
 
+// ── Stage Inputs okf: markers (ADR-0104 decision 5) ─────────────────────────
+
+/** Extract the unique entity names from `okf:<entity>` markers in a stage file. */
+export function extractStageOkfMarkers(stageText) {
+  const out = new Set();
+  let m;
+  STAGE_OKF_MARKER_RE.lastIndex = 0;
+  while ((m = STAGE_OKF_MARKER_RE.exec(stageText)) !== null) out.add(m[1]);
+  return [...out].sort();
+}
+
+/**
+ * A stage may only ground on entities the workflow declared in okf_rooms. Every
+ * `okf:E` marker found in a stage must be in the manifest's okf_rooms allow-list
+ * (grounding outside the declared rooms is a least-privilege violation). The
+ * matrix-resolution of okf_rooms itself is handled by checkRoomResolution.
+ * @param {string[]} markers       entities grounded by the stage (from okf: markers)
+ * @param {string[]} workflowRooms the manifest's okf_rooms
+ * @param {string} stageLabel      path for messages
+ * @returns {string[]} violations
+ */
+export function checkStageMarkers(markers, workflowRooms, stageLabel) {
+  const allow = new Set(workflowRooms);
+  const errs = [];
+  for (const e of markers) {
+    if (!allow.has(e)) {
+      errs.push(
+        `${stageLabel}: stage grounds on 'okf:${e}' but '${e}' is not in the workflow's ` +
+          `okf_rooms allow-list — a stage may only load concepts the manifest declares (ADR-0104 §5)`,
+      );
+    }
+  }
+  return errs;
+}
+
 // ── Minimal YAML reader (flow-style, no dependency) ─────────────────────────
 // The manifests are deliberately simple: scalars, `[a, b]` flow sequences, and
 // `- item` block sequences. We parse exactly that subset rather than add a YAML
@@ -436,6 +477,19 @@ function main() {
       label: relative(repoRoot, file).replace(/\\/g, "/"),
     });
     allErrors.push(...errors);
+
+    // ADR-0104 §5: a stage's `okf:` markers must be within the workflow's okf_rooms.
+    const stagesDir = join(dirname(file), "stages");
+    if (existsSync(stagesDir) && Array.isArray(manifest.okf_rooms)) {
+      for (const ent of readdirSync(stagesDir, { withFileTypes: true })) {
+        if (!ent.isDirectory()) continue;
+        const stageCtx = join(stagesDir, ent.name, "CONTEXT.md");
+        if (!existsSync(stageCtx)) continue;
+        const markers = extractStageOkfMarkers(readFileSync(stageCtx, "utf8"));
+        const stageLabel = relative(repoRoot, stageCtx).replace(/\\/g, "/");
+        allErrors.push(...checkStageMarkers(markers, manifest.okf_rooms, stageLabel));
+      }
+    }
   }
 
   if (allErrors.length === 0) {

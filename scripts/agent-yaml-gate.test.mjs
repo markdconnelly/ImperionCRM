@@ -6,8 +6,42 @@ import {
   parseAgentYaml,
   parseCoverageMatrix,
   checkRoomResolution,
+  extractStageOkfMarkers,
+  checkStageMarkers,
   VALID_MODELS,
 } from "./agent-yaml-gate.mjs";
+
+describe("extractStageOkfMarkers / checkStageMarkers (ADR-0104 §5)", () => {
+  const stage = [
+    "## Inputs",
+    "| Source | Location | Scope | Why |",
+    "|---|---|---|---|",
+    "| Existing | silver `contact` / `account` · `okf:contact` `okf:account` | x | dedupe |",
+    "| Consent | consent ledger · `okf:consent_event` | x | lawfulness |",
+    "| ICP | `../skills/icp.md` | all | scoring |",
+  ].join("\n");
+
+  it("extracts unique, sorted okf: markers", () => {
+    expect(extractStageOkfMarkers(stage)).toEqual(["account", "consent_event", "contact"]);
+  });
+  it("returns [] when a stage grounds on no entity", () => {
+    expect(extractStageOkfMarkers("| Voice | skills/voice.md | all | tone |")).toEqual([]);
+  });
+  it("passes when every marker is within okf_rooms", () => {
+    const errs = checkStageMarkers(
+      ["account", "consent_event", "contact"],
+      ["contact", "account", "interaction", "consent_event"],
+      "stages/01/CONTEXT.md",
+    );
+    expect(errs).toEqual([]);
+  });
+  it("fails when a stage grounds outside the workflow okf_rooms allow-list", () => {
+    const errs = checkStageMarkers(["campaign"], ["contact", "account"], "stages/02/CONTEXT.md");
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toContain("okf:campaign");
+    expect(errs[0]).toContain("not in the workflow's");
+  });
+});
 
 /** A minimal valid manifest (CONVENTIONS example shape). */
 const valid = () => ({

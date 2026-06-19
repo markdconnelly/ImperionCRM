@@ -96,6 +96,17 @@ and never mix with runtime skills.
 1. **Job** — one sentence; one stage, one job. If a stage needs "and", split it.
 2. **Inputs** — a table: `| Source | Location | Scope | Why |`. Load nothing
    that isn't listed (layered context loading is the cost model).
+   - **OKF grounding marker (ADR-0104 §5).** A stage that grounds on a silver/gold
+     entity — i.e. relies on its *meaning / which source wins / how it joins* before
+     acting — **MUST** list that entity's OKF concept in its Inputs by tagging the
+     row's Location cell with an `` `okf:<entity>` `` marker (e.g. `` `okf:contact` ``).
+     This is the runtime-load guarantee: the authority rule is deterministically in
+     context before the stage acts, and the audit trail proves it (the spine in
+     ADR-0104 decision 3). Every `okf:<entity>` a stage grounds on **must** be in the
+     workflow's `agent.yaml` `okf_rooms` allow-list — grounding outside the declared
+     rooms is a least-privilege violation. The `icm-conformance` CI gate
+     (`scripts/agent-yaml-gate.mjs`) enforces this. A stage that touches no silver
+     meaning (pure skill/prior-output work) carries no marker.
 3. **Process** — numbered steps. Mark how each step runs:
    - `[script]` — **deterministic executor code, no model call.** Mechanical work
      with a single correct answer: data fetch, field extraction by known key, file
