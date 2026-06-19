@@ -14,7 +14,17 @@ tags: [meta]
 | **Repo** | frontend |
 | **Status** | Accepted |
 | **Date** | 2026-06-14 |
+| **Amended by** | ADR-XXXX (OKF as the orchestrator grounding cortex — routing keys, deterministic load, enforced freshness; placeholder number, claimed at merge) |
 | **Cross-references** | ADR-0041 (vector contract) · ADR-0044 (silver merge pattern) · ADR-0082 (time) · ADR-0083 (expense) · ADR-0080 (opportunity merge) · CLAUDE.md §4 (bronze/silver/gold), §8 (read-only DB MCP / PII) |
+
+> **Amended by ADR-XXXX (2026-06-18).** This ADR establishes *that* the bundle exists
+> and *what* it may contain. ADR-XXXX specifies *how the single orchestrator uses it*:
+> grounding-only scope, source-scoped tool pointers (via the ADR-0103 registry),
+> deterministic Layer-3 load as the spine (RAG for discovery), two routing frontmatter
+> keys (`entity`, `archetype`) with the authority rule kept as prose, stage-Inputs
+> enforcement, and **freshness reframed from docs-hygiene to a correctness control**
+> (the same-repo #535 gate is necessary but not sufficient — a no-DDL precedence flip
+> needs the cross-repo leg).
 
 ## Problem
 
