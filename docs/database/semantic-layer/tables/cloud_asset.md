@@ -4,7 +4,7 @@ title: cloud_asset
 description: Provider-agnostic cloud resource — one row per cloud asset, merged from per-provider bronze and discriminated by provider.
 resource: ../../../decision-records/ADR-0097-cmdb-authority-model.md
 tags: [silver, service-desk, cmdb, cloud, asset, merge]
-timestamp: 2026-06-17T00:00:00Z
+timestamp: 2026-06-18T00:00:00Z
 ---
 
 # cloud_asset
@@ -29,8 +29,12 @@ two.
 
 ## Bronze match / merge
 
-The cloud **Pipeline** bronze→silver merge (Pipeline #126) reads the shared projection
-`cloud_resource_bronze_all` and upserts one silver row per resource:
+The **on-prem local-pipeline** bronze→silver merge (`Invoke-ImperionCloudAssetMerge`,
+LocalPipeline #241) reads `cloud_resources` and upserts one silver row per resource. It
+**co-locates with ingestion** (local-pipeline ADR-0026): the local pipeline already collects
+the Azure ARM bronze, so it owns the merge too — moved off the cloud Pipeline (#126), which
+cedes its copy via Pipeline #135. Both writers are idempotent on the same key, so the cede
+window is gap-free. The merge:
 
 1. **Key** — upsert on `(provider, external_id)`; `external_id` is the provider-native id
    (the ARM resource id for azure). Idempotent.
