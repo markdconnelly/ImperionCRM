@@ -8,7 +8,7 @@ re-enter drafting or close the run.
 | Source | Location | Scope | Why |
 |---|---|---|---|
 | Send record | stage 04 `send-record.md` | all | what/when we sent |
-| Replies | `interaction` timeline | this contact, after send timestamp | response detection |
+| Replies | `interaction` timeline · `okf:interaction` | this contact, after send timestamp | response detection |
 | Channel rules | `../../skills/channel-rules.md` | cadence section | how often we may nudge |
 
 ## Process

@@ -7,9 +7,9 @@
 | Source | Location | Scope | Why |
 |---|---|---|---|
 | Lead event | the triggering row (Meta lead bronze / website form / DM interaction / Apollo entry) | full payload | the subject |
-| Existing contacts/accounts | silver `contact` / `account` | match candidates by email/phone/company | dedupe |
+| Existing contacts/accounts | silver `contact` / `account` · `okf:contact` `okf:account` | match candidates by email/phone/company | dedupe |
 | ICP | `../../skills/icp.md` | all | fit scoring |
-| Consent | consent ledger | this contact's entries | response lawfulness |
+| Consent | consent ledger · `okf:consent_event` | this contact's entries | response lawfulness |
 
 ## Process
 

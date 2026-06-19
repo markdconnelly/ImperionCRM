@@ -8,7 +8,7 @@ drafting stage can use without further lookups.
 | Source | Location | Scope | Why |
 |---|---|---|---|
 | Triage record | stage 01 `triage.md` | all | who/what we're researching |
-| Dossier data | silver/gold: `contact_enrichment`, `interaction` timeline, account history | matched contact/account only | prior relationship |
+| Dossier data | silver/gold: `contact_enrichment`, `interaction` timeline, account history · `okf:contact` `okf:account` `okf:interaction` | matched contact/account only | prior relationship |
 | Public form answers | the lead payload | message/answers text | what they actually asked |
 | ICP | `../../skills/icp.md` | segment notes | angle selection |
 
