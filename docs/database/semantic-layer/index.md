@@ -74,6 +74,7 @@ subset; remaining entities are tracked for expansion
 | [`consent_event`](tables/consent_event.md) | ledger | append-only; current_consent is the gate | ADR-0014 |
 | [`posture_snapshot`](tables/posture_snapshot.md) | ledger | append-only; grade at capture | ADR-0051 |
 | [`tenant_posture`](tables/tenant_posture.md) | golden/drift | observed vs human-approved golden | ADR-0051 |
+| [`posture_policy`](tables/posture_policy.md) | golden/drift | per-policy verdict; 5-family observed vs *_golden | ADR-0051 |
 | [`dns_domain`](tables/dns_domain.md) | golden/drift | account_domain SoR; dns_golden approved | ADR-0063 |
 | [`dns_golden`](tables/dns_golden.md) | golden/drift | operator approval (Set-ImperionDnsGoldenState) | ADR-0063 |
 | [`knowledge_object`](tables/knowledge_object.md) | gold | on-prem produced; Voyage 1024d | ADR-0041 |

@@ -152,7 +152,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [tenant_posture](tables/tenant_posture.md) | Security | E | ✅ | drift-monitor |
 | [dns_domain](tables/dns_domain.md) | Security | E | ✅ | DNS drift-monitor |
 | [dns_golden](tables/dns_golden.md) | Security | E | ✅ | golden approval (human-gated) |
-| posture_policy, *_golden (CA / Intune / Autopilot / device-config / Defender XDR) | Security | E | ⏳ | drift-monitor (autonomy-dialed) |
+| [posture_policy](tables/posture_policy.md), *_golden (CA / Intune / Autopilot / device-config / Defender XDR) | Security | E | ✅ | drift-monitor (autonomy-dialed) |
 | account_domain | Security | H | ⏳ | domain registry (operator-curated) |
 | defender_incidents, defender_alerts | Security | B | ⏳ | incident triage |
 | [defender_incident_ticket_link](tables/defender_incident_ticket_link.md) | Security | D | ✅ | incident→ticket (ADR-0059) |
