@@ -3,9 +3,13 @@ import {
   stripSqlComments,
   migrationTouchesEntity,
   evaluateGate,
+  evaluateSkillRule,
   CONCEPTS_DIR,
+  SOURCE_SKILL_CONCEPT,
   ESCAPE_HATCH_LABEL,
 } from "./semantic-layer-gate.mjs";
+
+const skillManifest = (name) => `plugins/imperion-skills/skills/${name}/SKILL.md`;
 
 // The concept-bearing silver entities the gate guards (subset used in fixtures).
 const ENTITIES = ["expense_item", "expense_report", "time_record", "timesheet"];
@@ -118,5 +122,57 @@ describe("evaluateGate", () => {
     });
     expect(r.ok).toBe(true);
     expect(r.touched).toEqual([]);
+  });
+});
+
+describe("evaluateSkillRule (ADR-0104 skill-pointer rule)", () => {
+  it("passes when no skill was removed", () => {
+    const r = evaluateSkillRule({
+      removedFiles: ["src/foo.ts"],
+      changedFiles: ["src/foo.ts"],
+      hasEscapeHatch: false,
+    });
+    expect(r.ok).toBe(true);
+    expect(r.removedSkills).toEqual([]);
+  });
+
+  it("passes when a skill is only edited (manifest still present, not deleted)", () => {
+    const r = evaluateSkillRule({
+      removedFiles: [],
+      changedFiles: [skillManifest("imperion-msp-sources")],
+      hasEscapeHatch: false,
+    });
+    expect(r.ok).toBe(true);
+    expect(r.removedSkills).toEqual([]);
+  });
+
+  it("fails when a skill manifest is removed and source_skill is not touched", () => {
+    const r = evaluateSkillRule({
+      removedFiles: [skillManifest("imperion-msp-sources")],
+      changedFiles: [skillManifest("imperion-msp-sources")],
+      hasEscapeHatch: false,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.removedSkills).toEqual(["imperion-msp-sources"]);
+    expect(r.message).toContain(SOURCE_SKILL_CONCEPT);
+  });
+
+  it("passes when a removed skill is accompanied by a source_skill update", () => {
+    const r = evaluateSkillRule({
+      removedFiles: [skillManifest("imperion-msp-sources")],
+      changedFiles: [skillManifest("imperion-msp-sources"), SOURCE_SKILL_CONCEPT],
+      hasEscapeHatch: false,
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("passes a removed skill under the escape hatch", () => {
+    const r = evaluateSkillRule({
+      removedFiles: [skillManifest("foo")],
+      changedFiles: [],
+      hasEscapeHatch: true,
+    });
+    expect(r.ok).toBe(true);
+    expect(r.message).toContain(ESCAPE_HATCH_LABEL);
   });
 });

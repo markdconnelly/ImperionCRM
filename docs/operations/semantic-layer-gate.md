@@ -99,6 +99,21 @@ CHANGED_FILES=$'db/migrations/0099_x.sql\ndocs/database/semantic-layer/tables/ex
 The gate is **PR-only** (`if: github.event_name == 'pull_request'` in `ci.yml`) — there
 is no base-branch or label context on a push to `main`.
 
+## Second rule — skill-pointer integrity (ADR-0104 decision 6, layer 1 (b))
+
+The source→skill registry (`source_skill`) maps each provider to its **sanctioned
+fetch/validate skill** (ADR-0104 decision 2). A skill **renamed or removed** under
+`plugins/imperion-skills/skills/<name>/` can orphan a registry pointer. So the gate also
+**fails the PR** when a skill manifest (`SKILL.md`) is *deleted* (rename = delete + add)
+unless `docs/database/semantic-layer/tables/source_skill.md` is touched in the same PR
+(prompting a review of the map) — or the `semantic-layer-not-affected` label is applied.
+
+A **pure skill edit** (the manifest still exists) is **not** flagged — only a
+removal/rename, which is the actual pointer risk. Detection uses
+`git diff --diff-filter=D` (exported as `REMOVED_FILES`). The registry *table*'s schema
+changes need no special rule — `source_skill` has a concept file, so the migration rule
+above already covers it.
+
 ## Security impact
 
 None. Reads only migration SQL and bundle filenames already in the repo; no secrets,

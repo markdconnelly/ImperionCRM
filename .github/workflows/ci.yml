@@ -110,6 +110,8 @@ jobs:
         run: |
           git fetch --no-tags origin "$GITHUB_BASE_REF"
           CHANGED_FILES="$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD)"
-          export CHANGED_FILES
+          REMOVED_FILES="$(git diff --name-only --diff-filter=D "origin/$GITHUB_BASE_REF"...HEAD)"
+          export CHANGED_FILES REMOVED_FILES
           echo "Changed files:"; echo "$CHANGED_FILES" | sed 's/^/  /'
+          echo "Removed files:"; echo "$REMOVED_FILES" | sed 's/^/  /'
           node scripts/semantic-layer-gate.mjs
