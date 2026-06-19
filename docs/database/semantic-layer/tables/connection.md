@@ -54,6 +54,10 @@ honors it); `sync_cursor` tracks incremental progress.
   enrichment provenance.
 - `account_id` → `account` (client-scope connections; ADR-0103). Complements
   `account_tenant` (tenant→account) for resolving a client's M365 estate.
+- `provider` mirrors [`source_skill`](source_skill.md)`.provider` — together they are the
+  source registry: `connection` holds per-instance custody (KV secret ref, scope, cadence),
+  `source_skill` holds the per-provider **sanctioned fetch/validate skill** the orchestrator
+  routes to (ADR-0104 decision 2).
 
 ## Notes
 
