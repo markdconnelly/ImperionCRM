@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-17T00:00:00Z
+timestamp: 2026-06-18T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -80,8 +80,8 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [strategic_business_review](tables/strategic_business_review.md) | Customer Success | B | ✅ | QBR / SBR-prep |
 | [ticket](tables/ticket.md) | Service Desk | B (Autotask SoR) | ✅ | service-desk |
 | [chat_session](tables/chat_session.md) | Service Desk | B (native pre-ticket + deflection) | ✅ | service-desk (chatbot deflection / routing) |
-| [ci_relationship](tables/ci_relationship.md) | Service Desk | D (app-native CMDB overlay; IT Glue write-back is a separate gated slice) | ⏳ | CMDB / impact analysis (#647, ADR-0078) |
-| [cmdb_ci_overlay](tables/cmdb_ci_overlay.md) | Service Desk | D (app-native per-CI criticality overlay; effective = override ?? derived_default; IT Glue write-back is a separate gated slice) | ⏳ | CMDB / impact analysis (#648, ADR-0078/0097) |
+| [ci_relationship](tables/ci_relationship.md) | Service Desk | D (app-native CMDB overlay; IT Glue write-back is a separate gated slice) | ✅ | CMDB / impact analysis (#647, ADR-0078) |
+| [cmdb_ci_overlay](tables/cmdb_ci_overlay.md) | Service Desk | D (app-native per-CI criticality overlay; effective = override ?? derived_default; IT Glue write-back is a separate gated slice) | ✅ | CMDB / impact analysis (#648, ADR-0078/0097) |
 | [change_request](tables/change_request.md) (+ change_affected_ci) | Service Desk | D (app-native ITIL change working object; Autotask is the eventual record SoR via the gated route #661) | ✅ | Change Enablement (#656, ADR-0079; risk #658 / approval #659 / calendar #660 / route #661) |
 | sbr_dimension_score, sbr_ticket | Customer Success | B | ⏳ | SBR-prep |
 | question_template, question, engagement_answer | Sales | B | ⏳ | discovery / assessment capture |

@@ -4,7 +4,7 @@ title: Concept-file authoring standard
 description: The required shape, depth bar, and archetype-keyed sections every OKF concept file under tables/ must follow. Codifies ADR-0086 conformance.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [semantic-layer, okf, authoring, standard, conformance]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-18T00:00:00Z
 ---
 
 # Concept-file authoring standard
@@ -31,10 +31,19 @@ Gold-standard exemplars: [`account`](tables/account.md), [`contact`](tables/cont
 
 ## Required sections (every file)
 
-1. **Frontmatter** — `type` · `title` (= entity name) · `description` (one line, names the
-   archetype behaviour) · `resource` (relative path to the governing ADR) · `tags`
+1. **Frontmatter** — `type` · `title` (= entity name) · `entity` (the addressable
+   silver/gold name the orchestrator routes on — usually identical to the table name and
+   the file stem) · `archetype` (one of the eight doctrine archetypes `A`–`H`; the
+   *typed* routing label, not a prose hint) · `description` (one line, names the archetype
+   behaviour) · `resource` (relative path to the governing ADR) · `tags`
    (`[silver|gold, domain, entity, archetype-hint]`) · `timestamp` (ISO-8601 `…Z`; bump on
    every content change — the gate's minimum).
+   > `entity` + `archetype` are **classification labels for deterministic routing**
+   > (which file to load, how it behaves) — they are *not* a second copy of the authority
+   > rule, so they create no drift surface. The authority rule itself stays prose (read
+   > natively by the LLM consumer) — never promote it to a structured frontmatter block
+   > ("human-readable = machine-readable; no translation layer to drift"). See
+   > ADR-0104 (OKF orchestrator grounding cortex).
 2. **`# <entity>` + definition** — one short paragraph: what the entity *means* (the thing
    the app reasons over), the governing ADR link, and a pointer to its union view /
    migration / child tables.
@@ -72,10 +81,46 @@ A file passes when a knowledgeable engineer or an agent can, from it alone: pick
 **every enum's** allowed values, and know the **PII** boundary — without opening the
 schema. If any of those needs a trip to the migrations, the file is below bar.
 
+## Orchestrator consumption (how the brain uses these files)
+
+These files are the orchestrator's **grounding cortex** — the layer that gives it the
+right context to act *faithfully, with consistency* (ADR-0004 single orchestrator;
+ADR-0104). Authoring rules that follow from that role:
+
+- **Grounding only.** A concept file answers *meaning / authority / joins*. It does **not**
+  select tools. To reach the **sanctioned skill** for a source, the orchestrator resolves
+  *entity → its listed sources → the source registry → the skill* — the source→skill map
+  lives **once** in the source registry (the `connection` provider record, extending
+  ADR-0103), never per-entity here. So: list an entity's sources (you already do); never
+  inline a skill pointer into every entity file.
+- **Deterministic load is the spine.** An ICM stage that knows its entity loads the **whole**
+  concept file as a Layer-3 constraint — so the authority rule is in context *every* time.
+  Keep files short and self-contained (the depth bar) precisely so this load is cheap and
+  total. Vectorized-OKF RAG (LP #176) is for *discovery* only, never the primary grounding
+  path — chunking can drop the authority section.
+- **Use is enforced at the stage.** Any ICM stage reasoning over entity E **must list E's
+  concept file in its Layer-2 Inputs table** — the contract then can't run without the
+  authority rule present, and the audit trail proves it was. (Convention; wiring tracked
+  as a follow-up.)
+
 ## Process
 
 Changing a concept file is a normal unit of work (issue → worktree → micro-PR). A PR that
 changes a silver entity's shape / source-of-record / joins updates the matching file
-(≥ `timestamp`) **and** its `coverage-matrix.md` row in the **same** PR — mechanically
-enforced by the [#535 gate](../../operations/semantic-layer-gate.md). A new silver entity
-gets a new file (this standard) + a matrix row.
+(≥ `timestamp`) **and** its `coverage-matrix.md` row in the **same** PR.
+
+**Freshness is a correctness control, not docs hygiene** (ADR-0104): because the
+orchestrator deterministically grounds on the authority rule, a stale rule silently
+corrupts every action. Enforced in three layers, strongest where cheapest:
+
+1. **Same-repo gate** — the [#535 gate](../../operations/semantic-layer-gate.md) fires on
+   silver DDL *and* (extension) on source→skill-registry / referenced-skill changes; both
+   live here and are diffable at author time.
+2. **Cross-repo CI link-check** — a sibling-repo PR (Pipeline / LocalPipeline) touching
+   merge / ingestion / **precedence** for a silver entity must link an `okf-sync` issue/PR
+   in this repo, else the sibling's CI fails. This is the only mechanical catch for a
+   **precedence flip that changes the authority rule with no DDL fingerprint**.
+3. **Reconciliation backstop** — the on-prem enrichment agent (LocalPipeline #175) diffs
+   live behaviour vs the prose authority rule and opens drift issues.
+
+A new silver entity gets a new file (this standard) + a matrix row.
