@@ -6,7 +6,7 @@ archetype: D
 description: App-native ITIL 4 Change Enablement working object — a typed (standard|normal|emergency) change Imperion creates over the managed estate, with status, affected CMDB CIs, and nullable risk/approval/schedule columns the downstream slices populate. Autotask is the eventual change record SoR via a separate gated route (#661).
 resource: ../../../decision-records/ADR-0079-change-enablement.md
 tags: [silver, service-desk, change-enablement, itil, cmdb, overlay, archetype-d, app-native]
-timestamp: 2026-06-17T15:00:00Z
+timestamp: 2026-06-18T12:00:00Z
 ---
 
 # change_request
@@ -70,8 +70,10 @@ risk · [#659](https://github.com/markdconnelly/ImperionCRM/issues/659) approval
 | `created_at` / `updated_at` | timestamptz | row timestamps |
 
 `change_affected_ci` (the link): `id` uuid PK · `change_id` uuid → `change_request` (FK,
-CASCADE) · `ci_type` text CHECK in (account|user|device) · `ci_id` text · unique
-`(change_id, ci_type, ci_id)`.
+CASCADE) · `ci_type` text CHECK in (account|user|device|cloud) · `ci_id` text · unique
+`(change_id, ci_type, ci_id)`. `cloud` was added in migration 0145 (#925) so a change can be
+raised against a `cloud_asset` CI, completing cloud as a first-class CI across all three
+curated-layer tables (alongside `ci_relationship` / `cmdb_ci_overlay`, migration 0144).
 
 ## Joins
 
