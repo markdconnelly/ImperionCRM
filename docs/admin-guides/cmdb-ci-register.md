@@ -203,6 +203,26 @@ directional walk (downstream dependents only / upstream dependencies only) passe
 gracefully and never surface. **No migration** — the traversal is entirely app-layer over the
 existing `ci_relationship` reads.
 
+## Managed apps (Intune app drill, #261)
+
+A **device** CI detail carries a **Managed apps** section — the per-device Intune
+managed/detected app inventory (app name · publisher · version · platform · install
+state), so an admin can drill from the asset straight into what is installed on it. This
+completes the Intune-fed drillable asset detail: devices, compliance, and config policies
+already existed; the per-device app list was the gap.
+
+- **Source.** Bronze `intune_managed_apps` (migration `0148`, per-source bronze ADR-0039),
+  populated by the on-prem local-pipeline collector over Graph
+  `DeviceManagementApps.Read.All`. Apps join the silver device by the **same keys** the
+  device CI already laterals `intune_managed_devices` on — the Intune managed-device id
+  (preferred) or the serial number (fallback).
+- **Absent beats wrong (ADR-0051 §6).** Until the collector runs against the applied table
+  the bronze is empty, so the section degrades to an honest *"no managed apps reported"*
+  state — never an error, never an invented row. The install-state badge is green only for
+  a literal `installed`, red for `failed`/`error`, dim/neutral for anything else or absent.
+- **Read-only.** Like the rest of the CMDB, the section never writes — manage app
+  assignments in Intune.
+
 ## Access
 
 The **register and device inventory are read-only** for admin∨support (`canSeeCmdb`,
@@ -246,6 +266,13 @@ UI. App-native only — there is **no IT Glue write path** here.
   edge set by a new un-scoped read `crm.listAllCiRelationships()` (mock `[]`); the detail page
   computes the read-model server-side. UI in `src/components/cmdb/impact-panel.tsx`. The
   `CiImpact` read-model is the reusable surface #373 (change-risk) + #320 (incident-triage) read.
+- Managed apps (#261): bronze `intune_managed_apps` (migration `0148`); read accessor
+  `crm.listDeviceManagedApps(deviceId)` (mock `[]`, schema-lag/empty-bronze fallback `[]`)
+  joining apps to the silver device by Intune managed-device id / serial; pure display
+  helpers in `src/lib/cmdb/managed-apps.ts` (unit-tested, `managed-apps.test.ts`); UI in
+  `src/components/cmdb/managed-apps.tsx`, rendered on the **device** CI detail only. The
+  collector is a **local-pipeline companion** (`DeviceManagementApps.Read.All` — a
+  Mark-gated Graph grant). This is **bronze**, so it has no OKF concept file.
 
 ## Security notes
 

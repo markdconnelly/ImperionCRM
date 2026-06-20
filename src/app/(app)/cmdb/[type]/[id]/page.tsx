@@ -12,6 +12,7 @@ import { CiCriticality } from "@/components/cmdb/ci-criticality";
 import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
 import { LifecycleBadge } from "@/components/cmdb/lifecycle-badge";
 import { ImpactPanel } from "@/components/cmdb/impact-panel";
+import { ManagedApps } from "@/components/cmdb/managed-apps";
 import { analyzeImpact } from "@/lib/cmdb/impact";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +53,12 @@ export default async function CiDetailPage({
   // this CI's incident edges), traversed cycle-safe + depth-bounded against the CI set.
   const allEdges = await crm.listAllCiRelationships();
   const impact = analyzeImpact({ ciType, ciId: id }, items, allEdges);
+
+  // Intune managed-apps drill (#261): only device CIs have an app inventory. The read
+  // degrades to [] (empty section) when the bronze is absent/unpopulated — never blocks
+  // the page (ADR-0051 §6).
+  const managedApps =
+    ciType === "device" ? await crm.listDeviceManagedApps(id) : [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -123,6 +130,8 @@ export default async function CiDetailPage({
       </div>
 
       <CiCriticality ci={ci} canWrite={canWrite} />
+
+      {ci.ciType === "device" && <ManagedApps apps={managedApps} />}
 
       <ImpactPanel impact={impact} />
 

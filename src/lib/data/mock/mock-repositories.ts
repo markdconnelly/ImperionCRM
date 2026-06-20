@@ -383,6 +383,11 @@ export const mockRepositories: Repositories = {
     async listConfigurationItems() {
       return [];
     },
+    // Intune managed apps drill (#261) — no bronze to read in mock mode; the device-detail
+    // "Managed apps" section renders empty rather than crashing (acceptance: mock = []).
+    async listDeviceManagedApps() {
+      return [];
+    },
     // CMDB relationship layer (#647) — no edges in mock mode; the panel + graph render
     // empty (never crash), and the writes throw (no DB) like the other overlay writes.
     async listCiRelationships() {
