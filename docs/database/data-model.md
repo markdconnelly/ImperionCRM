@@ -1002,7 +1002,7 @@ erDiagram
       text status "active|pending|expired|revoked|error"
       text[] scopes
       text keyvault_secret_ref "KV secret NAME — never the token/secret value"
-      text auth_method "certificate|secret (enterprise app); null for OAuth (ADR-0103)"
+      text auth_method "certificate|secret (enterprise app)|api_key (UniFi etc, #960); null for OAuth (ADR-0103)"
       text cert_thumbprint "cert when auth_method=certificate (ADR-0103)"
       jsonb sync_cursor
       timestamptz last_sync_at
