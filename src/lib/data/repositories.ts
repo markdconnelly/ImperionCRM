@@ -643,6 +643,23 @@ export interface ExpenseItemInput {
 }
 
 /**
+ * A receipt to attach to an out-of-pocket item (ADR-0083 §Receipts, #899). The blob
+ * fields are exactly what the backend's `POST /api/expense/receipts/upload` returned
+ * after storing the bytes (BE #200) — the FE never holds the bytes once stored, only
+ * this custody reference. `employeeId` is the session OWNER (re-verified server-side);
+ * `originalFilename`/`contentType` echo the upload for the audit + Autotask push.
+ */
+export interface ReceiptAttachmentInput {
+  itemId: string; // the website_expense_item to link (must be on an Open report owned by employeeId)
+  employeeId: string; // the owning app_user (from session; re-verified server-side)
+  blobPath: string; // private storage-account path/key the backend wrote
+  contentHash: string | null; // integrity digest (e.g. sha256) the backend computed
+  byteSize: number | null;
+  contentType: string | null;
+  originalFilename: string | null;
+}
+
+/**
  * A new manual mileage item (ADR-0083, #853) — the v1 interim while the MileIQ API is
  * paywalled (full MileIQ → v2). Written to the `website_mileage` bronze (migration 0137).
  * MILES are authoritative; the reimbursement $ is DERIVED by the backend (miles ×
@@ -1559,6 +1576,14 @@ export interface CrmRepository {
    *  new id, or null if the report isn't Open or isn't owned by `employeeId` (lock re-check).
    *  Miles only — the reimbursement $ is backend-derived (comp reader), never entered here. */
   addMileageItem(input: MileageItemInput): Promise<string | null>;
+  /** Attach a receipt to an out-of-pocket item on the employee's OWN Open report (ADR-0083
+   *  §Receipts, #899). The backend already stored the BYTES in a private `receipts` blob and
+   *  returned its custody fields (`blobPath`/`contentHash`/`byteSize`/`contentType`); this
+   *  inserts the `receipt_attachment` row from those fields and links `website_expense_item.
+   *  receipt_id`, under one transaction with a lock + ownership + Open re-check (never trusts
+   *  the form). Returns the new receipt id, or null when the item isn't on an Open report owned
+   *  by `employeeId`. The FE owns the row; the backend owns the bytes (ADR-0042 boundary). */
+  attachReceiptToExpenseItem(input: ReceiptAttachmentInput): Promise<string | null>;
 
   /** ADMIN inline correction of a SUBMITTED report's out-of-pocket items (ADR-0083 #488),
    *  gated by `expense:approve`. Add / edit-in-place / delete a `website_expense_item`; the

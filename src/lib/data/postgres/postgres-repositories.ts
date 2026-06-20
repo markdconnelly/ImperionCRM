@@ -89,6 +89,7 @@ import type {
   IntakeSubmitResult,
   ExpenseItemInput,
   MileageItemInput,
+  ReceiptAttachmentInput,
   ExpenseCorrection,
   ExpenseCategoryMappingInput,
   ExpenseCategoryAdminRow,
@@ -7316,6 +7317,61 @@ export const postgresRepositories: Repositories = {
         );
         await client.query("COMMIT");
         return rows[0].id;
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
+    async attachReceiptToExpenseItem(input: ReceiptAttachmentInput): Promise<string | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.attachReceiptToExpenseItem(input);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Resolve + lock the item's report; only attach when it is Open AND owned by the
+        // session employee. The join enforces ownership without trusting any form input —
+        // an employee can only attach to their OWN pre-submit out-of-pocket line (mileage is
+        // receipt-exempt and never lands in website_expense_item, so it can't match here).
+        const { rows: rep } = await client.query<{ state: string }>(
+          `SELECT er.state
+             FROM website_expense_item wi
+             JOIN expense_report er ON er.id = wi.expense_report_id
+            WHERE wi.id = $1 AND wi.app_user_id = $2
+            FOR UPDATE OF er`,
+          [input.itemId, input.employeeId],
+        );
+        if (!rep[0] || rep[0].state !== "open") {
+          await client.query("ROLLBACK");
+          return null;
+        }
+        // Insert the receipt_attachment from the backend's custody fields (the bytes already
+        // live in the private `receipts` blob, BE #200), then link the item. verified_in_
+        // autotask stays false — the backend flips it on the approval push (ADR-0083 §Receipts).
+        const { rows: rcpt } = await client.query<{ id: string }>(
+          `INSERT INTO receipt_attachment
+             (app_user_id, blob_path, content_hash, content_type, byte_size, original_filename)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id`,
+          [
+            input.employeeId,
+            input.blobPath,
+            input.contentHash,
+            input.contentType,
+            input.byteSize,
+            nullIfEmpty(input.originalFilename),
+          ],
+        );
+        const receiptId = rcpt[0].id;
+        await client.query(
+          `UPDATE website_expense_item SET receipt_id = $1
+            WHERE id = $2 AND app_user_id = $3`,
+          [receiptId, input.itemId, input.employeeId],
+        );
+        await client.query("COMMIT");
+        return receiptId;
       } catch (e) {
         await client.query("ROLLBACK");
         throw e;

@@ -27,6 +27,7 @@ import {
   reopenExpenseReportAction,
 } from "./actions";
 import { deleteExpenseItemAction } from "./out-of-pocket/actions";
+import { ReceiptUpload } from "@/components/expenses/receipt-upload";
 
 const STATE_TONE: Record<ExpenseReportState, string> = {
   open: "text-dim",
@@ -64,9 +65,9 @@ function UnmappedEmployee() {
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; notice?: string }>;
 }) {
-  const { period } = await searchParams;
+  const { period, notice } = await searchParams;
   const session = await auth();
   const employeeId = await resolveAppUserIdByEmail(session?.user?.email ?? "");
   if (!employeeId) return <UnmappedEmployee />;
@@ -117,6 +118,15 @@ export default async function ExpensesPage({
         >
           ← All expense reports
         </Link>
+
+        {/* Receipt-upload outcome (#899) — surfaced when the backend degrades a receipt
+            upload (unconfigured / file rejected / unreachable) so the employee gets an honest
+            message instead of a silent failure. Successful uploads redirect without a notice. */}
+        {notice && (
+          <div className="rounded-lg border border-amber/40 bg-amber/5 p-3 text-sm text-amber">
+            {notice}
+          </div>
+        )}
 
         {!report ? (
           <div className="flex flex-col gap-4 rounded-lg border border-border bg-panel p-6 text-sm text-dim">
@@ -197,7 +207,22 @@ export default async function ExpensesPage({
                           {it.kind === "mileage" ? "Mileage" : (it.categoryName ?? "—")}
                         </td>
                         <td className="px-4 py-2 text-dim">
-                          {it.kind === "mileage" ? `${it.miles ?? 0} mi` : (it.merchant ?? "—")}
+                          <div className="flex flex-col gap-1">
+                            <span>
+                              {it.kind === "mileage" ? `${it.miles ?? 0} mi` : (it.merchant ?? "—")}
+                            </span>
+                            {/* Receipts (#899): out-of-pocket items need a receipt to attest
+                                (mileage is receipt-exempt). Show the badge once one is linked,
+                                or — on the employee's OWN Open report — the upload control. */}
+                            {it.kind !== "mileage" &&
+                              (it.hasReceipt ? (
+                                <span className="inline-flex w-fit items-center gap-1 rounded border border-green/40 bg-green/10 px-1.5 py-0.5 text-[11px] font-medium text-green">
+                                  Receipt attached
+                                </span>
+                              ) : report.state === "open" ? (
+                                <ReceiptUpload itemId={it.id} period={period ?? ""} />
+                              ) : null)}
+                          </div>
                         </td>
                         <td className="px-4 py-2">{fmtUsd(it.amount)}</td>
                         <td className="px-4 py-2 text-dim">{it.reimbursable ? "Yes" : "No"}</td>
