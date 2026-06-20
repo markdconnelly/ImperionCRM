@@ -470,6 +470,14 @@ export const mockRepositories: Repositories = {
     async setOpportunityStage() {
       throw new Error(NO_DB);
     },
+    // Sales knowledge (#429) — no-DB dev has no website bronze, so reads are honestly
+    // empty and writes throw (a manual bronze write needs the real table).
+    async getOpportunityKnowledge() {
+      return { notes: null, knowledge: [], updatedAt: null };
+    },
+    async addOpportunityKnowledge() {
+      throw new Error(NO_DB);
+    },
     // Forecasting (ADR-0072, #381) — read model. No-DB / schema-lag fallback is
     // empty (the forecast fields + quota/snapshot tables are 0114; the forecast
     // surface is #383). Honest empty, like listTasks.

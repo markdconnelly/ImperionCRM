@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { ConversationPanel } from "@/components/comms/conversation-panel";
+import { OpportunityKnowledge } from "@/components/pipeline/opportunity-knowledge";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeRevenue, REDACTED_MONEY } from "@/lib/auth/roles";
@@ -62,14 +63,18 @@ function Section({
  */
 export default async function OpportunityDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ notice?: string }>;
 }) {
   const { id } = await params;
+  const { notice } = await searchParams;
   const { crm } = getRepositories();
-  const [roles, opportunity] = await Promise.all([
+  const [roles, opportunity, knowledge] = await Promise.all([
     getSessionRoles(),
     crm.getOpportunity(id),
+    crm.getOpportunityKnowledge(id),
   ]);
   if (!opportunity) notFound();
 
@@ -142,6 +147,19 @@ export default async function OpportunityDetailPage({
             details={conversationDetails}
             emptyHint="No conversations captured for this deal yet."
           />
+        </Section>
+
+        {/* Sales knowledge (#429, epic #425) — manual notes + uploaded customer
+            knowledge the sales team captures, written to the website opportunity
+            bronze (source='website', highest merge precedence; ADR-0039). Feeds the
+            gold layer for the orchestrator. */}
+        <Section
+          title="Sales knowledge"
+          icon="NotebookPen"
+          hint="Notes & uploaded documents the sales team captures about this deal — the context a machine feed can't. Written to the website opportunity bronze (highest merge precedence) and fed to the orchestrator."
+          className="lg:col-span-3"
+        >
+          <OpportunityKnowledge opportunityId={id} knowledge={knowledge} notice={notice} />
         </Section>
       </div>
     </div>

@@ -75,6 +75,16 @@ const services = {
     baseUrlEnv: "INTEGRATION_SERVICE_URL",
     audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
   },
+  // Opportunity knowledge blob custody (#429, epic #425; ADR-0069 attachments → Azure
+  // Blob). Stores the sales-uploaded customer-knowledge BYTES in a private blob and
+  // returns the custody fields; same backend Function App, so it shares the integration
+  // base URL + Easy Auth audience. No-op (ServiceNotConfiguredError) until
+  // INTEGRATION_SERVICE_URL is set, so the upload surface degrades with a notice.
+  knowledge: {
+    name: "Opportunity knowledge upload",
+    baseUrlEnv: "INTEGRATION_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
+  },
 } satisfies Record<string, ServiceDescriptor>;
 
 /** The orchestrator's reply shape (backend ADR-0032/0036 wire contract). */
@@ -683,6 +693,50 @@ export const receiptsService = {
     callServiceRaw<ReceiptUploadResult>(
       services.receipts,
       "/expense/receipts/upload",
+      input.bytes,
+      {
+        headers: {
+          "content-type": input.contentType,
+          "x-filename": input.filename,
+          "x-actor-user-id": input.actorUserId,
+        },
+        timeoutMs: 60_000, // a multi-MB upload + AV scan may take longer than a JSON call
+      },
+    ),
+};
+
+/** The custody fields the opportunity-knowledge upload endpoint returns once the bytes
+ *  are stored (#429): the private blob path/key, the integrity digest, and the
+ *  size/type the backend recorded. The FE persists these into
+ *  `website_opportunities.knowledge_blob_refs` — it never holds the bytes after the
+ *  upload returns (ADR-0042 boundary: backend owns bytes, FE the row). Same shape as
+ *  the receipt-upload result (one generic blob-custody contract). */
+export type KnowledgeUploadResult = ReceiptUploadResult;
+
+/**
+ * Opportunity knowledge upload custody (#429, epic #425; ADR-0069 attachments → Azure
+ * Blob). The front end holds NO storage credentials (ADR-0043/0028): it streams the
+ * file BYTES to the caller-gated backend endpoint, which AV-scans, sha256s, and writes
+ * them to a PRIVATE blob, then returns the custody reference the FE links onto the
+ * website opportunity bronze. Headers carry the file's own `content-type`, the original
+ * `x-filename`, and `x-actor-user-id` (the session employee). Until
+ * INTEGRATION_SERVICE_URL is set the call is `not_configured` and the upload surface
+ * degrades with a notice.
+ */
+export const knowledgeService = {
+  upload: (input: {
+    /** The raw file bytes (the request body). */
+    bytes: ArrayBuffer | Uint8Array;
+    /** The file's own MIME type, sent as `content-type` (the endpoint validates the allowlist). */
+    contentType: string;
+    /** The original filename, sent as `x-filename` for the audit + gold/vectorization push. */
+    filename: string;
+    /** The acting employee (`app_user.id`), sent as `x-actor-user-id`. */
+    actorUserId: string;
+  }) =>
+    callServiceRaw<KnowledgeUploadResult>(
+      services.knowledge,
+      "/opportunity/knowledge/upload",
       input.bytes,
       {
         headers: {
