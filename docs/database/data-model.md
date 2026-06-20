@@ -1004,6 +1004,7 @@ erDiagram
       text keyvault_secret_ref "KV secret NAME — never the token/secret value"
       text auth_method "certificate|secret (enterprise app)|api_key (UniFi etc, #960); null for OAuth (ADR-0103)"
       text cert_thumbprint "cert when auth_method=certificate (ADR-0103)"
+      jsonb provider_config "non-secret per-connection config; UniFi {connectionType,controllerHost} (#962)"
       jsonb sync_cursor
       timestamptz last_sync_at
       int poll_interval_minutes "pipeline poll cadence; 0 = manual/paused (ADR-0038)"

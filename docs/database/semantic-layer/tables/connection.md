@@ -6,7 +6,7 @@ archetype: H
 description: OAuth/integration connection record + Key Vault credential registry — personal/company/client scope; tokens custodied in Key Vault by reference (name only); client connections link to an account; carries auth method + poll cadence.
 resource: ../../../decision-records/ADR-0103-connection-credential-registry.md
 tags: [silver, identity, connection, reference, config]
-timestamp: 2026-06-20T00:00:00Z
+timestamp: 2026-06-20T01:00:00Z
 ---
 
 # connection
@@ -49,6 +49,7 @@ honors it); `sync_cursor` tracks incremental progress.
 | `scopes` | text[] | granted OAuth scopes |
 | `keyvault_secret_ref` | text | **reference only — never the secret value** |
 | `external_account_id` | text | provider account id |
+| `provider_config` | jsonb | per-connection **non-secret** config (#962). UniFi: `{connectionType:console\|cloud, controllerHost}`. **Never a secret** — secrets stay in Key Vault by `keyvault_secret_ref` |
 | `poll_interval_minutes` | integer | cadence gate (default `60`; `0` = manual/paused; CHECK ≥ 0; ADR-0038, migration 0035) |
 | `sync_cursor` | jsonb | incremental cursor |
 | `last_sync_at` / `connected_at` | timestamptz | |
