@@ -1429,6 +1429,22 @@ the merge-join keys to silver `device` (and the #162 device policy-applied indic
 Writer: `imperion-localpipeline`; readers: `mgid-imperioncrmpipeline` (merge) and the
 web role (device page).
 
+### Intune managed-apps bronze (migration 0148, #261, epic #873)
+
+`intune_managed_apps` — the per-device managed/detected **app** inventory (the remaining
+Intune drillable-detail gap after devices/compliance/config-policies). Same
+local-pipeline envelope, one row per (device, app), fed by the on-prem collector over
+Graph `DeviceManagementApps.Read.All` (a **Mark-gated** grant; the collector is a
+local-pipeline companion, self-gates until this migration is applied). Queryable join
+keys mirror the silver `device` merge keys: `managed_device_id`
+(= `intune_managed_devices.external_id`, the primary join) and `serial_number` (fallback)
+— both indexed. Flat app columns (`display_name`, `publisher`, `version`, `platform`,
+`install_state`, …) stay all-text; true types + the lossless payload live in
+`raw_payload`. **Bronze, not silver** — no silver entity, no OKF concept file. Writer:
+`imperion-localpipeline`; readers: `mgid-imperioncrmpipeline`, the backend role, and the
+web role (the device-CI detail **Managed apps** drill section). Surfaced via
+`crm.listDeviceManagedApps(deviceId)` on the `/cmdb/device/<id>` detail.
+
 ### Meta Business Manager bronze + organic social silver (migration 0075, #253)
 
 Six local-pipeline-envelope bronze tables for Imperion's own Business Suite assets

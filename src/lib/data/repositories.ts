@@ -150,6 +150,7 @@ import type {
   ContractRow,
   DeviceInventoryRow,
   ConfigurationItem,
+  DeviceManagedApp,
   CiType,
   CiRelationship,
   CiRelationshipInput,
@@ -844,6 +845,17 @@ export interface CrmRepository {
    * Mock / schema-lag fallback = `[]` (the register renders empty, never crashes).
    */
   listConfigurationItems(): Promise<ConfigurationItem[]>;
+
+  /**
+   * The Intune managed/detected apps installed on one silver device (#261, epic #873,
+   * bronze `intune_managed_apps`, migration 0148; per-source bronze ADR-0039). Backs the
+   * device-CI detail "Managed apps" drill section. Joined to the silver device by its
+   * Intune managed-device id (preferred) / serial number — the same keys the device CI
+   * already laterals `intune_managed_devices` on. Mock / schema-lag fallback = `[]` (the
+   * section renders an empty/absent state, never crashes; the bronze is empty until the
+   * collector runs against an applied table — ADR-0051 §6).
+   */
+  listDeviceManagedApps(deviceId: string): Promise<DeviceManagedApp[]>;
 
   // ── CMDB relationship layer (#647, epic #372, ADR-0078) ─────────────────────
   /**

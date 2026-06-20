@@ -292,6 +292,7 @@ import type {
   ContractRow,
   DeviceInventoryRow,
   ConfigurationItem,
+  DeviceManagedApp,
   CiType,
   CiRelationship,
   CiRelationshipInput,
@@ -1566,6 +1567,64 @@ export const postgresRepositories: Repositories = {
         });
       } catch {
         return mockRepositories.crm.listConfigurationItems();
+      }
+    },
+
+    // Intune managed-apps drill (#261, epic #873, bronze intune_managed_apps migration 0148).
+    async listDeviceManagedApps(deviceId: string): Promise<DeviceManagedApp[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listDeviceManagedApps(deviceId);
+      try {
+        // The per-device managed/detected app inventory for ONE silver device. Apps join the
+        // device by the SAME keys the device CI already laterals intune_managed_devices on
+        // (0069): the Intune managed-device id (preferred) or the serial number (fallback).
+        // We resolve the device's serial + its Intune managed-device id, then match apps on
+        // either. Bronze is all-text; the latest collected row per app wins (DISTINCT ON).
+        // An absent bronze table (collector not yet run / migration not applied) throws and
+        // degrades to [] via the catch — the section renders empty, never errors.
+        const { rows } = await pool.query<{
+          app_id: string | null;
+          display_name: string | null;
+          publisher: string | null;
+          version: string | null;
+          platform: string | null;
+          install_state: string | null;
+          install_state_detail: string | null;
+          app_type: string | null;
+        }>(
+          `WITH dev AS (
+             SELECT d.serial_number,
+                    (SELECT i.external_id
+                       FROM intune_managed_devices i
+                      WHERE i.serial_number = d.serial_number AND i.serial_number <> ''
+                      ORDER BY i.collected_at DESC
+                      LIMIT 1) AS managed_device_id
+               FROM device d
+              WHERE d.id = $1::uuid
+           )
+           SELECT DISTINCT ON (ma.app_id, ma.display_name)
+                  ma.app_id, ma.display_name, ma.publisher, ma.version, ma.platform,
+                  ma.install_state, ma.install_state_detail, ma.app_type
+             FROM intune_managed_apps ma, dev
+            WHERE (dev.managed_device_id IS NOT NULL
+                     AND ma.managed_device_id = dev.managed_device_id)
+               OR (dev.serial_number IS NOT NULL AND dev.serial_number <> ''
+                     AND ma.serial_number = dev.serial_number)
+            ORDER BY ma.app_id, ma.display_name, ma.collected_at DESC`,
+          [deviceId],
+        );
+        return rows.map((r) => ({
+          appId: r.app_id,
+          displayName: r.display_name,
+          publisher: r.publisher,
+          version: r.version,
+          platform: r.platform,
+          installState: r.install_state,
+          installStateDetail: r.install_state_detail,
+          appType: r.app_type,
+        }));
+      } catch {
+        return mockRepositories.crm.listDeviceManagedApps(deviceId);
       }
     },
 

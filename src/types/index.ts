@@ -3293,6 +3293,24 @@ export interface CiCriticalityOverrideInput {
   override: Criticality | null;
 }
 
+/**
+ * One Intune managed/detected app installed on a device (#261, bronze
+ * `intune_managed_apps`, migration 0148; per-source bronze ADR-0039). A READ-ONLY
+ * row backing the device-CI detail "Managed apps" drill section. Bronze flat columns
+ * are stringified text (0038/0069 envelope), so every field is a raw string | null;
+ * the display layer (`src/lib/cmdb/managed-apps.ts`) normalises absent → "—".
+ */
+export interface DeviceManagedApp {
+  appId: string | null;
+  displayName: string | null;
+  publisher: string | null;
+  version: string | null;
+  platform: string | null;
+  installState: string | null;
+  installStateDetail: string | null;
+  appType: string | null;
+}
+
 // ── CMDB relationship layer (#647, epic #372, ADR-0078) ──────────────────────
 // The CMDB's first PERSISTED table (migration 0131): a typed, directional EDGE
 // between two CIs. A CI is a polymorphic `(ciType, ciId)` pair over the read-only
