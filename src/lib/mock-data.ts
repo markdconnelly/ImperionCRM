@@ -220,7 +220,7 @@ export function mockCurrentConsent(id: string): CurrentConsentRow[] {
 
 // ── Connections (ADR-0012/0024) ──────────────────────────────────────────────
 
-const NO_CRED = { accountId: null, accountName: null, authMethod: null, certThumbprint: null };
+const NO_CRED = { accountId: null, accountName: null, authMethod: null, certThumbprint: null, clientId: null };
 
 export const userConnections: ConnectionRow[] = [
   { id: "cn_01", scope: "user", provider: "m365", displayName: "a.reyes@imperion.example", status: "active", scopes: ["Mail.Read", "Calendars.Read", "Chat.Read"], owner: "A. Reyes", keyvaultSecretRef: "conn-user-areyes-m365", lastSync: "2026-06-06 07:00", connectedAt: "2026-04-12", pollIntervalMinutes: 15, ...NO_CRED },
@@ -232,12 +232,12 @@ export const companyConnections: ConnectionRow[] = [
   { id: "cn_10", scope: "company", provider: "autotask", displayName: "Imperion Autotask", status: "active", scopes: ["tickets:read"], owner: null, keyvaultSecretRef: "conn-company-autotask", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 30, ...NO_CRED },
   { id: "cn_11", scope: "company", provider: "itglue", displayName: "Imperion IT Glue", status: "active", scopes: ["assets:read", "docs:read"], owner: null, keyvaultSecretRef: "conn-company-itglue", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 720, ...NO_CRED },
   { id: "cn_12", scope: "company", provider: "apollo", displayName: "Apollo — enrichment", status: "active", scopes: ["contacts:enrich", "companies:enrich"], owner: null, keyvaultSecretRef: "conn-company-apollo", lastSync: null, connectedAt: "2026-06-08", pollIntervalMinutes: 1440, ...NO_CRED },
-  { id: "cn_13", scope: "company", provider: "m365", displayName: "Imperion M365 (enterprise app)", status: "active", scopes: ["Directory.Read.All"], owner: null, keyvaultSecretRef: "conn-company-m365", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 1440, accountId: null, accountName: null, authMethod: "certificate", certThumbprint: "A1B2C3D4E5F6…" },
+  { id: "cn_13", scope: "company", provider: "m365", displayName: "Imperion M365 (enterprise app)", status: "active", scopes: ["Directory.Read.All"], owner: null, keyvaultSecretRef: "conn-company-m365", lastSync: "2026-06-06 06:30", connectedAt: "2026-01-05", pollIntervalMinutes: 1440, accountId: null, accountName: null, authMethod: "certificate", certThumbprint: "A1B2C3D4E5F6…", clientId: null },
 ];
 
 /** Client-scope connections (ADR-0103) — a managed customer's credential, linked to its account. */
 export const clientConnections: ConnectionRow[] = [
-  { id: "cn_20", scope: "client", provider: "m365", displayName: "Contoso M365 (tenant 1)", status: "active", scopes: ["Directory.Read.All"], owner: null, keyvaultSecretRef: "conn-client-contoso-t1-m365", lastSync: "2026-06-06 05:00", connectedAt: "2026-05-01", pollIntervalMinutes: 1440, accountId: "acc_contoso", accountName: "Contoso Ltd", authMethod: "secret", certThumbprint: null },
+  { id: "cn_20", scope: "client", provider: "m365", displayName: "Contoso M365 (tenant 1)", status: "active", scopes: ["Directory.Read.All"], owner: null, keyvaultSecretRef: "conn-client-contoso-t1-m365", lastSync: "2026-06-06 05:00", connectedAt: "2026-05-01", pollIntervalMinutes: 1440, accountId: "acc_contoso", accountName: "Contoso Ltd", authMethod: "secret", certThumbprint: null, clientId: "11111111-2222-3333-4444-555555555555" },
 ];
 
 // ── Demand generation (ADR-0012/0026) ────────────────────────────────────────
