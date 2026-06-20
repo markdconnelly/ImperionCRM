@@ -135,117 +135,29 @@ Key Vault) in deployed environments.
 
 ## 6. Current state of the work
 
+**Volatile status lives in [docs/STATE.md](docs/STATE.md)** — per the meta-policy
+(§4.5: "Current state — kept SHORT; volatile detail belongs in `docs/STATE.md`").
+This section stays a one-paragraph pointer so the contract above it stays stable.
+
 The app is **built, deployed, and live** on Azure App Service
-(`imperioncrm.azurewebsites.net`, Entra SSO). It is no longer a chat-interface
-prototype — the Next.js project, the three-column shell, Entra auth, PostgreSQL +
-pgvector, the repository data layer, and all the UI modules below are real and
-serving data.
-
-**Built and live:**
-- **Three-column shell** — collapsible left nav (64px icon rail), central work area
-  with a top bar (page title, **wired** global search → Knowledge, Graph-sync
-  indicator), and the collapsible right orchestrator agent panel. Collapse state
-  persists to localStorage. User chip shows "Entra · SSO".
-- **Modules (all real):** Dashboard, Leads (+ capture hooks & inbox), Discovery
-  (+ agent-answer approval → fit/nurture routing), Accounts, Contacts (+ 360 detail:
-  dossier, timeline, consent, composer), Pipeline (interactive — move deals between
-  stages), Assessments, Proposals, **Projects** (the project board, ADR-0052 #95:
-  every project type on one surface, user-creatable types — table not enum,
-  migration 0058 — owners, per-project tasks via `task.project_id`,
-  `canManageProjects`), Onboarding, Business Reviews, Tickets, Tasks,
-  Campaigns (+ audiences/ads + builders), Communications (unified multi-channel
-  timeline), **Reporting** (central **BI hub**, ADR-0062 — marketing/social,
-  service-desk & security-fleet intelligence over the gold layer, with a cross-domain
-  summary strip on the Dashboard that deep-links into each section),
-  Knowledge (search over the gold layer), Workflows (+ builder
-  & step editor), Consent (ledger), Integrations (per-user personal connections),
-  Security (posture dashboard), Settings, Feedback (GitHub-coupled), **AI Agents**
-  (ADR-0048: orchestrator preset + budget via the backend's GET/PUT `/agent/settings`,
-  registered sub-agents, `agent.turn` audit activity), **Board of Directors**
-  (ADR-0049 + backend ADR-0039: convene → POST `/board/sessions` runs the synchronous
-  two-round deliberation + synthesis; sessions list + `/board/[id]` transcript &
-  recommendation read the 0056 tables directly; convening is guarded by `agents:operate`,
-  admin-only per ADR-0050).
-  Editable discovery/assessment question catalog. The AI Agents and Board pages are
-  **admin-only** (#90, `canSeeAgentPages` — same gate as Settings/ADR-0030), and
-  Settings has an **AI tab** surfacing the orchestrator preset / budget cap /
-  month-to-date spend card (same card + backend PUT as the AI Agents page).
-- **Data:** PostgreSQL + pgvector; migrations **0001–0148 applied** to prod
-  (recent sets: work-management 0094–0101; time/expense finance 0085–0093; CMDB +
-  cloud first-class CI 0131/0132/0144/0145; Key Vault credential registry 0141 +
-  `connection.client_id` 0147; OKF `source_skill` routing registry 0143;
-  `intune_managed_apps` bronze 0148). Repo holds files through 0148. Typed
-  repositories with a mock fallback. Entra SSO (certificate client auth) +
-  break-glass. **Full dated inventory of shipped work → [docs/STATE.md](docs/STATE.md).**
-- **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
-- **Per-connection poll cadence (ADR-0038, migration 0035):** `connection.poll_interval_minutes`
-  (0 = manual/paused) with an auto-saving cadence selector on the Settings cards; the pipeline
-  honours it via `pollDue()` (pipeline ADR-0008).
-- **Per-source bronze (ADR-0039, migrations 0036/0037):** one physical bronze table per
-  (source, entity) — `{autotask,apollo,m365,itglue,website}_contacts`, the `_companies` set, and
-  `{itglue,m365,website}_devices` — read through union views (`contact_bronze_all` etc.); a new
-  silver **`device`** table; `contact`/`account` remain the silver aggregate. Manual entries use
-  the `website` source. The on-prem local-pipeline adds its own security-posture bronze (Secure
-  Score, Sentinel, Entra/Intune policies, Autotask contracts/tickets, IT Glue export) + related-
-  source citation views (migrations 0038–0041). Newer bronze feeds (0075–0079):
-  **Meta** business (FB/IG posts, DMs, lead forms — live in prod), **Defender**
-  incidents/alerts, **Entra** auth-methods, **SharePoint** site inventory, and
-  **Entra groups + membership** (feeding the silver user object) — these back the
-  reporting BI hub's marketing/social and security-fleet sections.
-- **Security/assessment ingestion (ADR-0040, migrations 0042/0043):** **Dark Web ID** compromised
-  credentials → silver `credential_exposure`; **Televy** reports → `assessment_artifact`. Wired
-  but gated (no-op until the API key is configured).
-- **Per-user OAuth connections (ADR-0024 + backend ADR-0038):** Settings → Your connections
-  runs the backend's real authorization-code flow (`connectionsService` →
-  `/connections/{provider}/{start,callback,disconnect}`; callback route
-  `/api/connections/[provider]/callback`; tokens custodied in Key Vault by the backend;
-  disconnect revokes custody first). Unconfigured providers (and key-based Plaud) degrade
-  to the recorded stub with a notice. Activation = backend app settings
-  (`OAUTH_REDIRECT_BASE_URL` + per-provider client ids — docs/operations/credential-wiring-next-steps.md §4b).
-- **Live integration wiring (as of 2026-06-19):** QuickBooks Online **production** app
-  connected (expense/payroll read-back, ADR-0093); **M365 Graph** mail/Teams ingestion
-  proven with tokens in Key Vault; **ACS** email verified (`acs.imperionllc.com`, agent
-  sends as the `crm@` shared mailbox, ADR-0058); **Autotask** ticket webhook live;
-  **receipt** storage + 90-day lifecycle provisioned; **Meta** FB/IG ingestion live. The
-  `connection` table is now a Key Vault **credential registry** (ADR-0103 — scope
-  personal/company/client + cert-or-secret). Detail + remaining gates → [docs/STATE.md](docs/STATE.md).
-
-**Aesthetic:** dense, premium internal-tool feel (Linear/Vercel-grade), dark theme.
-Design tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · panel-2
-`#151B28` · border `#1E2636` · text `#E6EAF2` · dim `#8A93A6` · accent `#5B8DEF` ·
-accent-2 `#7C6BF0` · green `#3FBF8F` · amber `#E0A33E` · red `#E2615A`. Display font
-Space Grotesk, body IBM Plex Sans.
-
-**Deferred to the next phase (deliberately stubbed, not broken):** the remaining
-ingestion engines (YouTube / LinkedIn / Plaud — **M365 Graph and Meta FB/IG are now
-live in prod**, see above), agent/LLM enrichment execution (pending on-prem hydration),
-and embeddings generation + vector (semantic) search (LocalPipeline #176 — not yet
-built). **Real 1:1 email/SMS sends are wired (#183, ADR-0058):** the composer executes through the backend's
-approval-gated send path (consent re-asserted at execution; email as the employee's
-own M365 mailbox, SMS via ACS) and degrades to the logged-to-timeline stub with an
-honest notice where the backend/prerequisites aren't configured. The agent layer is
-no longer deferred: the orchestrator runtime is live in the backend (backend
-ADR-0036), the AI Agents page is real (ADR-0048), and the **Board** page is real
-(ADR-0049, backend ADR-0039). Until a source is wired, the remaining flows are
-stubbed (e.g. a "send" logs to the timeline) and never fail the page.
+(`imperioncrm.azurewebsites.net`, Entra SSO) — the Next.js three-column shell, Entra
+auth, PostgreSQL + pgvector, the typed repository data layer, and every UI module are
+real and serving data. The board's verdict (2026-06-17) is that the *build* is done;
+reaching `v1.0.0` is now an **operator/credential** problem, not a feature-build one.
+Most flows that look "deferred" are **deploy-dormant**, not broken — they light up the
+moment their source credential lands and the on-prem collectors hydrate bronze. The
+dated, authoritative inventory — shipped modules, the migration/ADR ledger, integration
+wiring status, the go-live spine, and what is deliberately stubbed — is the running
+ledger in **[docs/STATE.md](docs/STATE.md)** (and, durably, GitHub issues/PRs + the ADRs).
 
 ---
 
-## 7. Build plan — status & next phase
+## 7. Build plan & the four-repo division of labor
 
-The original first-tasks plan is **complete**: ✅ project scaffolded (Next.js App
-Router + TypeScript + Tailwind, ESLint, strict TS, `/docs` tree); ✅ three-column
-shell + Dashboard; ✅ Entra ID auth gate (certificate client assertion, ADR-0005);
-✅ PostgreSQL + pgvector with the typed repository data layer; ✅ the orchestrator
-boundary stubbed behind interfaces; ✅ CI/CD on App Service (GitHub Actions: lint,
-typecheck, build, docs check). Hosting landed on **Azure App Service** (ADR-0006),
-not Static Web Apps.
-
-**Next phase — wire the live integrations** (the deliberately-deferred work). This is a
-**four-repo system** with a settled division of labor (2026-06-09, ADR-0042): **this
-front end = strictly GUI** (direct DB *reads* for rendering are fine; every *process*
-calls the backend) · **`ImperionCRM_Backend` = all processes** (Azure Functions on the
-same App Service Plan, **identity-gated** — Easy Auth + caller allowlist, backend
+This is a **four-repo system** with a settled division of labor (2026-06-09, ADR-0042):
+**this front end = strictly GUI** (direct DB *reads* for rendering are fine; every
+*process* calls the backend) · **`ImperionCRM_Backend` = all processes** (Azure Functions
+on the same App Service Plan, **identity-gated** — Easy Auth + caller allowlist, backend
 ADR-0035; private networking deferred for cost — reached server-side via
 `src/lib/services/external-client.ts`; boundary = ADR-0028) · **`ImperionCRM_Pipeline` =
 live data** (webhooks, bronze→silver merge, on-demand refresh — pipeline ADR-0011) ·
@@ -254,22 +166,12 @@ bulk ingestion, IT Glue hub, ALL vectorization). The shared security baseline is
 [docs/security/unified-security-standard.md](docs/security/unified-security-standard.md).
 **This repo remains the single source of truth for the database schema/migrations** —
 the siblings are consumers; propose schema changes here.
-1. ~~Live OAuth flows + Key Vault token storage for per-user connections~~ (done —
-   backend ADR-0038 + this repo's wiring), then the ingestion engines writing into the
-   `interaction` timeline + `contact_enrichment` dossier — **M365 Graph mail/Teams and
-   Meta FB/IG now live in prod**; YouTube / LinkedIn / Plaud remain.
-2. ~~Real email sends behind the consent gate~~ (done — ADR-0058, live as the employee's
-   own M365 mailbox + the `crm@` shared agent mailbox; SMS deferred, no ACS number).
-   Agent/LLM enrichment execution remains (pending on-prem hydration).
-3. Embeddings generation + vector (semantic) search over the gold layer
-   (LocalPipeline #176 — **not yet built**; OKF bundle is now large enough to vectorize).
-4. ~~The orchestrator agent runtime + the AI Agents page~~ (done — backend ADR-0036,
-   front-end ADR-0048); ~~the Board page~~ (done — backend ADR-0039, front-end
-   ADR-0049 + the `/board` module).
-5. Pre-go-live: QBO / M365 / ACS / Autotask credentials are now wired in prod. The
-   remaining go-live spine is **on-prem host hydration (LP #102) → agent-quality eval
-   (#186) → Mark UX sign-off → declare v1.0.0** (Release-As across all four repos).
-   SSO cert rotation (#940) is accepted-risk. See [docs/STATE.md](docs/STATE.md).
+
+The original scaffolding plan is complete (Next.js App Router + strict TS + Tailwind,
+the three-column shell, the Entra auth gate per ADR-0005, PostgreSQL + pgvector with the
+typed data layer, the orchestrator boundary, CI/CD on **Azure App Service** per ADR-0006).
+**The current build status, the remaining "wire the live integrations" work, and the
+go-live spine to `v1.0.0` are the dated ledger in [docs/STATE.md](docs/STATE.md).**
 
 Before starting each task, restate the plan briefly and flag anything that
 conflicts with the principles in §2–§5.
