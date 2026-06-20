@@ -585,6 +585,32 @@ export const connectionsService = {
       consentUrl?: string;
       detail?: string;
     }>(services.integration, "/connections/docusign/status"),
+  /**
+   * Register (or rotate) a managed client tenant's per-tenant M365 app credential
+   * (#950, backend #217 / PR #224, cutover #226). Per-client-app model (ADR-0103 /
+   * ADR-0076): every managed client tenant has its OWN Entra app registration — a
+   * distinct app (client) id + its own credential. The admin enters the tenant's app
+   * id + a credential (a client secret OR a certificate thumbprint); the backend
+   * custodies a `secret` in Key Vault under `conn-client-<tenantId>-m365` and writes the
+   * `client`-scope m365 `connection` row. The secret VALUE is sent once over the
+   * server-to-backend boundary and never returned, logged, or stored in this DB
+   * (CLAUDE.md §5). The browser never calls this — the web app proxies server-side
+   * (ADR-0028/0035). 501 when the backend isn't configured → the UI degrades.
+   */
+  registerClientM365: (input: {
+    accountId: string;
+    tenantId: string;
+    clientAppId: string;
+    authMethod: "secret" | "certificate";
+    clientSecret?: string;
+    certThumbprint?: string;
+    displayName?: string;
+  }) =>
+    callService<{ connectionId: string }>(
+      services.integration,
+      "/connections/client/m365",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
 };
 
 /**

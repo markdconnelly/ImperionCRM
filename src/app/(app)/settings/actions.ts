@@ -217,6 +217,97 @@ export async function testDocusignConnectionAction(): Promise<DocusignTestResult
 }
 
 /**
+ * Outcome of registering a client tenant's M365 app credential (#950), rendered inline
+ * on the form. Never carries secret material — only a human status line.
+ */
+export type ClientCredentialResult = {
+  ok: boolean;
+  tone: "green" | "amber" | "red";
+  message: string;
+};
+
+const GUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const THUMBPRINT_RE = /^[0-9a-fA-F]{40}$/;
+
+/**
+ * Register (or rotate) a managed client tenant's per-tenant M365 app credential (#950,
+ * ADR-0103 / backend #217). The admin supplies the linked account, the tenant's Entra
+ * app (client) id, and a credential — a client secret OR a certificate thumbprint. The
+ * secret/cert is handed to the backend, which custodies it in Key Vault and writes the
+ * `client`-scope `connection` row (the value never touches this DB or a log, CLAUDE.md §5).
+ * The browser never calls the backend — this server action proxies it (ADR-0028/0035).
+ * Gated on `settings:write` (admin); returns a result the form renders inline. Degrades
+ * to an honest notice when the backend isn't configured yet.
+ */
+export async function registerClientM365Action(
+  formData: FormData,
+): Promise<ClientCredentialResult> {
+  await requireCapability("settings:write");
+
+  const accountId = String(formData.get("accountId") ?? "").trim();
+  const tenantId = String(formData.get("tenantId") ?? "").trim();
+  const clientAppId = String(formData.get("clientAppId") ?? "").trim();
+  const authMethodRaw = String(formData.get("authMethod") ?? "").trim();
+  const clientSecret = String(formData.get("clientSecret") ?? "").trim();
+  const certThumbprint = String(formData.get("certThumbprint") ?? "").trim();
+  const displayName = String(formData.get("displayName") ?? "").trim();
+
+  // Validate before sending anything across the boundary (mirrors the backend zod schema).
+  if (!accountId) return { ok: false, tone: "red", message: "Pick the linked account." };
+  if (!GUID_RE.test(tenantId))
+    return { ok: false, tone: "red", message: "Tenant id must be a GUID." };
+  if (!GUID_RE.test(clientAppId))
+    return { ok: false, tone: "red", message: "App (client) id must be a GUID." };
+  if (authMethodRaw !== "secret" && authMethodRaw !== "certificate")
+    return { ok: false, tone: "red", message: "Choose an auth method." };
+  const authMethod = authMethodRaw;
+  if (authMethod === "secret" && !clientSecret)
+    return { ok: false, tone: "red", message: "Enter the client secret." };
+  if (authMethod === "certificate" && !THUMBPRINT_RE.test(certThumbprint))
+    return {
+      ok: false,
+      tone: "red",
+      message: "Certificate thumbprint must be a 40-character hex SHA-1.",
+    };
+
+  const outcome = await callServiceWithFallback(
+    () =>
+      connectionsService.registerClientM365({
+        accountId,
+        tenantId,
+        clientAppId,
+        authMethod,
+        clientSecret: authMethod === "secret" ? clientSecret : undefined,
+        certThumbprint: authMethod === "certificate" ? certThumbprint : undefined,
+        displayName: displayName || undefined,
+      }),
+    {
+      label: "registerClientM365Action",
+      notConfigured:
+        "Saved nothing — the credential custody backend isn't configured in this environment yet.",
+      failed: "Couldn't register the client credential — the backend rejected the request.",
+    },
+  );
+
+  revalidatePath("/settings/credentials");
+  if (outcome.ok) {
+    return {
+      ok: true,
+      tone: "green",
+      message:
+        authMethod === "secret"
+          ? "Client M365 app registered — the secret is custodied in Key Vault and the connection is live."
+          : "Client M365 app registered — the certificate thumbprint is recorded and the connection is live.",
+    };
+  }
+  return {
+    ok: false,
+    tone: outcome.kind === "not_configured" ? "amber" : "red",
+    message: outcome.message,
+  };
+}
+
+/**
  * Begin the company-wide QuickBooks Online connect flow (#117/#528). It needs no cookie:
  * the backend parks a one-time CSRF `state` in Key Vault and embeds it
  * in the Intuit consent URL, then validates it on the callback (same posture as the
