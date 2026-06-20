@@ -115,3 +115,20 @@ jobs:
           echo "Changed files:"; echo "$CHANGED_FILES" | sed 's/^/  /'
           echo "Removed files:"; echo "$REMOVED_FILES" | sed 's/^/  /'
           node scripts/semantic-layer-gate.mjs
+
+  claude-md:
+    name: CLAUDE.md meta-policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Required CLAUDE.md meta-policy anchors present
+        shell: bash
+        run: |
+          f=CLAUDE.md
+          miss=0
+          req=("What this project is" "architectural principles" "Technology stack" "Never commit secrets" "Current state" "Working agreement" "unified-security-standard.md" "docs/decision-records")
+          for p in "${req[@]}"; do
+            if ! grep -qiF "$p" "$f"; then echo "::error file=$f::missing required meta-policy anchor: $p"; miss=1; fi
+          done
+          if [ "$miss" -ne 0 ]; then exit 1; fi
+          echo "CLAUDE.md: all 8 meta-policy anchors present"
