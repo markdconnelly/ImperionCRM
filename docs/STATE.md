@@ -9,7 +9,7 @@
 > The authoritative cross-session record is GitHub issues/PRs + the ADRs — this file is
 > a navigable index over them, not a replacement.
 
-**Last refreshed:** 2026-06-19 · **Milestone:** pre-`v1.0.0` (build complete; go-live is
+**Last refreshed:** 2026-06-20 · **Milestone:** pre-`v1.0.0` (build complete; go-live is
 now an operator/credential problem, not a code problem) · **Schema:** migrations
 **0001–0148 applied to prod** · **ADRs:** through **0104** · **OKF bundle:** 56 concept files.
 
@@ -120,3 +120,39 @@ bugfixes, and already-filed v1 work continue. Deferred-feature epics are parked 
 
 These degrade to an honest "logged to the timeline" / "recorded stub with a notice" path
 and never fail a page — by design, so the GUI is demoable before every source is wired.
+
+---
+
+## 7. Shell, plumbing & aesthetic (shipped detail)
+
+Detail relocated from `CLAUDE.md` §6 (issue [#970](https://github.com/markdconnelly/ImperionCRM/issues/970), right-sizing per meta-policy §4.5).
+
+- **Three-column shell** — collapsible left nav (64px icon rail); central work area with
+  a top bar (page title, wired global search → Knowledge, Graph-sync indicator); the
+  collapsible right orchestrator panel. Collapse state persists to localStorage. User chip
+  shows "Entra · SSO" + a **sign-out** button (`signOutAction` → `/login`). AI Agents +
+  Board pages are admin-only (#90, `canSeeAgentPages`); Settings has an **AI tab** with the
+  orchestrator preset / budget cap / month-to-date spend card.
+- **Per-connection poll cadence** (ADR-0038, migration 0035): `connection.poll_interval_minutes`
+  (0 = manual/paused) + auto-saving cadence selector on Settings cards; the pipeline honours
+  it via `pollDue()` (pipeline ADR-0008).
+- **Per-source bronze** (ADR-0039, migrations 0036/0037 + 0038–0041 posture, 0075–0079 newer
+  feeds): one physical bronze table per (source, entity), read through union views; silver
+  `device` table; manual entries use the `website` source. Posture bronze (Secure Score,
+  Sentinel, Entra/Intune policies, Autotask contracts/tickets, IT Glue) + citation views are
+  on-prem (LocalPipeline). Newer feeds: Meta (FB/IG), Defender, Entra auth-methods, SharePoint
+  inventory, Entra groups + membership.
+- **Security/assessment ingestion** (ADR-0040, migrations 0042/0043): Dark Web ID →
+  `credential_exposure`; Televy → `assessment_artifact`. Wired but gated (no-op until key set).
+- **Per-user OAuth connections** (ADR-0024 + backend ADR-0038): Settings → Your connections
+  runs the backend authorization-code flow; tokens custodied in Key Vault by the backend;
+  unconfigured providers degrade to a recorded stub with a notice. Activation = backend app
+  settings (`OAUTH_REDIRECT_BASE_URL` + per-provider client ids).
+- **1:1 email/SMS sends** (#183, ADR-0058): composer executes through the backend's
+  approval-gated send path (consent re-asserted at execution; email as the employee's own M365
+  mailbox + the `crm@` shared agent mailbox; SMS via ACS deferred — no number) and degrades to
+  the logged-to-timeline stub where prerequisites aren't configured.
+- **Aesthetic:** dense, premium internal-tool feel (Linear/Vercel-grade), dark theme. Design
+  tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · panel-2 `#151B28` ·
+  border `#1E2636` · text `#E6EAF2` · dim `#8A93A6` · accent `#5B8DEF` · accent-2 `#7C6BF0` ·
+  green `#3FBF8F` · amber `#E0A33E` · red `#E2615A`. Display font Space Grotesk, body IBM Plex Sans.
