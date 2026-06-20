@@ -157,6 +157,19 @@ and **verified stored** (read-back). A **90-day blob lifecycle** then deletes th
 storage-account copy — Autotask becomes the durable receipt SoR — **guarded** so a
 receipt **not yet verified-in-Autotask is retained/flagged, never silently deleted**.
 
+> **Write path wired (#200/#899, 2026-06-19).** The custody boundary follows ADR-0042: the
+> **backend owns the bytes**, the **front end owns the row**. The web app holds NO storage
+> credential — its drag/drop upload control (on a receipt-less out-of-pocket line in the
+> expense list) streams the file to the caller-gated backend endpoint
+> `POST /api/expense/receipts/upload` (headers `content-type`, `x-filename`,
+> `x-actor-user-id`; PDF + images ≤ 25 MiB, AV-scanned + sha256'd → private `receipts`
+> blob, BE #200), then inserts the `receipt_attachment` row from the returned
+> `{blobPath, contentHash, byteSize, contentType}` and links `expense_item.receipt_id`
+> (self-scoped `expense:write`, lock + ownership + Open re-check). v1 is upload-only — no
+> OCR. Attaching a receipt clears the `missing_receipt` HARD gate so the item becomes
+> attestable. When the backend is unconfigured/refuses the file, the surface degrades to a
+> notice (ADR-0018 graceful degradation), never a 500.
+
 **Autotask write — documentation + billing pass-through.** **One idempotent
 ExpenseReport per employee per month** (re-approval updates the same report via its
 stored `external_ref`, backend ADR-0044). **Billable** items carry

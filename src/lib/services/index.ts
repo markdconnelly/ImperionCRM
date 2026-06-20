@@ -13,7 +13,11 @@
  * Server-only.
  */
 import "server-only";
-import { callService, type ServiceDescriptor } from "@/lib/services/external-client";
+import {
+  callService,
+  callServiceRaw,
+  type ServiceDescriptor,
+} from "@/lib/services/external-client";
 import type { RefreshSource } from "@/lib/integrations/pipeline-refresh";
 import type { PayrollMatchSuggestion, TimeReconciliationResult } from "@/types";
 
@@ -58,6 +62,16 @@ const services = {
   // backend #109 + creds #495 land — full MileIQ integration is v2; v1 is manual entry.
   mileiq: {
     name: "MileIQ mileage",
+    baseUrlEnv: "INTEGRATION_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
+  },
+  // Receipt blob custody (#899, ADR-0083 §Receipts; backend BE #200). The endpoint
+  // stores the file BYTES in a private `receipts` blob and returns the custody fields;
+  // it runs on the same backend Function App, so it shares the integration base URL +
+  // Easy Auth audience. No-op (ServiceNotConfiguredError) until INTEGRATION_SERVICE_URL
+  // is set, so the upload surface degrades gracefully when the backend is unconfigured.
+  receipts: {
+    name: "Receipt upload",
     baseUrlEnv: "INTEGRATION_SERVICE_URL",
     audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
   },
@@ -633,4 +647,50 @@ export const mileiqService = {
       body: JSON.stringify(input),
       timeoutMs: 30_000,
     }),
+};
+
+/** The custody fields the receipt-upload endpoint returns once the bytes are stored
+ *  (BE #200): the private blob path/key, the integrity digest, and the size/type the
+ *  backend recorded. The FE persists these into `receipt_attachment` — it never holds
+ *  the bytes after the upload returns (ADR-0042 boundary: backend owns bytes, FE the row). */
+export interface ReceiptUploadResult {
+  blobPath: string;
+  contentHash: string | null;
+  byteSize: number | null;
+  contentType: string | null;
+}
+
+/**
+ * Receipt upload custody (#899, ADR-0083 §Receipts; backend BE #200). The front end holds
+ * NO storage credentials (ADR-0043/0028): it streams the file BYTES to the caller-gated
+ * backend endpoint, which AV-scans, sha256s, and writes them to a PRIVATE `receipts` blob,
+ * then returns the custody reference the FE links onto the expense item. Headers carry the
+ * file's own `content-type`, the original `x-filename`, and `x-actor-user-id` (the session
+ * employee — the backend self-scopes custody to that user). Until INTEGRATION_SERVICE_URL is
+ * set the call is `not_configured` and the upload surface degrades with a notice.
+ */
+export const receiptsService = {
+  upload: (input: {
+    /** The raw file bytes (the request body). */
+    bytes: ArrayBuffer | Uint8Array;
+    /** The file's own MIME type, sent as `content-type` (the endpoint validates PDF/images). */
+    contentType: string;
+    /** The original filename, sent as `x-filename` for the audit + Autotask push. */
+    filename: string;
+    /** The acting employee (`app_user.id`), sent as `x-actor-user-id` — backend self-scopes. */
+    actorUserId: string;
+  }) =>
+    callServiceRaw<ReceiptUploadResult>(
+      services.receipts,
+      "/expense/receipts/upload",
+      input.bytes,
+      {
+        headers: {
+          "content-type": input.contentType,
+          "x-filename": input.filename,
+          "x-actor-user-id": input.actorUserId,
+        },
+        timeoutMs: 60_000, // a multi-MB upload + AV scan may take longer than a JSON call
+      },
+    ),
 };

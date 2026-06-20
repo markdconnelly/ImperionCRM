@@ -1248,6 +1248,9 @@ export const mockRepositories: Repositories = {
     async addMileageItem() {
       throw new Error(NO_DB);
     },
+    async attachReceiptToExpenseItem() {
+      throw new Error(NO_DB);
+    },
     async correctSubmittedExpenseReport() {
       throw new Error(NO_DB);
     },

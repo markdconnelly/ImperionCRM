@@ -143,7 +143,8 @@ export function OutOfPocketForm({ period, defaultDate, categories, error }: Prop
       </label>
 
       <p className="text-xs text-dim">
-        Attach a receipt before you attest — out-of-pocket items need one to submit.
+        Save the item, then drop or upload its receipt from the expense list (#899) — out-of-pocket
+        items need a receipt before you can attest.
       </p>
 
       <div className="flex items-center gap-3">

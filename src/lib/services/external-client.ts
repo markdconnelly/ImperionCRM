@@ -111,3 +111,44 @@ export async function callService<T = unknown>(
     clearTimeout(timeout);
   }
 }
+
+/**
+ * POST a RAW (non-JSON) body to a backend endpoint and parse the JSON response — the
+ * binary-upload sibling of `callService` (#899, ADR-0083 §Receipts). `callService`
+ * always sends `content-type: application/json`; receipt upload streams the file BYTES
+ * with its own `content-type` + custody headers (`x-filename`, `x-actor-user-id`), so it
+ * needs a path that does NOT force the JSON content type. Reuses the SAME managed-identity
+ * auth (ADR-0028), timeout, and error taxonomy (ServiceNotConfiguredError /
+ * ServiceCallError) so the call-guard seam classifies failures identically. The bytes are
+ * the request body; nothing about them is logged here. Callers catch and degrade.
+ */
+export async function callServiceRaw<T = unknown>(
+  service: ServiceDescriptor,
+  path: string,
+  body: BodyInit,
+  init?: { headers?: Record<string, string>; timeoutMs?: number },
+): Promise<T> {
+  const baseUrl = process.env[service.baseUrlEnv]?.trim();
+  if (!baseUrl) throw new ServiceNotConfiguredError(service.name, service.baseUrlEnv);
+
+  const authHeaders: Record<string, string> = {};
+  const audience = service.audienceEnv ? process.env[service.audienceEnv]?.trim() : undefined;
+  if (audience) authHeaders.Authorization = `Bearer ${await getBearerToken(audience)}`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), init?.timeoutMs ?? 30_000);
+  try {
+    // No default content-type here: the caller sets it (the file's own MIME) alongside the
+    // custody headers, so a JSON default would mislabel the bytes.
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      body,
+      signal: controller.signal,
+      headers: { ...authHeaders, ...(init?.headers ?? {}) },
+    });
+    if (!res.ok) throw new ServiceCallError(service.name, res.status, await res.text());
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
