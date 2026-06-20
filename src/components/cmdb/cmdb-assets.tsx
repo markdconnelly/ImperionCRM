@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
-import { CI_TYPE_ICON, ciKey } from "@/lib/cmdb/ci";
+import { CI_TYPE_ICON, ciKey, deviceCiAttributes } from "@/lib/cmdb/ci";
 import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
 import { LifecycleBadge } from "@/components/cmdb/lifecycle-badge";
 import { DeviceInventory } from "@/components/cmdb/device-inventory";
@@ -181,7 +181,9 @@ function CiTable({ items }: { items: ConfigurationItem[] }) {
                   </td>
                   <td className="px-4 py-2 text-dim">
                     <span className="line-clamp-1">
-                      {ci.attributes.map((a) => `${a.label}: ${a.value}`).join(" · ")}
+                      {deviceCiAttributes(ci)
+                        .map((a) => `${a.label}: ${a.value}`)
+                        .join(" · ")}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right">

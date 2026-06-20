@@ -61,6 +61,26 @@ account is **dropped rather than shown**.
 - Click any CI to open its **detail view** — the owning account (links to the
   Account 360) plus the CI's key attributes.
 
+### Device convergence (#882)
+
+The unified surface (#876) has two device notions: the **Devices** view (the merged
+device inventory — silver `device` + IT Glue configurations, carrying Intune policy
+compliance + source/origin) and the **device CI** (the account-scoped, drillable CI with
+criticality/lifecycle). These are now **one first-class CI**:
+
+- The device CI (register row **and** detail) carries the richer Devices-view signals —
+  the **Policy** indicator (Intune Device Compliance, the same `classifyDevicePolicy`
+  rule; absent when the device is not reporting — a wrong green is worse than none) and a
+  **Source** attribute (the merged bronze provenance, e.g. *IT Glue, Intune*).
+- **Account-unlinked rows** are treated consistently with the register's client-estate
+  rule: a silver device with **no owning account** (or an IT Glue-only configuration) is
+  **not** a client CI, so it stays visible in the Devices inventory flagged **Unlinked**
+  but does **not** drill (a CI detail for it would not exist). Only account-linked silver
+  rows link to `/cmdb/device/<id>`.
+
+This is a **read-model/projection** change only — no schema change; the device CI arm of
+the union read just projects the existing Intune + `device_bronze_all` signals.
+
 ## Relationships (the CMDB edge layer, #647)
 
 Each CI detail view carries a **Relationships** panel and a **dependency-graph** view of

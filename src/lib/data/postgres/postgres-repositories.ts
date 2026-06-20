@@ -14,6 +14,7 @@ import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
+import { labelDeviceOrigins } from "@/lib/cmdb/ci";
 import { deriveCriticality } from "@/lib/cmdb/criticality";
 import { deriveLifecycle } from "@/lib/cmdb/lifecycle";
 import {
@@ -1323,11 +1324,14 @@ export const postgresRepositories: Repositories = {
           intune_management_state: string | null;
           intune_enrolled_at: string | null;
           cloud_category: string | null;
+          compliance_state: string | null;
+          last_sync_date_time: string | null;
+          device_origin: string | null;
         }>(
           `SELECT ci_type, ci_id, account_id, account_name, display_name, attributes,
                   relationship, lifecycle_stage, device_type,
                   device_status, last_seen_at, intune_management_state, intune_enrolled_at,
-                  cloud_category
+                  cloud_category, compliance_state, last_sync_date_time, device_origin
              FROM (
                SELECT 'account'::text AS ci_type,
                       a.id::text       AS ci_id,
@@ -1342,6 +1346,9 @@ export const postgresRepositories: Repositories = {
                       NULL::text       AS intune_management_state,
                       NULL::text       AS intune_enrolled_at,
                       NULL::text       AS cloud_category,
+                      NULL::text       AS compliance_state,
+                      NULL::text       AS last_sync_date_time,
+                      NULL::text       AS device_origin,
                       jsonb_build_array(
                         jsonb_build_object('label','Lifecycle','value',replace(a.lifecycle_stage::text,'_',' ')),
                         jsonb_build_object('label','Relationship','value',coalesce(a.relationship::text,'—')),
@@ -1364,6 +1371,9 @@ export const postgresRepositories: Repositories = {
                       NULL::text,
                       NULL::text,
                       NULL::text,
+                      NULL::text, -- compliance_state (user arm: n/a)
+                      NULL::text, -- last_sync_date_time
+                      NULL::text, -- device_origin
                       jsonb_build_array(
                         jsonb_build_object('label','Email','value',coalesce(c.email,'—')),
                         jsonb_build_object('label','Phone','value',coalesce(c.phone,'—'))
@@ -1387,6 +1397,13 @@ export const postgresRepositories: Repositories = {
                       imd.management_state,
                       imd.enrolled_date_time,
                       NULL::text,
+                      -- #882 convergence: carry the Devices-view richer signals onto the
+                      -- device CI. Intune compliance (same lateral that already feeds the
+                      -- lifecycle enrollment signal) + the merged bronze provenance, so the
+                      -- CI reads identically to the inventory row.
+                      imd.compliance_state,
+                      imd.last_sync_date_time,
+                      origin.sources,
                       jsonb_build_array(
                         jsonb_build_object('label','Type','value',coalesce(d.device_type,'—')),
                         jsonb_build_object('label','Make / model','value',trim(both ' ' from concat_ws(' ', d.manufacturer, d.model))),
@@ -1396,12 +1413,21 @@ export const postgresRepositories: Repositories = {
                  FROM device d
                  JOIN account a ON a.id = d.account_id
                  LEFT JOIN LATERAL (
-                   SELECT i.management_state, i.enrolled_date_time
+                   SELECT i.management_state, i.enrolled_date_time,
+                          i.compliance_state, i.last_sync_date_time
                    FROM intune_managed_devices i
                    WHERE i.serial_number = d.serial_number AND i.serial_number <> ''
                    ORDER BY i.collected_at DESC
                    LIMIT 1
                  ) imd ON d.serial_number IS NOT NULL
+                 LEFT JOIN LATERAL (
+                   -- Merged provenance: which bronze sources contributed to this silver
+                   -- device (device_bronze_all, migration 0036). Distinct source list, mapped
+                   -- to friendly labels in code; absent → no Source attribute (graceful).
+                   SELECT string_agg(DISTINCT db.source, ',' ORDER BY db.source) AS sources
+                   FROM device_bronze_all db
+                   WHERE db.device_id = d.id
+                 ) origin ON true
                 WHERE d.account_id IS NOT NULL
 
                UNION ALL
@@ -1423,6 +1449,9 @@ export const postgresRepositories: Repositories = {
                       NULL::text,
                       NULL::text,
                       ca.category::text,
+                      NULL::text, -- compliance_state (cloud arm: n/a)
+                      NULL::text, -- last_sync_date_time
+                      NULL::text, -- device_origin
                       jsonb_build_array(
                         jsonb_build_object('label','Provider','value',
                           CASE ca.provider WHEN 'azure' THEN 'Azure' WHEN 'aws' THEN 'AWS'
@@ -1466,12 +1495,20 @@ export const postgresRepositories: Repositories = {
 
         return rows.map((r) => {
           const o = overlay.get(`${r.ci_type}:${r.ci_id}`);
+          // #882 device-CI convergence signals (device arm only; null elsewhere).
+          const policyCompliance =
+            r.ci_type === "device"
+              ? classifyDevicePolicy(r.compliance_state, r.last_sync_date_time)
+              : null;
+          const origin = r.ci_type === "device" ? labelDeviceOrigins(r.device_origin) : null;
           return {
             ciType: r.ci_type,
             ciId: r.ci_id,
             accountId: r.account_id,
             accountName: r.account_name,
             displayName: r.display_name,
+            policyCompliance,
+            origin,
             attributes: (r.attributes ?? []).map((kv) => ({
               label: kv.label,
               // Empty make/model concat collapses to '' — normalise to the dash.

@@ -29,7 +29,15 @@ const POLICY_BADGE: Record<string, { label: string; className: string }> = {
  *
  * Extracted from the former `/devices` page (#795); it is now the **Devices** view
  * of the unified CMDB asset surface (#876, `CmdbAssets`) — the route `/devices`
- * redirects to CMDB. Silver-merged rows link to their device CI detail.
+ * redirects to CMDB.
+ *
+ * Device-CI convergence (#882, epic #873): an account-LINKED silver row IS a device
+ * Configuration Item, so it drills to the CI detail (which now carries the same policy
+ * + origin signals shown here — one device notion). Account-UNLINKED rows (silver
+ * devices with no owning account, or IT Glue-only configurations) are NOT client CIs
+ * (the CI register's staff/internal exclusion requires an owning account, ADR-0078), so
+ * they stay in the inventory flagged "Unlinked" but DO NOT link — a dead CI link would
+ * 404. This keeps the unlinked-row treatment consistent with the other three CI views.
  */
 export function DeviceInventory({ devices }: { devices: DeviceInventoryRow[] }) {
   return (
@@ -66,17 +74,25 @@ export function DeviceInventory({ devices }: { devices: DeviceInventoryRow[] }) 
               return (
                 <tr key={`${d.origin}-${d.id}`} className="border-t border-border hover:bg-panel-2">
                   <td className="px-4 py-3 font-medium">
-                    {d.origin === "silver" ? (
-                      // Silver-merged rows are device CIs → drill to the CI detail.
+                    {d.origin === "silver" && d.account ? (
+                      // Account-linked silver rows ARE device CIs → drill to the CI detail.
                       <Link href={`/cmdb/device/${d.id}`} className="text-text hover:text-accent">
                         {d.name ?? "—"}
                       </Link>
                     ) : (
-                      d.name ?? "—"
+                      // Account-unlinked (or IT Glue-only) rows are not client CIs — show,
+                      // never link (#882: a dead CI link would 404).
+                      (d.name ?? "—")
                     )}
                   </td>
                   <td className="px-4 py-3 text-dim">{d.deviceType ?? "—"}</td>
-                  <td className="px-4 py-3 text-dim">{d.account ?? "Unlinked"}</td>
+                  <td className="px-4 py-3">
+                    {d.account ?? (
+                      <span className="inline-flex items-center rounded bg-amber/10 px-1.5 py-0.5 text-xs text-amber">
+                        Unlinked
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-dim">{make || "—"}</td>
                   <td className="px-4 py-3 text-dim">{d.serialNumber ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">{d.os ?? "—"}</td>

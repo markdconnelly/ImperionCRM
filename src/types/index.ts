@@ -1,4 +1,5 @@
 import type { AppRole } from "@/lib/auth/roles";
+import type { DevicePolicyCompliance } from "@/lib/security/device-policy";
 
 export type Health = "green" | "amber" | "red";
 
@@ -3256,6 +3257,16 @@ export interface ConfigurationItem {
    * CIs are not physical assets → always `unknown` (the badge is suppressed for them).
    */
   lifecycle: AssetLifecycle;
+  /**
+   * Device-only convergence signals (#882, epic #873). The device CI now carries the
+   * richer Devices-view inventory signals so the two device notions are ONE first-class
+   * CI: `policyCompliance` is the Intune Device-Compliance indicator (the same
+   * `classifyDevicePolicy` rule the inventory uses; null = absent — never a wrong green);
+   * `origin` is the merged bronze provenance of the silver device (e.g. "IT Glue, Intune").
+   * Both are undefined for non-device CIs (a discriminant the renderers ignore).
+   */
+  policyCompliance?: DevicePolicyCompliance | null;
+  origin?: string | null;
 }
 
 /**

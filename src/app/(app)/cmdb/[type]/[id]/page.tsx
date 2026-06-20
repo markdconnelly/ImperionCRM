@@ -6,7 +6,7 @@ import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeCmdb } from "@/lib/auth/roles";
 import { can } from "@/lib/auth/policy";
-import { CI_TYPE_LABEL, CI_TYPE_ICON, asCiType } from "@/lib/cmdb/ci";
+import { CI_TYPE_LABEL, CI_TYPE_ICON, asCiType, deviceCiAttributes } from "@/lib/cmdb/ci";
 import { CiRelationships } from "@/components/cmdb/ci-relationships";
 import { CiCriticality } from "@/components/cmdb/ci-criticality";
 import { CriticalityBadge } from "@/components/cmdb/criticality-badge";
@@ -105,7 +105,7 @@ export default async function CiDetailPage({
               )}
             </dd>
           </div>
-          {ci.attributes.map((a) => (
+          {deviceCiAttributes(ci).map((a) => (
             <div
               key={a.label}
               className="flex items-center justify-between gap-3 border-b border-border/50 pb-2 text-sm"
