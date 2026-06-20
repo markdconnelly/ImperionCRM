@@ -6,7 +6,7 @@ archetype: H
 description: OAuth/integration connection record + Key Vault credential registry — personal/company/client scope; tokens custodied in Key Vault by reference (name only); client connections link to an account; carries auth method + poll cadence.
 resource: ../../../decision-records/ADR-0103-connection-credential-registry.md
 tags: [silver, identity, connection, reference, config]
-timestamp: 2026-06-19T00:00:00Z
+timestamp: 2026-06-20T00:00:00Z
 ---
 
 # connection
@@ -27,8 +27,8 @@ customer — `account_id` set; ADR-0103). Under the **per-client-app model** eac
 client tenant has its OWN Entra app registration: `client_id` holds that app's public
 application (client) id (set for `scope='client'` M365 rows; an identifier, NOT a secret —
 the credential still reuses `keyvault_secret_ref` / `cert_thumbprint`). `auth_method` records
-how the M365 enterprise app authenticates (`certificate` | `secret`; NULL for OAuth/token
-providers).
+how a credential authenticates (`certificate` | `secret` for the M365 enterprise app; `api_key`
+for key-based client sources such as UniFi consoles, #960; NULL for OAuth/token providers).
 `poll_interval_minutes` is the cadence gate (`0` = manual/paused; the pipeline's `pollDue()`
 honors it); `sync_cursor` tracks incremental progress.
 
@@ -40,7 +40,7 @@ honors it); `sync_cursor` tracks incremental progress.
 | `scope` | enum | `user` (personal) · `company` · `client` (managed customer; ADR-0103) |
 | `owner_user_id` | uuid | FK → `app_user` (set for user scope; NULL for company/client; ON DELETE CASCADE) |
 | `account_id` | uuid | FK → `account` (set for client scope; many connections → one account; ON DELETE SET NULL; ADR-0103) |
-| `auth_method` | text | `certificate` · `secret` (M365 enterprise app); NULL for OAuth/token providers (ADR-0103) |
+| `auth_method` | text | `certificate` · `secret` (M365 enterprise app) · `api_key` (key-based client sources, e.g. UniFi — #960); NULL for OAuth/token providers (ADR-0103) |
 | `cert_thumbprint` | text | certificate when `auth_method=certificate` (ADR-0103) |
 | `client_id` | text | Entra application (client) id of the client tenant's own app registration (per-client-app, #943; set for `scope=client` M365 rows). A **public identifier, not a secret** — supersedes the interim use of `external_account_id` (backend #217 / PR #224) |
 | `provider` | enum | append-extended per integration: `m365` · `google` · `youtube` · `linkedin` · `facebook` · `plaud` · `autotask` · `itglue` (0020) · `apollo` (0031) · `myitprocess` · `televy` · `quotemanager` · `gdap` (0033) · `darkwebid` (0042) · `acs` (0071) · `qbo` (0093) · `meta` (0127 — company FB/IG send credential, distinct from per-user `facebook` ingest) |
