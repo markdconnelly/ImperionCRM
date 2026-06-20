@@ -34,11 +34,16 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
+**56 concept files authored** (this table). Remaining objects from the
+[coverage matrix](coverage-matrix.md) are tracked for expansion under
+[#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
+
 | Concept | Archetype | Authoritative source | Governing ADR |
 |---|---|---|---|
 | [`account`](tables/account.md) | merge | website > autotask > itglue > apollo | ADR-0039 |
 | [`contact`](tables/contact.md) | merge | website > autotask > itglue > m365 > apollo | ADR-0039 |
 | [`device`](tables/device.md) | merge | website > itglue > m365 | ADR-0039 |
+| [`cloud_asset`](tables/cloud_asset.md) | merge | cloud provider (read-only; Azure ARM first, on-prem LP merge) | ADR-0097 |
 | [`opportunity`](tables/opportunity.md) | merge | website > autotask > KQM | ADR-0080 |
 | [`quota`](tables/quota.md) | single-SoR | website system of record | ADR-0072 |
 | [`forecast_snapshot`](tables/forecast_snapshot.md) | derived ledger | website (nightly snapshot job) | ADR-0072 |
@@ -57,6 +62,9 @@ subset; remaining entities are tracked for expansion
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |
 | [`ticket`](tables/ticket.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`chat_session`](tables/chat_session.md) | single-SoR | website (backend chat process; native pre-ticket) | ADR-0074 |
+| [`ci_relationship`](tables/ci_relationship.md) | write-back sidecar (app-native CMDB) | app-native derivation (IT Glue write-back gated) | ADR-0078/0097 |
+| [`cmdb_ci_overlay`](tables/cmdb_ci_overlay.md) | write-back sidecar (app-native CMDB) | app-native per-CI criticality (effective = override ?? derived_default) | ADR-0078/0097 |
+| [`change_request`](tables/change_request.md) | write-back sidecar (app-native ITIL) | app-native change working object (Autotask eventual record SoR, gated) | ADR-0079 |
 | [`contract`](tables/contract.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`interaction`](tables/interaction.md) | single-SoR | per-source / per-channel | ADR-0011 |
 | [`meeting`](tables/meeting.md) | single-SoR | per-platform (1:1 with interaction) | ADR-0011 |
