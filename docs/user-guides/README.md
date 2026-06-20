@@ -75,6 +75,9 @@ half of the platform; the full motion is the
 - **[Conversations on the 360](conversation-panel.md)** — read a company's, contact's,
   or deal's call & meeting intelligence — summary, action items, sentiment,
   objections, and deal-risk from transcribed voice. Read-only.
+- **[Sales knowledge on the Deal 360](opportunity-sales-knowledge.md)** — add running
+  notes and upload customer-knowledge documents to a deal; written to the website
+  opportunity bronze (highest merge precedence) and fed to the orchestrator.
 - **[Sales Activity — the Sales Queue](sales-activity.md)** — work your open sales
   tasks by due date and deal; create and complete them in place, and log a sales
   meeting.

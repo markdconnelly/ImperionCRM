@@ -8,6 +8,7 @@
  * Server-only. Selected by lib/data/index.ts when a database is configured.
  */
 import "server-only";
+import { createHash } from "node:crypto";
 import type { Pool } from "pg";
 import { getPool } from "@/lib/db/client";
 import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback";
@@ -90,6 +91,9 @@ import type {
   ExpenseItemInput,
   MileageItemInput,
   ReceiptAttachmentInput,
+  OpportunityKnowledgeInput,
+  OpportunityKnowledgeRow,
+  OpportunityKnowledgeRef,
   ExpenseCorrection,
   ExpenseCategoryMappingInput,
   ExpenseCategoryAdminRow,
@@ -381,6 +385,33 @@ function deriveHealth(
 function nullIfEmpty(v: string | null | undefined): string | null {
   const s = (v ?? "").trim();
   return s === "" ? null : s;
+}
+
+/**
+ * Defensively parse the `website_opportunities.knowledge_blob_refs` jsonb into typed
+ * refs (#429). The column is untyped jsonb (lossless bronze), so coerce each entry
+ * and drop anything without a blob path — a malformed/legacy row degrades to the
+ * entries it can read rather than throwing on the 360.
+ */
+function parseKnowledgeRefs(raw: unknown): OpportunityKnowledgeRef[] {
+  if (!Array.isArray(raw)) return [];
+  const out: OpportunityKnowledgeRef[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const blobPath = typeof r.blobPath === "string" ? r.blobPath : null;
+    if (!blobPath) continue;
+    out.push({
+      blobPath,
+      filename: typeof r.filename === "string" ? r.filename : "knowledge",
+      contentType: typeof r.contentType === "string" ? r.contentType : null,
+      byteSize: typeof r.byteSize === "number" ? r.byteSize : null,
+      contentHash: typeof r.contentHash === "string" ? r.contentHash : null,
+      uploadedAt: typeof r.uploadedAt === "string" ? r.uploadedAt : "",
+      uploadedByUserId: typeof r.uploadedByUserId === "string" ? r.uploadedByUserId : null,
+    });
+  }
+  return out;
 }
 
 /** Raw status_def row as returned by the configurable-status queries (ADR-0065 B5, #616). */
@@ -2183,6 +2214,90 @@ export const postgresRepositories: Repositories = {
       await pool.query(
         `UPDATE opportunity SET sales_stage = $2::opportunity_sales_stage WHERE id = $1`,
         [id, stage],
+      );
+    },
+
+    async getOpportunityKnowledge(opportunityId: string): Promise<OpportunityKnowledgeRow> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.getOpportunityKnowledge(opportunityId);
+      try {
+        const { rows } = await pool.query<{
+          notes: string | null;
+          knowledge_blob_refs: unknown;
+          collected_at: string | null;
+        }>(
+          // The website bronze row is keyed by the silver opportunity id (external_id).
+          `SELECT notes, knowledge_blob_refs, collected_at
+             FROM website_opportunities
+            WHERE source = 'website' AND external_id = $1
+            LIMIT 1`,
+          [opportunityId],
+        );
+        const row = rows[0];
+        if (!row) return { notes: null, knowledge: [], updatedAt: null };
+        return {
+          notes: row.notes,
+          knowledge: parseKnowledgeRefs(row.knowledge_blob_refs),
+          updatedAt: row.collected_at,
+        };
+      } catch {
+        // Bronze table may lag in some envs (0083) — honest empty, never fail the 360.
+        return { notes: null, knowledge: [], updatedAt: null };
+      }
+    },
+
+    async addOpportunityKnowledge(input: OpportunityKnowledgeInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.addOpportunityKnowledge(input);
+
+      // Append the new knowledge refs to whatever is already recorded — history is
+      // never rewritten (a prior upload stays even when notes are edited later).
+      const existing = await this.getOpportunityKnowledge(input.opportunityId);
+      const mergedKnowledge: OpportunityKnowledgeRef[] = [
+        ...existing.knowledge,
+        ...input.addedKnowledge,
+      ];
+
+      // The lossless bronze envelope (0083 LP style: tenant_id/source/external_id/
+      // collected_at/raw_payload/content_hash). The website source is the MSP's own
+      // GUI — not a per-client tenant — so it carries the stable 'website' envelope
+      // tenant; the opportunity id (globally unique) is the external_id. content_hash
+      // is computed over the manual payload so an unchanged re-save is a no-op merge.
+      const payload = {
+        title: input.title,
+        stage: input.stage,
+        account_ref: input.accountRef,
+        owner_user_id: input.ownerUserId,
+        notes: input.notes,
+        knowledge_blob_refs: mergedKnowledge,
+      };
+      const raw = JSON.stringify(payload);
+      const contentHash = createHash("sha256").update(raw).digest("hex");
+
+      await pool.query(
+        `INSERT INTO website_opportunities
+           (title, stage, amount, close_date, account_ref, owner_user_id, notes,
+            knowledge_blob_refs, tenant_id, source, external_id, collected_at,
+            raw_payload, content_hash)
+         VALUES ($1, $2, NULL, NULL, $3, $4, $5, $6::jsonb,
+                 'website', 'website', $7, now()::text, $8::jsonb, $9)
+         ON CONFLICT (tenant_id, source, external_id) DO UPDATE
+           SET title = EXCLUDED.title, stage = EXCLUDED.stage,
+               account_ref = EXCLUDED.account_ref, owner_user_id = EXCLUDED.owner_user_id,
+               notes = EXCLUDED.notes, knowledge_blob_refs = EXCLUDED.knowledge_blob_refs,
+               collected_at = EXCLUDED.collected_at, raw_payload = EXCLUDED.raw_payload,
+               content_hash = EXCLUDED.content_hash`,
+        [
+          input.title,
+          input.stage,
+          input.accountRef,
+          input.ownerUserId,
+          input.notes,
+          JSON.stringify(mergedKnowledge),
+          input.opportunityId,
+          raw,
+          contentHash,
+        ],
       );
     },
 

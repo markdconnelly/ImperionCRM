@@ -6,7 +6,7 @@ archetype: A
 description: Merged silver opportunity from three bronze sources (KQM quote header, Autotask, website manual); the object the app uses.
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, sales, opportunity, kqm, autotask, forecast]
-timestamp: 2026-06-15T22:00:00Z
+timestamp: 2026-06-19T00:00:00Z
 ---
 
 # opportunity
@@ -26,7 +26,11 @@ joins the sources together.
   (read-only, native CPQ gutted per the sale→delivery pivot).
 - **Autotask** (`autotask_opportunities`) — the Autotask Opportunity entity.
 - **Website** (`website_opportunities`) — manual sales-team entry, highest
-  precedence (a human override wins).
+  precedence (a human override wins). The sales team captures the context a machine
+  feed can't: running **`notes`** and uploaded **`knowledge_blob_refs`** (documents
+  about the customer/deal, stored in Azure Blob per ADR-0064; #429). The web app
+  writes this bronze (source='website') keyed by the silver opportunity id as
+  `external_id`; the uploaded knowledge feeds the gold layer for the orchestrator.
 
 ## Bronze union (shape)
 
@@ -40,7 +44,12 @@ the shared join keys:
 | `title` | all | |
 | `status_raw` | all | source-native status string |
 | `autotask_opportunity_id` | kqm/autotask | **cross-source join key** |
-| `account_external_ref` | kqm (`autotask_organization_id`) | → account |
+| `account_external_ref` | kqm (`autotask_organization_id`) / website (`account_ref`) | → account |
+
+The website source additionally carries manual-only fields **not** projected by the
+union view but read directly off `website_opportunities` for the Deal 360 (#429):
+`notes` (free text) and `knowledge_blob_refs` (jsonb array of Azure Blob pointers —
+`{blobPath, filename, contentType, byteSize, contentHash, uploadedAt, uploadedByUserId}`).
 
 ## Forecasting fields (ADR-0072, migration 0114)
 

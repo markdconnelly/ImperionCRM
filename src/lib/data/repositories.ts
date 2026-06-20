@@ -643,6 +643,53 @@ export interface ExpenseItemInput {
 }
 
 /**
+ * A single piece of sales-uploaded customer knowledge attached to an opportunity
+ * (#429, ADR-0069). The blob fields are exactly what the backend's upload endpoint
+ * returned after storing the bytes (ADR-0042 boundary: backend owns the bytes, the FE
+ * records the pointer). Persisted into `website_opportunities.knowledge_blob_refs`
+ * (the website bronze source of the silver `opportunity`).
+ */
+export interface OpportunityKnowledgeRef {
+  blobPath: string; // private storage-account path/key the backend wrote
+  filename: string; // original upload name (for display + downstream Autotask/gold push)
+  contentType: string | null;
+  byteSize: number | null;
+  contentHash: string | null; // integrity digest (e.g. sha256) the backend computed
+  uploadedAt: string; // ISO timestamp the FE recorded the ref
+  uploadedByUserId: string | null; // the acting app_user (session)
+}
+
+/**
+ * Sales-team knowledge to attach to an opportunity (#429, epic #425; ADR-0039/0042).
+ * Writes the `website_opportunities` bronze (source='website', highest merge
+ * precedence — a human override wins, ADR-0039 resurrection guard). `opportunityId`
+ * keys the row (= the silver opportunity id, used as the bronze `external_id`);
+ * `accountRef`/`title`/`stage`/`ownerUserId` mirror the merged silver so the bronze
+ * is self-describing for the pipeline merge. `notes` is the running free-text;
+ * `knowledge` are the newly-uploaded blob refs to append.
+ */
+export interface OpportunityKnowledgeInput {
+  opportunityId: string; // = the silver opportunity id (bronze external_id)
+  accountRef: string; // the Imperion account this deal belongs to
+  title: string; // mirror of the silver opportunity name (bronze self-description)
+  stage: string; // mirror of the silver sales_stage
+  ownerUserId: string | null; // the acting/owning app_user (from session)
+  notes: string | null; // the full running sales notes (replaces the prior notes text)
+  addedKnowledge: OpportunityKnowledgeRef[]; // blob refs to APPEND (never rewrite history)
+}
+
+/**
+ * The website-sourced sales knowledge currently recorded for an opportunity (#429) —
+ * the manual notes + the appended knowledge refs read back from `website_opportunities`
+ * for display on the deal 360. Null fields when no website bronze row exists yet.
+ */
+export interface OpportunityKnowledgeRow {
+  notes: string | null;
+  knowledge: OpportunityKnowledgeRef[];
+  updatedAt: string | null; // bronze collected_at (last manual edit)
+}
+
+/**
  * A receipt to attach to an out-of-pocket item (ADR-0083 §Receipts, #899). The blob
  * fields are exactly what the backend's `POST /api/expense/receipts/upload` returned
  * after storing the bytes (BE #200) — the FE never holds the bytes once stored, only
@@ -940,6 +987,22 @@ export interface CrmRepository {
   getOpportunity(id: string): Promise<OpportunityDetailRow | null>;
   /** Move an opportunity to a different sales stage (pipeline board). */
   setOpportunityStage(id: string, stage: string): Promise<void>;
+
+  /**
+   * The website-sourced sales knowledge (notes + uploaded knowledge refs) recorded
+   * for an opportunity (#429, epic #425). Reads the `website_opportunities` bronze
+   * (source='website'). Returns empty knowledge + null notes when no manual row
+   * exists yet; never throws to the page.
+   */
+  getOpportunityKnowledge(opportunityId: string): Promise<OpportunityKnowledgeRow>;
+  /**
+   * Save sales-team notes and append uploaded knowledge refs to an opportunity (#429,
+   * ADR-0039/0042). Writes the `website_opportunities` bronze (source='website',
+   * highest merge precedence). Idempotent upsert keyed by the opportunity id; the
+   * notes text is replaced, knowledge refs are appended. The silver `opportunity`
+   * merge is a pipeline transform — this only writes the website bronze.
+   */
+  addOpportunityKnowledge(input: OpportunityKnowledgeInput): Promise<void>;
 
   // Forecasting (ADR-0072, #381) — read model over the 0114 forecast fields.
   /** Opportunities with forecast fields resolved (effective probability + weighted). */
