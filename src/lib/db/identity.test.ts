@@ -50,6 +50,27 @@ describe("withIdentity", () => {
     expect(groupsIdx).toBeLessThan(callerIdx);
   });
 
+  it("sets app.user_id (owner axis) only when userId is resolved", async () => {
+    const UID = "99999999-9999-9999-9999-999999999999";
+    await withIdentity({ oid: OID, groups: [], userId: UID }, async () => {});
+    const userIdCall = clientQuery.mock.calls.find((c) =>
+      (c[0] as string).includes("app.user_id"),
+    )!;
+    expect(userIdCall[1]).toEqual([UID]);
+    expect(userIdCall[0] as string).toMatch(/,\s*true\)\s*$/); // is_local
+  });
+
+  it("leaves app.user_id UNSET when userId is absent/null (fail-closed, never empty)", async () => {
+    await withIdentity({ oid: OID, groups: [] }, async () => {});
+    expect(
+      clientQuery.mock.calls.find((c) => (c[0] as string).includes("app.user_id")),
+    ).toBeUndefined();
+    await withIdentity({ oid: OID, groups: [], userId: null }, async () => {});
+    expect(
+      clientQuery.mock.calls.find((c) => (c[0] as string).includes("app.user_id")),
+    ).toBeUndefined();
+  });
+
   it("sets the context with is_local=true (transaction-scoped, never leaks)", async () => {
     await withIdentity({ oid: OID, groups: ["support"] }, async () => {});
 

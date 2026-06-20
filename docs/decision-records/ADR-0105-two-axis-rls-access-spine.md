@@ -69,13 +69,23 @@ Verified against live prod (2026-06-20, read-only pg-MCP):
 Adopt **Option A — two-axis RLS** as the storage-layer floor of the access spine (#967):
 
 - **Two axes, both active at once.**
-  - *Personal / owner axis* — `USING (owner_user_id = current_setting('app.oid')::uuid)`.
+  - *Personal / owner axis* — `USING (owner_user_id = current_setting('app.user_id')::uuid)`.
   - *Company / role axis* — `USING (required_role = ANY(current_setting('app.groups')::text[]))`.
-- **Claim plumbing — `withIdentity(claims, fn)`** (`src/lib/db/identity.ts`): `BEGIN →
-  set_config('app.oid', …, true); set_config('app.groups', …, true); → fn(client) → COMMIT`.
-  `SET LOCAL` (via `set_config(..., is_local=true)`) is **mandatory** — a session-scoped `SET`
-  on a pooled connection leaks identity onto the next borrower (a cross-user data bug). The
-  helper is the only sanctioned way to carry identity into the DB session.
+- **`app.user_id` ≠ `app.oid` (corrected in slice 2, #975).** Ownership columns
+  (`owner_user_id`, `app_user_id`) FK to **`app_user.id`** — the internal uuid PK — NOT the
+  Entra `oid` (which is `app_user.entra_object_id`, a different value). So the owner axis keys
+  on a dedicated `app.user_id` GUC carrying the resolved `app_user.id`; `app.oid` is retained
+  for audit and any future entra-keyed predicate. (The original draft wrote `app.oid` for the
+  owner axis — wrong; an `oid` never equals an `owner_user_id`.)
+- **Claim plumbing — `withIdentity(identity, fn)`** (`src/lib/db/identity.ts`): `BEGIN →
+  set_config('app.user_id'|'app.oid'|'app.groups', …, true) → fn(client) → COMMIT`. Each GUC is
+  set only when its fact is present (never to `''`, which would make `current_setting(…)::uuid`
+  throw); an unset GUC reads back NULL → the policy matches no rows (fail-closed). `SET LOCAL`
+  (via `set_config(..., is_local=true)`) is **mandatory** — a session-scoped `SET` on a pooled
+  connection leaks identity onto the next borrower (a cross-user data bug). The helper is the
+  only sanctioned way to carry identity into the DB session; `requestIdentity()`
+  (`src/lib/auth/request-identity.ts`) is the single place a request's session is turned into
+  that context (`userId` ← `resolveActingUser`, `groups` ← session roles).
 - **Group capture.** Sign-in persists the caller's raw Entra group object-ids to
   `app_user.group_ids` (migration 0152) — authoritative membership for the company axis,
   distinct from the lossy `app_user.roles` projection. GUIDs arrive in the `groups` claim or,
@@ -90,10 +100,22 @@ Adopt **Option A — two-axis RLS** as the storage-layer floor of the access spi
   roles or raw group GUIDs is fixed when slice 3 writes the company policies; slice 1's plumbing
   is agnostic.
 
-Delivered in three slices: **slice 1 (#974, this ADR)** ships the `withIdentity` helper +
-`group_ids` capture with **no policies enabled** (zero behavior change); **slice 2 (#975)**
-enables the first owner-axis policy on a pilot personal table; **slice 3 (#976)** adds the
-company policies, the audited god-view, and the curation identity.
+Delivered in three slices: **slice 1 (#974)** ships the `withIdentity` helper + `group_ids`
+capture with **no policies enabled** (zero behavior change); **slice 2 (#975)** enables the
+first owner-axis policy on **`personal_note`** — a NEW, self-contained personal-tier table (the
+"verbatim drawer" of #968), chosen over an existing owner-scoped table because the app has no
+RLS today, so enabling it on a live table (e.g. `saved_view`'s shares, `notification_pref`'s
+dispatcher cross-reads) would break existing reads; a greenfield table routes 100% of its
+reads through `withIdentity` from creation; **slice 3 (#976)** adds the company policies, the
+audited god-view, and the curation identity.
+
+**`personal_note` is owner-only by design.** Because the app connects as the non-owner app
+role, an admin using the web app sees only their own notes — the personal-tier privacy
+contract (Derek's drawer invisible to Nick *and* to an admin via the app). Cross-user
+visibility over personal data is granted ONLY through slice 3's explicit, audited bypass /
+promotion path, never silently. Personal-tier tables are deliberately **out of the OKF
+company-silver canon** (ADR-0086 forbids PII there), so `personal_note` gets no OKF concept
+file.
 
 ## Consequences
 

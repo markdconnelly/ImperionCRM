@@ -89,7 +89,7 @@ done/▶-in-flight ledger.
 - `0131/0132` CMDB curated layer · `0144` cloud first-class CI · `0145` change_affected_ci allows cloud · `0146` posture_policy allows purview_compliance
 - `0141` connection credential registry · `0147` `connection.client_id` · `0142` LP merge write grants
 - `0143` `source_skill` routing registry · `0148` `intune_managed_apps` bronze
-- ⏳ **NOT yet prod-applied:** `0152` `app_user.group_ids` (access spine slice 1, #974 — placeholder #, Mark-gated apply)
+- ⏳ **NOT yet prod-applied (access spine #967, placeholder #s, Mark-gated apply):** `0152` `app_user.group_ids` (slice 1, #974) · `0153` `personal_note` + first RLS owner policy (slice 2, #975 — verify post-apply via [`docs/testing/rls-access-spine.md`](testing/rls-access-spine.md))
 
 **Recent ADRs** ([`docs/decision-records/`](decision-records/README.md)) — note the
 consolidated dossiers that supersede earlier scattered ADRs:
