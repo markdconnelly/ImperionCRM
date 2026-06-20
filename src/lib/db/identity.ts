@@ -1,15 +1,23 @@
 /**
- * Entra-claims → DB session context (access spine slice 1, #974 / parent #967).
+ * Entra-claims → DB session context (access spine, ADR-0105 / parent #967).
  *
- * The two-axis RLS design (ADR-00XX) enforces access at the storage layer by
- * reading the caller's Entra identity out of two Postgres GUCs inside each
- * request's transaction:
- *   - `app.oid`    — the user's Entra object id  → personal/owner axis
- *   - `app.groups` — the user's role-scope set   → company/role axis
+ * The two-axis RLS design enforces access at the storage layer by reading the
+ * caller's identity out of Postgres GUCs inside each request's transaction:
+ *   - `app.oid`     — the user's Entra object id            → audit / entra-keyed
+ *   - `app.user_id` — the user's `app_user.id` (internal PK) → personal/owner axis
+ *   - `app.groups`  — the user's role-scope set              → company/role axis
  *
- * RLS policies read them with `current_setting('app.oid', true)` /
- * `current_setting('app.groups', true)::text[]` (the `true` = missing_ok, so an
- * unset context yields NULL → no rows rather than an error).
+ * **Why `app.user_id` is distinct from `app.oid`.** Ownership columns
+ * (`owner_user_id`, `app_user_id`) FK to `app_user.id` — the internal uuid PK —
+ * NOT the Entra `oid` (which is `app_user.entra_object_id`, a different value).
+ * So owner-axis policies key on `app.user_id`
+ * (`owner_user_id = current_setting('app.user_id')::uuid`); `app.oid` stays for
+ * audit and any future entra-keyed predicate. `app.user_id` is set only when the
+ * caller resolved it — otherwise it stays unset and `current_setting(..., true)`
+ * yields NULL, so an owner policy matches no rows (fail-closed), never errors.
+ *
+ * RLS policies read the GUCs with `current_setting('<name>', true)` (the `true` =
+ * missing_ok, so an unset context yields NULL → no rows rather than an error).
  *
  * **Why a transaction is mandatory.** The FE runs a long-lived pool, so a plain
  * `SET` (session-scoped) would persist onto the next request that borrows the
@@ -18,8 +26,8 @@
  * COMMIT/ROLLBACK, so the context cannot outlive its transaction. This is the
  * load-bearing safety property; `identity.test.ts` pins it.
  *
- * Slice 1 ships this plumbing only — NO policies are enabled yet, so routing a
- * read through `withIdentity` is behaviour-neutral until slice 2 (#975).
+ * The first owner-axis policy lands on `personal_note` (slice 2, #975); company
+ * policies + the audited god-view + the curation identity follow in slice 3 (#976).
  *
  * Server-only. Returns null when no database is configured (mock mode), exactly
  * like a direct `pool.query()` caller degrades to mock data.
@@ -28,10 +36,22 @@ import "server-only";
 import type { PoolClient } from "pg";
 import { getPool } from "@/lib/db/client";
 
-/** Entra-derived security context carried into the DB session for RLS. */
+/**
+ * Identity facts carried into the DB session for RLS. Each is OPTIONAL — the
+ * helper sets only the GUCs it is given, and an unset GUC reads back as NULL
+ * (`current_setting(..., true)`), so a policy keyed on a missing fact matches no
+ * rows (fail-closed) rather than erroring.
+ */
 export interface IdentityContext {
-  /** Entra object id (`oid` claim) — owner/personal axis. */
-  oid: string;
+  /**
+   * The caller's `app_user.id` (internal uuid PK) — the owner/personal axis.
+   * Resolved from the Entra identity by the caller (e.g. `resolveActingUser`).
+   * Omitted/null when unresolved → `app.user_id` unset → owner policies match
+   * no rows (fail-closed).
+   */
+  userId?: string | null;
+  /** Entra object id (`oid` claim) — audit / future entra-keyed predicates. */
+  oid?: string | null;
   /**
    * Role-scope set — company axis. Carries the values RLS company policies
    * compare against (`required_role = ANY(current_setting('app.groups')::text[])`).
@@ -69,9 +89,16 @@ export async function withIdentity<T>(
   try {
     await client.query("BEGIN");
     // set_config(name, value, is_local) is the parameterized form of SET LOCAL —
-    // is_local=true scopes the setting to this transaction, and the claim values
-    // are bound as parameters rather than concatenated into SQL.
-    await client.query("SELECT set_config('app.oid', $1, true)", [identity.oid]);
+    // is_local=true scopes the setting to this transaction, and the values are
+    // bound as parameters rather than concatenated into SQL. Each GUC is set only
+    // when its fact is present — never to '' (an empty GUC would make
+    // `current_setting(name, true)::uuid` throw instead of yielding NULL).
+    if (identity.userId) {
+      await client.query("SELECT set_config('app.user_id', $1, true)", [identity.userId]);
+    }
+    if (identity.oid) {
+      await client.query("SELECT set_config('app.oid', $1, true)", [identity.oid]);
+    }
     await client.query("SELECT set_config('app.groups', $1, true)", [
       toPgTextArrayLiteral(identity.groups),
     ]);
