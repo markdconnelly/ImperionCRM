@@ -307,6 +307,87 @@ export async function registerClientM365Action(
   };
 }
 
+// A UniFi console/site id — short slug or GUID; alphanumerics + dashes (mirrors the backend
+// zod regex + the Key Vault secret-name charset).
+const UNIFI_CONSOLE_RE = /^[0-9a-zA-Z-]{1,64}$/;
+
+/**
+ * Register (or rotate) a managed client's per-console UniFi credential — the api-key twin of
+ * {@link registerClientM365Action} (#964, ADR-0103 / backend #229/#233). The admin supplies
+ * the linked account, the console/site id, the API family (`connectionType` console|cloud)
+ * with the on-prem `controllerHost` when it's a console, and the API key. The key is handed
+ * to the backend, which custodies it in Key Vault and writes the `client`-scope `unifi`
+ * `connection` row (the key value never touches this DB or a log, CLAUDE.md §5; the non-secret
+ * `connectionType`/`controllerHost` land on `connection.provider_config`). The browser never
+ * calls the backend — this server action proxies it (ADR-0028/0035). Gated on `settings:write`
+ * (admin); degrades to an honest notice when the backend isn't configured.
+ */
+export async function registerClientUnifiAction(
+  formData: FormData,
+): Promise<ClientCredentialResult> {
+  await requireCapability("settings:write");
+
+  const accountId = String(formData.get("accountId") ?? "").trim();
+  const consoleId = String(formData.get("consoleId") ?? "").trim();
+  const apiKey = String(formData.get("apiKey") ?? "").trim();
+  const connectionTypeRaw = String(formData.get("connectionType") ?? "").trim();
+  const controllerHost = String(formData.get("controllerHost") ?? "").trim();
+  const displayName = String(formData.get("displayName") ?? "").trim();
+
+  // Validate before sending anything across the boundary (mirrors the backend zod schema).
+  if (!accountId) return { ok: false, tone: "red", message: "Pick the linked account." };
+  if (!UNIFI_CONSOLE_RE.test(consoleId))
+    return {
+      ok: false,
+      tone: "red",
+      message: "Console id must be alphanumerics/dashes (1–64 chars).",
+    };
+  if (connectionTypeRaw !== "console" && connectionTypeRaw !== "cloud")
+    return { ok: false, tone: "red", message: "Choose a connection type." };
+  const connectionType = connectionTypeRaw;
+  if (connectionType === "console" && !controllerHost)
+    return {
+      ok: false,
+      tone: "red",
+      message: "Controller host is required for a console connection.",
+    };
+  if (!apiKey) return { ok: false, tone: "red", message: "Enter the API key." };
+
+  const outcome = await callServiceWithFallback(
+    () =>
+      connectionsService.registerClientUnifi({
+        accountId,
+        consoleId,
+        apiKey,
+        connectionType,
+        // Never send a host for a cloud console (the backend drops it anyway).
+        controllerHost: connectionType === "console" ? controllerHost : undefined,
+        displayName: displayName || undefined,
+      }),
+    {
+      label: "registerClientUnifiAction",
+      notConfigured:
+        "Saved nothing — the credential custody backend isn't configured in this environment yet.",
+      failed: "Couldn't register the UniFi console — the backend rejected the request.",
+    },
+  );
+
+  revalidatePath("/settings/credentials");
+  if (outcome.ok) {
+    return {
+      ok: true,
+      tone: "green",
+      message:
+        "UniFi console registered — the API key is custodied in Key Vault and the connection is live.",
+    };
+  }
+  return {
+    ok: false,
+    tone: outcome.kind === "not_configured" ? "amber" : "red",
+    message: outcome.message,
+  };
+}
+
 /**
  * Begin the company-wide QuickBooks Online connect flow (#117/#528). It needs no cookie:
  * the backend parks a one-time CSRF `state` in Key Vault and embeds it

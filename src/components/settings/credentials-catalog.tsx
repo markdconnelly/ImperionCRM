@@ -96,11 +96,17 @@ export function CredentialsCatalog({ connections }: { connections: ConnectionRow
                   )}
                 </td>
                 <td className="px-3 py-2 text-text">
-                  {c.authMethod
-                    ? c.authMethod === "certificate"
-                      ? `cert${c.certThumbprint ? ` · ${c.certThumbprint}` : ""}`
-                      : "secret"
-                    : <span className="text-dim">OAuth</span>}
+                  {c.authMethod ? (
+                    c.authMethod === "certificate" ? (
+                      `cert${c.certThumbprint ? ` · ${c.certThumbprint}` : ""}`
+                    ) : c.authMethod === "api_key" ? (
+                      "api key"
+                    ) : (
+                      "secret"
+                    )
+                  ) : (
+                    <span className="text-dim">OAuth</span>
+                  )}
                 </td>
                 <td className={`px-3 py-2 ${STATUS_STYLE[c.status] ?? "text-dim"}`}>{c.status}</td>
               </tr>
