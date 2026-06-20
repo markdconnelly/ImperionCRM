@@ -89,11 +89,12 @@ done/▶-in-flight ledger.
 - `0131/0132` CMDB curated layer · `0144` cloud first-class CI · `0145` change_affected_ci allows cloud · `0146` posture_policy allows purview_compliance
 - `0141` connection credential registry · `0147` `connection.client_id` · `0142` LP merge write grants
 - `0143` `source_skill` routing registry · `0148` `intune_managed_apps` bronze
+- ⏳ **NOT yet prod-applied:** `0152` `app_user.group_ids` (access spine slice 1, #974 — placeholder #, Mark-gated apply)
 
 **Recent ADRs** ([`docs/decision-records/`](decision-records/README.md)) — note the
 consolidated dossiers that supersede earlier scattered ADRs:
 - `ADR-0091` AI/ICM platform · `ADR-0092` medallion data platform · `ADR-0093` employee finance · `ADR-0094` PM parity · `ADR-0095` RBAC · `ADR-0096` sale→delivery
-- `ADR-0097` CMDB authority model · `ADR-0098` change enablement · `ADR-0099` manual-mileage-v1 / MileIQ-v2 · `ADR-0100` broad employee read · `ADR-0101` minimalist code generation · `ADR-0102` vector contract single home · `ADR-0103` connection credential registry · `ADR-0104` OKF orchestrator grounding cortex
+- `ADR-0097` CMDB authority model · `ADR-0098` change enablement · `ADR-0099` manual-mileage-v1 / MileIQ-v2 · `ADR-0100` broad employee read · `ADR-0101` minimalist code generation · `ADR-0102` vector contract single home · `ADR-0103` connection credential registry · `ADR-0104` OKF orchestrator grounding cortex · `ADR-0105` two-axis RLS access spine *(Proposed, #967; placeholder #)*
 
 ---
 

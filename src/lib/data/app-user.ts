@@ -15,6 +15,12 @@ export interface AppUserUpsert {
   email: string;
   displayName: string | null;
   roles: AppRole[];
+  /**
+   * Raw Entra group object-ids (migration 0152, #974). Authoritative membership
+   * for two-axis RLS company scope; distinct from the normalized `roles`.
+   * Optional so existing callers compile; defaults to `[]`.
+   */
+  groupIds?: string[];
 }
 
 /**
@@ -44,14 +50,21 @@ export async function upsertAppUser(input: AppUserUpsert): Promise<void> {
   if (!input.entraObjectId) return;
   try {
     await pool.query(
-      `INSERT INTO app_user (entra_object_id, email, display_name, roles)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO app_user (entra_object_id, email, display_name, roles, group_ids)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (entra_object_id) DO UPDATE
          SET email = EXCLUDED.email,
              display_name = EXCLUDED.display_name,
              roles = EXCLUDED.roles,
+             group_ids = EXCLUDED.group_ids,
              updated_at = now()`,
-      [input.entraObjectId, input.email, input.displayName, input.roles],
+      [
+        input.entraObjectId,
+        input.email,
+        input.displayName,
+        input.roles,
+        input.groupIds ?? [],
+      ],
     );
   } catch (err) {
     // Never block sign-in on a mirror failure; auth still succeeds.

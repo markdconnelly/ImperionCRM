@@ -27,6 +27,26 @@ export interface RoleClaims {
   roles?: string[];
 }
 
+/** Entra object-id (group/user GUID) shape. */
+const GROUP_GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Extract the caller's raw Entra group object-ids from the token claims, for
+ * durable capture on `app_user.group_ids` (access spine slice 1, #974). Group
+ * GUIDs may arrive in the `groups` claim OR — under the live `emit_as_roles`
+ * config (#169) — the `roles` claim, so both positions are scanned. Only
+ * GUID-shaped values are kept (App-Role value strings like
+ * "Application.ImperionCRM.Admins" are not group ids), deduped and lowercased
+ * for stable comparison. PURE / edge-safe.
+ */
+export function groupIdsFromClaims(claims: RoleClaims | null | undefined): string[] {
+  const ids = new Set<string>();
+  for (const value of [...(claims?.groups ?? []), ...(claims?.roles ?? [])]) {
+    if (GROUP_GUID_RE.test(value)) ids.add(value.toLowerCase());
+  }
+  return [...ids];
+}
+
 export function rolesFromClaims(claims: RoleClaims | null | undefined): AppRole[] {
   const candidates: string[] = [];
   const groupMap = roleEnv.groupMap;
