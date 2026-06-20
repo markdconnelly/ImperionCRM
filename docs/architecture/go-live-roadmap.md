@@ -162,8 +162,20 @@ bronze post writers, 9 gold composers, idempotent vectorization (ADR-0009).
    draft answers; consent gate is already in place.
 5. **Real sends behind the consent gate** — replace the front end's logged-to-timeline
    stubs (`sendMessageAction`, campaign platform push) with backend calls.
-6. **Remaining collectors** (local) — Sentinel, KQM, DocuSign (bronze tables exist;
-   KQM shape is still an assumption — verify against live access first).
+6. **Local collectors — shipped (no longer pending).** _Updated 2026-06-20 (sync from
+   LocalPipeline #254):_ the Sentinel (LocalPipeline #97), KQM header + won-quote-detail
+   (LocalPipeline #98/#160/#161), and DocuSign (LocalPipeline #99) collectors are **built
+   and merged** — the LP build tail is now credential/migration gating, not missing code.
+   Since the 2026-06-10 review LP has also **adopted a much wider source roster** (built or
+   ADR-scheduled): Azure ARM cloud-asset CMDB (LocalPipeline ADR-0023), QBO finance full
+   pull (LocalPipeline ADR-0020), Datto RMM/BCDR + myITprocess (LocalPipeline ADR-0018),
+   Amazon Business / CDW logistics (LocalPipeline ADR-0021), scoped interaction capture
+   (LocalPipeline ADR-0022), EasyDMARC, Entra hygiene, and information protection — plus
+   **ownership of the bronze→silver merge for the sources it ingests** (LocalPipeline
+   ADR-0026). The only remaining LP work is operator: gold re-sync + full vectorization
+   (LocalPipeline #101, gated on a front-end grant migration) and on-prem host provisioning
+   / retire `-SkipSecretStore` (LocalPipeline #102; DPAPI-unlock fallback LocalPipeline
+   #223). All issue/ADR numbers here prefixed *LocalPipeline* are that sibling repo's.
 
 ## Sequencing rationale
 
