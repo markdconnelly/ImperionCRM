@@ -2577,6 +2577,7 @@ export interface ConnectionRow {
   accountName: string | null; // resolved account name, for display
   authMethod: string | null; // certificate|secret (enterprise app); null for OAuth
   certThumbprint: string | null; // cert id when authMethod=certificate (public, not a secret)
+  clientId: string | null; // Entra app (client) id of the client tenant's own app registration (per-client-app, #943); public identifier, never a secret
 }
 
 /** A row in an account's external identity map. */

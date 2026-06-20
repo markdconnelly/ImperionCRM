@@ -29,6 +29,9 @@ describe("listAllConnections (credential registry)", () => {
     expect(client?.accountId).toBeTruthy();
     expect(client?.accountName).toBeTruthy();
     expect(client?.authMethod).toBe("secret");
+    // Per-client-app model (#943): a client-scope M365 connection carries its tenant's
+    // own Entra app (client) id — a public identifier, never a secret value.
+    expect(client?.clientId).toBeTruthy();
 
     const certApp = all.find((c) => c.authMethod === "certificate");
     expect(certApp?.certThumbprint).toBeTruthy();

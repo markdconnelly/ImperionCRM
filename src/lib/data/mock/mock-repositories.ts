@@ -1668,6 +1668,7 @@ export const mockRepositories: Repositories = {
           accountName: null,
           authMethod: null,
           certThumbprint: null,
+          clientId: null,
         });
       }
     },

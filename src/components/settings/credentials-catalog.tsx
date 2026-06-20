@@ -3,8 +3,10 @@ import type { ConnectionRow } from "@/types";
 /**
  * Credentials catalog (ADR-0103, #905) — the governed view of every Key Vault credential
  * the system custodies, grouped by scope. Renders each connection's Key Vault secret NAME
- * (`keyvaultSecretRef`) + scope + provider + linked account + auth method + status. It
- * NEVER renders a secret value — the token/secret lives only in Key Vault (CLAUDE.md §5).
+ * (`keyvaultSecretRef`) + scope + provider + linked account + app (client) id + auth method
+ * + status. The app (client) id is the client tenant's own Entra app registration id
+ * (per-client-app, #943) — a public identifier, not a secret. It NEVER renders a secret
+ * value — the token/secret lives only in Key Vault (CLAUDE.md §5).
  */
 
 const SCOPE_LABEL: Record<string, string> = {
@@ -65,6 +67,7 @@ export function CredentialsCatalog({ connections }: { connections: ConnectionRow
               <th className="px-3 py-2 font-medium">Scope</th>
               <th className="px-3 py-2 font-medium">Provider</th>
               <th className="px-3 py-2 font-medium">Account / owner</th>
+              <th className="px-3 py-2 font-medium">App (client) id</th>
               <th className="px-3 py-2 font-medium">Auth</th>
               <th className="px-3 py-2 font-medium">Status</th>
             </tr>
@@ -84,6 +87,13 @@ export function CredentialsCatalog({ connections }: { connections: ConnectionRow
                 <td className="px-3 py-2 text-text">{c.provider}</td>
                 <td className="px-3 py-2 text-text">
                   {c.accountName ?? c.owner ?? <span className="text-dim">—</span>}
+                </td>
+                <td className="px-3 py-2">
+                  {c.clientId ? (
+                    <span className="font-mono text-xs text-text">{c.clientId}</span>
+                  ) : (
+                    <span className="text-dim">—</span>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-text">
                   {c.authMethod

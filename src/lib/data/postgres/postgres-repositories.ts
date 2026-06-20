@@ -11075,7 +11075,7 @@ export const postgresRepositories: Repositories = {
                   cn.status::text AS status, cn.scopes, u.display_name AS owner,
                   cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at, cn.poll_interval_minutes,
                   cn.account_id::text AS account_id, a.name AS account_name,
-                  cn.auth_method, cn.cert_thumbprint
+                  cn.auth_method, cn.cert_thumbprint, cn.client_id
              FROM connection cn
              LEFT JOIN app_user u ON u.id = cn.owner_user_id
              LEFT JOIN account a ON a.id = cn.account_id
@@ -11099,7 +11099,7 @@ export const postgresRepositories: Repositories = {
                   cn.status::text AS status, cn.scopes, u.display_name AS owner,
                   cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at, cn.poll_interval_minutes,
                   cn.account_id::text AS account_id, a.name AS account_name,
-                  cn.auth_method, cn.cert_thumbprint
+                  cn.auth_method, cn.cert_thumbprint, cn.client_id
              FROM connection cn
              LEFT JOIN app_user u ON u.id = cn.owner_user_id
              LEFT JOIN account a ON a.id = cn.account_id
@@ -15073,6 +15073,7 @@ interface ConnectionDbRow {
   account_name?: string | null;
   auth_method?: string | null;
   cert_thumbprint?: string | null;
+  client_id?: string | null;
 }
 
 /**
@@ -15388,6 +15389,7 @@ function mapConnection(r: ConnectionDbRow): ConnectionRow {
     accountName: r.account_name ?? null,
     authMethod: r.auth_method ?? null,
     certThumbprint: r.cert_thumbprint ?? null,
+    clientId: r.client_id ?? null,
   };
 }
 
