@@ -261,9 +261,171 @@ one of four repositories that make up the product. The single map of the whole e
   cross-repo baseline — referenced, never restated).
 - **Data** flows bronze → silver → gold (ADR-0092); the curated *meaning* of the
   silver tier is the governed OKF semantic layer (ADR-0086).
+- **Live status** — the dated inventory of exactly what is shipped, wired, and
+  deferred (migrations through 0148, integration wiring, the go-live spine) is
+  [STATE.md](../STATE.md). This overview describes the capability surface; STATE.md
+  tracks its build state.
 
 For the decisions behind every capability above, see
 [decision-records](../decision-records/README.md) — in particular the consolidated
 dossiers **ADR-0091** (AI/ICM), **ADR-0092** (medallion data), **ADR-0093**
 (employee finance), **ADR-0094** (PM parity), **ADR-0095** (RBAC), and **ADR-0096**
 (sale → delivery).
+
+---
+
+## 7. Why we build it this way — the bets and the payoff
+
+The capability surface above is the *what*. This section is the *why*: the handful of
+deliberate architectural bets that make Imperion different from buying ten point tools,
+and what each one buys the business. Every bet is governed by an ADR, so none of this is
+re-litigated casually — it is the settled reasoning a new engineer or reviewer should
+internalise before proposing a change.
+
+### 7.1 One platform over one object model — not a tool sprawl
+
+**The bet.** CRM, ERP, the extras, and the AI all sit on **one PostgreSQL object model,
+one identity spine, and one communications timeline** — a modular monolith, not a
+constellation of SaaS subscriptions stitched together by integrations.
+
+**The payoff.** A lead, the account it belongs to, the opportunity it became, the project
+that delivered it, the tickets that support it, the time and expense booked against it,
+and the invoice that billed it are all *the same graph* — no export/import seams, no
+"which system is right" reconciliation tax, no per-seat licence multiplied across ten
+vendors. The shared `task` model serving both sales and delivery (ADR-0052/0094) is the
+concrete example: one table, one set of views, one permission model, reused everywhere
+work happens. An MSP that runs its whole business here gets a single source of truth and a
+single bill, and every new capability composes with the ones already there instead of
+bolting on beside them.
+
+### 7.2 An intelligence layer above Microsoft 365 and Kaseya — augment, never replace
+
+**The bet.** Imperion sits *on top of* the systems the MSP already runs (M365, Autotask,
+IT Glue, Kaseya, QuickBooks) and orchestrates them; it does not try to replace them. It
+stores external identifiers and syncs bidirectionally where it adds value (ADR-0044
+Autotask-as-SoR, ADR-0085 QBO read-only mirror).
+
+**The payoff.** No rip-and-replace, no data migration risk, no fighting the tools the
+business is contractually and operationally committed to. Autotask stays the system of
+record for tickets and contracts; QuickBooks stays authoritative for the money;
+Imperion adds the connective intelligence — the unified timeline, the orchestrated
+workflows, the cross-system reporting — that none of those tools provide on their own.
+The MSP keeps its existing licences and muscle memory and gets a brain on top.
+
+### 7.3 Open web stack over Power Platform / Dataverse / Copilot Studio
+
+**The bet.** Next.js · React · TypeScript · PostgreSQL + pgvector · Azure Functions —
+proven open web technology — explicitly **not** Power Platform, Dataverse, or Copilot
+Studio (CLAUDE.md §1 NOT-list).
+
+**The payoff.** Full ownership of the data model, the UX, and the release cadence;
+no low-code ceiling when a requirement gets hard; no Dataverse storage tax or premium-
+connector licensing creeping into every feature; portability and real software-
+engineering discipline (typed repositories, migrations as the schema SoR, CI gates,
+ADRs). The product can be as dense and fast as a Linear/Vercel-grade internal tool
+because it is actually engineered, not assembled in a designer.
+
+### 7.4 One orchestrator the user talks to — many sub-agents it doesn't see
+
+**The bet.** The employee converses with **a single orchestrator agent**; the
+specialised sub-agents (CRM, Sales, Proposal, Onboarding, Docs, IT Glue, Autotask, M365,
+Reporting) are internal and never address the user directly (ADR-0091, principle §2.2).
+
+**The payoff.** One mental model for the user — "ask the agent" — instead of learning a
+zoo of bots. And one chokepoint where context, memory, **permissions**, and tool-routing
+are enforced: the orchestrator selects tools, invokes sub-agents, and returns a single
+coherent answer, so security and governance are applied in one place rather than smeared
+across many agents that each have to get it right.
+
+### 7.5 The medallion pipeline — per-source bronze → merged silver → AI-ready gold
+
+**The bet.** External data lands as **lossless per-source bronze** (one physical table
+per source × entity, ADR-0039), is normalised and de-duplicated into **silver** entities
+by an explicit authority-precedence merge (e.g. `contact`: website > autotask > itglue >
+m365 > apollo), and is distilled into **gold** knowledge objects + embeddings that the
+agents reason over (ADR-0092).
+
+**The payoff.** Bronze is an immutable audit trail and a reprocessing safety net — if a
+merge rule changes, silver rebuilds from raw without re-fetching. The explicit precedence
+makes "which source wins" a documented decision, not an accident. And because agents
+consume **gold**, their reasoning runs over curated, embedded knowledge instead of raw
+payloads — cheaper, faster, and far less likely to hallucinate from noise. Merge
+co-locates with ingestion (LocalPipeline ADR-0026) so the plane that ingests a source
+owns its merge, keeping the data lineage clean across the four repos.
+
+### 7.6 OKF as the orchestrator's grounding cortex
+
+**The bet.** The curated *meaning* of the silver tier — what each entity means, which
+source is authoritative, and how it joins — lives in **one governed OKF bundle**
+(ADR-0086), and the orchestrator **grounds** on it: entity/archetype routing keys plus
+prose authority, loaded deterministically per workflow stage (ADR-0104). OKF is grounding-
+only — meaning, not facts, not actions.
+
+**The payoff.** Agents never guess a join path or invent which source is authoritative —
+they read it from a version-controlled, PII-free, human-reviewed contract. Three freshness
+gates (same-repo docs-gate, cross-repo `okf-sync`, on-prem reconciliation) make **staleness
+a CI failure**, so the map can't silently drift from the schema. This is what lets the AI
+suite be trustworthy on real client data: the "brain" is OKF (grounding) + gold/RAG +
+the live DB (facts) + agent memory + ICM (action), each a distinct, governed organ.
+
+### 7.7 Four repos with a hard division of labor
+
+**The bet.** GUI (this repo) · processes (Backend Functions) · live data (Pipeline) ·
+heavy lifting (on-prem LocalPipeline) — a settled split (ADR-0042) where the front end
+does direct DB *reads* for rendering but routes **every process** to the backend, the
+backend holds all provider keys, and the front end holds **no AI key**.
+
+**The payoff.** A clean security boundary (the surface users touch can't move money, send
+mail, or hold a provider secret), independent deploy cadences, and a single schema home
+(this repo) so migrations never fork. Concurrency is safe because the contract — not git —
+is the real coordination layer (CLAUDE.md §10). The cost is cross-repo discipline; the
+benefit is that each plane can be reasoned about, secured, and scaled on its own.
+
+### 7.8 Security and consent as product features, not afterthoughts
+
+**The bet.** Entra ID is the sole identity provider; RBAC gates every surface and every
+mutating action fail-closed (ADR-0095); an **append-only consent ledger with lawful-basis
+tracking blocks every outbound send and ad** unless consent is current (ADR-0014); the
+audit log is the substrate under everything.
+
+**The payoff.** The consent gate is a *defensible compliance posture* under TCPA /
+CAN-SPAM / GDPR baked into the data model — not a checkbox bolted on later — so the
+business can do outreach at scale without legal exposure. Fail-closed RBAC + comp-data
+gating means the platform can hold sensitive payroll and client PII while staying least-
+privilege. Security being a feature (the "Mythos Proof" posture, §5) is what makes an
+internal platform holding this much sensitive data viable at all.
+
+### 7.9 Assessment-led go-to-market
+
+**The bet.** A **paid AI Security Readiness Assessment** is the wedge — not a free audit —
+that earns the access and evidence to win a multi-year managed-services contract, with
+recurring Strategic Business Reviews driving expansion afterward (the lifecycle in
+[customer-lifecycle](../architecture/customer-lifecycle.md)).
+
+**The payoff.** Charging for the assessment qualifies the prospect (they have budget and
+intent), funds the sales motion, and produces the evidence that makes the proposal
+near-inevitable. The whole CRM motion — capture → consent-gated nurture → discovery
+(agent pre-fill, human confirm) → paid assessment → proposal → MRR contract → recurring
+SBRs → expansion — is modelled in the object graph, so the GTM strategy is *encoded in
+the product*, not just described in a deck.
+
+### 7.10 A settled AI stack — Claude + Voyage, one vector space, key held server-side
+
+**The bet.** Generation is **Claude** (Haiku cheap tier / Sonnet premium tier); embeddings
+are **Voyage `voyage-3-large` @ 1024 dims**; one pair, one vector space, pinned by contract
+(ADR-0092/0102); re-adding a provider requires a new ADR. The front end holds no AI key —
+the backend and on-prem pipeline call the providers.
+
+**The payoff.** One embedding space means every vector is comparable — no "which model
+embedded this" ambiguity that breaks semantic search. Tiering generation (cheap vs.
+premium) controls cost without sacrificing quality where it matters. Keeping provider keys
+out of the GUI (custodied in Key Vault, called server-side) means the surface most exposed
+to users never holds a secret. The deliberate *un*-agnosticism is the point: a settled
+stack is one fewer thing to reason about on every feature.
+
+---
+
+> **In one line:** Imperion is built as **one engineered platform, on one governed data
+> model, above the tools the MSP already runs, with a single trustworthy agent and
+> security in the substrate** — because that is what turns ten subscriptions and a pile of
+> spreadsheets into an operational brain the business can actually run on.

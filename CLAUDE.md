@@ -170,11 +170,13 @@ serving data.
   **admin-only** (#90, `canSeeAgentPages` — same gate as Settings/ADR-0030), and
   Settings has an **AI tab** surfacing the orchestrator preset / budget cap /
   month-to-date spend card (same card + backend PUT as the AI Agents page).
-- **Data:** PostgreSQL + pgvector; migrations **0001–0101 applied** to prod
-  (latest: Waves 8/9 work-management set 0094–0101 — comments/activity, task
-  hierarchy, work tags, mentions, dependencies, assignees/watchers, attachments,
-  notifications). Repo holds files through 0101. Typed repositories with a mock
-  fallback. Entra SSO (certificate client auth) + break-glass.
+- **Data:** PostgreSQL + pgvector; migrations **0001–0148 applied** to prod
+  (recent sets: work-management 0094–0101; time/expense finance 0085–0093; CMDB +
+  cloud first-class CI 0131/0132/0144/0145; Key Vault credential registry 0141 +
+  `connection.client_id` 0147; OKF `source_skill` routing registry 0143;
+  `intune_managed_apps` bronze 0148). Repo holds files through 0148. Typed
+  repositories with a mock fallback. Entra SSO (certificate client auth) +
+  break-glass. **Full dated inventory of shipped work → [docs/STATE.md](docs/STATE.md).**
 - **Auth:** sidebar user chip has a **sign-out** button (`signOutAction` → `/login`).
 - **Per-connection poll cadence (ADR-0038, migration 0035):** `connection.poll_interval_minutes`
   (0 = manual/paused) with an auto-saving cadence selector on the Settings cards; the pipeline
@@ -200,6 +202,13 @@ serving data.
   disconnect revokes custody first). Unconfigured providers (and key-based Plaud) degrade
   to the recorded stub with a notice. Activation = backend app settings
   (`OAUTH_REDIRECT_BASE_URL` + per-provider client ids — docs/operations/credential-wiring-next-steps.md §4b).
+- **Live integration wiring (as of 2026-06-19):** QuickBooks Online **production** app
+  connected (expense/payroll read-back, ADR-0093); **M365 Graph** mail/Teams ingestion
+  proven with tokens in Key Vault; **ACS** email verified (`acs.imperionllc.com`, agent
+  sends as the `crm@` shared mailbox, ADR-0058); **Autotask** ticket webhook live;
+  **receipt** storage + 90-day lifecycle provisioned; **Meta** FB/IG ingestion live. The
+  `connection` table is now a Key Vault **credential registry** (ADR-0103 — scope
+  personal/company/client + cert-or-secret). Detail + remaining gates → [docs/STATE.md](docs/STATE.md).
 
 **Aesthetic:** dense, premium internal-tool feel (Linear/Vercel-grade), dark theme.
 Design tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · panel-2
@@ -207,11 +216,11 @@ Design tokens (in `globals.css` + Tailwind): bg `#0B0E14` · panel `#111621` · 
 accent-2 `#7C6BF0` · green `#3FBF8F` · amber `#E0A33E` · red `#E2615A`. Display font
 Space Grotesk, body IBM Plex Sans.
 
-**Deferred to the next phase (deliberately stubbed, not broken):** the actual
-ingestion engines (Microsoft Graph / YouTube / LinkedIn / Facebook — the per-user
-OAuth flow itself is now live-wired, see above), agent/LLM
-enrichment execution, and embeddings generation + vector search. **Real 1:1 email/SMS
-sends are wired (#183, ADR-0058):** the composer executes through the backend's
+**Deferred to the next phase (deliberately stubbed, not broken):** the remaining
+ingestion engines (YouTube / LinkedIn / Plaud — **M365 Graph and Meta FB/IG are now
+live in prod**, see above), agent/LLM enrichment execution (pending on-prem hydration),
+and embeddings generation + vector (semantic) search (LocalPipeline #176 — not yet
+built). **Real 1:1 email/SMS sends are wired (#183, ADR-0058):** the composer executes through the backend's
 approval-gated send path (consent re-asserted at execution; email as the employee's
 own M365 mailbox, SMS via ACS) and degrades to the logged-to-timeline stub with an
 honest notice where the backend/prerequisites aren't configured. The agent layer is
@@ -246,16 +255,21 @@ bulk ingestion, IT Glue hub, ALL vectorization). The shared security baseline is
 **This repo remains the single source of truth for the database schema/migrations** —
 the siblings are consumers; propose schema changes here.
 1. ~~Live OAuth flows + Key Vault token storage for per-user connections~~ (done —
-   backend ADR-0038 + this repo's wiring; per-provider app registrations remain an
-   ops task), then the ingestion engines (Graph email/Teams, YouTube, LinkedIn,
-   Facebook, Plaud) writing into the `interaction` timeline and `contact_enrichment`
-   dossier.
-2. Real email/SMS sends behind the consent gate; agent/LLM enrichment execution.
-3. Embeddings generation + vector (semantic) search over the gold layer.
+   backend ADR-0038 + this repo's wiring), then the ingestion engines writing into the
+   `interaction` timeline + `contact_enrichment` dossier — **M365 Graph mail/Teams and
+   Meta FB/IG now live in prod**; YouTube / LinkedIn / Plaud remain.
+2. ~~Real email sends behind the consent gate~~ (done — ADR-0058, live as the employee's
+   own M365 mailbox + the `crm@` shared agent mailbox; SMS deferred, no ACS number).
+   Agent/LLM enrichment execution remains (pending on-prem hydration).
+3. Embeddings generation + vector (semantic) search over the gold layer
+   (LocalPipeline #176 — **not yet built**; OKF bundle is now large enough to vectorize).
 4. ~~The orchestrator agent runtime + the AI Agents page~~ (done — backend ADR-0036,
    front-end ADR-0048); ~~the Board page~~ (done — backend ADR-0039, front-end
    ADR-0049 + the `/board` module).
-5. Pre-go-live security: rotate the deferred secrets (see the project memory).
+5. Pre-go-live: QBO / M365 / ACS / Autotask credentials are now wired in prod. The
+   remaining go-live spine is **on-prem host hydration (LP #102) → agent-quality eval
+   (#186) → Mark UX sign-off → declare v1.0.0** (Release-As across all four repos).
+   SSO cert rotation (#940) is accepted-risk. See [docs/STATE.md](docs/STATE.md).
 
 Before starting each task, restate the plan briefly and flag anything that
 conflicts with the principles in §2–§5.
