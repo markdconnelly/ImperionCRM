@@ -7,6 +7,8 @@ import {
   isClientCi,
   toConfigurationItems,
   filterConfigurationItems,
+  labelDeviceOrigins,
+  deviceCiAttributes,
 } from "@/lib/cmdb/ci";
 import { mockRepositories } from "@/lib/data/mock/mock-repositories";
 import type { ConfigurationItem } from "@/types";
@@ -84,6 +86,55 @@ describe("filterConfigurationItems", () => {
   });
   test("combines both filters", () => {
     expect(filterConfigurationItems(items, { ciType: "account", accountId: "a2" })).toHaveLength(0);
+  });
+});
+
+describe("device-CI convergence signals (#882)", () => {
+  test("labelDeviceOrigins maps known bronze sources to friendly labels", () => {
+    expect(labelDeviceOrigins("itglue,m365_synced")).toBe("IT Glue, Intune");
+    expect(labelDeviceOrigins("website")).toBe("Manual");
+    expect(labelDeviceOrigins("datto_rmm")).toBe("Datto RMM");
+  });
+  test("labelDeviceOrigins passes unknown sources through and tolerates whitespace", () => {
+    expect(labelDeviceOrigins(" itglue , future_feed ")).toBe("IT Glue, future_feed");
+  });
+  test("labelDeviceOrigins returns null for empty/absent input", () => {
+    expect(labelDeviceOrigins(null)).toBeNull();
+    expect(labelDeviceOrigins(undefined)).toBeNull();
+    expect(labelDeviceOrigins("")).toBeNull();
+    expect(labelDeviceOrigins(" , ")).toBeNull();
+  });
+
+  test("deviceCiAttributes appends Policy + Source rows for a device CI", () => {
+    const ci = account({
+      ciType: "device",
+      displayName: "LT-01",
+      attributes: [{ label: "Type", value: "workstation" }],
+      policyCompliance: "compliant",
+      origin: "IT Glue, Intune",
+    });
+    expect(deviceCiAttributes(ci)).toEqual([
+      { label: "Type", value: "workstation" },
+      { label: "Policy", value: "Compliant" },
+      { label: "Source", value: "IT Glue, Intune" },
+    ]);
+  });
+  test("deviceCiAttributes omits absent signals (absent beats a wrong value)", () => {
+    const ci = account({
+      ciType: "device",
+      attributes: [{ label: "Type", value: "server" }],
+      policyCompliance: null,
+      origin: null,
+    });
+    expect(deviceCiAttributes(ci)).toEqual([{ label: "Type", value: "server" }]);
+  });
+  test("deviceCiAttributes leaves non-device CIs untouched", () => {
+    const ci = account({
+      attributes: [{ label: "Relationship", value: "client" }],
+      policyCompliance: "drift",
+      origin: "IT Glue",
+    });
+    expect(deviceCiAttributes(ci)).toEqual([{ label: "Relationship", value: "client" }]);
   });
 });
 

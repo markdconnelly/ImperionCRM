@@ -24,6 +24,7 @@
  */
 
 import type { CiType, ConfigurationItem } from "@/types";
+import type { DevicePolicyCompliance } from "@/lib/security/device-policy";
 
 export const CI_TYPES: readonly CiType[] = ["account", "user", "device", "cloud"] as const;
 
@@ -81,6 +82,67 @@ export function toConfigurationItems(
   return rows
     .filter(isClientCi)
     .map((r) => ({ ...r, accountId: r.accountId as string }));
+}
+
+/**
+ * Human label for the device CI policy-compliance indicator (#882) — the SAME
+ * vocabulary the Devices-view inventory badge uses (`DeviceInventory`), so the two
+ * device notions read identically now they are one CI.
+ */
+export const DEVICE_POLICY_LABEL: Record<DevicePolicyCompliance, string> = {
+  compliant: "Compliant",
+  drift: "Drift",
+  ungoverned: "Ungoverned",
+};
+
+/**
+ * Friendly label per `device_bronze_all` source code (#882) — the bronze provenance
+ * the merged silver device was built from (migration 0036). Anything unmapped passes
+ * through verbatim (forward-compatible with new device feeds).
+ */
+const DEVICE_ORIGIN_LABEL: Record<string, string> = {
+  itglue: "IT Glue",
+  m365_synced: "Intune",
+  website: "Manual",
+  datto_rmm: "Datto RMM",
+};
+
+/**
+ * Turn the raw comma-joined `device_bronze_all.source` aggregate into a human source
+ * list for the device CI's "Source" attribute (e.g. `"itglue,m365_synced"` →
+ * `"IT Glue, Intune"`). PURE + unit-tested; null/empty in → null out (no Source row).
+ */
+export function labelDeviceOrigins(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const labels = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map((s) => DEVICE_ORIGIN_LABEL[s] ?? s);
+  return labels.length > 0 ? labels.join(", ") : null;
+}
+
+/**
+ * Append the device-only convergence signals (#882, epic #873) to a CI's display
+ * attributes — Intune policy compliance + merged bronze origin — so they surface on
+ * BOTH the register table and the CI detail (which both render `attributes` generically),
+ * with no per-surface branching. PURE: the SQL projection sets `policyCompliance`/`origin`
+ * on the device arm; this is the single place that turns them into display rows, and is
+ * unit-tested here. A null/absent signal contributes NOTHING (absent beats a wrong value —
+ * the inventory's cardinal rule, ADR-0051 §6). Non-device CIs are returned unchanged.
+ */
+export function deviceCiAttributes(
+  ci: Pick<ConfigurationItem, "ciType" | "attributes" | "policyCompliance" | "origin">,
+): { label: string; value: string }[] {
+  if (ci.ciType !== "device") return ci.attributes;
+  const extra: { label: string; value: string }[] = [];
+  if (ci.policyCompliance) {
+    extra.push({ label: "Policy", value: DEVICE_POLICY_LABEL[ci.policyCompliance] });
+  }
+  if (ci.origin && ci.origin.length > 0) {
+    extra.push({ label: "Source", value: ci.origin });
+  }
+  return [...ci.attributes, ...extra];
 }
 
 /** Filter a CI list by optional type + account (the register's two filters). */
