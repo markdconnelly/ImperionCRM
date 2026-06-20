@@ -1358,5 +1358,19 @@
     "file": "ADR-0105-two-axis-rls-access-spine.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0106",
+    "title": "Agent eval & quality plane",
+    "status": "proposed",
+    "date": "2026-06-20",
+    "tags": [
+      "meta",
+      "agents"
+    ],
+    "summary": "An in-platform eval/quality plane as data: golden sets (agent_eval_case), scored eval runs (agent_eval_run) and per-case results (agent_eval_result), scored by deterministic assertions plus an LLM-judge on the existing Claude tier, gated in CI against a baseline. The scoring twin of the agent_run ledger; slice 1 ships schema + ADR dormant.",
+    "file": "ADR-0106-agent-eval-quality-plane.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

@@ -66,6 +66,7 @@ here.
 | 7 | **[The knowledge & RAG layer](knowledge-and-rag.md)** | The gold `knowledge_object` / `knowledge_embedding` store, the vectorization pipeline, the pinned Voyage vector contract, citations, and `search_knowledge`. |
 | 8 | **[Agent rooms — the OKF semantic layer](agent-rooms-okf.md)** | How the curated OKF semantic layer over the silver tier becomes per-agent "rooms," consumed at the section level. |
 | 9 | **[Autonomy — the tiered dial](autonomy-dial.md)** | The one autonomy dial stored as data (`autopilot_policies`), the L0→L3 rungs, the T0–T3 action policy, and the single Mark-gate. |
+| 10 | **[The eval & quality plane](eval-quality-plane.md)** | The scoring twin of the run ledger: golden sets (`agent_eval_case`), scored runs (`agent_eval_run`/`agent_eval_result`), the LLM-judge + deterministic assertions, and the CI quality gate that makes raising autonomy safe (ADR-0106). |
 
 > The repo also carries small **operating-convention** notes used by the build
 > crew (not part of the runtime AI suite): how Claude Code consumes
