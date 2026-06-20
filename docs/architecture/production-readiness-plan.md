@@ -46,7 +46,7 @@ Sentinel/KQM/DocuSign collectors, M365 comms bronze tables).
 | **`ImperionCRM`** (front-end) ← *this repo* | GUI; direct DB reads; **owns DB schema + migrations** | Live. Migrations `0001–0058` applied. Agents page (ADR-0048), Board module (ADR-0049), **project board** (ADR-0052 #95), OAuth UI + callback route, saved views, device inventory all real. |
 | **`ImperionCRM_Backend`** | ALL processes: agent runtime, OAuth, sends, credentials, semantic search | Claude tool-use orchestrator (ADR-0036) + tier presets/budget (ADR-0037) + per-user OAuth (ADR-0038) + **Board runtime** (ADR-0039) deployed. Sends gated on consent; SMS awaits ACS config. |
 | **`ImperionCRM_Pipeline`** (cloud) | Live data: webhooks, bronze→silver merge, on-demand refresh | Webhook payload handlers **implemented** (ADR-0013): Autotask tickets land + merge inline; Graph notifications trigger GDAP-fail-closed targeted refresh. Merge covers contacts/accounts/devices/contracts/tickets/exposures/assessments. |
-| **`ImperionCRM_LocalPipelineEnrichment`** (on-prem) | Heavy lifting: bulk ingestion + **all** vectorization | Module **v0.5.0**: post writers fanned out (PR #68), **nine** knowledge composers (PR #69 — account, contact, contract, ticket, device, exposure, assessment, proposal, posture), 279 hermetic tests. Vectorization stage built; awaits the real Voyage key. |
+| **`ImperionCRM_LocalPipelineEnrichment`** (on-prem) | Heavy lifting: bulk ingestion + **bronze→silver merge for the sources it ingests** + **all** vectorization | **Updated 2026-06-19 (sync from LocalPipeline #254):** release **0.12.0**, **~190 exported cmdlets** (lever-A surface-shrink privatizing internals, LocalPipeline ADR-0027/#226), **~200 hermetic Pester test files**, 0 ScriptAnalyzer findings. Now **owns the bronze→silver merge for the sources it bulk-ingests** (LocalPipeline ADR-0026, "merge co-locates with ingestion" — posture/Meta/DNS + M365 directory groups #239 + Azure ARM `cloud_asset` #241, wired into `Register-ImperionTask` #243); the cloud `ImperionCRM_Pipeline` keeps **only** the live/webhook-driven merge (it ceded `cloud_asset` in Pipeline #135; the M365-directory cede in Pipeline #134 is held until the LP entra-group collectors fill `m365_groups`/`m365_group_members` bronze in prod). **Voyage vectorization live in prod.** _(2026-06-10 vintage: module v0.5.0, nine composers, 279 hermetic tests.)_ |
 
 ## Operator checklist (the remaining unblocks, in order of payoff)
 
@@ -99,12 +99,24 @@ Sentinel/KQM/DocuSign collectors, M365 comms bronze tables).
       the agent via the local posture composer (gold), by design.
 
 ### `ImperionCRM_LocalPipelineEnrichment` (on-prem)
-- [x] ~~Vectorization stage~~ (ADR-0009) · ~~bronze post fan-out~~ (PR #68) ·
-      ~~nine knowledge composers~~ (PR #69, v0.5.0).
-- [ ] **Operator:** real Voyage key → `-Vectorize`; knowledge re-sync; host provisioning
-      (§ checklist 1/2/8).
-- [ ] **Build:** Sentinel collector · KQM + DocuSign collectors (bronze tables exist) ·
-      M365 mail/Teams bronze tables (front-end migration first) → their post writers.
+> **Updated 2026-06-19 (sync from LocalPipeline #254):** the LP build tail is **done** —
+> what remains is operator (credential/migration) gating, not missing code. All issue/ADR
+> numbers below prefixed *LocalPipeline*/*Pipeline* are that sibling repo's.
+- [x] ~~Vectorization stage~~ (LocalPipeline ADR-0009) · ~~bronze post fan-out~~ ·
+      ~~knowledge composers~~ — and now shipped + merged in LP:
+      ~~Sentinel collector~~ (LocalPipeline #97) · ~~KQM collector (header + won-quote
+      detail)~~ (LocalPipeline #98/#160/#161) · ~~DocuSign collector~~ (LocalPipeline #99) ·
+      ~~M365 mail/Teams post writers~~ (LocalPipeline #100) · ~~PR CI gate~~ (LocalPipeline
+      #103) · ~~release-please~~ (LocalPipeline #104) · ~~bronze-writer factory~~
+      (LocalPipeline #105) · ~~knowledge-composer framework~~ (LocalPipeline #106) ·
+      ~~Voyage key + vectorization live in prod~~.
+- [x] ~~Owns the bronze→silver merge for the sources it bulk-ingests~~ (LocalPipeline
+      ADR-0026 — posture/Meta/DNS + M365 directory groups #239 + Azure ARM `cloud_asset`
+      #241, wired into `Register-ImperionTask` #243).
+- [ ] **Operator (remaining):** gold re-sync + full vectorization (LocalPipeline #101 —
+      gated on a front-end grant migration); on-prem host provisioning / retire
+      `-SkipSecretStore` (LocalPipeline #102 — LP now has a DPAPI-unlock fallback,
+      LocalPipeline #223, for hosts whose cert lacks the CMS Document-Encryption EKU).
 
 ## Recommended sequence
 
