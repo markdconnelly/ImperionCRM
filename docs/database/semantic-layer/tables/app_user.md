@@ -6,7 +6,7 @@ archetype: H
 description: Internal employee/user identity — sourced from Entra ID; roles drive RBAC; payroll/comp extensions are segregated and gated.
 resource: ../../../decision-records/ADR-0016-rbac-and-identity-model.md
 tags: [silver, identity, rbac, reference]
-timestamp: 2026-06-14T00:00:00Z
+timestamp: 2026-06-20T00:00:00Z
 ---
 
 # app_user
@@ -18,9 +18,12 @@ The internal user (Imperion employee). Governed by
 ## Source of record / authority
 
 **Entra ID is the identity source** (`entra_object_id`, `email`, `display_name`); `roles`
-are derived from Entra group membership and drive RBAC across the app. Payroll/HR
-extensions (`employee_profile`, `pay_rate`, classification 1099/W2) are **segregated** and
-comp data is finance/backend-gated (GRANT-restricted) — not part of this row.
+are derived from Entra group membership and drive RBAC across the app. `group_ids` carries
+the **raw Entra group object-ids** from the sign-in token — the authoritative membership
+record (distinct from the lossy `roles` projection), feeding the two-axis RLS company scope
+(ADR-0105, #967). Payroll/HR extensions (`employee_profile`, `pay_rate`, classification
+1099/W2) are **segregated** and comp data is finance/backend-gated (GRANT-restricted) — not
+part of this row.
 
 ## Schema
 
@@ -31,6 +34,7 @@ comp data is finance/backend-gated (GRANT-restricted) — not part of this row.
 | `email` | text | |
 | `display_name` | text | |
 | `roles` | text[] | from Entra groups; drives RBAC |
+| `group_ids` | text[] | raw Entra group object-ids; two-axis RLS company scope (ADR-0105) |
 
 ## Joins
 

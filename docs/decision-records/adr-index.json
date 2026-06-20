@@ -1344,5 +1344,19 @@
     "file": "ADR-0104-okf-orchestrator-grounding-cortex.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0105",
+    "title": "Two-axis RLS access spine — Entra claims enforced at the storage layer",
+    "status": "proposed",
+    "date": "2026-06-20",
+    "tags": [
+      "meta",
+      "security"
+    ],
+    "summary": "Two-axis Postgres RLS (owner/oid + role/groups) as the storage-layer floor of the access spine: claims injected per-request via SET LOCAL, read by policies with current_setting; group object-ids captured on sign-in; admin god-view by table ownership; a privileged curation service identity crosses the personal→company wall.",
+    "file": "ADR-0105-two-axis-rls-access-spine.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

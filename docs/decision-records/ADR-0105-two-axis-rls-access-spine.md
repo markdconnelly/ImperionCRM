@@ -1,3 +1,13 @@
+---
+adr: 0105
+title: "Two-axis RLS access spine — Entra claims enforced at the storage layer"
+status: proposed
+date: 2026-06-20
+repo: frontend
+summary: "Two-axis Postgres RLS (owner/oid + role/groups) as the storage-layer floor of the access spine: claims injected per-request via SET LOCAL, read by policies with current_setting; group object-ids captured on sign-in; admin god-view by table ownership; a privileged curation service identity crosses the personal→company wall."
+tags: [meta, security]
+---
+
 # ADR-0105: Two-axis RLS access spine — Entra claims enforced at the storage layer
 
 > **Number is a placeholder.** ADR-0105 is claimed at MERGE per system CLAUDE.md §10.3
