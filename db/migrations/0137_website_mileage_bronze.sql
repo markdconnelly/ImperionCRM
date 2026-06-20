@@ -75,6 +75,9 @@ ALTER TABLE expense_item ADD CONSTRAINT expense_item_source_kind CHECK (
 -- Same output columns/order/types as 0089 (CREATE OR REPLACE requires it). Manual
 -- mileage projects amount=NULL (derived later), category=NULL, merchant=destination
 -- (mirrors the mileiq_drive branch), carrying its own reimbursable/billable/company.
+-- NOTE (#947): the mileage branch's NULL amount MUST be cast NULL::numeric(12,2) —
+-- a bare NULL::numeric widens the view's amount column to unconstrained numeric and
+-- CREATE OR REPLACE then fails ("cannot change data type of view column amount").
 CREATE OR REPLACE VIEW expense_item_all AS
   SELECT id, 'website'::text AS source, 'out_of_pocket'::text AS kind, app_user_id,
          item_date, amount, NULL::numeric AS miles, category_id, merchant,
@@ -82,7 +85,7 @@ CREATE OR REPLACE VIEW expense_item_all AS
     FROM website_expense_item
   UNION ALL
   SELECT id, 'website'::text AS source, 'mileage'::text AS kind, app_user_id,
-         item_date, NULL::numeric AS amount, miles, NULL::uuid AS category_id,
+         item_date, NULL::numeric(12,2) AS amount, miles, NULL::uuid AS category_id,
          destination AS merchant, reimbursable, billable, autotask_company_id,
          NULL::uuid AS receipt_id, updated_at AS last_seen_at
     FROM website_mileage
