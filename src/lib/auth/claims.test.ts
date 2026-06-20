@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { rolesFromClaims } from "@/lib/auth/claims";
+import { groupIdsFromClaims, rolesFromClaims } from "@/lib/auth/claims";
 
 /**
  * `rolesFromClaims` reads two env knobs through `roleEnv` (DEV_ROLE and
@@ -73,5 +73,33 @@ describe("rolesFromClaims", () => {
   test("DEV_ROLE is appended for local preview", () => {
     process.env.DEV_ROLE = "admin";
     expect(rolesFromClaims({})).toEqual(["admin"]);
+  });
+});
+
+describe("groupIdsFromClaims (#974)", () => {
+  const G1 = "11111111-2222-3333-4444-555555555555";
+  const G2 = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+
+  test("collects GUIDs from the `groups` claim", () => {
+    expect(groupIdsFromClaims({ groups: [G1, G2] })).toEqual([G1, G2]);
+  });
+
+  test("collects group GUIDs arriving in the `roles` claim (emit_as_roles, #169)", () => {
+    expect(groupIdsFromClaims({ roles: [G1] })).toEqual([G1]);
+  });
+
+  test("ignores App-Role value strings — only GUIDs are group ids", () => {
+    expect(
+      groupIdsFromClaims({ roles: ["Application.ImperionCRM.Admins"], groups: [G1] }),
+    ).toEqual([G1]);
+  });
+
+  test("dedupes (same GUID in both claim positions) and lowercases", () => {
+    expect(groupIdsFromClaims({ groups: [G1.toUpperCase()], roles: [G1] })).toEqual([G1]);
+  });
+
+  test("a claimless user yields no group ids", () => {
+    expect(groupIdsFromClaims({})).toEqual([]);
+    expect(groupIdsFromClaims(null)).toEqual([]);
   });
 });

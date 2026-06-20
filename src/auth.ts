@@ -23,7 +23,7 @@ import Credentials from "next-auth/providers/credentials";
 import authConfig from "@/auth.config";
 import { entraEnv, breakGlass } from "@/lib/env";
 import { buildClientAssertion } from "@/lib/auth/client-assertion";
-import { rolesFromClaims, type RoleClaims } from "@/lib/auth/claims";
+import { groupIdsFromClaims, rolesFromClaims, type RoleClaims } from "@/lib/auth/claims";
 import { upsertAppUser } from "@/lib/data/app-user";
 
 const ASSERTION_TYPE =
@@ -145,6 +145,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: p.email ?? user?.email ?? "",
         displayName: p.name ?? user?.name ?? null,
         roles: rolesFromClaims(p),
+        // Raw Entra group object-ids for two-axis RLS company scope (#974).
+        groupIds: groupIdsFromClaims(p),
       });
     },
   },
