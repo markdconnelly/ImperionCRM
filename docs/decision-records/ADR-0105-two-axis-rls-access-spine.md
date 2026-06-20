@@ -117,6 +117,83 @@ promotion path, never silently. Personal-tier tables are deliberately **out of t
 company-silver canon** (ADR-0086 forbids PII there), so `personal_note` gets no OKF concept
 file.
 
+## Slice 3 design — company axis, god-view, curation identity (#976; resolved 2026-06-20)
+
+Slice 3 was decomposed into #979 (company axis), #980 (god-view), #981 (curation identity) and
+designed against ADR-0095 (RBAC) and **ADR-0100 (broad employee read is the v1 posture)** before
+any code. The load-bearing finding: **ADR-0100 makes the company axis narrow.** Reads are
+*intentionally* broad for every signed-in employee; the only exception is server-side
+revenue/comp redaction; object/account-scoped reads are deferred to v2 pending a real driver.
+So a blanket per-row `required_role` company gate would *contradict* an Accepted ADR and risk
+breaking many reads. The design below reflects that.
+
+### `app.groups` vocabulary (settles the slice-1/2 deferral)
+
+`app.groups` carries the caller's **normalized app-role slugs** (`admin`, `finance`,
+`project_manager`, `sales`, `support`) — what `requestIdentity()` already passes and what
+`app_user.roles` stores — **not** raw Entra group GUIDs. Slugs are legible in policy predicates
+and on any future gated row; the raw GUIDs remain on `app_user.group_ids` for audit.
+
+### Slice 3a — company axis: narrow, comp/finance-only, mostly deferred
+
+- **Scope:** the company axis does **not** blanket company tables. Per ADR-0100, company-tier
+  data stays broad-read with **no RLS**; the company gate applies only to the genuinely
+  sensitive **comp/finance** surface (e.g. `pay_rate`, migration 0085) that ADR-0095/0100 already
+  protect with GRANT-restriction + server-side redaction.
+- **v1 applies it to ZERO existing tables.** Retrofitting RLS onto `pay_rate` et al. is a
+  behaviour change requiring every read routed through `withIdentity` first, and those tables are
+  *already* protected — so the v1 deliverable is the **documented pattern**, not an applied
+  policy. Application is gated on a real driver (compartmented clients / restricted contractors /
+  a compliance requirement — the same triggers ADR-0100 names) or the slice-2 routing being done
+  for a given table.
+- **Pattern (when applied):** a **whole-table role gate**, not a per-row `required_role` column:
+  `USING (current_setting('app.groups', true)::text[] && ARRAY['finance','admin'])`. A per-row
+  `required_role` / account-visibility model is explicitly the v2 concept ADR-0100 deferred.
+
+### Slice 3b — audited admin god-view: personal-tier only, ledgered at the data layer
+
+- **Mechanism:** a **per-table permissive `admin` RLS policy**
+  (`USING ('admin' = ANY(current_setting('app.groups', true)::text[]))`), **not** a `BYPASSRLS`
+  role — granular, reuses the same plumbing, and an admin's reach is visible in `pg_policies`.
+- **Scope:** god-view is meaningful **only over RLS-gated personal-tier tables** (`personal_note`
+  today). Over company-tier, broad read already gives an admin everything (ADR-0100), so no
+  god-view policy is needed there.
+- **Audit:** an admin reading **another employee's personal data** via god-view must be ledgered.
+  RLS policies cannot cleanly write audit rows, so the audit is enforced at the **data layer**:
+  when `requestIdentity` indicates `admin` and the read returns rows the admin does not own, the
+  personal-tier repo writes an `audit_log` entry (one per access event, not per row). Ordinary
+  company reads are **not** per-read audited (consistent with ADR-0100). The owner's own reads
+  are not audited.
+
+### Slice 3c — privileged curation service identity (build LAST, most scrutiny)
+
+The autonomous curation/promotion agents move knowledge across the personal→company wall. They
+have no user in the loop, so they cannot borrow a user token.
+
+- **Identity:** a dedicated Azure **managed identity → dedicated Postgres login role** with
+  **NO `BYPASSRLS`**. Its reach is *explicit*: narrow table GRANTs + dedicated curation RLS
+  policies scoped to the promotion path only. The agent **runs in the backend** (ADR-0042; FE
+  owns the DB role + policies + ledger schema, BE owns the runtime — a BE issue tracks the
+  runtime).
+- **Audit ledger:** a new append-only **`curation_event`** table (FE migration): actor (service
+  identity), source personal ref, target company ref, action (`proposed` | `applied`), timestamp.
+  Every cross-wall action is ledgered; no exceptions.
+- **Promotion is human-approved, never silent.** The curation identity may **read personal to
+  propose** and **write a proposal** (`status='draft'`), mirroring the agent-draft pattern of
+  `engagement_answer` (`source='agent'`, ADR-0027); a human approves before the company-side
+  write is applied. "Explicit, never silent" *is* the approval gate.
+- **Non-impersonation (hard invariant):** the curation role acts **as itself** — it **never**
+  calls `withIdentity` with a borrowed user context and never sets `app.user_id`/`app.oid` to a
+  real user. Its curation policies key on the service identity, not on a user GUC. This is the
+  structural guarantee that it cannot read a drawer *as* its owner.
+
+### Implementation order & dependencies
+
+3b (god-view on `personal_note`) is buildable next and self-contained. 3a is **design-only for
+v1** (pattern documented; application deferred per ADR-0100). 3c depends on the #968 personal
+data model + a promotion target existing, and is the highest-risk component — built last, behind
+the human-approval gate, with its own backend ADR for the runtime.
+
 ## Consequences
 
 ### Security impact
@@ -124,7 +201,10 @@ file.
 Strongly positive: the database becomes the hard floor — even a misbehaving agent or a missed
 application guard cannot read across the boundary once policies are enabled. The leak-safety of
 the helper (`SET LOCAL` only, inside a transaction) is pinned by `identity.test.ts`. Group
-object-ids are non-secret directory identifiers (no PII, no secrets on the row).
+object-ids are non-secret directory identifiers (no PII, no secrets on the row). The slice-3
+curation identity is the highest-privilege actor; its **no-`BYPASSRLS` + never-impersonate +
+ledger-every-write** invariants are the controls that keep upward personal→company leakage —
+the threat this whole spine is designed against — from happening silently.
 
 ### Cost impact
 
@@ -144,5 +224,6 @@ Before enabling any policy in prod, re-verify the live role attributes (non-BYPA
   containers/prefixes + scoped SAS keyed to `oid`/role — out of scope for slice 1.
 - Agent-framework retrieval scoping (grounding-cortex, ADR-0104) consumes the same claims so an
   agent inherits, never exceeds, the caller's reach.
-- The exact `required_role`/`app.groups` element vocabulary (app-role slugs vs group GUIDs) is
-  decided with the slice-3 company policies.
+- The `app.groups` vocabulary is **settled** (slice-3 design): normalized app-role slugs, not
+  raw group GUIDs (see "Slice 3 design"). A per-row `required_role` / account-visibility model
+  remains the v2 concept ADR-0100 deferred — built only when a real driver appears.
