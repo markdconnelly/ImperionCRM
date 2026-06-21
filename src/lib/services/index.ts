@@ -251,6 +251,27 @@ export const agentService = {
     ),
 
   /**
+   * Decide a parked action on the approval cockpit (#1056, ADR-0109 D5): approve /
+   * edit-and-approve / reject an `agent_pending_action`. On approval the backend runs
+   * the existing approval-gated executor (`/agent/actions/execute`) with the parked
+   * payload — consent re-checked (ADR-0058) — and records the human approver as the
+   * audited actor; on rejection it just closes the row. The queue write is
+   * backend-owned (ADR-0042 — the web role has no UPDATE on `agent_pending_action`).
+   * `editedBody` is set only for an edit-and-approve.
+   */
+  decidePendingAction: (input: {
+    pendingActionId: string;
+    decision: "approve" | "reject";
+    approvedByUserId: string;
+    editedBody?: string;
+  }) =>
+    callService<{ pendingActionId: string; status: string; interactionId?: string }>(
+      services.agent,
+      "/orchestration/cockpit/decide",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
+    ),
+
+  /**
    * Flip the per-workflow autonomy dial (#278, ADR-0087): set the rung
    * (L0–L3) + mark-gated flag for an (agent, workflow) on the ICM plane. Admin-only
    * upstream (`agents:operate`); the backend upserts `agent_autopilot_policy` and

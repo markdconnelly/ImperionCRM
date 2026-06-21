@@ -348,6 +348,9 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   settings: canSeeSettings,
   security: canSeeSettings,
   agents: canSeeAgentPages,
+  // The AI-Technician operator cockpit (#1056) — same admin gate as the AI agent
+  // pages it lives beside (operating the agent layer, ADR-0050).
+  "operator-technician": canSeeAgentPages,
   board: canSeeAgentPages,
   cmdb: canSeeCmdb,
   // Change Enablement (ADR-0079, #656) — the ITIL Service practice; admin∨support, the
