@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://imperioncrm/icm/agent.schema.json",
   "title": "ICM agent.yaml manifest",
-  "description": "The per-workspace declarative manifest (ADR-0088). Maps 1:1 to the CMA agent object: `system` is COMPOSED by the backend loader from `system_compose`; the remaining keys are the structured fields where least-privilege is enforced. Structure only — the `tools`/`okf_rooms` subset invariant (workflow ⊆ domain ⊆ Constitution) is cross-file and is checked by scripts/agent-yaml-gate.mjs, not by this schema. See docs/agents/agent-yaml-schema.md and CONSTITUTION.md §3.",
+  "description": "The per-workflow declarative manifest (ADR-0088). Maps 1:1 to the CMA agent object: `system` is COMPOSED by the backend loader from `system_compose`; the remaining keys are the structured fields where least-privilege is enforced. Structure only — the `tools`/`okf_rooms` subset invariant (workflow ⊆ domain ⊆ Constitution) is cross-file and is checked by scripts/agent-yaml-gate.mjs, not by this schema. See docs/agents/agent-yaml-schema.md and CONSTITUTION.md §3.",
   "type": "object",
   "additionalProperties": false,
   "required": ["name", "model", "system_compose", "tools", "okf_rooms", "autonomy_rung"],
@@ -45,7 +45,7 @@
     },
     "okf_rooms": {
       "type": "array",
-      "description": "The data scope: OKF rooms (ADR-0086) this worker may read. MUST be a subset of the domain's rooms; every entry resolves to a coverage-matrix row whose `domain` matches this workspace's domain (or `kernel`).",
+      "description": "The data scope: OKF rooms (ADR-0086) this worker may read. MUST be a subset of the domain's rooms; every entry resolves to a coverage-matrix row whose `domain` matches this workflow's domain (or `kernel`).",
       "items": { "type": "string", "minLength": 1 },
       "uniqueItems": true
     },

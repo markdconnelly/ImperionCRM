@@ -1,7 +1,7 @@
 // agent.yaml conformance gate — the CI `icm-conformance` check
 // (ADR-0088 / issues #699 + #702, part of epic #695).
 //
-// Validates every workspace `agent.yaml` manifest the backend loader (Backend
+// Validates every workflow `agent.yaml` manifest the backend loader (Backend
 // #162) consumes against the CMA agent-object contract, and enforces the two
 // cross-file invariants a single manifest cannot express on its own:
 //
@@ -430,7 +430,7 @@ function main() {
   const manifests = findAgentManifests(icmRoot);
 
   if (manifests.length === 0) {
-    console.log("✓ agent.yaml gate: no workspace manifests yet (domain tier not populated) — schema + validator in place.");
+    console.log("✓ agent.yaml gate: no workflow manifests yet (domain tier not populated) — schema + validator in place.");
     process.exit(0);
   }
 

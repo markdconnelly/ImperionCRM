@@ -50,9 +50,9 @@ flowchart LR
 | **L3 · Auto** | act autonomously within the declared self-approve scope |
 | **🔒 Mark gate** | regardless of rung, customer-facing actions · money · prod-migration · deploy · `X.0.0` route to **one human queue** |
 
-An ICM workspace declares its rung in `agent.yaml` (`autonomy_rung` +
+An ICM workflow declares its rung in `agent.yaml` (`autonomy_rung` +
 `auto_may_self_approve` — see [agent-yaml-schema.md](agent-yaml-schema.md)). The
-sales `lead-response` workspace is **L1**: it drafts, but every customer-facing
+sales `lead-response` workflow is **L1**: it drafts, but every customer-facing
 send still parks until the workflow is admin-flipped to `auto`, and even then only
 within its narrow self-approve clause.
 
@@ -123,7 +123,7 @@ the whole system: many isolated sessions, one human reviewer (system
 
 - **Sub-agents** — the Sales/Outreach agent is T2 (propose-only); the Reporting
   agent is T0 (read-only). See [agent-platform.md](agent-platform.md).
-- **ICM workflows** — the dial per workspace; sends always exit via ADR-0058.
+- **ICM workflows** — the dial per workflow; sends always exit via ADR-0058.
 - **The Board** — personas are tool-less (T0 by construction); recommendations are
   advisory, ratified/overruled by the human CISO. See
   [board-of-directors.md](board-of-directors.md).

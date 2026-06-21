@@ -85,12 +85,18 @@ each entry **resolves to a coverage-matrix row** — and the
 
 ## 3. The room → `agent.yaml` wiring
 
-The sales `lead-response` workspace declares
+The sales `lead-response` workflow declares
 `okf_rooms: [contact, account, interaction, consent_event, lead_score, campaign]`
 — a subset of the sales domain's rooms (`icm/domains/sales/room.yaml`), which is a
 subset of the Constitution's rooms (`icm/CONSTITUTION.yaml`). So "which meaning a
 worker may load" is the *same* allow-list that bounds "which data it may read" —
 meaning and access are one structural contract.
+
+> **Room vs workspace (#1065).** A **room** is a *grounding atom* — the per-entity OKF
+> meaning, one concept file. A **workspace** is the department-scoped *bundle* of rooms +
+> RAG scope + policy + roster — i.e. an ICM **domain** (`icm/domains/<domain>/`). A
+> **workflow**'s `okf_rooms` is its subset of its workspace's (domain's) rooms, which is a
+> subset of the Constitution's. Three nested allow-lists, one structural contract.
 
 ---
 

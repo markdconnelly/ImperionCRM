@@ -13,8 +13,8 @@ verbatim where possible; deviations are deliberate and noted. ADR-0088 adds the
 |---|---|---|
 | 0a — constitution | — | [`icm/CONSTITUTION.md`](CONSTITUTION.md): the inherited contract every domain/workflow obeys (governance/identity/observability/data-platform wrappers, the non-negotiables) |
 | 0b — dev orientation | CLAUDE.md | [`icm/CLAUDE.md`](CLAUDE.md): how Claude Code MOVES through the tree (dry-runs); not the runtime's brain |
-| 1 — domain | — | `icm/domains/<domain>/room.md`: thin bounded-context prose (SoR posture, rooms, voice, default rung) |
-| 2 — workspace | workspace `CONTEXT.md` | `icm/domains/<domain>/<workflow>/CONTEXT.md` (routing) **+ `agent.yaml`** (the declarative manifest) |
+| 1 — domain *(= "workspace")* | — | `icm/domains/<domain>/room.md`: thin bounded-context prose for a staffed department (SoR posture, rooms, voice, default rung) |
+| 2 — workflow | workflow `CONTEXT.md` | `icm/domains/<domain>/<workflow>/CONTEXT.md` (routing) **+ `agent.yaml`** (the declarative manifest) |
 | 3 — stage contract | stage `CONTEXT.md` | `…/<workflow>/stages/NN-<name>/CONTEXT.md` |
 | 3r — reference | `references/` | runtime skills (3 tiers, below) + OKF rooms + cited ADRs/docs + gold-layer reads |
 | 4 — working artifacts | `output/` files | **Postgres run records, NOT files** — the repo holds the factory, the platform holds the product |
@@ -25,7 +25,22 @@ files. The runtime's Layer-0 system prompt is **composed by the backend loader**
 from Constitution → domain `room.md` → workflow prose (ADR-0088 §2), not a single
 file — and is never named `CLAUDE.md` (see Naming).
 
-## Workspace structure
+### Vocabulary — the OS-wide hierarchy (#1065)
+
+The canonical agentic-OS hierarchy is **task → workflow → agent → workspace** (the
+backend `CONTEXT.md` glossary, in `ImperionCRM_Backend`). Mapped onto ICM:
+
+- **task** — a stage action/tool (a single job, Layer 3);
+- **workflow** — an ICM **Layer-2** unit (`icm/domains/<domain>/<workflow>/`); it
+  already *is* one business workflow (formerly called a "workspace" here);
+- **agent** — an `agent.yaml` worker provisioned for a workflow;
+- **workspace** — a staffed **department**, i.e. an ICM **domain**
+  (`icm/domains/<domain>/`). "Workspace" and "domain" name the same thing.
+
+The on-disk path stays `domains/` (cheap stability); only the *word* for Layer-2
+changed (workspace → workflow), so one term means one thing across the OS.
+
+## Tree structure
 
 ```
 icm/
@@ -49,7 +64,7 @@ icm/
           <skill-slug>.md               # TIER 3 — workflow-local runtime skills
 ```
 
-## The `agent.yaml` manifest (every workspace)
+## The `agent.yaml` manifest (every workflow)
 
 The CMA agent-object shape (ADR-0088). `system` is **composed** from prose files;
 `model`/`tools`/`skills`/`mcp_servers`/`okf_rooms`/`autonomy_rung` are structured
