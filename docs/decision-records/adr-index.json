@@ -1387,5 +1387,20 @@
     "file": "ADR-0107-governed-action-tool-grant-plane.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0108",
+    "title": "LinkedIn integration — identity, outbound share, ad-library intel",
+    "status": "proposed",
+    "date": "2026-06-21",
+    "tags": [
+      "integration",
+      "marketing",
+      "agents"
+    ],
+    "summary": "Wire LinkedIn into the agentic OS by reusing existing structure, not building a LinkedIn silo: the connected member's OIDC profile lands in external_identity + contact_social_identity (provider/platform='linkedin'); posts/comms ride the unified interaction timeline (source='linkedin'); a 'Share on LinkedIn' outbound action plugs into the ADR-0107 action plane (catalog action + grant + autonomy dial, mark_gated); our own paid ads reuse campaign/ad. The ONLY net-new silver entity is ad_library_record (public Ad Library competitive intel). Scope is disciplined to what LinkedIn actually grants today — OIDC own-profile, w_member_social outbound-only, Ad Library read — with inbound feed / org analytics / people-search parked on partner-tier approval. Token lifecycle is ~60-day with no refresh token, so the connection needs an expiry surface, not silent death.",
+    "file": "ADR-0108-linkedin-integration.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
