@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.23.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.22.0...imperion-crm-v0.23.0) (2026-06-21)
+
+
+### Features
+
+* **agent:** persist app-wide sidecar conversation across navigation ([#1119](https://github.com/markdconnelly/ImperionCRM/issues/1119)) ([#1122](https://github.com/markdconnelly/ImperionCRM/issues/1122)) ([bbb971b](https://github.com/markdconnelly/ImperionCRM/commit/bbb971bfd84f9a9cf25baa939ab34ad4b75552d4))
+* **connections:** saveClientCredential data layer for client-scope credentials ([#957](https://github.com/markdconnelly/ImperionCRM/issues/957)) ([#1057](https://github.com/markdconnelly/ImperionCRM/issues/1057)) ([522f7f6](https://github.com/markdconnelly/ImperionCRM/commit/522f7f6cab65cf938c0b0915e8864dcc0710c9c1))
+* **data-plane:** entity_xref golden-record registry — schema ([#1054](https://github.com/markdconnelly/ImperionCRM/issues/1054)) ([#1060](https://github.com/markdconnelly/ImperionCRM/issues/1060)) ([bbeca68](https://github.com/markdconnelly/ImperionCRM/commit/bbeca68ebdb77f20c017c52ec93aa23014331e71))
+* **jarvis:** Jarvis landing page (/jarvis) — codex chat, session history, drill-in trace ([#1118](https://github.com/markdconnelly/ImperionCRM/issues/1118)) ([#1121](https://github.com/markdconnelly/ImperionCRM/issues/1121)) ([1f8b75f](https://github.com/markdconnelly/ImperionCRM/commit/1f8b75fe24a4aace8f33effab4abb8897f9f549d))
+* **metrics:** governed metric_definition store + seed core metrics ([#1055](https://github.com/markdconnelly/ImperionCRM/issues/1055)) ([#1059](https://github.com/markdconnelly/ImperionCRM/issues/1059)) ([9af8225](https://github.com/markdconnelly/ImperionCRM/commit/9af8225b6fbdcc5b71e7f2e1834c49c9f1f41cdc))
+* **pax8:** provider + bronze schema + silver mapping ([#1052](https://github.com/markdconnelly/ImperionCRM/issues/1052)) ([#1061](https://github.com/markdconnelly/ImperionCRM/issues/1061)) ([96ff2d7](https://github.com/markdconnelly/ImperionCRM/commit/96ff2d78f76f67952024cbaf4aaaecb1d3767cd3))
+* **schema:** Jarvis ledger + action-plane migration ([#1064](https://github.com/markdconnelly/ImperionCRM/issues/1064)) ([#1117](https://github.com/markdconnelly/ImperionCRM/issues/1117)) ([6b285d8](https://github.com/markdconnelly/ImperionCRM/commit/6b285d8a44bb534e6dab2f1f85ee2c5f93307e36))
+* **technician:** operator ticket queue + approval cockpit surface ([#1056](https://github.com/markdconnelly/ImperionCRM/issues/1056)) ([#1062](https://github.com/markdconnelly/ImperionCRM/issues/1062)) ([701cabb](https://github.com/markdconnelly/ImperionCRM/commit/701cabb8b89ca4d2513bebd7e31f8f563a840ac9))
+* **unifi:** land unifi_devices bronze table + device merge precedence ([#1053](https://github.com/markdconnelly/ImperionCRM/issues/1053)) ([#1063](https://github.com/markdconnelly/ImperionCRM/issues/1063)) ([039cd5b](https://github.com/markdconnelly/ImperionCRM/commit/039cd5b306db08c150b65c7cb013610eb112bbe2))
+
 ## [0.22.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.21.0...imperion-crm-v0.22.0) (2026-06-21)
 
 
