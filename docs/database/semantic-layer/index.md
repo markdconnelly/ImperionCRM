@@ -91,6 +91,7 @@ subset; remaining entities are tracked for expansion
 | [`source_skill`](tables/source_skill.md) | reference (tool-routing) | website (per-provider sanctioned fetch/validate skill) | ADR-0104 |
 | [`agent_autopilot_policy`](tables/agent_autopilot_policy.md) | control/config (app-native) | website (autonomy dial; agents read their rung) | ADR-0087 |
 | [`agent_tool_grant`](tables/agent_tool_grant.md) | reference (tool-routing) | website (per-agent tool allow-list; ADR-0104 points here) | ADR-0087 |
+| [`metric_definition`](tables/metric_definition.md) | control/config (headless-BI) | website (governed metric definitions; agents & dashboards share) | ADR-0062 |
 | [`project_provisioning`](tables/project_provisioning.md) | write-back sidecar | front end requests; backend executor writes (DocuSign-gated) | ADR-0080 |
 | [`task_ticket_fire`](tables/task_ticket_fire.md) | write-back sidecar | front end requests; backend executor fires (JIT) | ADR-0080 |
 | [`time_ticket`](tables/time_ticket.md) | write-back sidecar | front end requests; backend executor writes (idempotent weekly) | ADR-0082 |

@@ -177,6 +177,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [agent_autopilot_policy](tables/agent_autopilot_policy.md) | horizontal | H | ✅ | the autonomy dial — every tier reads its rung (#721, ADR-0087) |
 | account_tenant, saved_view | horizontal | H | ⏳ | n/a |
 | report_definition, dashboard, dashboard_item | horizontal | B/H | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
+| [metric_definition](tables/metric_definition.md) | horizontal | H | ✅ | the headless-BI metric contract — one governed definition agents & dashboards share (#1050/#1055) |
 
 ## Audit / governance
 
