@@ -54,3 +54,97 @@ export async function saveAgentSettingsAction(
   revalidatePath("/settings"); // the card also lives on Settings → AI (#90)
   return { ok: true, message: "Orchestrator settings saved." };
 }
+
+/** Result the grants admin surface shows after a grant/revoke/scope edit. */
+export interface GrantMutationResult {
+  ok: boolean;
+  message: string;
+}
+
+/** Parse the scope textarea into a `{ field: string[] }` allow-list, or an error. */
+function parseScopeInput(raw: string): { ok: true; value: Record<string, string[]> } | { ok: false; error: string } {
+  const text = raw.trim();
+  if (!text) return { ok: true, value: {} };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "Scope must be valid JSON, e.g. {\"accountId\":[\"a1\"]}." };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { ok: false, error: "Scope must be a JSON object of field → string[] allow-lists." };
+  }
+  const value: Record<string, string[]> = {};
+  for (const [field, vals] of Object.entries(parsed as Record<string, unknown>)) {
+    if (!Array.isArray(vals) || !vals.every((v) => typeof v === "string")) {
+      return { ok: false, error: `Field "${field}" must be an array of strings.` };
+    }
+    value[field] = vals as string[];
+  }
+  return { ok: true, value };
+}
+
+/**
+ * Grant a sub-agent a tool, or edit a grant's scope (idempotent upsert). Admin-gated
+ * (`settings:write`, ADR-0045); the WRITE is a PROCESS so it goes through the backend
+ * `POST /agent/grants` (ADR-0042 — the web role has no INSERT/UPDATE on agent_tool_grant).
+ */
+export async function upsertToolGrantAction(formData: FormData): Promise<GrantMutationResult> {
+  await requireCapability("settings:write");
+
+  const agentId = String(formData.get("agentId") ?? "");
+  const tool = String(formData.get("tool") ?? "").trim();
+  if (!agentId || !tool) return { ok: false, message: "Pick an agent and a tool name." };
+  const scope = parseScopeInput(String(formData.get("scope") ?? ""));
+  if (!scope.ok) return { ok: false, message: scope.error };
+
+  const acting = await resolveActingUser();
+  const outcome = await callServiceWithFallback(
+    () =>
+      agentService.upsertToolGrant({
+        agentId,
+        tool,
+        scope: scope.value,
+        ...(acting.ok ? { actingUserId: acting.id } : {}),
+      }),
+    {
+      label: "upsertToolGrantAction",
+      notConfigured:
+        "The agent backend isn't wired up in this environment (AGENT_SERVICE_URL unset) — grants can't be changed yet.",
+      failed: "Saving the grant failed — try again in a moment.",
+    },
+  );
+  if (!outcome.ok) return { ok: false, message: outcome.message };
+
+  revalidatePath("/agents/grants");
+  return { ok: true, message: `Grant saved: ${tool}.` };
+}
+
+/** Revoke a sub-agent's tool grant. Admin-gated; backend `DELETE /agent/grants`. */
+export async function revokeToolGrantAction(formData: FormData): Promise<GrantMutationResult> {
+  await requireCapability("settings:write");
+
+  const agentId = String(formData.get("agentId") ?? "");
+  const tool = String(formData.get("tool") ?? "").trim();
+  if (!agentId || !tool) return { ok: false, message: "Missing agent or tool." };
+
+  const acting = await resolveActingUser();
+  const outcome = await callServiceWithFallback(
+    () =>
+      agentService.revokeToolGrant({
+        agentId,
+        tool,
+        ...(acting.ok ? { actingUserId: acting.id } : {}),
+      }),
+    {
+      label: "revokeToolGrantAction",
+      notConfigured:
+        "The agent backend isn't wired up in this environment (AGENT_SERVICE_URL unset) — grants can't be changed yet.",
+      failed: "Revoking the grant failed — try again in a moment.",
+    },
+  );
+  if (!outcome.ok) return { ok: false, message: outcome.message };
+
+  revalidatePath("/agents/grants");
+  return { ok: true, message: `Grant revoked: ${tool}.` };
+}
