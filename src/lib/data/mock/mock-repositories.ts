@@ -1677,6 +1677,45 @@ export const mockRepositories: Repositories = {
         });
       }
     },
+    async saveClientCredential(input) {
+      // In-memory upsert so the credential-entry form (#950) reflects saves without a DB
+      // (ADR-0103). Keyed by (account, provider, client app id) — one credential per client
+      // app per account. externalAccountId (unifi console id) is DB-only; not on ConnectionRow.
+      const existing = clientConnections.find(
+        (c) =>
+          c.accountId === input.accountId &&
+          c.provider === input.provider &&
+          (c.clientId ?? null) === (input.clientId ?? null),
+      );
+      if (existing) {
+        existing.displayName = input.displayName;
+        existing.scopes = input.scopes;
+        existing.authMethod = input.authMethod;
+        existing.certThumbprint = input.certThumbprint;
+        existing.clientId = input.clientId;
+        existing.keyvaultSecretRef = input.keyvaultSecretRef;
+        existing.status = input.status;
+      } else {
+        clientConnections.push({
+          id: `cn_client_${input.provider}_${clientConnections.length + 1}`,
+          scope: "client",
+          provider: input.provider,
+          displayName: input.displayName,
+          status: input.status,
+          scopes: input.scopes,
+          owner: null,
+          keyvaultSecretRef: input.keyvaultSecretRef,
+          lastSync: null,
+          connectedAt: null,
+          pollIntervalMinutes: 1440,
+          accountId: input.accountId,
+          accountName: null,
+          authMethod: input.authMethod,
+          certThumbprint: input.certThumbprint,
+          clientId: input.clientId,
+        });
+      }
+    },
     async setPollInterval(id, minutes) {
       // In-memory update so the cadence selector reflects without a DB (ADR-0038).
       const safe = Math.max(0, Math.floor(minutes));

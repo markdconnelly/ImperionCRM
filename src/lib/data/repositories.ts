@@ -2257,6 +2257,28 @@ export interface CompanyCredentialInput {
   status: string; // active|pending|error|expired|revoked
 }
 
+/**
+ * Upsert a per-CLIENT credential (ADR-0103 credential registry). The credential-entry
+ * form (#950) writes one `scope='client'` `connection` row linking a managed client
+ * `account` to a per-client read source (m365 enterprise app or unifi console). Mirrors
+ * {@link CompanyCredentialInput} but client-scoped + the registry columns: the credential
+ * authenticates by `secret` | `certificate` | `api_key` (#960), the secret itself is
+ * custodied in Key Vault by the backend and only its NAME is recorded here — never a value.
+ * Keyed by (account, provider, external/client identity) so re-saving rotates, not duplicates.
+ */
+export interface ClientCredentialInput {
+  accountId: string; // owning managed-client account (required for client scope)
+  provider: string; // m365 | unifi
+  displayName: string | null;
+  scopes: string[];
+  authMethod: string | null; // certificate | secret | api_key (null = OAuth)
+  certThumbprint: string | null; // when authMethod=certificate (public id, never a secret)
+  clientId: string | null; // Entra app (client) id of the client tenant's own app (m365 per-client-app)
+  keyvaultSecretRef: string | null; // Key Vault secret NAME only — never the secret value
+  externalAccountId: string | null; // tenant id (m365) / console id (unifi)
+  status: string; // active|pending|error|expired|revoked
+}
+
 /** Connections repository: per-user personal + company-wide, and the identity map. */
 export interface ConnectionsRepository {
   /** Personal connections for the signed-in employee, resolved by email (ADR-0024). */
@@ -2269,6 +2291,8 @@ export interface ConnectionsRepository {
   connect(input: ConnectionInput): Promise<void>;
   /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;
+  /** Upsert a per-client credential (ADR-0103) — the foundation the client credential-entry form (#950) writes. */
+  saveClientCredential(input: ClientCredentialInput): Promise<void>;
   /** Set how often (minutes) the pipeline polls a connection; 0 = manual/paused (ADR-0038). */
   setPollInterval(id: string, minutes: number): Promise<void>;
   disconnect(id: string): Promise<void>;

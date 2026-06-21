@@ -59,6 +59,7 @@ import type {
   AudienceInput,
   CampaignInput,
   CampaignSendInput,
+  ClientCredentialInput,
   CompanyCredentialInput,
   ConnectionInput,
   ConsentEventInput,
@@ -11218,6 +11219,70 @@ export const postgresRepositories: Repositories = {
           input.status,
         ],
       );
+    },
+
+    async saveClientCredential(input: ClientCredentialInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.saveClientCredential(input);
+      // ADR-0103 credential registry: one client-scope row per (account, provider, identity).
+      // There is no DB unique index for client scope (identity differs per provider — m365
+      // keys on client_id, unifi on external_account_id), so rotate via UPDATE-then-INSERT
+      // keyed on COALESCE(client_id, external_account_id) — mirrors the backend client
+      // custody upserts (shared/connections.ts). The secret lives in Key Vault; we persist
+      // only its reference + the public auth metadata.
+      const clientId = nullIfEmpty(input.clientId);
+      const externalAccountId = nullIfEmpty(input.externalAccountId);
+      const { rowCount } = await pool.query(
+        `UPDATE connection
+            SET display_name        = $4,
+                scopes              = $5,
+                auth_method         = $6,
+                cert_thumbprint     = $7,
+                client_id           = $8,
+                keyvault_secret_ref = $9,
+                external_account_id = $10,
+                status              = $11::connection_status,
+                connected_at        = now(),
+                updated_at          = now()
+          WHERE scope = 'client'
+            AND account_id = $1
+            AND provider = $2::connection_provider
+            AND COALESCE(client_id, external_account_id, '') = COALESCE($3::text, '')`,
+        [
+          input.accountId,
+          input.provider,
+          clientId ?? externalAccountId,
+          nullIfEmpty(input.displayName),
+          input.scopes,
+          nullIfEmpty(input.authMethod),
+          nullIfEmpty(input.certThumbprint),
+          clientId,
+          nullIfEmpty(input.keyvaultSecretRef),
+          externalAccountId,
+          input.status,
+        ],
+      );
+      if (rowCount === 0) {
+        await pool.query(
+          `INSERT INTO connection
+             (scope, account_id, provider, display_name, scopes, auth_method,
+              cert_thumbprint, client_id, keyvault_secret_ref, external_account_id, status)
+           VALUES ('client', $1, $2::connection_provider, $3, $4, $5, $6, $7, $8, $9,
+                   $10::connection_status)`,
+          [
+            input.accountId,
+            input.provider,
+            nullIfEmpty(input.displayName),
+            input.scopes,
+            nullIfEmpty(input.authMethod),
+            nullIfEmpty(input.certThumbprint),
+            clientId,
+            nullIfEmpty(input.keyvaultSecretRef),
+            externalAccountId,
+            input.status,
+          ],
+        );
+      }
     },
 
     async setPollInterval(id: string, minutes: number): Promise<void> {
