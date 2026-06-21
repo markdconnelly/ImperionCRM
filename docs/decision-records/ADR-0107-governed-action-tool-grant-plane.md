@@ -4,7 +4,7 @@ title: "Governed action & tool-grant plane"
 status: proposed
 date: 2026-06-20
 repo: frontend
-summary: "Turn the declarative ADR-0055 autonomy tiers and the dormant agent_tool_grant table (0056) into an enforced, deny-by-default actuation plane: every sub-agent tool call is checked against a grant; outbound actions move from a hardcoded enum to a typed action-contract catalog; grants carry an evaluated scope; and a tool whose tier exceeds the agent's autopilot ceiling routes to the existing human-approval path instead of executing. The actuation twin of the agent_run ledger and the eval plane — it governs what an agent may DO, not just what it did or whether it was correct."
+summary: "Turn the declarative ADR-0055 autonomy tiers and the dormant agent_tool_grant table (0056) into an enforced, deny-by-default actuation plane: every sub-agent tool call is checked against a grant; outbound actions move from a hardcoded enum to a typed action-contract catalog; grants carry an evaluated scope; and human-in-the-loop is native via a 1–5 autonomy dial (1 = approve everything, 5 = fully autonomous) that maps to a tier ceiling — actions above the ceiling route to a native approval cockpit instead of executing. The actuation twin of the agent_run ledger and the eval plane — it governs what an agent may DO, not just what it did or whether it was correct."
 tags: [meta, agents, security]
 ---
 
@@ -83,8 +83,9 @@ autonomously**.
 
 ## Decision
 
-Make the actuation plane **enforced and deny-by-default**, mirroring the ledger/eval ownership
-split. Five decisions, one per slice of epic #990:
+Make the actuation plane **enforced and deny-by-default** with **native human-in-the-loop**,
+mirroring the ledger/eval ownership split. Six decisions across the five slices of epic #990
+(D4 + D5 both land in slice 2E):
 
 ### D1 — Deny-by-default tool grants (slice 2B, the tracer bullet)
 The sub-agent tool-dispatch boundary (the loop that invokes `SubAgentTool.run`) **asserts a
@@ -109,14 +110,40 @@ check evaluates against the call (e.g. an Autotask write limited to certain queu
 tenants). Out-of-scope calls are refused + audited exactly like an absent grant. A per-agent
 **grants admin surface** (front end, role-gated) views/grants/revokes tools and edits scope.
 
-### D4 — Tier-ceiling routing into the existing approval path (slice 2E)
-When an action's tier **exceeds** the agent's `autopilot_policies` ceiling, the dispatch routes
-it to the **existing** human-approval path (`agent/actions/execute`) and tells the model it is
-pending approval; **at or below** the ceiling it executes inline. The routing decision is
-recorded on `agent_run`. This finally connects the declarative ADR-0055 tier to the ADR-0087
-autonomy dial — the tier label stops being decoration.
+### D4 — Native human-in-the-loop: the 1–5 autonomy dial → tier-ceiling routing (slice 2E)
+Human-in-the-loop is a **first-class, native control**, not a config flag. Each agent (with a
+per-surface / per-action-class override on `autopilot_policies`) carries an **autonomy level
+1–5**, surfaced as a slider:
 
-### D5 — Audit + scope provenance on the run
+| Level | Name | Behavior (auto-execute up to / approve at-or-above) |
+|---|---|---|
+| **1** | Manual | approve **every** action (T1+). Only T0 reads run unattended. |
+| **2** | Assisted | auto **T1** (internal, undoable); approve **T2/T3** (client-visible + high-risk). |
+| **3** | Supervised | auto through **T2** (routine client-visible); approve **T3** (irreversible/financial/destructive). |
+| **4** | Autonomous-with-oversight | auto **all tiers**, but **notify + open an undo/cancel window** (no pre-approval). |
+| **5** | Fully autonomous | execute silently, audit only. No gate, no notify. |
+
+The level resolves to a **tier ceiling**; at dispatch, an action whose ADR-0055 tier **exceeds**
+that ceiling routes to the **native approval cockpit** (D5, built on the existing
+`agent/actions/execute` path) and the model is told it is pending approval; **at or below** the
+ceiling it executes inline (level 4 executes but emits a notify + reversible window). The level,
+the resolved ceiling, and the routing decision are recorded on `agent_run`. This finally connects
+the declarative ADR-0055 tier to the ADR-0087 autonomy dial — the tier label stops being
+decoration, and the dial becomes something an operator can *see and move*.
+
+> The exact tier→level boundaries above are the recommended default; they are data on
+> `autopilot_policies`, so they are tunable without a schema change. Levels 1 and 5 are fixed by
+> definition (approve-everything / fully-autonomous); 2–4 are the tunable middle.
+
+### D5 — Native approval cockpit (slice 2E, with the dial)
+The human side of HITL is a **native surface**, not an out-of-band email: a cockpit where pending
+agent actions queue with their proposing agent, tier, rationale, target, and resolved level, and a
+human approves/rejects (the approver becomes the audited actor, consent re-checked at execute —
+the ADR-0032 property preserved). Level-4 oversight items (post-hoc notify + undo window) surface
+here too. This reuses the `agent/actions/execute` executor and is **not** blocked on the ICM
+approval queue (#277); if the two surfaces converge later that is a separate decision.
+
+### D6 — Audit + scope provenance on the run
 Every grant decision (allow / deny-no-grant / deny-out-of-scope / route-to-approval) is
 auditable, and the effective grant set for a run is reflected in `agent_run.permission_scope`
 so the ledger answers *"what was this agent permitted to do at the time"* — the actuation
