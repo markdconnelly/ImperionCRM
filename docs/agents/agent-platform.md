@@ -80,6 +80,36 @@ Two facts that trip people up:
   orchestrator's per-turn audit into `agent_run`/`agent_message` is a separate
   later change (ADR-0049 §6). Don't assume every CRM turn is in `agent_run` yet.
 
+### 2.1 Sub-agent rows + seeded tool grants (migration 0156, ADR-0107)
+
+Until migration 0156 the `agent` table held **only** `module='board'` personas —
+the CRM sub-agents (`crm`, `autotask`, …) were pure code registrations, so
+`agent_tool_grant` had nothing to reference and a grant check was impossible.
+Migration 0156 (#993, the 2B-0 foundation of the governed action/tool-grant plane
+#990) seeds the **9 registered sub-agents as `module='crm'` rows** (`name` =
+SubAgentName) and their per-agent tool allowlist:
+
+| Sub-agent (`agent.name`, module `crm`) | Granted tools (`agent_tool_grant.tool`) |
+|---|---|
+| `crm` | `crm_search_accounts`, `crm_search_contacts`, `crm_get_contact`, `crm_search_opportunities`, `crm_create_task`, `crm_add_note` |
+| `autotask` | `autotask_search_tickets`, `autotask_get_ticket`, `autotask_add_triage_note` |
+| `documentation` | `docs_search_knowledge`, `docs_draft_article` |
+| `itglue` | `itglue_list_organizations`, `itglue_search_configurations`, `itglue_get_configuration`, `itglue_search_docs` |
+| `m365` | `m365_recent_comms`, `m365_search_comms`, `m365_upcoming_meetings` |
+| `plaud` | `plaud_list_recordings`, `plaud_get_note`, `plaud_get_transcript` |
+| `advisor` | `advisor_list`, `advisor_consult` |
+| `reporting` | `agent_reporting` *(generic delegate — no narrow tools)* |
+| `sales` | `agent_sales` *(generic delegate — no narrow tools)* |
+
+- **`search_knowledge` is exempt** — it is an orchestrator-global tool, not
+  sub-agent-scoped, so it carries no grant row.
+- **This is the shared foundation for two planes.** The grants feed the
+  deny-by-default egress check (#990); the same rows give the native 1–5 autonomy
+  dial (#996 / ADR-0107 D4) a per-sub-agent row to hang a level on.
+- **Dormant on apply — zero behavior change.** Nothing reads `agent_tool_grant`
+  yet. Enforcement is **BE #244 (2B-1)**, which must deploy **only after** this
+  seed is prod-applied — otherwise fail-closed enforcement blocks every tool.
+
 ---
 
 ## 3. The sub-agent fleet
