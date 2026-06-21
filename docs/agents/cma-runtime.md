@@ -44,7 +44,7 @@ The CMA shape (the same split `agent.yaml` encodes — see
 
 | Concept | Lifetime | Built from |
 |---|---|---|
-| **Agent object** | created once, **versioned on change** | a workspace `agent.yaml` (its `system` composed from `CONSTITUTION.md` → domain `room.md` → workflow `prose.md`; structured fields `model`/`tools`/`skills`/`mcp_servers`/`okf_rooms`/`autonomy_rung`) |
+| **Agent object** | created once, **versioned on change** | a workflow `agent.yaml` (its `system` composed from `CONSTITUTION.md` → domain `room.md` → workflow `prose.md`; structured fields `model`/`tools`/`skills`/`mcp_servers`/`okf_rooms`/`autonomy_rung`) |
 | **Session** | **ephemeral, run-scoped** — one per workflow run | the agent object + per-run volatile injection (caller identity, this-run rooms) at session time |
 
 There is **no long-lived per-domain persona.** A trigger spins up a session, the
@@ -82,7 +82,7 @@ sequenceDiagram
     participant G as ADR-0058 send gate
     participant L as agent_run / agent_message (#163)
     T->>D: new work-unit
-    D->>Ld: select workspace agent.yaml
+    D->>Ld: select workflow agent.yaml
     Ld->>Ld: validate + subset-check + compose system
     Ld->>CMA: create/version agent object → session
     loop each turn
@@ -165,7 +165,7 @@ tables from migration 0056), so:
 |---|---|
 | `agent.yaml` schema + conformance gate | **Live** (`icm/agent.schema.json`, `scripts/agent-yaml-gate.mjs`, CI `icm-conformance`) |
 | Constitution + sales budget files | **Live** (`icm/CONSTITUTION.{md,yaml}`, `icm/domains/sales/room.{md,yaml}`) |
-| The `lead-response` workspace (a real agent object's source) | **Live** (definitions) |
+| The `lead-response` workflow (a real agent object's source) | **Live** (definitions) |
 | Backend loader (compose `system`, version the agent object) | **In build — Backend #162** |
 | Session-event mirror into `agent_run` / `agent_message` | **In build — Backend #163** |
-| The other eight domains' workspaces | **Planned** (ADR-0088) |
+| The other eight domains' workflows | **Planned** (ADR-0088) |

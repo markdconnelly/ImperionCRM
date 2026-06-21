@@ -4,7 +4,7 @@ Imperion OS automates MSP business processes — marketing → sales →
 project management → service desk → finance — using the **Interpreted Context
 Methodology (ICM)**. This guide is the onboarding tour: what ICM is, how the
 factory tree is laid out, how a run flows, the autonomy dial, and the live
-reference workspace.
+reference workflow.
 
 [← The AI suite](README.md) · Governing decision:
 [ADR-0091](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)
@@ -52,7 +52,7 @@ icm/
       room.md              #   thin domain prose (composed into system)
       room.yaml            #   the domain least-privilege budget (⊆ Constitution)
       skills/              #   TIER 2 — domain-shared runtime skills
-      lead-response/       # Layer 2 — a workspace (one business workflow)
+      lead-response/       # Layer 2 — a workflow (one business workflow)
         CONTEXT.md         #   routing: trigger, stage order, autonomy notes
         agent.yaml         #   the declarative manifest (the CMA agent object)
         prose.md           #   workflow system prose (composed into system)
@@ -79,7 +79,7 @@ Constitution, never peer folders** (ADR-0091 §9).
 ```mermaid
 flowchart TD
     TRG["Trigger<br/>(new lead · ticket · cadence)"] --> TRI["Deterministic triage / dispatch<br/>(code, ADR-0087)"]
-    TRI --> SESS["Session provisioned from the workspace agent.yaml<br/>(system = Constitution → room.md → prose.md)"]
+    TRI --> SESS["Session provisioned from the workflow agent.yaml<br/>(system = Constitution → room.md → prose.md)"]
     SESS --> S1["Stage 01 — single job<br/>load only this stage's Inputs"]
     S1 --> S2["Stage 02 …"]
     S2 --> CP{Checkpoint?}
@@ -153,9 +153,9 @@ endpoint → an honest "not wired yet" notice instead of a failure.
 
 ---
 
-## 5. The live reference workspace: `sales/lead-response`
+## 5. The live reference workflow: `sales/lead-response`
 
-The one fully-built workspace today is
+The one fully-built workflow today is
 [`icm/domains/sales/lead-response/`](../../icm/domains/sales/lead-response/CONTEXT.md)
 (issue #701). Use it as the template for every new workflow.
 
@@ -216,7 +216,7 @@ channel rules). Developer skills are the engineering canon — see
 
 - **Author a workflow** with the `imperion-icm` developer skill (skills plugin).
 - **Changing a workflow / domain / the Constitution is a normal unit of work:**
-  issue → branch → micro-PR (ADR-0060/0061), one workspace per PR.
+  issue → branch → micro-PR (ADR-0060/0061), one workflow per PR.
 - **Conformance is gated by CI** (`icm-conformance`, #702): every `agent.yaml`
   is shape-checked against `icm/agent.schema.json` and the
   `workflow ⊆ domain ⊆ Constitution` invariant is enforced by
@@ -226,11 +226,11 @@ channel rules). Developer skills are the engineering canon — see
   **same PR** (docs-gate — the definitions are docs).
 
 Current domains/workflows: see [`icm/domains/`](../../icm/domains/) —
-`sales/lead-response` is the live reference workspace; the other eight domains are
+`sales/lead-response` is the live reference workflow; the other eight domains are
 planned per ADR-0088.
 
 ## Operating rule for working *on* ICM
 
 Any work on or dry-run of a workflow follows the Layer-0 protocol in
-[`icm/CLAUDE.md`](../../icm/CLAUDE.md): route via the workspace `CONTEXT.md`, load
+[`icm/CLAUDE.md`](../../icm/CLAUDE.md): route via the workflow `CONTEXT.md`, load
 only the stage's `Inputs` table, **stop at checkpoints, never send.**

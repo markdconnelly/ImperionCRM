@@ -287,7 +287,7 @@ Single-context: one `CONTEXT.md` at the repo root + ADRs in `docs/decision-recor
 
 ### ICM business-process automation
 
-MSP business workflows are ICM workspaces under `icm/` (factory, ADR-0061), executed by the backend orchestrator with a per-workflow autonomy dial (draft -> auto). **Operating rule:** any work on or dry-run of a workflow follows the Layer-0 protocol in `icm/CLAUDE.md` - route via the workspace `CONTEXT.md`, load only the stage's Inputs table, stop at checkpoints, never send. Conventions: `icm/CONVENTIONS.md`; overview: `docs/agents/icm.md`.
+MSP business workflows are ICM workflows under `icm/` (factory, ADR-0061), executed by the backend orchestrator with a per-workflow autonomy dial (draft -> auto). **Operating rule:** any work on or dry-run of a workflow follows the Layer-0 protocol in `icm/CLAUDE.md` - route via the workflow `CONTEXT.md`, load only the stage's Inputs table, stop at checkpoints, never send. Conventions: `icm/CONVENTIONS.md`; overview: `docs/agents/icm.md`.
 
 ### Skills plugin (canon)
 

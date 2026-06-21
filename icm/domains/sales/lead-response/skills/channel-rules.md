@@ -31,7 +31,7 @@
 
 - Outbound ≠ inbound: stricter basis. Only contacts on a list Mark approved
   for outreach; CAN-SPAM/unsubscribe footer mandatory; sequence steps are
-  defined per-campaign (separate workspace file when the first campaign is
+  defined per-campaign (separate workflow file when the first campaign is
   built) — stage 03 does not freestyle outbound copy.
 - v1: every outbound enrollment requires human approval (no `auto`).
 

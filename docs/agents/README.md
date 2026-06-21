@@ -58,8 +58,8 @@ here.
 | # | Guide | What it covers |
 |---|---|---|
 | 1 | **[The agent platform & surfaces](agent-platform.md)** | The orchestrator, the persisted agent core (`agent` / `agent_run` / `agent_memory`), the sub-agent fleet, the `/agents` operations page, and the in-app agent panel + AI-assisted surfaces. **Start here.** |
-| 2 | **[ICM — business-process automation](icm.md)** | The Interpreted Context Methodology: the `icm/` factory, the domain → workspace → stage tree, the autonomy dial (draft → auto), and the live `lead-response` reference workspace. |
-| 3 | **[`agent.yaml` — the workspace manifest](agent-yaml-schema.md)** | The declarative CMA agent-object manifest, field-by-field; how prose and structure are split; the `workflow ⊆ domain ⊆ Constitution` least-privilege invariant; the conformance gate. |
+| 2 | **[ICM — business-process automation](icm.md)** | The Interpreted Context Methodology: the `icm/` factory, the domain → workflow → stage tree, the autonomy dial (draft → auto), and the live `lead-response` reference workflow. |
+| 3 | **[`agent.yaml` — the workflow manifest](agent-yaml-schema.md)** | The declarative CMA agent-object manifest, field-by-field; how prose and structure are split; the `workflow ⊆ domain ⊆ Constitution` least-privilege invariant; the conformance gate. |
 | 4 | **[The CMA runtime](cma-runtime.md)** | The self-hosted Managed Agents runtime: the managed-agent loop, ephemeral run-scoped workers, the self-hosted sandbox, the budget-file convention, and how session events mirror into the `agent_run` ledger. |
 | 5 | **[Orchestration & observability matrix](orchestration-matrix.md)** | The single map of *every* agent — the five-tier taxonomy (Triage · Dispatch · Execute · Observe/Govern · Spine), the run ledger, and the OKF-room-per-agent model. |
 | 6 | **[The AI Board of Directors](board-of-directors.md)** | The convened panel of influence personas, the board packet, the deputy-CISO model, and the deliberation → synthesis → review flow. |
@@ -93,7 +93,7 @@ not yet running**. The honest current state, verified against source on
 | `/board` page + Board runtime (two-round deliberation + synthesis) | **Live** | `src/app/(app)/board/`; backend ADR-0039 |
 | Agent core schema (`agent`, `agent_tool_grant`, `agent_run`, `agent_message`, `agent_memory`) | **Live (migration 0056)** | `db/migrations/0056_agent_core_and_board.sql` |
 | Gold knowledge store schema (`knowledge_object`, `knowledge_embedding`) | **Live (migration 0045)** | `db/migrations/0045_gold_knowledge_vectors.sql` |
-| ICM factory + the `lead-response` reference workspace | **Live (definitions)** | `icm/domains/sales/lead-response/` |
+| ICM factory + the `lead-response` reference workflow | **Live (definitions)** | `icm/domains/sales/lead-response/` |
 | `agent.yaml` schema + conformance gate (CI `icm-conformance`) | **Live** | `icm/agent.schema.json`, `scripts/agent-yaml-gate.mjs` |
 | ICM Constitution + sales-domain budget files | **Live** | `icm/CONSTITUTION.{md,yaml}`, `icm/domains/sales/room.{md,yaml}` |
 | **Embedding generation / semantic search** (the vectors that fill the gold store) | **Dormant** — schema is live, the on-prem pipeline produces vectors; semantic search "arrives with vectorization" | overview §4 *Knowledge search*; ADR-0041 |

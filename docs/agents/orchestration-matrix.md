@@ -18,7 +18,7 @@ the [OKF semantic layer (ADR-0086)](../decision-records/ADR-0086-okf-semantic-la
 > **What's actually built (2026-06-16).** This matrix is the *target roster* — the
 > full taxonomy ADR-0091 (from ADR-0087) ratifies. Live today: the orchestrator +
 > Reporting/Sales executors, the Board personas, the `agent_run` ledger schema,
-> and the ICM `lead-response` workspace. Many Observe/Govern roles are the design
+> and the ICM `lead-response` workflow. Many Observe/Govern roles are the design
 > surface, not running code; the §"Reality check" and §"Dependencies" sections
 > below flag the genuine gaps (notably the missing AR/invoice entity, #668).
 

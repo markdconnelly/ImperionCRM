@@ -4,7 +4,7 @@ This is the **runtime meta-policy** for the agent layer (ADR-0088, amending ADR-
 It is to `agent.yaml` manifests what the system-level CLAUDE.md §4 is to repo CLAUDE.md
 files: a small set of clauses every domain and workflow **must declare and obey**,
 enforced downward by conformance (CI `icm-conformance`, #702) — never re-argued per
-workspace.
+workflow.
 
 The universals below — Governance, Identity, Observability, Data Platform — are
 **inherited from here, not peer folders**. A worker is *born under* them; it cannot route
@@ -13,7 +13,7 @@ around them because they were never a destination.
 ## 1. What a worker is
 
 A trigger → deterministic triage/dispatch (code, ADR-0087) → an **ephemeral, run-scoped**
-worker provisioned from a workspace `agent.yaml`. The agent object is created once and
+worker provisioned from a workflow `agent.yaml`. The agent object is created once and
 versioned; the **session is the per-run spin-up**. No long-lived per-domain persona.
 
 Runtime: **self-hosted Managed Agents** (ADR-0088) — Anthropic runs the loop; tools
@@ -31,7 +31,7 @@ The Claude API carries `system` (prose) and `model`/`tools`/`mcp_servers`/`skill
   `autonomy_rung`) carry everything **enforced**. Least-privilege lives here, not in prose
   — a prompt is not an enforcement surface.
 
-## 3. Required `agent.yaml` keys (every workspace)
+## 3. Required `agent.yaml` keys (every workflow)
 
 | Key | Rule |
 |---|---|
@@ -39,7 +39,7 @@ The Claude API carries `system` (prose) and `model`/`tools`/`mcp_servers`/`skill
 | `model` | a settled-stack model (ADR-0043) |
 | `system_compose` | ordered list ending at the workflow prose; MUST begin with `CONSTITUTION.md` then the domain `room.md` |
 | `tools` | least-privilege; **⊆ the domain's tools** |
-| `okf_rooms` | the data scope; **⊆ the domain's rooms**; every entry resolves to a `coverage-matrix` row whose `domain` matches this workspace's domain (or `kernel`) |
+| `okf_rooms` | the data scope; **⊆ the domain's rooms**; every entry resolves to a `coverage-matrix` row whose `domain` matches this workflow's domain (or `kernel`) |
 | `skills` | cross / domain / workflow tiers only (CONVENTIONS §skills) |
 | `autonomy_rung` | `L0`–`L3`; states what `auto` may self-approve |
 | `mcp_servers` | optional; credentials via vaults, never inline |
@@ -70,7 +70,7 @@ restate (the canonical-source rule).
 6. **Audit canon stays ours.** Session events mirror into `agent_run`/`agent_message`
    (Backend #163); the Postgres ledger is authoritative.
 
-## 6. The inherited horizontals (wrappers, not workspaces)
+## 6. The inherited horizontals (wrappers, not workflows)
 
 | Horizontal | What it enforces, on every worker |
 |---|---|

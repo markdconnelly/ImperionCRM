@@ -1,6 +1,6 @@
-# `agent.yaml` — the ICM workspace manifest
+# `agent.yaml` — the ICM workflow manifest
 
-The declarative, per-workspace manifest that defines an ICM worker. It is the
+The declarative, per-workflow manifest that defines an ICM worker. It is the
 single artifact the **backend loader** (Backend #162) turns into a **CMA agent
 object**, and the artifact the **CI conformance gate** (`icm-conformance`, #702)
 validates. One `agent.yaml` lives beside each workflow's prose at
@@ -46,7 +46,7 @@ enforcement surface.
 
 | Key | Req | Shape | Meaning |
 |---|---|---|---|
-| `name` | ✓ | kebab-case string, unique in domain | the workspace name |
+| `name` | ✓ | kebab-case string, unique in domain | the workflow name |
 | `model` | ✓ | settled-stack enum (ADR-0043) | `claude-opus-4-8` · `claude-sonnet-4-5` · `claude-haiku-4-5` |
 | `system_compose` | ✓ | ordered `.md` list, ≥3 | starts `CONSTITUTION.md`, then domain `room.md`, ends at workflow `prose.md` |
 | `tools` | ✓ | string allow-list | least-privilege; **⊆ domain ⊆ Constitution** |
@@ -159,6 +159,6 @@ the new, additive guarantee.
 
 ## Changing a manifest
 
-Issue → branch → micro-PR (ADR-0060/0061), one workspace per PR. An ADR that
+Issue → branch → micro-PR (ADR-0060/0061), one workflow per PR. An ADR that
 supersedes a clause this manifest obeys updates the manifest in the same PR.
 Conformance is gated by CI (`icm-conformance`, #702).

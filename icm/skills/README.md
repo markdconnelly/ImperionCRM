@@ -2,7 +2,7 @@
 
 Skills here are loadable by ANY workflow stage and by the orchestrator/
 sub-agents on ad-hoc turns (CONVENTIONS.md "Two skill tiers"). Workflow-local
-knowledge stays in that workspace's `skills/`; the moment a second workflow
+knowledge stays in that workflow's `skills/`; the moment a second workflow
 needs it, promote it here and leave a pointer.
 
 Format: one `<slug>.md` per skill, opening with a one-line **Use when:**

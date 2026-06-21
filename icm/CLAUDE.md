@@ -18,7 +18,7 @@ time; the numbered folder IS the execution order. The reference implementation i
 
 1. Read ONLY that stage's `CONTEXT.md`.
 2. Load ONLY what its Inputs table lists (plus skills it cites — shared ones
-   in `skills/`, workflow-local ones in the workspace's `skills/`). Loading
+   in `skills/`, workflow-local ones in the workflow's `skills/`). Loading
    unlisted context is a contract violation, not thoroughness.
 3. Do the Process steps; produce exactly the named Outputs in the contract's
    format. Steps marked `[script]`-class mechanical work should be
