@@ -17,7 +17,7 @@ tags: [integration, marketing, agents]
 
 | Field | Value |
 |---|---|
-| **Repo** | frontend (schema + this ADR + OKF); Pipeline/LocalPipeline = collectors+merge; Backend = outbound action |
+| **Repo** | frontend (schema + this ADR + OKF + display); Backend = OIDC profile collector (S1) + outbound action (S2); LocalPipeline = Ad-Library collector+merge (S3) |
 | **Status** | Proposed |
 | **Date** | 2026-06-21 |
 | **Epic** | #1007 (slices S1 #1008 · S2 #1009 · S3 #1010 · S4 #1011) |
@@ -91,13 +91,17 @@ Six decisions across slices S1–S4 of epic #1007. This ADR slice ships **docs o
 migration applied), the ADR-0107 / access-spine slice-1 precedent.
 
 ### D1 — Identity reuses the existing tables (S1 #1008)
-The connected member's OIDC profile (`/v2/userinfo`) is ingested by a **cloud-Pipeline** collector
-(live/on-demand — low volume), landed in a thin bronze (`linkedin_profile`, ADR-0042 envelope), and
-merged into **`external_identity`** (`provider='linkedin'`, `external_id`=`sub`/member URN, metadata
-= name/picture/locale) and **`contact_social_identity`** (`platform='linkedin'`, `profile_url`,
-`external_id`) for the owning `app_user`'s contact, with the personal fields stamped through the
-existing lawful-basis enrichment path. **No new tables.** Scope reality: own profile only — no
-people-search, no arbitrary-profile enrichment.
+The connected member's OIDC profile (`/v2/userinfo`) is ingested by a **backend** collector
+(`ImperionCRM_Backend`, mirroring the M365 comms engine — CLAUDE.md §5.B), which resolves the
+user's `connection` token (refresh-on-read) and writes **directly** to silver: **`external_identity`**
+(`provider='linkedin'`, `external_id`=`sub`/member URN, metadata = name/picture/locale) and —
+when the member resolves to a CRM `contact` by email — **`contact_social_identity`**
+(`platform='linkedin'`, `external_id`, `raw`). No bronze stage and **no new tables**; the writes
+are idempotent upserts. (The collector is the backend's, **not** the cloud Pipeline's: a per-user
+OAuth-token read is a backend process — the Pipeline explicitly excludes comms/interaction
+ingestion and its `/api/refresh` + connector manifest are company/account-scoped, not per-user.
+Shipped in backend PR #252.) Scope reality: own profile only — no people-search, no
+arbitrary-profile enrichment.
 
 ### D2 — Comms ride the unified interaction timeline (S1/S2)
 LinkedIn posts/comments/DMs are `interaction` rows with `source='linkedin'` and the existing `kind`
@@ -164,8 +168,8 @@ approval lands they decompose into ingest slices that reuse `interaction` / `soc
 - OKF: one new concept file + one coverage-matrix row (S3), timestamp touches on
   `contact_social_identity`/`external_identity`/`interaction` concept files if their notes change
   (§11, docs-gate enforced).
-- Sibling issues per slice (Pipeline collector for S1, LocalPipeline Ad-Library collector for S3,
-  Backend action for S2) per the cross-repo decomposition rule.
+- Sibling issues per slice (Backend collector for S1 (#252), Backend action for S2, LocalPipeline
+  Ad-Library collector for S3) per the cross-repo decomposition rule.
 
 ## Future considerations
 - **Partner-tier unlock (S4)** turns on inbound feed + org analytics + people-search — all of which
