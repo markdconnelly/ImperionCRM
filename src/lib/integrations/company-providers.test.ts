@@ -85,3 +85,24 @@ describe("COMPANY_PROVIDERS — Meta provider (#586)", () => {
     expect(pageId?.required).toBe(true);
   });
 });
+
+describe("COMPANY_PROVIDERS — Pax8 provider (#1052)", () => {
+  const pax8 = COMPANY_PROVIDERS.find((p) => p.key === "pax8");
+
+  it("is a pollable credential ingest source (procure→bill loop, #1042)", () => {
+    expect(pax8).toBeDefined();
+    expect(pax8?.kind).toBe("credential");
+    expect(pax8?.sendCapable).not.toBe(true);
+    expect(pax8?.adminConsent).not.toBe(true);
+    expect(providerIsPollable(pax8!)).toBe(true);
+  });
+
+  it("collects an OAuth client-credentials pair — clientId (public) + clientSecret (write-only)", () => {
+    const fieldNames = pax8?.fields?.map((f) => f.name) ?? [];
+    expect(fieldNames).toEqual(["clientId", "clientSecret"]);
+    expect(pax8?.fields?.find((f) => f.name === "clientId")?.secret).toBe(false);
+    const secret = pax8?.fields?.find((f) => f.name === "clientSecret");
+    expect(secret?.secret).toBe(true);
+    expect(secret?.required).toBe(true);
+  });
+});

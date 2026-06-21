@@ -135,6 +135,33 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     ],
   },
   {
+    key: "pax8",
+    label: "Pax8",
+    icon: "ShoppingCart",
+    kind: "credential",
+    description:
+      "Pax8 distributor API — subscriptions, licenses, and orders (the procure→provision→bill loop, #1042).",
+    scopes: ["subscriptions:read", "licenses:read", "orders:read", "companies:read"],
+    fields: [
+      {
+        name: "clientId",
+        label: "Client ID",
+        secret: false,
+        type: "text",
+        required: true,
+        placeholder: "Pax8 API client id",
+      },
+      {
+        name: "clientSecret",
+        label: "Client secret",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "Pax8 API OAuth client-credentials secret. Stored in Key Vault by reference; never echoed back.",
+      },
+    ],
+  },
+  {
     key: "myitprocess",
     label: "My IT Process",
     icon: "ListChecks",
