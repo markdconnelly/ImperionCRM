@@ -99,6 +99,7 @@ done/▶-in-flight ledger.
 - `0141` connection credential registry · `0147` `connection.client_id` · `0142` LP merge write grants
 - `0143` `source_skill` routing registry · `0148` `intune_managed_apps` bronze
 - ⏳ **NOT yet prod-applied (access spine #967, Mark-gated apply):** `0152` `app_user.group_ids` (slice 1, #974) · `0153` `personal_note` + first RLS owner policy (slice 2, #975 — verify post-apply via [`docs/testing/rls-access-spine.md`](testing/rls-access-spine.md))
+- ⏳ **NOT yet prod-applied (Jarvis wedge #1038, Mark-gated apply):** `0163` Jarvis run-ledger + action plane (#1064): `agent.display_name` + seed · `agent_conversation` (conversation_id correlation root) · `agent_run.conversation_id` · `agent_pending_action` chain (`run_id`/`plan_seq`/`depends_on_seq`) + `data_class` · `agent_governance_setting` (kill-switch/caps/TTL) · Autotask eval-case seeds
 
 **Recent ADRs** ([`docs/decision-records/`](decision-records/README.md)) — note the
 consolidated dossiers that supersede earlier scattered ADRs:
