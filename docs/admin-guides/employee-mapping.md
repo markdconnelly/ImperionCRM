@@ -11,7 +11,7 @@
 
 ## Why it exists
 
-The time and expense lifecycle in Imperion Business Manager reconciles several
+The time and expense lifecycle in Imperion OS reconciles several
 external systems per employee. To join them, each employee (`app_user`) must be
 linked to their identity in each system. This one-time admin setup captures those
 ids.

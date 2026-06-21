@@ -1,6 +1,6 @@
 # How the database is shaped — a guide to the schema
 
-> **Audience:** anyone new to Imperion Business Manager who needs to understand the
+> **Audience:** anyone new to Imperion OS who needs to understand the
 > data model before reading code or running a query — a new engineer, a reviewer, an
 > operator, or an agent author.
 > **Scope:** the *narrative* of the schema — how the store is organized, the medallion
@@ -18,7 +18,7 @@
 
 ## 1. One store, three jobs
 
-Imperion Business Manager runs on a **single PostgreSQL 18 database with the
+Imperion OS runs on a **single PostgreSQL 18 database with the
 `pgvector` extension** (`imperioncrm`, Azure Database for PostgreSQL Flexible Server).
 That one store does three jobs at once (ADR-0003):
 
@@ -264,7 +264,7 @@ Migrations apply with a **short-lived Microsoft Entra token** as the password �
 | The meaning — source-of-record, joins, PII per silver entity | [semantic-layer/index.md](semantic-layer/index.md) (governed OKF canon) |
 | How the app reads data | [data-access-layer.md](data-access-layer.md) |
 | How a fact crosses repo boundaries | [system-of-systems](../architecture/system-of-systems.md) |
-| The capability story the data backs | [Imperion Business Manager — overview](../product/imperion-os-overview.md) |
+| The capability story the data backs | [Imperion OS — overview](../product/imperion-os-overview.md) |
 | The decisions behind the platform | [ADR-0092](../decision-records/ADR-0092-medallion-data-platform-consolidated.md) (medallion) · [decision-records](../decision-records/README.md) |
 
 The shared cross-repo security baseline is the

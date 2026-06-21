@@ -1,6 +1,6 @@
 # ICM — business-process automation
 
-Imperion Business Manager automates MSP business processes — marketing → sales →
+Imperion OS automates MSP business processes — marketing → sales →
 project management → service desk → finance — using the **Interpreted Context
 Methodology (ICM)**. This guide is the onboarding tour: what ICM is, how the
 factory tree is laid out, how a run flows, the autonomy dial, and the live

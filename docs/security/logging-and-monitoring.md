@@ -1,6 +1,6 @@
 # Logging & monitoring
 
-What **Imperion Business Manager** records, where the record lands, and how the platform
+What **Imperion OS** records, where the record lands, and how the platform
 is watched. The governing invariant — **"audit everything that acts"** — is in
 [unified-security-standard](unified-security-standard.md) §4 (referenced, not restated).
 

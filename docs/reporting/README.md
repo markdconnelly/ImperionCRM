@@ -12,7 +12,7 @@ reference for everything under `/reporting`.
 
 ## 1. Two kinds of reporting, one hub
 
-Imperion Business Manager ships **two** complementary reporting surfaces, both reached
+Imperion OS ships **two** complementary reporting surfaces, both reached
 from the `/reporting` hub:
 
 1. **Curated BI dashboards (ADR-0062).** Hand-built, read-optimized intelligence over the

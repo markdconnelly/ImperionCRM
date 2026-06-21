@@ -15,7 +15,7 @@
 
 ## The one idea
 
-**Imperion Business Manager** is single-tenant (Imperion employees only). Authorization
+**Imperion OS** is single-tenant (Imperion employees only). Authorization
 is **layered defense-in-depth**, and every layer assumes the one above it can be
 bypassed:
 

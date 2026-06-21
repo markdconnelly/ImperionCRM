@@ -1,6 +1,6 @@
 # 🗂️ Data Governance
 
-How **Imperion Business Manager** decides *what data it may hold, why it may hold it, who
+How **Imperion OS** decides *what data it may hold, why it may hold it, who
 may see it, and when it must go.* Where [security](../security/README.md) is about
 *protecting* data and [compliance](../compliance/README.md) is about *mapping* controls
 to obligations, data governance is about the **data itself** — its classification,

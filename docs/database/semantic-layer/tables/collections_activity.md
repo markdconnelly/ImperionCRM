@@ -41,7 +41,7 @@ website's own collections worklist, never QBO. The AR twin of
 - **One CURRENT-state row per (tenant, invoice).** The per-reminder history is an
   append-only JSONB log on that one row (a reminder is a low-volume timeline read as a
   unit, not a queryable entity) — kept as a single-table overlay, no child table.
-- **Agent posture** ([ADR-0087](../../../decision-records/ADR-0087-agent-orchestration-matrix.md)):
+- **Agent posture** ([ADR-0087](../../../decision-records/ADR-0087-agent-orchestration-and-observability-layer.md)):
   the Collections agent detects/drafts/escalates against the mirror and records its action
   here; it never moves money.
 

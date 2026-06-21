@@ -1,6 +1,6 @@
 # Product roadmap — v1 "Complete" → v2 "Refined" → v3 (TBD)
 
-The cross-repo product roadmap for **Imperion Business Manager**. It defines what each
+The cross-repo product roadmap for **Imperion OS**. It defines what each
 major version *means* and the capability gates that cut it.
 
 | Field | Value |

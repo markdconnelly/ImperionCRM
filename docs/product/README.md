@@ -1,6 +1,6 @@
 # 📈 Product
 
-What **Imperion Business Manager** *is*, in product terms — the full capability surface
+What **Imperion OS** *is*, in product terms — the full capability surface
 and the requirements behind it. If you are new and want the single best starting read,
 open the **[capability overview](imperion-os-overview.md)**.
 
@@ -12,7 +12,7 @@ open the **[capability overview](imperion-os-overview.md)**.
 
 ## Start here
 
-**Imperion Business Manager** is the single operational platform an MSP runs its whole
+**Imperion OS** is the single operational platform an MSP runs its whole
 business on — **not just a CRM**, but **CRM + ERP + extras + a full AI suite** on one
 surface, sitting as an intelligence layer above Microsoft 365 and Kaseya (CLAUDE.md §1).
 The capability overview is the onboarding-grade tour of every one of those families; this

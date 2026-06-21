@@ -1,6 +1,6 @@
 # Incident response
 
-The loop for handling a security incident in **Imperion Business Manager**, and the
+The loop for handling a security incident in **Imperion OS**, and the
 runbooks that execute each step. This page is the *map*; the per-situation keystrokes
 live in [runbooks](../runbooks/README.md) and the
 [secrets-rotation runbook](../operations/secrets-rotation-runbook.md).

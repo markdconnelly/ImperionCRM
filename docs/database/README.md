@@ -1,7 +1,7 @@
 # 🗄️ Database
 
 A single **PostgreSQL 18 + `pgvector`** store is the system of record, the embedding
-store, and the agent memory layer for **Imperion Business Manager** (ADR-0003). One
+store, and the agent memory layer for **Imperion OS** (ADR-0003). One
 store, three jobs, one version of the truth — relational queries, semantic search, and
 agent reasoning all point at the same data.
 

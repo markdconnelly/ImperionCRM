@@ -1,6 +1,6 @@
 # 🔁 Workflows
 
-How Imperion Business Manager automates business processes — the **in-app workflow
+How Imperion OS automates business processes — the **in-app workflow
 engine** that drives nurture, pre-discovery, re-engagement, and marketing journeys, plus
 the human-approval and consent gates woven through all of it. This README is the
 onboarding map; the step-by-step authoring and runtime walkthrough lives in

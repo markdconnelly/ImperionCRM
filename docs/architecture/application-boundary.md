@@ -6,7 +6,7 @@
   ADR-0007, [ADR-0018](../decision-records/ADR-0018-gui-only-frontend-external-functions.md),
   [ADR-0042](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md)
 
-**This repository is the GUI for Imperion Business Manager.** It renders the interface
+**This repository is the GUI for Imperion OS.** It renders the interface
 and does exactly two kinds of work; anything else is hosted elsewhere. This is the
 *single most important boundary* in the codebase — internalize it before changing code.
 For where this repo sits among the four (and how a process actually reaches the

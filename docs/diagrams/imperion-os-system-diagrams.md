@@ -1,4 +1,4 @@
-# Imperion Business Manager — system diagrams (consolidated source)
+# Imperion OS — system diagrams (consolidated source)
 
 > **What this is:** the cross-cutting, estate-level diagrams that several documents in
 > the library refer to, gathered in one place so there is a single canonical source to
@@ -13,12 +13,12 @@
 
 ## 1. The capability surface (CRM · ERP · Extras · AI)
 
-Imperion Business Manager is **not just a CRM** — it is CRM + ERP + extras + a full AI
+Imperion OS is **not just a CRM** — it is CRM + ERP + extras + a full AI
 suite on one surface (CLAUDE.md §1). The four families:
 
 ```mermaid
 flowchart TB
-    IBM(["Imperion Business Manager"])
+    IBM(["Imperion OS"])
     IBM --> CRM["🤝 CRM<br/>leads · contacts · accounts · pipeline ·<br/>campaigns · journeys · lifecycle"]
     IBM --> ERP["🏭 ERP<br/>sale→delivery · projects/PM · time &amp; expense ·<br/>Monthly Close · collections · CMDB/assets"]
     IBM --> EXTRA["✨ Extras<br/>BI hub · connector marketplace ·<br/>security posture · consent &amp; governance"]
@@ -137,5 +137,5 @@ Full narrative: [customer-lifecycle](../architecture/customer-lifecycle.md); sou
 
 These are **maps, not the territory** — verify against source before acting on a picture.
 When the system changes, update the diagram in the same PR as the code (docs-as-code,
-CLAUDE.md §8). Brand every title **Imperion Business Manager**; never embed secrets,
+CLAUDE.md §8). Brand every title **Imperion OS**; never embed secrets,
 client identifiers, or PII.

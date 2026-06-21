@@ -1,6 +1,6 @@
 # ✅ Testing
 
-How Imperion Business Manager stays correct — the automated gates that run on every
+How Imperion OS stays correct — the automated gates that run on every
 change, and the strategy behind them. This is the onboarding entry point; the deeper
 reasoning, conventions, and how-to live in
 **[testing-strategy](testing-strategy.md)**.

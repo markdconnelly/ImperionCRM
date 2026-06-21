@@ -6,7 +6,7 @@
 
 **Applies to:** All employees
 **Currency:** USD only (multi-currency is out of scope)
-**System:** Imperion Business Manager — monthly expense module (ADR-0083)
+**System:** Imperion OS — monthly expense module (ADR-0083)
 
 ---
 

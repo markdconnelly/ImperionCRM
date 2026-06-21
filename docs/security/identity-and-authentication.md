@@ -1,6 +1,6 @@
 # Identity & Authentication
 
-How **Imperion Business Manager** authenticates users. Implements ADR-0002 (Entra ID as
+How **Imperion OS** authenticates users. Implements ADR-0002 (Entra ID as
 sole IdP) and ADR-0005 (Auth.js + certificate client assertion). For *authorization* —
 who can do what *after* sign-in — see [authorization-model](authorization-model.md) and
 the canonical [ADR-0095](../decision-records/ADR-0095-authorization-rbac-consolidated.md).

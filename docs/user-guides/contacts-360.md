@@ -4,7 +4,7 @@
 
 A **contact** is a person. The Contacts list (left nav → **Contacts**, route
 `/contacts`) is every signed client contact; the **Contact 360** (`/contacts/[id]`)
-is everything Imperion Business Manager knows about one person on a single screen —
+is everything Imperion OS knows about one person on a single screen —
 their dossier, every conversation you've had, their consent, and the box to send the
 next message.
 

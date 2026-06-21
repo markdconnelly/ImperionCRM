@@ -1,6 +1,6 @@
 # 🔐 Security
 
-Security in **Imperion Business Manager** is **a product feature, not an afterthought**
+Security in **Imperion OS** is **a product feature, not an afterthought**
 (CLAUDE.md §5). The posture — internally code-named **"Mythos Proof"** — assumes
 *continuous, AI-assisted attack*, credential theft, supply-chain risk, and insider
 threat, and is built so that **identity is the perimeter**: there is no private network

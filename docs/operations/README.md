@@ -1,6 +1,6 @@
 # 🛠️ Operations
 
-**How Imperion Business Manager runs in production — and how you keep it healthy.**
+**How Imperion OS runs in production — and how you keep it healthy.**
 
 [← Documentation library](../README.md) ·
 [Capability overview](../product/imperion-os-overview.md) ·
@@ -35,7 +35,7 @@ flowchart TD
 
 ## The live deployment
 
-Imperion Business Manager (this GUI repo) is **built, deployed, and live** on Azure App
+Imperion OS (this GUI repo) is **built, deployed, and live** on Azure App
 Service at `imperioncrm.azurewebsites.net`, behind Entra SSO. A push to `main` triggers
 the GitHub Actions workflow that builds a Next.js **standalone** bundle and ships it.
 

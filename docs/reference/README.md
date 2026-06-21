@@ -1,6 +1,6 @@
 # 📎 Reference
 
-The **canonical source material** Imperion Business Manager is built around — the
+The **canonical source material** Imperion OS is built around — the
 originating business assets kept here so the schema, the client-facing copy, and agent
 behavior all trace back to a single authority. When a question is "what does the *real*
 business process say?", this is where the answer lives.

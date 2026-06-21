@@ -6,7 +6,7 @@
 ---
 
 **What this is.** The complete inventory of every piece of secret material in the
-**Imperion Business Manager** four-repo system — who owns it, where it lives, how to
+**Imperion OS** four-repo system — who owns it, where it lives, how to
 rotate it, and on what cadence — plus a one-glance compromise quick-reference. Use it for
 the deferred pre-go-live rotation pass, for routine cadence rotations, when onboarding a
 new secret, and as the first thing you reach for during a suspected compromise.

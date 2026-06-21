@@ -1,6 +1,6 @@
 # The agent eval & quality plane
 
-How agent output quality is measured, scored, and gated in Imperion Business Manager.
+How agent output quality is measured, scored, and gated in Imperion OS.
 
 [← The AI suite](README.md) · Governing decision:
 [ADR-0106](../decision-records/ADR-0106-agent-eval-quality-plane.md) · Epic #983 · Slice 1 #984.

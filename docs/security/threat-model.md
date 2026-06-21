@@ -1,6 +1,6 @@
 # Threat model
 
-What **Imperion Business Manager** protects, who we assume is attacking it, where the
+What **Imperion OS** protects, who we assume is attacking it, where the
 trust boundaries are, and how each documented control answers a specific threat. This
 is a reference that *organizes* the controls defined elsewhere — it does not invent new
 ones. Every control named here is decided in the

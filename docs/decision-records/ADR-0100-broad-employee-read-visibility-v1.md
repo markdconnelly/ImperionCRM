@@ -31,7 +31,7 @@ posture documented today?
 
 ## Context
 
-- **Single-tenant, internal-only.** Imperion Business Manager is used exclusively by
+- **Single-tenant, internal-only.** Imperion OS is used exclusively by
   Imperion employees (ADR-0095). Every authenticated principal is a trusted member of one
   company; there is no client/tenant boundary inside the app.
 - **Roles are global, not account-scoped.** The five roles (`admin`, `finance`,

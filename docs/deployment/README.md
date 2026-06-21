@@ -1,6 +1,6 @@
 # 🚀 Deployment
 
-How code gets from a merge to the live **Imperion Business Manager** app, where
+How code gets from a merge to the live **Imperion OS** app, where
 configuration and secrets live, and how database changes ship *separately* from the app.
 Everything here is verified against the actual workflows in `.github/workflows/`.
 

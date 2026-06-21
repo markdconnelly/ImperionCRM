@@ -1,6 +1,6 @@
 # 🧩 API
 
-The contracts between the **Imperion Business Manager** web app, the external Azure
+The contracts between the **Imperion OS** web app, the external Azure
 Functions backend, and the integrations they reach. This is the onboarding-grade reference
 for *how the app talks to anything outside the browser*.
 
@@ -12,7 +12,7 @@ for *how the app talks to anything outside the browser*.
 
 ## 1. The big picture: there is (almost) no public REST surface
 
-Imperion Business Manager is a Next.js app, not an API product. **Most reads and writes go
+Imperion OS is a Next.js app, not an API product. **Most reads and writes go
 through server actions + the repository layer** — there is no public REST surface for core
 CRUD. The API surface that *does* exist is narrow and falls into three buckets:
 

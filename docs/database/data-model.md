@@ -1,4 +1,4 @@
-# Imperion Business Manager — Data Model (ERD)
+# Imperion OS — Data Model (ERD)
 
 > **This is the structural reference** — every entity, column, FK, and enum, organized
 > into five `erdiagram` blocks. For the *narrative* (how the store is organized, the

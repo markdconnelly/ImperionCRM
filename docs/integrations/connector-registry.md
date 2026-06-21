@@ -3,7 +3,7 @@
 [← Integrations](README.md) · [Capability overview](../product/imperion-os-overview.md#4-extras--beyond-classic-crmerp)
 
 The **connector registry** is the declarative, first-party marketplace foundation of
-**Imperion Business Manager** (ADR-0076, epic #322). Instead of wiring each integration
+**Imperion OS** (ADR-0076, epic #322). Instead of wiring each integration
 by hand, every connector is described by a uniform **manifest** so the platform can
 browse, enable, and configure them consistently. This page is the onboarding-grade tour:
 what a connector *is*, the two halves that model it, the v1 catalog, the lifecycle, the

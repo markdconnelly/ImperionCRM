@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📚 Imperion Business Manager — Documentation Library
+# 📚 Imperion OS — Documentation Library
 
 **Everything about what the platform does, how it works, why it's built this way, and
 how to run it.**
@@ -17,7 +17,7 @@ how to run it.**
 
 ## Start here — what the product is
 
-**Imperion Business Manager** is the single operational platform a Managed Service
+**Imperion OS** is the single operational platform a Managed Service
 Provider runs its whole business on — **not just a CRM**, but **CRM + ERP + extras +
 a full AI suite** on one surface, sitting as an intelligence layer above Microsoft
 365 and Kaseya. For the complete, onboarding-grade tour of every capability, read the
@@ -26,7 +26,7 @@ companion to this navigational hub.
 
 ```mermaid
 flowchart TB
-    IBM(["Imperion Business Manager"])
+    IBM(["Imperion OS"])
     IBM --> CRM["🤝 CRM<br/>leads · contacts · accounts · pipeline ·<br/>campaigns · journeys · lifecycle"]
     IBM --> ERP["🏭 ERP<br/>sale→delivery · projects/PM · time & expense ·<br/>Monthly Close · collections · CMDB/assets"]
     IBM --> EXTRA["✨ Extras<br/>BI hub · connector marketplace ·<br/>security posture · consent & governance"]

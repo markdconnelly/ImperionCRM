@@ -6,7 +6,7 @@
 ---
 
 **What this is.** The one operational detail every operator must understand about
-**Imperion Business Manager**'s single **unauthenticated** route. Everything else on the
+**Imperion OS**'s single **unauthenticated** route. Everything else on the
 platform is behind Entra SSO; `/story` is the deliberate exception — a self-contained,
 static marketing/build-story page served *without* a sign-in gate (#248). This page
 explains how that exception is implemented, why it is safe, and how to change or remove

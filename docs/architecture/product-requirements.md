@@ -15,7 +15,7 @@
 > that postdate this interview — read the
 > [capability overview](../product/imperion-os-overview.md).
 
-**Imperion Business Manager** is the internal operations platform for Imperion LLC (an
+**Imperion OS** is the internal operations platform for Imperion LLC (an
 MSP). It is the **single interface employees use to track the health of a customer
 across the entire lifecycle** — from an inbound lead, through the sales cycle,
 onboarding, implementation, operational readiness, handoff, and continuous

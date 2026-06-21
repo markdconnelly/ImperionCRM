@@ -1,6 +1,6 @@
 # 🖼️ Diagrams
 
-Shared, cross-cutting **diagram source** for Imperion Business Manager — version
+Shared, cross-cutting **diagram source** for Imperion OS — version
 controlled and rendered from text, never binary exports (CLAUDE.md §8). Every diagram in
 the documentation library is something you can read, diff, and regenerate; nothing here
 is a screenshot.
@@ -22,7 +22,7 @@ flowchart LR
 ```
 
 A diagram you can diff and regenerate stays true to the system; a screenshot rots the
-moment the code moves. So Imperion Business Manager keeps **diagram source in the repo,
+moment the code moves. So Imperion OS keeps **diagram source in the repo,
 beside the document it explains**, and lets GitHub render it. The house format is
 **Mermaid**; PlantUML or D2 are used only where they express something Mermaid cannot.
 
@@ -47,7 +47,7 @@ the prose in one reviewable place. You will find:
 This folder is the home for **shared / cross-cutting source** — the estate-level
 pictures that several documents embed or point at, gathered so there is one canonical
 copy to maintain. The consolidated copy-paste set lives in
-**[imperion-business-manager-system-diagrams](imperion-business-manager-system-diagrams.md)**.
+**[imperion-os-system-diagrams](imperion-os-system-diagrams.md)**.
 
 ---
 
@@ -88,8 +88,8 @@ flowchart TB
 
 - **One concept per diagram.** If a picture needs a paragraph to decode, split it.
 - **Label edges**, not just nodes — the relationship is usually the point.
-- **Brand:** the product is **Imperion Business Manager** in any diagram title or root
-  node, never "Imperion CRM".
+- **Brand:** the product is **Imperion OS** in any diagram title or root
+  node, never "Imperion CRM" or "Imperion Business Manager".
 - **Keep it renderable in GitHub.** Confirm the Mermaid block parses (GitHub preview or
   the Mermaid live editor) before committing — a broken diagram block is a broken doc.
 - **No secrets, no client identifiers, no PII** in any diagram — the same rule as every
@@ -100,7 +100,7 @@ flowchart TB
 
 ## See also
 
-- [System diagrams (consolidated source)](imperion-business-manager-system-diagrams.md)
+- [System diagrams (consolidated source)](imperion-os-system-diagrams.md)
 - [Architecture](../architecture/README.md) — owns the eight diagrams and the deeper
   system narrative.
 - [System of systems](../architecture/system-of-systems.md) — the four-repo estate.

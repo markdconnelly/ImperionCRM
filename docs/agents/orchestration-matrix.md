@@ -1,6 +1,6 @@
 # 🛰️ Agent orchestration & observability matrix
 
-The single map of **every agent** in Imperion Business Manager — what it owns, how
+The single map of **every agent** in Imperion OS — what it owns, how
 much autonomy it has, what context it loads, and which roles *watch* the system
 rather than act on it. Where [agent-platform.md](agent-platform.md) covers the
 user-facing orchestrator and [icm.md](icm.md) covers the workflows, this is the

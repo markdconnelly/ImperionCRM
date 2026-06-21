@@ -1,7 +1,7 @@
 # Agent skills — where they live and how they change
 
 > **Scope.** This is a **developer-skill** convention for the engineering agents
-> that build Imperion Business Manager (Claude Code). It is distinct from the ICM
+> that build Imperion OS (Claude Code). It is distinct from the ICM
 > **runtime** skills the agent workforce loads at run time — see
 > [icm.md §6](icm.md). Don't mix the two.
 
