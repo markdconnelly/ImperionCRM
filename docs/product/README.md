@@ -2,10 +2,10 @@
 
 What **Imperion Business Manager** *is*, in product terms — the full capability surface
 and the requirements behind it. If you are new and want the single best starting read,
-open the **[capability overview](imperion-business-manager-overview.md)**.
+open the **[capability overview](imperion-os-overview.md)**.
 
 [← Documentation library](../README.md) ·
-[Capability overview](imperion-business-manager-overview.md) ·
+[Capability overview](imperion-os-overview.md) ·
 [System of systems](../architecture/system-of-systems.md)
 
 ---
@@ -32,7 +32,7 @@ flowchart LR
 
 | Doc | What's inside |
 | --- | --- |
-| **[Capability overview](imperion-business-manager-overview.md)** | The complete, onboarding-grade tour of every capability — **CRM · ERP · Extras · the full AI suite** — cross-linked to the deeper per-area docs and the ADRs that govern each decision. **Start here.** |
+| **[Capability overview](imperion-os-overview.md)** | The complete, onboarding-grade tour of every capability — **CRM · ERP · Extras · the full AI suite** — cross-linked to the deeper per-area docs and the ADRs that govern each decision. **Start here.** |
 | [PM feature requirements](pm-feature-requirements.md) | The gap analysis and requirement set behind the project-management parity cluster (ADR-0094) — what Imperion needs to match best-in-class PM tools, and why. |
 
 ---

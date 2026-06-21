@@ -5,7 +5,7 @@ it models. This is the index for the architecture area — start here, then foll
 path that matches what you need.
 
 [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md) ·
+[Capability overview](../product/imperion-os-overview.md) ·
 [Decision records](../decision-records/README.md)
 
 > **Imperion Business Manager** is the single operational platform a Managed Service
@@ -14,7 +14,7 @@ path that matches what you need.
 > the repo slug and `package.json` name, which are out of scope for the rebrand); the
 > product and its docs are now **Imperion Business Manager**. For the full capability
 > surface, read the
-> [capability overview](../product/imperion-business-manager-overview.md).
+> [capability overview](../product/imperion-os-overview.md).
 
 ## In one picture
 

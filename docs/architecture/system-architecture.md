@@ -7,11 +7,11 @@ narrates and diagrams; it does **not** restate the decisions — each layer's au
 lives in its ADRs, linked inline.
 
 [← Architecture](README.md) · [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md)
+[Capability overview](../product/imperion-os-overview.md)
 
 > **Scope note.** This doc describes the *system shape* — the three layers every
 > capability rides on. The full capability surface (CRM · ERP · extras · the AI suite)
-> is the [capability overview](../product/imperion-business-manager-overview.md); the
+> is the [capability overview](../product/imperion-os-overview.md); the
 > cross-repo estate is [system-of-systems](system-of-systems.md). Every capability —
 > the customer-facing motion *and* the operational/financial backbone (delivery,
 > projects, finance, support) — rides on the same three layers below.

@@ -4,12 +4,12 @@ How employees actually use **Imperion Business Manager**, module by module. Writ
 for the person doing the work — a new hire on day one — not the person who built it.
 
 [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md) ·
+[Capability overview](../product/imperion-os-overview.md) ·
 [Customer lifecycle](../architecture/customer-lifecycle.md) ·
 [Admin guides](../admin-guides/README.md)
 
 > **New here?** Read the
-> [capability overview](../product/imperion-business-manager-overview.md) first for
+> [capability overview](../product/imperion-os-overview.md) first for
 > the big picture — what the platform is and the four families (CRM · ERP · extras ·
 > AI). Then come back here for the screen-by-screen how-to.
 

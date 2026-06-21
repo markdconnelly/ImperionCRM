@@ -5,7 +5,7 @@ in the system is actually implemented** under them. This is the builder's recipe
 stakeholder's explainer.
 
 [← Architecture](README.md) · [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md)
+[Capability overview](../product/imperion-os-overview.md)
 
 This doc goes **deeper** than [system-architecture](system-architecture.md): that doc
 narrates the three layers at altitude; this one gives the **eight implementation

@@ -10,7 +10,7 @@ repos and the public `/story` page link here rather than restating it.
 
 [← Architecture](README.md) · [← Documentation library](../README.md) ·
 [Data & automation doctrine](data-and-automation-doctrine.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md) ·
+[Capability overview](../product/imperion-os-overview.md) ·
 [Decision records](../decision-records/README.md)
 
 ---

@@ -7,7 +7,7 @@ major version *means* and the capability gates that cut it.
 |---|---|
 | **Scope** | Cross-repo product roadmap (frontend · backend · pipeline · local-pipeline) |
 | **Status** | Adopted 2026-06-10 (issue #119); **recut 2026-06-11 per ADR-0057** (issue #179). Snapshot vintage 2026-06-11 — the v1/v2/v3 *definitions and gates* stand; the per-item ledger lives on the GitHub epics + the `v1.0` milestone, not here. |
-| **Companions** | [`go-live-roadmap.md`](go-live-roadmap.md) (internal v1 sequencing), [capability overview](../product/imperion-business-manager-overview.md) (the shipped surface), ADR-0054 (board governance), ADR-0055 (autonomy tiers), [ADR-0056 / versioning-standard](versioning-standard.md), ADR-0057 (this recut) |
+| **Companions** | [`go-live-roadmap.md`](go-live-roadmap.md) (internal v1 sequencing), [capability overview](../product/imperion-os-overview.md) (the shipped surface), ADR-0054 (board governance), ADR-0055 (autonomy tiers), [ADR-0056 / versioning-standard](versioning-standard.md), ADR-0057 (this recut) |
 
 ## Vision
 

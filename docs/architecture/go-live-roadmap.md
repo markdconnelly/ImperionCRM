@@ -12,7 +12,7 @@
 > changed is that the *feature build* has since expanded far past the modules named here
 > (the full ERP + AI surface now ships; migrations `0001–0101` are applied). Treat this
 > as the go-live *operations* track; the live capability picture is the
-> [capability overview](../product/imperion-business-manager-overview.md) and
+> [capability overview](../product/imperion-os-overview.md) and
 > [CLAUDE.md §6](../../CLAUDE.md).
 
 ## What "online" means (the go-live definition)

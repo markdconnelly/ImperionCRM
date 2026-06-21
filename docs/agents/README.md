@@ -7,7 +7,7 @@ and understand *what the AI does, how it is built, what is live today, and where
 the safety rails are.*
 
 [← Documentation library](../README.md) ·
-[Product capability overview → §5 The full AI suite](../product/imperion-business-manager-overview.md)
+[Product capability overview → §5 The full AI suite](../product/imperion-os-overview.md)
 
 > **Governing decision: [ADR-0091](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)**
 > — the *Agent & ICM platform consolidated dossier*. It folds eleven member

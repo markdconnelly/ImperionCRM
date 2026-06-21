@@ -3,7 +3,7 @@
 **How Imperion Business Manager runs in production — and how you keep it healthy.**
 
 [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md) ·
+[Capability overview](../product/imperion-os-overview.md) ·
 [System of systems](../architecture/system-of-systems.md)
 
 ---

@@ -6,7 +6,7 @@
 how to run it.**
 
 [← Back to the project](../README.md) ·
-[Capability overview](product/imperion-business-manager-overview.md) ·
+[Capability overview](product/imperion-os-overview.md) ·
 [System of systems](architecture/system-of-systems.md) ·
 [Architecture](architecture/README.md) ·
 [Decision records](decision-records/README.md)
@@ -21,7 +21,7 @@ how to run it.**
 Provider runs its whole business on — **not just a CRM**, but **CRM + ERP + extras +
 a full AI suite** on one surface, sitting as an intelligence layer above Microsoft
 365 and Kaseya. For the complete, onboarding-grade tour of every capability, read the
-**[capability overview](product/imperion-business-manager-overview.md)** — it is the
+**[capability overview](product/imperion-os-overview.md)** — it is the
 companion to this navigational hub.
 
 ```mermaid
@@ -111,7 +111,7 @@ subdirectory, so this hub stays the single, stable index.
 
 | Area | What's inside |
 | --- | --- |
-| 📈 [product](product/README.md) | The full **[capability overview](product/imperion-business-manager-overview.md)** (CRM + ERP + extras + AI) and the product/feature requirements. |
+| 📈 [product](product/README.md) | The full **[capability overview](product/imperion-os-overview.md)** (CRM + ERP + extras + AI) and the product/feature requirements. |
 | 📖 [user-guides](user-guides/README.md) | How employees use each module, screen by screen. |
 | 🔑 [admin-guides](admin-guides/README.md) | Admin-only configuration: roles, connectors, templates, finance & comp setup. |
 

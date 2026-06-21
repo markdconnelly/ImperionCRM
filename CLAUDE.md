@@ -12,14 +12,29 @@ when reporting information to me be extremley concise and sacrifice grammar for 
 
 ## 1. What this project is
 
-**Imperion Business Manager** (this repo is the GUI; legacy slug `ImperionCRM`) — an
-internal, AI-enabled operations platform an MSP runs its **whole business** on. It is
-**not just a CRM**: it spans **CRM + ERP + extras + a full AI suite** on one surface,
-covering the full lifecycle of a managed-services customer (lead → qualification →
-proposal → onboarding → implementation → operational readiness → handoff → continuous
-customer success) **and** the internal operations behind it (delivery, projects,
-finance, support). The product name is **Imperion Business Manager**; the repo slug
-and `package.json` name stay `imperion-crm` (Mark-gated, out of scope to rename).
+**Imperion OS** (this repo is the GUI; legacy slug `ImperionCRM`) — an internal,
+AI-enabled operations platform an MSP runs its **whole business** on, and underneath
+**an operating system for AI agents over the company's knowledge and actions**
+(ADR-0110). It is **not just a CRM**: it spans **CRM + ERP + extras + a full AI suite**
+on one surface, covering the full lifecycle of a managed-services customer (lead →
+qualification → proposal → onboarding → implementation → operational readiness → handoff
+→ continuous customer success) **and** the internal operations behind it (delivery,
+projects, finance, support).
+
+**The OS framing (data-as-kernel + second-brain-as-OS).** The data platform is the
+kernel: the medallion tiers are the filesystem, the OKF semantic layer is the type
+system / grounding cortex, gold + Voyage `voyage-3-large` @1024d vectors are addressable
+long-term memory, and the two-axis RLS access spine is the ring/permission model. Tiered
+knowledge (canon · company · personal) is the agent's second-brain memory hierarchy; the
+backend orchestrator + ICM + the 1–5 autonomy dial are the scheduler/syscalls; agents are
+processes; Pipeline + LocalPipeline are I/O. The canonical argument is
+[`docs/architecture/data-design-for-agents.md`](docs/architecture/data-design-for-agents.md).
+
+The product name is **Imperion OS** ("Imperion Business Manager" / "Imperion CRM" are
+retired as product names). **Identity-bearing names are unchanged** (ADR-0016 / ADR-0110):
+the repo slug `ImperionCRM`, the `package.json` name `imperion-crm`, the Entra app names,
+the database names, and the `*.azurewebsites.net` URLs all stay — write "Imperion OS" in
+prose but keep those names verbatim in code, config, and deploy contexts.
 
 It sits as an **operational intelligence layer above Microsoft 365 and Kaseya
 systems**, augmenting them rather than replacing them.
@@ -36,7 +51,7 @@ systems**, augmenting them rather than replacing them.
   Managed Agents runtime · orchestration & observability matrix · agent rooms (OKF) ·
   RAG knowledge layer · AI-assisted surfaces (ADR-0091).
 
-Full tour: [`docs/product/imperion-business-manager-overview.md`](docs/product/imperion-business-manager-overview.md).
+Full tour: [`docs/product/imperion-os-overview.md`](docs/product/imperion-os-overview.md).
 
 ### What it explicitly is NOT
 - NOT just a CRM — CRM is one quadrant of a CRM + ERP + extras + AI platform

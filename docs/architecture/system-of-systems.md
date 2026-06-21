@@ -18,7 +18,7 @@ both — it is the map of the whole estate.
 > system-level `CLAUDE.md` wins. Governing decision: **[ADR-0042](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md)** (four-repo division of labor, settled 2026-06-09).
 
 [← Architecture](README.md) · [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md)
+[Capability overview](../product/imperion-os-overview.md)
 
 ---
 

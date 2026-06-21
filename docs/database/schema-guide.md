@@ -264,7 +264,7 @@ Migrations apply with a **short-lived Microsoft Entra token** as the password �
 | The meaning — source-of-record, joins, PII per silver entity | [semantic-layer/index.md](semantic-layer/index.md) (governed OKF canon) |
 | How the app reads data | [data-access-layer.md](data-access-layer.md) |
 | How a fact crosses repo boundaries | [system-of-systems](../architecture/system-of-systems.md) |
-| The capability story the data backs | [Imperion Business Manager — overview](../product/imperion-business-manager-overview.md) |
+| The capability story the data backs | [Imperion Business Manager — overview](../product/imperion-os-overview.md) |
 | The decisions behind the platform | [ADR-0092](../decision-records/ADR-0092-medallion-data-platform-consolidated.md) (medallion) · [decision-records](../decision-records/README.md) |
 
 The shared cross-repo security baseline is the

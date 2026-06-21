@@ -14,7 +14,7 @@
 
 Imperion Business Manager is an internal, AI-enabled platform an MSP runs its
 **whole business** on — CRM + ERP + extras + a full AI suite on one surface
-([capability tour](../product/imperion-business-manager-overview.md)). Most of it
+([capability tour](../product/imperion-os-overview.md)). Most of it
 is open to every signed-in employee, with money redacted from support-only users. A
 smaller set of **administrative surfaces** — identity, integrations, configuration,
 and the time/expense finance lifecycle — are gated to **admin** and (for finance

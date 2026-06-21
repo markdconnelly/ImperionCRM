@@ -7,7 +7,7 @@ business process say?", this is where the answer lives.
 
 [← Documentation library](../README.md) ·
 [Customer lifecycle](../architecture/customer-lifecycle.md) ·
-[Product overview](../product/imperion-business-manager-overview.md)
+[Product overview](../product/imperion-os-overview.md)
 
 ---
 
@@ -63,7 +63,7 @@ client-facing copy and agent output must follow.
 
 - [Customer lifecycle](../architecture/customer-lifecycle.md) — the assessment-led motion
   these assets define.
-- [Product overview](../product/imperion-business-manager-overview.md) — where the
+- [Product overview](../product/imperion-os-overview.md) — where the
   capabilities built on these inputs are toured.
 - [Workflows](../workflows/README.md) — the nurture/pre-discovery automation built on the
   nurture playbook.
