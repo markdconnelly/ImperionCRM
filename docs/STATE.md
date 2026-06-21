@@ -12,7 +12,7 @@
 **Last refreshed:** 2026-06-21 · **Product name:** **Imperion OS** — the agentic operating system
 for an MSP (ADR-0110; identity names `ImperionCRM*` frozen per ADR-0016) · **Milestone:**
 pre-`v1.0.0` (build complete; go-live is now an operator/credential problem, not a code problem) ·
-**Schema:** migrations **0001–0148 applied to prod** · **ADRs:** through **0110** · **OKF bundle:**
+**Schema:** migrations **0001–0163 applied to prod** · **ADRs:** through **0110** · **OKF bundle:**
 56 concept files.
 
 ---
@@ -57,7 +57,7 @@ done/▶-in-flight ledger.
   - ✅ **Expense v1 effectively COMPLETE** ([#482](https://github.com/markdconnelly/ImperionCRM/issues/482)): manual-mileage path live end-to-end (form → `website_mileage` bronze 0137 → silver `expense_item`); receipt upload live ([#899](https://github.com/markdconnelly/ImperionCRM/issues/899) → `receipt_attachment`); QBO production app connected.
   - ▶ MileIQ paid mileage API → **deferred to v2** (ADR-0099); v1 mileage = manual entry.
 - ✅ **AR collections** (ADR-0085): dunning worklist over the read-only QBO invoice mirror + app-native `collections_activity` overlay (never writes QBO).
-- ✅ **CMDB & assets** (ADR-0092/0097): read-only CI register + Device inventory over per-source bronze merged to silver `device`; **cloud is now a first-class CI** (migration 0144 — 23 cloud→account edges + criticality overlay verified in prod), Intune managed-apps device drill (0148); **UniFi network-infra bronze** `unifi_devices` (0162, #1053 — landing target for the closed LP #73/#259 collector; merge co-locates on-prem, LP follow-up; NOT yet prod-applied).
+- ✅ **CMDB & assets** (ADR-0092/0097): read-only CI register + Device inventory over per-source bronze merged to silver `device`; **cloud is now a first-class CI** (migration 0144 — 23 cloud→account edges + criticality overlay verified in prod), Intune managed-apps device drill (0148); **UniFi network-infra bronze** `unifi_devices` (0162, #1053 — landing target for the closed LP #73/#259 collector; merge co-locates on-prem, LP follow-up; prod-applied, awaiting collector hydration).
 - ✅ Service desk: tickets (Autotask-linked), omnichannel queue + live-chat console with deflection telemetry + escalate-to-Autotask; Strategic Business Reviews.
 
 ### Extras
@@ -98,8 +98,8 @@ done/▶-in-flight ledger.
 - `0131/0132` CMDB curated layer · `0144` cloud first-class CI · `0145` change_affected_ci allows cloud · `0146` posture_policy allows purview_compliance
 - `0141` connection credential registry · `0147` `connection.client_id` · `0142` LP merge write grants
 - `0143` `source_skill` routing registry · `0148` `intune_managed_apps` bronze
-- ⏳ **NOT yet prod-applied (access spine #967, Mark-gated apply):** `0152` `app_user.group_ids` (slice 1, #974) · `0153` `personal_note` + first RLS owner policy (slice 2, #975 — verify post-apply via [`docs/testing/rls-access-spine.md`](testing/rls-access-spine.md))
-- ⏳ **NOT yet prod-applied (Jarvis wedge #1038, Mark-gated apply):** `0163` Jarvis run-ledger + action plane (#1064): `agent.display_name` + seed · `agent_conversation` (conversation_id correlation root) · `agent_run.conversation_id` · `agent_pending_action` chain (`run_id`/`plan_seq`/`depends_on_seq`) + `data_class` · `agent_governance_setting` (kill-switch/caps/TTL) · Autotask eval-case seeds
+- `0152` `app_user.group_ids` (#974) · `0153` `personal_note` + first RLS owner policy (#975 — verify via [`docs/testing/rls-access-spine.md`](testing/rls-access-spine.md)) · `0158` actuation dial + cockpit queue · `0159` `metric_definition` · `0160` `entity_xref` · `0161` Pax8 bronze · `0162` `unifi_devices` bronze
+- `0163` Jarvis run-ledger + action plane (**#1064, prod-applied 2026-06-21**): `agent.display_name` + seed · `agent_conversation` (conversation_id correlation root) · `agent_run.conversation_id` · `agent_pending_action` chain (`run_id`/`plan_seq`/`depends_on_seq`) + `data_class` · `agent_governance_setting` (kill-switch/caps/TTL) · Autotask eval-case seeds
 
 **Recent ADRs** ([`docs/decision-records/`](decision-records/README.md)) — note the
 consolidated dossiers that supersede earlier scattered ADRs:
