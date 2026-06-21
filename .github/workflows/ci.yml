@@ -44,6 +44,28 @@ jobs:
       - name: Test
         run: npm test
 
+  eval-gate:
+    # Agent quality gate (ADR-0106, epic #983 slice 4). Runs the eval-plane suites
+    # against the backend runner and fails the build on a regression below the
+    # committed eval/baselines.json. DORMANT BY DEFAULT: the live run is guarded on
+    # AGENT_EVAL_BASE_URL — unset (today) ⇒ the gate reports `pending_no_backend` and
+    # exits 0, so it never blocks a PR until the repo configures the backend var
+    # (+ EVAL_ACTING_USER_ID / EVAL_RUN_TOKEN). Same dormant pattern as `npm run eval`
+    # (agent-quality-eval.mjs, ADR-0057).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - name: Eval quality gate (dormant until AGENT_EVAL_BASE_URL is set)
+        env:
+          AGENT_EVAL_BASE_URL: ${{ vars.AGENT_EVAL_BASE_URL }}
+          EVAL_ACTING_USER_ID: ${{ vars.EVAL_ACTING_USER_ID }}
+          EVAL_RUN_TOKEN: ${{ secrets.EVAL_RUN_TOKEN }}
+        run: npm run eval:gate
+
   docs:
     # Documentation validation gate (CLAUDE.md §8). PRs fail if required docs
     # are missing. Lightweight checks now; expand to markdownlint, link-check,

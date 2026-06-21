@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "eval": "node scripts/agent-quality-eval.mjs"
+    "eval": "node scripts/agent-quality-eval.mjs",
+    "eval:gate": "node scripts/eval-gate.mjs"
   },
   "dependencies": {
     "@azure/identity": "^4.5.0",

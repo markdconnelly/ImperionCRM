@@ -1,0 +1,9 @@
+{
+  "_comment": "Eval CI quality-gate baselines (ADR-0106, epic #983 slice 4). Per-suite minimum aggregate_score the backend eval runner (POST /api/agent/eval/run) must hold. A suite falling below (baseline - tolerance) fails the gate. Raise a baseline only with a green run on the new bar; never lower it to make a red gate pass. Suites match the seeded golden-set modules (migration 0155).",
+  "tolerance": 0.05,
+  "suites": {
+    "reporting": 0.75,
+    "sales": 0.75,
+    "crm": 0.75
+  }
+}

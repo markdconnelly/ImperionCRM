@@ -57,9 +57,20 @@ A case `passed` only if its assertions hold **and** the judge score clears the r
 
 ## 4. The quality gate (slice 4, CI)
 
-On a PR, the affected suite runs and the gate **blocks the merge if `aggregate_score` regresses
-below the stored baseline** — the same mechanism as docs-gate / okf-sync. A nightly job runs the
-full suite to catch drift outside any single PR.
+`scripts/eval-gate.mjs` runs the eval-plane suites against the backend runner and **fails the
+build when a suite's `aggregate_score` drops below its committed baseline** (minus a tolerance
+band) — the same mechanism as docs-gate / okf-sync. Baselines live in
+[`eval/baselines.json`](../../eval/baselines.json) (per-suite minimum + tolerance); a suite with
+no committed baseline fails rather than silently passing.
+
+- **CI job:** `eval-gate` in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
+- **Dormant by default:** the live HTTP run is guarded on `AGENT_EVAL_BASE_URL`. Until that repo
+  var is set (with `EVAL_ACTING_USER_ID`, and `EVAL_RUN_TOKEN` for caller-auth), the gate reports
+  `pending_no_backend` and exits 0 — never blocking a PR before a backend is reachable. Same guard
+  as the v1 acceptance eval (`scripts/agent-quality-eval.mjs`, ADR-0057); the two are
+  complementary — that is the one-time v1 cut gate, this is the ongoing regression net.
+- **Run it:** `npm run eval:gate` (pure verdict logic unit-tested in `scripts/eval-gate.test.mjs`).
+- Raise a baseline only on a green run at the higher bar; never lower it to make a red gate pass.
 
 ---
 
@@ -67,10 +78,10 @@ full suite to catch drift outside any single PR.
 
 | Slice | What | Repo | State |
 |---|---|---|---|
-| 1 | Eval spine schema + ADR-0106 (this doc), **dormant** | frontend | this PR (#984) |
-| 2 | Backend runner: execute suite, assertions + LLM-judge, write runs/results | backend | planned |
-| 3 | Golden-set authoring surface + first real seed cases per module | frontend | planned |
-| 4 | CI quality gate (PR-affected subset) + nightly full-suite run | frontend CI | planned |
+| 1 | Eval spine schema + ADR-0106 (this doc), **dormant** | frontend | shipped (#984) |
+| 2 | Backend runner: execute suite, assertions + LLM-judge, write runs/results | backend | shipped (BE #239, ADR-0077) |
+| 3 | Golden-set seed + read-only eval dashboard | frontend | shipped (#986) |
+| 4 | CI quality gate vs committed baselines (dormant until backend reachable) | frontend CI | shipped (#988) |
 
 ---
 
