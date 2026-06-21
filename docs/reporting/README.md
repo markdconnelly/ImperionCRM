@@ -6,7 +6,7 @@ and dashboards over a governed semantic model (ADR-0075). This area is the onboa
 reference for everything under `/reporting`.
 
 [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md#4-extras--beyond-classic-crmerp)
+[Capability overview](../product/imperion-os-overview.md#4-extras--beyond-classic-crmerp)
 
 ---
 

@@ -5,7 +5,7 @@
   well beyond this CRM-centric scope into a full **CRM + ERP + extras + AI** platform.
 - **Owner:** Mark Connelly (Imperion LLC)
 - **Related:** [data-model](../database/data-model.md), ADR-0010 … ADR-0016,
-  [capability overview](../product/imperion-business-manager-overview.md)
+  [capability overview](../product/imperion-os-overview.md)
   (the *current* shipped surface), [product-roadmap-v1-v3](product-roadmap-v1-v3.md)
 
 > **Read this as the founding requirements doc, not the current scope.** It captures
@@ -13,7 +13,7 @@
 > For what exists *now* — including the ERP backbone (sale→delivery, projects/PM,
 > time/expense, finance close, collections, CMDB, service desk) and the full AI suite
 > that postdate this interview — read the
-> [capability overview](../product/imperion-business-manager-overview.md).
+> [capability overview](../product/imperion-os-overview.md).
 
 **Imperion Business Manager** is the internal operations platform for Imperion LLC (an
 MSP). It is the **single interface employees use to track the health of a customer

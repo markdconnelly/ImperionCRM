@@ -40,7 +40,7 @@ the prose in one reviewable place. You will find:
 | --- | --- |
 | The data model / ERD | [database/data-model](../database/data-model.md) |
 | The assessment-led customer lifecycle | [architecture/customer-lifecycle](../architecture/customer-lifecycle.md) |
-| The capability mind-map (CRM · ERP · Extras · AI) | [product/imperion-business-manager-overview](../product/imperion-business-manager-overview.md) |
+| The capability mind-map (CRM · ERP · Extras · AI) | [product/imperion-os-overview](../product/imperion-os-overview.md) |
 | The CI gate flow | [testing/README](../testing/README.md) |
 | The workflow / journey automation flows | [workflows/README](../workflows/README.md) |
 

@@ -1,6 +1,6 @@
 # Connector registry & marketplace (ADR-0076)
 
-[← Integrations](README.md) · [Capability overview](../product/imperion-business-manager-overview.md#4-extras--beyond-classic-crmerp)
+[← Integrations](README.md) · [Capability overview](../product/imperion-os-overview.md#4-extras--beyond-classic-crmerp)
 
 The **connector registry** is the declarative, first-party marketplace foundation of
 **Imperion Business Manager** (ADR-0076, epic #322). Instead of wiring each integration

@@ -7,7 +7,7 @@
   (what happens once a deal is *won*),
   [sales & marketing reference assets](../reference/sales-marketing/README.md),
   [data-model](../database/data-model.md),
-  [capability overview](../product/imperion-business-manager-overview.md)
+  [capability overview](../product/imperion-os-overview.md)
 
 This is the canonical description of how **Imperion Business Manager** acquires,
 qualifies, converts, and grows a managed-services customer. The CRM modules model this
@@ -21,7 +21,7 @@ contract. "We begin every relationship with an AI Security Readiness Assessment.
 > the sale→delivery orchestration ([ADR-0096](../decision-records/ADR-0096-sale-delivery-consolidated.md)),
 > and the ongoing operational/financial backbone (projects, time/expense, finance,
 > support) is the ERP surface in the
-> [capability overview](../product/imperion-business-manager-overview.md#3-erp--the-operational--financial-backbone).
+> [capability overview](../product/imperion-os-overview.md#3-erp--the-operational--financial-backbone).
 
 ## The funnel
 

@@ -4,7 +4,7 @@
 > detail the meta-policy (`CLAUDE.md` §4) keeps **out** of `CLAUDE.md` so the contract
 > there stays short and stable. `CLAUDE.md` §6 carries the one-paragraph summary and
 > points here. The **why / what we are building** narrative lives in
-> [`docs/product/imperion-business-manager-overview.md`](product/imperion-business-manager-overview.md);
+> [`docs/product/imperion-os-overview.md`](product/imperion-os-overview.md);
 > the durable decisions live in [`docs/decision-records/`](decision-records/README.md).
 > The authoritative cross-session record is GitHub issues/PRs + the ADRs — this file is
 > a navigable index over them, not a replacement.
@@ -38,7 +38,7 @@ as scheduler and the governed action planes as protected mode. The canonical arg
 ## 2. Shipped capability inventory (by domain)
 
 Each row is live in the app unless flagged. Routes and governing ADRs are in the
-[capability overview](product/imperion-business-manager-overview.md); this is the
+[capability overview](product/imperion-os-overview.md); this is the
 done/▶-in-flight ledger.
 
 ### CRM

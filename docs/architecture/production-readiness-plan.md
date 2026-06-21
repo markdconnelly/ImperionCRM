@@ -12,7 +12,7 @@
 > the connector marketplace), and **migrations `0001–0101` are applied to prod** (the
 > "`0001–0058`" below reflects the 2026-06-10 vintage only). For the live module/state
 > picture read [CLAUDE.md §6](../../CLAUDE.md) and the
-> [capability overview](../product/imperion-business-manager-overview.md); for roadmap
+> [capability overview](../product/imperion-os-overview.md); for roadmap
 > framing read [product-roadmap-v1-v3](product-roadmap-v1-v3.md).
 
 ## TL;DR

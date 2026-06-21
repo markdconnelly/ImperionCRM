@@ -7,7 +7,7 @@ agent reasoning all point at the same data.
 
 [← Documentation library](../README.md) ·
 [System of systems](../architecture/system-of-systems.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md)
+[Capability overview](../product/imperion-os-overview.md)
 
 ---
 

@@ -1,7 +1,7 @@
 # MileIQ External API
 
 [← Integrations](README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md#33-time--expense-monthly-close)
+[Capability overview](../product/imperion-os-overview.md#33-time--expense-monthly-close)
 
 MileIQ is the **mileage source** behind Imperion Business Manager's employee expense
 tracking — the system of record for the *miles* an employee drove for business.

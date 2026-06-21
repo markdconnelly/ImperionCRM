@@ -6,7 +6,7 @@ that governs those connections, and the security rules that keep credentials out
 front end.
 
 [← Documentation library](../README.md) ·
-[Capability overview](../product/imperion-business-manager-overview.md#4-extras--beyond-classic-crmerp) ·
+[Capability overview](../product/imperion-os-overview.md#4-extras--beyond-classic-crmerp) ·
 [System of systems](../architecture/system-of-systems.md)
 
 > **Read this first if you are new.** Imperion Business Manager is the GUI tier of a

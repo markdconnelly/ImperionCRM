@@ -1,8 +1,8 @@
-# Imperion Business Manager — capability overview
+# Imperion OS — capability overview
 
 > **Audience:** anyone new to the product — a new employee, an engineer, a reviewer,
 > or a stakeholder who wants the full picture in one read.
-> **Scope:** the complete capability surface of Imperion Business Manager, organized
+> **Scope:** the complete capability surface of Imperion OS, organized
 > as **CRM · ERP · Extras · the full AI suite**. Every capability here is built and
 > serving in the live app unless explicitly flagged otherwise; this document
 > describes what *exists*, cross-linked to the deeper per-area docs and the ADRs that
@@ -14,13 +14,24 @@
 
 ---
 
-## 1. What Imperion Business Manager is
+## 1. What Imperion OS is
 
-**Imperion Business Manager** is the single operational platform a Managed Service
+**Imperion OS** is the single operational platform a Managed Service
 Provider runs its whole business on. It began as a CRM and is now far more: it is the
 **operational brain** of the MSP, spanning the customer-facing motion (CRM), the
 operational and financial backbone (ERP), a set of extras that no classic CRM or ERP
 ships with, and a **full AI suite** woven through all of it.
+
+Underneath the capability surface, Imperion OS is **an operating system for AI agents
+over the company's knowledge and actions** — the data platform is the kernel (medallion
+filesystem + OKF grounding cortex + gold/Voyage long-term memory + RLS ring model), the
+tiered knowledge layer is the agent's second brain, and the backend orchestrator + ICM +
+the 1–5 autonomy dial are the scheduler under governed, protected-mode autonomy. That is
+the **data-as-kernel + second-brain-as-OS** thesis; the canonical argument for why this
+data design is superior for agentic workloads is
+[data design for agents](../architecture/data-design-for-agents.md) (ADR-0110). The
+product name is **Imperion OS**; identity names (`ImperionCRM` slug, `imperion-crm`
+package, Entra apps, DBs, `*.azurewebsites.net`) are unchanged (ADR-0016).
 
 It sits as an **intelligence layer above Microsoft 365 and Kaseya** — augmenting and
 orchestrating those systems, never replacing them — and gives every employee **one
@@ -30,7 +41,7 @@ Dataverse / Copilot Studio).
 
 ```mermaid
 mindmap
-  root(("Imperion<br/>Business<br/>Manager"))
+  root(("Imperion OS"))
     CRM
       Leads & capture
       Contacts & 360
@@ -110,7 +121,7 @@ Deeper: [user-guides](../user-guides/README.md) ·
 
 ## 3. ERP — the operational & financial backbone
 
-This is where Imperion Business Manager goes well beyond a CRM. Once a deal is won,
+This is where Imperion OS goes well beyond a CRM. Once a deal is won,
 the same platform runs delivery, project management, time and expense, finance close,
 collections, and the asset register — all over the same object model and the same
 identity spine.
@@ -246,7 +257,7 @@ boundaries, failure handling) · [api](../api/README.md) ·
 
 ## 6. How it all sits together
 
-Imperion Business Manager (this repo) is the **GUI**: it renders the UI, reads
+Imperion OS (this repo) is the **GUI**: it renders the UI, reads
 PostgreSQL directly for display, and routes **every process** to the backend. It is
 one of four repositories that make up the product. The single map of the whole estate
 — who owns what, how a fact crosses repo boundaries, where identity is enforced — is

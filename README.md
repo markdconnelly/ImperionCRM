@@ -1,15 +1,20 @@
 <div align="center">
 
-# Imperion Business Manager
+# Imperion OS
 
-**The operational brain for a modern Managed Service Provider.**
+**The agentic operating system for a modern Managed Service Provider.**
 
-One interface. One agent. The whole business — every customer from the first ad they
+One surface. One agent. The whole business — every customer from the first ad they
 see to the quarterly business review years later, and every internal process from a
-won quote to a paid expense report — in one place.
+won quote to a paid expense report — runs on one data substrate built for AI agents
+to reason and act on safely.
+
+> Product name: **Imperion OS** (ADR-0110; formerly "Imperion Business Manager").
+> Identity names — the repo slug `ImperionCRM`, the `imperion-crm` package, the Entra
+> apps, the databases, and the `*.azurewebsites.net` URLs — are unchanged (ADR-0016).
 
 [Documentation library](docs/README.md) ·
-[Capability overview](docs/product/imperion-business-manager-overview.md) ·
+[Capability overview](docs/product/imperion-os-overview.md) ·
 [System of systems](docs/architecture/system-of-systems.md) ·
 [Architecture](docs/architecture/README.md) ·
 [Customer lifecycle](docs/architecture/customer-lifecycle.md) ·
@@ -21,8 +26,12 @@ won quote to a paid expense report — in one place.
 
 ## What this is
 
-**Imperion Business Manager** is the single operational platform an MSP runs its
-business on. It is **not just a CRM** — it spans the full operating surface:
+**Imperion OS** is the single operational platform an MSP runs its business on — and,
+underneath, **an operating system for AI agents over the company's knowledge and
+actions**. An OS schedules processes over shared resources under governed access;
+Imperion OS does that for agents, with the data platform as the kernel and a tiered,
+identity-scoped knowledge layer as the agent's second brain. It is **not just a CRM** —
+it spans the full operating surface:
 
 - **CRM** — leads, contacts, accounts, the unified communications timeline, the
   sales pipeline, opportunities, segments, marketing campaigns + journeys, events,
@@ -62,8 +71,28 @@ Running an MSP means knowing your customers cold **and** running every internal
 process cleanly — sales, delivery, finance, support. In practice that knowledge and
 that work are **scattered across a dozen tools** (M365, Kaseya, QuickBooks,
 spreadsheets, someone's memory), re-keyed by hand, with no single source of truth
-and no AI that understands the business. Imperion Business Manager turns that sprawl
-into one operating surface with one agent on top of it.
+and no AI that understands the business. Imperion OS turns that sprawl into one
+operating surface with one agent on top of it.
+
+## The OS in one diagram
+
+The OS metaphor is the design constraint, not a slogan — **data-as-kernel +
+second-brain-as-OS**. Every layer maps to a real artifact:
+
+| OS concept | Imperion OS |
+| --- | --- |
+| **Kernel** (filesystem · type system · long-term memory · ring model) | Medallion bronze→silver→gold · OKF semantic layer (grounding cortex) · gold + Voyage `voyage-3-large` @1024d vectors · two-axis RLS access spine |
+| **Memory** (the second brain) | Tiered knowledge: canon · company · personal ×6, identity-scoped in the DB |
+| **Scheduler / syscalls** | Backend orchestrator + sub-agents · ICM · 1–5 autonomy dial · `agent_run` ledger · eval plane · deny-by-default action/tool-grant · event/trigger substrate |
+| **Processes** | The agent roster (triage → dispatch → execute → observe → spine) |
+| **I/O** | Pipeline (sensory ingest) + LocalPipeline (memory consolidation / vectorization) |
+| **Protected mode** | Autonomy dial + approval cockpit + Mark-gates |
+
+> One refinement DNA at three altitudes: medallion refines **data**, OKF/IKF refines
+> **meaning**, ICM refines **action**. The full case — and why this beats an LLM + RAG
+> bolted onto a human-form CRM schema — is the canonical
+> **[data design for agents](docs/architecture/data-design-for-agents.md)** (siblings
+> link it rather than restate it).
 
 ## Architecture at a glance
 
@@ -97,7 +126,7 @@ flowchart TB
       VAULT["🔑 OAuth + AI keys (Key Vault)"]
     end
 
-    subgraph FE["🖼️ Imperion Business Manager (this repo — Next.js GUI)"]
+    subgraph FE["🖼️ Imperion OS (this repo — Next.js GUI)"]
       UI["Three-column shell + agent panel"]
     end
 
@@ -168,7 +197,7 @@ line to preserve the version-sensitive Entra `customFetch` hook, ADR-0009).
 
 ## The four-repo system
 
-Imperion Business Manager is one product built from four repositories with a settled
+Imperion OS is one product built from four repositories with a settled
 division of labor (ADR-0042). Full map:
 [system-of-systems](docs/architecture/system-of-systems.md).
 

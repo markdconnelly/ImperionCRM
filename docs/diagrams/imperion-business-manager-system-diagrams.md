@@ -25,7 +25,7 @@ flowchart TB
     IBM --> AI["🤖 Full AI suite<br/>orchestrator + sub-agents · ICM + autonomy dial ·<br/>Managed Agents runtime · agent rooms · RAG"]
 ```
 
-Full narrative: [capability overview](../product/imperion-business-manager-overview.md).
+Full narrative: [capability overview](../product/imperion-os-overview.md).
 
 ---
 
