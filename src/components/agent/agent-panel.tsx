@@ -4,36 +4,30 @@ import { useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/icon";
 import { askAgentAction } from "@/lib/agent/ask-action";
-import type { AgentMessage } from "@/types";
+import { useAgentSession } from "@/components/agent/agent-session-context";
 
 /**
  * The right-hand orchestrator panel — LIVE against the backend's Claude tool-use loop
- * (backend ADR-0036) via `askAgentAction`. One conversation id per panel mount threads
- * the turns for tracing/audit. When the backend isn't configured the action returns a
- * clear notice instead of erroring, so the panel never breaks the shell.
+ * (backend ADR-0036) via `askAgentAction`. The conversation + its id live in the
+ * shell-level AgentSessionProvider (#1119), so the thread persists as you move page to
+ * page, collapse/expand, or pass through /jarvis — this panel is a pure consumer. When
+ * the backend isn't configured the action returns a clear notice instead of erroring, so
+ * the panel never breaks the shell.
  */
-export function AgentPanel({
-  onCollapse,
-  agentMessages,
-}: {
-  onCollapse: () => void;
-  agentMessages: AgentMessage[];
-}) {
-  const [messages, setMessages] = useState<AgentMessage[]>(agentMessages);
+export function AgentPanel({ onCollapse }: { onCollapse: () => void }) {
+  const { messages, addMessages, conversationId } = useAgentSession();
   const [draft, setDraft] = useState("");
   const [isPending, startTransition] = useTransition();
-  const conversationId = useRef<string>(crypto.randomUUID());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function send() {
     const message = draft.trim();
     if (!message || isPending) return;
     setDraft("");
-    setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "user", text: message }]);
+    addMessages([{ id: crypto.randomUUID(), role: "user", text: message }]);
     startTransition(async () => {
-      const reply = await askAgentAction(message, conversationId.current);
-      setMessages((prev) => [
-        ...prev,
+      const reply = await askAgentAction(message, conversationId());
+      addMessages([
         { id: crypto.randomUUID(), role: "agent", text: reply.text },
         ...(reply.requiresApproval
           ? [{

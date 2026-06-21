@@ -44,7 +44,17 @@ A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
   `agent_conversation.title` may carry client_pii (`data_class`-tagged for the #1034
   admin-RLS policy).
 
+## The app-wide sidecar (every other page)
+
+Off `/jarvis`, the orchestrator rides along as the right-hand **sidecar** (`AgentPanel`).
+Its conversation + `conversation_id` live in a shell-level `AgentSessionProvider`
+(`src/components/agent/agent-session-context.tsx`, #1119) mounted once in `AppShell`, so the
+thread **persists as you move page to page**, collapse/expand the panel, or pass through
+`/jarvis` (where the sidecar is suppressed). It rehydrates from `sessionStorage`, so a reload
+keeps the thread within the browser session; the durable ledger remains the backend's
+(`agent_conversation`, ADR-0042).
+
 ## Related
 
-Sidecar persistence across the rest of the app: #1119. Operator cockpit (action queue):
-[`technician-cockpit.md`](technician-cockpit.md). ICM run viewer: `src/lib/agent/icm-runs.ts`.
+Operator cockpit (action queue): [`technician-cockpit.md`](technician-cockpit.md). ICM run
+viewer: `src/lib/agent/icm-runs.ts`.

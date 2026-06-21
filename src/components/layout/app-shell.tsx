@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { AgentPanel } from "@/components/agent/agent-panel";
+import { AgentSessionProvider } from "@/components/agent/agent-session-context";
 import type { AgentMessage, SessionUser } from "@/types";
 
 /**
@@ -57,30 +58,32 @@ export function AppShell({
   }, [agentCollapsed]);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-bg text-text">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onExpand={() => setSidebarCollapsed(false)}
-        user={user}
-      />
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar
-          sidebarCollapsed={sidebarCollapsed}
-          onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
-          // On /jarvis the panel is intentionally absent, so hide the reopen button.
-          agentCollapsed={hideAgent ? false : agentCollapsed}
-          onOpenAgent={() => setAgentCollapsed(false)}
+    // The session provider lives ABOVE the conditional AgentPanel render so the sidecar
+    // conversation survives navigation, collapse, and /jarvis (#1119). It mounts once —
+    // the (app) layout segment keeps AppShell alive across route changes.
+    <AgentSessionProvider initialMessages={agentMessages}>
+      <div className="flex h-screen w-screen overflow-hidden bg-bg text-text">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onExpand={() => setSidebarCollapsed(false)}
+          user={user}
         />
-        <main className="flex-1 overflow-y-auto p-4">{children}</main>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+            // On /jarvis the panel is intentionally absent, so hide the reopen button.
+            agentCollapsed={hideAgent ? false : agentCollapsed}
+            onOpenAgent={() => setAgentCollapsed(false)}
+          />
+          <main className="flex-1 overflow-y-auto p-4">{children}</main>
+        </div>
+
+        {!agentCollapsed && !hideAgent && (
+          <AgentPanel onCollapse={() => setAgentCollapsed(true)} />
+        )}
       </div>
-
-      {!agentCollapsed && !hideAgent && (
-        <AgentPanel
-          onCollapse={() => setAgentCollapsed(true)}
-          agentMessages={agentMessages}
-        />
-      )}
-    </div>
+    </AgentSessionProvider>
   );
 }
