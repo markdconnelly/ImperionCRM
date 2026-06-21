@@ -8,7 +8,7 @@
 > [← Admin guides](README.md) · [Time administration](timesheet-administration.md) ·
 > [Employee mapping](employee-mapping.md)
 
-This guide covers the four expense-side admin surfaces in Imperion Business Manager.
+This guide covers the four expense-side admin surfaces in Imperion OS.
 They are the expense twins of the time surfaces and follow the same patterns: one
 unified lifecycle table, a finance roll-up, a one-time mapping console, and a
 comp-gated rate. The platform's hard rule runs through all of them — **the app

@@ -11,7 +11,7 @@
 ## What this is
 
 The CMDB register is a **read-only Configuration Item (CI) view** projected over the
-**existing silver inventory** Imperion Business Manager already holds. It is the
+**existing silver inventory** Imperion OS already holds. It is the
 foundation of the CMDB cluster: a clean `cmdb_ci` union read-model that later slices
 (relationships, impact, asset lifecycle) extend.
 

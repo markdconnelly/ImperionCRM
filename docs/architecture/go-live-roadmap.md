@@ -1,4 +1,4 @@
-# Imperion Business Manager — go-live roadmap
+# Imperion OS — go-live roadmap
 
 > **You are in: `ImperionCRM` — the CANONICAL copy.** Synced copies live in the three
 > sibling repos; update here and re-sync. Companion to the

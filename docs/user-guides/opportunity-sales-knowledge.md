@@ -41,7 +41,7 @@ silver opportunity id:
 
 The front end holds **no storage credentials**. The file **bytes** are streamed to the
 caller-gated backend, which AV-scans, hashes (sha256), and stores them in a **private
-Azure Blob** ([ADR-0069](../decision-records/ADR-0069-attachments-azure-blob.md)); the
+Azure Blob** ([ADR-0064](../decision-records/ADR-0064-pm-collaboration-comments-mentions-notifications-attachments.md)); the
 backend returns a custody reference (blob path + digest + size/type) that the GUI records
 in `website_opportunities.knowledge_blob_refs`
 ([ADR-0064](../decision-records/ADR-0064-pm-collaboration-comments-mentions-notifications-attachments.md)

@@ -1,6 +1,6 @@
 # 🌪️ Disaster Recovery
 
-Business continuity for **Imperion Business Manager**: what we protect, how fast we must
+Business continuity for **Imperion OS**: what we protect, how fast we must
 recover it, how we *prove* a restore actually works, and who we tell. DR is the
 **recover** phase that [incident-response](../security/incident-response.md) hands off
 to — when something is lost or corrupted, this is how it comes back.

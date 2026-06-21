@@ -10,7 +10,7 @@
 
 ## What this is
 
-In Imperion Business Manager, task and project statuses are **configurable data**,
+In Imperion OS, task and project statuses are **configurable data**,
 not hard-coded enums. The `status_def` table (migration 0104) holds admin-definable
 status sets, and this surface is the CRUD UI over it. Adding a status like *"Waiting
 on client"* to one project type is a **row insert** — no schema change, no deploy.

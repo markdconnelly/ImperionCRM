@@ -1,6 +1,6 @@
 # 🧭 Architecture
 
-How **Imperion Business Manager** is shaped, where its boundaries are, and the motion
+How **Imperion OS** is shaped, where its boundaries are, and the motion
 it models. This is the index for the architecture area — start here, then follow the
 path that matches what you need.
 
@@ -8,11 +8,13 @@ path that matches what you need.
 [Capability overview](../product/imperion-os-overview.md) ·
 [Decision records](../decision-records/README.md)
 
-> **Imperion Business Manager** is the single operational platform a Managed Service
+> **Imperion OS** is the single operational platform a Managed Service
 > Provider runs its whole business on — **CRM + ERP + extras + a full AI suite** over
-> one data store and one identity spine. It began as a CRM ("Imperion CRM" survives in
-> the repo slug and `package.json` name, which are out of scope for the rebrand); the
-> product and its docs are now **Imperion Business Manager**. For the full capability
+> one data store and one identity spine. It began as a CRM and the names "Imperion CRM"
+> and "Imperion Business Manager" are retired as product names, surviving only as
+> identity-bearing names (the repo slug `ImperionCRM` and `package.json` name
+> `imperion-crm`), which are out of scope for the rebrand (ADR-0110); the product and
+> its docs are now **Imperion OS**. For the full capability
 > surface, read the
 > [capability overview](../product/imperion-os-overview.md).
 

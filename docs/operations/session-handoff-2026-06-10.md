@@ -5,7 +5,7 @@
 ---
 
 > **Historical record — read with care.** This is a **point-in-time** snapshot of the
-> 2026-06-10 build sprint for **Imperion Business Manager**, kept for the record. It can
+> 2026-06-10 build sprint for **Imperion OS**, kept for the record. It can
 > lag the live system by days. For *current* state, verify against **git log + the prod
 > database**, not this file (see the working notes at the bottom). For the standing
 > operational picture start at [Operations](README.md).

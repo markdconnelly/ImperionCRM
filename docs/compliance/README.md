@@ -1,6 +1,6 @@
 # 📋 Compliance
 
-Where **Imperion Business Manager**'s controls map to external obligations, and where the
+Where **Imperion OS**'s controls map to external obligations, and where the
 evidence lives. Compliance here is a **mapping layer**, not a second set of controls: the
 *substance* lives in [security](../security/README.md) and
 [data-governance](../data-governance/README.md); this area answers "**which control
@@ -11,7 +11,7 @@ satisfies which obligation, and how would we prove it?**"
 [Data governance](../data-governance/README.md) ·
 [Logging & monitoring](../security/logging-and-monitoring.md)
 
-> **Context.** Imperion Business Manager is an **internal, single-tenant** platform for
+> **Context.** Imperion OS is an **internal, single-tenant** platform for
 > one MSP (Imperion employees only) — not a multi-tenant SaaS sold to third parties. So
 > the obligations in scope are the ones that come from **how the business operates**
 > (outreach, profiling, employee data, access control), not from a SaaS-vendor

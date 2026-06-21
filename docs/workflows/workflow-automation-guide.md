@@ -12,7 +12,7 @@
 
 ## 1. One engine, four faces
 
-Everything automated in Imperion Business Manager runs on **one** substrate. Whether you
+Everything automated in Imperion OS runs on **one** substrate. Whether you
 call it a nurture campaign, a pre-discovery sequence, a re-engagement push, or a marketing
 journey, under the hood it is the same three tables:
 

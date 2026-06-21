@@ -1,4 +1,4 @@
-# Imperion Business Manager — cross-repo production-readiness plan
+# Imperion OS — cross-repo production-readiness plan
 
 > **You are in: `ImperionCRM` — the CANONICAL copy.** Synced copies live in the three
 > sibling repos; update here and re-sync. This repo's section is marked **← this repo**

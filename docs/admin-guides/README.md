@@ -1,7 +1,7 @@
 # 🔑 Admin guides
 
 > **Audience:** internal administrators and finance staff who **configure and
-> support Imperion Business Manager** — the controls *behind* the day-to-day UI.
+> support Imperion OS** — the controls *behind* the day-to-day UI.
 > End users belong in [user-guides](../user-guides/README.md); operators on call
 > belong in [operations](../operations/README.md).
 
@@ -12,7 +12,7 @@
 
 ---
 
-Imperion Business Manager is an internal, AI-enabled platform an MSP runs its
+Imperion OS is an internal, AI-enabled platform an MSP runs its
 **whole business** on — CRM + ERP + extras + a full AI suite on one surface
 ([capability tour](../product/imperion-os-overview.md)). Most of it
 is open to every signed-in employee, with money redacted from support-only users. A
@@ -96,7 +96,7 @@ audience. They are gated the same way:
 
 ## The wider platform
 
-Imperion Business Manager is the **GUI repository** in a four-repository system
+Imperion OS is the **GUI repository** in a four-repository system
 (ADR-0042). Processes, live data, and heavy enrichment live in the three sibling
 repos. For the whole picture see
 [System of systems](../architecture/system-of-systems.md):

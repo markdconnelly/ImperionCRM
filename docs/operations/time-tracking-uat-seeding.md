@@ -6,7 +6,7 @@
 ---
 
 > **What this is.** A copy-paste runbook for `scripts/seed-time-uat.mjs` — the prerequisite
-> data seed for the **Imperion Business Manager** time-tracking UAT. **Mark runs it** (prod
+> data seed for the **Imperion OS** time-tracking UAT. **Mark runs it** (prod
 > writes are Mark-gated, system `CLAUDE.md` §2); the agent authors the script and never
 > executes it. **Test Entra users only — no client/employee PII** in the script, config, or
 > any issue/PR. Run the [UAT script](time-tracking-uat-script.md) once seeding lands.

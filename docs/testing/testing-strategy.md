@@ -1,7 +1,7 @@
 # Testing strategy
 
 > **Audience:** anyone writing or reviewing code in this repo. This explains *how*
-> Imperion Business Manager is tested, *why* it is tested that way, and what is
+> Imperion OS is tested, *why* it is tested that way, and what is
 > deliberately out of scope today. For the one-screen summary and the gate table, start
 > at the [testing README](README.md).
 

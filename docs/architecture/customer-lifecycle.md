@@ -9,7 +9,7 @@
   [data-model](../database/data-model.md),
   [capability overview](../product/imperion-os-overview.md)
 
-This is the canonical description of how **Imperion Business Manager** acquires,
+This is the canonical description of how **Imperion OS** acquires,
 qualifies, converts, and grows a managed-services customer. The CRM modules model this
 motion; the dashboard and the per-module pages are views over it. The defining trait is
 that it is **assessment-led**: a *paid* AI Security Readiness Assessment is the wedge

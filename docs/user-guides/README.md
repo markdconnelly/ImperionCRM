@@ -1,6 +1,6 @@
 # 📖 User Guides
 
-How employees actually use **Imperion Business Manager**, module by module. Written
+How employees actually use **Imperion OS**, module by module. Written
 for the person doing the work — a new hire on day one — not the person who built it.
 
 [← Documentation library](../README.md) ·

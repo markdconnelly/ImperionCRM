@@ -2,7 +2,7 @@
 
 [← Reporting](README.md) · [Report builder](report-builder.md) · [Semantic model](semantic-model.md)
 
-"Dashboards" in **Imperion Business Manager** means two distinct things, both reached from
+"Dashboards" in **Imperion OS** means two distinct things, both reached from
 the `/reporting` hub. This page covers both:
 
 1. **The curated BI hub** (ADR-0062) — the hand-built intelligence sections and the

@@ -1,4 +1,4 @@
-# Imperion Business Manager
+# Imperion OS
 
 The MSP business-management app (CRM + support + delivery + security posture) for Imperion. One app across four repos; this repo owns the database schema and the UI. Data flows bronze → silver → gold per source, merged into unified objects the app reads.
 

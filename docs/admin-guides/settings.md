@@ -9,7 +9,7 @@
 > [← Admin guides](README.md) · [Connectors](connectors.md) ·
 > [Security standard](../security/unified-security-standard.md)
 
-Settings is the administrator's control panel for Imperion Business Manager. It is
+Settings is the administrator's control panel for Imperion OS. It is
 where the org's **integration credentials**, the **AI budget**, per-employee
 **connected accounts**, the **customer tenant map**, and the **configuration tools**
 live. It is one of the small set of fully admin-gated surfaces (the same class as

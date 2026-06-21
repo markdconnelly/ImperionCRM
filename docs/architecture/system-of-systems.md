@@ -1,10 +1,10 @@
 # 🌐 System of systems — the four repositories as one platform
 
-**Imperion Business Manager** is **one product** built from **four repositories**. This
+**Imperion OS** is **one product** built from **four repositories**. This
 is the one doc that explains them *together*: who owns what, how a fact crosses repo
 boundaries on its way from an external system to an answer on screen, where identity is
 enforced, and which repo is the single source of truth for each shared concern. (The
-product is "Imperion Business Manager"; "ImperionCRM" survives only as the GUI repo's
+product is "Imperion OS"; "ImperionCRM" survives only as the GUI repo's
 slug — out of scope for the rebrand.)
 
 It is the cross-repo companion to the two repo-internal architecture docs:

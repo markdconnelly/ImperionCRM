@@ -1,6 +1,6 @@
 # 🏛️ System architecture — three layers, three open standards
 
-How a fact travels through **Imperion Business Manager**: from a raw record in someone
+How a fact travels through **Imperion OS**: from a raw record in someone
 else's system, to something an agent can reason over, to an answer in front of an
 employee. This doc is the **one place** that ties the three layers together. It
 narrates and diagrams; it does **not** restate the decisions — each layer's authority

@@ -1,6 +1,6 @@
 # 🔌 Integrations
 
-How **Imperion Business Manager** connects to the outside world. This area is the
+How **Imperion OS** connects to the outside world. This area is the
 onboarding-grade reference for every external system the platform talks to, the model
 that governs those connections, and the security rules that keep credentials out of the
 front end.
@@ -9,7 +9,7 @@ front end.
 [Capability overview](../product/imperion-os-overview.md#4-extras--beyond-classic-crmerp) ·
 [System of systems](../architecture/system-of-systems.md)
 
-> **Read this first if you are new.** Imperion Business Manager is the GUI tier of a
+> **Read this first if you are new.** Imperion OS is the GUI tier of a
 > **four-repo system** (ADR-0042). It *renders* integration state and *collects*
 > credentials, but it never runs an integration process and never holds a provider
 > secret. The live OAuth flows, token custody, polling, and ingestion run in the three
@@ -21,7 +21,7 @@ front end.
 
 ```mermaid
 flowchart TB
-    subgraph FE["Imperion Business Manager (this repo — GUI only)"]
+    subgraph FE["Imperion OS (this repo — GUI only)"]
         SET["Settings -> Your connections<br/>(per-user OAuth)"]
         CRED["Settings -> Company credentials<br/>(org-wide secrets)"]
         CAT["/connectors<br/>(connector marketplace)"]

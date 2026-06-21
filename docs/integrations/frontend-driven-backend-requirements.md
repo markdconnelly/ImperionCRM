@@ -2,7 +2,7 @@
 
 [← Integrations](README.md) · [System of systems](../architecture/system-of-systems.md)
 
-**Imperion Business Manager** is the GUI tier of a four-repo system (ADR-0042). This page
+**Imperion OS** is the GUI tier of a four-repo system (ADR-0042). This page
 is the **cross-repo to-do list**: the engines the GUI already *expects* from its siblings,
 each with current status. If you are onboarding to the integration surface, read it as
 "what the front end has wired up, and which sibling owes the engine behind it."
