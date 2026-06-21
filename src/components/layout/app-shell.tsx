@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { AgentPanel } from "@/components/agent/agent-panel";
@@ -23,6 +24,10 @@ export function AppShell({
   // Collapse state persists to localStorage and is restored on load (CLAUDE.md §6).
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [agentCollapsed, setAgentCollapsed] = useState(false);
+
+  // The /jarvis landing page IS the agent surface (#1118) — suppress the right-hand
+  // sidecar (and its top-bar reopen affordance) there; show it on every other route.
+  const hideAgent = usePathname() === "/jarvis";
 
   useEffect(() => {
     try {
@@ -63,13 +68,14 @@ export function AppShell({
         <TopBar
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
-          agentCollapsed={agentCollapsed}
+          // On /jarvis the panel is intentionally absent, so hide the reopen button.
+          agentCollapsed={hideAgent ? false : agentCollapsed}
           onOpenAgent={() => setAgentCollapsed(false)}
         />
         <main className="flex-1 overflow-y-auto p-4">{children}</main>
       </div>
 
-      {!agentCollapsed && (
+      {!agentCollapsed && !hideAgent && (
         <AgentPanel
           onCollapse={() => setAgentCollapsed(true)}
           agentMessages={agentMessages}
