@@ -1402,5 +1402,20 @@
     "file": "ADR-0108-linkedin-integration.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0109",
+    "title": "Actuation autonomy dial (1–5) + approval cockpit queue",
+    "status": "proposed",
+    "date": "2026-06-21",
+    "tags": [
+      "meta",
+      "agents",
+      "security"
+    ],
+    "summary": "Implement ADR-0107 D4/D5: a per-agent 1–5 actuation autonomy dial that resolves to an ADR-0055 tier ceiling, with above-ceiling actions routed to a native approval cockpit. Reconciles the new actuation dial with the existing L0–L3 ICM-orchestration rung (agent_autopilot_policy, 0123) as ONE dial CONCEPT over TWO planes: a dedicated agent_action_autonomy table (level 1–5 + tunable ceilings) for actuation, distinct from the ICM rung table; plus agent_pending_action as the cockpit queue. Fail-closed default level 1 keeps today's behavior (every send approved).",
+    "file": "ADR-0109-actuation-autonomy-dial.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
