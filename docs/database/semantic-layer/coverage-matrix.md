@@ -207,6 +207,7 @@ of its own — it inherits the domain of the silver entity it feeds.
 | interaction (B) | `m365_mail_messages` · `m365_teams_chats/_meetings` · `facebook_posts/_comments/_messages` · `instagram_media/_comments` |
 | posture / dns (C/E) | `secure_scores` · `defender_incidents/_alerts` · `entra_*` · `intune_*` · `*_golden` · `dns_zones` · `dns_records` · `sharepoint_sites` · `azure_*` · `sentinel_*` |
 | social_metric (B) | `meta_insights` |
+| contract / device (⏳ Pax8 license→agreement/device mapping, #1042/#1052) | `pax8_companies` · `pax8_subscriptions` · `pax8_licenses` · `pax8_orders` (0161; collector LP #279, merge LP #280) |
 
 ## Seams to resolve (the one-domain rule)
 
