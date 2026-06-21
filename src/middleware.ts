@@ -26,13 +26,8 @@ export const config = {
    * public legal surface (#934/#497) — the EULA + Privacy Policy must be reachable
    * without an Entra login (Intuit's QuickBooks production-app review fetches the
    * URLs anonymously); same `(?:$|/)` anchor so it cannot leak onto sibling routes.
-   * `/jarvis` is **TEMPORARILY public for testing** (#1123, #1118) — it serves no data
-   * unauthenticated (`resolveActingUser` returns no_session → empty rail, chat replies
-   * "sign in again"; it renders the shell only). **MUST be re-gated before v1.0.0 go-live
-   * (#1123)** — remove the `jarvis(?:$|/)` token below to restore the Entra gate; same
-   * `(?:$|/)` anchor so it cannot leak onto sibling routes.
    */
   matcher: [
-    "/((?!api/auth|login|break-glass|story(?:$|/)|opt-in(?:$|/)|legal(?:$|/)|jarvis(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|login|break-glass|story(?:$|/)|opt-in(?:$|/)|legal(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
