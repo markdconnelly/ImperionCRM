@@ -16,6 +16,18 @@ it builds on are gathered in the
 and [ADR-0091 Agent & ICM platform](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)
 dossiers (member ADRs cited inline below).
 
+> **The operating-system framing (ADR-0110).** These three bets are why **Imperion OS** is an
+> *operating system for AI agents over a company's knowledge and actions*. The medallion tiers
+> are the **kernel filesystem**; the OKF/IKF layer is the **type system / grounding cortex**;
+> gold + Voyage `voyage-3-large` @ 1024d vectors are **addressable long-term memory**; the
+> two-axis RLS access spine ([ADR-0105](../decision-records/ADR-0105-two-axis-rls-access-spine.md))
+> is the **ring/permission model**; the backend orchestrator + ICM + the autonomy dial are the
+> **scheduler + syscalls**; agents are the **processes**; Pipeline + LocalPipeline are **I/O**
+> (sensory ingest + memory consolidation). The single refinement DNA below — data → meaning →
+> action — is what makes agentic capability *designed in from the substrate, not bolted on*. The
+> full case (and the superiority argument versus an LLM + RAG bolted onto a human-form CRM) is
+> the canonical [**data design for agents**](data-design-for-agents.md).
+
 ---
 
 ## 1. One bet, three altitudes
@@ -256,6 +268,27 @@ re-asserted at execution.
 > *how a model reaches tools/data*; ICM is *how context is structured across a multi-stage
 > workflow*. A stage may query the read-only DB via the postgres MCP.
 
+### 5.1 The governance planes that harden the action layer
+
+The autonomy dial above is the governance *concept*; since mid-2026 it is backed by an enforced
+**actuation stack** — the OS's protected-mode, syscall, process-table, and test-harness organs.
+Together they are what makes raising autonomy *safe* rather than reckless:
+
+| Plane | What it enforces | Decision |
+| --- | --- | --- |
+| **1–5 autonomy dial + approval cockpit** | Per-agent level resolves to a tier ceiling; actions above it route to a native approval cockpit instead of executing (L1 approve-all … L5 fully autonomous) | [ADR-0109](../decision-records/ADR-0109-actuation-autonomy-dial.md) |
+| **Deny-by-default action/tool-grant** | Every tool call checks a per-agent grant with an evaluated scope; outbound actions are a typed action-contract catalog, not a hardcoded enum | [ADR-0107](../decision-records/ADR-0107-governed-action-tool-grant-plane.md) |
+| **Eval / quality plane** | Measures whether agent output is *correct* against committed baselines; gates regressions in CI (the test harness) | [ADR-0106](../decision-records/ADR-0106-agent-eval-quality-plane.md) · backend ADR-0077 |
+| **Event / trigger substrate** | Interrupts/cron — what wakes an agent for reactive autonomy; bounded by the acting identity's grant set | [#991](https://github.com/markdconnelly/ImperionCRM/issues/991) |
+| **Two-axis RLS access spine** | Memory boundaries enforced in the database: role-scoped company + owner-scoped personal | [ADR-0105](../decision-records/ADR-0105-two-axis-rls-access-spine.md) |
+| **Tiered knowledge (the second brain)** | canon · company · personal ×6 — the agent's identity-scoped memory hierarchy | [#966](https://github.com/markdconnelly/ImperionCRM/issues/966) / [#967](https://github.com/markdconnelly/ImperionCRM/issues/967) / [#968](https://github.com/markdconnelly/ImperionCRM/issues/968) |
+| **OKF grounding cortex** | Meaning/authority/joins loaded deterministically per stage; freshness = correctness, enforced by three CI gates | [ADR-0104](../decision-records/ADR-0104-okf-orchestrator-grounding-cortex.md) |
+
+The shape is the OS thesis made concrete: **trust to act** (grant) · **metered action** (dial +
+cockpit) · **proof of what happened** (the `agent_run` ledger, archetype C above) · **proof it
+was right** (eval) — each a distinct, governed organ. The full argument is
+[data design for agents](data-design-for-agents.md).
+
 ---
 
 ## 6. What each business unit gains
@@ -329,6 +362,13 @@ Medallion: [ADR-0039](../decision-records/ADR-0039-per-source-bronze-tables.md) 
 [ADR-0082](../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md) ·
 [ADR-0083](../decision-records/ADR-0083-employee-expense-tracking-and-reimbursement.md) —
 Boundary: [ADR-0042](../decision-records/ADR-0042-division-of-labor-reads-direct-processes-backend.md) ·
-[ADR-0018](../decision-records/ADR-0018-gui-only-frontend-external-functions.md). Related:
+[ADR-0018](../decision-records/ADR-0018-gui-only-frontend-external-functions.md) — Governance planes:
+[ADR-0104](../decision-records/ADR-0104-okf-orchestrator-grounding-cortex.md) (grounding cortex) ·
+[ADR-0105](../decision-records/ADR-0105-two-axis-rls-access-spine.md) (RLS spine) ·
+[ADR-0106](../decision-records/ADR-0106-agent-eval-quality-plane.md) (eval) ·
+[ADR-0107](../decision-records/ADR-0107-governed-action-tool-grant-plane.md) (action/tool-grant) ·
+[ADR-0109](../decision-records/ADR-0109-actuation-autonomy-dial.md) (autonomy dial) ·
+[ADR-0110](../decision-records/ADR-0110-rebrand-imperion-os.md) (Imperion OS positioning). Related:
+[**data design for agents**](data-design-for-agents.md) (the agentic-OS argument) ·
 [system-architecture](system-architecture.md) · [data model + ERD](../database/data-model.md) ·
 [semantic layer](../database/semantic-layer/index.md).

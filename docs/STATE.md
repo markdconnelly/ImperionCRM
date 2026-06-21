@@ -1,4 +1,4 @@
-# Current state — Imperion Business Manager (frontend repo)
+# Current state — Imperion OS (frontend repo)
 
 > **What this is.** The dated, volatile inventory of *what is actually shipped* — the
 > detail the meta-policy (`CLAUDE.md` §4) keeps **out** of `CLAUDE.md` so the contract
@@ -9,9 +9,11 @@
 > The authoritative cross-session record is GitHub issues/PRs + the ADRs — this file is
 > a navigable index over them, not a replacement.
 
-**Last refreshed:** 2026-06-20 · **Milestone:** pre-`v1.0.0` (build complete; go-live is
-now an operator/credential problem, not a code problem) · **Schema:** migrations
-**0001–0148 applied to prod** · **ADRs:** through **0104** · **OKF bundle:** 56 concept files.
+**Last refreshed:** 2026-06-21 · **Product name:** **Imperion OS** — the agentic operating system
+for an MSP (ADR-0110; identity names `ImperionCRM*` frozen per ADR-0016) · **Milestone:**
+pre-`v1.0.0` (build complete; go-live is now an operator/credential problem, not a code problem) ·
+**Schema:** migrations **0001–0148 applied to prod** · **ADRs:** through **0110** · **OKF bundle:**
+56 concept files.
 
 ---
 
@@ -24,6 +26,12 @@ reaching `v1.0.0` (first real employee use, target ≈ 2026-07-01) is an **opera
 problem — wiring credentials, hydrating the on-prem collectors, and a UX sign-off — not a
 feature-build problem. Most flows that look "deferred" are **deploy-dormant**, not broken:
 they light up the moment their source credential lands and the collectors hydrate bronze.
+
+The positioning is now explicit: Imperion OS is an **operating system for AI agents over the
+company's knowledge and actions** — medallion kernel + OKF grounding cortex + gold/Voyage
+long-term memory + the two-axis RLS access spine, with the backend orchestrator/ICM/autonomy-dial
+as scheduler and the governed action planes as protected mode. The canonical argument is
+[`docs/architecture/data-design-for-agents.md`](architecture/data-design-for-agents.md) (ADR-0110).
 
 ---
 
@@ -60,6 +68,7 @@ done/▶-in-flight ledger.
 - ✅ Single orchestrator runtime live in the backend (backend ADR-0036); right-hand orchestrator panel on every page.
 - ✅ AI Agents page (ADR-0048) + Board of Directors (ADR-0049) — both admin-only, real, reading live tables.
 - ✅ ICM framework + autonomy dial (ADR-0091); self-hosted Managed Agents runtime; orchestration & observability matrix (ADR-0087).
+- ▶ **Agentic-OS governance planes** (the actuation/memory hardening, mostly schema+foundation shipped, prod-apply Mark-gated): **two-axis RLS access spine** (ADR-0105, migs 0152/0153 — slices 1–2 shipped, dormant); **deny-by-default action/tool-grant** (ADR-0107, migs 0156–0158 — 2B–2E1 shipped); **1–5 autonomy dial + approval cockpit** (ADR-0109 — schema + dispatch routing in flight, #996); **eval/quality plane** (ADR-0106 + backend ADR-0077 — 0154/0155 **prod-applied**, CI gate dormant); **event/trigger substrate** (#991 — unbuilt); **tiered knowledge / 6 personal brains** (#966/#967/#968 — access-spine first). These are the OS's protected-mode + syscall + test-harness organs; see [`data-design-for-agents.md`](architecture/data-design-for-agents.md).
 - ✅ **OKF semantic layer as the orchestrator grounding cortex** (ADR-0104, amends ADR-0086): grounding-only meaning/authority/joins; `source_skill` routing registry (migration 0143); three freshness gates live (same-repo + cross-repo okf-sync + on-prem reconciliation).
 - ▶ RAG gold layer + embeddings: knowledge objects modelled; **vectorization (Voyage 1024d) not yet built** (LocalPipeline #176). Semantic search surfaces when this lands.
 
@@ -94,7 +103,8 @@ done/▶-in-flight ledger.
 **Recent ADRs** ([`docs/decision-records/`](decision-records/README.md)) — note the
 consolidated dossiers that supersede earlier scattered ADRs:
 - `ADR-0091` AI/ICM platform · `ADR-0092` medallion data platform · `ADR-0093` employee finance · `ADR-0094` PM parity · `ADR-0095` RBAC · `ADR-0096` sale→delivery
-- `ADR-0097` CMDB authority model · `ADR-0098` change enablement · `ADR-0099` manual-mileage-v1 / MileIQ-v2 · `ADR-0100` broad employee read · `ADR-0101` minimalist code generation · `ADR-0102` vector contract single home · `ADR-0103` connection credential registry · `ADR-0104` OKF orchestrator grounding cortex · `ADR-0105` two-axis RLS access spine *(Proposed, #967; placeholder #)*
+- `ADR-0097` CMDB authority model · `ADR-0098` change enablement · `ADR-0099` manual-mileage-v1 / MileIQ-v2 · `ADR-0100` broad employee read · `ADR-0101` minimalist code generation · `ADR-0102` vector contract single home · `ADR-0103` connection credential registry · `ADR-0104` OKF orchestrator grounding cortex · `ADR-0105` two-axis RLS access spine
+- `ADR-0106` agent eval/quality plane · `ADR-0107` governed action & tool-grant plane · `ADR-0108` LinkedIn integration · `ADR-0109` actuation autonomy dial (1–5) · `ADR-0110` rebrand to Imperion OS (identity names `ImperionCRM*` frozen, ADR-0016) *(placeholder #, claimed at merge)*
 
 ---
 
