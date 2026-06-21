@@ -1417,5 +1417,20 @@
     "file": "ADR-0109-actuation-autonomy-dial.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0110",
+    "title": "Rebrand product to Imperion OS; identity names remain ImperionCRM*",
+    "status": "accepted",
+    "date": "2026-06-21",
+    "tags": [
+      "meta",
+      "product",
+      "branding"
+    ],
+    "summary": "Rename the product in all prose to Imperion OS — the agentic operating system for an MSP — retiring 'Imperion Business Manager' and 'Imperion CRM' as product names. Record the canonical positioning: data-as-kernel + second-brain-as-OS, argued in docs/architecture/data-design-for-agents.md. All identity-bearing names are explicitly OUT of scope and unchanged: repo slug ImperionCRM, package imperion-crm, Entra app names, database names, and *.azurewebsites.net URLs (a rename of those is Mark-gated, ADR-0016).",
+    "file": "ADR-0110-rebrand-imperion-os.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
