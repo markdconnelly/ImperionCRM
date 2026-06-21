@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
@@ -172,10 +173,15 @@ export default async function AgentsPage({
       <section className="rounded-xl border border-border bg-panel p-5">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-display text-sm font-semibold tracking-tight">Recent agent activity</h3>
-          <span className="text-[11px] text-dim">
-            last {runs.length || 20} turns · audit_log (agent.turn)
-            {!dbConfigured && " · sample data"}
-          </span>
+          <div className="flex items-center gap-3">
+            <Link href="/agents/evals" className="text-[11px] text-dim hover:text-text">
+              Eval runs →
+            </Link>
+            <span className="text-[11px] text-dim">
+              last {runs.length || 20} turns · audit_log (agent.turn)
+              {!dbConfigured && " · sample data"}
+            </span>
+          </div>
         </div>
         {runs.length === 0 ? (
           <p className="text-sm text-dim">
