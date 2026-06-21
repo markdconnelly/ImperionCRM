@@ -174,6 +174,9 @@ export default async function AgentsPage({
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-display text-sm font-semibold tracking-tight">Recent agent activity</h3>
           <div className="flex items-center gap-3">
+            <Link href="/agents/grants" className="text-[11px] text-dim hover:text-text">
+              Tool grants →
+            </Link>
             <Link href="/agents/evals" className="text-[11px] text-dim hover:text-text">
               Eval runs →
             </Link>

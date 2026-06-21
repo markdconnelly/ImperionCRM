@@ -106,9 +106,16 @@ SubAgentName) and their per-agent tool allowlist:
 - **This is the shared foundation for two planes.** The grants feed the
   deny-by-default egress check (#990); the same rows give the native 1–5 autonomy
   dial (#996 / ADR-0107 D4) a per-sub-agent row to hang a level on.
-- **Dormant on apply — zero behavior change.** Nothing reads `agent_tool_grant`
-  yet. Enforcement is **BE #244 (2B-1)**, which must deploy **only after** this
-  seed is prod-applied — otherwise fail-closed enforcement blocks every tool.
+- **Enforced at dispatch (BE #244, 2B-1).** The backend loop refuses any tool a
+  sub-agent has no grant for (`is_error` + `agent.tool.denied` audit); deploys only
+  after the seed is prod-applied (fail-closed).
+- **Scope predicates (BE #248 / FE #1005, 2D — ADR-0107 D3).** Each grant's `scope`
+  jsonb is a per-input-field allow-list (`{ field: string[] }`; `{}` = unconstrained).
+  At dispatch, after the grant check, an out-of-scope call is refused + audited
+  (`out_of_scope`). Admins manage grants + scope at **`/agents/grants`** (the admin UI),
+  which writes through the backend `GET/POST/DELETE /api/agent/grants` (ADR-0042 — the web
+  role only reads `agent_tool_grant`; revoke needs the backend MI's DELETE grant,
+  migration 0157).
 
 ---
 

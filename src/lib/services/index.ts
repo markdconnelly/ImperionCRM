@@ -207,6 +207,31 @@ export const agentService = {
     }),
 
   /**
+   * Grant a sub-agent a tool, or edit a grant's scope predicate (idempotent upsert;
+   * backend `POST /agent/grants`, #248 / ADR-0107 D3). `scope` is a per-input-field
+   * allow-list (`{}` = unconstrained). The grant write is backend-owned (ADR-0042 — the
+   * web role has no INSERT/UPDATE on `agent_tool_grant`); `actingUserId` feeds the audit.
+   */
+  upsertToolGrant: (input: {
+    agentId: string;
+    tool: string;
+    scope?: Record<string, string[]>;
+    actingUserId?: string;
+  }) =>
+    callService<{ agentId: string; tool: string; scope: Record<string, string[]> }>(
+      services.agent,
+      "/agent/grants",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+
+  /** Revoke a sub-agent's tool grant (backend `DELETE /agent/grants`, #248). */
+  revokeToolGrant: (input: { agentId: string; tool: string; actingUserId?: string }) =>
+    callService<{ revoked: boolean }>(services.agent, "/agent/grants", {
+      method: "DELETE",
+      body: JSON.stringify(input),
+    }),
+
+  /**
    * Resolve a parked ICM checkpoint (#278, ADR-0061): approve / edit-and-approve /
    * reject a drafted lead-response artifact. The backend re-asserts consent at any
    * send (ADR-0058) and records the human approver on the run. `editedDraft` is set
