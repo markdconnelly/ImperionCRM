@@ -3,10 +3,10 @@ type: Silver Table
 title: device
 entity: device
 archetype: A
-description: Unified asset/endpoint — one row per device, merged from per-source bronze by precedence (incl. Datto RMM) + BCDR backup-posture field merge.
+description: Unified asset/endpoint — one row per device, merged from per-source bronze by precedence (incl. Datto RMM + UniFi network infra) + BCDR backup-posture field merge.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, device, merge]
-timestamp: 2026-06-17T00:00:00Z
+timestamp: 2026-06-21T00:00:00Z
 ---
 
 # device
@@ -19,19 +19,32 @@ The silver asset record for a client's endpoint/hardware. Governed by
 ## Source of record / authority
 
 Per-source device bronze merges by **precedence
-`website` > `datto_rmm` > `m365` > `itglue`** (#683, proposed from LocalPipeline #195 /
-LP ADR-0018). Matched primarily by serial number, then name within an account; website
-rows are pre-linked (resurrection guard — `website` stays highest, untouched).
+`website` > `datto_rmm` > `unifi` > `m365` > `itglue`** (#683, proposed from LocalPipeline
+#195 / LP ADR-0018; `unifi` added #1053). Matched primarily by serial number, then name
+within an account; website rows are pre-linked (resurrection guard — `website` stays
+highest, untouched).
 
 - `website_devices` (manual, highest) · `datto_rmm_devices` (RMM managed-estate:
-  device-existence + live-state — online, OS, patch/AV; bronze `0119`) · `m365_devices`
-  (Intune/Graph directory, enrolled-only; precedence label `m365_synced`) ·
-  `itglue_devices` (documentation, lowest).
+  device-existence + live-state — online, OS, patch/AV; bronze `0119`) · `unifi_devices`
+  (UniFi network infrastructure — switches/APs/gateways + firmware-compliance; live
+  controller authority; bronze `0162`) · `m365_devices` (Intune/Graph directory,
+  enrolled-only; precedence label `m365_synced`) · `itglue_devices` (documentation, lowest).
 
 **Authority note (#683):** Datto RMM is a strong machine authority (it actually sees the
 endpoint live), so it sits above `m365` (enrolled-only) and `itglue` (documentation).
 This also drops `itglue` **below** `m365` — a reorder of the two pre-existing sources
 (was `itglue` > `m365`): live Intune enrolment now outranks IT Glue documentation.
+
+**UniFi authority + scope (#1053).** `unifi_devices` covers the **network-infrastructure**
+device class (`device_type='network'` — switches, APs, gateways) the endpoint sources do
+not see, so precedence collisions are rare; where they occur it ranks as a **live
+controller** authority (it directly manages the device), below `datto_rmm` (the endpoint
+live-state authority) and above the directory/documentation sources. UniFi gear is physical
+on-prem hardware and feeds **`device`, never `cloud_asset`** (which is ARM/cloud resources).
+The bronze→silver merge runs on-prem with the collector (merge co-locates with ingestion,
+LP ADR-0026) as a future `Invoke-ImperionUniFiMerge`; `mac` is the lateral key. Surfacing the
+firmware-compliance signals as silver `device` columns is a follow-up (bronze carries them
+losslessly today).
 
 **Backup posture (BCDR) is a field-scoped merge, not identity precedence.**
 `datto_bcdr_backups` (bronze `0119`) contributes backup-posture fields

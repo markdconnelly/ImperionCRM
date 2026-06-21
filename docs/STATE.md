@@ -57,7 +57,7 @@ done/▶-in-flight ledger.
   - ✅ **Expense v1 effectively COMPLETE** ([#482](https://github.com/markdconnelly/ImperionCRM/issues/482)): manual-mileage path live end-to-end (form → `website_mileage` bronze 0137 → silver `expense_item`); receipt upload live ([#899](https://github.com/markdconnelly/ImperionCRM/issues/899) → `receipt_attachment`); QBO production app connected.
   - ▶ MileIQ paid mileage API → **deferred to v2** (ADR-0099); v1 mileage = manual entry.
 - ✅ **AR collections** (ADR-0085): dunning worklist over the read-only QBO invoice mirror + app-native `collections_activity` overlay (never writes QBO).
-- ✅ **CMDB & assets** (ADR-0092/0097): read-only CI register + Device inventory over per-source bronze merged to silver `device`; **cloud is now a first-class CI** (migration 0144 — 23 cloud→account edges + criticality overlay verified in prod), Intune managed-apps device drill (0148).
+- ✅ **CMDB & assets** (ADR-0092/0097): read-only CI register + Device inventory over per-source bronze merged to silver `device`; **cloud is now a first-class CI** (migration 0144 — 23 cloud→account edges + criticality overlay verified in prod), Intune managed-apps device drill (0148); **UniFi network-infra bronze** `unifi_devices` (0162, #1053 — landing target for the closed LP #73/#259 collector; merge co-locates on-prem, LP follow-up; NOT yet prod-applied).
 - ✅ Service desk: tickets (Autotask-linked), omnichannel queue + live-chat console with deflection telemetry + escalate-to-Autotask; Strategic Business Reviews.
 
 ### Extras
