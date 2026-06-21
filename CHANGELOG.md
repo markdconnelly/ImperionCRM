@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.22.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.21.0...imperion-crm-v0.22.0) (2026-06-21)
+
+
+### Features
+
+* **agents:** actuation autonomy dial + cockpit queue schema ([#1012](https://github.com/markdconnelly/ImperionCRM/issues/1012)) ([#1017](https://github.com/markdconnelly/ImperionCRM/issues/1017)) ([6906b15](https://github.com/markdconnelly/ImperionCRM/commit/6906b15890e15b5b76c8b12b7831bb2fc76d5559))
+* **agents:** agent eval & quality plane — spine schema + ADR-0106 ([#984](https://github.com/markdconnelly/ImperionCRM/issues/984)) ([#985](https://github.com/markdconnelly/ImperionCRM/issues/985)) ([f3baf76](https://github.com/markdconnelly/ImperionCRM/commit/f3baf76ee290c3bf4741919f07a710def05d84ac))
+* **agents:** eval CI quality gate vs committed baselines ([#988](https://github.com/markdconnelly/ImperionCRM/issues/988)) ([#989](https://github.com/markdconnelly/ImperionCRM/issues/989)) ([d5342db](https://github.com/markdconnelly/ImperionCRM/commit/d5342dbfa8fc8834d83274814e1652001ebe425f))
+* **agents:** eval golden-set seed + read-only eval dashboard ([#986](https://github.com/markdconnelly/ImperionCRM/issues/986)) ([#987](https://github.com/markdconnelly/ImperionCRM/issues/987)) ([a723016](https://github.com/markdconnelly/ImperionCRM/commit/a723016c157127d01a4fabfa16ad73ce91f84b73))
+* **agents:** per-agent tool-grants admin UI + backend DELETE grant ([#1005](https://github.com/markdconnelly/ImperionCRM/issues/1005)) ([#1006](https://github.com/markdconnelly/ImperionCRM/issues/1006)) ([9925c66](https://github.com/markdconnelly/ImperionCRM/commit/9925c66d47da7aff7b4adcb67d2fd04894ae0792))
+* **auth:** two-axis RLS access spine slice 1 — withIdentity + group_ids ([#974](https://github.com/markdconnelly/ImperionCRM/issues/974)) ([#977](https://github.com/markdconnelly/ImperionCRM/issues/977)) ([64c3f5a](https://github.com/markdconnelly/ImperionCRM/commit/64c3f5abb8e1ae6e2c191a3c9171f2f8fd788d16))
+* **connections:** add 'unifi' provider to connection_provider ([#957](https://github.com/markdconnelly/ImperionCRM/issues/957)) ([#958](https://github.com/markdconnelly/ImperionCRM/issues/958)) ([fb3f1b3](https://github.com/markdconnelly/ImperionCRM/commit/fb3f1b3dddeec283cc164690f77b55168bf27fb8))
+* **connections:** client UniFi console registration form ([#964](https://github.com/markdconnelly/ImperionCRM/issues/964)) ([#965](https://github.com/markdconnelly/ImperionCRM/issues/965)) ([11a89cb](https://github.com/markdconnelly/ImperionCRM/commit/11a89cbade35ece3b527772fab7c8a8d7d5d71aa))
+* **db:** access spine slice 2 — first owner-axis RLS policy on personal_note ([#975](https://github.com/markdconnelly/ImperionCRM/issues/975)) ([#978](https://github.com/markdconnelly/ImperionCRM/issues/978)) ([cb0ad32](https://github.com/markdconnelly/ImperionCRM/commit/cb0ad324d78573d4529dcb80d7e7e3ac3ba0c16d))
+* **db:** seed sub-agent agent rows + tool grants ([#993](https://github.com/markdconnelly/ImperionCRM/issues/993)) ([#1002](https://github.com/markdconnelly/ImperionCRM/issues/1002)) ([4767707](https://github.com/markdconnelly/ImperionCRM/commit/476770709563e15a80f3abf43b11792a51201ef2))
+* **intune:** managed-apps bronze + device-CI drill section ([#261](https://github.com/markdconnelly/ImperionCRM/issues/261)) ([#952](https://github.com/markdconnelly/ImperionCRM/issues/952)) ([c1c60d2](https://github.com/markdconnelly/ImperionCRM/commit/c1c60d2ff62c215356fd318696961f979b76bc68))
+* **schema:** add connection.client_id for per-client m365 app registrations ([#943](https://github.com/markdconnelly/ImperionCRM/issues/943)) ([#951](https://github.com/markdconnelly/ImperionCRM/issues/951)) ([d2c7a61](https://github.com/markdconnelly/ImperionCRM/commit/d2c7a61f5d2e30274328e7d87c0564477f2c3ede))
+* **schema:** add connection.provider_config jsonb for non-secret per-connection config ([#962](https://github.com/markdconnelly/ImperionCRM/issues/962)) ([#963](https://github.com/markdconnelly/ImperionCRM/issues/963)) ([6df060a](https://github.com/markdconnelly/ImperionCRM/commit/6df060a91bff319eb9f81a72795c6cee9260421b))
+* **schema:** widen connection.auth_method CHECK to include 'api_key' ([#960](https://github.com/markdconnelly/ImperionCRM/issues/960)) ([#961](https://github.com/markdconnelly/ImperionCRM/issues/961)) ([f7b06bd](https://github.com/markdconnelly/ImperionCRM/commit/f7b06bd75ec62572da5b0202116196958d88fb05))
+* **settings:** admin UX to register a client tenant's M365 app credential ([#950](https://github.com/markdconnelly/ImperionCRM/issues/950)) ([#959](https://github.com/markdconnelly/ImperionCRM/issues/959)) ([24073fe](https://github.com/markdconnelly/ImperionCRM/commit/24073fe4daaba1870763f3e1cf42e9a8d6f9e23f))
+
+
+### Bug Fixes
+
+* **db:** preserve numeric(12,2) amount in expense_item_all view ([#947](https://github.com/markdconnelly/ImperionCRM/issues/947)) ([#948](https://github.com/markdconnelly/ImperionCRM/issues/948)) ([8663aa7](https://github.com/markdconnelly/ImperionCRM/commit/8663aa73032a14e5a2c3c0b74d128d64d28bfd63))
+
 ## [0.21.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.20.0...imperion-crm-v0.21.0) (2026-06-20)
 
 
