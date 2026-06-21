@@ -1372,5 +1372,20 @@
     "file": "ADR-0106-agent-eval-quality-plane.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0107",
+    "title": "Governed action & tool-grant plane",
+    "status": "proposed",
+    "date": "2026-06-20",
+    "tags": [
+      "meta",
+      "agents",
+      "security"
+    ],
+    "summary": "Turn the declarative ADR-0055 autonomy tiers and the dormant agent_tool_grant table (0056) into an enforced, deny-by-default actuation plane: every sub-agent tool call is checked against a grant; outbound actions move from a hardcoded enum to a typed action-contract catalog; grants carry an evaluated scope; and human-in-the-loop is native via a 1–5 autonomy dial (1 = approve everything, 5 = fully autonomous) that maps to a tier ceiling — actions above the ceiling route to a native approval cockpit instead of executing. The actuation twin of the agent_run ledger and the eval plane — it governs what an agent may DO, not just what it did or whether it was correct.",
+    "file": "ADR-0107-governed-action-tool-grant-plane.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
