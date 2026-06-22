@@ -147,4 +147,40 @@ describe("approveProposedAction — verbatim submit", () => {
     expect(result.ok).toBe(false);
     expect(h.executeProposedAction).not.toHaveBeenCalled();
   });
+
+  it("passes an UNREGISTERED action kind through to the backend (forward-verbatim, #994/#1130)", async () => {
+    // The front end hasn't cataloged this kind; the backend is the authoritative dispatcher,
+    // so the action is forwarded untouched rather than dropped.
+    h.executeProposedAction.mockResolvedValue({});
+    const action = { kind: "update_ticket", ticketId: "T-9", status: "resolved" };
+    const result = await approveProposedAction(action);
+    expect(result.ok).toBe(true);
+    expect(h.executeProposedAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action }),
+    );
+  });
+
+  it("refuses a registered action with an INVALID payload — never forwarded (#994)", async () => {
+    // send_email without contactId/body fails the catalog schema.
+    const result = await approveProposedAction({ kind: "send_email", channel: "email" });
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/validation/i);
+    expect(h.executeProposedAction).not.toHaveBeenCalled();
+  });
+
+  it("forwards a registered, valid action and still defers consent to the backend (#994)", async () => {
+    // Catalog passes a well-formed send_email, but the backend's authoritative consent gate
+    // refuses — proving the pre-flight tightens, never replaces, the consent re-check (ADR-0058).
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    h.executeProposedAction.mockRejectedValue(new ServiceCallError("agent", 403, "consent_denied"));
+    const valid = { kind: "send_email", contactId: "c1", channel: "email", body: "Hi" };
+    const result = await approveProposedAction(valid);
+    expect(h.executeProposedAction).toHaveBeenCalledWith({
+      action: valid,
+      approval: { approvedByUserId: USER, approved: true },
+    });
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/consent/i);
+    errorSpy.mockRestore();
+  });
 });

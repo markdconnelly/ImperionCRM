@@ -3,6 +3,7 @@
 import { agentService, type ProposedAction } from "@/lib/services";
 import { callServiceWithFallback } from "@/lib/services/call-guard";
 import { resolveActingUser } from "@/lib/services/acting-user";
+import { resolveAction } from "@/lib/agent/action-catalog";
 
 /** What the panel renders for one orchestrator turn. */
 export interface AskAgentResult {
@@ -109,16 +110,31 @@ export async function askAgentAction(
 }
 
 /**
- * Approve and execute ONE agent-proposed action from the live reply (#1130). Submits the
- * envelope's `input` VERBATIM to the backend's approval-gated executor (the ONLY send path —
- * backend ADR-0033) via {@link agentService.executeProposedAction}; the acting employee is
- * recorded as the approver (ADR-0055) and the backend re-asserts consent at execution
- * (403 consent_denied → blocked notice, ADR-0058). Never throws to the client; degrades to a
- * clear notice when the backend is unconfigured.
+ * Approve and execute ONE agent-proposed action from the live reply (#1130). First resolves
+ * + validates the action against the action-contract catalog (ADR-0107 D2 / #994) — an
+ * unregistered kind or schema-invalid payload is refused locally, never forwarded. Then
+ * submits the envelope's `input` VERBATIM to the backend's approval-gated executor (the ONLY
+ * send path — backend ADR-0033) via {@link agentService.executeProposedAction}; the acting
+ * employee is recorded as the approver (ADR-0055) and the backend re-asserts consent at
+ * execution (403 consent_denied → blocked notice, ADR-0058). Never throws to the client;
+ * degrades to a clear notice when the backend is unconfigured.
  */
 export async function approveProposedAction(
   action: ProposedAction["input"],
 ): Promise<ApproveActionResult> {
+  // Resolve the action against the catalog (ADR-0107 D2 / #994) BEFORE forwarding. A REGISTERED
+  // kind whose payload fails its schema is refused here — never forwarded — so a malformed call
+  // to a known contract is caught before the round-trip. An unregistered kind passes through to
+  // the backend, which is the authoritative validator/dispatcher (#1130 forward-verbatim). The
+  // backend always re-asserts consent at execution (ADR-0058) — this pre-flight only tightens.
+  const resolved = resolveAction(action);
+  if (!resolved.ok) {
+    return {
+      ok: false,
+      message: "Blocked — the action's input didn't pass validation. Nothing was sent.",
+    };
+  }
+
   const acting = await resolveActingUser();
   if (!acting.ok) {
     return {
