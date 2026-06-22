@@ -26,6 +26,9 @@ tools:
   - send.dm              # approval-gated in-channel DM reply (ADR-0058 path only)
   - send.sms             # approval-gated SMS via ACS (ADR-0058 path only)
   - booking.link         # mint/lookup a booking link (no PII, no send)
+  - ticket.note          # write an INTERNAL Autotask work-note (operational, not
+                         #   client-facing; approval-gated executor, never a direct
+                         #   silver write). Service workspace, #1067.
 
 # OKF rooms: the union of every silver entity any worker may read. Each name
 # resolves to a docs/database/semantic-layer/ coverage-matrix row (ADR-0086).
@@ -37,3 +40,6 @@ okf_rooms:
   - consent_event
   - lead_score
   - campaign
+  - ticket           # Service workspace (#1067) — Autotask-SoR ticket (read)
+  - device           # Service workspace — endpoint/network CI status (read)
+  - cloud_asset      # Service workspace — cloud resource CI status (read)

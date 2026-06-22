@@ -1,0 +1,26 @@
+# room.yaml — the service domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any service workflow may be granted. A workflow's agent.yaml narrows this further
+# (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs). Every
+# entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+# Service workers may read the ticket + its grounding context and write ONE thing
+# in v1: the internal operational work-note. Sends (email/dm/sms), booking links,
+# and consent.check are NOT in the service budget — triage neither contacts a
+# client nor books anything; a later remediation/dispatch workflow that needs more
+# is granted then, not domain-wide now.
+tools:
+  - pg.read
+  - ticket.note
+
+# The service data scope — the rooms a service worker may read.
+okf_rooms:
+  - ticket
+  - account
+  - contact
+  - device
+  - cloud_asset
+  - interaction
