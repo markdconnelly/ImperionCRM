@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Imperion OS — Executive Summary: an operating system for AI agents</title>
+<meta name="description" content="The thesis at altitude: Imperion OS is an operating system for AI agents over a company's knowledge and actions — data-as-kernel, second-brain-as-OS. A two-page executive summary with links to the canonical deep dives and the long-form research paper." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#070B1E; --bg-2:#0B1130; --surface:#121A3D; --surface-2:#19224A;
+    --line:#243056; --ink:#EAF0FF; --muted:#9AA8C7; --muted-2:#6B7AA0;
+    --cyan:#2DD4BF; --cyan-bright:#5EEAD4; --amber:#FBBF24; --indigo:#5B6CFF;
+    --bronze:#C77B3C; --silver:#AEB8C9; --gold:#E3B341; --green:#34D399;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --maxw:880px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:var(--cyan-bright);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora::before{content:"";position:absolute;width:62vw;height:62vw;left:-18vw;top:-22vw;border-radius:50%;filter:blur(90px);opacity:.45;background:radial-gradient(circle at 30% 30%, rgba(45,212,191,.40), transparent 62%)}
+  .aurora::after{content:"";position:absolute;width:54vw;height:54vw;right:-16vw;top:4vw;border-radius:50%;filter:blur(90px);opacity:.4;background:radial-gradient(circle at 60% 40%, rgba(91,108,255,.32), transparent 60%)}
+  header.nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(12px);background:rgba(7,11,30,.6);border-bottom:1px solid rgba(36,48,86,.6)}
+  .nav-inner{max-width:var(--maxw);margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;color:var(--ink)}
+  .brand .glyph{width:22px;height:22px;color:var(--cyan)}
+  .nav-links{display:flex;gap:22px;align-items:center;font-family:var(--mono);font-size:12.5px}
+  .nav-links a{color:var(--muted)}
+  .nav-links a:hover{color:var(--ink);text-decoration:none}
+  @media(max-width:640px){.nav-links a:not(.gh){display:none}}
+  main{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .hero{padding:clamp(54px,10vw,104px) 0 28px}
+  .eyebrow{font-family:var(--mono);font-size:13px;color:var(--cyan);letter-spacing:1px;display:inline-block;margin-bottom:18px}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(36px,6.4vw,62px);line-height:1.02;letter-spacing:-.02em;margin-bottom:20px}
+  h1 .glow{background:linear-gradient(120deg,var(--cyan-bright),var(--indigo) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{font-size:clamp(17px,2.3vw,20px);color:var(--muted);max-width:680px}
+  .lede b{color:var(--ink);font-weight:600}
+  .badge-live{margin-top:22px;display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 16px}
+  .badge-live .pulse{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  h2{font-family:var(--display);font-weight:600;font-size:clamp(23px,3.6vw,32px);line-height:1.1;letter-spacing:-.01em;margin:0 0 14px}
+  section{padding:30px 0;border-top:1px solid var(--line)}
+  section p{color:var(--muted);margin-bottom:14px}
+  section p b{color:var(--ink);font-weight:600}
+  .k{font-family:var(--mono);color:var(--cyan-bright);font-size:.92em}
+  /* deep-dive quick links */
+  .quick{background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--line);border-radius:18px;padding:22px 22px 8px;margin:8px 0 4px}
+  .quick .qh{font-family:var(--mono);font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted-2);margin-bottom:14px}
+  .qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:640px){.qgrid{grid-template-columns:1fr}}
+  .qcard{display:block;background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:14px;transition:transform .18s var(--ease),border-color .18s var(--ease)}
+  .qcard:hover{transform:translateY(-2px);border-color:rgba(45,212,191,.5);text-decoration:none}
+  .qcard .qt{font-family:var(--display);font-weight:600;font-size:15px;color:var(--ink);margin-bottom:3px}
+  .qcard .qm{font-family:var(--mono);font-size:11px;color:var(--muted-2)}
+  .qcard .qd{font-size:12.5px;color:var(--muted);margin-top:5px}
+  /* OS map table */
+  table{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2)}
+  td b{color:var(--ink)}
+  td span{color:var(--muted)}
+  .alt{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:6px}
+  @media(max-width:640px){.alt{grid-template-columns:1fr}}
+  .altc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .altc .t{font-family:var(--mono);font-size:11.5px;letter-spacing:.4px;color:var(--cyan-bright);text-transform:uppercase;margin-bottom:8px}
+  .altc b{font-family:var(--display);display:block;margin-bottom:6px}
+  .altc p{font-size:13px;margin:0}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13px;font-weight:600;padding:11px 18px;border-radius:10px;transition:transform .18s var(--ease)}
+  .btn:hover{transform:translateY(-1px);text-decoration:none}
+  .btn.primary{background:var(--cyan);color:#04121a}
+  .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  ul.tight{margin:0 0 14px 18px;color:var(--muted)}
+  ul.tight li{margin-bottom:7px}
+  ul.tight b{color:var(--ink)}
+  footer{max-width:var(--maxw);margin:18px auto 0;padding:26px 24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:var(--mono);font-size:12px;color:var(--muted-2)}
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/story">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+      Imperion OS
+    </a>
+    <nav class="nav-links">
+      <a href="#thesis">thesis</a>
+      <a href="#loop">the loop</a>
+      <a href="#governance">governance</a>
+      <a href="research-paper.html">research paper</a>
+      <a class="gh" href="/story">build story</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="border-top:none">
+    <span class="eyebrow">// executive summary</span>
+    <h1>An <span class="glow">operating system</span> for AI agents</h1>
+    <p class="lede"><b>Imperion OS</b> is the platform a managed-services provider runs its whole business on — and underneath, an operating system for AI agents over the company's knowledge and actions. The thesis is two claims woven together: <b>data-as-kernel</b> and <b>second-brain-as-OS</b>. This is the summary at altitude; the deep dives and the research paper are the rabbit hole.</p>
+    <div class="badge-live"><span class="pulse"></span> Live on Azure App Service · Entra SSO · built across four repositories by AI agents</div>
+  </section>
+
+  <!-- deep-dive quick links, near the top -->
+  <div class="quick">
+    <div class="qh">Deep dives — one canonical explainer per layer</div>
+    <div class="qgrid">
+      <a class="qcard" href="https://github.com/markdconnelly/ImperionCRM_Backend/blob/main/docs/architecture/deep-dives/model-workspace-protocol.md">
+        <div class="qt">ICM / Model Workspace Protocol</div>
+        <div class="qm">ImperionCRM_Backend · the action layer</div>
+        <div class="qd">Filesystem-as-orchestration — numbered stage folders, one orchestrator doing the work of a fleet.</div>
+      </a>
+      <a class="qcard" href="https://github.com/markdconnelly/ImperionCRM/blob/main/docs/architecture/deep-dives/medallion-architecture.md">
+        <div class="qt">Medallion architecture</div>
+        <div class="qm">ImperionCRM · the kernel filesystem</div>
+        <div class="qd">Bronze → silver → gold: provenance, authority-merge, and addressable 1024d recall.</div>
+      </a>
+      <a class="qcard" href="https://github.com/markdconnelly/ImperionCRM/blob/main/docs/architecture/deep-dives/open-knowledge-format.md">
+        <div class="qt">Open Knowledge Format</div>
+        <div class="qm">ImperionCRM · the type system</div>
+        <div class="qd">Concept-per-file meaning, authority, and joins — the deterministic grounding cortex.</div>
+      </a>
+      <a class="qcard" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment/blob/main/docs/architecture/deep-dives/mempalace-memory-architecture.md">
+        <div class="qt">MemPalace memory</div>
+        <div class="qm">…LocalPipelineEnrichment · recall</div>
+        <div class="qd">Verbatim history behind a semantic index — the drill-from-summary-to-source pattern.</div>
+      </a>
+      <a class="qcard" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment/blob/main/docs/architecture/deep-dives/open-brain-second-brain.md">
+        <div class="qt">Open Brain (OB1)</div>
+        <div class="qm">…LocalPipelineEnrichment · memory</div>
+        <div class="qd">One store, many agents — a single kernel every agent plugs into.</div>
+      </a>
+      <a class="qcard" href="https://github.com/markdconnelly/ImperionCRM/blob/main/docs/architecture/deep-dives/how-it-all-fits-together.md">
+        <div class="qt">How it all fits together</div>
+        <div class="qm">ImperionCRM · the synthesis</div>
+        <div class="qd">Five ideas, one machine — one loop, three altitudes, three memory tiers.</div>
+      </a>
+    </div>
+  </div>
+
+  <section id="thesis">
+    <h2>The thesis: an OS for agents</h2>
+    <p>An operating system schedules <b>processes</b> over shared <b>resources</b> under <b>governed access</b>. Imperion OS does exactly this — but the processes are <b>AI agents</b>, and the shared resource is <b>everything the business knows and can do</b>. The metaphor is not decoration; it is the design constraint that produced the architecture.</p>
+    <table>
+      <tr><th>OS concept</th><th>Imperion OS realization</th></tr>
+      <tr><td><b>Kernel — filesystem</b></td><td><span>Medallion data platform: bronze (raw, lossless) → silver (merged, authoritative) → gold (AI-ready).</span></td></tr>
+      <tr><td><b>Kernel — type system</b></td><td><span>OKF semantic layer — concept-per-file meaning, authority, and joins; the orchestrator's grounding cortex.</span></td></tr>
+      <tr><td><b>Long-term memory</b></td><td><span>Gold knowledge objects + Voyage <span class="k">voyage-3-large</span> @ 1024d — one citation-backed object per entity, one vector space.</span></td></tr>
+      <tr><td><b>Ring / permission model</b></td><td><span>Two-axis row-level-security spine — role-scoped company + owner-scoped personal, enforced in PostgreSQL.</span></td></tr>
+      <tr><td><b>Memory hierarchy</b></td><td><span>Tiered knowledge — canon · company · personal (six per-user brains): the agent's second brain.</span></td></tr>
+      <tr><td><b>Scheduler & syscalls</b></td><td><span>Backend orchestrator + ICM workflows + the 1–5 autonomy dial + the <span class="k">agent_run</span> ledger.</span></td></tr>
+      <tr><td><b>Protected mode</b></td><td><span>Deny-by-default action/tool-grants + approval cockpit — nothing that widens privilege runs without a human.</span></td></tr>
+      <tr><td><b>I/O</b></td><td><span>Pipeline (live webhook ingest) + LocalPipeline (on-prem bulk ingest + all vectorization).</span></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Two claims, woven together</h2>
+    <p><b>Data-as-kernel.</b> The data platform is the kernel. It owns provenance, meaning, retrieval, and permissions — the things an agent must be able to <b>trust</b> before it reasons or acts. Agents never touch raw resources directly; they go through the kernel's governed interfaces. A fact carries its source and capture time, so "says who, and as of when?" — the first question any agent should be able to answer — is answerable by construction.</p>
+    <p><b>Second-brain-as-OS.</b> The knowledge tiers are the agent's memory hierarchy — a second brain whose recall is identity-scoped, citation-backed, and consolidated by a background process, the way a real OS pages memory and a real brain consolidates during sleep. A personal brain <b>cannot leak</b> into the company tier — the boundary is a database invariant, not a code convention.</p>
+  </section>
+
+  <section id="loop">
+    <h2>One loop, three altitudes</h2>
+    <p>It is one architecture, not three add-ons. The same refinement DNA — trust is <b>earned in stages, never declared</b> — appears at three altitudes:</p>
+    <div class="alt">
+      <div class="altc"><div class="t">Altitude 1 · data</div><b>Medallion</b><p>raw → trustworthy → AI-ready</p></div>
+      <div class="altc"><div class="t">Altitude 2 · meaning</div><b>OKF / IKF</b><p>observed → defined → authoritative</p></div>
+      <div class="altc"><div class="t">Altitude 3 · action</div><b>ICM / MWP</b><p>drafted → approved → auto</p></div>
+    </div>
+    <p style="margin-top:16px">Each shares four traits: progressive refinement, plain-text and version-controlled, human-readable = machine-readable, and human-in-the-loop by default with autonomy as a dial. Writes flow back to source systems and re-enter as bronze — a closed, auditable loop.</p>
+  </section>
+
+  <section id="governance">
+    <h2>Why the autonomy is safe</h2>
+    <p>Trust to <b>read</b> is the data half; trust to <b>act</b> is the action half. Raising autonomy is only safe because four governance planes hold at once:</p>
+    <ul class="tight">
+      <li><b>Trust to act</b> — deny-by-default action / tool-grants with evaluated scopes; a prompt-injected agent cannot reach a tool it was never granted.</li>
+      <li><b>Metered action</b> — a 1–5 autonomy dial; anything above an agent's ceiling routes to a native approval cockpit instead of executing.</li>
+      <li><b>Proof of what happened</b> — an append-only <span class="k">agent_run</span> / <span class="k">agent_message</span> ledger; every grant decision is auditable.</li>
+      <li><b>Proof it was right</b> — an eval / quality plane that gates regressions in CI against committed baselines.</li>
+    </ul>
+    <p><b>Honest limits.</b> This is not "one autonomous AI that just runs the business" — by design it is staged, contracted, and gated; reframe "fully autonomous" as "fully automated with supervision you can dial." It is near-real-time (webhooks + on-demand refresh), not streaming analytics. And the curated meaning layer is load-bearing: a stale semantic layer would lie with confidence, which is why freshness is enforced as a CI gate.</p>
+  </section>
+
+  <section>
+    <h2>Read on</h2>
+    <p>This summary is the map. The territory is the long-form rationale for every data-structure decision, and the synthesis that assembles the layers into one machine.</p>
+    <div class="cta">
+      <a class="btn primary" href="research-paper.html">Read the research paper →</a>
+      <a class="btn ghost" href="https://github.com/markdconnelly/ImperionCRM/blob/main/docs/architecture/deep-dives/how-it-all-fits-together.md">How it all fits together →</a>
+      <a class="btn ghost" href="/story">The build story →</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>Imperion OS — executive summary · grounded in the repos, no fabricated claims</span>
+  <span><a href="https://github.com/markdconnelly">github.com/markdconnelly</a></span>
+</footer>
+</body>
+</html>
