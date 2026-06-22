@@ -6,7 +6,7 @@ archetype: B
 description: One captured voice/meeting conversation (ACS call, Teams meeting, or upload) with its diarized turns (conversation_segment) and AI insights (conversation_insight); the voice channel of the customer 360 / interaction timeline.
 resource: ../../../decision-records/ADR-0068-conversational-intelligence-pipeline.md
 tags: [silver, communications, conversation, voice, transcription, ai]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # conversation
@@ -38,6 +38,7 @@ Postgres; only the diarized turns and the AI insights are relational.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK |
+| `owner_user_id` | uuid? | FK → `app_user` (SET NULL) — the owning employee (meeting host / ingesting per-user connection); attribution for the personal-memory capture-sweep (ADR-0113/0116), NULL until stamped |
 | `account_id` | uuid? | FK → `account` (SET NULL) — an upload may be unlinked until auto-linking |
 | `contact_id` | uuid? | FK → `contact` (SET NULL) |
 | `opportunity_id` | uuid? | FK → `opportunity` (SET NULL) — the "deal" link |
@@ -73,6 +74,11 @@ Postgres; only the diarized turns and the AI insights are relational.
 
 - `account_id` → `account`; `contact_id` → `contact`; `opportunity_id` → `opportunity`
   (all optional — auto-linking an ambiguous capture is an ADR-0068 future consideration).
+- `owner_user_id` → `app_user` — the owning employee. The backend capture-sweep
+  (ImperionCRM_Backend #344) drains a transcribed conversation's `conversation_segment`
+  turns into THIS employee's personal brain (`memory_drawer`, owner-scoped — ADR-0113/0116);
+  an unattended timer drains owner-bearing transcribed conversations. NULL until the capture
+  orchestrator stamps it (the sweep then falls back to a caller-supplied owner).
 - `consent_basis_id` → `consent_event` (the consent ledger basis the transcription rests on).
 - `conversation_segment.conversation_id` / `conversation_insight.conversation_id` →
   `conversation` (CASCADE).
