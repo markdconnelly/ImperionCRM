@@ -75,3 +75,10 @@ Schema is front-end-owned (ADR-0042). The web role reads+writes the dial (operat
 - **`agent_run` recording deferred.** Routing is recorded on the pending-action row + audit until the orchestrator moves onto `agent_run` (ADR-0049 §6).
 
 This ADR ships **schema + helper + this doc** (2E-1); behavior changes land in 2E-2 (backend), 2E-3 (slider), 2E-4 (cockpit).
+
+## Amendment (2026-06-22, #996 close-out) — dispatch-resolution contract + `agent_run` recording
+
+The two deferrals above are now resolved, closing parent #996:
+
+- **Dispatch-resolution is now an explicit, pure FE contract.** D2's level→ceiling helper plus the action catalog (#994, ADR-0107 D2) are tied into a single `resolveDispatch(actionKind, agentKey, dials)` in `src/lib/agent/action-dispatch.ts`: it reads the action's tier from the catalog (an **uncatalogued kind is T3** — fail-closed), picks the **most-specific** dial row (`(agent,class)` → `(agent,*)` → `(*,class)` → `(*,*)` → none ⇒ level 1), and returns the routing decision (`execute` / `execute_notify` / `cockpit`) + the record. The **backend dispatcher (BE #250) remains authoritative** at runtime and mirrors this logic (repos don't share code, ADR-0042); this is the front-end half the operator surfaces preview against.
+- **`agent_run` recording is no longer deferred.** The original deferral was "the CRM orchestrator doesn't write `agent_run` yet." The Jarvis run-ledger (migration 0163, #1064, ADR-0080) put the orchestrator onto `agent_run`, so the columns now have a writer. Migration **0176** (RENUMBER AT MERGE) adds `resolved_level` / `resolved_ceiling` / `route_decision` to `agent_run` — the same record the pending-action row already carries for parked actions (D3), now also recorded for actions that **execute inline** (L3–L5). Backend writes; web `SELECT`s for the glass-box trace. This satisfies ADR-0107 D4's "record level/ceiling/routing on `agent_run`" verbatim.
