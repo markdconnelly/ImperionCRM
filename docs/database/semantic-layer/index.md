@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**56 concept files authored** (this table). Remaining objects from the
+**61 concept files authored** (this table). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
 
@@ -42,6 +42,8 @@ subset; remaining entities are tracked for expansion
 |---|---|---|---|
 | [`account`](tables/account.md) | merge | website > autotask > itglue > apollo | ADR-0039 |
 | [`contact`](tables/contact.md) | merge | website > autotask > itglue > m365 > apollo | ADR-0039 |
+| [`contact_social_identity`](tables/contact_social_identity.md) | single-SoR | app-native (social/enrichment connectors; per contact+platform) | ADR-0025 |
+| [`contact_enrichment`](tables/contact_enrichment.md) | single-SoR (EAV) | app-native per-fact dossier (each fact self-attributes source + lawful basis) | ADR-0025 |
 | [`device`](tables/device.md) | merge | website > itglue > m365 | ADR-0039 |
 | [`cloud_asset`](tables/cloud_asset.md) | merge | cloud provider (read-only; Azure ARM first, on-prem LP merge) | ADR-0097 |
 | [`opportunity`](tables/opportunity.md) | merge | website > autotask > KQM | ADR-0080 |
@@ -93,6 +95,7 @@ subset; remaining entities are tracked for expansion
 | [`agent_tool_grant`](tables/agent_tool_grant.md) | reference (tool-routing) | website (per-agent tool allow-list; ADR-0104 points here) | ADR-0087 |
 | [`metric_definition`](tables/metric_definition.md) | control/config (headless-BI) | website (governed metric definitions; agents & dashboards share) | ADR-0062 |
 | [`entity_xref`](tables/entity_xref.md) | reference (identity spine) | resolver/merges (every source id → one internal entity) | ADR-0039 |
+| [`external_identity`](tables/external_identity.md) | reference (identity) | app-native account/contact ↔ provider link | ADR-0024 |
 | [`project_provisioning`](tables/project_provisioning.md) | write-back sidecar | front end requests; backend executor writes (DocuSign-gated) | ADR-0080 |
 | [`task_ticket_fire`](tables/task_ticket_fire.md) | write-back sidecar | front end requests; backend executor fires (JIT) | ADR-0080 |
 | [`time_ticket`](tables/time_ticket.md) | write-back sidecar | front end requests; backend executor writes (idempotent weekly) | ADR-0082 |
