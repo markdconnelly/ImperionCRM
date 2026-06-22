@@ -1,9 +1,4 @@
--- 0176: Re-grant the `reporting` sub-agent its narrow named tools (#264 — ADR-0107 D1).
---
--- RENUMBER AT MERGE (system CLAUDE.md §10.3): authored against the next free number
--- observed on origin/main (0175 was highest → 0176). Multiple sessions run concurrently;
--- if another migration merges first, take the next free number, rename this file, and
--- fix the cross-references before squash-merge.
+-- 0177: Re-grant the `reporting` sub-agent its narrow named tools (#264 — ADR-0107 D1).
 --
 -- LOCKSTEP with backend #264 (PR in ImperionCRM_Backend): the backend refactors the
 -- `reporting` sub-agent from the generic `agent_reporting` delegate to TWO narrow named
