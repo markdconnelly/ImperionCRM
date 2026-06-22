@@ -275,6 +275,48 @@ _Avoid_: DNS status, managed (unqualified)
 **DNS Posture Pillar**:
 A future Posture Pillar scoring DNS health (drift + governance verdict). Not in Score Model v1; enters v2 behind an ADR-0051 amendment once the feed is populated.
 
+### Personal knowledge (#966 / #968)
+
+**Personal Knowledge Store**:
+A per-employee, owner-scoped second brain spanning **two substrates** — the Synthesis Store (Postgres) and the Curated Vault (blob). Owner-private by contract: one employee's store is invisible to every other employee and to admins via the app (enforced by the personal-axis RLS, ADR-0105). Six exist day-one (Mark, Derek, Nick, Luke, Brandon, Anna).
+_Avoid_: personal brain (use Store), memory (unqualified)
+
+**Capture**:
+One immutable raw input to a Personal Knowledge Store — verbatim text (note, transcript, message) held in Postgres, or a binary (image/audio) held in blob with a routing record. The audit floor and the re-synthesis source; never silently edited, but an admin may explicitly purge garbage. Synthesis is derived from Captures.
+_Avoid_: bronze (reserve for the company medallion), drawer (a vault file), raw (unqualified)
+
+**Synthesis Store**:
+The Postgres half of a Personal Knowledge Store — where personal input is **synthesized** into structured facts, a temporal knowledge graph, and pgvector embeddings (OpenBrain-style). The system of record and the queryable/retrievable substrate.
+_Avoid_: silver/gold (those name the company-tier medallion), database (unqualified)
+
+**Curated Vault**:
+The blob half of a Personal Knowledge Store — an agent-maintained filesystem of **markdown files only**, a curated, human-readable representation of what the person knows that they review and interact with. Binary artifacts (images) also land here and are **routed** into processing for synthesis. Not raw capture; a curated projection.
+_Avoid_: bronze (it is curated, not raw), Obsidian vault, second brain (that is the whole Store)
+
+**Room Path**:
+The scoping address a Capture and its Knowledge Facts carry (e.g. `mark/projects/imperion-os`), mirroring the Curated Vault folder tree 1:1 — wing = top segment (person/project), room = topic segment. Scoped retrieval is a path-prefix filter, not a flat-corpus scan. The vault folders are the canonical structure (MemPalace-style); Postgres mirrors, never re-defines. Promoted to a first-class table only if a real driver (per-room ACL/metadata) appears.
+_Avoid_: wing/room as tables, folder (unqualified), namespace
+
+**Knowledge Fact**:
+A synthesized assertion in a Synthesis Store — an entity–relation–object triple carrying a **Validity Window**. Facts **expire** (are invalidated) rather than silently going stale; "freshness = correctness" is data, not convention. Derived from Captures; the nodes/edges of the personal temporal knowledge graph.
+_Avoid_: triple (unqualified), memory, embedding (that is the retrievable form of a fact)
+
+**Validity Window**:
+A Knowledge Fact's `valid_from` / `valid_to`. **Invalidate** closes the window when a fact is superseded; **Timeline** queries a subject's facts across windows. The temporal axis of the knowledge graph.
+_Avoid_: TTL, expiry (unqualified)
+
+**Distillation**:
+The agent process that turns a Capture into **several resolution levels**: literal (verbatim transcript), summary, and meaning (Knowledge Facts + embeddings). Uploads are distilled the same way. The Curated Vault presents the distilled, **current** state with cross-references; stale levels flush as their Validity Windows close. Multi-resolution by design — drill from summary to verbatim on demand.
+_Avoid_: summarization (that is one level), extraction (unqualified), chunking
+
+**Personal Curator**:
+The owner-scoped agent routine that keeps a Personal Knowledge Store's two substrates in sync — projecting Synthesis Store changes into the Curated Vault, processing blob-first or human-edited markdown back into the Synthesis Store, and **hunting contradictions** between the two to surface for the owner's approval. Operates strictly within one owner's scope; it never crosses the personal→company wall (that is the separate promotion path, ADR-0105 §3c).
+_Avoid_: curation service identity (that is the cross-wall promoter), sync job
+
+**Knowledge Contradiction**:
+A conflict the Personal Curator detects between the Synthesis Store and the Curated Vault (or between a new fact and an existing one) — never auto-resolved; bubbled up for the owner to approve a correction.
+_Avoid_: conflict (unqualified), drift (that is a posture term)
+
 ### Agent automation (ICM, ADR-0061)
 
 **ICM Workspace**:

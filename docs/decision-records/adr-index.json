@@ -1463,5 +1463,20 @@
     "file": "ADR-0112-client-mapping.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0113",
+    "title": "Personal Knowledge Store data model — two-substrate synthesis + curated vault",
+    "status": "proposed",
+    "date": "2026-06-21",
+    "tags": [
+      "meta",
+      "knowledge-tiers",
+      "security"
+    ],
+    "summary": "The personal tier is two substrates: a Postgres Synthesis Store (immutable Captures -> temporal-KG Knowledge Facts with Validity Windows -> pgvector embeddings) and a blob Curated Vault (an agent-curated markdown filesystem the owner reviews). A background Personal Curator with ledgered non-BYPASSRLS god-view keeps them bidirectionally synced and hunts Knowledge Contradictions for owner approval. Inverts the original bronze-in-blob framing; LP keeps all vectorization; amends ADR-0105 with the intra-owner curator god-view.",
+    "file": "ADR-0113-personal-knowledge-store-data-model.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
