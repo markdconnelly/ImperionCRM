@@ -6,7 +6,8 @@ archetype: H
 description: Internal employee/user identity — sourced from Entra ID; roles drive RBAC; payroll/comp extensions are segregated and gated.
 resource: ../../../decision-records/ADR-0016-rbac-and-identity-model.md
 tags: [silver, identity, rbac, reference]
-timestamp: 2026-06-20T00:00:00Z
+data_class: people_hr
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # app_user

@@ -6,7 +6,8 @@ archetype: A
 description: Unified asset/endpoint — one row per device, merged from per-source bronze by precedence (incl. Datto RMM + UniFi network infra) + BCDR backup-posture field merge.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, device, merge]
-timestamp: 2026-06-21T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # device

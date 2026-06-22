@@ -6,7 +6,8 @@ archetype: A
 description: Unified person — one row per individual, merged from five bronze sources by precedence; the CRM 360 subject.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, contact, merge]
-timestamp: 2026-06-15T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # contact
