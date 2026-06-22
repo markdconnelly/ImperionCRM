@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { listRecentEvalRuns } from "@/lib/agent/eval-runs-data";
+import { listRecentTuningCandidates } from "@/lib/agent/tuning-candidates-data";
+import { statusTone as candidateTone } from "@/lib/agent/tuning-candidates";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeAgentPages } from "@/lib/auth/roles";
 import { isDbConfigured } from "@/lib/db/client";
@@ -35,6 +37,7 @@ export default async function AgentEvalsPage() {
   if (!canSeeAgentPages(roles)) redirect("/");
 
   const runs = await listRecentEvalRuns(25);
+  const candidates = await listRecentTuningCandidates(15);
   const dbConfigured = isDbConfigured();
 
   return (
@@ -107,6 +110,59 @@ export default async function AgentEvalsPage() {
         <p className="mt-3 text-[11px] text-dim">
           Scored by deterministic assertions + an LLM-judge on the golden set. Dormant until
           migration 0154/0155 is applied and the runner is live.
+        </p>
+      </section>
+
+      <section className="rounded-xl border border-border bg-panel p-5">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="font-display text-sm font-semibold tracking-tight">Tuning candidates</h3>
+          <span className="text-[11px] text-dim">
+            Mark-gated proposals · agent_tuning_candidate
+            {!dbConfigured && " · sample data"}
+          </span>
+        </div>
+
+        {candidates.length === 0 ? (
+          <p className="text-sm text-dim">
+            No tuning candidates yet — a failing eval or a low-scored run opens a prompt/grant/skill
+            change proposal here for a human to accept or reject (ADR-0120). Nothing auto-applies.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-[11px] uppercase tracking-wide text-dim">
+                  <th className="py-2 pr-3 font-medium">Kind</th>
+                  <th className="py-2 pr-3 font-medium">Proposal</th>
+                  <th className="py-2 pr-3 font-medium">Module</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {candidates.map((c) => (
+                  <tr key={c.id} className="border-b border-border/50 align-top last:border-0">
+                    <td className="whitespace-nowrap py-2 pr-3">
+                      <span className="rounded border border-border bg-panel-2 px-1.5 py-0.5 text-xs text-text">
+                        {c.kind}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3">
+                      <span className="text-text">{c.title}</span>
+                      <span className="block text-[11px] text-dim">{c.rationale}</span>
+                    </td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-dim">{c.module ?? "—"}</td>
+                    <td className={`whitespace-nowrap py-2 pr-3 text-xs font-medium ${candidateTone(c.status)}`}>
+                      {c.status}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="mt-3 text-[11px] text-dim">
+          The eval→improvement loop (ADR-0120): low scores open proposals; golden cases harvested
+          from real traces pass fail-closed PII redaction first. Applying any change is human-gated.
         </p>
       </section>
     </div>

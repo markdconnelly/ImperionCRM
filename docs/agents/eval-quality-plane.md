@@ -82,6 +82,8 @@ no committed baseline fails rather than silently passing.
 | 2 | Backend runner: execute suite, assertions + LLM-judge, write runs/results | backend | shipped (BE #239, ADR-0077) |
 | 3 | Golden-set seed + read-only eval dashboard | frontend | shipped (#986) |
 | 4 | CI quality gate vs committed baselines (dormant until backend reachable) | frontend CI | shipped (#988) |
+| 5 | Eval→improvement feedback loop + PII-safe golden harvest (schema + redaction contract + read surface), **dormant** | frontend | shipped (#1037) |
+| 5b | Backend harvester (trace → redacted case) + auto-filer (low score → tuning candidate) | backend | follow-up (authorised by ADR-0120) |
 
 ### Golden-set additions
 
@@ -101,6 +103,38 @@ agent surfaces ship — each follows the 0155 pattern (`ON CONFLICT (module, nam
 
 ---
 
+## 5c. The eval→improvement feedback loop (slice 5, #1037, ADR-0120)
+
+Measuring quality is half the job; **closing the loop** is the other half. Slice 5 adds two paths:
+
+**Harvest — real traces → golden cases, PII-redacted.** The richest source of new golden cases is
+what agents actually did (`agent_run` / `agent_message`), but that ledger carries client PII and the
+golden set is curated/synthetic-only (§8). So every harvested string passes a **fail-closed
+redaction contract** — `src/lib/agent/eval-harvest.ts`:
+
+- `redactPii()` replaces every recognised token (email, phone, money, URL, IP, UUID, long number,
+  proper name) with a **typed placeholder** — never the original substring; it over-redacts on
+  purpose.
+- `assertHarvestSafe()` / `residualPii()` re-scan the redacted candidate and **throw** on any
+  surviving token. The harvester drops the candidate on throw — a trace that can't be made safe is
+  never harvested. **No client row-level PII enters `agent_eval_case`** (proven by the PII fixtures
+  in `eval-harvest.test.ts`). This is defence-in-depth on top of the `data_class` RLS floor (0175).
+- A harvested case is stamped `agent_eval_case.harvest_source = 'harvested'` + `harvest_run_id`
+  (0179) for audit; curated cases keep the `'curated'` default.
+
+**Loop — low scores → Mark-gated tuning candidates.** A failed eval / low-scored run opens an
+**`agent_tuning_candidate`** (0179): a `kind` ∈ {prompt, grant, skill} proposal with a PII-free
+`title` + `rationale`, an optional `proposed_diff`, provenance, and a `status`
+(open → accepted/rejected/applied). **It never auto-applies** — applying a change is a human
+decision (the autonomy ceiling, #1036). The accepted/applied track record is the signal earned
+autonomy (#1036) later reads. Surfaced on `/agents/evals` as the "Tuning candidates" card.
+
+**Ownership.** The FE owns the schema, the redaction contract/library, and the read surface; the
+**backend runtime** owns the harvester (trace → redacted case via `buildHarvestCandidate`) and the
+auto-filer (open a candidate, optionally file a GitHub issue → `external_ref`). The backend calls
+the FE redaction library as the shared contract. Slice 5 is **dormant** (schema + contract + read
+surface); the runtime is the authorised follow-up.
+
 ## 6. Boundaries
 
 - **No PII, no secrets, no client identifiers** in `agent_eval_case` — curated/synthetic or
@@ -110,5 +144,6 @@ agent surfaces ship — each follows the 0155 pattern (`ON CONFLICT (module, nam
 - Agent-platform operational tables — **not** silver business entities (same class as
   `agent_run` / `agent_memory`), so absent from the OKF semantic bundle
   (`semantic-layer-not-affected`).
-- The eval plane **measures**; it does not act. Corrections it surfaces feed the
-  feedback/learning plane (future), not a write-back from the runner.
+- The eval plane **measures**; it does not act. Corrections it surfaces feed the feedback loop as
+  **Mark-gated proposals** (`agent_tuning_candidate`, §5c / ADR-0120) — never a write-back from the
+  runner and never an auto-applied prompt/grant/skill change.
