@@ -1,6 +1,6 @@
--- 0180: agent_subscription — predicate fan-out for the wake-event substrate (#999, 1C of
+-- 0181: agent_subscription — predicate fan-out for the wake-event substrate (#999, 1C of
 -- epic #991/#997, per ADR-0111 §Scope "deferred to #999").
--- Migration number 0180 claimed at MERGE per system CLAUDE.md §10.3 — 0179 was the highest on
+-- Migration number 0181 claimed at MERGE per system CLAUDE.md §10.3 — 0179 was the highest on
 -- origin/main at rebase. RENUMBER AT MERGE if another session lands a lower-numbered migration
 -- first: rebase on current main, rename this file + this comment to the next free number, squash.
 --
