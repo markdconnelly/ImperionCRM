@@ -1530,5 +1530,21 @@
     "file": "ADR-0116-universal-memory-mcp-contract.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0117",
+    "title": "Public technical papers + canonical deep-dive doc set",
+    "status": "accepted",
+    "date": "2026-06-22",
+    "tags": [
+      "meta",
+      "docs",
+      "architecture",
+      "public-surface"
+    ],
+    "summary": "Establish two layers of architecture explainer: a canonical per-layer deep-dive set in docs/architecture/deep-dives/ (this repo owns medallion, OKF, and the synthesis; siblings own MWP, MemPalace, Open Brain at fixed paths), and two unauthenticated public papers under public/papers/ (executive summary + long-form research paper) served the same way as /story via a middleware bypass. The deep dives are the single authoritative source; the papers and siblings link to them rather than restating.",
+    "file": "ADR-0117-public-technical-papers-deep-dive-set.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
