@@ -332,6 +332,26 @@ export const agentService = {
     ),
 
   /**
+   * Replay a dead-lettered wake event (#1000, 1D): re-inject an `agent_event` row that
+   * exhausted its dispatch attempts (status='dead') back through the SAME dispatch path. The
+   * backend (`agents:operate`-gated upstream; caller-auth, ADR-0035) re-pends the row
+   * (status='pending', attempts reset, errors cleared) and stamps replayed_at/replayed_by —
+   * it does NOT copy or delete the row, so the original event + idempotency_key persist.
+   * Idempotency holds: the re-driven event keeps producing the same eventKey
+   * '<event_id>:<workflow>' per matched subscription, and the dispatcher's findRunByEventKey
+   * guard (#299/#357) REUSES any run a prior dispatch already opened — a replay only opens runs
+   * for (event, workflow) pairs that never succeeded. The re-pend write is backend-owned
+   * (ADR-0042 — the web role has no UPDATE re-pending a dead row). `actingUserId` is the admin
+   * who replayed it (the replayed_by audit).
+   */
+  replayDeadLetteredEvent: (input: { eventId: string; actingUserId?: string }) =>
+    callService<{ eventId: string; status: string; replayed: boolean; alreadyLive?: boolean }>(
+      services.agent,
+      "/agent/events/replay",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
+    ),
+
+  /**
    * Flip the per-workflow autonomy dial (#278, ADR-0087): set the rung
    * (L0–L3) + mark-gated flag for an (agent, workflow) on the ICM plane. Admin-only
    * upstream (`agents:operate`); the backend upserts `agent_autopilot_policy` and

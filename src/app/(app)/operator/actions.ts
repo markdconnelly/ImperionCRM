@@ -92,3 +92,39 @@ export async function decidePendingActionAction(formData: FormData): Promise<Icm
     message: decision === "approve" ? "Action approved and sent for execution." : "Action rejected.",
   };
 }
+
+/**
+ * Replay a dead-lettered wake event from the event observability / DLQ surface (#1000, 1D).
+ * `agents:operate`-gated (admin-only, ADR-0050 — operating the agent layer). Re-injects a
+ * dead `agent_event` row through the SAME backend dispatch path (`POST /agent/events/replay`,
+ * BE twin of #1000), which re-pends the row and stamps replayed_at/replayed_by. Idempotency
+ * holds via the #299/#357 eventKey guard — a replay never double-opens a run that already
+ * succeeded. The re-pend write is backend-owned (ADR-0042); degrades to an honest notice
+ * where the endpoint isn't wired in this environment.
+ */
+export async function replayDeadLetteredEventAction(formData: FormData): Promise<IcmActionResult> {
+  await requireCapability("agents:operate");
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  if (!eventId) return { ok: false, message: "No event selected to replay." };
+
+  const acting = await resolveActingUser();
+  if (!acting.ok) return { ok: false, message: "Sign in again — couldn't resolve your identity." };
+
+  const outcome = await callServiceWithFallback(
+    () => agentService.replayDeadLetteredEvent({ eventId, actingUserId: acting.id }),
+    {
+      label: "replayDeadLetteredEventAction",
+      notConfigured:
+        "The wake-event dispatcher isn't wired in this environment yet — the replay is recorded but won't re-drive until the backend is configured.",
+      failed: "Couldn't replay the event — try again in a moment.",
+    },
+  );
+  if (!outcome.ok) return { ok: false, message: outcome.message };
+  revalidatePath("/operator/events");
+  return {
+    ok: true,
+    message: outcome.value.alreadyLive
+      ? "That event was already live again — nothing to replay (idempotent)."
+      : "Event re-injected — the dispatcher will re-drive it on the next pass.",
+  };
+}
