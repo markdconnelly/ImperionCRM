@@ -1561,5 +1561,20 @@
     "file": "ADR-0118-data-class-third-rls-axis-action-ceiling.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0119",
+    "title": "Eval→improvement feedback loop + PII-safe golden harvest",
+    "status": "proposed",
+    "date": "2026-06-22",
+    "tags": [
+      "meta",
+      "agents",
+      "security"
+    ],
+    "summary": "Close the eval loop: failed evals / low-scored agent_run rows open Mark-gated tuning candidates (prompt|grant|skill proposals) that never auto-apply, and golden cases are harvested from real traces through a fail-closed PII-redaction contract so no client row-level data enters the eval corpus. Extends ADR-0106 (eval plane).",
+    "file": "ADR-0119-eval-feedback-loop-pii-safe-harvest.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
