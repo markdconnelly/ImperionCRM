@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/icon";
 import { approveProposedAction } from "@/lib/agent/ask-action";
+import { actionLabel } from "@/lib/agent/action-catalog";
 import type { ProposedAction, ProposedActionTier } from "@/lib/services";
 
 /**
@@ -25,10 +26,13 @@ const TIER_BADGE: Record<ProposedActionTier, { label: string; className: string 
   T3: { label: "T3 · high-risk", className: "bg-red/15 text-red" },
 };
 
-/** Human label for a catalog action kind (falls back to the raw kind). */
-const KIND_LABEL: Record<string, string> = {
-  send_email: "Send email",
-  send_sms: "Send SMS",
+/**
+ * Labels for kinds not yet in the front-end action catalog (#994). These are backend-only
+ * executors the catalog doesn't model yet; they migrate into `action-catalog.ts` as they
+ * gain a front-end contract. `actionLabel` is consulted first (catalog source of truth),
+ * this map second, the raw kind last.
+ */
+const SUPPLEMENTAL_LABEL: Record<string, string> = {
   update_ticket: "Update ticket",
   reply_ticket: "Reply on ticket",
   log_time: "Log time",
@@ -42,7 +46,9 @@ export function ProposedActionCard({ action }: { action: ProposedAction }) {
     label: action.tier,
     className: "bg-panel-2 text-dim",
   };
-  const kindLabel = KIND_LABEL[action.kind] ?? action.kind;
+  // Catalog is the source of truth; supplemental covers not-yet-cataloged backend kinds.
+  const cataloged = actionLabel(action.kind);
+  const kindLabel = cataloged !== action.kind ? cataloged : (SUPPLEMENTAL_LABEL[action.kind] ?? action.kind);
   const decided = result !== null;
 
   function approve() {

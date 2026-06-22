@@ -22,7 +22,12 @@ A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
    **and** non-comms actions (ticket update/reply, log-time) — labelled by its ADR-0055
    `tier` and ADR-0016 `dataClass`. Approving submits the envelope's `input` **verbatim** to
    the backend's only send path (`POST /agent/actions/execute`), which re-asserts consent
-   (ADR-0058). A reply that flags approval but carries no renderable envelope (older deploy)
+   (ADR-0058). Before forwarding, the envelope is resolved against the front-end
+   **action-contract catalog** (`src/lib/agent/action-catalog.ts`, ADR-0107 D2 / [#994](https://github.com/markdconnelly/ImperionCRM/issues/994)):
+   a *registered* action (`send_email`/`send_sms` migrated in) is schema-validated and a
+   malformed payload is refused locally; an *unregistered* kind passes through to the backend
+   (the authoritative validator/dispatcher) so the forward-verbatim contract (#1130) is
+   preserved. A reply that flags approval but carries no renderable envelope (older deploy)
    still shows the plain notice. **Nothing is ever sent automatically.** *(The standalone
    operator action queue is the technician cockpit, [#1014](https://github.com/markdconnelly/ImperionCRM/issues/1014)
    — a separate surface; this is the per-turn inline affordance, #1130.)*
@@ -38,7 +43,7 @@ A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
 | History rail | `agent_conversation` (scoped to `created_by`) | `src/lib/agent/jarvis.ts` |
 | Drill-in trace | `agent_run` → `agent_message` by `conversation_id` | `src/lib/agent/jarvis.ts` |
 | Live turn | backend orchestrator via `askAgentAction` | `src/lib/agent/ask-action.ts` |
-| Proposed-action approval | the reply's `proposedActions[]` envelope; approve → `POST /agent/actions/execute` (input verbatim) via `approveProposedAction` | `src/lib/agent/ask-action.ts` · `src/components/agent/proposed-action-card.tsx` |
+| Proposed-action approval | the reply's `proposedActions[]` envelope; resolve+validate via the action-contract catalog, then approve → `POST /agent/actions/execute` (input verbatim) via `approveProposedAction` | `src/lib/agent/ask-action.ts` · `src/lib/agent/action-catalog.ts` · `src/components/agent/proposed-action-card.tsx` |
 
 ## Boundaries & degradation
 
