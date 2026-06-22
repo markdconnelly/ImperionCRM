@@ -283,6 +283,7 @@ Together they are what makes raising autonomy *safe* rather than reckless:
 | **Two-axis RLS access spine** | Memory boundaries enforced in the database: role-scoped company + owner-scoped personal | [ADR-0105](../decision-records/ADR-0105-two-axis-rls-access-spine.md) |
 | **Tiered knowledge (the second brain)** | canon · company · personal ×6 — the agent's identity-scoped memory hierarchy | [#966](https://github.com/markdconnelly/ImperionCRM/issues/966) / [#967](https://github.com/markdconnelly/ImperionCRM/issues/967) / [#968](https://github.com/markdconnelly/ImperionCRM/issues/968) |
 | **OKF grounding cortex** | Meaning/authority/joins loaded deterministically per stage; freshness = correctness, enforced by three CI gates | [ADR-0104](../decision-records/ADR-0104-okf-orchestrator-grounding-cortex.md) |
+| **Grounding-conflict resolution** | When canon · company · personal disagree at grounding time: serve the most-authoritative valid tier *labelled* (anti-stall), and bubble the conflict to the **domain owner** to resolve — never hard precedence, never model arbitration; every conflict ledgered | [ADR-0119](../decision-records/ADR-0119-grounding-conflict-resolution-domain-owner.md) |
 
 The shape is the OS thesis made concrete: **trust to act** (grant) · **metered action** (dial +
 cockpit) · **proof of what happened** (the `agent_run` ledger, archetype C above) · **proof it
