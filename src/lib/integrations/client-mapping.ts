@@ -47,6 +47,54 @@ export const CLIENT_MAPPING_ADAPTERS: Record<string, ClientMappingAdapter> = {
     unitNoun: "tenant",
     bindsConnection: true,
   },
+  // ── F (#1144): the remaining per-client connectors ─────────────────────────────────────────
+  // Each contributes a fan-out adapter; their units come from the per-source unit-source config in
+  // the data layer (`listClientMappingUnits`). Every bronze is empty until its collector runs
+  // (data-in is Mark-gated, separate thread), so these light up as their bronze hydrates.
+  itglue: {
+    connector: "itglue",
+    sourceSystem: "itglue",
+    label: "IT Glue",
+    unitNoun: "organization",
+    bindsConnection: false,
+  },
+  pax8: {
+    connector: "pax8",
+    sourceSystem: "pax8",
+    label: "Pax8",
+    unitNoun: "company",
+    bindsConnection: false,
+  },
+  quotemanager: {
+    connector: "quotemanager",
+    sourceSystem: "quotemanager",
+    label: "Quote Manager (KQM)",
+    unitNoun: "customer",
+    bindsConnection: false,
+  },
+  televy: {
+    connector: "televy",
+    sourceSystem: "televy",
+    label: "Televy",
+    unitNoun: "customer",
+    bindsConnection: false,
+  },
+  myitprocess: {
+    connector: "myitprocess",
+    sourceSystem: "myitprocess",
+    label: "My IT Process",
+    unitNoun: "account",
+    bindsConnection: false,
+  },
+  // UniFi is a per-client credential (one console per client), so the link also binds the
+  // `connection` row's account (unit D). Units are consoles/sites derived from `unifi_devices`.
+  unifi: {
+    connector: "unifi",
+    sourceSystem: "unifi",
+    label: "UniFi",
+    unitNoun: "console",
+    bindsConnection: true,
+  },
 };
 
 /** Resolve an adapter by its route segment, or null when the connector isn't mappable. */

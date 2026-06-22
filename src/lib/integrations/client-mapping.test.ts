@@ -21,6 +21,25 @@ describe("getClientMappingAdapter", () => {
     });
   });
 
+  it("registers every remaining per-client connector (F #1144)", () => {
+    for (const key of ["itglue", "pax8", "quotemanager", "televy", "myitprocess", "unifi"]) {
+      const a = getClientMappingAdapter(key);
+      expect(a, key).not.toBeNull();
+      expect(a?.sourceSystem).toBe(key);
+    }
+  });
+
+  it("UniFi is a per-client credential (binds connection); the fan-out sources do not", () => {
+    expect(getClientMappingAdapter("unifi")?.bindsConnection).toBe(true);
+    for (const key of ["itglue", "pax8", "quotemanager", "televy", "myitprocess"]) {
+      expect(getClientMappingAdapter(key)?.bindsConnection, key).toBe(false);
+    }
+  });
+
+  it("does NOT register darkwebid — domains are a separate account_domain surface (ADR-0112)", () => {
+    expect(getClientMappingAdapter("darkwebid")).toBeNull();
+  });
+
   it("returns null for an unmappable / unknown connector", () => {
     expect(getClientMappingAdapter("qbo")).toBeNull();
     expect(getClientMappingAdapter("nope")).toBeNull();
