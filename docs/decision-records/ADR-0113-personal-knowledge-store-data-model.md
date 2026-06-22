@@ -42,7 +42,7 @@ the original #968 sketch implied.
 - **Synthesis Store (Postgres)** is the system of record and the queryable/retrievable half:
   immutable **Captures** → synthesized **Knowledge Facts** (a temporal knowledge graph) →
   **pgvector** embeddings. OpenBrain-style — Postgres is where data is *synthesized*.
-- **Curated Vault (blob)** is a **markdown-only filesystem**, agent-curated and human-reviewable
+- **Curated Vault (Azure Files SMB share — see §8)** is a **markdown-only filesystem**, agent-curated and human-reviewable
   — the navigable "memory palace" the owner reads and edits, and a fast context-load for the
   Jarvis orchestrator. Binary artifacts (images/audio) land here with a routing record into
   Distillation.
@@ -99,6 +99,35 @@ Voyage `voyage-3-large` @ 1024 dims (ADR-0041). Personal embeddings ride the exi
 **LocalPipeline** vectorization path like everything else — one vectorization owner, no §1
 exception. Synthesis and embedding **coordinate through a DB state column** (`embed_state`):
 the FE/curator enqueues `pending`, LP drains and flips to `embedded`. No direct FE/BE→LP call.
+
+### 8. Vault substrate — Azure Files (SMB) per-employee share, mounted natively (refines "blob")
+
+The Curated Vault is an **Azure Files SMB file share per employee** (stable slug, e.g. `vault-mark`),
+**not** raw Blob object storage. Decided 2026-06-21 (Mark) so the owner can **mount the vault as a
+native drive** (`net use Z: \\<account>.file.core.windows.net\vault-mark`) and edit it in
+Obsidian/VS Code with real filesystem semantics — SMB handles atomic write-then-rename saves that a
+Blob FUSE/WinFsp overlay does not.
+
+- **Per-employee share = the owner boundary.** One share per owner; **rooms are folder prefixes
+  inside** the share (`projects/imperion-os/decisions.md` = the Room Path). The share is the
+  blob-layer mirror of the Postgres owner axis.
+- **Identity-based access (not a shared key):** Entra Kerberos auth on the storage account +
+  per-share RBAC (`Storage File Data SMB Share Contributor` on `vault-<owner>`), so the owner gets
+  direct scoped access to their **own** share; agent/cross-owner access stays backend-mediated.
+- **Storage-path columns** (`personal_capture.blob_ref`, `personal_vault_file.blob_ref`) carry the
+  **Azure Files share path**, not a Blob URL.
+
+**Accepted tradeoffs (vs Blob):**
+- SMB is **port 445**, blocked by most residential ISPs → reaching the share from a home machine
+  needs a **point-to-site VPN + private endpoint** on the storage account (recommended), or Azure
+  File Sync. This is an operational prerequisite, not a code change (Phase 2 of the rollout).
+- **No offline** — a mounted drive needs connectivity.
+- **Weaker cloud-side change events** than Blob (no rich Event Grid). The Personal Curator therefore
+  **detects human edits by polling the share and diffing `personal_vault_file.content_hash`**, not
+  event-driven. The schema already carries `content_hash` for exactly this.
+
+LocalPipeline (#298, on-prem) remains the vectorizer; the owner mounts the share directly, so a
+separate local-folder-sync arm is **not** required.
 
 ## Amendment to ADR-0105 — the Personal Curator god-view
 

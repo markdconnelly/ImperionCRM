@@ -278,11 +278,11 @@ A future Posture Pillar scoring DNS health (drift + governance verdict). Not in 
 ### Personal knowledge (#966 / #968)
 
 **Personal Knowledge Store**:
-A per-employee, owner-scoped second brain spanning **two substrates** — the Synthesis Store (Postgres) and the Curated Vault (blob). Owner-private by contract: one employee's store is invisible to every other employee and to admins via the app (enforced by the personal-axis RLS, ADR-0105). Six exist day-one (Mark, Derek, Nick, Luke, Brandon, Anna).
+A per-employee, owner-scoped second brain spanning **two substrates** — the Synthesis Store (Postgres) and the Curated Vault (Azure Files SMB share). Owner-private by contract: one employee's store is invisible to every other employee and to admins via the app (enforced by the personal-axis RLS, ADR-0105). Six exist day-one (Mark, Derek, Nick, Luke, Brandon, Anna).
 _Avoid_: personal brain (use Store), memory (unqualified)
 
 **Capture**:
-One immutable raw input to a Personal Knowledge Store — verbatim text (note, transcript, message) held in Postgres, or a binary (image/audio) held in blob with a routing record. The audit floor and the re-synthesis source; never silently edited, but an admin may explicitly purge garbage. Synthesis is derived from Captures.
+One immutable raw input to a Personal Knowledge Store — verbatim text (note, transcript, message) held in Postgres, or a binary (image/audio) held in the vault share with a routing record. The audit floor and the re-synthesis source; never silently edited, but an admin may explicitly purge garbage. Synthesis is derived from Captures.
 _Avoid_: bronze (reserve for the company medallion), drawer (a vault file), raw (unqualified)
 
 **Synthesis Store**:
@@ -290,8 +290,8 @@ The Postgres half of a Personal Knowledge Store — where personal input is **sy
 _Avoid_: silver/gold (those name the company-tier medallion), database (unqualified)
 
 **Curated Vault**:
-The blob half of a Personal Knowledge Store — an agent-maintained filesystem of **markdown files only**, a curated, human-readable representation of what the person knows that they review and interact with. Binary artifacts (images) also land here and are **routed** into processing for synthesis. Not raw capture; a curated projection.
-_Avoid_: bronze (it is curated, not raw), Obsidian vault, second brain (that is the whole Store)
+The **Azure Files (SMB) share** half of a Personal Knowledge Store — a per-employee share (slug e.g. `vault-mark`) the owner **mounts as a native drive** and edits, holding an agent-maintained filesystem of **markdown files only**: a curated, human-readable representation of what the person knows. Rooms are folder prefixes within the share; binaries (images) also land here and are **routed** into Distillation. Not raw capture; a curated projection (ADR-0113 §8).
+_Avoid_: bronze (it is curated, not raw), blob (it is Azure Files, not object storage), Obsidian vault, second brain (that is the whole Store)
 
 **Room Path**:
 The scoping address a Capture and its Knowledge Facts carry (e.g. `mark/projects/imperion-os`), mirroring the Curated Vault folder tree 1:1 — wing = top segment (person/project), room = topic segment. Scoped retrieval is a path-prefix filter, not a flat-corpus scan. The vault folders are the canonical structure (MemPalace-style); Postgres mirrors, never re-defines. Promoted to a first-class table only if a real driver (per-room ACL/metadata) appears.
