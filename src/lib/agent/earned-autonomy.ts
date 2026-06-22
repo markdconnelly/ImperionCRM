@@ -1,5 +1,5 @@
 /**
- * Earned / graduated autonomy with HARD CEILINGS (#1036, ADR-01XX — RENUMBER AT MERGE).
+ * Earned / graduated autonomy with HARD CEILINGS (#1036, ADR-0121 — RENUMBER AT MERGE).
  *
  * Autonomy is EARNED. The operator-set 1–5 dial (`agent_action_autonomy`, 0158, ADR-0109)
  * is the FLOOR an agent always has; on top of it an agent that builds a clean track record on
@@ -32,13 +32,13 @@ import { isAlwaysGate, isDataClass } from "@/lib/security/data-class";
 /**
  * Default promotion threshold: N consecutive clean approvals on an action class before the
  * earned ceiling steps up ONE ADR-0055 tier. Tunable per row (`promote_threshold`) but never
- * below 1 (a single clean run can never be a promotion floor of 0). ADR-01XX D1.
+ * below 1 (a single clean run can never be a promotion floor of 0). ADR-0121 D1.
  */
 export const DEFAULT_PROMOTE_THRESHOLD = 5;
 
 /**
  * The minimum eval score a run must clear to COUNT as a "clean" approval toward promotion
- * (ADR-01XX D1). Mirrors the eval baseline (#1037 / ADR-0120 golden gate, 0.75). A run below
+ * (ADR-0121 D1). Mirrors the eval baseline (#1037 / ADR-0120 golden gate, 0.75). A run below
  * this — even if a human approved it — does NOT advance the streak (it is not a "miss" by
  * itself, but it is not progress either; an explicit miss resets, see {@link applyOutcome}).
  */
@@ -82,7 +82,7 @@ export interface RunOutcome {
   /**
    * Did the run "miss"? A MISS is any of: a human REJECTED the proposed action, the action
    * EXECUTED but was reverted/undone within its window, OR the run's eval scored a hard
-   * FAIL (below the harvest fail floor, #1037). Precise definition is ADR-01XX D2. A miss is
+   * FAIL (below the harvest fail floor, #1037). Precise definition is ADR-0121 D2. A miss is
    * an INSTANT demote to the operator dial floor.
    */
   miss: boolean;
@@ -113,7 +113,7 @@ export function maxTier(a: AutonomyTier | null, b: AutonomyTier | null): Autonom
 
 /**
  * Apply a completed run's {@link RunOutcome} to an agent's {@link EarnedRecord}, returning the
- * NEXT record (pure — no mutation). The earned-autonomy state machine (ADR-01XX D1/D2):
+ * NEXT record (pure — no mutation). The earned-autonomy state machine (ADR-0121 D1/D2):
  *
  *   - MISS  → INSTANT demote: earnedTier → null (back to the operator dial floor), streak 0,
  *             a `demote` transition ledgered. One miss erases the whole earned record.

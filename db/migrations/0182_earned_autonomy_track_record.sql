@@ -1,5 +1,5 @@
--- 0180: Earned / graduated autonomy track record + transition ledger (#1036, ADR-01XX).
--- Migration number 0180 is a PLACEHOLDER — RENUMBER AT MERGE per system CLAUDE.md §10.3
+-- 0182: Earned / graduated autonomy track record + transition ledger (#1036, ADR-0121).
+-- Migration number 0182 is a PLACEHOLDER — RENUMBER AT MERGE per system CLAUDE.md §10.3
 -- (rebase on current main, take the next free number, rename + fix references, then squash;
 -- 0179 is the highest on main at authoring time — multiple sessions are live).
 --
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS agent_earned_autonomy (
   -- keys this exact (agent, class).
   agent_key        text NOT NULL,
   -- The action class the record is built on (a catalog kind, e.g. 'update_ticket'). NOT '*':
-  -- a track record is specific to an action class (ADR-01XX D1).
+  -- a track record is specific to an action class (ADR-0121 D1).
   action_class     text NOT NULL,
   -- The ADR-0055 tier the agent has EARNED on this class (T0–T3), raising the effective dispatch
   -- ceiling for NON-always-gate classes. NULL = nothing earned yet (the operator dial alone
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS agent_earned_autonomy (
   CONSTRAINT agent_earned_autonomy_uniq UNIQUE (agent_key, action_class)
 );
 COMMENT ON TABLE agent_earned_autonomy IS
-  'Earned / graduated autonomy track record (#1036, ADR-01XX). Per (agent_key, action_class): the ADR-0055 tier the agent has earned (raising the dispatch ceiling for NON-always-gate classes only — the always_gate hard ceiling, #1034/ADR-0118, is enforced at dispatch and discards the earned raise), the clean approval streak, and the promote threshold + eval floor. Twin of agent_action_autonomy (0158). Promotes on a clean streak; INSTANT demote to the dial floor on a miss. No PII, no secrets.';
+  'Earned / graduated autonomy track record (#1036, ADR-0121). Per (agent_key, action_class): the ADR-0055 tier the agent has earned (raising the dispatch ceiling for NON-always-gate classes only — the always_gate hard ceiling, #1034/ADR-0118, is enforced at dispatch and discards the earned raise), the clean approval streak, and the promote threshold + eval floor. Twin of agent_action_autonomy (0158). Promotes on a clean streak; INSTANT demote to the dial floor on a miss. No PII, no secrets.';
 
 CREATE INDEX IF NOT EXISTS idx_agent_earned_autonomy_lookup
   ON agent_earned_autonomy (agent_key, action_class);

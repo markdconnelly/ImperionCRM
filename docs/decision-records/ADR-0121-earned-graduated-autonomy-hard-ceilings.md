@@ -11,7 +11,7 @@ tags: [meta, agents, security]
 # ADR-0121: Earned / graduated autonomy with hard ceilings
 
 > Number claimed at MERGE per system CLAUDE.md S10.3. The migration this ADR
-> describes (0180, agent_earned_autonomy + agent_earned_transition) is authored
+> describes (0182, agent_earned_autonomy + agent_earned_transition) is authored
 > against a placeholder and renumbered at merge.
 
 | Field | Value |
@@ -100,7 +100,7 @@ run ledger + cockpit. The pure engine is `src/lib/agent/earned-autonomy.ts` (`ap
 `clampCeilingForClass`, `earnedExecutesInline`).
 
 ### D5 - Schema + audit
-Migration **0180** (RENUMBER AT MERGE) adds `agent_earned_autonomy` (per-pair earned tier +
+Migration **0182** (RENUMBER AT MERGE) adds `agent_earned_autonomy` (per-pair earned tier +
 streak + threshold + eval floor; **no `*` wildcard** - autonomy is earned per concrete agent,
 never as a global default) and `agent_earned_transition` (append-only promote/demote ledger
 with from/to tier, reason, triggering `agent_run`). Web role **reads** both (cockpit render);

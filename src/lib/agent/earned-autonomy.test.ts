@@ -13,7 +13,7 @@ import {
 } from "./earned-autonomy";
 
 /**
- * Pins the earned / graduated autonomy engine (#1036, ADR-01XX): promote on a clean record,
+ * Pins the earned / graduated autonomy engine (#1036, ADR-0121): promote on a clean record,
  * INSTANT demote on a miss, and the HARD CEILING invariant — an always-gate class (#1034 /
  * ADR-0118) NEVER receives the earned raise regardless of track record. The backend mirrors
  * this pure logic (repos don't share code, ADR-0042); the two must agree.

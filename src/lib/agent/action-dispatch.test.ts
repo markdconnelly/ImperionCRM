@@ -156,7 +156,7 @@ describe("resolveDispatch — a freshly registered action is dispatched by the c
   });
 });
 
-describe("resolveDispatch — earned / graduated autonomy (#1036, ADR-01XX)", () => {
+describe("resolveDispatch — earned / graduated autonomy (#1036, ADR-0121)", () => {
   // A non-always-gate (operational) T2 action — the class earned autonomy CAN graduate.
   const OPS_T2: ActionDef = {
     kind: "earned_ops_action",

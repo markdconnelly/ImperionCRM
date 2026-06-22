@@ -1,10 +1,10 @@
 /**
- * `agent_earned_autonomy` + `agent_earned_transition` read layer (#1036, ADR-01XX, migration
- * 0180) - the front-end READ surface for earned / graduated autonomy.
+ * `agent_earned_autonomy` + `agent_earned_transition` read layer (#1036, ADR-0121, migration
+ * 0182) - the front-end READ surface for earned / graduated autonomy.
  *
  * The earned dimension is BACKEND-OWNED at runtime: the backend dispatcher (BE #250) runs the
  * promotion / demotion engine (`src/lib/agent/earned-autonomy.ts` applyOutcome - the pure
- * mirror) and writes both tables at dispatch. Migration 0180 grants the web identity SELECT
+ * mirror) and writes both tables at dispatch. Migration 0182 grants the web identity SELECT
  * only - the front end READS the earned tier, the clean streak, and the last transition to
  * render the cockpit's track-record line (#1014). There is no FE write path (unlike the
  * operator dial 0158, which the slider writes directly).
@@ -113,7 +113,7 @@ export async function listEarnedAutonomy(): Promise<EarnedRecord[]> {
          FROM agent_earned_autonomy
         ORDER BY agent_key, action_class`,
     );
-    // Last transition per (agent, class) - DISTINCT ON the recency index (0180).
+    // Last transition per (agent, class) - DISTINCT ON the recency index (0182).
     const { rows: trans } = await pool.query<TransitionRow>(
       `SELECT DISTINCT ON (agent_key, action_class)
               agent_key, action_class, kind, from_tier, to_tier, reason, created_at
