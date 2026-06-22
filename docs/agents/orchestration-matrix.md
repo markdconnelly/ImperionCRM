@@ -4,7 +4,9 @@ The single map of **every agent** in Imperion OS — what it owns, how
 much autonomy it has, what context it loads, and which roles *watch* the system
 rather than act on it. Where [agent-platform.md](agent-platform.md) covers the
 user-facing orchestrator and [icm.md](icm.md) covers the workflows, this is the
-*whole roster*.
+*whole roster* by **tier**. For the roster by **named agent** — the eight personas
+(Felix · Chase · Belle · …), one per workspace, with their guardrails — see the
+[agent roster](agent-roster.md).
 
 Governing decision:
 [ADR-0091](../decision-records/ADR-0091-agent-icm-platform-consolidated.md) (from

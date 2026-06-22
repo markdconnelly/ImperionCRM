@@ -68,6 +68,7 @@ here.
 | 9 | **[Autonomy — the tiered dial](autonomy-dial.md)** | The one autonomy dial stored as data (`autopilot_policies`), the L0→L3 rungs, the T0–T3 action policy, and the single Mark-gate. |
 | 10 | **[The eval & quality plane](eval-quality-plane.md)** | The scoring twin of the run ledger: golden sets (`agent_eval_case`), scored runs (`agent_eval_run`/`agent_eval_result`), the LLM-judge + deterministic assertions, and the CI quality gate that makes raising autonomy safe (ADR-0106). |
 | 11 | **[The AI-Technician operator cockpit](technician-cockpit.md)** | The supervised-first wedge surface: the `/operator/technician` ticket queue of proposed actions parked above the autonomy ceiling, approve / edit / reject wired to the approval-gated executor, the run trace, and the per-workflow autonomy dial (ADR-0109). |
+| 12 | **[The agent roster](agent-roster.md)** | The staffed org chart: the eight named agents (Felix · Chase · Belle · Audrey · Vance · Pierce · Celeste · Vera), one per workspace, with persona + voice + guardrails, and the rule that **each agent's guardrails are the source of truth for its governance config.** Felix (Service) is the wedge, built first. |
 
 > The repo also carries small **operating-convention** notes used by the build
 > crew (not part of the runtime AI suite): how Claude Code consumes
