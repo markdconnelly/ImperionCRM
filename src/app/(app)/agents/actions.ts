@@ -6,6 +6,8 @@ import { agentService } from "@/lib/services";
 import { callServiceWithFallback } from "@/lib/services/call-guard";
 import { resolveActingUser } from "@/lib/services/acting-user";
 import { isAgentPreset, parseBudgetInput } from "@/lib/agent/settings";
+import { coerceLevel } from "@/lib/agent/action-autonomy";
+import { upsertActionAutonomyDial } from "@/lib/agent/action-autonomy-data";
 
 /** Result the Orchestrator card surfaces after a save attempt. */
 export interface SaveAgentSettingsResult {
@@ -147,4 +149,44 @@ export async function revokeToolGrantAction(formData: FormData): Promise<GrantMu
 
   revalidatePath("/agents/grants");
   return { ok: true, message: `Grant revoked: ${tool}.` };
+}
+
+/** Result the actuation-dial slider surfaces after a save attempt. */
+export interface SetActionAutonomyResult {
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Set the 1–5 actuation autonomy level for an agent (+ optional per-action-class
+ * override), writing `agent_action_autonomy` directly (#1013 / 2E-3, ADR-0109 D4).
+ *
+ * `agents:operate`-gated (admin-only, like the 0123 ICM rung dial). Unlike the other
+ * /agents writes this is NOT a backend process: migration 0158 gives the web role the
+ * INSERT/UPDATE grant and the backend only SELECTs the dial at dispatch, so the slider
+ * upserts the row here. Reversible — re-saving is another upsert. Fail-closed: an
+ * unparseable level coerces to 1 (Manual).
+ */
+export async function setActionAutonomyAction(
+  formData: FormData,
+): Promise<SetActionAutonomyResult> {
+  await requireCapability("agents:operate");
+
+  const agentKey = String(formData.get("agentKey") ?? "").trim();
+  const actionClass = String(formData.get("actionClass") ?? "*").trim() || "*";
+  const level = coerceLevel(formData.get("level"));
+  const noteRaw = String(formData.get("note") ?? "").trim();
+  if (!agentKey) return { ok: false, message: "Missing the agent for the dial." };
+
+  const outcome = await upsertActionAutonomyDial({
+    agentKey,
+    actionClass,
+    level,
+    note: noteRaw || null,
+  });
+  if (!outcome.ok) return { ok: false, message: outcome.message };
+
+  revalidatePath("/agents");
+  const scope = actionClass === "*" ? agentKey : `${agentKey} · ${actionClass}`;
+  return { ok: true, message: `Autonomy set to level ${level} for ${scope}.` };
 }
