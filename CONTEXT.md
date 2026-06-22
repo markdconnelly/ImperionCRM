@@ -317,6 +317,22 @@ _Avoid_: curation service identity (that is the cross-wall promoter), sync job
 A conflict the Personal Curator detects between the Synthesis Store and the Curated Vault (or between a new fact and an existing one) — never auto-resolved; bubbled up for the owner to approve a correction.
 _Avoid_: conflict (unqualified), drift (that is a posture term)
 
+**Universal Memory MCP**:
+The write+recall memory MCP server (ADR-0116) that lets external agent tools — **Claude Code, Cursor** — and the orchestrator share **one governed brain**, exposing three tools: `store`, `recall`, `list_agents`. A thin client over backend `/api/memory/*` endpoints (not raw SQL); the caller's Entra claims flow through and RLS decides. Co-exists with the **read-only** Postgres MCP (which speaks raw `SELECT`); this is the governed *write* door.
+_Avoid_: the read-only pg-MCP (a different server), database connection, raw-SQL MCP
+
+**store / recall / list_agents**:
+The Universal Memory MCP's three tools. **store** = write one deliberate verbatim Capture (personal-scope only — always the authenticated human's, never a shared diary). **recall** = the single canonical gold ranker (ADR-0115), two-level (gold summary → drill bronze), reading *across* readable diaries; dormant until query-embed + gold hydration land. **list_agents** = the RLS-scoped list of recall scopes the caller can read (personal wings + project wings + agent diaries), roster-enriched.
+_Avoid_: search (that is recall), save (that is store), CRUD
+
+**Agent Diary**:
+A shared, agent-authored namespace in `memory_drawer` — `owner_user_id` NULL (company axis), `agent_slug` set, wing `agent:<slug>`. Written **backend-in-process** by an autonomous agent (e.g. Felix, the orchestrator), never through the MCP; readable across the governed brain via `recall`. Distinct from a human's owner-private capture (which an agent may *pen* on the human's behalf — that stays owner-scoped).
+_Avoid_: personal wing (that is owner-private), agent transcript (that is `agent_message`)
+
+**Agent Slug**:
+The free-text attribution key on a Capture (`memory_drawer.agent_slug`) naming the authoring agent or tool (`claude-code`, `cursor`, `felix`). `NOT NULL` *is* the authored-by-agent discriminator. A convention, not yet a foreign key (an agent registry is deferred); spans more than the named roster (dev tools too).
+_Avoid_: agent id, the named roster (that is a subset), authored_by_agent flag (the slug subsumes it)
+
 ### Agent automation (ICM, ADR-0061)
 
 **ICM Workspace**:
