@@ -108,9 +108,18 @@ not in the bus.**
    "One event → N agents" is row matching, not topic fan-out.
 5. **Idempotency = the UNIQUE `idempotency_key`** (e.g. `autotask:ticket:{id}:created`) → a
    redelivered event opens at most one run.
-6. **Dead-letter + replay = the `status` lifecycle.** The dispatcher increments `attempts` and
-   sets `status='dead'` after the configured ceiling; admin replay (`dead|dispatched → pending`)
-   is #1000.
+6. **Dead-letter + replay = the `status` lifecycle (shipped, #1000 / 1D).** The dispatcher
+   increments `attempts` and sets `status='dead'` after the configured ceiling, stamping
+   `dead_lettered_at` and preserving the **original event in place** (the dead row keeps its
+   `event_type`/`idempotency_key`/`source`/`subject`/`payload` — no copy, no silent drop).
+   **Admin replay** (`agents:operate`, backend `POST /agent/events/replay`) re-pends THE SAME
+   row (`status='pending'`, `attempts=0`, `last_error/claimed_at/dispatched_at/dead_lettered_at`
+   cleared, `replayed_at`/`replayed_by` stamped) so it re-drives through the same dispatch path.
+   **Idempotency holds on replay** because the re-driven event re-derives the same per-workflow
+   `eventKey` `'<event_id>:<workflow>'`, and the dispatcher's `findRunByEventKey` guard
+   (#299/#357) REUSES any run a prior dispatch already opened — a replay only opens runs for
+   (event, workflow) pairs that never succeeded (gap-free, no double-actuation). See the DLQ +
+   observability subsection below; schema = migration `0183_agent_event_dlq_replay`.
 7. **Containment of autonomous blast radius (#1033 decision-3 / #1034).** (a) **Loop-prevention is
    structural** — wake on `created` only; an agent's own ticket writes are updates/notes and can
    never self-wake; belt-and-suspenders, the dispatcher ignores events whose source identity is
@@ -148,14 +157,46 @@ App Service Plan.
 
 A new reactive timer (the dispatcher) is the first non-HTTP/non-poll-of-source trigger in the
 backend; it needs a stale-`claimed` reaper (sibling of the stale-`running` reaper #273) and a
-DLQ/replay surface (#1000). Observability rides the BE #258 run-ledger (`agent_run`/`agent_event`
-correlation) + the agent event taxonomy.
+DLQ/replay surface (#1000, shipped — see below). Observability rides the BE #258 run-ledger
+(`agent_run`/`agent_event` correlation) + the agent event taxonomy.
+
+### Dead-letter, replay & observability (1D, #1000 — shipped)
+
+**The DLQ record shape (defined once, mirrored in the FE reader + the BE replay endpoint).** A
+dead-lettered event is simply an `agent_event` row with `status='dead'`; the original event is
+preserved in place. Migration `0183_agent_event_dlq_replay` adds three audit columns:
+`dead_lettered_at` (when it died), `replayed_at` + `replayed_by` (the admin replay audit, null
+until replayed). No new table — the inbox row IS the dead-letter record.
+
+**Replay flow.** The admin clicks Replay on the FE observability surface (`/operator/events`,
+`agents:operate`-gated); the FE server action calls the backend `POST /agent/events/replay`
+(caller-auth, ADR-0035). The endpoint, for a `dead` row, re-pends it: `status='pending'`,
+`attempts=0`, `last_error/claimed_at/dispatched_at/dead_lettered_at` cleared, `replayed_at=now()`,
+`replayed_by=<admin>`. A row that is NOT `dead` (already live again) is a no-op (`alreadyLive`),
+so a double-click is harmless. The dispatcher re-drives the re-pended row on its next pass.
+
+**Why replay can't double-open runs.** Each opened run carries
+`permission_scope.eventKey='<event_id>:<workflow>'` (#299/#357). Before opening a run the
+dispatcher pre-checks `findRunByEventKey`; an existing non-cancelled run for that (event, workflow)
+is REUSED. So if a partial fan-out succeeded before the event died (some workflows opened runs,
+one threw and tripped the dead ceiling), a replay only opens runs for the workflows that never
+got one — gap-free, idempotent, no double-actuation.
+
+**Observability enumerates per-event runs via eventKey (1:N, never 1:1).** Since #999/#357 one
+event opens N runs but `agent_event.run_id` stamps only the representative; the FE lineage read
+(`listRecentEventLineage`) LATERAL-joins `agent_run` on
+`permission_scope->>'eventKey' LIKE '<event_id>:%'` to surface ALL runs an event opened, parsing
+the workflow from the eventKey suffix. The surface shows recent events → status → matched
+subscriptions (the workflows that produced runs) → resulting runs (with glass-box trace links) +
+DLQ depth (`dead` + `deferred` counts).
 
 ## Future considerations
 
 - **#999 (1C):** `agent_subscription` predicate table + one-event-fans-to-N-subscriptions;
   per-subscription fan-out cap.
-- **#1000 (1D):** dead-letter admin replay + event/run observability surface.
+- **#1000 (1D) — shipped:** dead-letter admin replay + event/run observability surface (migration
+  `0183_agent_event_dlq_replay`, FE `/operator/events`, BE `POST /agent/events/replay`). See the
+  "Dead-letter, replay & observability" subsection under Operational impact.
 - **Service Bus topics** if/when fan-out, ordering, or sessions are measured to bind (the inbox
   contract makes this a notifier-only swap).
 - **More producers:** won-quote, posture drift, and other already-ingested events become wakes by
