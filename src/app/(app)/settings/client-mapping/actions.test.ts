@@ -8,6 +8,9 @@ const h = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   link: vi.fn(),
   unlink: vi.fn(),
+  // A stand-in ServiceNotConfiguredError (a plain 1-arg Error subclass) so the degrade path is
+  // exercised faithfully without depending on the real 2-arg constructor signature.
+  ServiceNotConfiguredError: class ServiceNotConfiguredError extends Error {},
 }));
 
 vi.mock("@/lib/auth/guard", () => ({ requireCapability: h.requireCapability }));
@@ -15,14 +18,11 @@ vi.mock("next/cache", () => ({ revalidatePath: h.revalidatePath }));
 vi.mock("@/lib/services", () => ({
   clientMappingService: { link: h.link, unlink: h.unlink },
 }));
-// A stand-in ServiceNotConfiguredError so the degrade path is exercised faithfully. Defined
-// inside the factory (vi.mock is hoisted above the file body, so it can't close over a const).
 vi.mock("@/lib/services/external-client", () => ({
-  ServiceNotConfiguredError: class ServiceNotConfiguredError extends Error {},
+  ServiceNotConfiguredError: h.ServiceNotConfiguredError,
 }));
 
 import { linkClientMappingAction, unlinkClientMappingAction } from "./actions";
-import { ServiceNotConfiguredError } from "@/lib/services/external-client";
 
 function form(fields: Record<string, string>): FormData {
   const fd = new FormData();
@@ -66,7 +66,7 @@ describe("linkClientMappingAction", () => {
   });
 
   it("degrades quietly when the backend isn't configured", async () => {
-    h.link.mockRejectedValueOnce(new ServiceNotConfiguredError("not configured"));
+    h.link.mockRejectedValueOnce(new h.ServiceNotConfiguredError("not configured"));
     await expect(
       linkClientMappingAction(form({ connector: "autotask", sourceKey: "AT-1", accountId: "a1" })),
     ).resolves.toBeUndefined();
