@@ -227,3 +227,30 @@ Before enabling any policy in prod, re-verify the live role attributes (non-BYPA
 - The `app.groups` vocabulary is **settled** (slice-3 design): normalized app-role slugs, not
   raw group GUIDs (see "Slice 3 design"). A per-row `required_role` / account-visibility model
   remains the v2 concept ADR-0100 deferred — built only when a real driver appears.
+
+## Amendment (2026-06-22) — Personal Curator intra-owner god-view (#1157, ADR-0114)
+
+ADR-0105 §3c scoped the curation identity to the **cross-wall** promoter (never impersonates,
+keyed on its service identity). ADR-0114 introduces a **second, distinct** privileged actor — the
+**Personal Curator** — which stays **intra-owner**: it reads+writes broadly across the personal
+tier to synthesize Knowledge Facts, project/ingest the Curated Vault, and hunt Knowledge
+Contradictions, but only ever writes back to the **same** `owner_user_id` it read. It never crosses
+the personal→company wall (that remains §3c's promoter alone). The Personal Curator's god-view,
+**implemented in migration 0169** (#1157), follows the §3b shape rather than `BYPASSRLS`:
+
+- a **permissive RLS policy per personal table** for a **dedicated, non-`BYPASSRLS`
+  managed-identity → Postgres login** (`imperion-personal-curator`), keyed on **`current_user`**
+  (the connection's DB role) — not a settable GUC, so it cannot be spoofed by the web/backend app
+  role, and the reach is visible in `pg_policies`. **FE owns the policies + ledger schema; INFRA
+  provisions the login role (Phase-2); the BACKEND owns the runtime (BE #302).**
+- **personal-tier only** (memory_drawer personal rows · personal_fact · personal_vault_file ·
+  personal_contradiction · personal_curation_event) — never a company table;
+- **every god-view action ledgered** to append-only `personal_curation_event` (the audit control
+  that keeps the non-bypass god-view accountable; enforced at the curator's data layer);
+- the **LP vectorization role** (`imperion-localpipeline`) gets the same concession, **SELECT-only**
+  here (read personal verbatim across owners to produce the gold summary, LP #300), plus INSERT on
+  the ledger for its `embed_enqueue` action.
+
+The owner-scoping invariant survives because both actors only write back to the owner they read.
+This amends — does not supersede — §3c; the two curation actors coexist (intra-owner Curator +
+cross-wall promoter).
