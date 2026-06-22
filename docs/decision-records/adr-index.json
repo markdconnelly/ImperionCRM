@@ -1495,5 +1495,22 @@
     "file": "ADR-0114-personal-knowledge-store-data-model.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0115",
+    "title": "Gold hybrid ranker — staged retrieval contract over the gold knowledge store",
+    "status": "proposed",
+    "date": "2026-06-22",
+    "tags": [
+      "architecture",
+      "agents",
+      "memory",
+      "retrieval",
+      "vector"
+    ],
+    "summary": "Defines the Phase 2 hybrid ranker query-path over the gold knowledge store (knowledge_object / knowledge_embedding, ADR-0041, hybrid substrate 0166). Four DETERMINISTIC stages combined as a weighted sum: semantic (HNSW cosine, filtered to the pinned vector triple) + keyword (ts_rank over chunk_fts) + metadata containment (metadata @> via GIN) + temporal recency decay; default weights semantic 1.0 / keyword 0.3 / temporal 0.2, 30-day half-life. The deterministic ranker is a frontend READ given a query VECTOR (no AI key needed); generating the vector (Voyage) and the OPTIONAL Claude Haiku rerank are AI calls and live in the backend (ADR-0042 §1, Backend #304/#305). Results are knowledge_object rows with entity_ref so callers drill to the verbatim store (memory_drawer / agent_message). Runs under withIdentity so RLS applies.",
+    "file": "ADR-0115-gold-hybrid-ranker-contract.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
