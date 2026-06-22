@@ -83,6 +83,20 @@ no committed baseline fails rather than silently passing.
 | 3 | Golden-set seed + read-only eval dashboard | frontend | shipped (#986) |
 | 4 | CI quality gate vs committed baselines (dormant until backend reachable) | frontend CI | shipped (#988) |
 
+### Golden-set additions
+
+The starter seed (slice 3, migration 0155) is grown by additive seed migrations as new
+agent surfaces ship — each follows the 0155 pattern (`ON CONFLICT (module, name) DO NOTHING`).
+
+- **`technician` module** (#1191, migration 0171) — one golden per AI Technician Autotask
+  write action shipped in backend #257 (epic #1038): `autotask_update_ticket`,
+  `autotask_post_reply`, `autotask_log_time`. Each asserts the action **parks / routes to a
+  human** on the autonomous path and executes only via the approval-gated `POST
+  /agent/actions/execute` — `post_reply` (`client_pii`) and `log_time` (`financial`) are
+  always-gated; `update_ticket` (`operational`) is auto-eligible by class but withheld by the
+  v1 technician autonomy ceiling. Per ADR-0083 each `expectation` doubles as the gauntlet goal
+  ("the plan meets the ticket-resolution goal **and** routes correctly").
+
 ---
 
 ## 6. Boundaries
