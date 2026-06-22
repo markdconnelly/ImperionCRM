@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Imperion OS — Research Paper: data-structure decisions for an agentic operating system</title>
+<meta name="description" content="The long-form rationale for every data-structure decision behind Imperion OS: why medallion bronze/silver/gold, why pgvector + Voyage voyage-3-large @ 1024d in a single vector space, why concept-per-file OKF meaning, why a two-substrate personal memory with a temporal knowledge graph, why two-axis RLS, and how the gold hybrid ranker scores. Cited." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#070B1E; --bg-2:#0B1130; --surface:#121A3D; --surface-2:#19224A;
+    --line:#243056; --ink:#EAF0FF; --muted:#9AA8C7; --muted-2:#6B7AA0;
+    --cyan:#2DD4BF; --cyan-bright:#5EEAD4; --amber:#FBBF24; --indigo:#5B6CFF;
+    --bronze:#C77B3C; --silver:#AEB8C9; --gold:#E3B341; --green:#34D399;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --maxw:820px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:var(--cyan-bright);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora::before{content:"";position:absolute;width:60vw;height:60vw;left:-20vw;top:-24vw;border-radius:50%;filter:blur(95px);opacity:.4;background:radial-gradient(circle at 30% 30%, rgba(45,212,191,.38), transparent 62%)}
+  header.nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(12px);background:rgba(7,11,30,.6);border-bottom:1px solid rgba(36,48,86,.6)}
+  .nav-inner{max-width:var(--maxw);margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;color:var(--ink)}
+  .brand .glyph{width:22px;height:22px;color:var(--cyan)}
+  .nav-links{display:flex;gap:20px;align-items:center;font-family:var(--mono);font-size:12.5px}
+  .nav-links a{color:var(--muted)}
+  @media(max-width:640px){.nav-links a:not(.gh){display:none}}
+  main{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 24px 40px}
+  .hero{padding:clamp(50px,9vw,92px) 0 8px}
+  .eyebrow{font-family:var(--mono);font-size:13px;color:var(--cyan);letter-spacing:1px;display:inline-block;margin-bottom:16px}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(32px,5.4vw,52px);line-height:1.04;letter-spacing:-.02em;margin-bottom:18px}
+  h1 .glow{background:linear-gradient(120deg,var(--cyan-bright),var(--indigo) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{font-size:clamp(16px,2.2vw,19px);color:var(--muted);max-width:700px}
+  .lede b{color:var(--ink);font-weight:600}
+  .meta{margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--muted-2)}
+  .abstract{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:12px;padding:18px 20px;margin:26px 0 6px}
+  .abstract .t{font-family:var(--mono);font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--cyan-bright);margin-bottom:8px}
+  .abstract p{color:var(--muted);font-size:15px}
+  .toc{font-family:var(--mono);font-size:13px;color:var(--muted);margin:24px 0;padding:18px 20px;background:var(--bg-2);border:1px solid var(--line);border-radius:12px}
+  .toc a{display:block;padding:3px 0;color:var(--muted)}
+  .toc a:hover{color:var(--cyan-bright);text-decoration:none}
+  h2{font-family:var(--display);font-weight:600;font-size:clamp(22px,3.4vw,30px);line-height:1.12;letter-spacing:-.01em;margin:0 0 12px}
+  h3{font-family:var(--display);font-weight:600;font-size:17px;margin:20px 0 8px;color:var(--ink)}
+  section{padding:28px 0;border-top:1px solid var(--line)}
+  section p{color:var(--muted);margin-bottom:14px}
+  section p b{color:var(--ink);font-weight:600}
+  .k{font-family:var(--mono);color:var(--cyan-bright);font-size:.9em}
+  ul.tight,ol.tight{margin:0 0 14px 20px;color:var(--muted)}
+  ul.tight li,ol.tight li{margin-bottom:8px}
+  ul.tight b,ol.tight b{color:var(--ink)}
+  sup a{font-family:var(--mono);font-size:11px;color:var(--cyan-bright);text-decoration:none;padding:0 1px}
+  .callout{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:14px 0;font-size:14px;color:var(--muted)}
+  .callout b{color:var(--amber)}
+  table{width:100%;border-collapse:collapse;margin:8px 0 10px;font-size:13.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2)}
+  td b{color:var(--ink)}
+  ol.refs{margin:0;padding-left:22px;font-size:13.5px;color:var(--muted)}
+  ol.refs li{margin-bottom:10px}
+  ol.refs b{color:var(--ink)}
+  ol.refs .u{font-family:var(--mono);font-size:11.5px;word-break:break-all}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13px;font-weight:600;padding:11px 18px;border-radius:10px}
+  .btn:hover{text-decoration:none}
+  .btn.primary{background:var(--cyan);color:#04121a}
+  .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  footer{max-width:var(--maxw);margin:18px auto 0;padding:26px 24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:var(--mono);font-size:12px;color:var(--muted-2)}
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/story">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+      Imperion OS
+    </a>
+    <nav class="nav-links">
+      <a href="executive-summary.html">executive summary</a>
+      <a href="#references">references</a>
+      <a class="gh" href="/story">build story</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="border-top:none">
+    <span class="eyebrow">// research paper</span>
+    <h1>Data-structure decisions for an <span class="glow">agentic operating system</span></h1>
+    <p class="lede">The long-form rationale behind <b>Imperion OS</b>. Not <i>what</i> was built — the <a href="executive-summary.html">executive summary</a> covers that — but <b>why each data-structure decision is the one that holds up</b> under real client data, real autonomy, and real audit. Every external influence is cited; nothing is invented.</p>
+    <p class="meta">Imperion · internal architecture paper · companion to <span class="k">docs/architecture/data-design-for-agents.md</span> · external sources retrieved 2026-06-21</p>
+    <div class="abstract">
+      <div class="t">Abstract</div>
+      <p>The default way to add AI to a business application is to bolt an LLM + RAG onto a schema shaped for a human clicking a UI. It demos well and fails in production: the agent cannot tell where a fact came from or whether it is stale, which of three conflicting sources wins, where one user's memory ends and another's begins, or what it is allowed to <i>do</i> with what it retrieves. Imperion OS inverts the ordering — the data design came first, shaped for agents, and the UI renders over it. This paper defends six structural decisions that follow from that inversion: the medallion tiering, a single pinned vector space, concept-per-file semantics, a two-substrate personal memory with a temporal knowledge graph, two-axis row-level security, and a hybrid recall ranker.</p>
+    </div>
+  </section>
+
+  <nav class="toc">
+    <a href="#ordering">1 · The ordering decision: data-first</a>
+    <a href="#medallion">2 · Why medallion bronze / silver / gold</a>
+    <a href="#vectors">3 · Why pgvector + Voyage voyage-3-large @ 1024d, one vector space</a>
+    <a href="#okf">4 · Why concept-per-file meaning (OKF)</a>
+    <a href="#personal">5 · Why a two-substrate personal memory with a temporal KG</a>
+    <a href="#rls">6 · Why two-axis row-level security</a>
+    <a href="#ranker">7 · How the gold hybrid ranker scores</a>
+    <a href="#limits">8 · Honest limits</a>
+    <a href="#references">References</a>
+  </nav>
+
+  <section id="ordering">
+    <h2>1 · The ordering decision: data-first, not LLM-bolt-on</h2>
+    <p>An operating system schedules <b>processes</b> over shared <b>resources</b> under <b>governed access</b>. Treat AI agents as the processes and "everything the business knows and can do" as the resource, and the data platform becomes the <b>kernel</b>: it must own provenance, meaning, retrieval, and permissions before any agent reasons or acts. That single reframe dictates every decision below. The contrast case — a vector index stapled to a human-form CRM with a chatbot reading off it — fails not because the model is weak but because the <i>substrate</i> cannot answer the questions an acting agent must ask first.</p>
+    <p>The structural claim of this paper: the failure modes of bolt-on agentic AI are <b>data-structure failures</b>, and each is closed by a specific, deliberate structural choice — not by a better prompt. The same instinct — that <b>deterministic structure beats a fragile multi-agent framework</b> — drives the action layer, where filesystem structure itself is the agentic architecture<sup><a href="#r8">[8]</a></sup>; this paper concerns the <i>data</i> half of that thesis.</p>
+  </section>
+
+  <section id="medallion">
+    <h2>2 · Why medallion bronze / silver / gold</h2>
+    <p>The medallion pattern progressively improves data quality across three layers, never losing the raw truth<sup><a href="#r1">[1]</a></sup>. Imperion adopts it because the alternative — overwrite-in-place — <b>discards provenance</b>, and an agent acting on a fact must be able to answer <b>"says who, and as of when?"</b></p>
+    <h3>Bronze: lossless, per-source, provenanced</h3>
+    <p>Every external fact lands as <b>one physical table per (source × entity)</b>, storing the original payload verbatim; a union view stacks them with a <span class="k">source</span> discriminator. Provenance is therefore <b>structural</b> — the table name <i>is</i> the source, so a row can never lose its origin — and bronze is an <b>immutable reprocessing safety net</b>: change a merge rule and silver rebuilds from bronze without re-fetching the external systems. Adding a source is additive (a new bronze table + one precedence entry), which is why the system scales to dozens of feeds without a downstream rewrite.</p>
+    <h3>Silver: merged by explicit authority</h3>
+    <p>Silver is one row per real-world entity, <b>recomputed field-by-field, each field from the highest-precedence non-empty source</b> (e.g. <span class="k">contact</span>: website &gt; autotask &gt; itglue &gt; m365 &gt; apollo). The precedence order <i>is</i> the authority rule, documented per entity. This is where correctness lives or dies — matching keys, out-of-order arrivals, empty-vs-null — so it is tested and versioned, never hand-waved.</p>
+    <h3>Gold: distilled, AI-ready</h3>
+    <p>Gold is one citation-backed knowledge object per entity, derived from a known silver row, so a recalled summary traces back through silver to its bronze origin — <b>RAG over a curated, provenanced substrate</b> rather than a scraped pile, the single biggest lever on whether an agent hallucinates from noise. Drafts carry no embedding, so memory never recalls something unapproved.</p>
+    <div class="callout"><b>Honest status.</b> The gold schema and ~900 knowledge objects exist; embedding generation has not yet run (the vector column is empty), so semantic search is the contract and pipeline, not a live index at the time of writing.</div>
+  </section>
+
+  <section id="vectors">
+    <h2>3 · Why pgvector + Voyage <span class="k">voyage-3-large</span> @ 1024d, one vector space</h2>
+    <p>Three sub-decisions here, each defensible on its own.</p>
+    <h3>Why pgvector (one store, not a bolt-on vector DB)</h3>
+    <p>The embeddings live in the <b>same PostgreSQL</b> that holds the relational system of record. This is the "one store, many agents" shape that the Open Brain work argues for<sup><a href="#r7">[7]</a></sup>: a single kernel every agent plugs into, instead of a relational DB <i>plus</i> a separate vector service that can drift, double the ops surface, and lose referential integrity between a vector and the row it summarizes. A gold embedding can join to its silver entity in one query because they share a database.</p>
+    <h3>Why <span class="k">voyage-3-large</span></h3>
+    <p>Voyage's <span class="k">voyage-3-large</span> is a state-of-the-art general-purpose embedding model with Matryoshka-style dimension flexibility<sup><a href="#r3">[3]</a></sup>, paired with Anthropic-style contextual retrieval to cut retrieval failures by contextualizing chunks before embedding<sup><a href="#r4">[4]</a></sup>. The model pair (Claude for generation, Voyage for embedding) is a settled contract, not a per-feature choice.</p>
+    <h3>Why a single pinned 1024-dimension space</h3>
+    <p>Every vector in the system is <b>the same model at the same 1024 dimensions</b>, polymorphic over any silver entity. The reason is brutally simple: <b>vectors are only comparable within one space</b>. Mix models or dimensions and cosine similarity between a <span class="k">contact</span> and a <span class="k">ticket</span> becomes meaningless. Pinning the dimension makes cross-entity recall valid by construction and makes re-embedding a deliberate, versioned migration rather than an accident.</p>
+  </section>
+
+  <section id="okf">
+    <h2>4 · Why concept-per-file meaning (OKF)</h2>
+    <p>Trustworthy data is necessary but not sufficient: an agent must also know what an entity <i>means</i> and which source <i>wins</i>. A bolt-on RAG system embeds rows and hopes the model <i>infers</i> meaning from text — which is exactly where confident, wrong answers come from. Imperion instead adopts Google's <b>Open Knowledge Format</b> — a vendor-neutral markdown + YAML-frontmatter spec for sharing curated knowledge with agents<sup><a href="#r2">[2]</a></sup> — as a semantic layer of <b>one concept file per silver entity</b>.</p>
+    <p>Each file carries the entity's definition, its <b>authority rule</b> (the precedence order), its documented join paths, and a PII note. Three structural properties follow:</p>
+    <ul class="tight">
+      <li><b>Retrieval you can trust, not vibes.</b> Agents read the join path and which source is authoritative from a contract instead of guessing — the failure mode that produces plausible-but-wrong answers is removed at the source.</li>
+      <li><b>A PII firewall.</b> The meaning layer is PII-free by design, so it can be shared, version-controlled, and even vectorized safely; specific personal values resolve against the live database, never a static file.</li>
+      <li><b>Freshness as correctness.</b> A stale semantic layer lies with confidence, so staleness is made a <b>CI failure</b> — a PR that changes a silver table with a concept file must update that file in the same PR. The map cannot silently drift from the schema.</li>
+    </ul>
+    <p>The same file a person reads is what the agent consumes — human-readable equals machine-readable, with no translation layer to drift. This is the meaning altitude of the same refinement DNA the medallion applies to data.</p>
+  </section>
+
+  <section id="personal">
+    <h2>5 · Why a two-substrate personal memory with a temporal knowledge graph</h2>
+    <p>A second brain needs to answer two different questions well: "what is true about me right now?" and "what did I actually say / decide, verbatim?" One store optimized for both does neither, so the personal tier uses <b>two substrates</b>.</p>
+    <h3>The Synthesis Store — a temporal knowledge graph</h3>
+    <p>Verbatim captures land in bronze; from them, a per-owner <b>knowledge graph</b> of entity–relation–object facts is synthesized. Each fact carries a <b>validity window</b> (<span class="k">valid_from</span> / <span class="k">valid_to</span>): a changed mind is a <b>new fact that closes the prior one</b>, never a destructive edit. This is the append-only-ledger discipline applied to personal knowledge — you can reconstruct what a brain believed at any past moment, which is both an audit property and the only honest way to model beliefs that change over time. Provenance is polymorphic: every fact cites the verbatim bronze turn (human capture or agent message) it was distilled from.</p>
+    <h3>The Curated Vault — owner-edited markdown</h3>
+    <p>Alongside the graph, each owner has a private <b>Azure Blob "Curated Vault"</b> of markdown they can edit directly, synced over HTTPS (no server, SMB, or VPN). This is the human-authored half of the second brain — durable, portable, plain-text — kept in sync with the synthesized graph by a background curator.</p>
+    <h3>Verbatim recall, the MemPalace way</h3>
+    <p>Recall is <b>two-level</b>, the pattern MemPalace demonstrates of storing history verbatim behind a semantic index<sup><a href="#r5">[5]</a></sup>: hybrid-search the dense gold summaries first, then <b>drill via a reference to the faithful verbatim turns</b> only when the exact words matter. Search stays cheap and few; recall stays faithful and complete. Crucially this is expressed <b>natively in the medallion</b> (bronze raw + gold index + a reference) rather than as a bolt-on store with its own vector space — the consolidation-as-background-process idea that systems like claude-mem operationalize for session continuity<sup><a href="#r6">[6]</a></sup>, realized as data engineering.</p>
+  </section>
+
+  <section id="rls">
+    <h2>6 · Why two-axis row-level security</h2>
+    <p>An agent's memory must have boundaries enforced <b>where the data lives, not where the app asks nicely</b>. A bolt-on system enforces memory boundaries in application code — one missed check and a personal note surfaces in a shared answer. Imperion pushes the boundary into PostgreSQL <b>row-level security</b> along two axes:</p>
+    <table>
+      <tr><th>Axis</th><th>Scopes</th><th>Enforces</th></tr>
+      <tr><td><b>Company</b></td><td>role → canon · company tiers</td><td>what a role may read across the shared estate</td></tr>
+      <tr><td><b>Personal</b></td><td>owner → that owner's brain only</td><td>one user's personal memory is invisible to another</td></tr>
+    </table>
+    <p>A personal brain <b>cannot leak</b> into the company tier — it is a database invariant, not a convention. Cross-tier curation (personal → company) is done only by a privileged, <b>non-BYPASSRLS</b> service identity under an append-only god-view ledger, so even the curator's reach is itself scoped and audited. This is the OS ring/permission model applied to memory: the leak is made <i>structurally impossible</i> rather than <i>conventionally discouraged</i>.</p>
+  </section>
+
+  <section id="ranker">
+    <h2>7 · How the gold hybrid ranker scores</h2>
+    <p>Vector-only retrieval is brittle: it misses exact identifiers (a ticket number, a domain) that lexical search nails, and it has no notion of recency or scope. The gold tier therefore ranks on <b>four signals composed together</b>, not similarity alone:</p>
+    <ol class="tight">
+      <li><b>Semantic similarity</b> — cosine distance in the single 1024-d Voyage space; "about the same thing."</li>
+      <li><b>Full-text (lexical)</b> — PostgreSQL FTS for exact tokens an embedding blurs (IDs, names, error strings).</li>
+      <li><b>Metadata</b> — entity type, tier, source, draft-vs-published; a draft has no embedding and is invisible to recall.</li>
+      <li><b>Temporal</b> — capture/validity recency, so a current fact outranks a superseded one (the validity windows of §5 feed directly into rank).</li>
+    </ol>
+    <p>Composing these is what makes recall both <b>precise</b> (lexical + metadata filtering) and <b>relevant</b> (semantic + temporal weighting). The contextual-retrieval guidance that motivates contextualizing chunks before embedding<sup><a href="#r4">[4]</a></sup> applies here too: the substrate being ranked is curated and provenanced, so a high score means a <i>verifiable</i> result, not just a textually-similar one.</p>
+  </section>
+
+  <section id="limits">
+    <h2>8 · Honest limits</h2>
+    <p>A credible architecture names its edges:</p>
+    <ul class="tight">
+      <li><b>Not one autonomous AI that "just runs the business."</b> By design it is staged, contracted, and gated; "fully autonomous" is reframed as "fully automated with supervision you can dial."</li>
+      <li><b>Not real-time streaming analytics.</b> The kernel is near-real-time (webhooks + on-demand refresh), not a stream processor.</li>
+      <li><b>The semantic layer is load-bearing.</b> A stale OKF bundle would lie with confidence; the freshness gates are not optional polish.</li>
+      <li><b>The PII boundary is load-bearing — one mistake is a breach.</b> Bundles and skills are PII-free by design; curation agents must aggregate/redact when walking production.</li>
+      <li><b>Recall is contract-complete, not yet hydrated.</b> At the time of writing the personal substrate is provisioned but empty and embeddings have not been generated; the design is finished, the index is not.</li>
+    </ul>
+    <p>Surfacing these is part of why the design is trustworthy — the same discipline that made provenance structural makes the limits explicit.</p>
+    <div class="cta">
+      <a class="btn primary" href="executive-summary.html">← Executive summary</a>
+      <a class="btn ghost" href="https://github.com/markdconnelly/ImperionCRM/blob/main/docs/architecture/deep-dives/how-it-all-fits-together.md">How it all fits together →</a>
+      <a class="btn ghost" href="/story">The build story →</a>
+    </div>
+  </section>
+
+  <section id="references">
+    <h2>References</h2>
+    <p style="font-size:13px">External sources, retrieved 2026-06-21. Listed with their real titles; none fabricated.</p>
+    <ol class="refs">
+      <li id="r1"><b>What is Medallion Architecture?</b> — Databricks. <span class="u">https://www.databricks.com/glossary/medallion-architecture</span></li>
+      <li id="r2"><b>Introducing the Open Knowledge Format</b> — Sam McVeety &amp; Amir Hormati, Google Cloud. <span class="u">https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing</span></li>
+      <li id="r3"><b>voyage-3-large: a new state-of-the-art general-purpose embedding model</b> — Voyage AI. <span class="u">https://blog.voyageai.com/2025/01/07/voyage-3-large/</span></li>
+      <li id="r4"><b>Introducing Contextual Retrieval</b> — Anthropic. <span class="u">https://www.anthropic.com/news/contextual-retrieval</span></li>
+      <li id="r5"><b>mempalace</b> — MemPalace (local-first AI memory storing history verbatim with semantic retrieval). <span class="u">https://github.com/MemPalace/mempalace</span></li>
+      <li id="r6"><b>claude-mem — Introduction</b> — Claude-Mem (persistent memory compression across sessions). <span class="u">https://docs.claude-mem.ai/introduction</span></li>
+      <li id="r7"><b>OB1 / Open Brain</b> — Nate B. Jones (one DB + AI gateway + chat channel giving any tool shared persistent memory). <span class="u">https://github.com/NateBJones-Projects/OB1</span></li>
+      <li id="r8"><b>Interpretable Context Methodology: Folder Structure as Agentic Architecture</b> — Jake Van Clief &amp; David McDermott, arXiv:2603.16021. <span class="u">https://arxiv.org/abs/2603.16021</span></li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  <span>Imperion OS — research paper · grounded in the repos, citations real</span>
+  <span><a href="https://github.com/markdconnelly">github.com/markdconnelly</a></span>
+</footer>
+</body>
+</html>
