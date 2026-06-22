@@ -1463,5 +1463,22 @@
     "file": "ADR-0112-client-mapping.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0113",
+    "title": "Verbatim memory tier — agent recall alongside gold summaries",
+    "status": "proposed",
+    "date": "2026-06-21",
+    "tags": [
+      "meta",
+      "architecture",
+      "agents",
+      "memory",
+      "security"
+    ],
+    "summary": "Introduce a verbatim memory tier (memory_drawer) that stores conversation/agent turns ORIGINAL-text, never summarized, recalled via the hybrid ranker — amending the 'agents consume Gold only' principle so the orchestrator can drill from gold summaries down to verbatim source. Wing/room scoping over the two-axis RLS access spine; capture is a backend process, vectorization is LocalPipeline; PII-bearing, RLS is the control, out of OKF.",
+    "file": "ADR-0113-verbatim-memory-tier.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
