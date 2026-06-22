@@ -140,6 +140,7 @@ export const navBottom: NavItem[] = [
       { key: "expense-mileage-rate", label: "Mileage rate", icon: "Gauge", href: "/expenses/mileage-rate" },
       { key: "agents", label: "AI agents", icon: "Bot", href: "/agents" },
       { key: "operator-technician", label: "Technician cockpit", icon: "Wrench", href: "/operator/technician" },
+      { key: "operator-cockpit", label: "Approval cockpit", icon: "ShieldCheck", href: "/operator/cockpit" },
       { key: "workflows", label: "Workflows", icon: "Workflow", href: "/workflows" },
       { key: "questions", label: "Questions", icon: "FileQuestion", href: "/questions" },
       { key: "settings-assessment-types", label: "Assessment types", icon: "ListChecks", href: "/settings/assessment-types" },
