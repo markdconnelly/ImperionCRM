@@ -136,34 +136,46 @@ mount paths were ruled out. It trades the literal drive-letter for a synced fold
 identically, and in return removes all networking prerequisites and restores event-driven change
 detection.
 
-### 9. Reconciliation — the Capture layer IS `memory_drawer` (ADR-0113 / #1153)
+### 9. Reconciliation — Capture unifies onto the verbatim stores (`memory_drawer` + `agent_message`, ADR-0113 / #1153)
 
 A parallel session shipped **ADR-0113 (verbatim memory tier)** + migration **0166** (hybrid-search
-substrate on gold), defining a **`memory_drawer`** table — one row = one verbatim unit
-(conversation turn / agent step / user note), original-text, inline `vector(1024)` + `tsvector`,
-wing/room scoping, two-axis RLS — explicitly positioned as the real drawer that supersedes the
-`personal_note` pilot. That is the **same job** as this ADR's originally-proposed `personal_capture`.
+substrate on gold) + **migration 0167 `memory_drawer`** (#1163, MERGED + **prod-applied** 2026-06-22).
+As shipped, `memory_drawer` is **bronze verbatim NON-AGENT memory** — user notes + captured *human*
+conversations, original-text, append-only, wing/room scoping, two-axis RLS — explicitly superseding
+the `personal_note` pilot. That is the **same job** as this ADR's originally-proposed `personal_capture`.
 
-**Resolution (Mark, 2026-06-21): unify on `memory_drawer`.** It is the single verbatim **Capture**
-substrate. Personal Captures are simply its **owner-scoped rows** (wing = person). This supersedes
-items §1/§2/§8 wherever they named a separate `personal_capture` table and §7's `personal_embedding`:
+**Resolution (Mark, 2026-06-21): unify on `memory_drawer`** — corrected here to match the shipped
+schema (CLAUDE.md §4 is now canon on this):
 
-- **No `personal_capture` table** — personal raw verbatim is a `memory_drawer` row (wing=person,
-  `owner_user_id` = `app.user_id`). **Slice A1 (#1154) is retired.**
-- **No `personal_embedding` table** — recall rides `memory_drawer`'s inline embedding + the 0166
-  ranker primitives. **Slice A3 (#1156) is retired**; personal-scoped retrieval is a thin
-  wing/owner-filtered query over the shared substrate.
+- **Verbatim is SPLIT BY ORIGIN, not one table.** `memory_drawer` holds **non-agent** verbatim
+  (notes, human conversations); **agent-run transcripts — including Claude Code — live in
+  `agent_message`** (`agent_conversation`→`agent_run`→`agent_message`, 0056/0163), NOT in
+  `memory_drawer`. So the personal **Capture** layer is the **owner-scoped rows of `memory_drawer`
+  PLUS the owner's `agent_message` turns** — sourced from both by origin.
+- **No `personal_capture` table** — personal raw verbatim is a `memory_drawer` row (wing=`user:<id>`,
+  `owner_user_id` = `app.user_id`) or an `agent_message` row. **Slice A1 (#1154) is retired.**
+- **Bronze carries NO embedding** (corrected — the original ADR-0113 draft had an inline vector; the
+  shipped 0167 does not). Recall is **two-level**: a **gold `memory` summary** (`knowledge_object`,
+  `entity_type='memory'`, `entity_ref=conversation_id`, embedded + hybrid-searchable via 0045/0166)
+  → **drill** to the verbatim bronze rows. **No `personal_embedding` table; Slice A3 (#1156) is
+  retired**; personal vectorization produces the gold `memory` summary (LP, §7), and personal-scoped
+  retrieval is a thin wing/owner-filtered query over that gold + drill-down.
 - **What stays net-new (this ADR's actual contribution):** the temporal KG — **Knowledge Facts +
-  Validity Windows** (#1155, `source_capture_id` → `memory_drawer.id`); the **Curated Vault** +
-  **Personal Curator** + ledger + Contradiction table (#1157); **Distillation**; and the Blob +
-  local-sync vault substrate (§8). These layer *on top of* `memory_drawer`, which has none of them.
+  Validity Windows** (#1155); the **Curated Vault** + **Personal Curator** + ledger + Contradiction
+  table (#1157); **Distillation**; and the Blob + local-sync vault substrate (§8). These layer *on
+  top of* the verbatim stores, which have none of them. Because verbatim is split by origin, a Fact's
+  provenance is a **polymorphic source ref** (`source_kind` ∈ {`memory_drawer`,`agent_message`} +
+  `source_id`), not a single FK — a Fact can be synthesized from a note, a human conversation, or an
+  agent turn.
 - **Binaries** (images/audio) still land in the owner's Blob vault container with a routing record;
-  only the *text* verbatim unifies into `memory_drawer`.
+  only *text* verbatim lives in `memory_drawer`/`agent_message`.
 
-Net: **one drawer, two consumers** — agent recall (ADR-0113) and personal synthesis (this ADR) —
-truer to MemPalace's single-drawer model and free of a duplicate owner-scoped raw tier. Requires
-coordination with the #1153 owner so `memory_drawer` carries what the KG/Vault need (a stable row id
-for `source_capture_id`; owner-scoped wing=person already covered by its two-axis RLS).
+Net: **shared verbatim, two consumers** — agent recall (ADR-0113) and personal synthesis (this ADR) —
+free of a duplicate owner-scoped raw tier. The shipped `memory_drawer` (0167) already carries what the
+KG/Vault need: a stable `id` for the polymorphic source ref and owner-scoped `wing`/`owner_user_id`
+RLS. **Open with the #1153 owner:** the Personal Curator's god-view policy (below) must extend over
+`memory_drawer` personal rows, and retention/forgetting (#303) interacts with Facts that cite a
+purged drawer row.
 
 ## Amendment to ADR-0105 — the Personal Curator god-view
 
