@@ -1,5 +1,5 @@
--- 0169: memory_drawer.agent_slug — per-agent attribution for the Universal Memory MCP
--- (#1170, Phase 4, ADR-0116). Migration number 0169 claimed at MERGE per system
+-- 0170: memory_drawer.agent_slug — per-agent attribution for the Universal Memory MCP
+-- (#1170, Phase 4, ADR-0116). Migration number 0170 claimed at MERGE (renumbered from placeholder 0169 — #1157/PR#1171 took 0169 first, §10.3 second-merger renumbers) per system
 -- CLAUDE.md §10.3 — authored against a placeholder; renumber if another migration merges first.
 --
 -- WHY THIS EXISTS. Phase 4 adds a write+recall memory MCP (store/recall/list_agents) so
