@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { PendingActionCockpit } from "@/components/agents/pending-action-cockpit";
-import { listPendingActions } from "@/lib/agent/pending-action-cockpit";
+import { L4OversightView } from "@/components/agents/l4-oversight-view";
+import { listPendingActions, listExecutedActions } from "@/lib/agent/pending-action-cockpit";
 import { getSessionRoles } from "@/lib/auth/session";
 import { can } from "@/lib/auth/policy";
 import { isDbConfigured } from "@/lib/db/client";
@@ -24,13 +25,15 @@ export const dynamic = "force-dynamic"; // live cockpit queue, never prerendered
  *
  * Distinct from the Technician-only cockpit (`/operator/technician`, #1056): that one is
  * scoped to the wedge agent + carries its autonomy dial; this is the agent-agnostic
- * queue. The L4 oversight view (executed actions + undo window) is a tracked follow-up (#1202).
+ * queue. Below the approval queue sits the L4 oversight view (#1202): actions an agent
+ * executed inline at autonomy level 4 (Autonomous-with-oversight), surfaced for
+ * after-the-fact review with an undo window while it's open.
  */
 export default async function ApprovalCockpitPage() {
   const roles = await getSessionRoles();
   const canOperate = can(roles, "agents:operate"); // admin-only (ADR-0050)
 
-  const queue = await listPendingActions();
+  const [queue, executed] = await Promise.all([listPendingActions(), listExecutedActions()]);
   const dbNote = isDbConfigured() ? "" : " · sample data";
 
   return (
@@ -46,10 +49,12 @@ export default async function ApprovalCockpitPage() {
 
       <PendingActionCockpit items={queue} canReview={canOperate} reviewAction={decidePendingActionAction} />
 
+      <L4OversightView items={executed} canReview={canOperate} />
+
       <p className="text-[11px] text-dim">
-        Showing {queue.length} parked action{queue.length === 1 ? "" : "s"} across all agents ·
-        agent_pending_action cockpit (ADR-0109){dbNote}. Executed actions + the L4 undo window are a
-        tracked follow-up (#1202).
+        Showing {queue.length} parked action{queue.length === 1 ? "" : "s"} awaiting approval and{" "}
+        {executed.length} executed autonomously (L4 oversight) across all agents ·
+        agent_pending_action cockpit (ADR-0109){dbNote}.
       </p>
     </div>
   );

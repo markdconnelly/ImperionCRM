@@ -139,6 +139,81 @@ function strField(payload: Record<string, unknown> | null, key: string): string 
   return typeof v === "string" && v.trim() ? v : null;
 }
 
+/**
+ * One agent action that already EXECUTED (or whose undo window expired) — the L4
+ * oversight half (#1202, ADR-0107 D5 / ADR-0109). At autonomy level 4
+ * (Autonomous-with-oversight) the backend executes inline then parks the row here so an
+ * operator can review it after the fact and, while the undo window is open, undo it
+ * (a compensating action via the backend — twin of the decide endpoint, backend #267).
+ */
+export interface ExecutedActionItem {
+  /** `agent_pending_action.id` — the undo target. */
+  id: string;
+  agentKey: string;
+  agentLabel: string;
+  actionKind: string;
+  tier: string;
+  rationale: string | null;
+  resolvedLevel: number | null;
+  resolvedCeiling: string | null;
+  /** The action body that executed (read-only on the oversight surface). */
+  draft: string;
+  /** `status` — `executed` (undo may still be open) or `expired` (window closed). */
+  status: "executed" | "expired";
+  /** Who/what decided it: the approver, or the agent itself for an autonomous L4 run. */
+  decidedByUserId: string | null;
+  /** When it executed (or the window closed), ISO. */
+  decidedAt: string | null;
+  createdAt: string; // ISO
+  /** The execution interaction, for the audit/trace link. */
+  interactionId: string | null;
+  target: PendingActionTarget | null;
+  runId: string | null;
+}
+
+const MOCK_EXECUTED: ExecutedActionItem[] = [
+  {
+    id: "mock-executed-1",
+    agentKey: "technician",
+    agentLabel: "Felix · Service",
+    actionKind: "reply_ticket",
+    tier: "T2",
+    rationale:
+      "Autonomous-with-oversight (L4): customer reply executed inline, surfaced here for after-the-fact review within the undo window.",
+    resolvedLevel: 4,
+    resolvedCeiling: "T2",
+    draft:
+      "Hi — I've applied the recommended firmware update to SWITCH-02 and confirmed all ports are back up. Closing this out; reopen if anything recurs.",
+    status: "executed",
+    decidedByUserId: null,
+    decidedAt: "2026-06-21T16:40:00Z",
+    createdAt: "2026-06-21T16:39:30Z",
+    interactionId: "mock-interaction-1",
+    target: { label: "T20260621.0051 · SWITCH-02 ports flapping", href: "/tickets?query=T20260621.0051" },
+    runId: null,
+  },
+  {
+    id: "mock-executed-2",
+    agentKey: "sales",
+    agentLabel: "Chase · Sales",
+    actionKind: "send_email",
+    tier: "T2",
+    rationale:
+      "L4 lead follow-up sent autonomously; the undo window has since closed (terminal).",
+    resolvedLevel: 4,
+    resolvedCeiling: "T2",
+    draft:
+      "Hi Marcus — following up on our chat. I've attached the managed-IT overview; happy to walk through it whenever suits.",
+    status: "expired",
+    decidedByUserId: null,
+    decidedAt: "2026-06-20T11:05:00Z",
+    createdAt: "2026-06-20T11:04:40Z",
+    interactionId: "mock-interaction-2",
+    target: null,
+    runId: null,
+  },
+];
+
 /** All agents' parked actions awaiting a decision, newest first. */
 export async function listPendingActions(limit = 100): Promise<PendingActionItem[]> {
   const pool = getPool();
@@ -193,6 +268,77 @@ export async function listPendingActions(limit = 100): Promise<PendingActionItem
     }));
   } catch (err) {
     console.error("Pending-action cockpit queue read failed:", err);
+    return [];
+  }
+}
+
+/**
+ * All agents' EXECUTED (or expired) actions for the L4 oversight view (#1202), newest
+ * decision first. These already ran inline at autonomy level 4; the operator reviews them
+ * after the fact and undoes them while the window is open. `executed` rows are still
+ * potentially undoable; `expired` rows are terminal (window closed). Same honest
+ * degradation as the pending read: DB unset → mock sample; query failure → empty list.
+ */
+export async function listExecutedActions(limit = 100): Promise<ExecutedActionItem[]> {
+  const pool = getPool();
+  if (!pool) return MOCK_EXECUTED;
+  try {
+    const { rows } = await pool.query<{
+      id: string;
+      agent_key: string;
+      action_kind: string;
+      tier: string;
+      rationale: string | null;
+      resolved_level: number | null;
+      resolved_ceiling: string | null;
+      payload: Record<string, unknown> | null;
+      status: "executed" | "expired";
+      decided_by_user_id: string | null;
+      decided_at: string | null;
+      created_at: string;
+      interaction_id: string | null;
+      ticket_id: string | null;
+      ticket_number: string | null;
+      ticket_title: string | null;
+    }>(
+      `SELECT p.id, p.agent_key, p.action_kind, p.tier, p.rationale,
+              p.resolved_level, p.resolved_ceiling, p.payload, p.status,
+              p.decided_by_user_id, p.decided_at, p.created_at, p.interaction_id,
+              t.id AS ticket_id, t.number AS ticket_number, t.title AS ticket_title
+       FROM agent_pending_action p
+       LEFT JOIN ticket t ON t.id = CASE
+              WHEN p.payload->>'ticketId' ~ '^[0-9a-fA-F-]{36}$'
+              THEN (p.payload->>'ticketId')::uuid END
+       WHERE p.status IN ('executed', 'expired')
+       ORDER BY p.decided_at DESC NULLS LAST, p.created_at DESC
+       LIMIT $1`,
+      [Math.min(Math.max(limit, 1), 200)],
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      agentKey: r.agent_key,
+      agentLabel: agentLabel(r.agent_key),
+      actionKind: r.action_kind,
+      tier: r.tier,
+      rationale: r.rationale,
+      resolvedLevel: r.resolved_level,
+      resolvedCeiling: r.resolved_ceiling,
+      draft: draftFromPayload(r.payload),
+      status: r.status,
+      decidedByUserId: r.decided_by_user_id,
+      decidedAt: r.decided_at ? new Date(r.decided_at).toISOString() : null,
+      createdAt: new Date(r.created_at).toISOString(),
+      interactionId: r.interaction_id,
+      target: r.ticket_id
+        ? {
+            label: `${r.ticket_number ? `${r.ticket_number} · ` : ""}${r.ticket_title ?? "ticket"}`,
+            href: `/tickets?query=${encodeURIComponent(r.ticket_number ?? r.ticket_title ?? "")}`,
+          }
+        : null,
+      runId: strField(r.payload, "runId"),
+    }));
+  } catch (err) {
+    console.error("Executed-action oversight read failed:", err);
     return [];
   }
 }
