@@ -130,8 +130,11 @@ All external data flows through three layers:
   over Gold**; for faithful recall the orchestrator **drills from a Gold summary to
   its verbatim Bronze source via references** (ADR-0113) — e.g. a conversation
   summary (`knowledge_object`, `entity_ref=conversation_id`) → its verbatim turns
-  (`agent_message` for agent runs, `memory_drawer` for human notes/conversations;
-  split by origin). Verbatim text is never the reasoning substrate; the summary is.
+  (`agent_message` for agent **transcripts**, `memory_drawer` for **deliberate
+  captures** — human notes/conversations and deliberate agent memories written via
+  the Memory MCP `store`, ADR-0116; **split by origin = transcript vs deliberate
+  capture**, with `memory_drawer.agent_slug` attributing the agent). Verbatim text is
+  never the reasoning substrate; the summary is.
 
 The platform must support relational queries, semantic/vector search, knowledge
 graphs, agent memory, and document intelligence from the start. Traditional CRUD
