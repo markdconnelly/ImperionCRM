@@ -1432,5 +1432,20 @@
     "file": "ADR-0110-rebrand-imperion-os.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0111",
+    "title": "Agent event/trigger substrate — durable agent_event inbox, Storage-Queue notifier, in-app subscription fan-out",
+    "status": "proposed",
+    "date": "2026-06-22",
+    "tags": [
+      "meta",
+      "agents",
+      "security"
+    ],
+    "summary": "The event-driven wake substrate for autonomous agents: a durable agent_event DB inbox (source of truth, idempotent/replayable) drained by a backend dispatcher; an Azure Storage Queue acts only as a low-latency NOTIFIER over the inbox (poll is the durability floor), staying consistent with pipeline ADR-0003; subscription/predicate fan-out lives in an agent_subscription table + dispatcher code, not in the bus; containment = idempotency key + wake-on-created loop-break + rate/fan-out caps; dead-letter/replay via the status lifecycle.",
+    "file": "ADR-0111-agent-event-substrate.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
