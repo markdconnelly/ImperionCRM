@@ -35,6 +35,18 @@ export const CLIENT_MAPPING_ADAPTERS: Record<string, ClientMappingAdapter> = {
     unitNoun: "company",
     bindsConnection: false,
   },
+  // M365 (E3 #1147). Tenant Mapping is the M365 instance of Client Mapping (ADR-0112, amends
+  // ADR-0051). Units are Customer Tenants — the universe is the posture-bronze tenant set plus
+  // any already-linked tenant in `entity_xref ('account','m365',guid)` (backfilled by migration
+  // 0165). `bindsConnection` is true because m365 is a per-client credential; the link also keeps
+  // the legacy `account_tenant` row in sync until the posture-join cutover (#1049).
+  m365: {
+    connector: "m365",
+    sourceSystem: "m365",
+    label: "Microsoft 365",
+    unitNoun: "tenant",
+    bindsConnection: true,
+  },
 };
 
 /** Resolve an adapter by its route segment, or null when the connector isn't mappable. */

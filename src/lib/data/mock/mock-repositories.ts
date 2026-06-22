@@ -1646,14 +1646,33 @@ export const mockRepositories: Repositories = {
       return [...clientConnections, ...companyConnections].filter((c) => c.accountId === accountId);
     },
     async listClientMappingUnits(sourceSystem: string) {
-      // Client Mapping units (ADR-0112) — a small Autotask fixture so the surface renders without
-      // a DB: one already mapped, two unmapped (one name-matches an account → suggestion).
-      if (sourceSystem !== "autotask") return [];
-      return [
-        { sourceKey: "AT-1001", name: "Acme Corp", mappedAccountId: "a1", mappedAccountName: "Acme Corp" },
-        { sourceKey: "AT-1002", name: "Globex", mappedAccountId: null, mappedAccountName: null },
-        { sourceKey: "AT-1003", name: "Initech", mappedAccountId: null, mappedAccountName: null },
-      ];
+      // Client Mapping units (ADR-0112) — small fixtures so the surface renders without a DB.
+      if (sourceSystem === "autotask") {
+        // Autotask: one already mapped, two unmapped (one name-matches an account → suggestion).
+        return [
+          { sourceKey: "AT-1001", name: "Acme Corp", mappedAccountId: "a1", mappedAccountName: "Acme Corp" },
+          { sourceKey: "AT-1002", name: "Globex", mappedAccountId: null, mappedAccountName: null },
+          { sourceKey: "AT-1003", name: "Initech", mappedAccountId: null, mappedAccountName: null },
+        ];
+      }
+      if (sourceSystem === "m365") {
+        // M365 (E3 #1147): tenants keyed by GUID — one mapped (home tenant), one unmapped.
+        return [
+          {
+            sourceKey: "11111111-1111-1111-1111-111111111111",
+            name: "Acme Corp",
+            mappedAccountId: "a1",
+            mappedAccountName: "Acme Corp",
+          },
+          {
+            sourceKey: "22222222-2222-2222-2222-222222222222",
+            name: "22222222-2222-2222-2222-222222222222",
+            mappedAccountId: null,
+            mappedAccountName: null,
+          },
+        ];
+      }
+      return [];
     },
     async connect() {
       throw new Error(NO_DB);

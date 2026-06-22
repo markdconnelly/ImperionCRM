@@ -70,8 +70,9 @@ LocalPipeline planes and is not shown here.)
 
 **Edit client mappings** opens `/settings/client-mapping/<connector>` (the reusable mapping
 surface, epic #1141 unit E). The button appears only when that connector has a mapping
-adapter wired (`autotask` today; `m365` and the rest light up as units E3/F land), so it
-never links to a missing page.
+adapter wired (`autotask` and `m365` today; the rest light up as unit F lands), so it
+never links to a missing page. For `m365`, Tenant Mapping **is** this surface — the old
+`/settings/tenant-mapping` route now redirects here (ADR-0112, E3 #1147).
 
 ## What an admin does here
 

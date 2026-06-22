@@ -11,6 +11,16 @@ describe("getClientMappingAdapter", () => {
     expect(a).toMatchObject({ sourceSystem: "autotask", label: "Autotask", bindsConnection: false });
   });
 
+  it("resolves the M365 adapter (per-client credential → binds connection)", () => {
+    const a = getClientMappingAdapter("m365");
+    expect(a).toMatchObject({
+      sourceSystem: "m365",
+      label: "Microsoft 365",
+      unitNoun: "tenant",
+      bindsConnection: true,
+    });
+  });
+
   it("returns null for an unmappable / unknown connector", () => {
     expect(getClientMappingAdapter("qbo")).toBeNull();
     expect(getClientMappingAdapter("nope")).toBeNull();

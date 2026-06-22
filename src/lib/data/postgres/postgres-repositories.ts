@@ -11177,6 +11177,55 @@ export const postgresRepositories: Repositories = {
     async listClientMappingUnits(sourceSystem: string): Promise<ClientMappingUnit[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.connections.listClientMappingUnits(sourceSystem);
+
+      // M365 (E3 #1147) doesn't have a single bronze "companies" table — its units are Customer
+      // Tenants. The universe is the posture-bronze tenant set (the same UNION listUnmappedTenants
+      // envelopes) PLUS any tenant already linked in `entity_xref ('account','m365',guid)`
+      // (backfilled by migration 0165), so a mapped tenant shows even with no posture rows yet.
+      // The mapped link reads from entity_xref (the ADR-0112 authority); the legacy `account_tenant`
+      // row supplies a friendly display name during the deferred posture-join cutover (#1049).
+      if (sourceSystem === "m365") {
+        try {
+          const { rows } = await pool.query<{
+            source_key: string;
+            name: string | null;
+            mapped_account_id: string | null;
+            mapped_account_name: string | null;
+          }>(
+            `WITH tenants AS (
+                          SELECT tenant_id FROM secure_scores
+                UNION ALL SELECT tenant_id FROM entra_conditional_access_policies
+                UNION ALL SELECT tenant_id FROM intune_security_policies
+                UNION ALL SELECT tenant_id FROM device_configuration_policies
+                UNION ALL SELECT tenant_id FROM autopilot_policies
+                UNION ALL SELECT tenant_id FROM defender_xdr_security_policies
+                UNION ALL SELECT source_key AS tenant_id FROM entity_xref
+                            WHERE entity_type = 'account' AND source_system = 'm365'
+                              AND match_method = 'manual'
+             )
+             SELECT t.tenant_id AS source_key,
+                    COALESCE(a.name, at.display_name, t.tenant_id) AS name,
+                    x.internal_entity_id::text AS mapped_account_id,
+                    a.name AS mapped_account_name
+               FROM (SELECT DISTINCT tenant_id FROM tenants WHERE tenant_id IS NOT NULL) t
+               LEFT JOIN entity_xref x
+                 ON x.entity_type = 'account' AND x.source_system = 'm365'
+                AND x.source_key = t.tenant_id AND x.match_method = 'manual'
+               LEFT JOIN account a ON a.id = x.internal_entity_id
+               LEFT JOIN account_tenant at ON at.tenant_id = t.tenant_id
+              ORDER BY name`,
+          );
+          return rows.map((r) => ({
+            sourceKey: r.source_key,
+            name: r.name ?? r.source_key,
+            mappedAccountId: r.mapped_account_id,
+            mappedAccountName: r.mapped_account_name,
+          }));
+        } catch {
+          return mockRepositories.connections.listClientMappingUnits(sourceSystem);
+        }
+      }
+
       // Each connector's units live in its own bronze table; pick it from a whitelist so the
       // table name is never caller-derived (the source_system value IS parameterized). The
       // tracer ships Autotask (the only populated source); E3/F add the rest.

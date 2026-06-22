@@ -8,6 +8,8 @@ const h = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   link: vi.fn(),
   unlink: vi.fn(),
+  upsertTenantMapping: vi.fn(),
+  deleteTenantMapping: vi.fn(),
   // A stand-in ServiceNotConfiguredError (a plain 1-arg Error subclass) so the degrade path is
   // exercised faithfully without depending on the real 2-arg constructor signature.
   ServiceNotConfiguredError: class ServiceNotConfiguredError extends Error {},
@@ -21,6 +23,16 @@ vi.mock("@/lib/services", () => ({
 vi.mock("@/lib/services/external-client", () => ({
   ServiceNotConfiguredError: h.ServiceNotConfiguredError,
 }));
+vi.mock("@/lib/data", () => ({
+  getRepositories: () => ({
+    security: {
+      upsertTenantMapping: h.upsertTenantMapping,
+      deleteTenantMapping: h.deleteTenantMapping,
+    },
+  }),
+}));
+
+const TENANT = "11111111-1111-1111-1111-111111111111";
 
 import { linkClientMappingAction, unlinkClientMappingAction } from "./actions";
 
@@ -72,6 +84,39 @@ describe("linkClientMappingAction", () => {
     ).resolves.toBeUndefined();
     expect(h.revalidatePath).toHaveBeenCalled();
   });
+
+  it("does not dual-write account_tenant for a fan-out connector (autotask)", async () => {
+    await linkClientMappingAction(form({ connector: "autotask", sourceKey: "AT-1", accountId: "a1" }));
+    expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+  });
+
+  it("m365: proxies entity_xref AND dual-writes account_tenant for a valid tenant GUID (#1049)", async () => {
+    await linkClientMappingAction(form({ connector: "m365", sourceKey: TENANT, accountId: "a1" }));
+    expect(h.link).toHaveBeenCalledWith({
+      entityType: "account",
+      sourceSystem: "m365",
+      sourceKey: TENANT,
+      internalEntityId: "a1",
+      connectionId: undefined,
+    });
+    expect(h.upsertTenantMapping).toHaveBeenCalledWith({
+      tenantId: TENANT,
+      accountId: "a1",
+      displayName: null,
+    });
+  });
+
+  it("m365: carries the bound connectionId through to the backend (bindsConnection)", async () => {
+    await linkClientMappingAction(
+      form({ connector: "m365", sourceKey: TENANT, accountId: "a1", connectionId: "cn_9" }),
+    );
+    expect(h.link).toHaveBeenCalledWith(expect.objectContaining({ connectionId: "cn_9" }));
+  });
+
+  it("m365: skips the account_tenant dual-write when the sourceKey isn't a tenant GUID", async () => {
+    await linkClientMappingAction(form({ connector: "m365", sourceKey: "not-a-guid", accountId: "a1" }));
+    expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+  });
 });
 
 describe("unlinkClientMappingAction", () => {
@@ -91,5 +136,16 @@ describe("unlinkClientMappingAction", () => {
       sourceKey: "AT-1",
     });
     expect(h.revalidatePath).toHaveBeenCalledWith("/settings/client-mapping/autotask");
+    expect(h.deleteTenantMapping).not.toHaveBeenCalled();
+  });
+
+  it("m365: also drops the legacy account_tenant row for a valid tenant GUID (#1049)", async () => {
+    await unlinkClientMappingAction(form({ connector: "m365", sourceKey: TENANT }));
+    expect(h.unlink).toHaveBeenCalledWith({
+      entityType: "account",
+      sourceSystem: "m365",
+      sourceKey: TENANT,
+    });
+    expect(h.deleteTenantMapping).toHaveBeenCalledWith(TENANT);
   });
 });
