@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-19T00:00:00Z
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -73,6 +73,7 @@ subset; remaining entities are tracked for expansion
 | [`conversation`](tables/conversation.md) | single-SoR (+ gold) | app SoR; source supplies the capture (ACS/Teams/upload) | ADR-0068 |
 | [`conversation_segment`](tables/conversation_segment.md) | single-SoR (embedding unit) | app-native (diarized from transcript; the embed/citation unit) | ADR-0068 |
 | [`conversation_insight`](tables/conversation_insight.md) | gold (AI output) | backend Claude analyze stage (per-finding; not vectorized) | ADR-0068 |
+| [`memory_enrichment`](tables/memory_enrichment.md) | single-SoR (app-native) | backend Haiku extraction over memory_drawer verbatim (type/topics/people/action-items) | ADR-0113 |
 | [`campaign`](tables/campaign.md) | single-SoR | website system of record | ADR-0053 |
 | [`workflow`](tables/workflow.md) | single-SoR | website system of record | ADR-0027 |
 | [`lead_score`](tables/lead_score.md) | derived ledger | website (backend/LP scoring pass) | ADR-0073 |

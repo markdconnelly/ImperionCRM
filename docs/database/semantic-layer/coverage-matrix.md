@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-19T00:00:00Z
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -95,6 +95,8 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [meeting](tables/meeting.md) | Knowledge | B | ✅ | meeting follow-up |
 | [conversation](tables/conversation.md) | Knowledge | B (+ gold) | ✅ | conversational intelligence (transcribe→analyze→embed) |
 | [conversation_segment](tables/conversation_segment.md) (embedding unit), [conversation_insight](tables/conversation_insight.md) (AI output) | Knowledge | B / G | ✅ | conversational intelligence; risk/objection → forecasting |
+| memory_drawer (bronze verbatim, 0167/ADR-0113) | Knowledge | bronze | ⏳ | verbatim capture (#303); recall drills gold→bronze |
+| [memory_enrichment](tables/memory_enrichment.md) | Knowledge | B | ✅ | verbatim-memory write-time enrichment (Haiku type/topics/people/action-items; #1199, BE ADR-0086, writer BE #331) |
 
 ## Consent / enrichment / exposure
 
