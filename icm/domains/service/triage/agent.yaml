@@ -1,0 +1,14 @@
+name: triage
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Felix persona -> workflow prose
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../felix.md
+  - ./prose.md
+okf_rooms: [ticket, account, contact, device, cloud_asset, interaction]   # subset of domains/service/room.yaml
+tools: [pg.read, ticket.note]                                             # subset of domains/service/room.yaml
+skills:
+  - ./skills/severity-rubric            # Tier 3 — workflow-local
+  - ./skills/troubleshooting-paths      # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "only the internal operational work-note (ticket.note) at stage 05, when the stage-03 and stage-04 audits are green and the note is internal-only; the next-step proposal and anything customer-facing, financial, or remediating parks for a human in every mode"

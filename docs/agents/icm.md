@@ -226,8 +226,11 @@ channel rules). Developer skills are the engineering canon — see
   **same PR** (docs-gate — the definitions are docs).
 
 Current domains/workflows: see [`icm/domains/`](../../icm/domains/) —
-`sales/lead-response` is the live reference workflow; the other eight domains are
-planned per ADR-0088.
+`sales/lead-response` is the live reference workflow, and `service/triage` is the
+**Felix wedge** (the first agent-staffed workspace: Service, staffed by Felix, with
+a 5-stage event-woken triage workflow — research → asset-status → classify-path →
+troubleshoot → summary-handoff; #1067). The remaining domains are planned per
+ADR-0088; named agents per workspace are the [agent roster](agent-roster.md).
 
 ## Operating rule for working *on* ICM
 
