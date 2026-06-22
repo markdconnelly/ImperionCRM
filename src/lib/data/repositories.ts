@@ -198,6 +198,7 @@ import type {
   ChangeRequestDetail,
   ChangeRequestInput,
   ApprovalDecision,
+  ClientMappingUnit,
 } from "@/types";
 
 /** Editable account fields (create/update forms). */
@@ -2288,6 +2289,13 @@ export interface ConnectionsRepository {
   listAllConnections(): Promise<ConnectionRow[]>;
   /** Connections linked to one account (ADR-0103) — the account-page credentials panel; secret NAMES only. */
   listAccountConnections(accountId: string): Promise<ConnectionRow[]>;
+  /**
+   * The external units of a per-client connector + their current MANUAL `entity_xref` link, for
+   * the Client Mapping surface (ADR-0112, epic #1141). `sourceSystem` selects the connector's
+   * bronze (tracer: 'autotask'); unknown systems return []. Read-only — curation writes go
+   * through the backend (unit D, the web role is SELECT-only on entity_xref, migration 0160).
+   */
+  listClientMappingUnits(sourceSystem: string): Promise<ClientMappingUnit[]>;
   connect(input: ConnectionInput): Promise<void>;
   /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;

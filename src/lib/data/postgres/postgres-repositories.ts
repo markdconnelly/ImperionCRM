@@ -153,6 +153,7 @@ import type {
   CampaignSendRow,
   CommunicationDetail,
   ConnectionRow,
+  ClientMappingUnit,
   ConsentEventRow,
   ContactCrmStage,
   ContactPipelineRow,
@@ -11170,6 +11171,49 @@ export const postgresRepositories: Repositories = {
         return rows.map(mapConnection);
       } catch {
         return mockRepositories.connections.listAccountConnections(accountId);
+      }
+    },
+
+    async listClientMappingUnits(sourceSystem: string): Promise<ClientMappingUnit[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listClientMappingUnits(sourceSystem);
+      // Each connector's units live in its own bronze table; pick it from a whitelist so the
+      // table name is never caller-derived (the source_system value IS parameterized). The
+      // tracer ships Autotask (the only populated source); E3/F add the rest.
+      const BRONZE_BY_SOURCE: Record<string, string> = { autotask: "autotask_companies" };
+      const table = BRONZE_BY_SOURCE[sourceSystem];
+      if (!table) return [];
+      try {
+        // Units + their current MANUAL entity_xref link (the curated spine link, migration 0160);
+        // an automatic resolver link is not shown as "mapped" here — the GUI curates manual links.
+        const { rows } = await pool.query<{
+          source_key: string;
+          name: string | null;
+          mapped_account_id: string | null;
+          mapped_account_name: string | null;
+        }>(
+          `SELECT c.external_ref AS source_key,
+                  COALESCE(c.normalized_silver->>'name', c.payload_bronze->>'companyName',
+                           c.payload_bronze->>'name', c.external_ref) AS name,
+                  x.internal_entity_id::text AS mapped_account_id,
+                  a.name AS mapped_account_name
+             FROM ${table} c
+             LEFT JOIN entity_xref x
+               ON x.entity_type = 'account' AND x.source_system = $1
+              AND x.source_key = c.external_ref AND x.match_method = 'manual'
+             LEFT JOIN account a ON a.id = x.internal_entity_id
+            WHERE c.external_ref IS NOT NULL
+            ORDER BY name`,
+          [sourceSystem],
+        );
+        return rows.map((r) => ({
+          sourceKey: r.source_key,
+          name: r.name ?? r.source_key,
+          mappedAccountId: r.mapped_account_id,
+          mappedAccountName: r.mapped_account_name,
+        }));
+      } catch {
+        return mockRepositories.connections.listClientMappingUnits(sourceSystem);
       }
     },
 
