@@ -45,6 +45,34 @@ flowchart LR
     CAT --> UI["Connector catalog UI<br/>status · cadence · health"]
 ```
 
+## The client-mapping chain (per-client connectors)
+
+Connectors that map onto a **client** (account) — `m365`, `autotask`, `itglue`, `pax8`,
+`myitprocess`, `quotemanager`, `televy`, `darkwebid`, `unifi` (`CLIENT_SCOPED_CONNECTORS`
+in `src/lib/integrations/connector-chain.ts`) — carry a small **4-step pipeline chain** on
+their card, plus an **Edit client mappings** button. System/company-scope connectors (qbo,
+meta, docusign, apollo) show neither — one credential serves the whole org, there is nothing
+per-client to map.
+
+The chain (`connectorChainSteps`, ADR-0112) shows how far that connector has progressed:
+
+| Step | Icon | Done when |
+| --- | --- | --- |
+| **Credential** | key | A credential is custodied (Company-systems ref, or the instance is enabled). |
+| **Ingestion** | download | The collector has pulled the source into bronze at least once. |
+| **Discovery** | scan | Distinct client units (companies / tenants / sites) are visible to map. |
+| **Mapping** | link | Every discovered unit is linked to an Imperion account. |
+
+Tone: green = done · amber = in progress · grey = pending · red = errored. The derivation is
+deliberately honest — a connector whose bronze isn't wired yet shows discovery/mapping as
+**pending**, never a false green. (Step 5, the bronze→silver merge, lives in the Pipeline /
+LocalPipeline planes and is not shown here.)
+
+**Edit client mappings** opens `/settings/client-mapping/<connector>` (the reusable mapping
+surface, epic #1141 unit E). The button appears only when that connector has a mapping
+adapter wired (`autotask` today; `m365` and the rest light up as units E3/F land), so it
+never links to a missing page.
+
 ## What an admin does here
 
 - **Enter / rotate a credential** (Company systems) — write-only secret fields,

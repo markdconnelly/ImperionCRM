@@ -12,6 +12,12 @@ import {
   buildConnectorCatalog,
   GLOBAL_SCOPE,
 } from "@/lib/integrations/connector-catalog";
+import {
+  connectorChainSteps,
+  isClientScopedConnector,
+  type ConnectorChainStep,
+} from "@/lib/integrations/connector-chain";
+import { getClientMappingAdapter } from "@/lib/integrations/client-mapping";
 import { isRefreshable } from "@/lib/integrations/connector-registry";
 import { QBO_CONNECT_NOTICES, isQboConnectResult } from "@/lib/integrations/qbo-connect";
 import {
@@ -88,6 +94,36 @@ export default async function ConnectionsPage({
   // buildConnectorCatalog defaults to GLOBAL_SCOPE — only global-scope instances join.
   const entries = buildConnectorCatalog(listConnectorManifests(), instances, GLOBAL_SCOPE);
 
+  // Client-mapping pipeline chain per client-scoped connector (E2 #1146). The discovery/mapping
+  // counts come from the same whitelisted bronze⋈entity_xref read the mapping page uses, so only
+  // connectors with a wired adapter (autotask today; m365/F later) incur a query — the rest report
+  // unknown counts and the chain shows them as pending, never a false green.
+  const clientScoped = entries.filter((e) => isClientScopedConnector(e.manifest.key));
+  const summaries = await Promise.all(
+    clientScoped.map(async (e) => {
+      const adapter = getClientMappingAdapter(e.manifest.key);
+      if (!adapter) return [e.manifest.key, null] as const;
+      const units = await connections.listClientMappingUnits(adapter.sourceSystem);
+      return [
+        e.manifest.key,
+        { discovered: units.length, mapped: units.filter((u) => u.mappedAccountId).length },
+      ] as const;
+    }),
+  );
+  const summaryByKey = new Map(summaries);
+  const chains: Record<string, ConnectorChainStep[]> = {};
+  for (const e of clientScoped) {
+    const cred = companyByProvider.get(e.manifest.key) ?? null;
+    const summary = summaryByKey.get(e.manifest.key) ?? null;
+    chains[e.manifest.key] = connectorChainSteps({
+      hasCredential: e.connected || !!cred?.keyvaultSecretRef,
+      instanceStatus: e.instance?.status ?? null,
+      lastSyncAt: e.instance?.lastSyncAt ?? cred?.lastSync ?? null,
+      unitsDiscovered: summary ? summary.discovered : null,
+      unitsMapped: summary ? summary.mapped : null,
+    });
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -138,7 +174,7 @@ export default async function ConnectionsPage({
             Company systems above; this grid never stores a secret.
           </p>
         </div>
-        <ConnectorCatalog entries={entries} />
+        <ConnectorCatalog entries={entries} chains={chains} />
       </section>
     </div>
   );

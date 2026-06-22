@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import {
   groupCatalogByCategory,
@@ -9,6 +10,12 @@ import {
   type ConnectorCatalogEntry,
   type StatusTone,
 } from "@/lib/integrations/connector-catalog";
+import {
+  isClientScopedConnector,
+  type ChainStepStatus,
+  type ConnectorChainStep,
+} from "@/lib/integrations/connector-chain";
+import { getClientMappingAdapter } from "@/lib/integrations/client-mapping";
 import {
   enableConnectorAction,
   setConnectorCadenceAction,
@@ -40,9 +47,50 @@ function healthSummary(health: Record<string, unknown>): string | null {
   return typeof msg === "string" && msg.trim() ? msg : null;
 }
 
-function ConnectorCard({ entry }: { entry: ConnectorCatalogEntry }) {
+/** Chain-step badge classes per derived status (same dark token palette as StatusBadge). */
+const CHAIN_TONE: Record<ChainStepStatus, string> = {
+  done: "border-green/40 bg-green/10 text-green",
+  active: "border-amber/40 bg-amber/10 text-amber",
+  pending: "border-border bg-panel-2 text-dim",
+  blocked: "border-red/40 bg-red/10 text-red",
+};
+
+/**
+ * The 4-step "client pipeline" chain (credential · ingestion · discovery · mapping, E2 #1146).
+ * Each step is an icon tinted by its derived status; the connector tail (silver-merge) links out
+ * elsewhere. Tooltips carry a short non-secret detail. Only rendered for client-scoped connectors.
+ */
+function ChainIcons({ steps }: { steps: ConnectorChainStep[] }) {
+  return (
+    <div className="flex items-center gap-1" aria-label="Client mapping pipeline status">
+      {steps.map((step, i) => (
+        <div key={step.key} className="flex items-center gap-1">
+          <span
+            title={`${step.label}: ${step.detail}`}
+            className={`flex h-6 w-6 items-center justify-center rounded-md border ${CHAIN_TONE[step.status]}`}
+          >
+            <Icon name={step.icon} size={12} />
+          </span>
+          {i < steps.length - 1 && <span className="h-px w-2 bg-border" aria-hidden="true" />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ConnectorCard({
+  entry,
+  chain,
+}: {
+  entry: ConnectorCatalogEntry;
+  chain?: ConnectorChainStep[];
+}) {
   const { manifest, instance, connected, effectiveCadenceMinutes } = entry;
   const health = instance ? healthSummary(instance.health) : null;
+  // Client-scoped connectors carry the mapping chain + Edit affordance; the Edit button only
+  // shows when an adapter exists (else it would link to a 404 — autotask only today, E3/F add more).
+  const clientScoped = isClientScopedConnector(manifest.key);
+  const mappingAdapter = clientScoped ? getClientMappingAdapter(manifest.key) : null;
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-panel p-4">
@@ -97,8 +145,30 @@ function ConnectorCard({ entry }: { entry: ConnectorCatalogEntry }) {
         )}
       </dl>
 
+      {/* Client pipeline chain — credential · ingestion · discovery · mapping (E2 #1146) */}
+      {clientScoped && chain && (
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-dim">
+              Client mapping
+            </span>
+            <ChainIcons steps={chain} />
+          </div>
+          {mappingAdapter && (
+            <Link
+              href={`/settings/client-mapping/${manifest.key}`}
+              className="rounded-md border border-border bg-panel-2 px-2.5 py-1 text-xs text-text transition-colors hover:border-accent"
+            >
+              Edit client mappings
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+      <div
+        className={`flex flex-wrap items-center gap-2 pt-3 ${clientScoped && chain ? "" : "mt-auto border-t border-border/60"}`}
+      >
         {!connected ? (
           <form action={enableConnectorAction}>
             <input type="hidden" name="connectorKey" value={manifest.key} />
@@ -149,8 +219,17 @@ function ConnectorCard({ entry }: { entry: ConnectorCatalogEntry }) {
  * The connector catalog grid (#416). Browses every manifest joined to its instance,
  * grouped by category. Enable/configure/disable post to the `settings:write`-gated
  * server actions. No credential is collected here — see the page-level notice.
+ *
+ * `chains` carries the per-connector 4-step client-mapping pipeline (E2 #1146), computed
+ * server-side for client-scoped connectors; a card renders its chain when present.
  */
-export function ConnectorCatalog({ entries }: { entries: ConnectorCatalogEntry[] }) {
+export function ConnectorCatalog({
+  entries,
+  chains,
+}: {
+  entries: ConnectorCatalogEntry[];
+  chains?: Record<string, ConnectorChainStep[]>;
+}) {
   const groups = groupCatalogByCategory(entries);
 
   return (
@@ -172,7 +251,11 @@ export function ConnectorCatalog({ entries }: { entries: ConnectorCatalogEntry[]
           </h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {group.entries.map((entry) => (
-              <ConnectorCard key={entry.manifest.key} entry={entry} />
+              <ConnectorCard
+                key={entry.manifest.key}
+                entry={entry}
+                chain={chains?.[entry.manifest.key]}
+              />
             ))}
           </div>
         </section>
