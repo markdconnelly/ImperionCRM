@@ -87,12 +87,52 @@ const services = {
   },
 } satisfies Record<string, ServiceDescriptor>;
 
+/** ADR-0055 action tiers, lowest authority first (mirrors AutonomyTier). */
+export type ProposedActionTier = "T0" | "T1" | "T2" | "T3";
+
+/**
+ * The orchestrator's generalized proposed-action envelope (backend #282, slice 1 of
+ * BE #263). `kind` names the catalog action (e.g. `send_email`, `update_ticket`,
+ * `log_time`); `input` is the EXACT payload `POST /agent/actions/execute` consumes —
+ * the web app forwards it VERBATIM, never remapping its fields (issue #1130). `tier` +
+ * `dataClass` drive the approval surface's gating/labelling; `delivery`/`consentOk`/
+ * `targetContactId` are comms-projection hints carried for the legacy send path.
+ */
+export interface ProposedAction {
+  /** Catalog action kind, e.g. "send_email" | "send_sms" | "update_ticket" | "log_time". */
+  kind: string;
+  /** The verbatim execute payload — forwarded as `action` to /agent/actions/execute, untouched. */
+  input: Record<string, unknown>;
+  /** ADR-0055 action tier — drives the autonomy ceiling + the approval-surface badge. */
+  tier: ProposedActionTier;
+  /** Coarse data sensitivity class (ADR-0016 RLS), e.g. "operational" | "client_pii" | "financial". */
+  dataClass: string;
+  /** Resolved delivery hints for a comms send (recipient address, sender connection). */
+  delivery?: { to?: string; fromConnectionId?: string };
+  /** Why the agent proposed this — shown to the approver. */
+  rationale?: string;
+  /** Pre-checked consent for a comms send (the backend re-asserts at execution, ADR-0058). */
+  consentOk?: boolean;
+  /** The silver `contact` the action targets, when applicable. */
+  targetContactId?: string;
+}
+
 /** The orchestrator's reply shape (backend ADR-0032/0036 wire contract). */
 export interface AgentReply {
   text: string;
   routedTo: string;
   routingReason: string;
   requiresApproval?: boolean;
+  /**
+   * The generalized proposed-action envelope (backend #282). Each entry's `input` is the
+   * verbatim execute payload. This is the surface the approval UI consumes (#1130).
+   */
+  proposedActions?: ProposedAction[];
+  /**
+   * Legacy single-action comms projection (`{ kind, contactId, channel, body }`), present
+   * only when the first action is a comms send. Kept for back-compat ONLY; the FE no longer
+   * relies on it (#1130). Dropping it on the backend is a coordinated BE follow-up.
+   */
   proposedAction?: { kind: string; contactId: string; channel: string; body: string };
   conversationId?: string;
 }
@@ -177,6 +217,26 @@ export const agentService = {
     fromConnectionId?: string;
   }) =>
     callService<{ channel: "email" | "sms"; interactionId?: string }>(
+      services.agent,
+      "/agent/actions/execute",
+      { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
+    ),
+
+  /**
+   * Execute a generalized agent-PROPOSED action (issue #1130) against the same
+   * approval-gated executor as {@link executeAction} (backend POST /agent/actions/execute,
+   * the ONLY send path — backend ADR-0033). Unlike the human-composer path, the
+   * orchestrator already resolved the action's full payload, so the web app forwards
+   * `action: proposedActions[i].input` VERBATIM — no field remapping, no recipient/connection
+   * resolution here. `approval` carries the human approver (ADR-0055 — the operator who
+   * clicked Approve); the backend re-asserts consent at execution (403 consent_denied).
+   */
+  executeProposedAction: (input: {
+    /** The envelope's `input` — the exact execute payload, forwarded untouched. */
+    action: Record<string, unknown>;
+    approval: { approvedByUserId: string; approved: true };
+  }) =>
+    callService<{ channel?: "email" | "sms"; interactionId?: string }>(
       services.agent,
       "/agent/actions/execute",
       { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },

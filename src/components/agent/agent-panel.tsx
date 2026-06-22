@@ -5,6 +5,8 @@ import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/icon";
 import { askAgentAction } from "@/lib/agent/ask-action";
 import { useAgentSession } from "@/components/agent/agent-session-context";
+import { ProposedActionCard } from "@/components/agent/proposed-action-card";
+import type { ProposedAction } from "@/lib/services";
 
 /**
  * The right-hand orchestrator panel — LIVE against the backend's Claude tool-use loop
@@ -16,6 +18,10 @@ import { useAgentSession } from "@/components/agent/agent-session-context";
  */
 export function AgentPanel({ onCollapse }: { onCollapse: () => void }) {
   const { messages, addMessages, conversationId } = useAgentSession();
+  // Proposed-action envelopes (#1130) keyed by the agent message they accompany. Kept local
+  // (not in the persisted session) — these are transient approval affordances; the durable
+  // queue is the technician cockpit (#1014). AgentMessage stays untouched (shared hot type).
+  const [actionsByMsg, setActionsByMsg] = useState<Record<string, ProposedAction[]>>({});
   const [draft, setDraft] = useState("");
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -27,9 +33,11 @@ export function AgentPanel({ onCollapse }: { onCollapse: () => void }) {
     addMessages([{ id: crypto.randomUUID(), role: "user", text: message }]);
     startTransition(async () => {
       const reply = await askAgentAction(message, conversationId());
+      const replyId = crypto.randomUUID();
+      const hasActions = (reply.proposedActions?.length ?? 0) > 0;
       addMessages([
-        { id: crypto.randomUUID(), role: "agent", text: reply.text },
-        ...(reply.requiresApproval
+        { id: replyId, role: "agent", text: reply.text },
+        ...(reply.requiresApproval && !hasActions
           ? [{
               id: crypto.randomUUID(),
               role: "agent" as const,
@@ -37,6 +45,9 @@ export function AgentPanel({ onCollapse }: { onCollapse: () => void }) {
             }]
           : []),
       ]);
+      if (hasActions) {
+        setActionsByMsg((prev) => ({ ...prev, [replyId]: reply.proposedActions! }));
+      }
       requestAnimationFrame(() =>
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }),
       );
@@ -61,16 +72,20 @@ export function AgentPanel({ onCollapse }: { onCollapse: () => void }) {
 
       <div ref={scrollRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
         {messages.map((m) => (
-          <div
-            key={m.id}
-            className={cn(
-              "max-w-[90%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm leading-relaxed",
-              m.role === "agent"
-                ? "self-start bg-panel-2 text-text"
-                : "self-end bg-accent/15 text-text"
-            )}
-          >
-            {m.text}
+          <div key={m.id} className="contents">
+            <div
+              className={cn(
+                "max-w-[90%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm leading-relaxed",
+                m.role === "agent"
+                  ? "self-start bg-panel-2 text-text"
+                  : "self-end bg-accent/15 text-text"
+              )}
+            >
+              {m.text}
+            </div>
+            {actionsByMsg[m.id]?.map((action, i) => (
+              <ProposedActionCard key={`${m.id}-${i}`} action={action} />
+            ))}
           </div>
         ))}
         {isPending && (
