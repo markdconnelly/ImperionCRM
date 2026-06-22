@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { pickDial, resolveDispatch, type DialLike } from "./action-dispatch";
 import { registerActionDef, type ActionDef } from "./action-catalog";
+import { emptyEarnedRecord, type EarnedRecord } from "./earned-autonomy";
 
 /**
  * Pins the dispatch-resolution contract (#996 / 2E, ADR-0107 D4/D5, ADR-0109): the pure
@@ -151,6 +152,96 @@ describe("resolveDispatch — a freshly registered action is dispatched by the c
     expect(r.cataloged).toBe(true);
     expect(r.tier).toBe("T1");
     expect(r.resolvedCeiling).toBe("T1");
+    expect(r.decision).toBe("execute");
+  });
+});
+
+describe("resolveDispatch — earned / graduated autonomy (#1036, ADR-0121)", () => {
+  // A non-always-gate (operational) T2 action — the class earned autonomy CAN graduate.
+  const OPS_T2: ActionDef = {
+    kind: "earned_ops_action",
+    label: "Earned ops fixture",
+    tier: "T2",
+    dataClass: "operational",
+    consentClass: "none",
+    executor: "noop",
+    schema: {},
+  };
+  registerActionDef(OPS_T2);
+
+  const earned = (over: Partial<EarnedRecord>): EarnedRecord => ({
+    ...emptyEarnedRecord("sales", "earned_ops_action"),
+    ...over,
+  });
+
+  it("no earned record ⇒ pure dial behavior, unchanged (backward compatible)", () => {
+    // L1 (T0 ceiling), a T2 ops action routes to the cockpit — exactly as before #1036.
+    const r = resolveDispatch("earned_ops_action", "sales", [dial("sales", "*", 1)]);
+    expect(r.earnedTier).toBeNull();
+    expect(r.effectiveCeiling).toBe("T0");
+    expect(r.decision).toBe("cockpit");
+  });
+
+  it("an earned T2 tier RAISES the ceiling so a T2 ops action executes inline at L1", () => {
+    const r = resolveDispatch(
+      "earned_ops_action",
+      "sales",
+      [dial("sales", "*", 1)],
+      earned({ earnedTier: "T2" }),
+    );
+    expect(r.earnedTier).toBe("T2");
+    expect(r.effectiveCeiling).toBe("T2"); // max(dial T0, earned T2)
+    expect(r.hardGated).toBe(false);
+    expect(r.decision).toBe("execute");
+    expect(r.routesToCockpit).toBe(false);
+  });
+
+  it("an earned record keyed to a DIFFERENT class/agent never leaks autonomy", () => {
+    const wrongClass = { ...earned({ earnedTier: "T3" }), actionClass: "some_other_action" };
+    const r = resolveDispatch("earned_ops_action", "sales", [dial("sales", "*", 1)], wrongClass);
+    expect(r.earnedTier).toBeNull(); // record didn't key this action
+    expect(r.decision).toBe("cockpit");
+  });
+
+  it("the earned raise never LOWERS the dial (dial already higher wins)", () => {
+    // L4 (T3 ceiling) + a meagre earned T0: stays at the dial's execute_notify, not lowered.
+    const r = resolveDispatch(
+      "earned_ops_action",
+      "sales",
+      [dial("sales", "*", 4)],
+      earned({ earnedTier: "T0" }),
+    );
+    expect(r.effectiveCeiling).toBe("T3");
+    expect(r.decision).toBe("execute_notify");
+  });
+});
+
+describe("resolveDispatch — HARD CEILING invariant (always-gate class never auto-crossed)", () => {
+  // send_email is a real built-in T2, client_pii (always-gate) action.
+  const earnedSend = (tier: EarnedRecord["earnedTier"]): EarnedRecord => ({
+    ...emptyEarnedRecord("sales", "send_email"),
+    earnedTier: tier,
+  });
+
+  it("a maxed-out earned T3 record does NOT let a client_pii send execute inline at L1", () => {
+    const r = resolveDispatch("send_email", "sales", [dial("sales", "*", 1)], earnedSend("T3"));
+    expect(r.hardGated).toBe(true);
+    expect(r.earnedTier).toBe("T3"); // the capability exists…
+    expect(r.effectiveCeiling).toBe("T0"); // …but the earned raise is DISCARDED
+    expect(r.decision).toBe("cockpit"); // ALWAYS surfaces — the invariant
+  });
+
+  it("the always-gate cap holds at EVERY dial level below the action's tier", () => {
+    for (const level of [1, 2] as const) {
+      const r = resolveDispatch("send_email", "sales", [dial("sales", "*", level)], earnedSend("T3"));
+      expect(r.decision).toBe("cockpit");
+    }
+  });
+
+  it("an EXPLICIT operator dial (not earned) is still honored for an always-gate class", () => {
+    // A human deliberately setting L3 (T2) is the operator's call, not earned autonomy — honored.
+    const r = resolveDispatch("send_email", "sales", [dial("sales", "*", 3)], earnedSend("T3"));
+    expect(r.effectiveCeiling).toBe("T2"); // the dial, not the earned raise
     expect(r.decision).toBe("execute");
   });
 });

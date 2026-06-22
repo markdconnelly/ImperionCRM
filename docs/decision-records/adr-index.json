@@ -1591,5 +1591,20 @@
     "file": "ADR-0120-eval-feedback-loop-pii-safe-harvest.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0121",
+    "title": "Earned / graduated autonomy with hard ceilings",
+    "status": "proposed",
+    "date": "2026-06-22",
+    "tags": [
+      "meta",
+      "agents",
+      "security"
+    ],
+    "summary": "Layer EARNED autonomy onto the 1-5 actuation dial (ADR-0109): an agent that builds a clean eval + approval track record on an action class auto-promotes its effective ADR-0055 tier ceiling one tier at a time, fully audited, and INSTANTLY demotes to the operator dial floor on a single miss. The always-surface data_class.always_gate classes (money / credentials / customer-facing, ADR-0118) are a HARD CEILING: the earned raise is discarded for them, so no track record can auto-cross a standing Mark-gate. resolveDispatch (ADR-0109 amendment) enforces effectiveCeiling = max(dial ceiling, earned tier), capped to the dial alone for always-gate classes.",
+    "file": "ADR-0121-earned-graduated-autonomy-hard-ceilings.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
