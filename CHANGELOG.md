@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.24.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.23.0...imperion-crm-v0.24.0) (2026-06-22)
+
+
+### Features
+
+* **agents:** agent_event durable wake-event inbox ([#998](https://github.com/markdconnelly/ImperionCRM/issues/998)) ([#1131](https://github.com/markdconnelly/ImperionCRM/issues/1131)) ([a03ae64](https://github.com/markdconnelly/ImperionCRM/commit/a03ae646b5c2c3e08804fdb8d8813c1c50697ded))
+* **agents:** per-agent 1-5 actuation autonomy slider ([#1013](https://github.com/markdconnelly/ImperionCRM/issues/1013)) ([#1128](https://github.com/markdconnelly/ImperionCRM/issues/1128)) ([ce86cdf](https://github.com/markdconnelly/ImperionCRM/commit/ce86cdf00b00638306daf0a051ad0d46ce9dac29))
+* **client-mapping:** Client Mapping foundation — ADR-0112 + term + account_tenant→entity_xref backfill ([#1142](https://github.com/markdconnelly/ImperionCRM/issues/1142)) ([#1145](https://github.com/markdconnelly/ImperionCRM/issues/1145)) ([92ecb43](https://github.com/markdconnelly/ImperionCRM/commit/92ecb4383240e96285a9f8dea0ec6c457194e707))
+* **client-mapping:** connector card chain-icons + Edit-mappings button ([#1146](https://github.com/markdconnelly/ImperionCRM/issues/1146)) ([#1151](https://github.com/markdconnelly/ImperionCRM/issues/1151)) ([332f149](https://github.com/markdconnelly/ImperionCRM/commit/332f14931c97a52c4b8a4f5c131624d82c5314ee))
+* **client-mapping:** M365 adapter + retire /settings/tenant-mapping ([#1147](https://github.com/markdconnelly/ImperionCRM/issues/1147)) ([#1159](https://github.com/markdconnelly/ImperionCRM/issues/1159)) ([200a033](https://github.com/markdconnelly/ImperionCRM/commit/200a03388341ff2d8c2cdde9c874e254a0c2c947))
+* **client-mapping:** remaining connector adapters — itglue/pax8/kqm/televy/myitprocess/unifi ([#1144](https://github.com/markdconnelly/ImperionCRM/issues/1144)) ([#1162](https://github.com/markdconnelly/ImperionCRM/issues/1162)) ([6eb8294](https://github.com/markdconnelly/ImperionCRM/commit/6eb82940ca47f21bcaaed2b6641df028e1a1d5a4))
+* **client-mapping:** reusable Client Mapping page + Autotask tracer adapter ([#1143](https://github.com/markdconnelly/ImperionCRM/issues/1143)) ([#1149](https://github.com/markdconnelly/ImperionCRM/issues/1149)) ([faa1269](https://github.com/markdconnelly/ImperionCRM/commit/faa1269bec0dc5d40f97aa07855b6320932de22f))
+* **db:** hybrid-search substrate on gold vector store ([#1153](https://github.com/markdconnelly/ImperionCRM/issues/1153)) ([#1158](https://github.com/markdconnelly/ImperionCRM/issues/1158)) ([35ef63d](https://github.com/markdconnelly/ImperionCRM/commit/35ef63d4b7c1265e074df967bbe229b34d92b5e8))
+* **db:** memory_drawer bronze (non-agent verbatim) + revise ADR-0113 ([#1163](https://github.com/markdconnelly/ImperionCRM/issues/1163)) ([#1165](https://github.com/markdconnelly/ImperionCRM/issues/1165)) ([fc64856](https://github.com/markdconnelly/ImperionCRM/commit/fc6485619614d5ef1f1a507f532dccad401bcc53))
+* **db:** seed Technician autonomous-path action grants ([#1193](https://github.com/markdconnelly/ImperionCRM/issues/1193)) ([#1194](https://github.com/markdconnelly/ImperionCRM/issues/1194)) ([649185b](https://github.com/markdconnelly/ImperionCRM/commit/649185b8db94c00499fd6c4246ef4406a33fd4f8))
+* **eval-ci:** commit technician suite baseline ([#1195](https://github.com/markdconnelly/ImperionCRM/issues/1195)) ([#1196](https://github.com/markdconnelly/ImperionCRM/issues/1196)) ([15613ac](https://github.com/markdconnelly/ImperionCRM/commit/15613ac389cf62c9a4b98896b219bc1962bd4efb))
+* **eval:** golden cases for Technician Autotask write actions ([#1191](https://github.com/markdconnelly/ImperionCRM/issues/1191)) ([#1192](https://github.com/markdconnelly/ImperionCRM/issues/1192)) ([f762d51](https://github.com/markdconnelly/ImperionCRM/commit/f762d5140d4b62cfb1e9979beadbba375302d343))
+* **icm:** define Service workspace + Felix + triage workflow ([#1067](https://github.com/markdconnelly/ImperionCRM/issues/1067)) ([#1150](https://github.com/markdconnelly/ImperionCRM/issues/1150)) ([0a95dd1](https://github.com/markdconnelly/ImperionCRM/commit/0a95dd1f7648fae947a27134d23460486e0670a8))
+* **memory:** Curated Vault sync substrate + Personal Curator god-view ([#1157](https://github.com/markdconnelly/ImperionCRM/issues/1157)) ([#1171](https://github.com/markdconnelly/ImperionCRM/issues/1171)) ([6c81896](https://github.com/markdconnelly/ImperionCRM/commit/6c818968aafdb8141941b6c3f67035cad7c320f7))
+* **memory:** deterministic gold hybrid-ranker query-path ([#1166](https://github.com/markdconnelly/ImperionCRM/issues/1166)) ([#1167](https://github.com/markdconnelly/ImperionCRM/issues/1167)) ([41ab0f8](https://github.com/markdconnelly/ImperionCRM/commit/41ab0f840ad3e948d488f572dd821337e79c55b8))
+* **memory:** personal-tier temporal knowledge graph ([#1155](https://github.com/markdconnelly/ImperionCRM/issues/1155)) ([#1168](https://github.com/markdconnelly/ImperionCRM/issues/1168)) ([74978a0](https://github.com/markdconnelly/ImperionCRM/commit/74978a063ee85059fc2e204a2f073f6e89dff9ea))
+* **memory:** Universal Memory MCP contract — ADR-0116 + agent_slug attribution ([#1170](https://github.com/markdconnelly/ImperionCRM/issues/1170)) ([#1172](https://github.com/markdconnelly/ImperionCRM/issues/1172)) ([26df470](https://github.com/markdconnelly/ImperionCRM/commit/26df470a856a4a6ae6f0991a480b2978fc2fc5c9))
+
+
+### Bug Fixes
+
+* **branding:** rename "Imperion Business Manager" to "Imperion OS" in UI ([#1135](https://github.com/markdconnelly/ImperionCRM/issues/1135)) ([#1136](https://github.com/markdconnelly/ImperionCRM/issues/1136)) ([032769b](https://github.com/markdconnelly/ImperionCRM/commit/032769b09774cbb0b54a854298efe005e405e639))
+* **memory:** renumber migration 0169→0170 (collision with [#1157](https://github.com/markdconnelly/ImperionCRM/issues/1157)) ([#1170](https://github.com/markdconnelly/ImperionCRM/issues/1170)) ([#1175](https://github.com/markdconnelly/ImperionCRM/issues/1175)) ([e1b66d2](https://github.com/markdconnelly/ImperionCRM/commit/e1b66d2bd54498a047591fe598c7a22a3b4f8bb9))
+
 ## [0.23.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.22.0...imperion-crm-v0.23.0) (2026-06-21)
 
 
