@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Grounding-conflict + domain-owner data layer (#1035, ADR-01XX). Pins that every op routes
+ * Grounding-conflict + domain-owner data layer (#1035, ADR-0119). Pins that every op routes
  * through withIdentity, reads compose filters with positional params, raise inserts the conflict
  * AND ledgers it, resolve only touches an OPEN row (stamping the resolver) AND ledgers it, and the
  * registry reads/writes round-trip. Same pool-seam mock style as personal-vault-sync.test.ts.

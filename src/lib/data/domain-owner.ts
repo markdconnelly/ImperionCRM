@@ -1,5 +1,5 @@
 /**
- * `domain_owner` data layer — the domain-owner registry (#1035, ADR-01XX): per concept/domain →
+ * `domain_owner` data layer — the domain-owner registry (#1035, ADR-0119): per concept/domain →
  * the business owner who resolves grounding conflicts in that domain (with a fallback role so an
  * unassigned domain still routes somewhere). Company-tier reference/config (archetype H): broad
  * employee read, admin-managed writes.

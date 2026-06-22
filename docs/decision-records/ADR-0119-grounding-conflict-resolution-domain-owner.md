@@ -12,7 +12,7 @@ tags: [meta, agents, knowledge-tiers]
 
 > **Number is a placeholder.** ADR-0119 is claimed at MERGE per system CLAUDE.md §10.3 — the
 > branch that merges second renumbers. The migration is authored as
-> `0176_grounding_conflict_domain_owner.sql` against a placeholder number likewise.
+> `0178_grounding_conflict_domain_owner.sql` against a placeholder number likewise.
 
 | Field | Value |
 |---|---|

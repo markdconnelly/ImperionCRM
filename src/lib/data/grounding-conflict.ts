@@ -1,6 +1,6 @@
 /**
  * `grounding_conflict` data layer — the company-tier grounding-conflict resolution workflow
- * (#1035, ADR-01XX, agentic-OS contract decision 4). The company-tier twin of
+ * (#1035, ADR-0119, agentic-OS contract decision 4). The company-tier twin of
  * `personal_contradiction` (0169): a tri-tier disagreement (canon/OKF vs company silver vs
  * personal) raised at grounding time, routed to its `domain_owner`, resolved by the owner —
  * never auto-resolved, every action ledgered.

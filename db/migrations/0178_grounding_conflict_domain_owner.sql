@@ -1,8 +1,5 @@
--- 0176: Grounding-conflict resolution workflow + domain-owner registry (#1035, parent #1033,
--- ADR-01XX, agentic-OS contract 2026-06-21 decision 4 — grounding-conflict → owner resolution).
--- Migration number 0176 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
--- placeholder; the rebased branch takes the next free number just before squash. The ADR number
--- is likewise a placeholder.
+-- 0178: Grounding-conflict resolution workflow + domain-owner registry (#1035, parent #1033,
+-- ADR-0119, agentic-OS contract 2026-06-21 decision 4 — grounding-conflict → owner resolution).
 --
 -- WHY THIS EXISTS. At grounding time the orchestrator draws on three knowledge tiers (ADR-0114 /
 -- #966): canon/OKF (the curated meaning layer, ADR-0086), company silver (the merged tier), and

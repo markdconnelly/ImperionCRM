@@ -1,5 +1,5 @@
 /**
- * Grounding-time authority resolution (#1035, ADR-01XX, agentic-OS contract decision 4).
+ * Grounding-time authority resolution (#1035, ADR-0119, agentic-OS contract decision 4).
  *
  * When the orchestrator grounds an answer it may draw on three knowledge tiers (ADR-0114 / #966):
  *   - **canon / OKF**       — the curated meaning layer (ADR-0086): definitions, source-of-record,
