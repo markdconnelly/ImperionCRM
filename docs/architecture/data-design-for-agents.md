@@ -161,6 +161,20 @@ a recalled summary traces back to its source rows and through bronze to its orig
 RAG **over a curated, provenanced substrate**, not over a pile of scraped text — the
 single biggest lever on whether an agent hallucinates from noise.
 
+**Verbatim recall, the second-brain way** ([ADR-0113](../decision-records/ADR-0113-verbatim-memory-tier.md)).
+A summary answers "tell me about X"; it cannot answer "what *exactly* did the client say,"
+"what did I decide, in my words," or "what were the agent's exact steps." So verbatim turns
+live in **bronze**, split by origin — agent-run transcripts in the Jarvis ledger
+(`agent_message`), non-agent notes & captured human conversations in `memory_drawer` — raw,
+never summarized — while the **summary of each conversation lives in gold** (a
+`knowledge_object` with `entity_ref=conversation_id`, embedded and hybrid-searchable).
+Retrieval is
+**two-level**: hybrid-search the dense gold summaries, then **drill via the reference** to
+the faithful verbatim turns only when the exact words matter. The reference between the two
+is the point — search stays cheap and few, recall stays faithful and complete. This is the
+MemPalace verbatim-recall capability, expressed natively in the medallion (bronze raw + gold
+index + a reference) instead of a bolt-on store with its own vector space.
+
 ### 3.4 Identity-scoped memory — the RLS spine + knowledge tiers
 
 **An agent's memory must have boundaries enforced where the data lives, not where the app

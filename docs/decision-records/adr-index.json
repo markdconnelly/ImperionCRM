@@ -1466,7 +1466,7 @@
   },
   {
     "adr": "0113",
-    "title": "Verbatim memory tier — agent recall alongside gold summaries",
+    "title": "Verbatim memory — bronze turns, gold summaries, drill-down recall",
     "status": "proposed",
     "date": "2026-06-21",
     "tags": [
@@ -1476,7 +1476,7 @@
       "memory",
       "security"
     ],
-    "summary": "Introduce a verbatim memory tier (memory_drawer) that stores conversation/agent turns ORIGINAL-text, never summarized, recalled via the hybrid ranker — amending the 'agents consume Gold only' principle so the orchestrator can drill from gold summaries down to verbatim source. Wing/room scoping over the two-axis RLS access spine; capture is a backend process, vectorization is LocalPipeline; PII-bearing, RLS is the control, out of OKF.",
+    "summary": "Verbatim memory is bronze, split by origin: agent-run transcripts stay in the existing agent_conversation/agent_run/agent_message ledger (0056/0163); a new memory_drawer holds NON-agent verbatim (user notes + captured human conversations). Neither is summarized in place. The SUMMARY of each conversation lives in gold (knowledge_object, entity_ref=conversation_id, embedded + hybrid-searchable via 0166). Retrieval is two-level: search the gold summary, then drill to the verbatim bronze rows (memory_drawer or agent_message) via the reference. Amends §4 'consume Gold only' to 'reason/search over Gold; drill to bronze verbatim via references for faithful recall.' Two-axis RLS (ADR-0105); capture=backend, summary embedding=LocalPipeline; PII-bearing, RLS is the control, out of OKF.",
     "file": "ADR-0113-verbatim-memory-tier.md",
     "superseded_by": [],
     "consolidated_into": null
