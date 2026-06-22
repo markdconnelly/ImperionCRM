@@ -2210,6 +2210,19 @@ export interface UnmappedTenant {
 }
 
 /**
+ * One external unit of a per-client connector (a company / tenant / site) as seen on the
+ * Client Mapping surface (ADR-0112, epic #1141). `sourceKey` is the unit's id within its source
+ * system (e.g. an Autotask company id); `mappedAccountId` is the current **manual** `entity_xref`
+ * link (null = unmapped). A source identifier — never PII, never a secret.
+ */
+export interface ClientMappingUnit {
+  sourceKey: string;
+  name: string;
+  mappedAccountId: string | null;
+  mappedAccountName: string | null;
+}
+
+/**
  * One mapped Customer Tenant's posture rollup (silver `tenant_posture`, ADR-0051).
  * A mapped tenant with no rollup yet still surfaces — every numeric field is then
  * null/zero and `refreshedAt` is null ("not refreshed" is a state, not an absence).

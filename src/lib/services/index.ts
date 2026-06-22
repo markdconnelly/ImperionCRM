@@ -683,6 +683,45 @@ export const connectionsService = {
 };
 
 /**
+ * Client Mapping write path (ADR-0112, epic #1141 unit E → backend unit D). The web role is
+ * SELECT-only on `entity_xref` (migration 0160), so curating a manual identity link
+ * (connector unit → account) is proxied through the backend. For per-client-credential
+ * connectors (m365/unifi) the caller passes `connectionId` so the backend also keeps
+ * `connection.account_id` consistent in the same transaction. 501 when the backend isn't
+ * configured → the UI degrades. The browser never calls this — the web app proxies server-side
+ * (ADR-0028/0035).
+ */
+export const clientMappingService = {
+  /** Upsert a manual link → backend `POST /connections/client-mapping`. */
+  link: (input: {
+    entityType?: "account" | "contact" | "device" | "asset" | "opportunity";
+    sourceSystem: string;
+    sourceKey: string;
+    internalEntityId: string;
+    connectionId?: string;
+    actingUserId?: string;
+  }) =>
+    callService<{ id: string; linkedConnectionId?: string }>(
+      services.integration,
+      "/connections/client-mapping",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+
+  /** Remove a manual link → backend `DELETE /connections/client-mapping`. */
+  unlink: (input: {
+    entityType?: "account" | "contact" | "device" | "asset" | "opportunity";
+    sourceSystem: string;
+    sourceKey: string;
+    actingUserId?: string;
+  }) =>
+    callService<{ deleted: boolean }>(
+      services.integration,
+      "/connections/client-mapping",
+      { method: "DELETE", body: JSON.stringify(input) },
+    ),
+};
+
+/**
  * Company credential / secret store (ADR-0036). The backend is the only thing that
  * writes secrets to Key Vault (CLAUDE.md §5 / ADR-0028 isolation); this repo just
  * hands it the entered fields and gets back a Key Vault reference — the secret never

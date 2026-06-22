@@ -1645,6 +1645,16 @@ export const mockRepositories: Repositories = {
       // Connections linked to one account (ADR-0103) — the account-page panel. Names only.
       return [...clientConnections, ...companyConnections].filter((c) => c.accountId === accountId);
     },
+    async listClientMappingUnits(sourceSystem: string) {
+      // Client Mapping units (ADR-0112) — a small Autotask fixture so the surface renders without
+      // a DB: one already mapped, two unmapped (one name-matches an account → suggestion).
+      if (sourceSystem !== "autotask") return [];
+      return [
+        { sourceKey: "AT-1001", name: "Acme Corp", mappedAccountId: "a1", mappedAccountName: "Acme Corp" },
+        { sourceKey: "AT-1002", name: "Globex", mappedAccountId: null, mappedAccountName: null },
+        { sourceKey: "AT-1003", name: "Initech", mappedAccountId: null, mappedAccountName: null },
+      ];
+    },
     async connect() {
       throw new Error(NO_DB);
     },
