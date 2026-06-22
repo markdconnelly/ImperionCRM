@@ -8,12 +8,14 @@ import { getAgentSettingsState } from "@/lib/agent/settings-data";
 import { getCostRollupState } from "@/lib/agent/cost-rollup-data";
 import { parseMonthParam } from "@/lib/agent/cost-rollup";
 import { listRecentAgentRuns } from "@/lib/agent/activity";
+import { listActionAutonomyDials } from "@/lib/agent/action-autonomy-data";
+import { ActuationDial } from "@/components/agent/actuation-dial";
 import { formatUsd, settingsSourceNote } from "@/lib/agent/settings";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeAgentPages } from "@/lib/auth/roles";
 import { can } from "@/lib/auth/policy";
 import { isDbConfigured } from "@/lib/db/client";
-import { saveAgentSettingsAction } from "./actions";
+import { saveAgentSettingsAction, setActionAutonomyAction } from "./actions";
 
 export const dynamic = "force-dynamic"; // live settings + spend, never prerendered
 
@@ -40,6 +42,18 @@ const SUB_AGENTS = [
     role: "Drafts consent-gated outbound email/SMS for a contact, grounded in their gold-layer history. It only ever PROPOSES — the draft is queued for human approval, consent is checked up front and re-asserted at execution. Nothing sends autonomously.",
     tier: "Premium-tier drafting",
   },
+] as const;
+
+/**
+ * Acting agents whose actuation autonomy an operator can dial (#1013, ADR-0109). The
+ * global `*` default is fail-closed level 1 (Manual) and covers every agent absent a
+ * more specific row; named entries are the sub-agents that actually PROPOSE outbound
+ * actions today (Reporting is read-only, so it has no dial). Keep this in lockstep with
+ * the registered actuators above — a dial only means something for an agent that acts.
+ */
+const ACTUATORS = [
+  { agentKey: "*", actionClass: "*", label: "Global default (all agents)" },
+  { agentKey: "sales", actionClass: "*", label: "Sales / Outreach" },
 ] as const;
 
 const TOOLS = [
@@ -71,15 +85,18 @@ export default async function AgentsPage({
   // defense-in-depth as Settings, ADR-0030).
   if (!canSeeAgentPages(roles)) redirect("/");
   const canEdit = can(roles, "settings:write"); // admin-only (ADR-0045)
+  const canOperate = can(roles, "agents:operate"); // admin-only (ADR-0045) — gates the dial
 
   // ?month=YYYY-MM browses past rollup months (#184); anything else = current.
   const month = parseMonthParam((await searchParams).month);
 
-  const [settings, runs, costRollup] = await Promise.all([
+  const [settings, runs, costRollup, dials] = await Promise.all([
     getAgentSettingsState(),
     listRecentAgentRuns(20),
     getCostRollupState(month),
+    listActionAutonomyDials(),
   ]);
+  const dialByKey = new Map(dials.map((d) => [`${d.agentKey}::${d.actionClass}`, d]));
   const dbConfigured = isDbConfigured();
 
   const sourceNote = settingsSourceNote(settings.source);
@@ -169,7 +186,45 @@ export default async function AgentsPage({
         </p>
       </section>
 
-      {/* 4 ── Recent activity: the orchestrator's audit trail (agent.turn) */}
+      {/* 4 ── Actuation autonomy dials (#1013 / 2E-3, ADR-0107 D4 / ADR-0109) */}
+      <section className="rounded-xl border border-border bg-panel p-5">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <h3 className="font-display text-sm font-semibold tracking-tight">
+            Actuation autonomy
+          </h3>
+          <span className="flex items-center gap-1 text-[11px] text-dim">
+            <Icon name="Gauge" size={12} />
+            per-agent · audited · reversible (ADR-0109)
+          </span>
+        </div>
+        <p className="mb-3 text-sm text-dim">
+          How far an acting agent may go on its own before an action routes to the approval
+          cockpit. Each level 1–5 resolves to an ADR-0055 tier ceiling — an action whose tier
+          exceeds the ceiling is held for a human; at or below it executes. Fail-closed at
+          level 1 (Manual): until raised, every action above a read is approved.
+          {!dbConfigured && " · sample data"}
+        </p>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {ACTUATORS.map((a) => (
+            <ActuationDial
+              key={`${a.agentKey}::${a.actionClass}`}
+              agentKey={a.agentKey}
+              actionClass={a.actionClass}
+              label={a.label}
+              dial={dialByKey.get(`${a.agentKey}::${a.actionClass}`) ?? null}
+              canEdit={canOperate}
+              setAction={setActionAutonomyAction}
+            />
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-dim">
+          The backend resolves the level at dispatch (read-only on this table); the cockpit
+          (pending actions) lands with backend 2E-2. Per-action-class overrides and ceiling
+          tuning are data on `agent_action_autonomy` — no schema change to retune.
+        </p>
+      </section>
+
+      {/* 5 ── Recent activity: the orchestrator's audit trail (agent.turn) */}
       <section className="rounded-xl border border-border bg-panel p-5">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-display text-sm font-semibold tracking-tight">Recent agent activity</h3>
