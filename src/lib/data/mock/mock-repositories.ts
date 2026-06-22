@@ -1672,6 +1672,21 @@ export const mockRepositories: Repositories = {
           },
         ];
       }
+      // F (#1144): one unmapped fixture per remaining connector so each surface renders without a
+      // DB. The name name-matches "Acme Corp" where the source carries one, so the suggestion path
+      // is exercised; the id-only sources (kqm/myitprocess/unifi) fall back to the raw key.
+      const F_FIXTURES: Record<string, { sourceKey: string; name: string }> = {
+        itglue: { sourceKey: "ITG-501", name: "Acme Corp" },
+        pax8: { sourceKey: "PX8-77", name: "Acme Corp" },
+        quotemanager: { sourceKey: "KQM-CUST-12", name: "KQM-CUST-12" },
+        televy: { sourceKey: "TLV-RPT-9", name: "Acme Corp" },
+        myitprocess: { sourceKey: "MIP-ACME", name: "MIP-ACME" },
+        unifi: { sourceKey: "Acme HQ", name: "Acme HQ" },
+      };
+      const fixture = F_FIXTURES[sourceSystem];
+      if (fixture) {
+        return [{ ...fixture, mappedAccountId: null, mappedAccountName: null }];
+      }
       return [];
     },
     async connect() {
