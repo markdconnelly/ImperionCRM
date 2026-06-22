@@ -88,7 +88,7 @@ no committed baseline fails rather than silently passing.
 The starter seed (slice 3, migration 0155) is grown by additive seed migrations as new
 agent surfaces ship — each follows the 0155 pattern (`ON CONFLICT (module, name) DO NOTHING`).
 
-- **`technician` module** (#1191, migration 0171) — one golden per AI Technician Autotask
+- **`technician` module** (#1191, migration 0172) — one golden per AI Technician Autotask
   write action shipped in backend #257 (epic #1038): `autotask_update_ticket`,
   `autotask_post_reply`, `autotask_log_time`. Each asserts the action **parks / routes to a
   human** on the autonomous path and executes only via the approval-gated `POST
