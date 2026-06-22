@@ -6,7 +6,7 @@ archetype: H
 description: The governed metric-definitions store — one row per business number's canonical contract (name, grain, unit, definition, owner, data_class). The headless-BI source of truth so agents and humans agree.
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [reference, config, metrics, governance, bi, headless-bi]
-timestamp: 2026-06-21T00:00:00Z
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # metric_definition
@@ -26,9 +26,16 @@ on numbers read the *same* definition and cannot disagree on "what is MRR". Epic
 **The website is the system of record** (admin-curated definitions; no external merge). A
 definition is **deny-by-absence**: a surface may only report a governed number that has a
 row here. The `expression` is the authority for *how* the number is computed; the backend
-metric query endpoint ([#259](https://github.com/markdconnelly/ImperionCRM_Backend/issues/259))
-binds and executes it — `metric_definition` never holds row-level data, only the formula.
-Metric *values* (a snapshot/timeseries) are a later slice; this entity is the contract.
+metric query endpoint ([#259](https://github.com/markdconnelly/ImperionCRM_Backend/issues/259),
+`lookupMetric()`) and the `metric_lookup` sub-agent tool
+([#264](https://github.com/markdconnelly/ImperionCRM_Backend/issues/264)) bind and execute it —
+`metric_definition` never holds row-level data, only the formula. An `expression` is one of two
+states: an **executable** `SELECT … AS value` scalar with `:named` temporal params the engine
+binds, or **unbound** (a definitional fragment / NULL the engine cannot parse → status
+`unbound`). The seed currently binds `agent_compute_cost` (over `agent_run`) and
+`tickets_closed` (over silver `ticket`); `mrr`, `gross_margin`, and `technician_utilization`
+remain unbound until a clean scalar source lands. Metric *values* (a snapshot/timeseries) are a
+later slice; this entity is the contract.
 
 ## Schema
 
@@ -58,7 +65,7 @@ UNIQUE `(key)`; indexes on `data_class`, `active`.
 - `data_class` is the shared sensitivity axis with OKF concepts and action contracts
   (#1034): the class a metric carries gates which callers/agents may read it.
 - The `expression` references silver/operational entities (e.g. `contract`, `time_record`,
-  `autotask_ticket`, `agent_run`) but stores no rows from them.
+  the silver `ticket` table, `agent_run`) but stores no rows from them.
 
 ## Notes
 
