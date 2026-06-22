@@ -26,8 +26,12 @@ export const config = {
    * public legal surface (#934/#497) — the EULA + Privacy Policy must be reachable
    * without an Entra login (Intuit's QuickBooks production-app review fetches the
    * URLs anonymously); same `(?:$|/)` anchor so it cannot leak onto sibling routes.
+   * `/papers` is the deliberately public technical-paper set (#1181) — the
+   * self-contained static executive summary + research paper under public/papers,
+   * the same public-marketing exception as /story (no app data); same `(?:$|/)`
+   * anchor so it cannot leak onto sibling routes.
    */
   matcher: [
-    "/((?!api/auth|login|break-glass|story(?:$|/)|opt-in(?:$|/)|legal(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|login|break-glass|story(?:$|/)|papers(?:$|/)|opt-in(?:$|/)|legal(?:$|/)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
