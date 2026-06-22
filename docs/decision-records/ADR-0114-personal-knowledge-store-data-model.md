@@ -20,7 +20,7 @@ tags: [meta, knowledge-tiers, security]
 | **Status** | Proposed |
 | **Date** | 2026-06-21 |
 | **Epic** | #1152 (build) · #966 (tiered knowledge) · #968 (design of record) |
-| **Cross-references** | ADR-0105 (two-axis RLS access spine — **amended here**) · ADR-0041/0102 (Voyage vector contract) · ADR-0086 (OKF — personal is excluded) · ADR-0042 (four-repo split) · ADR-0111 (agent event substrate) · ADR-0043 (Claude generation tiers) |
+| **Cross-references** | ADR-0105 (two-axis RLS access spine — **amended here**) · ADR-0113 / #1153 (verbatim memory tier `memory_drawer` — **Capture unifies onto it, see §9**) · migration 0166 (hybrid-search substrate) · ADR-0041/0102 (Voyage vector contract) · ADR-0086 (OKF — personal is excluded) · ADR-0042 (four-repo split) · ADR-0111 (agent event substrate) · ADR-0043 (Claude generation tiers) |
 
 ## Problem
 
@@ -135,6 +135,35 @@ This is the original Option B from the design discussion, re-selected once the s
 mount paths were ruled out. It trades the literal drive-letter for a synced folder that edits
 identically, and in return removes all networking prerequisites and restores event-driven change
 detection.
+
+### 9. Reconciliation — the Capture layer IS `memory_drawer` (ADR-0113 / #1153)
+
+A parallel session shipped **ADR-0113 (verbatim memory tier)** + migration **0166** (hybrid-search
+substrate on gold), defining a **`memory_drawer`** table — one row = one verbatim unit
+(conversation turn / agent step / user note), original-text, inline `vector(1024)` + `tsvector`,
+wing/room scoping, two-axis RLS — explicitly positioned as the real drawer that supersedes the
+`personal_note` pilot. That is the **same job** as this ADR's originally-proposed `personal_capture`.
+
+**Resolution (Mark, 2026-06-21): unify on `memory_drawer`.** It is the single verbatim **Capture**
+substrate. Personal Captures are simply its **owner-scoped rows** (wing = person). This supersedes
+items §1/§2/§8 wherever they named a separate `personal_capture` table and §7's `personal_embedding`:
+
+- **No `personal_capture` table** — personal raw verbatim is a `memory_drawer` row (wing=person,
+  `owner_user_id` = `app.user_id`). **Slice A1 (#1154) is retired.**
+- **No `personal_embedding` table** — recall rides `memory_drawer`'s inline embedding + the 0166
+  ranker primitives. **Slice A3 (#1156) is retired**; personal-scoped retrieval is a thin
+  wing/owner-filtered query over the shared substrate.
+- **What stays net-new (this ADR's actual contribution):** the temporal KG — **Knowledge Facts +
+  Validity Windows** (#1155, `source_capture_id` → `memory_drawer.id`); the **Curated Vault** +
+  **Personal Curator** + ledger + Contradiction table (#1157); **Distillation**; and the Blob +
+  local-sync vault substrate (§8). These layer *on top of* `memory_drawer`, which has none of them.
+- **Binaries** (images/audio) still land in the owner's Blob vault container with a routing record;
+  only the *text* verbatim unifies into `memory_drawer`.
+
+Net: **one drawer, two consumers** — agent recall (ADR-0113) and personal synthesis (this ADR) —
+truer to MemPalace's single-drawer model and free of a duplicate owner-scoped raw tier. Requires
+coordination with the #1153 owner so `memory_drawer` carries what the KG/Vault need (a stable row id
+for `source_capture_id`; owner-scoped wing=person already covered by its two-axis RLS).
 
 ## Amendment to ADR-0105 — the Personal Curator god-view
 
