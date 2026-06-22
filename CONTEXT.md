@@ -226,8 +226,12 @@ _Avoid_: approve/reject (that vocabulary belongs to ADR-0033 action proposals)
 A Microsoft Entra tenant belonging to a customer, identified by its tenant GUID. The unit all Microsoft-sourced posture data is keyed by.
 _Avoid_: tenant (unqualified, ambiguous with Imperion's own tenant), organization
 
+**Client Mapping**:
+The explicit, admin-curated link from a connector's external unit (company / tenant / site / domain) to an `account` — one reusable surface across every per-client connector (ADR-0112). Backed by two stores: `entity_xref` for orgs/tenants/sites (backend-written; the web role is SELECT-only by design, migration 0160) and `account_domain` for domains (GUI-written). Per-client connectors (m365, autotask, itglue, pax8, myitprocess, quotemanager, televy, darkwebid, unifi) expose it via an **Edit client mappings** button; system/company connectors (qbo, meta, docusign, apollo, plaud, user-scope) omit it. Every accepted suggestion or manual override is `match_method='manual'`; auto/fuzzy resolution stays the backend resolver's job (epic #1049).
+_Avoid_: entity resolution (that's the backend resolver's automatic arm), connector mapping (unqualified)
+
 **Tenant Mapping**:
-The explicit, admin-managed link from a Customer Tenant to an account. One account per tenant; an account may own several tenants. Never inferred from domains.
+The M365 instance of Client Mapping (ADR-0112): the explicit, admin-managed link from a Customer Tenant to an account. One account per tenant; an account may own several tenants. Never inferred from domains. The legacy `account_tenant` table is backfilled into `entity_xref` (migration 0165) and kept readable during a deferred cutover.
 _Avoid_: tenant matching, domain mapping
 
 **Imperion Secure Score**:

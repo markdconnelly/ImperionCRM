@@ -1447,5 +1447,21 @@
     "file": "ADR-0111-agent-event-substrate.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0112",
+    "title": "Client Mapping — one unified, admin-curated per-connector account identity surface",
+    "status": "proposed",
+    "date": "2026-06-21",
+    "tags": [
+      "data",
+      "integrations",
+      "security",
+      "identity"
+    ],
+    "summary": "Client Mapping is the explicit admin-curated link from a connector's external unit (company / tenant / site / domain) to an account. It generalizes the M365-only Tenant Mapping (ADR-0051) into one reusable surface across every per-client connector, backed by two stores: entity_xref (orgs/tenants/sites; backend-written per migration 0160 — web is SELECT-only) and account_domain (domains; GUI-written). Three connector shapes (fan-out / per-client-credential / domain-keyed); per-client connectors get an Edit-client-mappings button, system/company connectors do not. Suggestions + one-click Accept + manual override, every curated link match_method='manual'. account_tenant is backfilled into entity_xref (migration 0165) and kept readable during a deferred cutover, not dropped.",
+    "file": "ADR-0112-client-mapping.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
