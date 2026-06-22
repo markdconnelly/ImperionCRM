@@ -199,6 +199,8 @@ authority for its row.
 |---|---|---|---|---|
 | audit_log | horizontal | C | n/a | (Observability — the audit substrate) |
 | agent_run, agent_message, agent_memory | horizontal | C / B / G | n/a | Observability — orchestrator telemetry |
+| agent_event | horizontal | H | n/a | Wake-event inbox — durable/idempotent/replayable; the backend dispatcher drains it (#998, ADR-0111) |
+| agent_subscription | horizontal | H | n/a | Predicate fan-out — (event_type → workflow) + structured predicate; one event → N matching runs, skips non-matches (#999, ADR-0111). Contract: [docs/agents/event-subscription-predicate.md](../../agents/event-subscription-predicate.md) |
 | board_session (+member/+message/+recommendation) | horizontal | B | n/a | Governance — board deliberation |
 | feature_request (+vote/+status_history) | horizontal | B | n/a | Engineering — feedback (GitHub-coupled) |
 | domain_owner | horizontal | H | n/a | Governance — per concept/domain → the business owner who resolves grounding conflicts (#1035, ADR-0119) |
