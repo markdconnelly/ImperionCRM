@@ -120,13 +120,18 @@ appropriate. Augment, do not replace.
 All external data flows through three layers:
 
 - **Bronze:** raw source data (emails, meetings, Teams messages, IT Glue exports,
-  Autotask records, Microsoft Graph content, My IT Process data). No
-  transformations; store original payloads.
+  Autotask records, Microsoft Graph content, My IT Process data, **and verbatim
+  conversation/agent memory turns** — ADR-0113). No transformations; store original
+  payloads.
 - **Silver:** normalized + enriched (cleaned entities, relationship mapping,
   metadata extraction, deduplication, classification).
 - **Gold:** AI-ready knowledge (summaries, embeddings, knowledge objects,
-  semantic relationships, agent-consumable datasets). Most agent reasoning should
-  consume Gold only.
+  semantic relationships, agent-consumable datasets). Agents **reason and search
+  over Gold**; for faithful recall the orchestrator **drills from a Gold summary to
+  its verbatim Bronze source via references** (ADR-0113) — e.g. a conversation
+  summary (`knowledge_object`, `entity_ref=conversation_id`) → its verbatim turns
+  (`agent_message` for agent runs, `memory_drawer` for human notes/conversations;
+  split by origin). Verbatim text is never the reasoning substrate; the summary is.
 
 The platform must support relational queries, semantic/vector search, knowledge
 graphs, agent memory, and document intelligence from the start. Traditional CRUD
