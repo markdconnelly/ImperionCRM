@@ -259,6 +259,15 @@ trustworthy.
 
 ## 5. Influences & further reading
 
+> **Deep dives.** Each layer argued above has a canonical deep dive under
+> [`deep-dives/`](deep-dives/README.md): [medallion architecture](deep-dives/medallion-architecture.md)
+> (the kernel filesystem), [Open Knowledge Format](deep-dives/open-knowledge-format.md) (the
+> type system / grounding cortex), and [how it all fits together](deep-dives/how-it-all-fits-together.md)
+> (the synthesis), plus the sibling-repo deep dives on MWP/ICM, MemPalace, and Open Brain.
+> The public-facing versions are the
+> [executive summary](../../public/papers/executive-summary.html) and the
+> [research paper](../../public/papers/research-paper.html).
+
 Imperion OS's data design is a synthesis: established data-platform patterns underneath, and
 the recent state of the art in **agentic memory, second-brain, and context-engineering** on
 top. The finding that motivated this document is that the patterns this literature advocates
