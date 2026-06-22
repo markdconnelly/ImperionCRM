@@ -4,7 +4,7 @@ title: Concept-file authoring standard
 description: The required shape, depth bar, and archetype-keyed sections every OKF concept file under tables/ must follow. Codifies ADR-0086 conformance.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [semantic-layer, okf, authoring, standard, conformance]
-timestamp: 2026-06-18T00:00:00Z
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # Concept-file authoring standard
@@ -36,9 +36,13 @@ Gold-standard exemplars: [`account`](tables/account.md), [`contact`](tables/cont
    the file stem) · `archetype` (one of the eight doctrine archetypes `A`–`H`; the
    *typed* routing label, not a prose hint) · `description` (one line, names the archetype
    behaviour) · `resource` (relative path to the governing ADR) · `tags`
-   (`[silver|gold, domain, entity, archetype-hint]`) · `timestamp` (ISO-8601 `…Z`; bump on
+   (`[silver|gold, domain, entity, archetype-hint]`) · **`data_class`** (the third access
+   axis, ADR-0118 / #1034 — one of `operational | financial | people_hr |
+   security_credentials | client_pii`; the typed sensitivity label the RLS read-predicate
+   and the action-plane ceiling enforce — see the data-class legend in
+   [coverage-matrix.md](coverage-matrix.md)) · `timestamp` (ISO-8601 `…Z`; bump on
    every content change — the gate's minimum).
-   > `entity` + `archetype` are **classification labels for deterministic routing**
+   > `entity` + `archetype` + `data_class` are **classification labels for deterministic routing**
    > (which file to load, how it behaves) — they are *not* a second copy of the authority
    > rule, so they create no drift surface. The authority rule itself stays prose (read
    > natively by the LLM consumer) — never promote it to a structured frontmatter block

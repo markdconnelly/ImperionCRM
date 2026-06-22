@@ -1546,5 +1546,20 @@
     "file": "ADR-0117-public-technical-papers-deep-dive-set.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0118",
+    "title": "data_class — the third RLS axis + the action-plane sensitivity ceiling",
+    "status": "proposed",
+    "date": "2026-06-22",
+    "tags": [
+      "meta",
+      "security",
+      "agents"
+    ],
+    "summary": "Isolation across the MSP's client tenants is by DATA SENSITIVITY, not client. Five coarse role-mapped classes (operational/CMDB, financial, people_hr, security_credentials, client_pii) become the THIRD RLS read-predicate alongside owner (ADR-0105 app.user_id) and role (app.groups), AND a ceiling on the governed action/tool-grant plane (ADR-0107): an action's data_class must be within the caller/agent's permitted classes. One source of truth, data_class_role_grant, read by both layers via app_data_class_allowed(). always-gate classes (money/customer-facing/credentials) are modeled as the hard ceiling earned autonomy can never cross (#1036).",
+    "file": "ADR-0118-data-class-third-rls-axis-action-ceiling.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

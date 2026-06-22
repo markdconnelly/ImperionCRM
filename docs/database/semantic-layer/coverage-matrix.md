@@ -33,6 +33,17 @@ referenced everywhere (`account`/`contact`/`employee`/`contract`); **horizontal*
 inherited concern (governance/identity/observability/data-platform), owned by the
 Constitution, not a vertical. Contested rows are the seams flagged at the end.
 
+**Data-class legend (ADR-0118, #1034):** the third access axis — data SENSITIVITY, the MSP's
+real isolation axis (employees roam all clients; the gate is the class, not the client). Every
+object carries exactly one **`data_class`**: **op** operational/CMDB (broad-read default) ·
+**fin** financial (always-gate) · **hr** people_hr · **sec** security_credentials (always-gate) ·
+**pii** client_pii (always-gate). The class is the THIRD RLS read-predicate and the action-plane
+ceiling (one rule, both layers — `app_data_class_allowed()`, migration 0175). always-gate classes
+(fin/sec/pii) are the hard ceiling earned autonomy can never auto-cross (#1036). The `data_class`
+column below is **partially populated in this tracer PR** (a representative row per class); the
+full per-concept backfill is the follow-up issue. A concept file's `data_class` frontmatter is the
+authority for its row.
+
 ## CRM core
 
 | Object | Domain | Archetype | IKF | Acting ICM workflow |
