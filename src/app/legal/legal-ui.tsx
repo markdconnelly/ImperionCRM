@@ -12,7 +12,7 @@ export const LEGAL_ENTITY = "Imperion LLC";
 /** Public contact for privacy / legal inquiries. Confirm the address. */
 export const LEGAL_CONTACT = "privacy@imperionllc.com";
 /** The product surface these terms govern. */
-export const PRODUCT_NAME = "Imperion Business Manager";
+export const PRODUCT_NAME = "Imperion OS";
 /** Effective / last-updated date shown on every document. */
 export const EFFECTIVE_DATE = "June 18, 2026";
 
