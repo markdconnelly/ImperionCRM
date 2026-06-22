@@ -290,7 +290,7 @@ The Postgres half of a Personal Knowledge Store — where personal input is **sy
 _Avoid_: silver/gold (those name the company-tier medallion), database (unqualified)
 
 **Curated Vault**:
-The **Azure Files (SMB) share** half of a Personal Knowledge Store — a per-employee share (slug e.g. `vault-mark`) the owner **mounts as a native drive** and edits, holding an agent-maintained filesystem of **markdown files only**: a curated, human-readable representation of what the person knows. Rooms are folder prefixes within the share; binaries (images) also land here and are **routed** into Distillation. Not raw capture; a curated projection (ADR-0113 §8).
+The **Azure Files (SMB) share** half of a Personal Knowledge Store — a per-employee share (slug e.g. `vault-mark`) the owner **mounts as a native drive** and edits, holding an agent-maintained filesystem of **markdown files only**: a curated, human-readable representation of what the person knows. Rooms are folder prefixes within the share; binaries (images) also land here and are **routed** into Distillation. Not raw capture; a curated projection (ADR-0114 §8).
 _Avoid_: bronze (it is curated, not raw), blob (it is Azure Files, not object storage), Obsidian vault, second brain (that is the whole Store)
 
 **Room Path**:

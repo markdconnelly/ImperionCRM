@@ -1466,6 +1466,23 @@
   },
   {
     "adr": "0113",
+    "title": "Verbatim memory tier — agent recall alongside gold summaries",
+    "status": "proposed",
+    "date": "2026-06-21",
+    "tags": [
+      "meta",
+      "architecture",
+      "agents",
+      "memory",
+      "security"
+    ],
+    "summary": "Introduce a verbatim memory tier (memory_drawer) that stores conversation/agent turns ORIGINAL-text, never summarized, recalled via the hybrid ranker — amending the 'agents consume Gold only' principle so the orchestrator can drill from gold summaries down to verbatim source. Wing/room scoping over the two-axis RLS access spine; capture is a backend process, vectorization is LocalPipeline; PII-bearing, RLS is the control, out of OKF.",
+    "file": "ADR-0113-verbatim-memory-tier.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0114",
     "title": "Personal Knowledge Store data model — two-substrate synthesis + curated vault",
     "status": "proposed",
     "date": "2026-06-21",
@@ -1475,7 +1492,7 @@
       "security"
     ],
     "summary": "The personal tier is two substrates: a Postgres Synthesis Store (immutable Captures -> temporal-KG Knowledge Facts with Validity Windows -> pgvector embeddings) and a blob Curated Vault (an agent-curated markdown filesystem the owner reviews). A background Personal Curator with ledgered god-view keeps them bidirectionally synced and hunts Knowledge Contradictions for owner approval. Inverts the original 'bronze-in-blob' framing; amends ADR-0105 (curator god-view).",
-    "file": "ADR-0113-personal-knowledge-store-data-model.md",
+    "file": "ADR-0114-personal-knowledge-store-data-model.md",
     "superseded_by": [],
     "consolidated_into": null
   }

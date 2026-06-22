@@ -6,7 +6,7 @@ archetype: G
 description: AI-ready gold text over any silver entity — on-prem produced; chunked + embedded into Voyage vectors; content-hash-idempotent, versioned re-embed.
 resource: ../../../decision-records/ADR-0041-gold-knowledge-vector-store.md
 tags: [gold, knowledge, retrieval, rag]
-timestamp: 2026-06-15T00:00:00Z
+timestamp: 2026-06-21T00:00:00Z
 ---
 
 # knowledge_object
@@ -53,6 +53,15 @@ UNIQUE `(tenant_id, entity_type, entity_ref)`.
   filters to the pinned version. The producer holds the one scoped `DELETE` (on
   `knowledge_embedding` only) to prune superseded versions.
 - `entity_type` / `entity_ref` resolve back to the described silver entity.
+
+## Retrieval
+
+Retrieval is **hybrid-capable** (migration 0166, #1153). Beyond the HNSW cosine vector
+search on `knowledge_embedding.embedding`: `knowledge_object.metadata` has a GIN index for
+facet filtering (`@>` containment / key existence), and `knowledge_embedding.chunk_fts` is a
+generated `english` `tsvector` (GIN-indexed) so a hybrid ranker can re-score vector
+candidates by keyword overlap at chunk granularity. Substrate only — the ranker query path
+itself is a later phase.
 
 ## Notes
 

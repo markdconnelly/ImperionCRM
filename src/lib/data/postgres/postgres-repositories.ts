@@ -11177,33 +11177,133 @@ export const postgresRepositories: Repositories = {
     async listClientMappingUnits(sourceSystem: string): Promise<ClientMappingUnit[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.connections.listClientMappingUnits(sourceSystem);
-      // Each connector's units live in its own bronze table; pick it from a whitelist so the
-      // table name is never caller-derived (the source_system value IS parameterized). The
-      // tracer ships Autotask (the only populated source); E3/F add the rest.
-      const BRONZE_BY_SOURCE: Record<string, string> = { autotask: "autotask_companies" };
-      const table = BRONZE_BY_SOURCE[sourceSystem];
-      if (!table) return [];
+
+      // M365 (E3 #1147) doesn't have a single bronze "companies" table — its units are Customer
+      // Tenants. The universe is the posture-bronze tenant set (the same UNION listUnmappedTenants
+      // envelopes) PLUS any tenant already linked in `entity_xref ('account','m365',guid)`
+      // (backfilled by migration 0165), so a mapped tenant shows even with no posture rows yet.
+      // The mapped link reads from entity_xref (the ADR-0112 authority); the legacy `account_tenant`
+      // row supplies a friendly display name during the deferred posture-join cutover (#1049).
+      if (sourceSystem === "m365") {
+        try {
+          const { rows } = await pool.query<{
+            source_key: string;
+            name: string | null;
+            mapped_account_id: string | null;
+            mapped_account_name: string | null;
+          }>(
+            `WITH tenants AS (
+                          SELECT tenant_id FROM secure_scores
+                UNION ALL SELECT tenant_id FROM entra_conditional_access_policies
+                UNION ALL SELECT tenant_id FROM intune_security_policies
+                UNION ALL SELECT tenant_id FROM device_configuration_policies
+                UNION ALL SELECT tenant_id FROM autopilot_policies
+                UNION ALL SELECT tenant_id FROM defender_xdr_security_policies
+                UNION ALL SELECT source_key AS tenant_id FROM entity_xref
+                            WHERE entity_type = 'account' AND source_system = 'm365'
+                              AND match_method = 'manual'
+             )
+             SELECT t.tenant_id AS source_key,
+                    COALESCE(a.name, at.display_name, t.tenant_id) AS name,
+                    x.internal_entity_id::text AS mapped_account_id,
+                    a.name AS mapped_account_name
+               FROM (SELECT DISTINCT tenant_id FROM tenants WHERE tenant_id IS NOT NULL) t
+               LEFT JOIN entity_xref x
+                 ON x.entity_type = 'account' AND x.source_system = 'm365'
+                AND x.source_key = t.tenant_id AND x.match_method = 'manual'
+               LEFT JOIN account a ON a.id = x.internal_entity_id
+               LEFT JOIN account_tenant at ON at.tenant_id = t.tenant_id
+              ORDER BY name`,
+          );
+          return rows.map((r) => ({
+            sourceKey: r.source_key,
+            name: r.name ?? r.source_key,
+            mappedAccountId: r.mapped_account_id,
+            mappedAccountName: r.mapped_account_name,
+          }));
+        } catch {
+          return mockRepositories.connections.listClientMappingUnits(sourceSystem);
+        }
+      }
+
+      // Every other connector's units come from its own bronze table (F #1144). The
+      // (table, key, name) shape is a SERVER-SIDE whitelist so neither the table nor the columns
+      // are ever caller-derived — only the `source_system` VALUE is parameterized into the
+      // entity_xref join. Two table shapes are covered: "companies"-style envelope tables
+      // (autotask/itglue/televy: `external_ref` + `*_silver`/`*_bronze` JSON) and collector-style
+      // tables (pax8/kqm/myitprocess/unifi: flat columns), including a few DISTINCT-derived sources
+      // with no companies table (kqm customer, myitprocess account, unifi console). All bronze
+      // except autotask is empty until its collector runs (data-in is Mark-gated).
+      const UNIT_SOURCE_BY_SYSTEM: Record<
+        string,
+        { table: string; keyExpr: string; nameExpr: string }
+      > = {
+        autotask: {
+          table: "autotask_companies",
+          keyExpr: "external_ref",
+          nameExpr:
+            "COALESCE(normalized_silver->>'name', payload_bronze->>'companyName', payload_bronze->>'name', external_ref)",
+        },
+        itglue: {
+          table: "itglue_companies",
+          keyExpr: "external_ref",
+          nameExpr:
+            "COALESCE(normalized_silver->>'name', payload_bronze->>'name', payload_bronze->>'organization-name', external_ref)",
+        },
+        pax8: {
+          table: "pax8_companies",
+          keyExpr: "external_id",
+          nameExpr: "COALESCE(name, external_id)",
+        },
+        quotemanager: {
+          table: "kqm_opportunities",
+          keyExpr: "customer_id",
+          nameExpr: "customer_id",
+        },
+        myitprocess: {
+          table: "myitprocess_recommendations",
+          keyExpr: "account_ref",
+          nameExpr: "account_ref",
+        },
+        televy: {
+          table: "televy_reports",
+          keyExpr: "external_ref",
+          nameExpr:
+            "COALESCE(normalized_silver->>'name', payload_bronze->>'company', external_ref)",
+        },
+        unifi: {
+          table: "unifi_devices",
+          keyExpr: "site",
+          nameExpr: "site",
+        },
+      };
+      const src = UNIT_SOURCE_BY_SYSTEM[sourceSystem];
+      if (!src) return [];
       try {
-        // Units + their current MANUAL entity_xref link (the curated spine link, migration 0160);
-        // an automatic resolver link is not shown as "mapped" here — the GUI curates manual links.
+        // DISTINCT (key,name) collapses both the companies tables (already one row per company)
+        // and the DISTINCT-derived sources (one customer/console spans many rows). Manual
+        // entity_xref link only (the curated spine, migration 0160) — an automatic resolver link
+        // is not shown as "mapped" here.
         const { rows } = await pool.query<{
           source_key: string;
           name: string | null;
           mapped_account_id: string | null;
           mapped_account_name: string | null;
         }>(
-          `SELECT c.external_ref AS source_key,
-                  COALESCE(c.normalized_silver->>'name', c.payload_bronze->>'companyName',
-                           c.payload_bronze->>'name', c.external_ref) AS name,
+          `SELECT c.source_key,
+                  c.name,
                   x.internal_entity_id::text AS mapped_account_id,
                   a.name AS mapped_account_name
-             FROM ${table} c
+             FROM (
+               SELECT DISTINCT ${src.keyExpr} AS source_key, ${src.nameExpr} AS name
+                 FROM ${src.table}
+                WHERE ${src.keyExpr} IS NOT NULL
+             ) c
              LEFT JOIN entity_xref x
                ON x.entity_type = 'account' AND x.source_system = $1
-              AND x.source_key = c.external_ref AND x.match_method = 'manual'
+              AND x.source_key = c.source_key AND x.match_method = 'manual'
              LEFT JOIN account a ON a.id = x.internal_entity_id
-            WHERE c.external_ref IS NOT NULL
-            ORDER BY name`,
+            ORDER BY c.name`,
           [sourceSystem],
         );
         return rows.map((r) => ({

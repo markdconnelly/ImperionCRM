@@ -70,8 +70,13 @@ LocalPipeline planes and is not shown here.)
 
 **Edit client mappings** opens `/settings/client-mapping/<connector>` (the reusable mapping
 surface, epic #1141 unit E). The button appears only when that connector has a mapping
-adapter wired (`autotask` today; `m365` and the rest light up as units E3/F land), so it
-never links to a missing page.
+adapter wired — `autotask`, `m365`, `itglue`, `pax8`, `quotemanager`, `televy`, `myitprocess`,
+and `unifi` (unit F #1144) — so it never links to a missing page. Each connector's units come
+from a server-side whitelist of (bronze table → key/name columns); every source except
+`autotask` is empty until its collector runs (data-in is gated). For `m365`, Tenant Mapping
+**is** this surface — the old `/settings/tenant-mapping` route now redirects here (ADR-0112,
+E3 #1147). `darkwebid` is deliberately **not** a client-mapping adapter — it is domain-keyed
+(`account_domain`), a separate mapping surface.
 
 ## What an admin does here
 

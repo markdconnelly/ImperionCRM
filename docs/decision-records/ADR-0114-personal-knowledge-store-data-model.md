@@ -1,5 +1,5 @@
 ---
-adr: 0113
+adr: 0114
 title: "Personal Knowledge Store data model — two-substrate synthesis + curated vault"
 status: proposed
 date: 2026-06-21
@@ -8,9 +8,9 @@ summary: "The personal tier is two substrates: a Postgres Synthesis Store (immut
 tags: [meta, knowledge-tiers, security]
 ---
 
-# ADR-0113: Personal Knowledge Store data model — two-substrate synthesis + curated vault
+# ADR-0114: Personal Knowledge Store data model — two-substrate synthesis + curated vault
 
-> **Number is a placeholder.** ADR-0113 is claimed at MERGE per system CLAUDE.md §10.3 —
+> **Number is a placeholder.** ADR-0114 is claimed at MERGE per system CLAUDE.md §10.3 —
 > the branch that merges second renumbers. Migrations referenced here are authored against
 > `0NNN_*` placeholders and numbered last.
 
