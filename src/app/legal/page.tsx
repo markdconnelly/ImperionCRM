@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LegalDoc, LEGAL_ENTITY, P, PRODUCT_NAME } from "./legal-ui";
 
 export const metadata: Metadata = {
-  title: "Legal — Imperion Business Manager",
+  title: "Legal — Imperion OS",
   description: `Legal documents for ${PRODUCT_NAME}.`,
   robots: { index: true, follow: true },
 };

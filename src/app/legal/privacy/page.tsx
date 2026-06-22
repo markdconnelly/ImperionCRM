@@ -12,9 +12,9 @@ import {
 } from "../legal-ui";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Imperion Business Manager",
+  title: "Privacy Policy — Imperion OS",
   description:
-    "How Imperion Business Manager collects, uses, stores, and protects information, including data accessed from QuickBooks Online.",
+    "How Imperion OS collects, uses, stores, and protects information, including data accessed from QuickBooks Online.",
   robots: { index: true, follow: true },
 };
 

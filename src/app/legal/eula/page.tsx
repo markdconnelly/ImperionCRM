@@ -12,7 +12,7 @@ import {
 } from "../legal-ui";
 
 export const metadata: Metadata = {
-  title: "End-User License Agreement — Imperion Business Manager",
+  title: "End-User License Agreement — Imperion OS",
   description: `The terms governing use of ${PRODUCT_NAME}.`,
   robots: { index: true, follow: true },
 };

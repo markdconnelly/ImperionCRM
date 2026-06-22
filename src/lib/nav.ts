@@ -193,7 +193,7 @@ export function titleForPath(pathname: string): string {
   const nested = navAll
     .filter((n) => n.href !== "/" && !n.href.startsWith("#") && pathname.startsWith(n.href))
     .sort((a, b) => b.href.length - a.href.length)[0];
-  return nested?.label ?? "Imperion Business Manager";
+  return nested?.label ?? "Imperion OS";
 }
 
 /** Active-state test for a nav item against the current path. */

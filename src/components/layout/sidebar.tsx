@@ -209,7 +209,7 @@ export function Sidebar({
         </div>
         {!collapsed && (
           <span className="font-display text-sm font-semibold tracking-tight">
-            Imperion Business Manager
+            Imperion OS
           </span>
         )}
       </div>

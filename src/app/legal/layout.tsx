@@ -8,9 +8,9 @@ import type { Metadata } from "next";
  * excluded from the sign-in gate in `src/middleware.ts` (the `legal(?:$|/)` anchor).
  */
 export const metadata: Metadata = {
-  title: "Legal — Imperion Business Manager",
+  title: "Legal — Imperion OS",
   description:
-    "Privacy Policy and End-User License Agreement for Imperion Business Manager.",
+    "Privacy Policy and End-User License Agreement for Imperion OS.",
   robots: { index: true, follow: true },
 };
 
