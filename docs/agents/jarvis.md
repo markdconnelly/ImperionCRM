@@ -16,8 +16,16 @@ A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
    (`agent_conversation`), newest activity first, with a **New conversation** button.
 2. **Live chat** (center, the main focus) — the orchestrator turn loop. The composer
    sends through `askAgentAction` (backend ADR-0036) threaded by a per-session
-   `conversation_id`; replies render inline. Drafts that need approval show a notice —
-   **nothing is ever sent automatically** (ADR-0058).
+   `conversation_id`; replies render inline. When a reply carries the generalized
+   **`proposedActions[]` envelope** (backend #282, `{ kind, input, tier, dataClass, … }`),
+   each action renders as an inline **approval card** (`ProposedActionCard`) — comms sends
+   **and** non-comms actions (ticket update/reply, log-time) — labelled by its ADR-0055
+   `tier` and ADR-0016 `dataClass`. Approving submits the envelope's `input` **verbatim** to
+   the backend's only send path (`POST /agent/actions/execute`), which re-asserts consent
+   (ADR-0058). A reply that flags approval but carries no renderable envelope (older deploy)
+   still shows the plain notice. **Nothing is ever sent automatically.** *(The standalone
+   operator action queue is the technician cockpit, [#1014](https://github.com/markdconnelly/ImperionCRM/issues/1014)
+   — a separate surface; this is the per-turn inline affordance, #1130.)*
 3. **Drill-in pop-out** (right, on demand) — selecting a past session opens its verbose
    **glass-box trace**: each `agent_run` (agent · status · cost) and its ordered
    `agent_message` stages (role · content · tool calls), so a human can drill into exactly
@@ -30,6 +38,7 @@ A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
 | History rail | `agent_conversation` (scoped to `created_by`) | `src/lib/agent/jarvis.ts` |
 | Drill-in trace | `agent_run` → `agent_message` by `conversation_id` | `src/lib/agent/jarvis.ts` |
 | Live turn | backend orchestrator via `askAgentAction` | `src/lib/agent/ask-action.ts` |
+| Proposed-action approval | the reply's `proposedActions[]` envelope; approve → `POST /agent/actions/execute` (input verbatim) via `approveProposedAction` | `src/lib/agent/ask-action.ts` · `src/components/agent/proposed-action-card.tsx` |
 
 ## Boundaries & degradation
 

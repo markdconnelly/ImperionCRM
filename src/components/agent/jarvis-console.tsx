@@ -5,7 +5,9 @@ import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/icon";
 import { askAgentAction } from "@/lib/agent/ask-action";
 import { loadConversationDetailAction } from "@/app/(app)/jarvis/actions";
+import { ProposedActionCard } from "@/components/agent/proposed-action-card";
 import type { JarvisConversation, JarvisConversationDetail } from "@/lib/agent/jarvis";
+import type { ProposedAction } from "@/lib/services";
 import type { AgentMessage } from "@/types";
 
 /**
@@ -21,6 +23,9 @@ export function JarvisConsole({
   initialConversations: JarvisConversation[];
 }) {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
+  // Proposed-action envelopes (#1130) keyed by the agent message they accompany — kept off
+  // AgentMessage so the shared type stays untouched (the cockpit, #1014, owns the queue surface).
+  const [actionsByMsg, setActionsByMsg] = useState<Record<string, ProposedAction[]>>({});
   const [draft, setDraft] = useState("");
   const [isPending, startTransition] = useTransition();
   const conversationId = useRef<string>(crypto.randomUUID());
@@ -37,10 +42,14 @@ export function JarvisConsole({
     setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "user", text: message }]);
     startTransition(async () => {
       const reply = await askAgentAction(message, conversationId.current);
+      const replyId = crypto.randomUUID();
+      const hasActions = (reply.proposedActions?.length ?? 0) > 0;
       setMessages((prev) => [
         ...prev,
-        { id: crypto.randomUUID(), role: "agent", text: reply.text },
-        ...(reply.requiresApproval
+        { id: replyId, role: "agent", text: reply.text },
+        // Only show the generic notice when the agent flagged approval but returned no
+        // renderable envelope (e.g. an older backend deploy); otherwise the cards say it.
+        ...(reply.requiresApproval && !hasActions
           ? [{
               id: crypto.randomUUID(),
               role: "agent" as const,
@@ -48,6 +57,9 @@ export function JarvisConsole({
             }]
           : []),
       ]);
+      if (hasActions) {
+        setActionsByMsg((prev) => ({ ...prev, [replyId]: reply.proposedActions! }));
+      }
       requestAnimationFrame(() =>
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }),
       );
@@ -57,6 +69,7 @@ export function JarvisConsole({
   function newConversation() {
     conversationId.current = crypto.randomUUID();
     setMessages([]);
+    setActionsByMsg({});
     setSelectedId(null);
     setDetail(null);
   }
@@ -138,14 +151,18 @@ export function JarvisConsole({
             </div>
           )}
           {messages.map((m) => (
-            <div
-              key={m.id}
-              className={cn(
-                "max-w-[80%] whitespace-pre-wrap rounded-lg px-3.5 py-2.5 text-sm leading-relaxed",
-                m.role === "agent" ? "self-start bg-panel-2 text-text" : "self-end bg-accent/15 text-text",
-              )}
-            >
-              {m.text}
+            <div key={m.id} className="contents">
+              <div
+                className={cn(
+                  "max-w-[80%] whitespace-pre-wrap rounded-lg px-3.5 py-2.5 text-sm leading-relaxed",
+                  m.role === "agent" ? "self-start bg-panel-2 text-text" : "self-end bg-accent/15 text-text",
+                )}
+              >
+                {m.text}
+              </div>
+              {actionsByMsg[m.id]?.map((action, i) => (
+                <ProposedActionCard key={`${m.id}-${i}`} action={action} />
+              ))}
             </div>
           ))}
           {isPending && !detailLoading && (

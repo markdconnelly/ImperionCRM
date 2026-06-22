@@ -1,6 +1,6 @@
 "use server";
 
-import { agentService } from "@/lib/services";
+import { agentService, type ProposedAction } from "@/lib/services";
 import { callServiceWithFallback } from "@/lib/services/call-guard";
 import { resolveActingUser } from "@/lib/services/acting-user";
 
@@ -9,6 +9,50 @@ export interface AskAgentResult {
   text: string;
   /** Set when the agent drafted an approval-gated action (send) — shown as a notice. */
   requiresApproval?: boolean;
+  /**
+   * The generalized proposed-action envelope (backend #282 / issue #1130). The approval
+   * surface renders these — gated/labelled by tier + dataClass — and submits each entry's
+   * `input` VERBATIM via {@link approveProposedAction}. Empty/undefined = nothing to approve.
+   */
+  proposedActions?: ProposedAction[];
+}
+
+/**
+ * Normalize the orchestrator reply's proposed-action surface to the generalized envelope
+ * (#1130). Prefers `proposedActions[]`; if only the legacy single-action comms projection
+ * is present (a backend mid-migration / older deploy), project it into a one-element
+ * envelope so the approval surface keeps working without relying on the legacy shape. The
+ * back-compat projection is dropped on the backend as a coordinated follow-up.
+ */
+function toProposedActions(reply: {
+  proposedActions?: ProposedAction[];
+  proposedAction?: { kind: string; contactId: string; channel: string; body: string };
+}): ProposedAction[] {
+  if (reply.proposedActions?.length) return reply.proposedActions;
+  const legacy = reply.proposedAction;
+  if (!legacy) return [];
+  // Legacy projection → envelope: a comms send is a T2 client-facing, client_pii action.
+  return [
+    {
+      kind: legacy.kind,
+      input: {
+        kind: legacy.kind,
+        contactId: legacy.contactId,
+        channel: legacy.channel,
+        body: legacy.body,
+      },
+      tier: "T2",
+      dataClass: "client_pii",
+      targetContactId: legacy.contactId,
+    },
+  ];
+}
+
+/** Result of approving a single proposed action from the live agent reply. */
+export interface ApproveActionResult {
+  ok: boolean;
+  /** A user-facing message describing what happened (sent / blocked / not configured / failed). */
+  message: string;
 }
 
 /**
@@ -56,8 +100,53 @@ export async function askAgentAction(
   );
   if (!outcome.ok) return { text: outcome.message };
 
+  const proposedActions = toProposedActions(outcome.value);
   return {
     text: outcome.value.text,
     ...(outcome.value.requiresApproval ? { requiresApproval: true } : {}),
+    ...(proposedActions.length ? { proposedActions } : {}),
   };
+}
+
+/**
+ * Approve and execute ONE agent-proposed action from the live reply (#1130). Submits the
+ * envelope's `input` VERBATIM to the backend's approval-gated executor (the ONLY send path —
+ * backend ADR-0033) via {@link agentService.executeProposedAction}; the acting employee is
+ * recorded as the approver (ADR-0055) and the backend re-asserts consent at execution
+ * (403 consent_denied → blocked notice, ADR-0058). Never throws to the client; degrades to a
+ * clear notice when the backend is unconfigured.
+ */
+export async function approveProposedAction(
+  action: ProposedAction["input"],
+): Promise<ApproveActionResult> {
+  const acting = await resolveActingUser();
+  if (!acting.ok) {
+    return {
+      ok: false,
+      message:
+        acting.reason === "no_session"
+          ? "Sign in again — I couldn't resolve your identity to record the approval."
+          : "I couldn't resolve your account to record the approval.",
+    };
+  }
+
+  const outcome = await callServiceWithFallback(
+    () =>
+      agentService.executeProposedAction({
+        action,
+        approval: { approvedByUserId: acting.id, approved: true },
+      }),
+    {
+      label: "approveProposedAction",
+      notConfigured:
+        "The agent backend isn't wired up in this environment yet (AGENT_SERVICE_URL unset) — nothing was sent.",
+      failed: "The action couldn't be executed — nothing was sent. Try again in a moment.",
+    },
+  );
+
+  if (outcome.ok) return { ok: true, message: "Approved — the action was executed." };
+  if (outcome.kind === "rejected" && outcome.status === 403) {
+    return { ok: false, message: "Blocked — consent was withdrawn for this recipient. Nothing was sent." };
+  }
+  return { ok: false, message: outcome.message };
 }
