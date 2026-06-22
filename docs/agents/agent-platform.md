@@ -117,6 +117,38 @@ SubAgentName) and their per-agent tool allowlist:
   role only reads `agent_tool_grant`; revoke needs the backend MI's DELETE grant,
   migration 0157).
 
+### 2.2 Technician autonomous-path action grants (migration 0171, ADR-0081)
+
+§2.1 grants cover the sub-agents' **narrow named tools** (read/triage). The
+**autonomous** Technician path is governed by a *separate* grant set, keyed under a
+distinct **`agent_key='technician'`** (the "Felix" autonomous-loop identity — not the
+`autotask` read/triage sub-agent, which merely carries the `display_name`
+"Autotask Technician", 0163). Per **ADR-0081 §tool-grant rule**: a *human*-approved
+catalog action needs no grant (the human is the gate), but the **autonomous** path turns
+a catalog action into a loop tool that — like every sub-agent tool — requires an
+`agent_tool_grant` row. The gauntlet's gate 3 (BE #285) enforces this deny-by-default.
+
+Migration 0171 (#1193) materializes the **`module='crm'` `name='technician'` anchor row**
+(so a grant has something to reference — `loadToolGrants()` resolves by `agent.name`) and
+models the action-grant **posture**, the FE twin of the backend `AUTONOMOUS_ACTION_GRANTS`
+mirror (BE #257):
+
+| Catalog action | v1 posture | Why withheld |
+|---|---|---|
+| `autotask_update_ticket` | **withheld** | operational; held until the actuation dial (0158) + grounding re-check are wired (first in line for a future ramp) |
+| `autotask_post_reply` | **withheld** | client_pii, customer-facing → always-gate |
+| `autotask_log_time` | **withheld** | financial → always-gate |
+| `send_email`, `send_sms` | **withheld** | comms sends — human-approved only, never a Technician action |
+
+- **v1 seeds zero grant rows — fully fail-closed.** Every posture is `withheld`, so the
+  autonomous loop has no write grant; deny-by-default already refuses every action. The
+  `agent_key='technician'` modeling lands now so a **future ramp is a data change** (a new
+  migration inserting one grant row), never a schema change.
+- **Keep in lockstep with the backend mirror.** The FE seed and
+  `AUTONOMOUS_ACTION_GRANTS` (BE #257) are two copies of one fact — change both together,
+  exactly like 0156 ↔ `SEEDED_TOOL_GRANTS`. A future ramp grants `autotask_update_ticket`
+  here **and** in the mirror, in the same lockstep change set.
+
 ---
 
 ## 3. The sub-agent fleet
