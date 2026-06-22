@@ -86,8 +86,9 @@ to an honest notice and saves nothing.
 ## Related surfaces
 
 - **Account page → Credentials panel** (#906) — the client connections for one account.
-- **Settings → Tenant mapping** (`/settings/tenant-mapping`, ADR-0051) — maps M365 tenants
-  onto accounts (the registry the on-prem estate discovery enumerates).
+- **Settings → Tenant mapping** (`/settings/client-mapping/m365`, ADR-0112 — the M365 instance of
+  Client Mapping; supersedes the standalone `/settings/tenant-mapping`, which now redirects) —
+  maps M365 Customer Tenants onto accounts (the registry the on-prem estate discovery enumerates).
 - Credential custody (write) is the backend's job; the on-prem pipeline authenticates the M365
   enterprise app by certificate or secret per this registry (BE #217, LP #234).
 

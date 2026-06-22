@@ -9,12 +9,6 @@ import { OrchestratorSettingsCard } from "@/components/agent/orchestrator-settin
 import { getAgentSettingsState } from "@/lib/agent/settings-data";
 import { settingsSourceNote } from "@/lib/agent/settings";
 import { saveAgentSettingsAction } from "@/app/(app)/agents/actions";
-import { getRepositories } from "@/lib/data";
-import { TenantMappingPanel } from "@/components/settings/tenant-mapping-panel";
-import {
-  deleteTenantMappingAction,
-  saveTenantMappingAction,
-} from "./tenant-mapping-actions";
 
 /** Human labels for the application roles. */
 const ROLE_LABEL: Record<AppRole, string> = {
@@ -60,14 +54,7 @@ export default async function SettingsPage({
   const email = session?.user?.email ?? "—";
   const rolesLabel = roles.map((r) => ROLE_LABEL[r] ?? r).join(", ");
 
-  const { crm, security } = getRepositories();
-  const [agentSettings, tenantMappings, unmappedTenants, accounts] =
-    await Promise.all([
-      getAgentSettingsState(),
-      security.listTenantMappings(),
-      security.listUnmappedTenants(),
-      crm.listAccounts(),
-    ]);
+  const agentSettings = await getAgentSettingsState();
 
   // ── Profile tab ────────────────────────────────────────────────────────────
   const profile = (
@@ -154,15 +141,23 @@ export default async function SettingsPage({
     </section>
   );
 
-  // ── Tenant Mapping tab (ADR-0051, #150) ─────────────────────────────────────
+  // ── Tenant Mapping tab (ADR-0112 / E3 #1147) ────────────────────────────────
+  // Tenant Mapping is now the M365 instance of the unified Client Mapping surface; the editable
+  // panel moved there. This tab is a signpost so the old location still leads somewhere useful.
   const tenantsPanel = (
-    <TenantMappingPanel
-      mappings={tenantMappings}
-      unmapped={unmappedTenants}
-      accounts={accounts}
-      saveAction={saveTenantMappingAction}
-      deleteAction={deleteTenantMappingAction}
-    />
+    <Card title="Tenant mapping">
+      <p className="text-sm text-dim">
+        Tenant mapping moved to <span className="text-text">Client Mapping</span> — Tenant Mapping
+        is now the Microsoft 365 instance of the unified mapping surface (ADR-0112). Map Customer
+        Tenants onto accounts there; the resolver treats each link as authoritative.
+      </p>
+      <Link
+        href="/settings/client-mapping/m365"
+        className="mt-3 inline-block rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+      >
+        Open M365 client mapping
+      </Link>
+    </Card>
   );
 
   const toolsPanel = (
@@ -178,7 +173,7 @@ export default async function SettingsPage({
           { href: "/custom-fields", label: "Custom fields", hint: "Admin-definable task/project fields (ADR-0065 B4)" },
           { href: "/settings/statuses", label: "Statuses", hint: "Admin-definable status sets per project type (ADR-0065 B5)" },
           { href: "/settings/credentials", label: "Credentials", hint: "Key Vault credential registry by scope — names only, never values (ADR-0103)" },
-          { href: "/settings/tenant-mapping", label: "Tenant mapping", hint: "Map M365 tenants onto accounts (ADR-0051)" },
+          { href: "/settings/client-mapping/m365", label: "Tenant mapping", hint: "Map M365 tenants onto accounts — the M365 instance of Client Mapping (ADR-0112)" },
         ].map((t) => (
           <li key={t.href}>
             <Link
