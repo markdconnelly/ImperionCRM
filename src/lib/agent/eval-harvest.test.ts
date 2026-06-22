@@ -8,7 +8,7 @@ import {
 } from "./eval-harvest";
 
 /**
- * The PII redaction contract (#1037, ADR-0119) — the security crux of the harvest pipeline.
+ * The PII redaction contract (#1037, ADR-0120) — the security crux of the harvest pipeline.
  * These fixtures carry SYNTHETIC PII shapes (fake names/emails/figures) and prove that NO
  * row-level PII can survive into the eval corpus: redaction replaces every token, and the
  * fail-closed guard throws on any residual.

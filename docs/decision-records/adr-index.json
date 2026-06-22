@@ -1564,6 +1564,21 @@
   },
   {
     "adr": "0119",
+    "title": "Grounding-conflict resolution workflow + domain-owner registry",
+    "status": "proposed",
+    "date": "2026-06-22",
+    "tags": [
+      "meta",
+      "agents",
+      "knowledge-tiers"
+    ],
+    "summary": "When the three knowledge tiers — canon/OKF, company silver, and the caller's personal tier — disagree at grounding time, the conflict is NOT resolved by hard precedence and NOT by model arbitration. It is bubbled to the DOMAIN BUSINESS OWNER (a per-concept/domain registry) to resolve via a workflow — the company-tier twin of the #968/ADR-0114 contradiction state machine. The agent does not stall: it answers immediately with the most-authoritative VALID tier (canon > company_silver > personal, gated by temporal validity), LABELLED, and raises the conflict in parallel (hedge/refuse-until-resolved is rejected as the default). Every conflict + resolution is ledgered. Resolution write-back to canon/silver is the deferred follow-up.",
+    "file": "ADR-0119-grounding-conflict-resolution-domain-owner.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0120",
     "title": "Eval→improvement feedback loop + PII-safe golden harvest",
     "status": "proposed",
     "date": "2026-06-22",
@@ -1573,7 +1588,7 @@
       "security"
     ],
     "summary": "Close the eval loop: failed evals / low-scored agent_run rows open Mark-gated tuning candidates (prompt|grant|skill proposals) that never auto-apply, and golden cases are harvested from real traces through a fail-closed PII-redaction contract so no client row-level data enters the eval corpus. Extends ADR-0106 (eval plane).",
-    "file": "ADR-0119-eval-feedback-loop-pii-safe-harvest.md",
+    "file": "ADR-0120-eval-feedback-loop-pii-safe-harvest.md",
     "superseded_by": [],
     "consolidated_into": null
   }

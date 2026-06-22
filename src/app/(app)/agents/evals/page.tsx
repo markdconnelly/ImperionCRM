@@ -125,7 +125,7 @@ export default async function AgentEvalsPage() {
         {candidates.length === 0 ? (
           <p className="text-sm text-dim">
             No tuning candidates yet — a failing eval or a low-scored run opens a prompt/grant/skill
-            change proposal here for a human to accept or reject (ADR-0119). Nothing auto-applies.
+            change proposal here for a human to accept or reject (ADR-0120). Nothing auto-applies.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -161,7 +161,7 @@ export default async function AgentEvalsPage() {
           </div>
         )}
         <p className="mt-3 text-[11px] text-dim">
-          The eval→improvement loop (ADR-0119): low scores open proposals; golden cases harvested
+          The eval→improvement loop (ADR-0120): low scores open proposals; golden cases harvested
           from real traces pass fail-closed PII redaction first. Applying any change is human-gated.
         </p>
       </section>

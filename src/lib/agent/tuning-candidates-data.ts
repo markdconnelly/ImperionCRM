@@ -1,7 +1,7 @@
 /**
- * Recent tuning candidates (#1037, ADR-0119) — server data-fetch for the feedback loop's read
+ * Recent tuning candidates (#1037, ADR-0120) — server data-fetch for the feedback loop's read
  * surface. Reads `agent_tuning_candidate` (the Mark-gated proposal ledger filled by the backend
- * harvester/auto-filer, 0176). The web identity has SELECT on the table (0176), so this is a
+ * harvester/auto-filer, 0179). The web identity has SELECT on the table (0179), so this is a
  * clean direct rendering read (ADR-0042).
  *
  * Degrades like the rest of the app: DB unset → mock sample rows; query failure → empty list,

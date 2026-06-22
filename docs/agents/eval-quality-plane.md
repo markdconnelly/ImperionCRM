@@ -83,7 +83,7 @@ no committed baseline fails rather than silently passing.
 | 3 | Golden-set seed + read-only eval dashboard | frontend | shipped (#986) |
 | 4 | CI quality gate vs committed baselines (dormant until backend reachable) | frontend CI | shipped (#988) |
 | 5 | Eval→improvement feedback loop + PII-safe golden harvest (schema + redaction contract + read surface), **dormant** | frontend | shipped (#1037) |
-| 5b | Backend harvester (trace → redacted case) + auto-filer (low score → tuning candidate) | backend | follow-up (authorised by ADR-0119) |
+| 5b | Backend harvester (trace → redacted case) + auto-filer (low score → tuning candidate) | backend | follow-up (authorised by ADR-0120) |
 
 ### Golden-set additions
 
@@ -103,7 +103,7 @@ agent surfaces ship — each follows the 0155 pattern (`ON CONFLICT (module, nam
 
 ---
 
-## 5c. The eval→improvement feedback loop (slice 5, #1037, ADR-0119)
+## 5c. The eval→improvement feedback loop (slice 5, #1037, ADR-0120)
 
 Measuring quality is half the job; **closing the loop** is the other half. Slice 5 adds two paths:
 
@@ -120,10 +120,10 @@ redaction contract** — `src/lib/agent/eval-harvest.ts`:
   never harvested. **No client row-level PII enters `agent_eval_case`** (proven by the PII fixtures
   in `eval-harvest.test.ts`). This is defence-in-depth on top of the `data_class` RLS floor (0175).
 - A harvested case is stamped `agent_eval_case.harvest_source = 'harvested'` + `harvest_run_id`
-  (0176) for audit; curated cases keep the `'curated'` default.
+  (0179) for audit; curated cases keep the `'curated'` default.
 
 **Loop — low scores → Mark-gated tuning candidates.** A failed eval / low-scored run opens an
-**`agent_tuning_candidate`** (0176): a `kind` ∈ {prompt, grant, skill} proposal with a PII-free
+**`agent_tuning_candidate`** (0179): a `kind` ∈ {prompt, grant, skill} proposal with a PII-free
 `title` + `rationale`, an optional `proposed_diff`, provenance, and a `status`
 (open → accepted/rejected/applied). **It never auto-applies** — applying a change is a human
 decision (the autonomy ceiling, #1036). The accepted/applied track record is the signal earned
@@ -145,5 +145,5 @@ surface); the runtime is the authorised follow-up.
   `agent_run` / `agent_memory`), so absent from the OKF semantic bundle
   (`semantic-layer-not-affected`).
 - The eval plane **measures**; it does not act. Corrections it surfaces feed the feedback loop as
-  **Mark-gated proposals** (`agent_tuning_candidate`, §5c / ADR-0119) — never a write-back from the
+  **Mark-gated proposals** (`agent_tuning_candidate`, §5c / ADR-0120) — never a write-back from the
   runner and never an auto-applied prompt/grant/skill change.

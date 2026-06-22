@@ -1,5 +1,5 @@
 ---
-adr: 0119
+adr: 0120
 title: "Eval→improvement feedback loop + PII-safe golden harvest"
 status: proposed
 date: 2026-06-22
@@ -8,11 +8,7 @@ summary: "Close the eval loop: failed evals / low-scored agent_run rows open Mar
 tags: [meta, agents, security]
 ---
 
-# ADR-0119: Eval→improvement feedback loop + PII-safe golden harvest
-
-> **Number is a placeholder.** ADR-0119 is claimed at MERGE per system CLAUDE.md §10.3 — the
-> branch that merges second renumbers. The migration is authored as `0176_eval_feedback_loop.sql`
-> against a placeholder likewise; both renumber together at merge.
+# ADR-0120: Eval→improvement feedback loop + PII-safe golden harvest
 
 | Field | Value |
 |---|---|
@@ -82,12 +78,12 @@ We need (a) a path from a low score to a concrete, **human-gated** improvement p
   under a permission-scoped identity; this guarantees the *corpus* stays clean even when the
   *source row* was legitimately readable. **No row-level client PII enters `agent_eval_case`.**
 
-A harvested case is stamped `harvest_source = 'harvested'` + `harvest_run_id` (0176) so its
+A harvested case is stamped `harvest_source = 'harvested'` + `harvest_run_id` (0179) so its
 redacted origin is auditable; curated cases keep the `'curated'` default.
 
 ### The feedback loop
 
-A failed eval / low-scored run opens an **`agent_tuning_candidate`** (0176): `kind` ∈
+A failed eval / low-scored run opens an **`agent_tuning_candidate`** (0179): `kind` ∈
 {prompt, grant, skill}, a PII-free `title` + `rationale` citing the failing eval/run, an optional
 human-readable `proposed_diff`, provenance (`source_eval_result_id` / `source_run_id`), an optional
 `external_ref` (e.g. an auto-filed GitHub issue), and a `status` (open → accepted/rejected/applied).
@@ -97,7 +93,7 @@ later reads.
 
 ### Ownership split
 
-- **Front end (this PR):** the schema (0176), the **redaction contract + library** (pure, tested),
+- **Front end (this PR):** the schema (0179), the **redaction contract + library** (pure, tested),
   the tuning-candidate read surface (cockpit card on `/agents/evals`), and this ADR.
 - **Backend (follow-up, this ADR authorises):** the runtime harvester (read low-scored ledger rows
   → `buildHarvestCandidate` → insert harvested case) and the auto-filer (open a candidate +
@@ -119,7 +115,7 @@ auto-filer, no LLM/GitHub calls (those are the backend follow-up). Mirrors ADR-0
   code/config change — same no-PII/no-secrets bar as `agent_eval_case`; the guard covers the
   `reason` field too.
 - The loop **cannot** mutate agent behaviour: it only proposes; the autonomy ceiling holds.
-- Grants follow the ledger split (0176): backend RW, web SELECT+UPDATE (operator decides), no
+- Grants follow the ledger split (0179): backend RW, web SELECT+UPDATE (operator decides), no
   DELETE, pipeline nothing. **Never commit secrets.**
 
 ### Cost impact

@@ -103,6 +103,50 @@ is backend #250 / #258 / #263 — out of scope here; this surface is list + deci
 
 ---
 
+## 2a. The dispatch-resolution contract (the FE half of the routing decision)
+
+The routing decision — *does this action execute inline, execute + notify, or park for a
+human?* — is one function of three inputs: the action's **tier** (from the catalog, #994),
+the acting agent's **level** (from the most-specific `agent_action_autonomy` row, mig
+0158), and ADR-0107 D4's level → **tier-ceiling** map. The **backend dispatcher (BE #250)
+is authoritative** — it owns the runtime, re-asserts consent (ADR-0058), and writes the run
+ledger. But the *logic* is a pure contract both planes share; the front end carries its
+half in **`src/lib/agent/action-dispatch.ts`** (`resolveDispatch`), exactly as it mirrors
+the catalog (`action-catalog.ts`) and the dial helpers (`action-autonomy.ts`). Repos don't
+share code (system [CLAUDE.md §1](../../CLAUDE.md)); the two copies are kept in lockstep.
+
+```
+resolveDispatch(actionKind, agentKey, dials) → {
+  tier,             // catalog tier; an UNCATALOGUED kind is T3 (most restrictive, fail-closed)
+  resolvedLevel,    // most-specific dial row's level; no row ⇒ 1 (Manual), fail-closed
+  resolvedCeiling,  // ADR-0055 ceiling the level mapped to (ADR-0107 D4 + per-row override)
+  decision,         // 'execute' | 'execute_notify' (L4) | 'cockpit'
+  routesToCockpit,  // decision === 'cockpit'
+}
+```
+
+Dial precedence (most specific first), mirroring the backend SELECT: exact `(agent, class)`
+→ `(agent, *)` → `(*, class)` → `(*, *)` → none. The two **fail-closed** invariants matter:
+an **uncatalogued action** is treated as **T3** (so "we don't recognize this action" routes
+to the cockpit, never silent-executes), and **no dial set** resolves to **level 1 (Manual)**.
+
+The front-end uses this to **preview** a routing decision on the operator surfaces (what
+would this level do to a T2 send?) and to shape the rendered record; it never dispatches.
+
+### Recorded on the run (`agent_run`)
+
+Issue #996's acceptance requires the resolved **level + ceiling + routing decision** to be
+recorded on the run, so the glass-box trace shows *why* an action executed silently vs.
+parked. `agent_pending_action` already records `resolved_level` / `resolved_ceiling` for the
+actions that **park** (mig 0158). Migration **0176** (this PR — *RENUMBER AT MERGE*, §10.3)
+adds the same record to **`agent_run`** for the actions that **execute inline** (L3–L5):
+`resolved_level`, `resolved_ceiling`, `route_decision`. The **backend dispatcher writes
+them** using the same `resolveDispatch` logic; the web role gets `SELECT` only (it renders
+the trace). NULL on all three = a read-only / pure-reasoning run that dispatched no governed
+action.
+
+---
+
 ## 3. What is live vs. proposed
 
 | Piece | State | Note |
@@ -110,6 +154,8 @@ is backend #250 / #258 / #263 — out of scope here; this surface is list + deci
 | The cockpit surface (cross-agent queue + controls), read-side + degradation | **Live (this PR, #1014)** | renders sample data until agents produce real rows |
 | `agent_pending_action` schema | **Live (mig 0158, prod-applied)** | ADR-0109 |
 | **Backend decide endpoint** (`/orchestration/cockpit/decide`) | **Live (backend #267, CLOSED)** | the executor re-asserts consent and stamps the approver |
+| **Dispatch-resolution contract (FE half)** — `resolveDispatch` (catalog tier + dial level → routing decision), pure + tested | **Live (this PR, #996)** | `src/lib/agent/action-dispatch.ts`; the backend (BE #250) mirrors it and is authoritative at runtime |
+| **`agent_run` routing record** (`resolved_level` / `resolved_ceiling` / `route_decision`) | **Schema this PR (mig 0176, RENUMBER AT MERGE)** | backend dispatcher writes it; web `SELECT` only for the trace. NOT prod-applied (Mark-gated) |
 | The dispatch-time routing that *enqueues* parked actions | **Pending** | backend #250 / #258 / #263 — until then the queue fills from the Technician propose-flow only |
 | **L4 oversight view** (executed actions list) | **Live (this PR, #1202)** | reads `status IN ('executed','expired')`; renders sample data until L4 dispatch produces real rows |
 | The L4 inline-execute-then-park dispatch path | **Pending** | backend #250 (dial→tier-ceiling routing) — until then no `executed` rows arrive from autonomy L4 |

@@ -1,7 +1,5 @@
--- 0176: Eval→improvement feedback loop + PII-safe golden-harvest provenance.
--- Eval-plane feedback slice (#1037, epic #983, ADR-0119). Migration number 0176 claimed at
--- MERGE per system CLAUDE.md §10.3 — authored against a placeholder; renumber if another
--- migration merges first. ADR-0119 is likewise a placeholder.
+-- 0179: Eval→improvement feedback loop + PII-safe golden-harvest provenance.
+-- Eval-plane feedback slice (#1037, epic #983, ADR-0120).
 --
 -- WHY THIS EXISTS. The eval plane (0154/0155, ADR-0106) MEASURES quality but does not close the
 -- loop: a failing eval or a low-scored `agent_run` produces no actionable artifact, and the
@@ -12,7 +10,7 @@
 --   1. agent_tuning_candidate — a Mark-GATED PROPOSAL row. A failed eval / low-scored run opens
 --      one (kind = prompt | grant | skill change); it carries a human-readable diff/rationale and
 --      a status (open → accepted/rejected/applied). It NEVER auto-applies anything — applying a
---      prompt/grant/skill change stays a human decision (ADR-0119, the autonomy ceiling #1036).
+--      prompt/grant/skill change stays a human decision (ADR-0120, the autonomy ceiling #1036).
 --      The accepted/applied track-record is the signal earned autonomy (#1036) later reads.
 --
 --   2. agent_eval_case provenance — harvest_source + harvest_run_id mark a case that was
@@ -43,7 +41,7 @@ ALTER TABLE agent_eval_case
   ADD COLUMN IF NOT EXISTS harvest_run_id uuid REFERENCES agent_run(id) ON DELETE SET NULL;
 COMMENT ON COLUMN agent_eval_case.harvest_source IS
   'Origin of this golden case: ''curated'' (hand-authored/synthetic, the default) or ''harvested'' '
-  '(synthesised from a real trace via the redaction-gated harvester, ADR-0119). A harvested case '
+  '(synthesised from a real trace via the redaction-gated harvester, ADR-0120). A harvested case '
   'has passed src/lib/agent/eval-harvest.ts fail-closed redaction — no client PII (§8).';
 COMMENT ON COLUMN agent_eval_case.harvest_run_id IS
   'For a harvested case: the agent_run it was synthesised from (provenance/audit). Content was '
@@ -75,13 +73,13 @@ CREATE TABLE IF NOT EXISTS agent_tuning_candidate (
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
 COMMENT ON TABLE agent_tuning_candidate IS
-  'Mark-gated improvement PROPOSAL (#1037, ADR-0119). A failed eval / low-scored run opens a '
+  'Mark-gated improvement PROPOSAL (#1037, ADR-0120). A failed eval / low-scored run opens a '
   'candidate prompt|grant|skill change; it never auto-applies — a human accepts/applies. The '
   'accepted/applied track record is the signal earned autonomy (#1036) reads. Backend RW, web '
   'SELECT+UPDATE (operator decides from the cockpit). No PII, no secrets — proposal text only.';
 COMMENT ON COLUMN agent_tuning_candidate.proposed_diff IS
   'Human-readable proposed change (prose/diff). NOT executable and NEVER auto-applied — applying '
-  'a prompt/grant/skill change is a human decision (ADR-0119, autonomy ceiling #1036).';
+  'a prompt/grant/skill change is a human decision (ADR-0120, autonomy ceiling #1036).';
 
 CREATE INDEX IF NOT EXISTS agent_tuning_candidate_status_idx
   ON agent_tuning_candidate (status, created_at DESC);

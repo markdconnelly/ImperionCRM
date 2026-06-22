@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mapTuningCandidateRow, statusTone } from "./tuning-candidates";
 
-/** Pure DB-shape → render-row mapper behind the tuning-candidate cockpit (#1037, ADR-0119). */
+/** Pure DB-shape → render-row mapper behind the tuning-candidate cockpit (#1037, ADR-0120). */
 describe("mapTuningCandidateRow", () => {
   const base = {
     id: "tc-1",

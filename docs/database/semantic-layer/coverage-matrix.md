@@ -201,6 +201,8 @@ authority for its row.
 | agent_run, agent_message, agent_memory | horizontal | C / B / G | n/a | Observability — orchestrator telemetry |
 | board_session (+member/+message/+recommendation) | horizontal | B | n/a | Governance — board deliberation |
 | feature_request (+vote/+status_history) | horizontal | B | n/a | Engineering — feedback (GitHub-coupled) |
+| domain_owner | horizontal | H | n/a | Governance — per concept/domain → the business owner who resolves grounding conflicts (#1035, ADR-0119) |
+| grounding_conflict (+event) | horizontal | H | n/a | Governance — canon·company·personal disagreement → domain-owner resolution; never auto-resolved, ledgered (#1035, ADR-0119) |
 
 ## Bronze source tables (raw, per-source — archetype inputs)
 

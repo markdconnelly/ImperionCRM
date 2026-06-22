@@ -1,5 +1,5 @@
 /**
- * Eval golden-set HARVEST + the PII redaction contract (#1037, ADR-0119, epic #983).
+ * Eval golden-set HARVEST + the PII redaction contract (#1037, ADR-0120, epic #983).
  *
  * THE PROBLEM. The richest source of new golden-eval cases is what agents have ACTUALLY done —
  * the `agent_run` / `agent_message` ledger (migration 0056). But that ledger carries verbatim
@@ -16,7 +16,7 @@
  *   2. {@link assertHarvestSafe} is the FAIL-CLOSED guard: it re-scans the candidate and throws
  *      if ANY residual PII pattern survives. The harvest pipeline (backend runtime) MUST call it
  *      and MUST drop the candidate on throw. A case that cannot be made safe is never harvested —
- *      synthesis is preferred over a lossy copy (ADR-0119).
+ *      synthesis is preferred over a lossy copy (ADR-0120).
  *
  * This is a PURE module (no `server-only`, no DB, no network) so the redaction guarantee is
  * exhaustively testable with PII-bearing fixtures (`eval-harvest.test.ts`). The backend is the

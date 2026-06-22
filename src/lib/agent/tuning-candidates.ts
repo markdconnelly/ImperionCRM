@@ -1,7 +1,7 @@
 /**
- * Tuning-candidate presentation types + pure mapper (#1037, ADR-0119) — the feedback loop's
+ * Tuning-candidate presentation types + pure mapper (#1037, ADR-0120) — the feedback loop's
  * read surface. A tuning candidate is a Mark-gated PROPOSAL (prompt|grant|skill change) opened
- * by a failed eval / low-scored run; it never auto-applies (ADR-0119, ceiling #1036).
+ * by a failed eval / low-scored run; it never auto-applies (ADR-0120, ceiling #1036).
  *
  * Pure module (no `server-only`, no DB) so it is unit-testable; the server data-fetch lives in
  * `tuning-candidates-data.ts` (the eval-runs.ts / eval-runs-data.ts split).
