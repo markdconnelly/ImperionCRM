@@ -95,7 +95,9 @@ agent surfaces ship — each follows the 0155 pattern (`ON CONFLICT (module, nam
   /agent/actions/execute` — `post_reply` (`client_pii`) and `log_time` (`financial`) are
   always-gated; `update_ticket` (`operational`) is auto-eligible by class but withheld by the
   v1 technician autonomy ceiling. Per ADR-0083 each `expectation` doubles as the gauntlet goal
-  ("the plan meets the ticket-resolution goal **and** routes correctly").
+  ("the plan meets the ticket-resolution goal **and** routes correctly"). Gated in CI by the
+  `technician` baseline in [`eval/baselines.json`](../../eval/baselines.json) (#1195, 0.75 — the
+  guardrail-suite bar).
 
 ---
 
