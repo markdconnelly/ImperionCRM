@@ -94,7 +94,7 @@ Constitution, not a vertical. Contested rows are the seams flagged at the end.
 | [interaction](tables/interaction.md) | Knowledge | B (+ gold) | ✅ | every workflow's research stage |
 | [meeting](tables/meeting.md) | Knowledge | B | ✅ | meeting follow-up |
 | [conversation](tables/conversation.md) | Knowledge | B (+ gold) | ✅ | conversational intelligence (transcribe→analyze→embed) |
-| conversation_segment (embedding unit), conversation_insight (AI output) | Knowledge | B / G | ⏳ | conversational intelligence; risk/objection → forecasting |
+| [conversation_segment](tables/conversation_segment.md) (embedding unit), [conversation_insight](tables/conversation_insight.md) (AI output) | Knowledge | B / G | ✅ | conversational intelligence; risk/objection → forecasting |
 
 ## Consent / enrichment / exposure
 

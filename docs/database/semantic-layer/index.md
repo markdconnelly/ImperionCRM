@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**61 concept files authored** (this table). Remaining objects from the
+**63 concept files authored** (this table). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
 
@@ -71,6 +71,8 @@ subset; remaining entities are tracked for expansion
 | [`interaction`](tables/interaction.md) | single-SoR | per-source / per-channel | ADR-0011 |
 | [`meeting`](tables/meeting.md) | single-SoR | per-platform (1:1 with interaction) | ADR-0011 |
 | [`conversation`](tables/conversation.md) | single-SoR (+ gold) | app SoR; source supplies the capture (ACS/Teams/upload) | ADR-0068 |
+| [`conversation_segment`](tables/conversation_segment.md) | single-SoR (embedding unit) | app-native (diarized from transcript; the embed/citation unit) | ADR-0068 |
+| [`conversation_insight`](tables/conversation_insight.md) | gold (AI output) | backend Claude analyze stage (per-finding; not vectorized) | ADR-0068 |
 | [`campaign`](tables/campaign.md) | single-SoR | website system of record | ADR-0053 |
 | [`workflow`](tables/workflow.md) | single-SoR | website system of record | ADR-0027 |
 | [`lead_score`](tables/lead_score.md) | derived ledger | website (backend/LP scoring pass) | ADR-0073 |
