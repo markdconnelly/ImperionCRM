@@ -11,7 +11,8 @@
 
 /** ADR-0055 autonomy tiers, lowest authority first. */
 export type AutonomyTier = "T0" | "T1" | "T2" | "T3";
-const TIER_ORDER: Record<AutonomyTier, number> = { T0: 0, T1: 1, T2: 2, T3: 3 };
+/** Tier authority order (T0 lowest → T3 highest). Exported for earned-autonomy tier math (#1036). */
+export const TIER_ORDER: Record<AutonomyTier, number> = { T0: 0, T1: 1, T2: 2, T3: 3 };
 const TIER_SET = new Set<string>(["T0", "T1", "T2", "T3"]);
 
 /** The dial's levels (ADR-0107 D4). */

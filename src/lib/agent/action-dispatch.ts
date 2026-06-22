@@ -3,9 +3,11 @@
  * ADR-0109). The connective tissue that ties the action-contract catalog (#994) and the
  * persisted dial (`agent_action_autonomy`, migration 0158) to a single ROUTING DECISION:
  *
- *   proposed action (kind) ──catalog──▶ ADR-0055 tier
+ *   proposed action (kind) ──catalog──▶ ADR-0055 tier + data_class
  *   acting agent + action class ──dial set──▶ most-specific level → tier ceiling
- *   tier vs ceiling ──▶ execute | execute_notify | cockpit   (+ the record for the ledger)
+ *   + EARNED tier (#1036) ──raises the ceiling for non-always-gate classes; the always-gate
+ *     hard ceiling (#1034/ADR-0118) DISCARDS the earned raise (the invariant)
+ *   tier vs EFFECTIVE ceiling ──▶ execute | execute_notify | cockpit   (+ the record for the ledger)
  *
  * At dispatch the backend (BE #250) is the AUTHORITATIVE dispatcher — it owns the runtime,
  * re-asserts consent at execute (ADR-0058), and writes the run ledger. This module is the
@@ -29,6 +31,11 @@ import {
   type AutonomyTier,
 } from "@/lib/agent/action-autonomy";
 import { getActionDef } from "@/lib/agent/action-catalog";
+import {
+  clampCeilingForClass,
+  earnedExecutesInline,
+  type EarnedRecord,
+} from "@/lib/agent/earned-autonomy";
 
 /** The wildcard key used by the global / agent-default dial rows. */
 const WILDCARD = "*";
@@ -69,8 +76,26 @@ export interface DispatchResolution {
   cataloged: boolean;
   /** The resolved 1–5 autonomy level that applied (from the most-specific dial row). */
   resolvedLevel: AutonomyLevel;
-  /** The ADR-0055 tier ceiling that level resolved to. */
+  /** The ADR-0055 tier ceiling that level resolved to (the operator dial alone). */
   resolvedCeiling: AutonomyTier;
+  /**
+   * The tier the agent has EARNED on this class (#1036), raising the effective ceiling, or
+   * `null` when no earned record applied (the dial alone governed).
+   */
+  earnedTier: AutonomyTier | null;
+  /**
+   * The EFFECTIVE ceiling actually applied = `max(resolvedCeiling, earnedTier)` (#1036). Equals
+   * `resolvedCeiling` when no earned tier applies. NEVER lets an always-gate class execute (the
+   * hard-ceiling invariant is enforced by `hardGated` short-circuiting the decision, not by
+   * lowering this number).
+   */
+  effectiveCeiling: AutonomyTier;
+  /**
+   * True when the action's `dataClass` is an always-gate class (#1034 / ADR-0118 — money /
+   * credentials / customer-facing). When true the action ALWAYS routes to the cockpit
+   * regardless of dial level or earned tier. THE HARD-CEILING INVARIANT.
+   */
+  hardGated: boolean;
   /** The dial row that won most-specific resolution (`null` ⇒ no dial set ⇒ fail-closed L1). */
   matchedDial: DialLike | null;
   /** The routing decision: execute inline / execute + notify (L4) / route to the cockpit. */
@@ -123,17 +148,49 @@ export function resolveDispatch(
   actionKind: string,
   agentKey: string,
   dials: readonly DialLike[],
+  earned?: EarnedRecord | null,
 ): DispatchResolution {
   const def = getActionDef(actionKind);
   const cataloged = def !== undefined;
   const tier: AutonomyTier = def?.tier ?? UNKNOWN_ACTION_TIER;
+  // An uncatalogued action has no known dataClass; treat it as always-gate (most restrictive),
+  // since "we don't know its sensitivity" must never grant earned auto-execute (fail-closed).
+  const dataClass = def?.dataClass ?? "client_pii";
 
   const matchedDial = pickDial(dials, agentKey, actionKind);
   const resolvedLevel = coerceLevel(matchedDial?.level);
   const ceilings = matchedDial?.ceilings ?? null;
   const resolvedCeiling = resolveTierCeiling(resolvedLevel, ceilings);
 
-  const decision = routeAction(tier, resolvedLevel, ceilings);
+  // The operator dial alone (no earned tier) — the baseline decision the rest layers on top of.
+  const dialDecision = routeAction(tier, resolvedLevel, ceilings);
+
+  // Earned autonomy (#1036): raise the dial ceiling toward the agent's earned tier, then apply
+  // the HARD CEILING for always-gate classes. The earned tier only applies when its record keys
+  // this exact (agent, class) pair — a record for another class never leaks autonomy here.
+  const earnedTier =
+    earned && earned.agentKey === agentKey && earned.actionClass === actionKind
+      ? earned.earnedTier
+      : null;
+  const { effectiveCeiling, hardGated } = clampCeilingForClass({
+    dialCeiling: resolvedCeiling,
+    earnedTier,
+    dataClass,
+  });
+
+  // The decision under the (earned-raised) effective ceiling. THE INVARIANT: for an always-gate
+  // class `effectiveCeiling` already DISCARDED any earned raise (clampCeilingForClass), so the
+  // verdict collapses to the operator dial alone — no track record can auto-cross. For a
+  // non-gated class the earned raise can let an above-dial-ceiling action execute inline.
+  let decision: RouteDecision;
+  if (earnedExecutesInline({ tier, effectiveCeiling, hardGated })) {
+    // Within the effective ceiling. Preserve L4's notify+undo flavor: the dial's own decision
+    // encodes execute_notify at L4, so reuse it when the dial alone would already execute; else
+    // a plain execute newly admitted by the earned-raised ceiling.
+    decision = dialDecision === "cockpit" ? "execute" : dialDecision;
+  } else {
+    decision = "cockpit";
+  }
 
   return {
     agentKey,
@@ -142,6 +199,9 @@ export function resolveDispatch(
     cataloged,
     resolvedLevel,
     resolvedCeiling,
+    earnedTier,
+    effectiveCeiling,
+    hardGated,
     matchedDial,
     decision,
     routesToCockpit: decision === "cockpit",
