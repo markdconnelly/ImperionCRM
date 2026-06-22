@@ -31,6 +31,7 @@ flowchart TD
 | 🧱 **The structure** — the ERD (five diagrams), every entity, every enum, the vector-data design | [**data-model.md**](data-model.md) — **updated on every schema change** |
 | 📖 **The meaning** — per silver entity: definition, source-of-record / authority, join paths, PII note | [**semantic-layer/**](semantic-layer/index.md) — **governed OKF canon** (ADR-0086) |
 | 🔌 **How the app reads** — the typed repository abstraction (ADR-0007), mock ↔ Postgres swap | [data-access-layer.md](data-access-layer.md) |
+| 🔎 **How gold is ranked for a query** — the hybrid ranker (semantic + keyword + metadata + temporal) | [gold-hybrid-retrieval.md](gold-hybrid-retrieval.md) (ADR-0115) |
 | 🔑 **Company-credential schema status** | [credential-config-todo.md](credential-config-todo.md) |
 
 > **Two kinds of database doc, kept apart on purpose.** The **narrative + ERD**
