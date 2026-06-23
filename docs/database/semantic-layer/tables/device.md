@@ -7,7 +7,7 @@ description: Unified asset/endpoint — one row per device, merged from per-sour
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, device, merge]
 data_class: operational
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T00:00:00Z
 ---
 
 # device
@@ -43,9 +43,21 @@ controller** authority (it directly manages the device), below `datto_rmm` (the 
 live-state authority) and above the directory/documentation sources. UniFi gear is physical
 on-prem hardware and feeds **`device`, never `cloud_asset`** (which is ARM/cloud resources).
 The bronze→silver merge runs on-prem with the collector (merge co-locates with ingestion,
-LP ADR-0026) as a future `Invoke-ImperionUniFiMerge`; `mac` is the lateral key. Surfacing the
-firmware-compliance signals as silver `device` columns is a follow-up (bronze carries them
-losslessly today).
+LP ADR-0026) as `Invoke-ImperionUniFiMerge` (LP #284). **`mac` is the lateral match key** —
+a real silver column (`#1241`/`0195`) with a partial-unique `(account_id, mac)` index over
+non-null mac, since UniFi gear carries no serial in bronze; the existing serial-keyed estate
+(mac NULL) is excluded by the predicate and untouched. The firmware-compliance signals
+(`firmware_version`, `firmware_updatable`) are now surfaced as silver columns (`0195`), fed
+from bronze `unifi_devices` (`0162`).
+
+**Source / precedence column (#1241/0195).** `device` carries a `source` provenance label
+(the contributing-provider key `website` | `datto_rmm` | `unifi` | `m365` | `itglue`),
+mirroring `cloud_asset.source` (`0139`). The merge uses it to scope a replace to the `unifi`
+label, distinguish a UniFi-created row from the serial-keyed estate, and honor the precedence
+above without clobbering a higher-authority (`website`/`datto_rmm`) row. `imperion-localpipeline`
+holds `INSERT, UPDATE` on `device` (`0195`, the 0139/0160 writer-grant pattern) so the on-prem
+merge can write; the columns/grant are dormant until prod-applied and the UniFi collector
+hydrates bronze.
 
 **Backup posture (BCDR) is a field-scoped merge, not identity precedence.**
 `datto_bcdr_backups` (bronze `0119`) contributes backup-posture fields
@@ -89,8 +101,12 @@ run null until it lands.
 | `name` | text | hostname / asset name |
 | `device_type` | text | free-text, e.g. `workstation` · `server` · `network` · `mobile` |
 | `manufacturer` / `model` / `serial_number` | text | serial is the primary match key |
+| `mac` | text | network-device natural key (UniFi lateral match, `0195`); partial-unique `(account_id, mac)` over non-null mac |
+| `source` | text | contributing-provider label (`website`\|`datto_rmm`\|`unifi`\|`m365`\|`itglue`), `0195`; precedence + replace-from-source scope |
 | `os` | text | |
 | `status` | text | free-text, e.g. `active` · `retired` |
+| `firmware_version` | text | installed firmware (UniFi compliance signal, `0195`) |
+| `firmware_updatable` | boolean | available-but-unapplied firmware update (`0195`) |
 | `last_seen_at` | timestamptz | |
 | `datto_device_uid` | text | Datto RMM/BCDR join key (`0140`); set by the matcher |
 | `backup_protected` | boolean | BCDR posture: protected / unprotected / unknown (null) |
