@@ -7,7 +7,7 @@ description: The entity-resolution golden-record registry — one row per (entit
 resource: ../../entity-xref-registry.md
 tags: [reference, identity, entity-resolution, governance, data-integrity, bitemporal]
 data_class: operational
-timestamp: 2026-06-23T12:00:00Z
+timestamp: 2026-06-23T18:00:00Z
 ---
 
 # entity_xref
@@ -88,7 +88,11 @@ No PII, no secrets — `source_key` is a source-system identifier. Created schem
 `external_identity` backfill; migration 0191 (#1112) makes the spine **bitemporal** —
 valid-time (`valid_to`) + system-time (`system_from`/`system_to`), with `entity_resolve()`
 extended to the live-row predicate without a signature change, and the unique guarantee narrowed
-to the one **live** mapping so closed history accumulates. The merge-lineage backfills
-(account/contact/device/opportunity per-source FKs) remain later #1049 slices; the
-data-quality autonomy gate is #1113. Specific identity mappings resolve against the live
-read-only DB, never this file.
+to the one **live** mapping so closed history accumulates. Migration 0194 (#1113) adds the
+**data-quality autonomy gate** (epic #1049 pillar 3, FINAL slice): the `dq_sla` policy
+(freshness + completeness per `data_class`) + `entity_dq_gate()`, a fail-closed dispatch gate
+that routes an action on a **stale or incomplete** record to the human cockpit — DQ as a safety
+control, a one-way clamp that never raises autonomy. `dq_sla` is archetype-H config (no concept
+file of its own, the 0175 precedent). The merge-lineage backfills
+(account/contact/device/opportunity per-source FKs) remain later #1049 slices. Specific identity
+mappings resolve against the live read-only DB, never this file.

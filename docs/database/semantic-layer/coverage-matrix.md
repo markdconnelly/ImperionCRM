@@ -199,7 +199,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | account_tenant, saved_view | horizontal | H | op | ⏳ | n/a |
 | report_definition, dashboard, dashboard_item | horizontal | B/H | op | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
 | [metric_definition](tables/metric_definition.md) | horizontal | H | op | ✅ | the headless-BI metric contract — one governed definition agents & dashboards share; seed expanded with 7 bound sales/service/finance contracts (#1050/#1055/#1114) + 5 profitability/ROI contracts (#1116, completing #1050); FE agent+BI query interface reads it via the single backend read path with the data_class gate (#1115) |
-| [entity_xref](tables/entity_xref.md) | horizontal | H | op | ✅ | the identity spine — every source id → one internal entity; agents resolve before acting via `entity_resolve()` (#1049/#1054, resolver+`external_identity` backfill #1111; **bitemporal** valid-time+system-time #1112) |
+| [entity_xref](tables/entity_xref.md) | horizontal | H | op | ✅ | the identity spine — every source id → one internal entity; agents resolve before acting via `entity_resolve()` (#1049/#1054, resolver+`external_identity` backfill #1111; **bitemporal** valid-time+system-time #1112; **DQ autonomy gate** `dq_sla`+`entity_dq_gate()` #1113 — **completes epic #1049**) |
 
 ## Audit / governance
 
@@ -213,6 +213,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | feature_request (+vote/+status_history) | horizontal | B | op | n/a | Engineering — feedback (GitHub-coupled) |
 | domain_owner | horizontal | H | op | n/a | Governance — per concept/domain → the business owner who resolves grounding conflicts (#1035, ADR-0119) |
 | grounding_conflict (+event) | horizontal | H | op | n/a | Governance — canon·company·personal disagreement → domain-owner resolution; never auto-resolved, ledgered (#1035, ADR-0119) |
+| dq_sla | horizontal | H | op | n/a | Governance — data-quality SLA (freshness+completeness) per `data_class`; `entity_dq_gate()` is a fail-closed dispatch gate routing stale/incomplete records to the cockpit (#1113, epic #1049 pillar 3) |
 
 ## Bronze source tables (raw, per-source — archetype inputs)
 

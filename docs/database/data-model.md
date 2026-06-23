@@ -3021,7 +3021,19 @@ source identities, including closed bitemporal history) stays the indexed SELECT
 contract. Full contract + backfill ledger: [`entity-xref-registry.md`](entity-xref-registry.md);
 meaning: [`semantic-layer/tables/entity_xref.md`](semantic-layer/tables/entity_xref.md). No PII,
 no secrets — `source_key` is a source-system identifier. Merge-lineage backfills are later #1049
-slices; the data-quality autonomy gate is #1113.
+slices.
+
+**Pillar 3 — data-quality autonomy gate** (migration 0194, #1113 — completes epic #1049). Acting
+on the right entity (#1111) and knowing what was true/believed when (#1112) is not enough for an
+autonomous Technician: it must refuse to act on **stale or incomplete** data. `dq_sla` (one row
+per `data_class`, the 0175 axis) sets `max_age_seconds` + `min_completeness`; the SQL function
+`entity_dq_gate(data_class, age_seconds, completeness)` returns whether a record MEETS its SLA
+(**fail-closed** on any breach / unknown class / NULL input). The backend dispatcher calls it
+AFTER the dial+earned verdict — a breach DOWNGRADES an otherwise-inline action to the human
+cockpit (a one-way clamp; DQ never raises autonomy, "freshness = correctness"). FE mirror:
+`src/lib/agent/data-quality-gate.ts` (`evaluateDqGate` + `gateDispatchOnDataQuality`, the third
+dispatch gate). `dq_sla` is archetype-H config (no OKF concept file, the 0175 precedent);
+deploy-dormant until the spine hydrates.
 
 ## Vector data (pgvector)
 
