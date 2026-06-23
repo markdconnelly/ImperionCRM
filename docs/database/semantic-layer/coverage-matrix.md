@@ -51,7 +51,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 |---|---|---|---|---|---|
 | [account](tables/account.md) | kernel | A | op | ✅ | research / QBR-prep; lead dedupe |
 | [contact](tables/contact.md) | kernel | A | pii | ✅ | research; lead-response |
-| [device](tables/device.md) | Service Desk | A | op | ✅ | asset/security context (Datto RMM precedence + BCDR backup posture, #683; UniFi `mac` key + `source`/precedence + firmware cols + LP write grant, #1241/0193) |
+| [device](tables/device.md) | Service Desk | A | op | ✅ | asset/security context (Datto RMM precedence + BCDR backup posture, #683; UniFi `mac` key + `source`/precedence + firmware cols + LP write grant, #1241/0195) |
 | [cloud_asset](tables/cloud_asset.md) | Service Desk | A | op | ✅ | CMDB cloud-asset CI (#874, ADR-0097) |
 | [external_identity](tables/external_identity.md) | horizontal | H | op | ✅ | identity resolution |
 | [contact_social_identity](tables/contact_social_identity.md) | kernel | B | pii | ✅ | enrichment |

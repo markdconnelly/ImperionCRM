@@ -1,6 +1,6 @@
--- 0193: silver `device` — UniFi-merge schema gaps (#1241; filed from LocalPipeline #284,
+-- 0195: silver `device` — UniFi-merge schema gaps (#1241; filed from LocalPipeline #284,
 -- `Invoke-ImperionUniFiMerge`, the on-prem bronze→silver merge `unifi_devices` → silver
--- `device`, LP ADR-0026). Migration number 0193 is a PLACEHOLDER — the real number is
+-- `device`, LP ADR-0026). Migration number 0195 is a PLACEHOLDER — the real number is
 -- claimed at MERGE per system CLAUDE.md §10.3 (the rebased branch takes the next free
 -- number just before squash; locate by content, never by this literal).
 --
