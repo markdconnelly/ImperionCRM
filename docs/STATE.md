@@ -47,6 +47,7 @@ done/▶-in-flight ledger.
 - ✅ Contacts + Contact-360 (dossier, unified communications timeline, per-contact consent, composer).
 - ✅ Accounts; interactive Pipeline (drag deals between stages).
 - ✅ **Client mapping / entity resolution** ([#1141](https://github.com/markdconnelly/ImperionCRM/issues/1141), migrations 0160/0165): `entity_xref` + `account_domain` cross-source identity spine (22 xref rows live in prod); `account_tenant` folded into `entity_xref`.
+- ✅ **Data-plane integrity spine** (epic [#1049](https://github.com/markdconnelly/ImperionCRM/issues/1049), migrations 0190–0192, placeholder #s): `entity_resolve()` forward resolver + `external_identity` backfill (#1111/0190); **bitemporal** `entity_xref` — valid-time + system-time, live-row predicate (#1112/0191); **DQ autonomy gate** — `dq_sla` freshness+completeness SLA per `data_class` + fail-closed `entity_dq_gate()` routing stale/incomplete records to the cockpit (#1113/0192). Deploy-dormant (spine empty in prod). Completes epic #1049.
 - ✅ Campaigns + audiences/ads + builders; Journeys (single-object workflow model, ADR-0073); Events (JSON-form registration).
 - ✅ Communications — one unified multi-channel timeline per contact.
 - ✅ Discovery → Assessments → Proposals engagement chain (agent-prefilled discovery answers a human confirms).

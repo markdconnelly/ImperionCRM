@@ -88,11 +88,40 @@ it moves **0 rows now** and lights up as the connector syncs hydrate it (deploy-
 rest of the spine). The remaining merge-lineage backfills stay later #1049 slices; the resolver
 function above is now stable so they can land behind a consistent read contract.
 
+## Data-quality autonomy gate (#1113, migration 0192 — epic #1049 pillar 3, FINAL slice)
+
+Resolving the right entity (#1111) and knowing what was true/believed when (#1112) is not enough
+for an *autonomous* Technician: it must also refuse to act on **stale or incomplete** data. Pillar
+3 makes data quality a **safety control on the action plane** — the same shape as the always-gate
+hard ceiling (data_class, 0175; earned autonomy, #1036): a one-way clamp that can only ever route
+an action **to the human cockpit**, never raise autonomy ("freshness = correctness").
+
+- **The SLA policy — `dq_sla` (data, not schema).** One row per `data_class` (the 0175
+  sensitivity axis — the gate is keyed on *what kind of data* the action touches, the axis the
+  action ceiling already uses), defining `max_age_seconds` (freshness) and `min_completeness`
+  (fraction of SLA-required fields populated, `[0,1]`). always-gate classes
+  (financial / security_credentials / client_pii) carry the tightest SLA (1h / 1.000);
+  `operational` is loosest (24h / 0.800). Tune by UPDATE-ing a row — never a migration.
+- **The gate — `entity_dq_gate(data_class, age_seconds, completeness) → boolean`.** TRUE iff the
+  record MEETS its class SLA (the action may proceed on DQ grounds); FALSE on any breach **or**
+  unknown class **or** NULL input — **fail-closed** (we can't prove the data is good → route to a
+  human). The backend dispatcher computes a record's age + completeness at dispatch and calls this
+  AFTER the dial+earned verdict; a breach DOWNGRADES an otherwise-inline decision to `cockpit`.
+- **FE mirror — `src/lib/agent/data-quality-gate.ts`** (pure): `evaluateDqGate` mirrors the SQL
+  predicate; `gateDispatchOnDataQuality(resolution, quality)` layers the gate onto a
+  `DispatchResolution` (action-dispatch.ts) as the **third** dispatch gate, returning
+  `gatedDecision` + a PII-free breach reason (`stale` / `incomplete` / `unknown`) for the cockpit
+  badge. `DEFAULT_DQ_SLA` mirrors the 0192 seed (kept in lockstep, the action-dispatch precedent).
+
+The spine is deploy-dormant (`entity_xref` empty in prod), so the gate evaluates **0 live
+actions** today and lights up with the rest of #1049. This **completes epic #1049**.
+
 ## Boundaries
 
 No PII, no secrets — `source_key` is a source-system identifier (Autotask company id, M365
-tenant/user id, device serial, …), not personal data. Bitemporal validity (valid-time `valid_to`
-+ system-time `system_from`/`system_to`, #1112) is **DONE — migration 0191**; the data-quality
-autonomy gate (#1113) is the remaining #1049 slice. `entity_resolve`'s predicate is now
+tenant/user id, device serial, …), not personal data; the DQ gate carries only class names +
+a record's age/completeness numbers. Bitemporal validity (valid-time `valid_to` + system-time
+`system_from`/`system_to`, #1112) is **DONE — migration 0191**; the data-quality autonomy gate
+(#1113) is **DONE — migration 0192**, completing epic #1049. `entity_resolve`'s predicate is now
 `valid_from <= now() < COALESCE(valid_to, 'infinity')` AND `system_to IS NULL` — 0191 extended
 0190's `valid_from <= now()` seam without changing the resolver signature or any caller.
