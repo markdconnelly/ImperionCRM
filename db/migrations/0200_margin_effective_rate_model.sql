@@ -1,11 +1,11 @@
--- 0904: Effective-rate / margin per client & service — compose the cost (#1091) and revenue
+-- 0200: Effective-rate / margin per client & service — compose the cost (#1091) and revenue
 -- (#1092) legs into the governed MARGIN + EFFECTIVE-RATE contracts (#1093, third tracer slice
 -- of the profitability epic #1044).
 --
--- Migration number 0904 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
+-- Migration number 0200 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
 -- authored against a high free slot while origin/main tops at 0196 and the sibling slices
 -- author against 0902 (#1091, PR #1248) / 0903 (#1092, PR #1254); the branch that merges last
--- renumbers. Do NOT hardcode-depend on 0904 — the metric contract test locates the new
+-- renumbers. Do NOT hardcode-depend on 0200 — the metric contract test locates the new
 -- definitions by `key` (`margin_to_serve` / `gross_margin_pct` / `effective_rate`), never by
 -- number.
 --
