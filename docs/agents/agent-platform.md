@@ -149,14 +149,14 @@ mirror (BE #257):
   exactly like 0156 ↔ `SEEDED_TOOL_GRANTS`. A future ramp grants `autotask_update_ticket`
   here **and** in the mirror, in the same lockstep change set.
 
-### 2.3 Pax8 procure→provision→bill governed sequence (migration 0175, ADR-0081)
+### 2.3 Pax8 procure→provision→bill governed sequence (migration 0184, ADR-0081)
 
 The license-procurement loop (epic [#1042](https://github.com/markdconnelly/ImperionCRM/issues/1042))
 is the first **multi-step governed task sequence** — *order a license in Pax8 → provision
 it in M365 → attach it to the agreement → bill* — owned by the procurement workspace agent
 **"Procurement (Vance)"** (`module='crm'` `name='procurement'` anchor, the 0171 pattern).
 Per **ADR-0042 §1** the *actuators* live in the backend action catalog (the BE twins of
-#1083–#1086); migration 0175 seeds only the FE-owned **governance** rows.
+#1083–#1086); migration 0184 seeds only the FE-owned **governance** rows.
 
 **The sequence is the governed unit (ADR-0081).** The four steps run under ONE permission
 bar = the **most-restrictive step**:

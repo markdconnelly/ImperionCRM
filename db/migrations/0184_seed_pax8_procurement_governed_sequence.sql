@@ -1,6 +1,6 @@
--- 0175: Seed the governed Pax8 procure->provision->bill action sequence (#1083/#1084/#1085/#1086,
+-- 0184: Seed the governed Pax8 procure->provision->bill action sequence (#1083/#1084/#1085/#1086,
 -- epic #1042; ADR-0081 task-sequence rule + ADR-0107 tool-grant rule + ADR-0109 hard ceilings).
--- Migration number 0175 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
+-- Migration number 0184 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
 -- placeholder; the rebased branch takes the next free number just before squash.
 --
 -- WHY THIS EXISTS. Epic #1042 closes the loop "order a license in Pax8 -> provision in M365 ->
