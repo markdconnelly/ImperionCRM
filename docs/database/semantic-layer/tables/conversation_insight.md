@@ -6,6 +6,7 @@ archetype: G
 description: An AI-derived finding over a captured conversation (summary / action_item / sentiment / objection / risk) — gold output the app and forecasting read directly.
 resource: ../../../decision-records/ADR-0068-conversational-intelligence-pipeline.md
 tags: [silver, gold, communications, conversation_insight, ai]
+data_class: client_pii
 timestamp: 2026-06-22T00:00:00Z
 ---
 

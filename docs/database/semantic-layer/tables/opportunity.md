@@ -6,7 +6,8 @@ archetype: A
 description: Merged silver opportunity from three bronze sources (KQM quote header, Autotask, website manual); the object the app uses.
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, sales, opportunity, kqm, autotask, forecast]
-timestamp: 2026-06-19T00:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # opportunity

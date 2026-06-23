@@ -6,7 +6,8 @@ archetype: B
 description: Sales discovery engagement with a fit verdict — website system of record; anchors the SBR cadence.
 resource: ../../../decision-records/ADR-0023-engagement-capture-and-relationship-data-model.md
 tags: [silver, sales, discovery, engagement]
-timestamp: 2026-06-15T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # discovery_call

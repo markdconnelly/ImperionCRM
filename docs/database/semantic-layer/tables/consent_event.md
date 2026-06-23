@@ -6,7 +6,8 @@ archetype: C
 description: Append-only consent ledger — immutable per-channel opt-in/opt-out facts with lawful basis; the gate on every send and ad.
 resource: ../../../decision-records/ADR-0014-consent-ledger-communications.md
 tags: [silver, consent, compliance, ledger]
-timestamp: 2026-06-14T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # consent_event

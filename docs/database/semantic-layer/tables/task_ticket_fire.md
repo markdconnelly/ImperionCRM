@@ -6,7 +6,8 @@ archetype: D
 description: Per-task write-back sidecar for JIT Autotask ticket creation — the front end requests a fire, the backend executor fires and stamps the id; idempotent, rolling-window.
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, delivery, ticket-fire, write-back, sidecar, archetype-d]
-timestamp: 2026-06-19T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # task_ticket_fire

@@ -6,6 +6,7 @@ archetype: B
 description: One contact → many social-platform identities; the Contact-360 social linkage (handle, profile, follower count, verified).
 resource: ../../../decision-records/ADR-0025-contact-360-enrichment-and-lawful-basis.md
 tags: [silver, crm, contact_social_identity, enrichment]
+data_class: client_pii
 timestamp: 2026-06-22T00:00:00Z
 ---
 

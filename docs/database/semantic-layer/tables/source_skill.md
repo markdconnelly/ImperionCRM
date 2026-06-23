@@ -6,7 +6,8 @@ archetype: H
 description: Per-source (provider) sanctioned fetch/validate skill map — the tool-routing hop the OKF layer points at; one row per provider, skills referenced by name only.
 resource: ../../../decision-records/ADR-0104-okf-orchestrator-grounding-cortex.md
 tags: [reference, config, tool-routing, registry, skills]
-timestamp: 2026-06-19T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # source_skill

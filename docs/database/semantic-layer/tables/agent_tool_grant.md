@@ -6,7 +6,8 @@ archetype: H
 description: Per-agent tool allow-list — which tool each registered agent may invoke, with an optional scope. The tool-routing authority ADR-0104 points at (OKF grounds; this grants).
 resource: ../../../decision-records/ADR-0087-agent-orchestration-and-observability-layer.md
 tags: [reference, config, agent, governance, tool-routing]
-timestamp: 2026-06-19T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # agent_tool_grant

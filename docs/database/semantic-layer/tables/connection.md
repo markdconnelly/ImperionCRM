@@ -6,7 +6,8 @@ archetype: H
 description: OAuth/integration connection record + Key Vault credential registry — personal/company/client scope; tokens custodied in Key Vault by reference (name only); client connections link to an account; carries auth method + poll cadence.
 resource: ../../../decision-records/ADR-0103-connection-credential-registry.md
 tags: [silver, identity, connection, reference, config]
-timestamp: 2026-06-20T01:00:00Z
+data_class: security_credentials
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # connection

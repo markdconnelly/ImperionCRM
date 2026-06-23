@@ -6,6 +6,7 @@ archetype: H
 description: The governed metric-definitions store — one row per business number's canonical contract (name, grain, unit, definition, owner, data_class). The headless-BI source of truth so agents and humans agree.
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [reference, config, metrics, governance, bi, headless-bi]
+data_class: operational
 timestamp: 2026-06-22T00:00:00Z
 ---
 

@@ -6,7 +6,8 @@ archetype: D
 description: Write-back sidecar pairing a Defender incident to an Autotask ticket — the PK is the sync-back idempotency key (at most one ticket per incident, so creation never loops).
 resource: ../../../decision-records/ADR-0059-defender-incident-autotask-ticket-linkage.md
 tags: [silver, security, mssp, incident, write-back, sidecar, archetype-d]
-timestamp: 2026-06-19T00:00:00Z
+data_class: security_credentials
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # defender_incident_ticket_link

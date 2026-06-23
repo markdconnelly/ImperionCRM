@@ -6,6 +6,7 @@ archetype: H
 description: Per-provider identity link — maps one internal account or contact to its id in an external system; the CRM-side feed into the identity spine.
 resource: ../../../decision-records/ADR-0024-per-user-personal-connections-and-lead-hooks.md
 tags: [silver, identity, external_identity, reference]
+data_class: operational
 timestamp: 2026-06-22T00:00:00Z
 ---
 

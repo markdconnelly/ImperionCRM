@@ -6,7 +6,8 @@ archetype: D
 description: Write-back sidecar for the one idempotent monthly Autotask ExpenseReport per employee — front end requests, backend executor writes; re-approval updates the same report.
 resource: ../../../decision-records/ADR-0083-employee-expense-tracking-and-reimbursement.md
 tags: [silver, finance, expense, write-back, sidecar, archetype-d]
-timestamp: 2026-06-19T00:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # autotask_expense_report

@@ -6,7 +6,8 @@ archetype: E
 description: Per-policy security drift verdict for a tenant — observed M365 policy vs human-approved golden baseline across six policy families, classified compliant/drift/ungoverned/missing.
 resource: ../../../decision-records/ADR-0051-security-posture-model-imperion-secure-score.md
 tags: [silver, security, posture, policy, drift, golden]
-timestamp: 2026-06-19T12:00:00Z
+data_class: security_credentials
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # posture_policy

@@ -6,6 +6,7 @@ archetype: B
 description: One captured voice/meeting conversation (ACS call, Teams meeting, or upload) with its diarized turns (conversation_segment) and AI insights (conversation_insight); the voice channel of the customer 360 / interaction timeline.
 resource: ../../../decision-records/ADR-0068-conversational-intelligence-pipeline.md
 tags: [silver, communications, conversation, voice, transcription, ai]
+data_class: client_pii
 timestamp: 2026-06-22T00:00:00Z
 ---
 

@@ -6,7 +6,8 @@ archetype: B
 description: Weekly Mon–Sun employee timesheet container — website system of record; drives the idempotent Autotask Time Ticket and payroll match.
 resource: ../../../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md
 tags: [silver, time-tracking, payroll]
-timestamp: 2026-06-14T00:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # timesheet

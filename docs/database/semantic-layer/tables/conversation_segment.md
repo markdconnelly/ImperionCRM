@@ -6,6 +6,7 @@ archetype: B
 description: One diarized turn of a captured conversation — the embedding unit of the conversational-intelligence pipeline and the citation target for voice recall.
 resource: ../../../decision-records/ADR-0068-conversational-intelligence-pipeline.md
 tags: [silver, communications, conversation_segment, voice, embedding]
+data_class: client_pii
 timestamp: 2026-06-22T00:00:00Z
 ---
 

@@ -6,7 +6,8 @@ archetype: B
 description: Immutable snapshot of a project's planned dates (target go-live + task due dates) captured at a point in time, for planned-vs-actual slippage — website system of record.
 resource: ../../../decision-records/ADR-0069-pm-planning-time-workload-goals-portfolio.md
 tags: [silver, delivery, project, baseline, pm]
-timestamp: 2026-06-15T20:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # project_baseline

@@ -6,7 +6,8 @@ archetype: B
 description: A revenue target for a sales owner or team over a period; the denominator of forecast attainment — website system of record.
 resource: ../../../decision-records/ADR-0072-revenue-forecasting-model.md
 tags: [silver, sales, forecast, quota, revenue]
-timestamp: 2026-06-15T22:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # quota

@@ -6,7 +6,8 @@ archetype: B
 description: Marketing campaign across platforms — website system of record; parents ads, metrics, and lead attribution.
 resource: ../../../decision-records/ADR-0053-campaign-builders-events-scheduled-sends.md
 tags: [silver, marketing, campaign, demand-gen]
-timestamp: 2026-06-15T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # campaign

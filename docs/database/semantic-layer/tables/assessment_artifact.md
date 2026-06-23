@@ -6,7 +6,8 @@ archetype: B
 description: Evidence store for an assessment — Televy / M365 / Google / scan / phishing-sim outputs held once as received, with optional normalized and summary forms.
 resource: ../../../decision-records/ADR-0023-engagement-capture-and-relationship-data-model.md
 tags: [silver, sales, assessment, evidence, televy]
-timestamp: 2026-06-15T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # assessment_artifact

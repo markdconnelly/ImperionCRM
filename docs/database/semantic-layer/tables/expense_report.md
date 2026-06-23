@@ -6,7 +6,8 @@ archetype: B
 description: Monthly employee expense container — website system of record; drives idempotent Autotask ExpenseReport and the QBO reimbursement match.
 resource: ../../../decision-records/ADR-0083-employee-expense-tracking-and-reimbursement.md
 tags: [silver, expense-tracking, reimbursement]
-timestamp: 2026-06-14T00:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # expense_report

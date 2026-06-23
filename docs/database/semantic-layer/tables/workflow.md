@@ -6,7 +6,8 @@ archetype: B
 description: Automation sequence (nurture / pre-discovery / re-engagement / journey) — website system of record; legacy kinds parent steps + enrollments, journeys are a single object.
 resource: ../../../decision-records/ADR-0027-pre-discovery-automation-and-agent-answer-approval.md
 tags: [silver, automation, workflow, nurture, journey]
-timestamp: 2026-06-15T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # workflow

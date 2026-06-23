@@ -6,7 +6,8 @@ archetype: E
 description: The human-approved per-domain DNS baseline — the operator-approved snapshot that dns_domain drift is classified against; system of record is operator approval, not any external feed.
 resource: ../../../decision-records/ADR-0063-dns-posture-tracking.md
 tags: [silver, security, dns, golden, baseline]
-timestamp: 2026-06-15T00:00:00Z
+data_class: security_credentials
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # dns_golden

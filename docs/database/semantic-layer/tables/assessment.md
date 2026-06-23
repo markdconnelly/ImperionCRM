@@ -6,7 +6,8 @@ archetype: B
 description: Paid security/readiness assessment — website system of record, scored across six pillars; anchor of the assessment-led GTM.
 resource: ../../../decision-records/ADR-0022-assessment-led-gtm-and-engagement-model.md
 tags: [silver, sales, assessment, security]
-timestamp: 2026-06-15T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # assessment
