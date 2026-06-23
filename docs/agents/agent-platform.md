@@ -149,6 +149,36 @@ mirror (BE #257):
   exactly like 0156 ↔ `SEEDED_TOOL_GRANTS`. A future ramp grants `autotask_update_ticket`
   here **and** in the mirror, in the same lockstep change set.
 
+### 2.3 Pax8 procure→provision→bill governed sequence (migration 0175, ADR-0081)
+
+The license-procurement loop (epic [#1042](https://github.com/markdconnelly/ImperionCRM/issues/1042))
+is the first **multi-step governed task sequence** — *order a license in Pax8 → provision
+it in M365 → attach it to the agreement → bill* — owned by the procurement workspace agent
+**"Procurement (Vance)"** (`module='crm'` `name='procurement'` anchor, the 0171 pattern).
+Per **ADR-0042 §1** the *actuators* live in the backend action catalog (the BE twins of
+#1083–#1086); migration 0175 seeds only the FE-owned **governance** rows.
+
+**The sequence is the governed unit (ADR-0081).** The four steps run under ONE permission
+bar = the **most-restrictive step**:
+
+| Step (issue) | Catalog action | data_class | v1 posture |
+|---|---|---|---|
+| Order (#1083) | `pax8_place_order` | **financial** (spends money) | **withheld** — ADR-0109 hard money ceiling, **never** auto |
+| Provision (#1084) | `m365_provision_license` | operational | **withheld** — held until actuation dial + grounding wired |
+| Agreement attach (#1085) | `agreement_attach_license` | operational | **withheld** — held likewise |
+| Bill / true-up (#1086) | `bill_attach_license` | **financial** (feeds invoicing/#1041) | **withheld** — ADR-0109 hard money ceiling, **never** auto |
+
+- **Always human-gated.** Two steps are financial and money actions sit under the
+  **ADR-0109 hard ceiling**, so the *whole* sequence is approve-once / run-all, no partial
+  rollback — it never auto-commits regardless of the autonomy dial.
+- **v1 seeds zero grant rows — fully fail-closed** (every posture `withheld`). The two
+  operational steps *could* be granted by a future lockstep migration once the dial +
+  grounding re-check are wired; the two financial steps **can never** be granted.
+- **Eval goldens** (`module='procurement'`): one per step + one for the full sequence, each
+  asserting the agent **parks / routes to a human** (the 0172 `mustRefuse` shape). The
+  `procurement` CI baseline is added in the follow-up PR that lands the backend agent's real
+  behavior (the 0172-goldens → #1196-baseline order).
+
 ---
 
 ## 3. The sub-agent fleet
