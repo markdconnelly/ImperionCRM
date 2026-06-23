@@ -8153,10 +8153,16 @@ export const postgresRepositories: Repositories = {
           status: string;
           target_live_date: Date | null;
         }>(
-          `SELECT p.id, p.name, a.name AS account, p.type::text AS type,
+          // `project.type` (the legacy project_type enum column) was dropped in
+          // migration 0058 when project types became data — join project_type for
+          // the display name, mirroring listProjects. Referencing the dropped column
+          // here threw on every prod load (caught, but it silently served mock data
+          // and surfaced as the /onboarding 500/empty board, #1137).
+          `SELECT p.id, p.name, a.name AS account, pt.name AS type,
                   p.status::text AS status, p.target_live_date
            FROM project p
            LEFT JOIN account a ON a.id = p.account_id
+           JOIN project_type pt ON pt.id = p.project_type_id
            ORDER BY p.target_live_date NULLS LAST, p.name`,
         );
         const { rows: ms } = await pool.query<{
