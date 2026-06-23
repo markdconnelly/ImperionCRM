@@ -7,7 +7,7 @@ description: The governed metric-definitions store — one row per business numb
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [reference, config, metrics, governance, bi, headless-bi]
 data_class: operational
-timestamp: 2026-06-23T12:00:00Z
+timestamp: 2026-06-23T18:00:00Z
 ---
 
 # metric_definition
@@ -34,12 +34,18 @@ metric query endpoint ([#259](https://github.com/markdconnelly/ImperionCRM_Backe
 states: an **executable** `SELECT … AS value` scalar with `:named` temporal params the engine
 binds, or **unbound** (a definitional fragment / NULL the engine cannot parse → status
 `unbound`). The bound (executable) seed set is: `agent_compute_cost` (over `agent_run`),
-`tickets_closed` (over silver `ticket`), and the seven contracts added by #1114 —
+`tickets_closed` (over silver `ticket`), the seven contracts added by #1114 —
 `new_business_mrr`, `win_rate`, `pipeline_mrr` (over `opportunity`), `open_tickets` and
 `avg_resolution_hours` (over silver `ticket`), `billable_hours` (over `time_record`),
-`reimbursable_expense` (over `expense_item`). The original `mrr`, `gross_margin`, and
-`technician_utilization` remain unbound until a clean scalar source lands. Metric *values* (a
-snapshot/timeseries) are a later slice; this entity is the contract.
+`reimbursable_expense` (over `expense_item`) — and the five profitability/ROI contracts added
+by [#1116](https://github.com/markdconnelly/ImperionCRM/issues/1116) (the third/final slice of
+#1050, wiring the profitability [#1044] and ROI [#1048] epics onto the governed path rather than
+re-deriving them ad-hoc): `recognized_revenue` (over `invoice_mirror`), `gross_profit` and
+`effective_hourly_rate` (revenue × cost/hours scalar subqueries over `invoice_mirror`,
+`expense_item`, `time_record`), `agent_tickets_worked` and `agent_cost_per_run` (over
+`agent_run`). The original `mrr`, `gross_margin`, and `technician_utilization` remain unbound
+until a clean scalar source lands. Metric *values* (a snapshot/timeseries) are a later slice;
+this entity is the contract.
 
 ## Schema
 
