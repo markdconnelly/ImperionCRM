@@ -207,3 +207,78 @@ The FE mirror of the SQL predicate; the backend dispatch is the authoritative en
 | `finance` | `security_credentials` | **false** |
 | `admin` | any class | true |
 | (any) | unknown class | **false** (fail-closed) |
+
+## Curation-identity matrix (slice 3c — #981, migration 0191)
+
+The **cross-wall curation promoter** — the ONLY actor permitted to move knowledge across the
+personal→company wall (#966 decision 5/6, ADR-0105 §3c). It runs autonomously (no user in the
+loop) as the dedicated **non-`BYPASSRLS`** Postgres login `imperion-curation-promoter`, with a
+**narrow audited write-scope** and its **own append-only ledger** (`curation_event`). The four
+§3c invariants enforced by migration 0191:
+
+1. **No `BYPASSRLS`** — explicit narrow GRANTs + curation policies scoped to the promotion path.
+2. **Append-only ledger** — every cross-wall action is one `curation_event` row; promoter has
+   `INSERT` only (no `UPDATE`/`DELETE`).
+3. **Human-approved promotion, never silent** — the promoter writes a `status='draft'`
+   `curation_promotion` (read-personal-to-propose); a human flips draft→approved→applied
+   (`src/lib/data/curation-promotion.ts`). The engagement_answer agent-draft pattern (ADR-0027).
+4. **Non-impersonation** — all promoter policies key on **`current_user`** (the DB login role),
+   NOT a settable GUC, so the web/backend app role spoofing `app.user_id`/`app.oid` can never
+   satisfy them. The promoter has no owner-axis reach; it acts as itself.
+
+This is distinct from the **Personal Curator** (`imperion-personal-curator`, migration 0169,
+ADR-0114) which is INTRA-owner and never crosses the wall — the two actors coexist.
+
+### Preconditions
+
+```sql
+SELECT rolbypassrls FROM pg_roles WHERE rolname = 'imperion-curation-promoter';  -- f (Phase-2)
+SELECT relrowsecurity FROM pg_class
+  WHERE relname IN ('curation_promotion', 'curation_event');                     -- t, t
+SELECT polname FROM pg_policies WHERE tablename = 'curation_promotion';
+  -- curation_promotion_promoter + curation_promotion_reviewer
+SELECT polname FROM pg_policies WHERE tablename = 'curation_event';
+  -- curation_event_promoter + curation_event_reviewer + curation_event_owner
+SELECT polname FROM pg_policies WHERE tablename = 'personal_fact' AND polname LIKE '%promoter%';
+  -- personal_fact_promoter_read (SELECT-only)
+```
+
+### DB-property matrix (verify after a Phase-2 role + apply)
+
+Cases keyed on the connection's login role (`current_user`) — the non-impersonation guarantee.
+"as promoter" = connected as `imperion-curation-promoter`; "as app role" = the web role with the
+`app.groups` GUC set (mirrors `withIdentity`). Let `O` be a personal-fact owner's `app_user.id`.
+
+| # | Connected as | Session context | Action | Expected |
+|---|---|---|---|---|
+| 1 | promoter | — | `INSERT INTO curation_promotion(..., status, proposed_by) VALUES (…, 'draft', 'imperion-curation-promoter')` | succeeds — read-to-propose write |
+| 2 | promoter | — | `INSERT … status='approved'` | **rejected** by `WITH CHECK` — promoter can only write a draft (the approval gate) |
+| 3 | promoter | — | `UPDATE curation_promotion SET status='applied' WHERE …` | **0 rows / refused** — no `UPDATE` grant; cannot apply (humans apply) |
+| 4 | promoter | `set_config('app.user_id', O, true)` | `SELECT count(*) FROM personal_note` | **0** — the promoter has NO personal_note policy + a GUC it sets is ignored; it cannot read a drawer as its owner (non-impersonation) |
+| 5 | promoter | — | `SELECT count(*) FROM personal_fact` | sees facts (read-to-propose god-view) — but `UPDATE personal_fact …` → **refused** (SELECT-only grant) |
+| 6 | promoter | — | `INSERT INTO curation_event(actor, …) VALUES ('imperion-curation-promoter', …)` | succeeds; `UPDATE/DELETE curation_event` → **refused** (append-only) |
+| 7 | app role | `app.groups = {"admin"}` | `SELECT count(*) FROM curation_promotion` | sees the queue (reviewer policy) |
+| 8 | app role | `app.groups = {"support"}` (technician) | `SELECT count(*) FROM curation_promotion` | **0** — a technician cannot review the cross-wall queue |
+| 9 | app role | `app.groups = {"admin"}` | `UPDATE curation_promotion SET status='applied' WHERE status='approved'` | succeeds — the human apply path |
+| 10 | app role | `app.user_id = O`, no `app.groups` | `SELECT count(*) FROM curation_event WHERE source_owner_user_id = O` | sees events touching O's drawer (owner transparency) |
+| 11 | app role | no context | `SELECT count(*) FROM curation_promotion` | **0** (fail-closed — neither reviewer nor promoter branch matches) |
+
+> Case 4 is the load-bearing **non-impersonation** proof: even with `app.user_id` set to a real
+> owner, the promoter sees zero `personal_note` rows — the owner axis keys on the GUC only for
+> the *app role*, and the promoter has no `personal_note` policy granting it anything. Its only
+> personal reach is the SELECT-only `personal_fact_promoter_read` god-view (case 5), enough to
+> *propose*, never to *mutate* a drawer.
+
+### Human-review wiring (unit-tested — `src/lib/data/curation-promotion.test.ts`)
+
+The FE owns the human-review surface (the promoter writer is BACKEND). These pin the
+application-layer behaviour above the RLS reviewer policy; the DB is the authoritative enforcer.
+
+| Behaviour | Expectation |
+|---|---|
+| non-reviewer (`support`) calls `listPendingPromotions` / `approvePromotion` | returns `null`, never opens a transaction (defense-in-depth above RLS) |
+| `approvePromotion` | flips `draft→approved`, guarded `WHERE status='draft'`; interim — **not** ledgered |
+| `applyPromotion` | flips `approved→applied` **and** writes ONE `curation_event('applied')` in the same transaction |
+| `rejectPromotion` | flips `draft→rejected` **and** writes ONE `curation_event('rejected')` |
+| `curation_event.detail` | provenance pointers + the status only — **never** proposed content (no PII in the ledger) |
+| no row matched the from-status | returns `null`, no ledger row (nothing happened) |
