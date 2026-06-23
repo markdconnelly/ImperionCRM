@@ -122,21 +122,22 @@ describe("the #1116 profitability/ROI migration conforms to the contract", () =>
   it("every seeded profitability/ROI row is a valid bound contract", async () => {
     const files = await readdir(MIGRATIONS_DIR);
     // Located by content, not number — the migration number is claimed at merge (§10.3).
-    // `recognized_revenue` is unique to the #1116 slice.
+    // `gross_profit` is unique to the #1116 slice (the #1092 revenue-join slice also mentions
+    // `recognized_revenue`, so match the more specific token to find THIS migration).
     let target = null;
     let sql = "";
     for (const f of files.filter((f) => f.endsWith(".sql"))) {
       const text = await readFile(`${MIGRATIONS_DIR}${f}`, "utf8");
       if (
         /INSERT\s+INTO\s+metric_definition/i.test(stripSqlComments(text)) &&
-        /recognized_revenue/.test(text)
+        /'gross_profit'/.test(text)
       ) {
         target = f;
         sql = text;
         break;
       }
     }
-    expect(target, "profitability/ROI migration (seeds recognized_revenue) not found").toBeTruthy();
+    expect(target, "profitability/ROI migration (seeds gross_profit) not found").toBeTruthy();
 
     const { rows, errors } = validateMetricSeedSql(sql);
     expect(errors).toEqual([]);
@@ -196,6 +197,51 @@ describe("the #1091 cost-allocation migration conforms to the contract", () => {
 
     // Both are bound (executable) money scalars the metric engine (#259) resolves — the labor
     // dollar lives ONLY here (the sole pay_rate reader), never in the broadly-granted view.
+    for (const r of rows) {
+      const expr = unwrap(r.expression);
+      expect(expr, `${unwrap(r.key)} should be a bound SELECT … AS value`).toMatch(
+        /^\s*select[\s\S]*\bas\s+value\b/i,
+      );
+      expect(unwrap(r.unit)).toBe("usd");
+      expect(unwrap(r.data_class)).toBe("financial");
+    }
+  });
+});
+
+describe("the #1092 revenue-join migration conforms to the contract", () => {
+  it("seeds the bound recognized-revenue partner contract, financial + usd", async () => {
+    const files = await readdir(MIGRATIONS_DIR);
+    // Located by content, not number — the migration number is claimed at merge (§10.3).
+    // `recognized_revenue_to_serve` is unique to the #1092 revenue-join slice.
+    let target = null;
+    let sql = "";
+    for (const f of files.filter((f) => f.endsWith(".sql"))) {
+      const text = await readFile(`${MIGRATIONS_DIR}${f}`, "utf8");
+      if (
+        /INSERT\s+INTO\s+metric_definition/i.test(stripSqlComments(text)) &&
+        /recognized_revenue_to_serve/.test(text)
+      ) {
+        target = f;
+        sql = text;
+        break;
+      }
+    }
+    expect(
+      target,
+      "revenue-join migration (seeds recognized_revenue_to_serve) not found",
+    ).toBeTruthy();
+
+    const { rows, errors } = validateMetricSeedSql(sql);
+    expect(errors).toEqual([]);
+    expect(rows.length).toBe(1); // the revenue partner to cost_to_serve
+
+    // The revenue join (#1092) gives the cost/revenue/margin trio (#1044) a stable revenue key
+    // the margin slice (#1093) composes against — without re-keying the canonical recognized_revenue.
+    const keys = rows.map((r) => unwrap(r.key));
+    expect(keys).toEqual(["recognized_revenue_to_serve"]);
+
+    // Bound (executable) money scalar the metric engine (#259) resolves — the same governed
+    // path the cost metrics use, so per-construction margin = revenue − cost composes by key.
     for (const r of rows) {
       const expr = unwrap(r.expression);
       expect(expr, `${unwrap(r.key)} should be a bound SELECT … AS value`).toMatch(

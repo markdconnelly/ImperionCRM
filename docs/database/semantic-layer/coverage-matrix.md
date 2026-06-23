@@ -169,6 +169,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 |---|---|---|---|---|---|
 | [invoice](tables/invoice.md) | Finance | B (QBO read-only mirror) | fin | ✅ | collections / AR-dunning; reconciliation-assurance (#667) |
 | [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | fin | ✅ | collections / AR-dunning (#677/#678) |
+| revenue_allocation | Finance | F | fin | ⏳ | revenue join (#1092, profitability epic #1044) — derived view: recognized revenue (from `invoice_mirror`, per client × month; service line NULL) + contracted revenue (from `contract.estimated_revenue` per client × `contract.category` × month); the revenue mirror of `cost_allocation` (#1091), composed into per-client/per-service margin by #1093 via the governed `recognized_revenue`/`recognized_revenue_to_serve` − `cost_to_serve` metrics |
 
 ## Procurement / licensing
 

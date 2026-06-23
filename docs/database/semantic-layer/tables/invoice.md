@@ -7,7 +7,7 @@ description: Read-only AR/invoice MIRROR over QuickBooks — observability only;
 resource: ../../../decision-records/ADR-0085-qbo-payment-fact-purchase-simple-start.md
 tags: [silver, finance, invoice, accounts-receivable, mirror, archetype-b]
 data_class: financial
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T20:00:00Z
 ---
 
 # invoice
@@ -78,6 +78,12 @@ The view type-casts the all-text bronze envelope (migration 0120) and adds deriv
   `lib/invoice-aging.ts`) and the Collections (AR-dunning) + Controller (reconciliation-
   assurance) ICM agents ([#667](https://github.com/markdconnelly/ImperionCRM/issues/667)) — all
   read-only.
+- **Revenue join (#1092, profitability epic #1044).** `account_id` + `txn_date` +
+  `total_amount` feed the derived `revenue_allocation` view's **recognized leg** (per client ×
+  month; `service_line` NULL — an invoice header carries no service line) and the governed
+  `recognized_revenue` / `recognized_revenue_to_serve` metrics, the revenue partner to the
+  cost-allocation `cost_to_serve` (#1091). The margin slice (#1093) composes
+  `margin = recognized_revenue − cost_to_serve` by metric key.
 
 ## Notes
 
