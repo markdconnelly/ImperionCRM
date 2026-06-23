@@ -82,6 +82,7 @@ a caller allowlist** (backend ADR-0035). Verified against the front-end service 
 | `POST /connections/qbo/start` | QuickBooks connect (`connectQuickBooksAction`, `settings:write`) | parks CSRF `state` in Key Vault, returns Intuit consent URL (ADR-0085) |
 | `POST /connections/qbo/callback` | The QBO callback route (§4) | `{ code, realmId, state }` → exchanges code, writes token to `conn-company-qbo`, row → `active` |
 | `POST /api/autotask/tickets` | `ticketsService.createTicket` (SBR / Feedback / Tasks) | `{ queue, title, description?, accountId, origin:{type,id} }` → idempotent ticket create (ADR-0052 §7); retried push returns the existing `ticketRef` (`created:false`) |
+| `GET /api/orchestration/metrics/{key}` | `metricsService.lookup` — the metric query interface (#1115, epic #1050) | `?period=&period_start=&period_end=` (YYYY-MM-DD) → `{ key, name, value\|null, unit, grain, asOf, dataClass, status }`. The single governed-number read path the `metric_lookup` sub-agent tool ALSO uses, so agent + BI agree by construction; the engine binds the pre-vetted `metric_definition.expression` in a READ-ONLY txn (backend #259/ADR-0078). `status` ∈ ok\|unbound\|not_found\|error |
 
 > Some of these are **fail-closed stubs** until the backend app settings + provider app
 > registrations land (e.g. unconfigured OAuth providers return 501, the web app records a
@@ -103,6 +104,8 @@ Verified against source.
 | `/api/qbo/callback` | GET | Intuit (QuickBooks) OAuth redirect target — forwards `code`+`realmId`+`state` to the backend, bounces to Settings with `qbo=<result>` | Session + `settings:write` (admin only); CSRF via the backend's one-time state |
 | `/api/notifications` | GET | The signed-in user's in-app notifications — `?unread=1` filters to unread, `?limit` (1–100, default 30) paginates; returns `{ notifications, unreadCount }` | Session (returns an empty payload when unauthenticated); read-only |
 | `/api/work/{parentType}/{parentId}/activity` | GET | Work-object activity feed (ADR-0064 A1, #330) — `?comments=1` comments-only, `?limit`/`?offset` paginate; returns `{ entries }` newest-first (comments ∪ audit events). Soft-deleted comment bodies never surface | Session (middleware-gated) + UUID-validated `parentId` + provisioned acting user, else empty (#883); read-only |
+| `/api/metrics` | GET | Governed-metric CATALOG (#1115) — `{ metrics: [{ key, name, grain, unit, owner, dataClass, bound }] }` for the BI metric picker. Direct DB read of `metric_definition` (a definition is a formula, not row data) | Session (middleware-gated); filtered to the caller's `data_class` read ceiling (#1034) on top of DB RLS; read-only |
+| `/api/metrics/{key}` | GET | Resolve ONE governed metric's value (#1115) — `?period=&period_start=&period_end=` → the `MetricResult` shape. Enforces the `data_class` gate (returns `status:forbidden` WITHOUT a backend call when out of ceiling), then delegates to the backend engine. Never sends SQL — only the key + sanitized params | Session (middleware-gated) + `data_class` read axis (#1034); read-only |
 | `/api/auth/[...nextauth]` | (NextAuth) | Entra ID auth handler (sign-in / callback / session). | Managed by NextAuth + Entra (ADR-0005) |
 
 ---
