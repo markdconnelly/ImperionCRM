@@ -53,10 +53,17 @@ profitability epic #1044) — `labor_cost_to_serve` (billable hours × effective
 ([#1092](https://github.com/markdconnelly/ImperionCRM/issues/1092), second slice of the
 profitability epic #1044) — `recognized_revenue_to_serve` (the same recognized-revenue scalar
 over `invoice_mirror` as the canonical `recognized_revenue`, carrying the `_to_serve` family
-name so the cost/revenue/margin trio reads as one family; #1093 composes
-`margin = recognized_revenue_to_serve − cost_to_serve` by key). The original `mrr`,
-`gross_margin`, and `technician_utilization` remain unbound until a clean scalar source lands.
-Metric *values* (a snapshot/timeseries) are a later slice; this entity is the contract.
+name so the cost/revenue/margin trio reads as one family). The margin slice
+([#1093](https://github.com/markdconnelly/ImperionCRM/issues/1093), third tracer of the
+profitability epic #1044) then composes those legs into three more bound `financial`
+contracts — `margin_to_serve` (`recognized_revenue_to_serve` − `cost_to_serve`),
+`gross_margin_pct` (margin ÷ recognized revenue × 100), and `effective_rate` (recognized
+revenue ÷ billable hours) — coupled to the cost (#1091) / revenue (#1092) slices **by
+metric KEY** (the expressions inline the same `invoice_mirror` / `time_record` + `pay_rate` /
+`expense_item` sources, not a view dependency, so they apply standalone). The original
+`mrr`, `gross_margin`, and `technician_utilization` remain unbound
+until a clean scalar source lands. Metric *values* (a snapshot/timeseries) are a later slice;
+this entity is the contract.
 
 ## Schema
 

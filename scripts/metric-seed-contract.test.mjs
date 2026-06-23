@@ -252,3 +252,48 @@ describe("the #1092 revenue-join migration conforms to the contract", () => {
     }
   });
 });
+
+describe("the #1093 margin / effective-rate migration conforms to the contract", () => {
+  it("seeds the three composed margin + effective-rate contracts, financial", async () => {
+    const files = await readdir(MIGRATIONS_DIR);
+    // Located by content, not number — the migration number is claimed at merge (§10.3).
+    // `margin_to_serve` is unique to the #1093 margin / effective-rate slice.
+    let target = null;
+    let sql = "";
+    for (const f of files.filter((f) => f.endsWith(".sql"))) {
+      const text = await readFile(`${MIGRATIONS_DIR}${f}`, "utf8");
+      if (
+        /INSERT\s+INTO\s+metric_definition/i.test(stripSqlComments(text)) &&
+        /margin_to_serve/.test(text)
+      ) {
+        target = f;
+        sql = text;
+        break;
+      }
+    }
+    expect(target, "margin/effective-rate migration (seeds margin_to_serve) not found").toBeTruthy();
+
+    const { rows, errors } = validateMetricSeedSql(sql);
+    expect(errors).toEqual([]);
+    expect(rows.length).toBe(3); // margin + margin% + effective rate
+
+    // The margin slice (#1093) composes cost (#1091) + revenue (#1092) by KEY semantics.
+    const keys = rows.map((r) => unwrap(r.key));
+    expect(keys).toEqual(["margin_to_serve", "gross_margin_pct", "effective_rate"]);
+
+    // All three are bound (executable) financial scalars the metric engine (#259) resolves —
+    // the labor dollar lives ONLY inside these expressions (the sole pay_rate reader).
+    for (const r of rows) {
+      const expr = unwrap(r.expression);
+      expect(expr, `${unwrap(r.key)} should be a bound SELECT … AS value`).toMatch(
+        /^\s*select[\s\S]*\bas\s+value\b/i,
+      );
+      expect(VALID_UNITS).toContain(unwrap(r.unit));
+      expect(unwrap(r.data_class)).toBe("financial");
+    }
+    // The composed margin number must reference both legs (revenue minuend, cost subtrahend).
+    const margin = unwrap(rows[0].expression);
+    expect(margin).toMatch(/invoice_mirror/); // recognized-revenue leg
+    expect(margin).toMatch(/pay_rate/); // labor cost leg
+  });
+});
