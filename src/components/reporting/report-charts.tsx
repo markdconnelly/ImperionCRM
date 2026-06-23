@@ -50,7 +50,11 @@ export function StagePipelineChart({ data }: { data: StageValueDatum[] }) {
         />
         <YAxis stroke={AXIS} tickLine={false} axisLine={false} allowDecimals={false} fontSize={12} />
         <Tooltip contentStyle={tooltipStyle} cursor={{ fill: CURSOR }} />
-        <Bar dataKey="count" name="Deals" radius={[4, 4, 0, 0]}>
+        {/* isAnimationActive={false}: under recharts 3 + React 19 the enter
+            animation can leave bars stuck at zero height (axes draw, bars don't —
+            #1139). Disabling it renders bars at full height immediately, matching
+            the working charts in agile-charts/forecast-charts. */}
+        <Bar dataKey="count" name="Deals" radius={[4, 4, 0, 0]} isAnimationActive={false}>
           {data.map((d) => (
             <Cell key={d.stage} fill={STAGE_COLORS[d.stage] ?? "#5B8DEF"} />
           ))}
@@ -76,7 +80,9 @@ export function StatusBarChart({ data, color }: { data: CountDatum[]; color: str
         />
         <YAxis stroke={AXIS} tickLine={false} axisLine={false} allowDecimals={false} fontSize={12} />
         <Tooltip contentStyle={tooltipStyle} cursor={{ fill: CURSOR }} />
-        <Bar dataKey="count" name="Count" fill={color} radius={[4, 4, 0, 0]} />
+        {/* isAnimationActive={false}: see StagePipelineChart — recharts 3 + React 19
+            leaves animated bars at zero height (#1139). */}
+        <Bar dataKey="count" name="Count" fill={color} radius={[4, 4, 0, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   );
