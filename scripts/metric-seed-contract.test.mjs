@@ -117,3 +117,51 @@ describe("the #1114 metric-expansion migration conforms to the contract", () => 
     }
   });
 });
+
+describe("the #1116 profitability/ROI migration conforms to the contract", () => {
+  it("every seeded profitability/ROI row is a valid bound contract", async () => {
+    const files = await readdir(MIGRATIONS_DIR);
+    // Located by content, not number — the migration number is claimed at merge (§10.3).
+    // `recognized_revenue` is unique to the #1116 slice.
+    let target = null;
+    let sql = "";
+    for (const f of files.filter((f) => f.endsWith(".sql"))) {
+      const text = await readFile(`${MIGRATIONS_DIR}${f}`, "utf8");
+      if (
+        /INSERT\s+INTO\s+metric_definition/i.test(stripSqlComments(text)) &&
+        /recognized_revenue/.test(text)
+      ) {
+        target = f;
+        sql = text;
+        break;
+      }
+    }
+    expect(target, "profitability/ROI migration (seeds recognized_revenue) not found").toBeTruthy();
+
+    const { rows, errors } = validateMetricSeedSql(sql);
+    expect(errors).toEqual([]);
+    expect(rows.length).toBe(5); // the five new profitability + ROI contracts
+
+    // The slice wires the profitability (#1044) + ROI (#1048) numbers onto the governed store.
+    const keys = rows.map((r) => unwrap(r.key));
+    expect(keys).toEqual([
+      "recognized_revenue",
+      "gross_profit",
+      "effective_hourly_rate",
+      "agent_tickets_worked",
+      "agent_cost_per_run",
+    ]);
+
+    // Every row is a bound (executable) SELECT … AS value scalar — none is a bare fragment,
+    // so the metric engine (#259) and the #1115 query interface resolve them with no further
+    // binding. This is what makes profitability/ROI consume the governed path, not an ad-hoc one.
+    for (const r of rows) {
+      const expr = unwrap(r.expression);
+      expect(expr, `${unwrap(r.key)} should be a bound SELECT … AS value`).toMatch(
+        /^\s*select[\s\S]*\bas\s+value\b/i,
+      );
+      expect(VALID_UNITS).toContain(unwrap(r.unit));
+      expect(VALID_DATA_CLASSES).toContain(unwrap(r.data_class));
+    }
+  });
+});
