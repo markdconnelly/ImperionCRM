@@ -27,7 +27,7 @@ export function stripSqlComments(sql) {
 /**
  * Extract the row tuples from the FIRST `INSERT INTO metric_definition (…columns…) VALUES …`
  * statement in `sql`. Returns an array of objects keyed by the insert's column list. Only the
- * column order declared in the INSERT is assumed (matches the 0159/0188 seed shape).
+ * column order declared in the INSERT is assumed (matches the 0159/0189 seed shape).
  */
 export function parseMetricSeedRows(sql) {
   const clean = stripSqlComments(sql);

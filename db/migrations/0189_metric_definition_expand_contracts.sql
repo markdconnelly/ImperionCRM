@@ -1,7 +1,7 @@
--- 0188: Expand the governed metric-definitions store with seven new contracts (#1114, epic #1050).
--- Migration number 0188 claimed at MERGE per system CLAUDE.md §10.3 — authored against the
+-- 0189: Expand the governed metric-definitions store with seven new contracts (#1114, epic #1050).
+-- Migration number 0189 claimed at MERGE per system CLAUDE.md §10.3 — authored against the
 -- next-free-on-origin/main placeholder. A concurrent FE session (#1111) is also adding a
--- migration; the branch that merges second renumbers. Do NOT hardcode-depend on 0188.
+-- migration; the branch that merges second renumbers. Do NOT hardcode-depend on 0189.
 --
 -- WHY THIS EXISTS. `metric_definition` (0159) is the headless-BI contract — one governed row
 -- per business number so agents (via the `metric_lookup` tool / backend #259/#264) and the BI
