@@ -289,8 +289,16 @@ export default async function TicketsPage({
             <tbody>
               {tickets.map((t) => (
                 <tr key={t.id} className="border-t border-border hover:bg-panel-2">
-                  <td className="px-4 py-3 text-dim">{t.number ?? "—"}</td>
-                  <td className="px-4 py-3 font-medium">{t.title}</td>
+                  <td className="px-4 py-3 text-dim">
+                    <Link href={`/tickets/${t.id}`} className="hover:text-accent">
+                      {t.number ?? "—"}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link href={`/tickets/${t.id}`} className="hover:text-accent">
+                      {t.title}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-dim">{t.account}</td>
                   <td className="px-4 py-3 text-dim">{labelTicketStatus(t.status)}</td>
                   <td className="px-4 py-3 text-dim">{labelTicketPriority(t.priority)}</td>
