@@ -48,11 +48,65 @@ pg-MCP) RLS is bypassed by ownership — `SELECT * FROM personal_note` sees all 
 is a *direct admin DB* view; the app never connects as the owner, so personal notes stay
 owner-only through the web app (intended). An app-layer audited admin/company bypass is slice 3.
 
-## Company-axis matrix (slice 3 — placeholder)
+## Company-axis matrix (slice 3a — #979, migration 0186)
 
-To be filled when slice 3 (#976) adds `app.groups` company policies: a technician must not read
-finance rows; an exec reads company-wide but not another employee's personal drawer unless
-promoted.
+The COMPANY / role axis — a row gated to a set of app-role slugs is visible only when the
+caller's roles (`app.groups`) intersect that set. Enforced by the policy
+`company_scoped_record_role` via `app_role_in_scope(ARRAY['finance','admin'])`, which reads the
+caller's roles (`app.groups`). Per ADR-0105 §3a the gate is **whole-table** (finance + admin),
+NOT a per-row `required_role` column, and lands first on the **greenfield** `company_scoped_record`
+table (the slice-2 / data_class precedent — enable a new axis on a new table, never retrofit a
+live read path; retrofitting onto `pay_rate` et al. is gated on a real driver per ADR-0100).
+
+### Preconditions
+
+```sql
+SELECT relrowsecurity FROM pg_class WHERE relname = 'company_scoped_record';   -- t
+SELECT polname FROM pg_policies WHERE tablename = 'company_scoped_record';     -- company_scoped_record_role
+```
+
+### Read/write matrix
+
+As the **app role**, in one transaction per case (mirrors `withIdentity`). Seed one
+`company_scoped_record` row as the table owner first.
+
+| # | Session context (`app.groups`) | Action | Expected |
+|---|---|---|---|
+| 1 | `{"finance"}` | `SELECT count(*) FROM company_scoped_record` | sees the row (finance is in scope) |
+| 2 | `{"admin"}` | `SELECT count(*) FROM company_scoped_record` | sees the row (admin is in scope) |
+| 3 | `{"support"}` (technician) | `SELECT count(*) FROM company_scoped_record` | **0** — a technician cannot read a finance-gated row |
+| 4 | `{"sales"}` | `SELECT count(*) FROM company_scoped_record` | **0** — sales is not in scope |
+| 5 | *no* `app.groups` set | `SELECT count(*) FROM company_scoped_record` | **0** (fail-closed — unset GUC → no role in scope) |
+| 6 | `{"support"}` | `INSERT INTO company_scoped_record(label) VALUES ('forge')` | **rejected** by `WITH CHECK` — out-of-scope caller cannot create a row |
+| 7 | `{"support","finance"}` | `SELECT count(*) FROM company_scoped_record` | sees the row (union — any role intersecting puts the caller in scope) |
+
+Worked example for case 3:
+
+```sql
+BEGIN;
+SELECT set_config('app.groups', '{"support"}', true);
+SELECT count(*) FROM company_scoped_record;   -- 0
+COMMIT;
+```
+
+> The owner axis (slice 2) and this company axis are independent — a finance technician sees
+> company-gated finance rows but still cannot read another employee's `personal_note` drawer,
+> and an owner sees their own drawer regardless of company role. The two-axis acceptance matrix
+> (#967) is the conjunction of this table and the owner-axis table above.
+
+### Action / label mirror (unit-tested — `src/lib/security/company-scope.test.ts`)
+
+The FE mirror of the SQL predicate (`rolesInScope`), used to label/gate a surface without a
+round-trip; the DB policy is the authoritative enforcer.
+
+| Caller roles | Gate | `rolesInScope` |
+|---|---|---|
+| `finance` | finance+admin | true |
+| `admin` | finance+admin | true |
+| `support` (technician) | finance+admin | **false** |
+| `sales` / `project_manager` / `hr` / `security` | finance+admin | **false** |
+| `support` + `finance` | finance+admin | true (union) |
+| (none) | finance+admin | **false** (fail-closed) |
 
 ## data_class-axis matrix (#1034, ADR-0118, migration 0175)
 

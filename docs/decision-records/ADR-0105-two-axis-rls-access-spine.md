@@ -254,3 +254,27 @@ the personal→company wall (that remains §3c's promoter alone). The Personal C
 The owner-scoping invariant survives because both actors only write back to the owner they read.
 This amends — does not supersede — §3c; the two curation actors coexist (intra-owner Curator +
 cross-wall promoter).
+
+## Amendment (2026-06-23) — Slice 3a built: company/role axis predicate + first policy (#979)
+
+§3a designed the company axis as a **whole-table role gate** (not a per-row `required_role`
+column — that per-row / account-visibility model stays the v2 concept ADR-0100 deferred), applied
+**narrowly** to comp/finance-shaped surfaces, with v1 applying it to **zero existing** tables
+(retrofitting onto already-GRANT-protected `pay_rate` et al. would break ADR-0100 broad reads).
+This amendment records the **build** of that pattern (#979, migration 0186):
+
+- The shared predicate **`app_role_in_scope(allowed_roles text[])`** (`STABLE`, `SECURITY
+  DEFINER`, fail-closed) — the twin of `app_data_class_allowed` (0175) — makes the whole-table
+  gate ONE re-usable rule: `USING (app_role_in_scope(ARRAY['finance','admin']))`.
+- The first company policy lands on a **NEW, greenfield** table **`company_scoped_record`**, not
+  on any live read path — the slice-2 / data_class precedent (prove a new axis on a new table
+  whose reads route 100% through `withIdentity` from creation; never retrofit). This keeps the
+  build behaviour-preserving while making the axis provable end-to-end; applying it to an existing
+  comp/finance table remains gated on a real driver per §3a / ADR-0100.
+- The FE mirror **`rolesInScope()`** (`src/lib/security/company-scope.ts`) labels/gates surfaces
+  without a round-trip; the DB policy is authoritative. The company-axis test matrix is filled in
+  `docs/testing/rls-access-spine.md` (a technician/`support` cannot read a finance-gated row;
+  finance + admin can; the axis is independent of the owner axis).
+
+The `app.groups` vocabulary stays **normalized app-role slugs** (§3 design). #980 (audited
+god-view, §3b) and #981 (curation identity, §3c) remain the rest of slice 3.
