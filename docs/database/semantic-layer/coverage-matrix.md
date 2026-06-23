@@ -198,7 +198,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [agent_autopilot_policy](tables/agent_autopilot_policy.md) | horizontal | H | op | ✅ | the autonomy dial — every tier reads its rung (#721, ADR-0087) |
 | account_tenant, saved_view | horizontal | H | op | ⏳ | n/a |
 | report_definition, dashboard, dashboard_item | horizontal | B/H | op | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
-| [metric_definition](tables/metric_definition.md) | horizontal | H | op | ✅ | the headless-BI metric contract — one governed definition agents & dashboards share; seed expanded with 7 bound sales/service/finance contracts (#1050/#1055/#1114) |
+| [metric_definition](tables/metric_definition.md) | horizontal | H | op | ✅ | the headless-BI metric contract — one governed definition agents & dashboards share; seed expanded with 7 bound sales/service/finance contracts (#1050/#1055/#1114); FE agent+BI query interface reads it via the single backend read path with the data_class gate (#1115) |
 | [entity_xref](tables/entity_xref.md) | horizontal | H | op | ✅ | the identity spine — every source id → one internal entity; agents resolve before acting via `entity_resolve()` (#1049/#1054, resolver+`external_identity` backfill #1111; **bitemporal** valid-time+system-time #1112) |
 
 ## Audit / governance

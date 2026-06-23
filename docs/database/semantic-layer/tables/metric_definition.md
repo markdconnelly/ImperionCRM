@@ -7,7 +7,7 @@ description: The governed metric-definitions store — one row per business numb
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [reference, config, metrics, governance, bi, headless-bi]
 data_class: operational
-timestamp: 2026-06-23T00:00:00Z
+timestamp: 2026-06-23T12:00:00Z
 ---
 
 # metric_definition
@@ -62,7 +62,12 @@ UNIQUE `(key)`; indexes on `data_class`, `active`.
 ## Joins
 
 - **Consumed by** the backend metric query endpoint (#259) at report time, and by the BI
-  hub / dashboards (#288). Downstream metric-bearing surfaces — per-service profitability
+  hub / dashboards (#288). The front-end **agent + BI query interface**
+  ([#1115](https://github.com/markdconnelly/ImperionCRM/issues/1115), `src/lib/metrics/query.ts`)
+  is the GUI-side reader: it lists the governed contracts (a direct RLS read of this table —
+  a definition is a formula, not row data) and resolves a value by delegating to the backend
+  engine (the single read path), enforcing the `data_class` read axis before the value is ever
+  evaluated. Downstream metric-bearing surfaces — per-service profitability
   ([#1044](https://github.com/markdconnelly/ImperionCRM/issues/1044)) and the ROI "two
   numbers" dashboard ([#1048](https://github.com/markdconnelly/ImperionCRM/issues/1048)) —
   reference metrics by `key`.

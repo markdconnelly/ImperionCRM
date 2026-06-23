@@ -56,6 +56,16 @@ const services = {
     baseUrlEnv: "PIPELINE_SERVICE_URL",
     audienceEnv: "PIPELINE_SERVICE_AUDIENCE",
   },
+  // Governed-metric query engine (#259/ADR-0078, epic #1050). The single read path for a
+  // governed business number lives on the backend orchestrator Function App
+  // (`/orchestration/metrics/{key}`), so it shares the agent base URL + Easy Auth audience.
+  // The FE agent+BI query interface (#1115) calls THIS so an agent and a dashboard resolve the
+  // identical value. No-op (ServiceNotConfiguredError) until AGENT_SERVICE_URL is set.
+  metrics: {
+    name: "Metric query engine",
+    baseUrlEnv: "AGENT_SERVICE_URL",
+    audienceEnv: "INTEGRATION_SERVICE_AUDIENCE",
+  },
   // MileIQ External API custody (#854/ADR-0099): the OAuth token lives in Key Vault on
   // the backend (#109), same host as the other per-user connections, so it shares the
   // integration base URL + Easy Auth audience. No-op (ServiceNotConfiguredError) until
@@ -370,6 +380,61 @@ export const agentService = {
       "/orchestration/icm/autonomy",
       { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
     ),
+};
+
+/**
+ * The single governed-metric result shape (backend `src/shared/metrics.ts` `MetricResult`,
+ * #259/ADR-0078). `value` is null unless `status==='ok'`; `status` carries `unbound`
+ * (definition not yet executable), `not_found`, or `error` as DATA, never an HTTP failure —
+ * so the one read path the agent (`metric_lookup`) and BI both use returns one structured
+ * shape. `dataClass` is the #1034 sensitivity axis carried on every result for gating.
+ */
+export interface MetricResultWire {
+  key: string;
+  name: string;
+  /** The computed value, or null when unbound / not_found / error. */
+  value: number | null;
+  unit: string;
+  grain: string;
+  /** ISO timestamp the value is "as of". */
+  asOf: string;
+  /** operational | financial | people_hr | security_credentials | client_pii. */
+  dataClass: string;
+  status: "ok" | "unbound" | "not_found" | "error";
+  message?: string;
+}
+
+/** Temporal params a governed metric may bind (the backend's fixed allow-list, YYYY-MM-DD). */
+export interface MetricParamsWire {
+  period?: string;
+  period_start?: string;
+  period_end?: string;
+}
+
+/**
+ * Governed-metric query engine seam (#1115, epic #1050; backend #259/ADR-0078). Resolves ONE
+ * governed metric by key through the backend's single read path
+ * (`/orchestration/metrics/{key}`) — the SAME path the `metric_lookup` sub-agent tool uses —
+ * so an agent and a BI dashboard compute the IDENTICAL number. The backend evaluates the
+ * pre-vetted `metric_definition.expression` in a READ-ONLY transaction; this seam NEVER sends
+ * SQL — only the metric key + temporal params (the backend rejects an unknown `:param` and
+ * caps the statement timeout). Until AGENT_SERVICE_URL is set the call throws
+ * ServiceNotConfiguredError and the BI surface degrades to "metric engine unavailable".
+ */
+export const metricsService = {
+  /** Resolve one governed metric by key (GET) with optional temporal params. */
+  lookup: (key: string, params?: MetricParamsWire) => {
+    const qs = new URLSearchParams();
+    if (params?.period) qs.set("period", params.period);
+    if (params?.period_start) qs.set("period_start", params.period_start);
+    if (params?.period_end) qs.set("period_end", params.period_end);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return callService<MetricResultWire>(
+      services.metrics,
+      `/orchestration/metrics/${encodeURIComponent(key)}${suffix}`,
+      { timeoutMs: 30_000 },
+    );
+  },
 };
 
 /**
