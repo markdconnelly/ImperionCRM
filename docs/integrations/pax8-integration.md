@@ -37,23 +37,28 @@ collected_at, raw_payload, content_hash`, PK `(tenant_id, source, external_id)`;
 The tables are **empty in prod** until migration 0161 is applied and the credential lands
 (both Mark-gated, #1042); the collector self-gates until then.
 
-## Silver mapping (planned — merge follow-up, LP #280)
+## Silver mapping (merge — LP #280 + the `license_assignment` projection)
 
 The merge ([LocalPipeline #280](https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment/issues/280))
-resolves Pax8 records onto existing silver entities — **no new silver entity**; Pax8 enriches
-what already exists:
+resolves Pax8 records onto silver in two steps:
 
-1. **Pax8 company → `account`.** Resolve `pax8_companies` to the silver `account` via the
-   entity-resolution registry (`entity_xref`, source_system `pax8`, #1054) — falling back to
-   name match — so every Pax8 record hangs off the right client.
-2. **Pax8 subscription/license → `contract` / agreement line.** A subscription is a recurring
-   commitment; map it to the client's `contract` (ADR-0080 sale→delivery) as the *actual*
-   licensed quantity, for true-up against the contracted quantity ([#1041](https://github.com/markdconnelly/ImperionCRM/issues/1041)).
-3. **Pax8 license → `device` link (where assignable).** When `assigned_to` resolves to a
-   user/device, link the license to the silver `device` so the CMDB shows what is licensed.
+1. **Pax8 company → `account` (built, LP #280).** Resolve `pax8_companies` to the silver
+   `account` via the entity-resolution registry (`entity_xref`, source_system `pax8`,
+   [#1054](https://github.com/markdconnelly/ImperionCRM/issues/1054)) — falling back to name
+   match — so every Pax8 record hangs off the right client.
+2. **Pax8 license → `license_assignment` (silver, migration 0185, [#1223](https://github.com/markdconnelly/ImperionCRM/issues/1223)).**
+   The per-license facts need a home the existing schema lacked (`contract` is header-only;
+   `device` has no license column). The thin **`license_assignment`** silver entity is that
+   home: one account-resolved row per assigned license carrying the **actual licensed
+   quantity** (the actual side of the [#1041](https://github.com/markdconnelly/ImperionCRM/issues/1041)
+   true-up) plus the optional **`device_id`** (license → device, CMDB) and **`contract_id`**
+   (license → agreement, [#1085](https://github.com/markdconnelly/ImperionCRM/issues/1085))
+   links. Distributor-agnostic by construction (`source`; `pax8` first). Concept:
+   [`semantic-layer/tables/license_assignment.md`](../database/semantic-layer/tables/license_assignment.md).
+   The LP merge extension that populates it is the #280 populate twin.
 
-Until the merge lands, the bronze tables stand alone (raw, queryable, no silver projection).
-The coverage matrix carries the ⏳ row for this mapping.
+Until the merge runs, the bronze tables stand alone (raw, queryable) and `license_assignment`
+is empty. The coverage matrix carries the `license_assignment` row.
 
 ## Boundaries
 

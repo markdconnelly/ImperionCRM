@@ -158,6 +158,12 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [invoice](tables/invoice.md) | Finance | B (QBO read-only mirror) | fin | ✅ | collections / AR-dunning; reconciliation-assurance (#667) |
 | [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | fin | ✅ | collections / AR-dunning (#677/#678) |
 
+## Procurement / licensing
+
+| Object | Domain | Archetype | IKF | Acting ICM workflow |
+|---|---|---|---|---|
+| [license_assignment](tables/license_assignment.md) | Finance | A | ✅ | agreement true-up (#1041); procure→provision→bill (#1042) |
+
 ## Security / MSSP
 
 | Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
@@ -227,7 +233,7 @@ silver entity it feeds (so e.g. the `qbo_*`/`website_expense_*` feeds are `fin`,
 | interaction (B) | `m365_mail_messages` · `m365_teams_chats/_meetings` · `facebook_posts/_comments/_messages` · `instagram_media/_comments` |
 | posture / dns (C/E) | `secure_scores` · `defender_incidents/_alerts` · `entra_*` · `intune_*` · `*_golden` · `dns_zones` · `dns_records` · `sharepoint_sites` · `azure_*` · `sentinel_*` |
 | social_metric (B) | `meta_insights` |
-| contract / device (⏳ Pax8 license→agreement/device mapping, #1042/#1052) | `pax8_companies` · `pax8_subscriptions` · `pax8_licenses` · `pax8_orders` (0161; collector LP #279, merge LP #280) |
+| account (via `entity_xref`) + license_assignment (A) | `pax8_companies` · `pax8_subscriptions` · `pax8_licenses` · `pax8_orders` (0161; collector LP #279). Merge LP #280 resolves company→`account` into `entity_xref`; license facts → `license_assignment` (0185) |
 
 ## Seams to resolve (the one-domain rule)
 
