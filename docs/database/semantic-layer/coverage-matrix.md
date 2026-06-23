@@ -95,7 +95,8 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [ci_relationship](tables/ci_relationship.md) | Service Desk | D (app-native CMDB overlay; IT Glue write-back is a separate gated slice) | op | ✅ | CMDB / impact analysis (#647, ADR-0078) |
 | [cmdb_ci_overlay](tables/cmdb_ci_overlay.md) | Service Desk | D (app-native per-CI criticality overlay; effective = override ?? derived_default; IT Glue write-back is a separate gated slice) | op | ✅ | CMDB / impact analysis (#648, ADR-0078/0097) |
 | [change_request](tables/change_request.md) (+ change_affected_ci) | Service Desk | D (app-native ITIL change working object; Autotask is the eventual record SoR via the gated route #661) | op | ✅ | Change Enablement (#656, ADR-0079; risk #658 / approval #659 / calendar #660 / route #661) |
-| sbr_dimension_score, sbr_ticket | Customer Success | B | pii | ⏳ | SBR-prep |
+| [sbr_dimension_score](tables/sbr_dimension_score.md) | Customer Success | B | pii | ✅ | SBR-prep (per-dimension trend vs benchmark) |
+| [sbr_ticket](tables/sbr_ticket.md) | Customer Success | B | pii | ✅ | SBR-prep (period ticket history bridge) |
 | question_template, question, engagement_answer | Sales | B | pii | ⏳ | discovery / assessment capture |
 | [contract](tables/contract.md) | kernel | B | op | ✅ | sale→delivery (DocuSign-gated) |
 
@@ -147,9 +148,9 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [expense_item](tables/expense_item.md) | Finance | A | fin | ✅ | monthly-close |
 | [expense_report](tables/expense_report.md) | Finance | B | fin | ✅ | expense-approval |
 | [autotask_expense_report](tables/autotask_expense_report.md) | Finance | D | fin | ✅ | ExpenseReport writer (→ Autotask) |
-| expense_reconciliation | Finance | F | fin | ⏳ | monthly-close (QBO match) |
-| receipt_attachment | Finance | B | fin | ⏳ | receipt handling |
-| expense_category, qbo_expense_account, mileage_rate | Finance | H | fin | ⏳ | n/a (config; rate comp-gated) |
+| [expense_reconciliation](tables/expense_reconciliation.md) | Finance | F | fin | ✅ | monthly-close (QBO match) |
+| [receipt_attachment](tables/receipt_attachment.md) | Finance | B | fin | ✅ | receipt handling (Autotask custody lifecycle) |
+| [expense_category](tables/expense_category.md) (+ qbo_expense_account bronze SoR), [mileage_rate](tables/mileage_rate.md) | Finance | H | fin | ✅ | n/a (config; QBO-mapped category; rate comp-gated) |
 
 ## Revenue / AR
 

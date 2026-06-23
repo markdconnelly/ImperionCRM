@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T00:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -34,7 +34,8 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**63 concept files authored** (this table). Remaining objects from the
+**71 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
 
@@ -62,6 +63,8 @@ subset; remaining entities are tracked for expansion
 | [`project_template`](tables/project_template.md) | single-SoR | website system of record | ADR-0070 |
 | [`discovery_call`](tables/discovery_call.md) | single-SoR | website system of record | ADR-0023 |
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |
+| [`sbr_dimension_score`](tables/sbr_dimension_score.md) | single-SoR (SBR child) | website (per-dimension re-score; trend vs benchmark) | ADR-0022 |
+| [`sbr_ticket`](tables/sbr_ticket.md) | single-SoR (SBR↔ticket bridge) | website (references ticket history, never copies) | ADR-0022 |
 | [`ticket`](tables/ticket.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`chat_session`](tables/chat_session.md) | single-SoR | website (backend chat process; native pre-ticket) | ADR-0074 |
 | [`ci_relationship`](tables/ci_relationship.md) | write-back sidecar (app-native CMDB) | app-native derivation (IT Glue write-back gated) | ADR-0078/0097 |
@@ -103,6 +106,10 @@ subset; remaining entities are tracked for expansion
 | [`task_ticket_fire`](tables/task_ticket_fire.md) | write-back sidecar | front end requests; backend executor fires (JIT) | ADR-0080 |
 | [`time_ticket`](tables/time_ticket.md) | write-back sidecar | front end requests; backend executor writes (idempotent weekly) | ADR-0082 |
 | [`autotask_expense_report`](tables/autotask_expense_report.md) | write-back sidecar | front end requests; backend executor writes (idempotent monthly) | ADR-0083 |
+| [`expense_reconciliation`](tables/expense_reconciliation.md) | reconciliation | backend verdict: approved reimbursable total vs QuickBooks bill-payment (read-only) | ADR-0083 |
+| [`receipt_attachment`](tables/receipt_attachment.md) | single-SoR (Autotask custody) | app-native ref; Autotask is the durable store once verified | ADR-0083 |
+| [`expense_category`](tables/expense_category.md) | reference / config | QuickBooks chart of accounts (category SoR; hard-linked) | ADR-0083 |
+| [`mileage_rate`](tables/mileage_rate.md) | reference / config (comp) | website (system-wide effective-dated rate; backend sole reader) | ADR-0083 |
 | [`defender_incident_ticket_link`](tables/defender_incident_ticket_link.md) | write-back sidecar | PK = sync-back idempotency key (one ticket per incident) | ADR-0059 |
 
 Enrichment-agent sync and vectorization of this bundle are tracked as follow-ups
