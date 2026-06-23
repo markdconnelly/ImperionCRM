@@ -28,9 +28,14 @@ Two queries, both indexed:
    -- returns internal_entity_id, or NULL when unresolved
    ```
    `entity_resolve` is STABLE (safe in a read transaction), reads only `entity_xref`, and is
-   backed by `uq_entity_xref_source` — at most one live row (the uniqueness guarantee). The FE
-   mirror of this contract (the `entity_type` / `source_system` vocabularies + the arg-order
-   encoder) is `src/lib/integrations/entity-resolution.ts`.
+   backed by the partial-unique `uq_entity_xref_source_live` — at most one **live** row (the
+   uniqueness guarantee). As of migration 0191 (#1112) the spine is **bitemporal** and the
+   resolver returns the row valid **now** under the **current** belief:
+   `valid_from <= now() < COALESCE(valid_to, 'infinity')` AND `system_to IS NULL` — the
+   `valid_to`/system-time bounds extend 0190's `valid_from <= now()` seam **without changing the
+   signature** or any caller. The FE mirror of this contract (the `entity_type` / `source_system`
+   vocabularies + the arg-order encoder + the `isLiveMapping` predicate mirror) is
+   `src/lib/integrations/entity-resolution.ts`.
 
 2. **Expand an internal entity → all its source identities** (lineage / the resolver,
    the "same entity across systems" UI panel):
@@ -42,11 +47,23 @@ Two queries, both indexed:
    Backed by `entity_xref_internal_idx`.
 
 **Writer contract.** Merges (cloud Pipeline + on-prem LocalPipeline) and the backend resolver
-**upsert** on the unique key — re-running a merge re-asserts the same link (idempotent). A
+**upsert** on the live unique key — re-running a merge re-asserts the same link (idempotent). A
 manual correction sets `match_method='manual'` with `match_confidence=1.000`; the resolver
 must never silently overwrite a `manual` link with a lower-confidence automated one.
 `internal_entity_id` is the silver PK for `entity_type` and is **polymorphic** (no hard FK):
 referential integrity is the writer's responsibility, validated per-type.
+
+**Bitemporal writer contract (migration 0191, #1112).** The partial-unique index permits at most
+one row with `valid_to IS NULL AND system_to IS NULL` per source identity, so history is kept by
+**closing, not overwriting**:
+- *Valid-time close* (the link stopped being true in the world — a contact left, a device was
+  decommissioned, a merge corrected a wrong link): set `valid_to = now()` on the open row. The
+  resolver stops returning it; the row remains for "what was true then".
+- *System-time correction* (we believed the wrong thing and are fixing it): set `system_to =
+  now()` on the superseded row and INSERT the corrected belief (new `system_from`). An audit can
+  reconstruct the mapping as we knew it at any past instant. Either close keeps exactly one live
+  row, so the resolver's scalar return stays well-defined. A NULL end is open-ended (still
+  valid / current belief) — every 0190-written row stays live with no data change.
 
 ## Backfill plan
 
@@ -74,7 +91,8 @@ function above is now stable so they can land behind a consistent read contract.
 ## Boundaries
 
 No PII, no secrets — `source_key` is a source-system identifier (Autotask company id, M365
-tenant/user id, device serial, …), not personal data. Bitemporal validity (`valid_to` /
-history, #1112) and the data-quality autonomy gate (#1113) are later slices of #1049;
-`entity_resolve`'s `valid_from <= now()` filter is the forward-compatible seam #1112 extends
-without changing the resolver signature or any caller.
+tenant/user id, device serial, …), not personal data. Bitemporal validity (valid-time `valid_to`
++ system-time `system_from`/`system_to`, #1112) is **DONE — migration 0191**; the data-quality
+autonomy gate (#1113) is the remaining #1049 slice. `entity_resolve`'s predicate is now
+`valid_from <= now() < COALESCE(valid_to, 'infinity')` AND `system_to IS NULL` — 0191 extended
+0190's `valid_from <= now()` seam without changing the resolver signature or any caller.

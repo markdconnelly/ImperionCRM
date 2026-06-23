@@ -4,11 +4,19 @@
  *
  * The DATABASE is authoritative: the spine is `entity_xref` (migration 0160) and the forward
  * resolver is the SQL function `entity_resolve(entity_type, source_system, source_key)`
- * (migration 0190). This module is the TypeScript mirror — the canonical vocabularies + the
- * resolver-call descriptor — so app/services code resolves a source identity through ONE typed
- * contract instead of hand-building the SQL, exactly as `lib/security/data-class.ts` mirrors
- * `app_data_class_allowed()`. Keep the vocabularies in lockstep with the 0160 CHECK constraints
- * and `CLIENT_MAPPING_ADAPTERS` (two copies of one fact, the 0156 ↔ SEEDED_TOOL_GRANTS precedent).
+ * (migration 0190; made BITEMPORAL by migration 0191, #1112). This module is the TypeScript
+ * mirror — the canonical vocabularies + the resolver-call descriptor — so app/services code
+ * resolves a source identity through ONE typed contract instead of hand-building the SQL, exactly
+ * as `lib/security/data-class.ts` mirrors `app_data_class_allowed()`. Keep the vocabularies in
+ * lockstep with the 0160 CHECK constraints and `CLIENT_MAPPING_ADAPTERS` (two copies of one
+ * fact, the 0156 ↔ SEEDED_TOOL_GRANTS precedent).
+ *
+ * Bitemporal (migration 0191, #1112, epic #1049): `entity_xref` carries a valid-time interval
+ * (`valid_from`/`valid_to` — "what was true when") and a system-time interval
+ * (`system_from`/`system_to` — "what we believed when we acted"). `entity_resolve()` returns the
+ * row that is valid NOW under the CURRENT belief; `isLiveMapping` below is the FE mirror of that
+ * exact predicate so a renderer can pick the live version out of a row's bitemporal history
+ * without re-deriving the SQL.
  *
  * No PII, no secrets — `entity_type` / `source_system` are classification labels and a
  * `source_key` is a source-system identifier (e.g. an Autotask company id), never personal data.
@@ -84,4 +92,35 @@ export function normalizeSourceIdentity(identity: SourceIdentity): SourceIdentit
 export function entityResolveArgs(identity: SourceIdentity): [string, string, string] | null {
   const n = normalizeSourceIdentity(identity);
   return n ? [n.entityType, n.sourceSystem, n.sourceKey] : null;
+}
+
+/**
+ * A spine row's bitemporal stamps (migration 0191, #1112). Valid-time
+ * (`validFrom`/`validTo`) is "what was true when"; system-time (`systemFrom`/`systemTo`) is "what
+ * we believed when". A `null` end means open-ended: `validTo === null` ⇒ still valid in the
+ * world, `systemTo === null` ⇒ the current belief. Dates are the resolved values of the
+ * `timestamptz` columns; only the columns the FE needs to pick the live version are mirrored
+ * here (the audit columns `created_at`/`updated_at` are not part of this contract).
+ */
+export interface BitemporalValidity {
+  validFrom: Date;
+  validTo: Date | null;
+  systemFrom: Date;
+  systemTo: Date | null;
+}
+
+/**
+ * The FE mirror of the `entity_resolve()` live-row predicate (migration 0191): a mapping is LIVE
+ * iff it is valid at `at` (`validFrom <= at < validTo`, open-ended `validTo` treated as infinity)
+ * AND it is the current belief (`systemTo === null`). Use this to pick the live version out of a
+ * row's bitemporal history client-side without re-deriving the SQL — the DB stays authoritative,
+ * but a lineage/"same entity across systems" panel can label which version the resolver would
+ * return. `at` defaults to now. Mirrors the resolver exactly: keep it in lockstep with the 0191
+ * function body.
+ */
+export function isLiveMapping(validity: BitemporalValidity, at: Date = new Date()): boolean {
+  const t = at.getTime();
+  const validNow = validity.validFrom.getTime() <= t && (validity.validTo === null || t < validity.validTo.getTime());
+  const currentBelief = validity.systemTo === null;
+  return validNow && currentBelief;
 }

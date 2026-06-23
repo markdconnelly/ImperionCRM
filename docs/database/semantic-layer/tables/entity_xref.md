@@ -5,9 +5,9 @@ entity: entity_xref
 archetype: H
 description: The entity-resolution golden-record registry — one row per (entity_type, source_system, source_key) mapping every source identity to one stable internal entity. The identity spine an agent resolves before acting cross-client.
 resource: ../../entity-xref-registry.md
-tags: [reference, identity, entity-resolution, governance, data-integrity]
+tags: [reference, identity, entity-resolution, governance, data-integrity, bitemporal]
 data_class: operational
-timestamp: 2026-06-23T00:00:00Z
+timestamp: 2026-06-23T12:00:00Z
 ---
 
 # entity_xref
@@ -44,11 +44,22 @@ backfill plan + the full read/writer contract live in
 | `source_key` | text | NOT NULL — the entity's id within `source_system` (not PII, not a secret) |
 | `match_confidence` | numeric(4,3) | NOT NULL default 1.000, `[0,1]` |
 | `match_method` | text | NOT NULL — `deterministic` \| `fuzzy` \| `manual` |
-| `valid_from` | timestamptz | when the mapping became authoritative (bitemporal `valid_to` is a later #1049 slice) |
+| `valid_from` | timestamptz | **valid-time start** — when the mapping became true in the world |
+| `valid_to` | timestamptz | **valid-time end** — when it stopped being true; `NULL` = still valid (0191) |
+| `system_from` | timestamptz | **system-time start** — when we began believing this mapping (0191) |
+| `system_to` | timestamptz | **system-time end** — when this belief was corrected; `NULL` = current belief (0191) |
 | `created_at` / `updated_at` | timestamptz | audit |
 
-UNIQUE `(entity_type, source_system, source_key)` — one source identity → exactly one internal
-entity. Index `(entity_type, internal_entity_id)` for the reverse expansion.
+**Bitemporal** (migration 0191, [#1112](https://github.com/markdconnelly/ImperionCRM/issues/1112)):
+valid-time (`valid_from`/`valid_to`) records *what was true when*; system-time
+(`system_from`/`system_to`) records *what we believed when we acted*. A `NULL` end is open-ended
+(still valid / current belief).
+
+Partial-UNIQUE `(entity_type, source_system, source_key) WHERE valid_to IS NULL AND system_to IS
+NULL` — at most one **live** source identity → exactly one internal entity, so closed history can
+accumulate alongside it (replaces 0160's unconditional unique). Plain index
+`(entity_type, source_system, source_key)` serves point-in-time history; index
+`(entity_type, internal_entity_id)` for the reverse expansion.
 
 ## Joins
 
@@ -57,9 +68,12 @@ entity. Index `(entity_type, internal_entity_id)` for the reverse expansion.
   guarantees the target exists.
 - **Resolved through one function.** The forward lookup `(entity_type, source_system,
   source_key) → internal_entity_id` is the SQL function `entity_resolve(...)` (migration 0190,
-  #1111) — the single callable every merge / backend resolver / Technician uses instead of
-  re-implementing the SELECT, so the matching rule has one home. The reverse expansion
-  (internal entity → all its source identities) stays the indexed SELECT in the read contract.
+  #1111; made bitemporal by 0191, #1112) — the single callable every merge / backend resolver /
+  Technician uses instead of re-implementing the SELECT, so the matching rule has one home. It
+  returns the row valid **now** under the **current** belief (`valid_from <= now() <
+  COALESCE(valid_to, 'infinity')` AND `system_to IS NULL`) — the bitemporal predicate, same
+  signature. The reverse expansion (internal entity → all its source identities, including closed
+  history) stays the indexed SELECT in the read contract.
 - **Seeded from [`external_identity`](external_identity.md).** The already-resolved
   account/contact↔provider links in `external_identity` (ADR-0012/0024) are backfilled into the
   spine (migration 0190) as `deterministic` links — `provider` → `source_system`, whichever
@@ -71,7 +85,10 @@ entity. Index `(entity_type, internal_entity_id)` for the reverse expansion.
 
 No PII, no secrets — `source_key` is a source-system identifier. Created schema-only in migration
 0160; migration 0190 (#1111) adds the `entity_resolve()` forward resolver + the
-`external_identity` backfill. The merge-lineage backfills (account/contact/device/opportunity
-per-source FKs) and bitemporal `valid_to` (#1112) remain later #1049 slices; `entity_resolve`
-already filters `valid_from <= now()` as the forward-compatible seam. Specific identity mappings
-resolve against the live read-only DB, never this file.
+`external_identity` backfill; migration 0191 (#1112) makes the spine **bitemporal** —
+valid-time (`valid_to`) + system-time (`system_from`/`system_to`), with `entity_resolve()`
+extended to the live-row predicate without a signature change, and the unique guarantee narrowed
+to the one **live** mapping so closed history accumulates. The merge-lineage backfills
+(account/contact/device/opportunity per-source FKs) remain later #1049 slices; the
+data-quality autonomy gate is #1113. Specific identity mappings resolve against the live
+read-only DB, never this file.

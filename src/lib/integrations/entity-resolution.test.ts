@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  type BitemporalValidity,
   ENTITY_RESOLVE_FN,
   ENTITY_TYPES,
   entityResolveArgs,
   isEntityType,
   isKnownSourceSystem,
+  isLiveMapping,
   normalizeSourceIdentity,
   SOURCE_SYSTEMS,
 } from "./entity-resolution";
@@ -78,5 +80,40 @@ describe("entityResolveArgs", () => {
     expect(
       entityResolveArgs({ entityType: "account", sourceSystem: "autotask", sourceKey: "" }),
     ).toBeNull();
+  });
+});
+
+describe("isLiveMapping (bitemporal predicate, migration 0191)", () => {
+  const at = new Date("2026-06-23T12:00:00Z");
+  const open = (over: Partial<BitemporalValidity> = {}): BitemporalValidity => ({
+    validFrom: new Date("2026-01-01T00:00:00Z"),
+    validTo: null,
+    systemFrom: new Date("2026-01-01T00:00:00Z"),
+    systemTo: null,
+    ...over,
+  });
+
+  it("an open-ended current-belief mapping is live", () => {
+    expect(isLiveMapping(open(), at)).toBe(true);
+  });
+
+  it("a mapping closed in valid-time before `at` is not live (what was true then, not now)", () => {
+    expect(isLiveMapping(open({ validTo: new Date("2026-03-01T00:00:00Z") }), at)).toBe(false);
+  });
+
+  it("a mapping whose valid-time has not started yet is not live", () => {
+    expect(isLiveMapping(open({ validFrom: new Date("2026-12-01T00:00:00Z") }), at)).toBe(false);
+  });
+
+  it("valid_to is exclusive at the instant `at` (now() < COALESCE(valid_to,'infinity'))", () => {
+    expect(isLiveMapping(open({ validTo: at }), at)).toBe(false);
+  });
+
+  it("a superseded belief (system_to set) is not live even when valid in the world", () => {
+    expect(isLiveMapping(open({ systemTo: new Date("2026-05-01T00:00:00Z") }), at)).toBe(false);
+  });
+
+  it("defaults `at` to now and treats an open interval as currently live", () => {
+    expect(isLiveMapping(open())).toBe(true);
   });
 });
