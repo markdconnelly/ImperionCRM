@@ -17,7 +17,7 @@ to-be-billed invoices on their way to QuickBooks. One row per
 ([`recurring_invoice_schedule`](recurring_invoice_schedule.md), period): the generator reads a
 schedule, computes the due occurrences up to today, and writes a draft for each. First tracer
 slice of epic [#1045](https://github.com/markdconnelly/ImperionCRM/issues/1045), child
-[#1095](https://github.com/markdconnelly/ImperionCRM/issues/1095). Migration `0901`
+[#1095](https://github.com/markdconnelly/ImperionCRM/issues/1095). Migration `0199`
 (placeholder — claimed at merge).
 
 It is **archetype D** (write-back sidecar — an app-owned object whose eventual write target is an

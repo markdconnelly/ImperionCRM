@@ -19,7 +19,7 @@ money **already** billed; this is the template for money **to be** billed. The r
 generator (`src/lib/recurring-invoice.ts`) reads a schedule and emits one
 [`generated_invoice`](generated_invoice.md) draft per due period. First tracer slice of epic
 [#1045](https://github.com/markdconnelly/ImperionCRM/issues/1045) (AR/AP & cash-flow),
-child [#1095](https://github.com/markdconnelly/ImperionCRM/issues/1095). Migration `0901`
+child [#1095](https://github.com/markdconnelly/ImperionCRM/issues/1095). Migration `0199`
 (placeholder — claimed at merge).
 
 ## Source of record / authority

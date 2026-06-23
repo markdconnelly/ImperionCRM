@@ -878,7 +878,7 @@ Unique `(tenant_id, qbo_invoice_id)`. Gated by `collections:read` / `collections
 follow-up (#678). PII-free: no amounts/balances (read live from the mirror), no customer
 contact data, no personal identifiers.
 
-### Recurring invoice generation — `recurring_invoice_schedule` + `generated_invoice` tables (ADR-0085, migration 0901 placeholder, #1095)
+### Recurring invoice generation — `recurring_invoice_schedule` + `generated_invoice` tables (ADR-0085, migration 0199 placeholder, #1095)
 
 The **billing** (money-out template) leg, the inverse of the read-only AR mirror (`invoice_mirror`,
 0121, which covers money already billed). Tracer slice of epic #1045. **Two app-native tables**, NO

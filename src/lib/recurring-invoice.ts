@@ -3,7 +3,7 @@
  *
  * Pure, dependency-free, NOT server-only — safe to import from a server generation route, a
  * future recurring-billing admin surface, and the vitest suite alike. This module turns a
- * recurring-billing template (`recurring_invoice_schedule`, migration 0901) into the per-period
+ * recurring-billing template (`recurring_invoice_schedule`, migration 0199) into the per-period
  * DRAFTS (`generated_invoice`) that a future Mark-gated backend job will POST to QuickBooks.
  *
  * THE QBO GATE. QuickBooks is the invoice system of record and is read-only on our side TODAY
@@ -35,7 +35,7 @@ export interface RecurringInvoiceLineItem {
   unitAmount: string;
 }
 
-/** The recurring-billing template the generator reads (`recurring_invoice_schedule`, mig 0901). */
+/** The recurring-billing template the generator reads (`recurring_invoice_schedule`, mig 0199). */
 export interface RecurringInvoiceSchedule {
   id: string;
   tenantId: string;
