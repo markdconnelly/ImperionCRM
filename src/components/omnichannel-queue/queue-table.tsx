@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
+import { labelTicketStatus } from "@/lib/tickets/autotask-labels";
 import type { QueueChannel, QueueItem, QueuePriority } from "@/types";
 
 /** Label + lucide icon per unified channel (kept local to the table for cohesion). */
@@ -79,7 +80,11 @@ export function QueueTable({ items }: { items: QueueItem[] }) {
                   </td>
                   <td className="px-4 py-3 text-dim">{item.account ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">{item.contactName ?? "—"}</td>
-                  <td className="px-4 py-3 text-dim">{item.status ?? "—"}</td>
+                  <td className="px-4 py-3 text-dim">
+                    {/* Ticket-source statuses are raw Autotask picklist codes (#1138);
+                        chat statuses are already words — only map the former. */}
+                    {item.source === "ticket" ? labelTicketStatus(item.status) : item.status ?? "—"}
+                  </td>
                   <td className="px-4 py-3 text-dim">{item.receivedAt ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">
                     {item.routedTo ?? (

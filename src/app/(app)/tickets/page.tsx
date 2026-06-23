@@ -4,6 +4,7 @@ import { Icon } from "@/components/ui/icon";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import type { TicketFilter } from "@/lib/data/repositories";
+import { labelTicketStatus, labelTicketPriority } from "@/lib/tickets/autotask-labels";
 import {
   createSavedViewAction,
   deleteSavedViewAction,
@@ -200,8 +201,18 @@ export default async function TicketsPage({
         </h3>
         <form method="get" className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="f" value="1" />
-          <Select label="Status" name="status" value={raw.status} options={options.statuses} />
-          <Select label="Priority" name="priority" value={raw.priority} options={options.priorities} />
+          <Select
+            label="Status"
+            name="status"
+            value={raw.status}
+            options={options.statuses.map((s) => ({ value: s, label: labelTicketStatus(s) }))}
+          />
+          <Select
+            label="Priority"
+            name="priority"
+            value={raw.priority}
+            options={options.priorities.map((p) => ({ value: p, label: labelTicketPriority(p) }))}
+          />
           <Select
             label="Account"
             name="account"
@@ -281,8 +292,8 @@ export default async function TicketsPage({
                   <td className="px-4 py-3 text-dim">{t.number ?? "—"}</td>
                   <td className="px-4 py-3 font-medium">{t.title}</td>
                   <td className="px-4 py-3 text-dim">{t.account}</td>
-                  <td className="px-4 py-3 text-dim">{t.status ?? "—"}</td>
-                  <td className="px-4 py-3 text-dim">{t.priority ?? "—"}</td>
+                  <td className="px-4 py-3 text-dim">{labelTicketStatus(t.status)}</td>
+                  <td className="px-4 py-3 text-dim">{labelTicketPriority(t.priority)}</td>
                   <td className="px-4 py-3 text-dim">{t.opened ?? "—"}</td>
                 </tr>
               ))}
