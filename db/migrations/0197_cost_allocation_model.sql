@@ -1,11 +1,11 @@
--- 0902: Cost-allocation model — allocate labor + (billable) tooling cost per client &
+-- 0197: Cost-allocation model — allocate labor + (billable) tooling cost per client &
 -- service, and give the governed cost-to-serve metrics a REAL labor basis (#1091, first
 -- tracer slice of the profitability epic #1044).
 --
--- Migration number 0902 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
+-- Migration number 0197 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
 -- authored against a high free slot while origin/main tops at 0195 and concurrent FE
 -- sessions (#1079/#1095/#1235) are also adding migrations; the branch that merges second
--- renumbers. Do NOT hardcode-depend on 0902 — the metric contract test locates the new
+-- renumbers. Do NOT hardcode-depend on 0197 — the metric contract test locates the new
 -- definitions by `key` (`labor_cost_to_serve` / `cost_to_serve`), never by number.
 --
 -- WHY THIS EXISTS. Epic #1044 (Hormozi — "you can't optimize a margin you don't measure")
