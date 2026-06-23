@@ -1,9 +1,9 @@
--- 0192: Wire PROFITABILITY (#1044) and ROI (#1048) onto the governed metric-definitions
+-- 0193: Wire PROFITABILITY (#1044) and ROI (#1048) onto the governed metric-definitions
 -- store as five new executable contracts (#1116 — third/final child of epic #1050).
--- Migration number 0192 claimed at MERGE per system CLAUDE.md §10.3 — authored against the
+-- Migration number 0193 claimed at MERGE per system CLAUDE.md §10.3 — authored against the
 -- next-free-on-origin/main placeholder (main tops at 0191). Concurrent FE sessions (#1113)
 -- are also adding migrations; the branch that merges second renumbers. Do NOT hardcode-depend
--- on 0192 — the contract test locates this file by content (`recognized_revenue`), not number.
+-- on 0193 — the contract test locates this file by content (`recognized_revenue`), not number.
 --
 -- WHY THIS EXISTS. Epic #1050 (governed metrics layer, "Elon — numeric source of truth")
 -- decomposed into: expand the store (#1114, 0189) → agent+BI query interface (#1115,
