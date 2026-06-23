@@ -1,7 +1,7 @@
--- 0188: entity-resolution spine slice — the resolver function + the external_identity backfill
--- (#1111, epic #1049). Migration number 0188 is a PLACEHOLDER claimed at MERGE per system
+-- 0190: entity-resolution spine slice — the resolver function + the external_identity backfill
+-- (#1111, epic #1049). Migration number 0190 is a PLACEHOLDER claimed at MERGE per system
 -- CLAUDE.md §10.3 — authored against the next free number; the rebased branch takes whatever is
--- free just before squash (parallel sessions may grab 0188+ concurrently).
+-- free just before squash (parallel sessions may grab 0190+ concurrently).
 --
 -- WHY THIS EXISTS. The identity spine `entity_xref` (migration 0160, #1054) is the canonical
 -- golden record an autonomous Technician (#1038) resolves BEFORE acting cross-client, but two

@@ -56,13 +56,13 @@ entity. Index `(entity_type, internal_entity_id)` for the reverse expansion.
   `device.id` / `cloud_asset.id` / `opportunity.id`. Not a DB FK (polymorphic) — the writer
   guarantees the target exists.
 - **Resolved through one function.** The forward lookup `(entity_type, source_system,
-  source_key) → internal_entity_id` is the SQL function `entity_resolve(...)` (migration 0188,
+  source_key) → internal_entity_id` is the SQL function `entity_resolve(...)` (migration 0190,
   #1111) — the single callable every merge / backend resolver / Technician uses instead of
   re-implementing the SELECT, so the matching rule has one home. The reverse expansion
   (internal entity → all its source identities) stays the indexed SELECT in the read contract.
 - **Seeded from [`external_identity`](external_identity.md).** The already-resolved
   account/contact↔provider links in `external_identity` (ADR-0012/0024) are backfilled into the
-  spine (migration 0188) as `deterministic` links — `provider` → `source_system`, whichever
+  spine (migration 0190) as `deterministic` links — `provider` → `source_system`, whichever
   subject column is set → `entity_type`. A `manual` spine link always wins over the backfill
   (idempotent `ON CONFLICT DO NOTHING`). This spine generalizes `external_identity` (and the
   per-merge `match_confidence` columns, ADR-0039) across all entity types.
@@ -70,7 +70,7 @@ entity. Index `(entity_type, internal_entity_id)` for the reverse expansion.
 ## Notes
 
 No PII, no secrets — `source_key` is a source-system identifier. Created schema-only in migration
-0160; migration 0188 (#1111) adds the `entity_resolve()` forward resolver + the
+0160; migration 0190 (#1111) adds the `entity_resolve()` forward resolver + the
 `external_identity` backfill. The merge-lineage backfills (account/contact/device/opportunity
 per-source FKs) and bitemporal `valid_to` (#1112) remain later #1049 slices; `entity_resolve`
 already filters `valid_from <= now()` as the forward-compatible seam. Specific identity mappings

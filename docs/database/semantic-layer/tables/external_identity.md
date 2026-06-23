@@ -50,7 +50,7 @@ context only.
   (any source id → one internal entity, across all entity types) that agents resolve
   before acting; `external_identity` is the narrower, CRM-scoped account/contact↔provider
   link. Treat `entity_xref` as authoritative where both describe the same mapping. These rows are
-  **backfilled into `entity_xref`** as `deterministic` links (migration 0188, #1111) — provider →
+  **backfilled into `entity_xref`** as `deterministic` links (migration 0190, #1111) — provider →
   `source_system`, the set subject column → `entity_type` — so the spine adopts them as a seed
   while a curated `manual` spine link still wins.
 

@@ -2979,7 +2979,7 @@ PK for that `entity_type`; no hard FK), with `match_confidence` + `match_method`
 (`deterministic`/`fuzzy`/`manual`) and a `valid_from` bitemporal seam. Unique on
 `(entity_type, source_system, source_key)`; reverse index on `(entity_type, internal_entity_id)`.
 
-Migration 0188 (#1111) adds the two consumption-side pieces:
+Migration 0190 (#1111) adds the two consumption-side pieces:
 
 - **`entity_resolve(entity_type, source_system, source_key) → internal_entity_id`** — the single
   STABLE SQL function every merge / backend resolver / Technician calls for the forward lookup,
@@ -2993,7 +2993,7 @@ Migration 0188 (#1111) adds the two consumption-side pieces:
 
 ```mermaid
 erDiagram
-    external_identity ||--o{ entity_xref : "backfills (0188)"
+    external_identity ||--o{ entity_xref : "backfills (0190)"
     entity_xref }o--|| account : "internal_entity_id (polymorphic)"
     entity_xref }o--|| contact : "internal_entity_id (polymorphic)"
     entity_xref {

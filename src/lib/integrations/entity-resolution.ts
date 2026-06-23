@@ -4,7 +4,7 @@
  *
  * The DATABASE is authoritative: the spine is `entity_xref` (migration 0160) and the forward
  * resolver is the SQL function `entity_resolve(entity_type, source_system, source_key)`
- * (migration 0188). This module is the TypeScript mirror — the canonical vocabularies + the
+ * (migration 0190). This module is the TypeScript mirror — the canonical vocabularies + the
  * resolver-call descriptor — so app/services code resolves a source identity through ONE typed
  * contract instead of hand-building the SQL, exactly as `lib/security/data-class.ts` mirrors
  * `app_data_class_allowed()`. Keep the vocabularies in lockstep with the 0160 CHECK constraints
@@ -50,7 +50,7 @@ export function isKnownSourceSystem(value: string): boolean {
   return (SOURCE_SYSTEMS as readonly string[]).includes(value);
 }
 
-/** The SQL function the database exposes as the single forward-lookup entry point (migration 0188). */
+/** The SQL function the database exposes as the single forward-lookup entry point (migration 0190). */
 export const ENTITY_RESOLVE_FN = "entity_resolve" as const;
 
 /** A source identity to resolve: which kind, which system, and the id within that system. */

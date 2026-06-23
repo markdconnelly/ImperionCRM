@@ -20,7 +20,7 @@ acting across every client needs that single answer so it never acts on the wron
 Two queries, both indexed:
 
 1. **Resolve a source identity → internal entity** (the merge/ingest path). As of migration
-   0188 (#1111) every consumer calls the resolver **function** rather than hand-rolling the
+   0190 (#1111) every consumer calls the resolver **function** rather than hand-rolling the
    SELECT, so the matching rule (uniqueness + the `valid_from <= now()` bitemporal seam) has one
    home:
    ```sql
@@ -58,14 +58,14 @@ re-run, never duplicates, and a curated `manual` link always wins.
 
 | entity_type | Backfill source (existing resolved FK) | source_system, source_key | Status |
 |---|---|---|---|
-| `account` / `contact` | `external_identity` (ADR-0012/0024) | provider → `source_system`; the set subject column → `entity_type`; `external_id` → `source_key` | **DONE — migration 0188 (#1111)** |
+| `account` / `contact` | `external_identity` (ADR-0012/0024) | provider → `source_system`; the set subject column → `entity_type`; `external_id` → `source_key` | **DONE — migration 0190 (#1111)** |
 | `account` (M365 tenant) | `account_tenant` (ADR-0051) | `('account', m365, tenant_guid)`, `manual` | DONE — migration 0165 (#1141) |
 | `account` | `account` merge lineage (per-source bronze ids, ADR-0039) | each populated `autotask`/`itglue`/`apollo`/`website` id on the account | follow-up #1049 |
 | `device` | `device` merge lineage + `external_identity` | itglue/m365 config ids | follow-up #1049 |
 | `asset` | `cloud_asset` (ADR-0097) source linkage | cloud provider resource id | follow-up #1049 |
 | `opportunity` | `opportunity` merge lineage (ADR-0080) | website/autotask/KQM ids | follow-up #1049 |
 
-The `external_identity` backfill (migration 0188) is the first general-FK seed (the 0165 tenant
+The `external_identity` backfill (migration 0190) is the first general-FK seed (the 0165 tenant
 backfill preceded it for the M365-specific link). `external_identity` is empty in prod today, so
 it moves **0 rows now** and lights up as the connector syncs hydrate it (deploy-dormant, like the
 rest of the spine). The remaining merge-lineage backfills stay later #1049 slices; the resolver

@@ -29,7 +29,7 @@ describe("entity-resolution vocabularies", () => {
     expect(isKnownSourceSystem("not-a-system")).toBe(false);
   });
 
-  it("names the SQL forward-resolver function (migration 0188)", () => {
+  it("names the SQL forward-resolver function (migration 0190)", () => {
     expect(ENTITY_RESOLVE_FN).toBe("entity_resolve");
   });
 });
