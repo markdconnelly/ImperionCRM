@@ -2976,16 +2976,21 @@ answer to *"are these two source records the same real-world thing?"* across eve
 system — the table an autonomous Technician (#1038) resolves before acting cross-client. One row
 per `(entity_type, source_system, source_key)` → one polymorphic `internal_entity_id` (the silver
 PK for that `entity_type`; no hard FK), with `match_confidence` + `match_method`
-(`deterministic`/`fuzzy`/`manual`) and a `valid_from` bitemporal seam. Unique on
+(`deterministic`/`fuzzy`/`manual`). **Bitemporal** (migration 0191, #1112): valid-time
+(`valid_from`/`valid_to` — *what was true when*) + system-time (`system_from`/`system_to` — *what
+we believed when*). Partial-unique on `(entity_type, source_system, source_key) WHERE valid_to IS
+NULL AND system_to IS NULL` (one **live** mapping; history accumulates); plain history index on
 `(entity_type, source_system, source_key)`; reverse index on `(entity_type, internal_entity_id)`.
 
 Migration 0190 (#1111) adds the two consumption-side pieces:
 
 - **`entity_resolve(entity_type, source_system, source_key) → internal_entity_id`** — the single
   STABLE SQL function every merge / backend resolver / Technician calls for the forward lookup,
-  so the matching rule (uniqueness + the `valid_from <= now()` filter) has one home rather than
-  N hand-rolled SELECTs. The bitemporal slice #1112 extends the filter to `valid_to` **without
-  changing the signature**. FE mirror: `src/lib/integrations/entity-resolution.ts`.
+  so the matching rule has one home rather than N hand-rolled SELECTs. Migration 0191 (#1112)
+  makes it bitemporal — it returns the row valid **now** under the **current** belief
+  (`valid_from <= now() < COALESCE(valid_to, 'infinity')` AND `system_to IS NULL`), extending
+  0190's `valid_from <= now()` seam **without changing the signature**. FE mirror (vocabularies +
+  arg-encoder + `isLiveMapping`): `src/lib/integrations/entity-resolution.ts`.
 - **`external_identity` backfill** — the already-resolved account/contact↔provider links
   (migration 0020, ADR-0012/0024) are copied into the spine as `deterministic` links (provider →
   `source_system`, the set subject column → `entity_type`), idempotent `ON CONFLICT DO NOTHING`
@@ -3004,16 +3009,19 @@ erDiagram
         text source_key
         numeric match_confidence
         text match_method "deterministic|fuzzy|manual"
-        timestamptz valid_from "bitemporal seam (#1112)"
+        timestamptz valid_from "valid-time start"
+        timestamptz valid_to "valid-time end; NULL=still valid (0191)"
+        timestamptz system_from "system-time start (0191)"
+        timestamptz system_to "system-time end; NULL=current belief (0191)"
     }
 ```
 
 The forward resolver is `entity_resolve()`; the reverse expansion (internal entity → all its
-source identities) stays the indexed SELECT in the read contract. Full contract + backfill
-ledger: [`entity-xref-registry.md`](entity-xref-registry.md); meaning:
-[`semantic-layer/tables/entity_xref.md`](semantic-layer/tables/entity_xref.md). No PII, no
-secrets — `source_key` is a source-system identifier. Merge-lineage backfills + bitemporal
-`valid_to` are later #1049 slices.
+source identities, including closed bitemporal history) stays the indexed SELECT in the read
+contract. Full contract + backfill ledger: [`entity-xref-registry.md`](entity-xref-registry.md);
+meaning: [`semantic-layer/tables/entity_xref.md`](semantic-layer/tables/entity_xref.md). No PII,
+no secrets — `source_key` is a source-system identifier. Merge-lineage backfills are later #1049
+slices; the data-quality autonomy gate is #1113.
 
 ## Vector data (pgvector)
 
