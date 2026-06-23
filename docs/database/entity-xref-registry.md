@@ -88,7 +88,7 @@ it moves **0 rows now** and lights up as the connector syncs hydrate it (deploy-
 rest of the spine). The remaining merge-lineage backfills stay later #1049 slices; the resolver
 function above is now stable so they can land behind a consistent read contract.
 
-## Data-quality autonomy gate (#1113, migration 0192 — epic #1049 pillar 3, FINAL slice)
+## Data-quality autonomy gate (#1113, migration 0194 — epic #1049 pillar 3, FINAL slice)
 
 Resolving the right entity (#1111) and knowing what was true/believed when (#1112) is not enough
 for an *autonomous* Technician: it must also refuse to act on **stale or incomplete** data. Pillar
@@ -111,7 +111,7 @@ an action **to the human cockpit**, never raise autonomy ("freshness = correctne
   predicate; `gateDispatchOnDataQuality(resolution, quality)` layers the gate onto a
   `DispatchResolution` (action-dispatch.ts) as the **third** dispatch gate, returning
   `gatedDecision` + a PII-free breach reason (`stale` / `incomplete` / `unknown`) for the cockpit
-  badge. `DEFAULT_DQ_SLA` mirrors the 0192 seed (kept in lockstep, the action-dispatch precedent).
+  badge. `DEFAULT_DQ_SLA` mirrors the 0194 seed (kept in lockstep, the action-dispatch precedent).
 
 The spine is deploy-dormant (`entity_xref` empty in prod), so the gate evaluates **0 live
 actions** today and lights up with the rest of #1049. This **completes epic #1049**.
@@ -122,6 +122,6 @@ No PII, no secrets — `source_key` is a source-system identifier (Autotask comp
 tenant/user id, device serial, …), not personal data; the DQ gate carries only class names +
 a record's age/completeness numbers. Bitemporal validity (valid-time `valid_to` + system-time
 `system_from`/`system_to`, #1112) is **DONE — migration 0191**; the data-quality autonomy gate
-(#1113) is **DONE — migration 0192**, completing epic #1049. `entity_resolve`'s predicate is now
+(#1113) is **DONE — migration 0194**, completing epic #1049. `entity_resolve`'s predicate is now
 `valid_from <= now() < COALESCE(valid_to, 'infinity')` AND `system_to IS NULL` — 0191 extended
 0190's `valid_from <= now()` seam without changing the resolver signature or any caller.

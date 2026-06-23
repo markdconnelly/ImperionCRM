@@ -8,13 +8,13 @@
  * SAFETY CONTROL, the same shape as the always-gate hard ceiling: a one-way clamp toward human
  * review that can only ever route-to-human, never raise autonomy ("freshness = correctness").
  *
- * The DATABASE is authoritative: the SLA policy is the `dq_sla` table (migration 0192) and the
+ * The DATABASE is authoritative: the SLA policy is the `dq_sla` table (migration 0194) and the
  * gate is the SQL function `entity_dq_gate(data_class, age_seconds, completeness)`. This module is
  * the FRONT-END mirror — the pure threshold rule the backend dispatcher (BE, ADR-0042) also
  * enforces — so the operator surfaces can PREVIEW the DQ verdict (why an action would park)
  * without a round-trip, exactly as {@link ./action-dispatch} mirrors the backend's dial
  * resolution and {@link ../security/data-class} mirrors `app_data_class_allowed()`. Repos don't
- * share code; keep the default SLA map below in lockstep with the 0192 seed.
+ * share code; keep the default SLA map below in lockstep with the 0194 seed.
  *
  * PURE: no `pg`, no `node:*`, no env. Safe to import anywhere (edge / server / client) and
  * unit-test directly. FAIL-CLOSED everywhere: an unknown class, a missing freshness stamp, or a
@@ -36,11 +36,11 @@ export interface DqSla {
 }
 
 /**
- * The default per-class SLA map — MIRRORS the `dq_sla` seed in migration 0192. The DATABASE is
+ * The default per-class SLA map — MIRRORS the `dq_sla` seed in migration 0194. The DATABASE is
  * authoritative; this is the FE convenience copy for previewing the gate when the DB-resolved SLA
  * isn't in hand. always-gate classes (financial / security_credentials / client_pii) get the
  * tightest SLAs; operational (broad-read ops data) tolerates more staleness. Keep in lockstep with
- * 0192 (two copies of one fact, the action-dispatch ↔ backend precedent).
+ * 0194 (two copies of one fact, the action-dispatch ↔ backend precedent).
  */
 export const DEFAULT_DQ_SLA: Readonly<Record<DataClass, DqSla>> = {
   operational: { maxAgeSeconds: 86_400, minCompleteness: 0.8 },
@@ -89,12 +89,12 @@ export function slaForClass(
 }
 
 /**
- * The pure DQ gate — the FE mirror of the SQL `entity_dq_gate()` (migration 0192). Returns whether
+ * The pure DQ gate — the FE mirror of the SQL `entity_dq_gate()` (migration 0194). Returns whether
  * a record of `dataClass` with the measured `quality` MEETS its SLA, plus the applied SLA and a
  * PII-free reason. FAIL-CLOSED: an unknown class, a null age, or a null completeness all read as a
  * breach (`meetsSla: false`). Staleness is checked before completeness so the reason names the
  * first thing that breaks (deterministic, matches the SQL's AND short-circuit intent for the
- * badge). Keep in lockstep with the 0192 function body.
+ * badge). Keep in lockstep with the 0194 function body.
  */
 export function evaluateDqGate(
   dataClass: string,

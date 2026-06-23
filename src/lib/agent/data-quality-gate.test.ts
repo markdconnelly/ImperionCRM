@@ -12,7 +12,7 @@ import type { DispatchResolution } from "./action-dispatch";
 /**
  * Pins the DQ-SLA autonomy gate (#1113, epic #1049 pillar 3): a stale/incomplete record can only
  * ever ROUTE an action to the human cockpit, never raise autonomy. Mirrors the SQL
- * `entity_dq_gate()` (migration 0192) + `gateDispatchOnDataQuality` as the third dispatch gate.
+ * `entity_dq_gate()` (migration 0194) + `gateDispatchOnDataQuality` as the third dispatch gate.
  * The backend enforces; this is the FE half — the two must agree.
  */
 

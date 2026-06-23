@@ -1,8 +1,8 @@
--- 0192: data-quality SLA + autonomy gate — DQ becomes a safety control on the action plane
+-- 0194: data-quality SLA + autonomy gate — DQ becomes a safety control on the action plane
 -- (#1113, epic #1049 — the THIRD/FINAL child, completing the data-plane integrity spine).
--- Migration number 0192 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 — authored
+-- Migration number 0194 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 — authored
 -- against the next free number; the rebased branch takes whatever is free just before squash
--- (parallel sessions #1116 / #981 / #1243 this wave grab 0192+ concurrently). Locate by content
+-- (parallel sessions #1116 / #981 / #1243 this wave grab 0194+ concurrently). Locate by content
 -- in the FE mirror's tests, never by hardcoded number.
 --
 -- WHY THIS EXISTS. Epic #1049 makes the data plane trustworthy enough for an AUTONOMOUS

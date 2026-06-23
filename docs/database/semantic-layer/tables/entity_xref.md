@@ -88,7 +88,7 @@ No PII, no secrets — `source_key` is a source-system identifier. Created schem
 `external_identity` backfill; migration 0191 (#1112) makes the spine **bitemporal** —
 valid-time (`valid_to`) + system-time (`system_from`/`system_to`), with `entity_resolve()`
 extended to the live-row predicate without a signature change, and the unique guarantee narrowed
-to the one **live** mapping so closed history accumulates. Migration 0192 (#1113) adds the
+to the one **live** mapping so closed history accumulates. Migration 0194 (#1113) adds the
 **data-quality autonomy gate** (epic #1049 pillar 3, FINAL slice): the `dq_sla` policy
 (freshness + completeness per `data_class`) + `entity_dq_gate()`, a fail-closed dispatch gate
 that routes an action on a **stale or incomplete** record to the human cockpit — DQ as a safety

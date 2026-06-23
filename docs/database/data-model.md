@@ -3023,7 +3023,7 @@ meaning: [`semantic-layer/tables/entity_xref.md`](semantic-layer/tables/entity_x
 no secrets — `source_key` is a source-system identifier. Merge-lineage backfills are later #1049
 slices.
 
-**Pillar 3 — data-quality autonomy gate** (migration 0192, #1113 — completes epic #1049). Acting
+**Pillar 3 — data-quality autonomy gate** (migration 0194, #1113 — completes epic #1049). Acting
 on the right entity (#1111) and knowing what was true/believed when (#1112) is not enough for an
 autonomous Technician: it must refuse to act on **stale or incomplete** data. `dq_sla` (one row
 per `data_class`, the 0175 axis) sets `max_age_seconds` + `min_completeness`; the SQL function
