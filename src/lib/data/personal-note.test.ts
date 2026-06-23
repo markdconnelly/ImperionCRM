@@ -20,10 +20,17 @@ const { connect, clientQuery, getPool } = vi.hoisted(() => {
 vi.mock("@/lib/db/client", () => ({ getPool, isDbConfigured: () => getPool() !== null }));
 vi.mock("server-only", () => ({}));
 
-import { createPersonalNote, listPersonalNotes } from "./personal-note";
+import {
+  PERSONAL_NOTE_GODVIEW_ACTION,
+  createPersonalNote,
+  listAllPersonalNotesAsAdmin,
+  listPersonalNotes,
+} from "./personal-note";
 
 const UID = "11111111-1111-1111-1111-111111111111";
+const OTHER = "22222222-2222-2222-2222-222222222222";
 const IDENTITY = { userId: UID, groups: ["support"] };
+const ADMIN = { userId: UID, groups: ["admin"] };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -94,5 +101,97 @@ describe("createPersonalNote", () => {
     const note = await createPersonalNote({ groups: [] }, "note");
     expect(note).toBeNull();
     expect(connect).not.toHaveBeenCalled(); // never opens a transaction
+  });
+});
+
+describe("listAllPersonalNotesAsAdmin (audited god-view, #980)", () => {
+  it("refuses (returns null) for a non-admin caller — never opens a transaction", async () => {
+    const result = await listAllPersonalNotesAsAdmin(IDENTITY); // support, not admin
+    expect(result).toBeNull();
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it("runs inside a withIdentity transaction (carrying app.groups for the policy)", async () => {
+    await listAllPersonalNotesAsAdmin(ADMIN);
+    const sqls = clientQuery.mock.calls.map((c) => c[0] as string);
+    expect(sqls[0]).toBe("BEGIN");
+    expect(sqls.at(-1)).toBe("COMMIT");
+    expect(sqls.some((s) => s.includes("app.groups"))).toBe(true);
+  });
+
+  it("the SELECT relies on the permissive RLS policy — no owner_user_id WHERE clause", async () => {
+    await listAllPersonalNotesAsAdmin(ADMIN);
+    const select = clientQuery.mock.calls.find((c) =>
+      (c[0] as string).includes("FROM personal_note"),
+    )![0] as string;
+    expect(select).not.toMatch(/where/i);
+  });
+
+  it("ledgers ONE audit_log event when rows the admin does not own are returned", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM personal_note")) {
+        return {
+          rows: [
+            { id: "n1", owner_user_id: OTHER, body: "a", created_at: "t", updated_at: "t" },
+            { id: "n2", owner_user_id: OTHER, body: "b", created_at: "t", updated_at: "t" },
+            { id: "n3", owner_user_id: UID, body: "mine", created_at: "t", updated_at: "t" },
+          ],
+        };
+      }
+      return { rows: [] };
+    });
+    const notes = await listAllPersonalNotesAsAdmin(ADMIN);
+    const audits = clientQuery.mock.calls.filter((c) =>
+      (c[0] as string).includes("INSERT INTO audit_log"),
+    );
+    expect(audits).toHaveLength(1); // one per access event, not per row
+    const [audit] = audits;
+    const params = audit[1] as unknown[];
+    expect(params[0]).toBe(UID); // actor = admin's app_user.id
+    expect(params[1]).toBe(PERSONAL_NOTE_GODVIEW_ACTION);
+    expect(params[2]).toBe(2); // only the two cross-owner notes counted
+    expect(JSON.parse(params[3] as string)).toEqual([OTHER]); // distinct owners crossed
+    expect(notes).toHaveLength(3); // all rows returned (god-view), owner carried back
+    expect(notes![0]).toMatchObject({ id: "n1", ownerUserId: OTHER });
+  });
+
+  it("does NOT audit when the admin saw only their own notes (not a god-view event)", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM personal_note")) {
+        return {
+          rows: [{ id: "n1", owner_user_id: UID, body: "mine", created_at: "t", updated_at: "t" }],
+        };
+      }
+      return { rows: [] };
+    });
+    await listAllPersonalNotesAsAdmin(ADMIN);
+    const audited = clientQuery.mock.calls.some((c) =>
+      (c[0] as string).includes("INSERT INTO audit_log"),
+    );
+    expect(audited).toBe(false);
+  });
+
+  it("does NOT log note bodies into the audit detail (no PII in the ledger)", async () => {
+    clientQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM personal_note")) {
+        return {
+          rows: [
+            { id: "n1", owner_user_id: OTHER, body: "SECRET-BODY", created_at: "t", updated_at: "t" },
+          ],
+        };
+      }
+      return { rows: [] };
+    });
+    await listAllPersonalNotesAsAdmin(ADMIN);
+    const audit = clientQuery.mock.calls.find((c) =>
+      (c[0] as string).includes("INSERT INTO audit_log"),
+    )!;
+    expect(JSON.stringify(audit[1])).not.toContain("SECRET-BODY");
+  });
+
+  it("returns [] in mock mode (no pool)", async () => {
+    getPool.mockReturnValue(null);
+    expect(await listAllPersonalNotesAsAdmin(ADMIN)).toEqual([]);
+    expect(connect).not.toHaveBeenCalled();
   });
 });
