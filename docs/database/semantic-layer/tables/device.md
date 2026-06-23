@@ -120,6 +120,10 @@ run null until it lands.
   (bronze `0119`) — the join carrying RMM live-state refresh and BCDR backup posture.
 - Security-posture context (Intune/Defender managed-device feeds) is keyed by tenant, not
   FK'd here — see `tenant_posture` / posture bronze.
+- **Consumed by** the agreement-reconciliation actual-count read-model (`listActualCounts`,
+  #1079 / epic #1041): per-account it contributes `devices` (row count) and `backups`
+  (rows with `backup_protected = true`, the BCDR posture field). Read-only projection — no
+  shape/authority change.
 
 ## Notes
 

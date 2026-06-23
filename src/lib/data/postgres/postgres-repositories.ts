@@ -16,6 +16,8 @@ import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import { labelDeviceOrigins } from "@/lib/cmdb/ci";
+import { toActualCounts, sortByEstateSize } from "@/lib/recon/actual-count";
+import type { ActualCountAggregate } from "@/lib/recon/actual-count";
 import { deriveCriticality } from "@/lib/cmdb/criticality";
 import { deriveLifecycle } from "@/lib/cmdb/lifecycle";
 import {
@@ -1569,6 +1571,67 @@ export const postgresRepositories: Repositories = {
         });
       } catch {
         return mockRepositories.crm.listConfigurationItems();
+      }
+    },
+
+    // Agreement-reconciliation ACTUAL-count aggregation (#1079, epic #1041).
+    async listActualCounts() {
+      const pool = getPool();
+      if (!pool) return mockRepositories.crm.listActualCounts();
+      try {
+        // Per-account roll-up of the ACTUAL deployed estate, projected over EXISTING
+        // silver — NO new ingest/schema. We anchor on `account` (every managed client),
+        // LEFT JOIN two pre-aggregated subqueries, and report 0 (not NULL) for a kind a
+        // client has none of (coalesce in SQL + `toCount` in code — belt and braces):
+        //   seats   = SUM(license_assignment.quantity)  (deploy-dormant until Pax8, #1042)
+        //   devices = COUNT(device)
+        //   backups = COUNT(device WHERE backup_protected)  (Datto BCDR posture, #683)
+        // Anchoring on `account` (not the inventory tables) keeps the staff/internal
+        // exclusion implicit: silver `account` is the client register, and both arms
+        // already key on `account_id`. The `toActualCounts` guard drops any account-less
+        // row defensively; `sortByEstateSize` orders largest-estate-first in code.
+        const { rows } = await pool.query<{
+          account_id: string;
+          account_name: string | null;
+          seats: string | null;
+          devices: string | null;
+          backups: string | null;
+        }>(
+          `SELECT a.id::text          AS account_id,
+                  a.name              AS account_name,
+                  lic.seats           AS seats,
+                  dev.devices         AS devices,
+                  dev.backups         AS backups
+             FROM account a
+             LEFT JOIN (
+               SELECT account_id, COALESCE(SUM(quantity), 0) AS seats
+                 FROM license_assignment
+                WHERE account_id IS NOT NULL
+                GROUP BY account_id
+             ) lic ON lic.account_id = a.id
+             LEFT JOIN (
+               SELECT account_id,
+                      COUNT(*)                                          AS devices,
+                      COUNT(*) FILTER (WHERE backup_protected IS TRUE)  AS backups
+                 FROM device
+                WHERE account_id IS NOT NULL
+                GROUP BY account_id
+             ) dev ON dev.account_id = a.id
+            WHERE lic.account_id IS NOT NULL OR dev.account_id IS NOT NULL`,
+        );
+        const aggregates: ActualCountAggregate[] = rows.map((r) => ({
+          accountId: r.account_id,
+          accountName: r.account_name,
+          seats: r.seats,
+          devices: r.devices,
+          backups: r.backups,
+        }));
+        return sortByEstateSize(toActualCounts(aggregates));
+      } catch (e) {
+        // Schema-lag (license_assignment / device not yet applied) degrades to empty,
+        // never crashes the surface — the inventory's cardinal rule (ADR-0051 §6).
+        if (isSchemaLagError(e)) return mockRepositories.crm.listActualCounts();
+        throw e;
       }
     },
 
