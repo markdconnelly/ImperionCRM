@@ -46,7 +46,7 @@ resolves Pax8 records onto silver in two steps:
    `account` via the entity-resolution registry (`entity_xref`, source_system `pax8`,
    [#1054](https://github.com/markdconnelly/ImperionCRM/issues/1054)) — falling back to name
    match — so every Pax8 record hangs off the right client.
-2. **Pax8 license → `license_assignment` (silver, migration 0176, [#1223](https://github.com/markdconnelly/ImperionCRM/issues/1223)).**
+2. **Pax8 license → `license_assignment` (silver, migration 0185, [#1223](https://github.com/markdconnelly/ImperionCRM/issues/1223)).**
    The per-license facts need a home the existing schema lacked (`contract` is header-only;
    `device` has no license column). The thin **`license_assignment`** silver entity is that
    home: one account-resolved row per assigned license carrying the **actual licensed

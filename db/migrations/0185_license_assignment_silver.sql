@@ -1,7 +1,7 @@
--- 0176: silver `license_assignment` — account-resolved distributor license facts (#1223, epic #1042).
--- Migration number 0176 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
+-- 0185: silver `license_assignment` — account-resolved distributor license facts (#1223, epic #1042).
+-- Migration number 0185 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
 -- placeholder; the rebased branch takes the next free number just before squash (it is authored as
--- 0176 because the sibling Pax8 governance seed already claims the 0175 placeholder on an open branch).
+-- 0185 because the sibling Pax8 governance seed already claims the 0184 placeholder on an open branch).
 --
 -- WHY THIS EXISTS. The Pax8 bronze→silver merge (LocalPipeline #280) resolves each Pax8 COMPANY to
 -- a silver `account` via `entity_xref` — but the per-LICENSE facts the loop needs have nowhere to
