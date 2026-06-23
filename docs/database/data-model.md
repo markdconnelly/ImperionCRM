@@ -878,6 +878,32 @@ Unique `(tenant_id, qbo_invoice_id)`. Gated by `collections:read` / `collections
 follow-up (#678). PII-free: no amounts/balances (read live from the mirror), no customer
 contact data, no personal identifiers.
 
+### Recurring invoice generation — `recurring_invoice_schedule` + `generated_invoice` tables (ADR-0085, migration 0199 placeholder, #1095)
+
+The **billing** (money-out template) leg, the inverse of the read-only AR mirror (`invoice_mirror`,
+0121, which covers money already billed). Tracer slice of epic #1045. **Two app-native tables**, NO
+QBO write: QuickBooks is the invoice SoR and read-only on our side today (ADR-0085) and the
+invoice-write OAuth scopes are **Mark-gated** — so generation produces app-side **drafts** that a
+future gated backend job will POST to QBO; nothing here calls QuickBooks.
+
+`recurring_invoice_schedule` (**archetype H**, config/template) holds the cadence the MSP authors
+per account: an **RFC-5545 RRULE subset** `rrule` (`FREQ=…;INTERVAL=n`, parsed by the existing
+`src/lib/recurrence.ts`, ADR-0070 E2 — one cadence vocabulary across the app), `line_items` JSONB
+(`[{ description, quantity, unit_amount }]`), `net_terms_days`, `start_on`/`end_on`, a materialised
+`next_run_on`, and the `last_generated_period` idempotency anchor. `status` is
+`recurring_invoice_status` (active|paused|ended).
+
+`generated_invoice` (**archetype D**, app-native until the push exists — the twin of
+`collections_activity`) is the **per-period draft queue/ledger**: one row per (schedule, period),
+**`UNIQUE (schedule_id, period_key)`** so a retry/overlap never double-bills. `status` is
+`generated_invoice_status` (pending→drafted→pushed, plus failed|skipped); `qbo_invoice_id` /
+`pushed_at` are written **ONLY** by the future Mark-gated QBO push and stay NULL until then — the
+mirror (0121) then picks the invoice up read-only. `total_amount` is an app-side draft subtotal for
+display/approval (Σ qty×unit, summed in cents); QBO recomputes tax/totals at push. Generation logic
+is pure in `src/lib/recurring-invoice.ts` (`generateDueDrafts`, deterministic catch-up with a
+`maxPeriods` safety cap). Gated by `invoicing:read` / `invoicing:write` (admin∨finance, ADR-0030).
+PII-free: the billed party is a business; no personal data, no secrets.
+
 ### CMDB relationship layer — `ci_relationship` table (ADR-0078, migration 0131, #647)
 
 The CMDB's first **persisted** table: a typed, directional **edge** between two Configuration
