@@ -310,3 +310,47 @@ tables only, with cross-owner reads ledgered at the data layer. This amendment r
 
 Migration 0187 is additive, idempotent, transactional, and **dormant until a Mark-gated apply**.
 #981 (curation identity, §3c) remains the last slice-3 component.
+
+## Amendment (2026-06-23) — Slice 3c built: privileged curation service identity (#981)
+
+§3c designed the **cross-wall curation promoter** — the *only* actor permitted to move knowledge
+across the personal→company wall — as a dedicated, non-`BYPASSRLS` managed identity with a narrow
+audited write-scope, its own append-only ledger, and a hard non-impersonation invariant. This
+amendment records the **build** (#981, migration 0192), the last and highest-scrutiny component
+of the access spine:
+
+- **Two greenfield control tables** (no live read path retrofitted — the slice-2/3a/3b
+  precedent): **`curation_promotion`** (the company-side promotion TARGET, draft→approved→applied
+  | rejected; the engagement_answer agent-draft pattern, ADR-0027) and **`curation_event`** (the
+  append-only cross-wall ledger). Both archetype H (governance/control), app-native, **no OKF
+  concept file** (not silver, not pipeline-merged — `semantic-layer-not-affected`).
+- **The four §3c invariants, made enforceable:**
+  1. **No `BYPASSRLS`** — the promoter (`imperion-curation-promoter`, INFRA-provisioned Phase-2)
+     gets explicit narrow GRANTs (`SELECT, INSERT` on proposals; `INSERT` on the ledger; `SELECT`
+     on `personal_fact`) + dedicated curation RLS policies scoped to the promotion path only.
+  2. **Append-only ledger** — `curation_event` has no promoter `UPDATE`/`DELETE`; every cross-wall
+     action is one row.
+  3. **Human-approved, never silent** — the promoter's `WITH CHECK` pins `status='draft'`; it
+     **cannot** write an approved/applied proposal nor `UPDATE` one (no grant). A human flips the
+     lifecycle through the FE review surface `src/lib/data/curation-promotion.ts`
+     (`listPendingPromotions` / `approvePromotion` / `applyPromotion` / `rejectPromotion`, each
+     reviewer-gated `admin`/`finance` + ledgering applied/rejected atomically). The human approval
+     *is* the "explicit, never silent" gate.
+  4. **Non-impersonation** — every promoter policy keys on **`current_user`** (the DB login role),
+     NOT a settable GUC, so the web/backend app role spoofing `app.user_id`/`app.oid` can never
+     satisfy them. The promoter has **no `personal_note`/owner-axis policy** at all; its only
+     personal reach is a **SELECT-only** god-view on `personal_fact` (`personal_fact_promoter_read`)
+     — enough to read-to-*propose*, never to mutate a drawer. It acts as itself.
+- **Distinct from the Personal Curator** (`imperion-personal-curator`, migration 0169,
+  ADR-0114 amendment): that actor is INTRA-owner (writes back only to the owner it read) and never
+  crosses the wall. The two curation actors coexist — intra-owner Curator + cross-wall promoter
+  (the 2026-06-22 amendment above anticipated this).
+- **Cross-repo:** FE owns the DB role's POLICIES + the ledger + promotion-target schema + the
+  human-review surface; **INFRA** provisions the login role (Phase-2); the **BACKEND** owns the
+  autonomous promoter runtime (a BE issue at build time). The curation-identity matrix is filled
+  in `docs/testing/rls-access-spine.md`; the human-review wiring is pinned in
+  `src/lib/data/curation-promotion.test.ts`.
+
+Migration 0192 is additive, idempotent, transactional, and **dormant until a Mark-gated apply**.
+With #979 (3a) · #980 (3b) · #981 (3c) built, **slice 3 — and the ADR-0105 access spine — is
+complete** (pending the Mark-gated prod applies + the Phase-2 service-role provisioning).
