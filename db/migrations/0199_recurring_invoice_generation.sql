@@ -1,4 +1,4 @@
--- 0901 (PLACEHOLDER — claimed at merge per system CLAUDE.md §10.3; 0195 was the latest
+-- 0199 (PLACEHOLDER — claimed at merge per system CLAUDE.md §10.3; 0195 was the latest
 -- applied/repo migration when this was authored. Rebase on main, take the next free number,
 -- rename this file — rename is data-safe — and fix the in-file refs + data-model.md + the two
 -- OKF concept timestamps before squash-merge.): recurring invoice GENERATION (QBO).
