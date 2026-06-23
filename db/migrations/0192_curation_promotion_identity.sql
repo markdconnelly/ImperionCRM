@@ -1,5 +1,5 @@
--- 0191: privileged curation service identity — the personal→company boundary-crosser
--- (#981, parent #976 / #967, ADR-0105 §3c). Migration number 0191 is a PLACEHOLDER claimed
+-- 0192: privileged curation service identity — the personal→company boundary-crosser
+-- (#981, parent #976 / #967, ADR-0105 §3c). Migration number 0192 is a PLACEHOLDER claimed
 -- at MERGE per system CLAUDE.md §10.3 — the rebased branch takes the next free number just
 -- before squash, and every reference is renumbered then. Do NOT prod-apply (each apply is
 -- Mark-gated, and this is a Mark-gated design throughout — the highest-privilege component).

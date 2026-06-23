@@ -316,7 +316,7 @@ Migration 0187 is additive, idempotent, transactional, and **dormant until a Mar
 §3c designed the **cross-wall curation promoter** — the *only* actor permitted to move knowledge
 across the personal→company wall — as a dedicated, non-`BYPASSRLS` managed identity with a narrow
 audited write-scope, its own append-only ledger, and a hard non-impersonation invariant. This
-amendment records the **build** (#981, migration 0191), the last and highest-scrutiny component
+amendment records the **build** (#981, migration 0192), the last and highest-scrutiny component
 of the access spine:
 
 - **Two greenfield control tables** (no live read path retrofitted — the slice-2/3a/3b
@@ -351,6 +351,6 @@ of the access spine:
   in `docs/testing/rls-access-spine.md`; the human-review wiring is pinned in
   `src/lib/data/curation-promotion.test.ts`.
 
-Migration 0191 is additive, idempotent, transactional, and **dormant until a Mark-gated apply**.
+Migration 0192 is additive, idempotent, transactional, and **dormant until a Mark-gated apply**.
 With #979 (3a) · #980 (3b) · #981 (3c) built, **slice 3 — and the ADR-0105 access spine — is
 complete** (pending the Mark-gated prod applies + the Phase-2 service-role provisioning).

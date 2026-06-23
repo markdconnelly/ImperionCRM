@@ -208,13 +208,13 @@ The FE mirror of the SQL predicate; the backend dispatch is the authoritative en
 | `admin` | any class | true |
 | (any) | unknown class | **false** (fail-closed) |
 
-## Curation-identity matrix (slice 3c — #981, migration 0191)
+## Curation-identity matrix (slice 3c — #981, migration 0192)
 
 The **cross-wall curation promoter** — the ONLY actor permitted to move knowledge across the
 personal→company wall (#966 decision 5/6, ADR-0105 §3c). It runs autonomously (no user in the
 loop) as the dedicated **non-`BYPASSRLS`** Postgres login `imperion-curation-promoter`, with a
 **narrow audited write-scope** and its **own append-only ledger** (`curation_event`). The four
-§3c invariants enforced by migration 0191:
+§3c invariants enforced by migration 0192:
 
 1. **No `BYPASSRLS`** — explicit narrow GRANTs + curation policies scoped to the promotion path.
 2. **Append-only ledger** — every cross-wall action is one `curation_event` row; promoter has

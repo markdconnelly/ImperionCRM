@@ -9,7 +9,7 @@
  * human approval is the "explicit, never silent" gate (#966 decision 5; engagement_answer
  * agent-draft pattern, ADR-0027): a personal→company promotion is only ever applied by a human.
  *
- * Every read/write goes through `withIdentity`, so the reviewer RLS policy (migration 0191,
+ * Every read/write goes through `withIdentity`, so the reviewer RLS policy (migration 0192,
  * `curation_promotion_reviewer`) gates the queue to privileged roles (`admin` / `finance`) AT
  * THE DATABASE — the storage layer is the floor. The reviewer also gets a defense-in-depth
  * application check (`isReviewer`) above the policy, mirroring the god-view pattern
@@ -30,7 +30,7 @@ import { withIdentity } from "@/lib/db/identity";
 /** The role slugs that may review the promotion queue (mirrors the SQL reviewer policy, §3c). */
 const REVIEWER_ROLES = ["admin", "finance"] as const;
 
-/** curation_event actions a human review can produce (mirrors the SQL CHECK, migration 0191). */
+/** curation_event actions a human review can produce (mirrors the SQL CHECK, migration 0192). */
 export const CURATION_EVENT_APPLIED = "applied";
 export const CURATION_EVENT_REJECTED = "rejected";
 
