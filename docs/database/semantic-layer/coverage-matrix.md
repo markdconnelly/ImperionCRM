@@ -149,6 +149,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [time_record](tables/time_record.md) | Finance | A | fin | ✅ | monthly-close |
 | [timesheet](tables/timesheet.md) | Finance | B | fin | ✅ | time-approval |
 | [time_ticket](tables/time_ticket.md) | Finance | D | fin | ✅ | Time Ticket writer (→ Autotask) |
+| cost_allocation | Finance | F | fin | ⏳ | cost-allocation model (#1091, profitability epic #1044) — derived view: billable hours + billable tooling/expense per client (account) × service line (ticket category) × month; labor HOURS only (the labor dollar lives only in the governed `labor_cost_to_serve`/`cost_to_serve` metrics, the sole pay_rate readers); license seat cost dormant until #1041 |
 | employee_profile, pay_rate | People | H | hr | ⏳ | n/a (comp-gated) |
 
 ## Expense

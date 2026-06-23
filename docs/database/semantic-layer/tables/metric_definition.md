@@ -7,7 +7,7 @@ description: The governed metric-definitions store — one row per business numb
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [reference, config, metrics, governance, bi, headless-bi]
 data_class: operational
-timestamp: 2026-06-23T18:00:00Z
+timestamp: 2026-06-23T19:00:00Z
 ---
 
 # metric_definition
@@ -43,8 +43,14 @@ by [#1116](https://github.com/markdconnelly/ImperionCRM/issues/1116) (the third/
 re-deriving them ad-hoc): `recognized_revenue` (over `invoice_mirror`), `gross_profit` and
 `effective_hourly_rate` (revenue × cost/hours scalar subqueries over `invoice_mirror`,
 `expense_item`, `time_record`), `agent_tickets_worked` and `agent_cost_per_run` (over
-`agent_run`). The original `mrr`, `gross_margin`, and `technician_utilization` remain unbound
-until a clean scalar source lands. Metric *values* (a snapshot/timeseries) are a later slice;
+`agent_run`), and the two cost-to-serve contracts added by the cost-allocation model
+([#1091](https://github.com/markdconnelly/ImperionCRM/issues/1091), first slice of the
+profitability epic #1044) — `labor_cost_to_serve` (billable hours × effective hourly
+`pay_rate`, over `time_record` + `pay_rate`) and `cost_to_serve` (labor + billable
+`expense_item`); these give `gross_profit` / `effective_hourly_rate` the real labor basis
+0193 was waiting on, and `cost_to_serve` grows the license leg when the cost/seat true-up
+(#1041) lands a per-seat cost. The original `mrr`, `gross_margin`, and
+`technician_utilization` remain unbound until a clean scalar source lands. Metric *values* (a snapshot/timeseries) are a later slice;
 this entity is the contract.
 
 ## Schema
