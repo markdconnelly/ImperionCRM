@@ -7,7 +7,7 @@ description: Managed-services contract — Autotask is the external system of re
 resource: ../../../decision-records/ADR-0044-silver-contracts-tickets.md
 tags: [silver, service, contract, autotask]
 data_class: operational
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T20:00:00Z
 ---
 
 # contract
@@ -52,6 +52,11 @@ operational contract record, not the signing ceremony.
   `project` (delivery the contract funds), `opportunity` (the sale that produced it).
 - `esign_envelope.contract_id` → this contract (ADR-0071): the envelope whose completion
   produced it. `esign_status` mirrors that envelope's status for fast read.
+- **Revenue join (#1092, profitability epic #1044).** `account_id` + `category` (the service
+  line, the revenue analog of the cost view's `ticket.category`) + `start_date` +
+  `estimated_revenue`, for active contracts, feed the derived `revenue_allocation` view's
+  **contracted leg** (per client × service line × month) — the contracted/recurring revenue
+  side of the per-client / per-service revenue join that mirrors `cost_allocation` (#1091).
 
 ## Notes
 
