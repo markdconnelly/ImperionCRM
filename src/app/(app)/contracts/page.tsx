@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { getRepositories } from "@/lib/data";
+import { labelContractType, labelContractStatus } from "@/lib/tickets/autotask-labels";
 
 export default async function ContractsPage() {
   const { engagements } = getRepositories();
@@ -33,13 +34,13 @@ export default async function ContractsPage() {
                     {c.number && <span className="ml-2 text-[11px] text-dim">#{c.number}</span>}
                   </td>
                   <td className="px-4 py-3 text-dim">{c.account ?? "—"}</td>
-                  <td className="px-4 py-3 text-dim">{c.contractType ?? "—"}</td>
+                  <td className="px-4 py-3 text-dim">{labelContractType(c.contractType)}</td>
                   <td className="px-4 py-3">
                     <span className="rounded border border-border px-1.5 py-0.5 text-[11px] text-dim">
                       {c.source === "docusign" ? "DocuSign" : "Autotask"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-dim">{c.status ?? "—"}</td>
+                  <td className="px-4 py-3 text-dim">{labelContractStatus(c.status)}</td>
                   <td className="px-4 py-3 text-dim">{c.startDate ?? "—"}</td>
                   <td className="px-4 py-3 text-dim">{c.endDate ?? "—"}</td>
                 </tr>
