@@ -1,11 +1,11 @@
--- 0903: Revenue join — allocate RECOGNIZED + CONTRACTED revenue per client & service, and
+-- 0198: Revenue join — allocate RECOGNIZED + CONTRACTED revenue per client & service, and
 -- give the governed profitability metrics a stable revenue partner to the cost side (#1092,
 -- second tracer slice of the profitability epic #1044).
 --
--- Migration number 0903 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
+-- Migration number 0198 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
 -- authored against a high free slot while origin/main tops at 0195 and the cost slice (#1091,
 -- PR #1248) authors against 0902; the branch that merges second renumbers. Do NOT hardcode-
--- depend on 0903 — the metric contract test locates the new definition by `key`
+-- depend on 0198 — the metric contract test locates the new definition by `key`
 -- (`recognized_revenue_to_serve`), never by number.
 --
 -- WHY THIS EXISTS. Epic #1044 (Hormozi — "you can't optimize a margin you don't measure")
