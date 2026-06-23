@@ -7,7 +7,7 @@ description: The entity-resolution golden-record registry — one row per (entit
 resource: ../../entity-xref-registry.md
 tags: [reference, identity, entity-resolution, governance, data-integrity]
 data_class: operational
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T00:00:00Z
 ---
 
 # entity_xref
@@ -55,13 +55,23 @@ entity. Index `(entity_type, internal_entity_id)` for the reverse expansion.
 - `internal_entity_id` resolves (per `entity_type`) to `account.id` / `contact.id` /
   `device.id` / `cloud_asset.id` / `opportunity.id`. Not a DB FK (polymorphic) — the writer
   guarantees the target exists.
-- **Consumed by** every merge (to resolve a source row to its internal entity before writing)
-  and by the backend resolver API + the Technician (to act on the correct entity). Overlaps
-  the per-merge `match_confidence` columns (ADR-0039) and `external_identity`, which this
-  spine generalizes across all entity types.
+- **Resolved through one function.** The forward lookup `(entity_type, source_system,
+  source_key) → internal_entity_id` is the SQL function `entity_resolve(...)` (migration 0190,
+  #1111) — the single callable every merge / backend resolver / Technician uses instead of
+  re-implementing the SELECT, so the matching rule has one home. The reverse expansion
+  (internal entity → all its source identities) stays the indexed SELECT in the read contract.
+- **Seeded from [`external_identity`](external_identity.md).** The already-resolved
+  account/contact↔provider links in `external_identity` (ADR-0012/0024) are backfilled into the
+  spine (migration 0190) as `deterministic` links — `provider` → `source_system`, whichever
+  subject column is set → `entity_type`. A `manual` spine link always wins over the backfill
+  (idempotent `ON CONFLICT DO NOTHING`). This spine generalizes `external_identity` (and the
+  per-merge `match_confidence` columns, ADR-0039) across all entity types.
 
 ## Notes
 
-No PII, no secrets — `source_key` is a source-system identifier. Schema-only in migration
-0160; backfill from existing resolved FKs and the resolver API are follow-up slices of #1049.
-Specific identity mappings resolve against the live read-only DB, never this file.
+No PII, no secrets — `source_key` is a source-system identifier. Created schema-only in migration
+0160; migration 0190 (#1111) adds the `entity_resolve()` forward resolver + the
+`external_identity` backfill. The merge-lineage backfills (account/contact/device/opportunity
+per-source FKs) and bitemporal `valid_to` (#1112) remain later #1049 slices; `entity_resolve`
+already filters `valid_from <= now()` as the forward-compatible seam. Specific identity mappings
+resolve against the live read-only DB, never this file.

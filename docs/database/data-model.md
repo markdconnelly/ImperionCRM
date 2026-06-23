@@ -2969,6 +2969,52 @@ full bodies + structured participants are lossless in `raw_payload`.
   from_user, participants, direction, message_type, sent_at, has_attachments, captured_user.
   `external_id` = message_id; `conversation_id` threads.
 
+## Entity-resolution spine — `entity_xref` + `entity_resolve()` (epic #1049)
+
+The golden-record identity spine `entity_xref` (migration 0160, #1054) is the one canonical
+answer to *"are these two source records the same real-world thing?"* across every source
+system — the table an autonomous Technician (#1038) resolves before acting cross-client. One row
+per `(entity_type, source_system, source_key)` → one polymorphic `internal_entity_id` (the silver
+PK for that `entity_type`; no hard FK), with `match_confidence` + `match_method`
+(`deterministic`/`fuzzy`/`manual`) and a `valid_from` bitemporal seam. Unique on
+`(entity_type, source_system, source_key)`; reverse index on `(entity_type, internal_entity_id)`.
+
+Migration 0190 (#1111) adds the two consumption-side pieces:
+
+- **`entity_resolve(entity_type, source_system, source_key) → internal_entity_id`** — the single
+  STABLE SQL function every merge / backend resolver / Technician calls for the forward lookup,
+  so the matching rule (uniqueness + the `valid_from <= now()` filter) has one home rather than
+  N hand-rolled SELECTs. The bitemporal slice #1112 extends the filter to `valid_to` **without
+  changing the signature**. FE mirror: `src/lib/integrations/entity-resolution.ts`.
+- **`external_identity` backfill** — the already-resolved account/contact↔provider links
+  (migration 0020, ADR-0012/0024) are copied into the spine as `deterministic` links (provider →
+  `source_system`, the set subject column → `entity_type`), idempotent `ON CONFLICT DO NOTHING`
+  so a curated `manual` link wins. (The 0165 backfill already seeded the M365 tenant links.)
+
+```mermaid
+erDiagram
+    external_identity ||--o{ entity_xref : "backfills (0190)"
+    entity_xref }o--|| account : "internal_entity_id (polymorphic)"
+    entity_xref }o--|| contact : "internal_entity_id (polymorphic)"
+    entity_xref {
+        uuid id PK
+        text entity_type "account|contact|device|asset|opportunity"
+        uuid internal_entity_id "silver PK for entity_type (no hard FK)"
+        text source_system
+        text source_key
+        numeric match_confidence
+        text match_method "deterministic|fuzzy|manual"
+        timestamptz valid_from "bitemporal seam (#1112)"
+    }
+```
+
+The forward resolver is `entity_resolve()`; the reverse expansion (internal entity → all its
+source identities) stays the indexed SELECT in the read contract. Full contract + backfill
+ledger: [`entity-xref-registry.md`](entity-xref-registry.md); meaning:
+[`semantic-layer/tables/entity_xref.md`](semantic-layer/tables/entity_xref.md). No PII, no
+secrets — `source_key` is a source-system identifier. Merge-lineage backfills + bitemporal
+`valid_to` are later #1049 slices.
+
 ## Vector data (pgvector)
 
 **One vector space (ADR-0041 / ADR-0043):** embeddings live in the unified gold store —

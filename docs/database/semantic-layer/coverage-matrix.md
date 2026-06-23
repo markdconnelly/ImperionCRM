@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -198,7 +198,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | account_tenant, saved_view | horizontal | H | op | ⏳ | n/a |
 | report_definition, dashboard, dashboard_item | horizontal | B/H | op | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
 | [metric_definition](tables/metric_definition.md) | horizontal | H | op | ✅ | the headless-BI metric contract — one governed definition agents & dashboards share; seed expanded with 7 bound sales/service/finance contracts (#1050/#1055/#1114) |
-| [entity_xref](tables/entity_xref.md) | horizontal | H | op | ✅ | the identity spine — every source id → one internal entity; agents resolve before acting (#1049/#1054) |
+| [entity_xref](tables/entity_xref.md) | horizontal | H | op | ✅ | the identity spine — every source id → one internal entity; agents resolve before acting via `entity_resolve()` (#1049/#1054, resolver+`external_identity` backfill #1111) |
 
 ## Audit / governance
 

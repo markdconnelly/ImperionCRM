@@ -7,7 +7,7 @@ description: Per-provider identity link — maps one internal account or contact
 resource: ../../../decision-records/ADR-0024-per-user-personal-connections-and-lead-hooks.md
 tags: [silver, identity, external_identity, reference]
 data_class: operational
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T00:00:00Z
 ---
 
 # external_identity
@@ -49,7 +49,10 @@ context only.
 - **vs [`entity_xref`](entity_xref.md):** `entity_xref` is the general identity spine
   (any source id → one internal entity, across all entity types) that agents resolve
   before acting; `external_identity` is the narrower, CRM-scoped account/contact↔provider
-  link. Treat `entity_xref` as authoritative where both describe the same mapping.
+  link. Treat `entity_xref` as authoritative where both describe the same mapping. These rows are
+  **backfilled into `entity_xref`** as `deterministic` links (migration 0190, #1111) — provider →
+  `source_system`, the set subject column → `entity_type` — so the spine adopts them as a seed
+  while a curated `manual` spine link still wins.
 
 ## Notes
 
