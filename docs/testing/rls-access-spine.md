@@ -43,10 +43,49 @@ SELECT count(*) FROM personal_note;   -- only A's notes
 COMMIT;
 ```
 
-Admin god-view: connected as the **table owner** (`Mark@ImperionLLC.com`, via `migrate.mjs` /
-pg-MCP) RLS is bypassed by ownership — `SELECT * FROM personal_note` sees all rows. Note this
-is a *direct admin DB* view; the app never connects as the owner, so personal notes stay
-owner-only through the web app (intended). An app-layer audited admin/company bypass is slice 3.
+Direct-admin DB view: connected as the **table owner** (`Mark@ImperionLLC.com`, via
+`migrate.mjs` / pg-MCP) RLS is bypassed by ownership — `SELECT * FROM personal_note` sees all
+rows. This is a *direct admin DB* view; the app never connects as the owner, so through the web
+app personal notes stay owner-only **except** via the audited god-view below (slice 3b).
+
+## Admin god-view matrix (slice 3b — #980, migration 0187)
+
+The audited admin god-view — an EXPLICIT, ledgered bypass of the personal-tier owner boundary
+**for the app role** (not the direct-DB ownership bypass above). Enforced by the permissive
+policy `personal_note_admin_godview` via `'admin' = ANY(current_setting('app.groups')::text[])`,
+which is OR'd with `personal_note_owner` (Postgres OR's PERMISSIVE policies). Per ADR-0105 §3b
+this is a **permissive admin policy, NOT a BYPASSRLS role** — granular (only tables carrying a
+god-view policy), reuses `withIdentity` plumbing, and visible in `pg_policies`. The audit is
+enforced at the **data layer** (`listAllPersonalNotesAsAdmin`, `personal-note.ts`): a single
+`audit_log` row per access event (action `personal_note.godview`) when the read returns rows the
+admin does not own.
+
+### Preconditions
+
+```sql
+SELECT polname, polpermissive FROM pg_policy
+  WHERE polrelid = 'personal_note'::regclass;   -- personal_note_owner + personal_note_admin_godview (both permissive=t)
+```
+
+### Read/write matrix
+
+As the **app role**, in one transaction per case (mirrors `withIdentity`). Let `A` and `B` be
+two distinct `app_user.id`s with `personal_note` rows.
+
+| # | Session context | Action | Expected |
+|---|---|---|---|
+| 1 | `app.groups = {"admin"}`, `app.user_id = A` | `SELECT count(*) FROM personal_note` | sees **all** rows (A's own via owner policy + B's via god-view policy) |
+| 2 | `app.groups = {"support"}`, `app.user_id = A` | `SELECT count(*) FROM personal_note` | sees only A's rows (non-admin → god-view branch FALSE → owner policy alone) |
+| 3 | `app.groups = {}`, no `app.user_id` | `SELECT count(*) FROM personal_note` | **0** (fail-closed — neither branch matches) |
+| 4 | `app.groups = {"admin"}`, `app.user_id = A` | `UPDATE personal_note SET body='x' WHERE id = <B's id>` | succeeds (admin `WITH CHECK` admits the course-correction write) |
+
+> **Audit (data-layer property, not a DB-policy property).** RLS admits the rows; the
+> `audit_log` ledger entry is written by the repo, so verify it at the application layer. Case 1
+> (an admin reading B's notes) must produce exactly **one** `audit_log` row with
+> `action='personal_note.godview'`, `actor_user_id=A`, `detail.notesViewed` = the cross-owner
+> count, and `detail.ownersViewed` = the distinct owners (e.g. `["B"]`) — never the note bodies.
+> An admin reading only their own notes (no cross-owner rows) writes **no** audit row. This is
+> pinned in `src/lib/data/personal-note.test.ts`.
 
 ## Company-axis matrix (slice 3a — #979, migration 0186)
 

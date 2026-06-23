@@ -278,3 +278,35 @@ This amendment records the **build** of that pattern (#979, migration 0186):
 
 The `app.groups` vocabulary stays **normalized app-role slugs** (§3 design). #980 (audited
 god-view, §3b) and #981 (curation identity, §3c) remain the rest of slice 3.
+
+## Amendment (2026-06-23) — Slice 3b built: audited admin god-view (#980)
+
+§3b designed the admin god-view as an **explicit, audited bypass** of the personal-tier owner
+boundary — a **permissive admin RLS policy, NOT a `BYPASSRLS` role**, scoped to personal-tier
+tables only, with cross-owner reads ledgered at the data layer. This amendment records the
+**build** (#980, migration 0187), on `personal_note` (the only RLS-gated personal table today):
+
+- **Policy `personal_note_admin_godview`** — `AS PERMISSIVE FOR ALL`,
+  `USING/WITH CHECK ('admin' = ANY(COALESCE(current_setting('app.groups', true), '{}')::text[]))`.
+  Postgres OR's permissive policies, so this is **additive** to `personal_note_owner`: a row is
+  visible when the caller owns it OR carries `admin`. Non-admins are unaffected (the admin branch
+  is FALSE for them); an unset `app.groups` matches neither branch (fail-closed). Chosen over a
+  `BYPASSRLS` admin role because it is **granular** (only tables with a god-view policy),
+  **reuses the `withIdentity` plumbing** (reads the same `app.groups` GUC), and is **visible in
+  `pg_policies`** — the bypass is auditable in the catalog, not hidden in a role attribute.
+- **The bypass is EXPLICIT** at the application layer: a distinct entry point
+  `listAllPersonalNotesAsAdmin()` (`src/lib/data/personal-note.ts`), never the ordinary owner
+  read path, gated to admins with a defense-in-depth check above the RLS policy. There is **no
+  always-on superuser path**.
+- **The audit is enforced at the DATA LAYER** (RLS cannot cleanly write an audit row; per-row
+  read logging is too heavy): when the god-view read returns rows the admin does **not** own, the
+  repo writes **ONE** `audit_log` entry per access event (`action='personal_note.godview'`,
+  `actor_user_id` = the admin's `app_user.id`, `detail` = cross-owner note count + distinct owner
+  ids — **never the note bodies**, no PII in the ledger). The audit INSERT runs inside the same
+  `withIdentity` transaction as the read, so a viewed-but-unledgered access is impossible. The
+  owner's own reads and ordinary company reads are **not** audited (consistent with ADR-0100).
+- The god-view matrix is filled in `docs/testing/rls-access-spine.md`; the data-layer audit
+  behaviour is pinned in `src/lib/data/personal-note.test.ts`.
+
+Migration 0187 is additive, idempotent, transactional, and **dormant until a Mark-gated apply**.
+#981 (curation identity, §3c) remains the last slice-3 component.
