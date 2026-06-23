@@ -49,6 +49,16 @@ queue across **all** agents in one place. The page has two parts:
    plus the execution stamp (`decided_at`, `interaction_id`) and the window state —
    `executed · undo window` (still potentially undoable) or `expired · terminal` (window
    closed). See [§5](#5-l4-oversight--executed--undo-window).
+4. **Earned-autonomy track record** — the *why-it-keeps-surfacing* panel
+   ([#1220](https://github.com/markdconnelly/ImperionCRM/issues/1220), ADR-0121). Autonomy
+   is **earned**: an agent that builds a clean streak on an action class auto-promotes its
+   ceiling one ADR-0055 tier at a time and instantly demotes to the dial floor on a single
+   miss. This panel reads that ledger so an operator sees, per agent / action class, the
+   **current earned tier**, the **clean streak toward the next promotion**, and the **last
+   promotion / demotion** (kind, from→to tier, reason, when). Always-gate classes (money /
+   credentials / customer-facing — `data_class.always_gate`) carry a **HARD-CAPPED** badge:
+   the earned dimension can never auto-cross them, so they keep surfacing regardless of any
+   track record. See [§6](#6-earned-autonomy-track-record).
 
 ```mermaid
 flowchart LR
@@ -73,6 +83,8 @@ flowchart LR
 |---|---|---|
 | Pending agent actions | `agent_pending_action` (mig 0158) where `status='pending'` (all `agent_key`s), joined to silver `ticket` via `payload->>'ticketId'` | `listPendingActions()`, `src/lib/agent/pending-action-cockpit.ts` |
 | Executed (L4 oversight) | `agent_pending_action` (mig 0158) where `status IN ('executed','expired')` (all `agent_key`s), newest `decided_at` first, same `ticket` join | `listExecutedActions()`, same module |
+| Earned-autonomy track record | `agent_earned_autonomy` + `agent_earned_transition` (mig 0182) — current earned tier, clean streak, last transition per `(agent_key, action_class)` | `listEarnedAutonomy()`, `src/lib/agent/earned-autonomy-data.ts`; rendered by `EarnedAutonomyTrackRecord`, `src/components/agents/earned-autonomy-track-record.tsx` |
+| Hard-cap badge | `data_class.always_gate` (mig 0175) — money / credentials / customer-facing, mirrored in `isAlwaysGate()` | `src/lib/security/data-class.ts` |
 | Proposing-agent label | `agent_key` → roster name (`docs/agents/agent-roster.md`), with the key itself as the fallback | `agentLabel()` in the same module |
 | Run trace link | `agent_run` / `agent_message` (mig 0056) via the existing glass-box viewer | `/workflows/runs/[id]` |
 
@@ -160,6 +172,8 @@ action.
 | **L4 oversight view** (executed actions list) | **Live (this PR, #1202)** | reads `status IN ('executed','expired')`; renders sample data until L4 dispatch produces real rows |
 | The L4 inline-execute-then-park dispatch path | **Pending** | backend #250 (dial→tier-ceiling routing) — until then no `executed` rows arrive from autonomy L4 |
 | **Undo / compensate** affordance | **Pending backend** — undo endpoint not built (FE issue filed against backend) | the button renders disabled with a "pending backend" hint; it becomes a server-action submit once the compensate endpoint (twin of #267) lands |
+| **Earned-autonomy track-record panel** (tier · streak · last transition + hard-cap badge) | **Live (this PR, #1220)** | reads `agent_earned_autonomy` / `agent_earned_transition` (mig 0182); renders sample rows until the backend promote/demote engine (BE #250) writes real ones |
+| `agent_earned_autonomy` / `agent_earned_transition` schema | **Live (mig 0182, #1036)** | ADR-0121; web role `SELECT` only — the backend dispatcher owns the writes |
 
 No invented features — where a piece is dormant, the surface says so in line.
 
@@ -222,3 +236,48 @@ oversight **list live** with the undo button **disabled** ("pending backend"). W
 endpoint lands, the affordance becomes an `agents:operate`-gated server action
 (`src/app/(app)/operator/actions.ts`) gated on the open window, wired through a new
 `agentService.undoPendingAction` binding — no UI rework.
+
+---
+
+## 6. Earned-autonomy track record
+
+Autonomy is **earned** (ADR-0121, [#1036](https://github.com/markdconnelly/ImperionCRM/issues/1036)).
+The operator-set 1–5 dial (`agent_action_autonomy`, ADR-0109) is the **floor** an agent
+always has; on top of it an agent that builds a clean track record on an action class
+**auto-promotes its effective ceiling one ADR-0055 tier at a time**, fully audited, and
+**instantly demotes back to the dial floor on a single miss** (a rejection, a revert, or an
+eval fail). The earned dimension can only ever *raise* the ceiling, never lower it below the
+dial. The promote/demote engine and the writes are **backend-owned** (BE #250, system
+[CLAUDE.md §1](../../CLAUDE.md)); the front end reads the ledger (mig 0182 grants the web
+identity `SELECT` only) and renders it.
+
+The **Earned-autonomy track record** panel ([#1220](https://github.com/markdconnelly/ImperionCRM/issues/1220),
+`EarnedAutonomyTrackRecord`) shows, per `(agent, action class)` with a persisted record:
+
+- **Current earned tier** — the tier the agent has earned on this class (`earned T2`), or
+  `dial floor · nothing earned` when nothing has been earned yet.
+- **Clean streak toward the next promotion** — `cleanStreak / promoteThreshold` with a
+  progress bar and the count of clean approvals (eval ≥ `cleanEvalFloor`) still needed to
+  step up one tier; an agent already at the top earned tier shows `at top earned tier (T3)`.
+- **Last transition** — the last promotion / demotion: kind (`▲ promote` / `▼ demote`),
+  `from → to` tier, the reason, and the timestamp. A record with no history shows
+  `no transitions yet`.
+
+### The hard ceiling — why always-gate classes keep surfacing
+
+The **always-gate** classes — money (`financial`), credentials (`security_credentials`),
+customer-facing (`client_pii`) — are **capped at "always approve"** (ADR-0118 / ADR-0121).
+**No track record, no dial level, no earned tier may cross them.** The panel badges these
+records **HARD-CAPPED** so an operator understands *why* such an agent's actions keep
+routing to the cockpit regardless of how clean its streak is. The flag is read from
+`data_class.always_gate` (mig 0175) via `isAlwaysGate()` — the cockpit does **not** invent
+a parallel list; it reuses the same always-gate set the data_class action ceiling enforces.
+
+### Security & PII posture
+
+The panel is **PII-free** by construction (ADR-0121 acceptance): it renders only agent keys
+(mapped to roster names), action-class names, tier labels, and counters — never any
+row-level, customer, or credential data. It reads the same degradation tiers as the rest of
+the cockpit (ADR-0042): DB unset → sample rows; query failure → empty list. It sits inside
+the same admin-gated route (`canSeeAgentPages`); there is no write path — the earned ledger
+is backend-written.
