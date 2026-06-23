@@ -2,7 +2,9 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { PendingActionCockpit } from "@/components/agents/pending-action-cockpit";
 import { L4OversightView } from "@/components/agents/l4-oversight-view";
+import { EarnedAutonomyTrackRecord } from "@/components/agents/earned-autonomy-track-record";
 import { listPendingActions, listExecutedActions } from "@/lib/agent/pending-action-cockpit";
+import { listEarnedAutonomy } from "@/lib/agent/earned-autonomy-data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { can } from "@/lib/auth/policy";
 import { isDbConfigured } from "@/lib/db/client";
@@ -33,7 +35,11 @@ export default async function ApprovalCockpitPage() {
   const roles = await getSessionRoles();
   const canOperate = can(roles, "agents:operate"); // admin-only (ADR-0050)
 
-  const [queue, executed] = await Promise.all([listPendingActions(), listExecutedActions()]);
+  const [queue, executed, earned] = await Promise.all([
+    listPendingActions(),
+    listExecutedActions(),
+    listEarnedAutonomy(),
+  ]);
   const dbNote = isDbConfigured() ? "" : " · sample data";
 
   return (
@@ -49,12 +55,15 @@ export default async function ApprovalCockpitPage() {
 
       <PendingActionCockpit items={queue} canReview={canOperate} reviewAction={decidePendingActionAction} />
 
+      <EarnedAutonomyTrackRecord records={earned} />
+
       <L4OversightView items={executed} canReview={canOperate} />
 
       <p className="text-[11px] text-dim">
         Showing {queue.length} parked action{queue.length === 1 ? "" : "s"} awaiting approval and{" "}
-        {executed.length} executed autonomously (L4 oversight) across all agents ·
-        agent_pending_action cockpit (ADR-0109){dbNote}.
+        {executed.length} executed autonomously (L4 oversight) across all agents, with{" "}
+        {earned.length} earned-autonomy track record{earned.length === 1 ? "" : "s"} ·
+        agent_pending_action cockpit (ADR-0109) + agent_earned_autonomy (ADR-0121){dbNote}.
       </p>
     </div>
   );

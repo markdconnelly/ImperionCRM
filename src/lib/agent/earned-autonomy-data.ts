@@ -81,8 +81,8 @@ function mapRow(r: EarnedRow, lastTransition: EarnedTransition | null): EarnedRe
 
 const MOCK_EARNED: EarnedRecord[] = [
   {
-    agentKey: "sales",
-    actionClass: "update_ticket",
+    agentKey: "technician",
+    actionClass: "operational",
     earnedTier: "T2",
     cleanStreak: 2,
     promoteThreshold: 5,
@@ -91,8 +91,34 @@ const MOCK_EARNED: EarnedRecord[] = [
       kind: "promote",
       from: "T1",
       to: "T2",
-      reason: "5 consecutive clean approvals (eval >= 0.75) on update_ticket",
+      reason: "5 consecutive clean approvals (eval >= 0.75) on operational",
       at: "2026-06-21T12:00:00Z",
+    },
+  },
+  {
+    // An always-gate class: HARD-CAPPED badge surfaces; no earned raise can cross it.
+    agentKey: "sales",
+    actionClass: "client_pii",
+    earnedTier: null,
+    cleanStreak: 0,
+    promoteThreshold: 5,
+    cleanEvalFloor: 0.75,
+    lastTransition: null,
+  },
+  {
+    // A class that just demoted on a miss — back at the dial floor.
+    agentKey: "finance",
+    actionClass: "operational",
+    earnedTier: null,
+    cleanStreak: 0,
+    promoteThreshold: 5,
+    cleanEvalFloor: 0.75,
+    lastTransition: {
+      kind: "demote",
+      from: "T2",
+      to: null,
+      reason: "miss: rejected / reverted / eval-fail — earned autonomy reset to the dial floor",
+      at: "2026-06-21T18:30:00Z",
     },
   },
 ];
