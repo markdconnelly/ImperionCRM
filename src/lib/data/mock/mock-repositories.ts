@@ -383,6 +383,12 @@ export const mockRepositories: Repositories = {
     async listConfigurationItems() {
       return [];
     },
+    // Agreement-reconciliation actual-count aggregation (#1079, epic #1041) — no silver
+    // inventory to roll up in mock mode; the surface renders empty rather than crashing
+    // (acceptance: mock fallback returns []).
+    async listActualCounts() {
+      return [];
+    },
     // Intune managed apps drill (#261) — no bronze to read in mock mode; the device-detail
     // "Managed apps" section renders empty rather than crashing (acceptance: mock = []).
     async listDeviceManagedApps() {

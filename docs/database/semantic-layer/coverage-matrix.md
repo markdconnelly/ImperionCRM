@@ -163,7 +163,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 
 | Object | Domain | Archetype | IKF | Acting ICM workflow |
 |---|---|---|---|---|
-| [license_assignment](tables/license_assignment.md) | Finance | A | ✅ | agreement true-up (#1041); procure→provision→bill (#1042) |
+| [license_assignment](tables/license_assignment.md) | Finance | A | ✅ | agreement true-up (#1041 — `quantity` is the actual side of the actual-count read-model `listActualCounts`, #1079); procure→provision→bill (#1042) |
 
 ## Security / MSSP
 

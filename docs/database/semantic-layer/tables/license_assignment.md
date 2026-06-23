@@ -81,6 +81,10 @@ Runs on 0 rows until the Pax8 credential lands + migration 0161 is applied (both
 - `contract_id` → `contract.id` — the agreement panel ("licenses attached to this agreement").
 - `entity_xref` (`source_system='pax8'`, `entity_type='account'`) — how `account_id` is
   resolved during the merge (it is **not** a join at read time).
+- **Consumed by** the agreement-reconciliation actual-count read-model (`listActualCounts`,
+  #1079 / epic #1041): per-account `seats = SUM(quantity)` is the *actual* side of the
+  contracted-vs-actual true-up. Read-only projection — no shape/authority change
+  (deploy-dormant until Pax8 hydrates this table, #1042).
 
 ## PII
 

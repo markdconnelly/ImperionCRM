@@ -200,6 +200,7 @@ import type {
   ApprovalDecision,
   ClientMappingUnit,
 } from "@/types";
+import type { ActualCountRow } from "@/lib/recon/actual-count";
 
 /** Editable account fields (create/update forms). */
 export interface AccountInput {
@@ -835,6 +836,19 @@ export interface CrmRepository {
 
   /** Read-only device & cloud-asset inventory (ADR-0047, view migration 0053). */
   listDeviceInventory(): Promise<DeviceInventoryRow[]>;
+
+  /**
+   * Agreement-reconciliation ACTUAL-count aggregation (#1079, epic #1041) — a READ-ONLY
+   * per-account roll-up of what is ACTUALLY deployed, projected over EXISTING silver, NO
+   * new ingest/schema. One row per account carrying: `seats` (sum of
+   * `license_assignment.quantity`), `devices` (silver `device` count), and `backups`
+   * (devices with `backup_protected = true`, the Datto BCDR posture field, #683). Only
+   * accounts with `account_id IS NOT NULL` inventory appear (mirrors the CMDB CI
+   * staff-exclusion). The `seats` arm is deploy-dormant until Pax8 hydrates
+   * `license_assignment` (#1042). Sorted largest-estate-first. Mock / schema-lag
+   * fallback = `[]` (the surface renders empty, never crashes).
+   */
+  listActualCounts(): Promise<ActualCountRow[]>;
 
   /**
    * The CMDB Configuration Item (CI) union read-model (#645, epic #372, ADR-0078) —
