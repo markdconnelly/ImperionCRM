@@ -7,7 +7,7 @@ description: Unified employee time timeline — one row per source fact, website
 resource: ../../../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md
 tags: [silver, time-tracking, payroll]
 data_class: financial
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T19:00:00Z
 ---
 
 # time_record
@@ -70,6 +70,13 @@ is **fixed by CHECK** — `website→attendance`, `autotask→allocation`.
   or `autotask_time_entry` (allocation, corroborating).
 - Feeds weekly Mon–Sun timesheets and the time/payroll reconciliations
   (time-deviation recon + expected-vs-QuickBooks payroll recon, ADR-0082).
+- **Cost allocation (#1091, profitability epic #1044).** `ancillary_ticket_ref`
+  joins to [`ticket`](ticket.md) (`external_ref` or `number`) → `ticket.account_id`,
+  which the derived `cost_allocation` view groups by (client × service line =
+  `ticket.category` × month) to surface **billable hours** per client/service. The
+  labor **dollar** is never in that view — it is computed only inside the governed
+  `labor_cost_to_serve` / `cost_to_serve` metric expressions (the sole readers of
+  `pay_rate`, ADR-0082 §Security), which the backend metric engine binds and runs.
 
 ## Notes
 
