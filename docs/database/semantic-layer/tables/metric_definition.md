@@ -7,7 +7,7 @@ description: The governed metric-definitions store — one row per business numb
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [reference, config, metrics, governance, bi, headless-bi]
 data_class: operational
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-23T00:00:00Z
 ---
 
 # metric_definition
@@ -33,10 +33,13 @@ metric query endpoint ([#259](https://github.com/markdconnelly/ImperionCRM_Backe
 `metric_definition` never holds row-level data, only the formula. An `expression` is one of two
 states: an **executable** `SELECT … AS value` scalar with `:named` temporal params the engine
 binds, or **unbound** (a definitional fragment / NULL the engine cannot parse → status
-`unbound`). The seed currently binds `agent_compute_cost` (over `agent_run`) and
-`tickets_closed` (over silver `ticket`); `mrr`, `gross_margin`, and `technician_utilization`
-remain unbound until a clean scalar source lands. Metric *values* (a snapshot/timeseries) are a
-later slice; this entity is the contract.
+`unbound`). The bound (executable) seed set is: `agent_compute_cost` (over `agent_run`),
+`tickets_closed` (over silver `ticket`), and the seven contracts added by #1114 —
+`new_business_mrr`, `win_rate`, `pipeline_mrr` (over `opportunity`), `open_tickets` and
+`avg_resolution_hours` (over silver `ticket`), `billable_hours` (over `time_record`),
+`reimbursable_expense` (over `expense_item`). The original `mrr`, `gross_margin`, and
+`technician_utilization` remain unbound until a clean scalar source lands. Metric *values* (a
+snapshot/timeseries) are a later slice; this entity is the contract.
 
 ## Schema
 
@@ -65,8 +68,9 @@ UNIQUE `(key)`; indexes on `data_class`, `active`.
   reference metrics by `key`.
 - `data_class` is the shared sensitivity axis with OKF concepts and action contracts
   (#1034): the class a metric carries gates which callers/agents may read it.
-- The `expression` references silver/operational entities (e.g. `contract`, `time_record`,
-  the silver `ticket` table, `agent_run`) but stores no rows from them.
+- The `expression` references silver/operational entities (e.g. `contract`, `opportunity`,
+  `time_record`, `expense_item`, the silver `ticket` table, `agent_run`) but stores no rows
+  from them.
 
 ## Notes
 
