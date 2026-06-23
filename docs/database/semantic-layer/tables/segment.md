@@ -6,7 +6,8 @@ archetype: B
 description: A general-purpose CRM contact set — manual (static) or rule (dynamic over contact fields) — with explicit membership. The enrollment source for marketing journeys and reusable for comms / list views. Distinct from an ad audience. Website system of record (app-native).
 resource: ../../../decision-records/ADR-0073-marketing-automation-journeys.md
 tags: [silver, marketing, segment, contact-set, app-native]
-timestamp: 2026-06-17T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # segment

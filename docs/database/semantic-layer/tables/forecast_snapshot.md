@@ -6,7 +6,8 @@ archetype: C
 description: A nightly point-in-time capture of the weighted + categorised forecast, closed-won, and quota per owner/period — for trend and forecast-accuracy. Website system of record (backend/pipeline job).
 resource: ../../../decision-records/ADR-0072-revenue-forecasting-model.md
 tags: [silver, sales, forecast, snapshot, revenue]
-timestamp: 2026-06-15T22:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # forecast_snapshot

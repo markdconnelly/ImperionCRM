@@ -6,7 +6,8 @@ archetype: B
 description: Admin-editable project playbook (milestones + steps/tasks, kept in template_item) instantiated as a snapshot onto new projects — website system of record.
 resource: ../../../decision-records/ADR-0070-pm-templates-recurrence-intake.md
 tags: [silver, delivery, project, template, pm]
-timestamp: 2026-06-16T16:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # project_template

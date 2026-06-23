@@ -39,177 +39,180 @@ object carries exactly one **`data_class`**: **op** operational/CMDB (broad-read
 **fin** financial (always-gate) · **hr** people_hr · **sec** security_credentials (always-gate) ·
 **pii** client_pii (always-gate). The class is the THIRD RLS read-predicate and the action-plane
 ceiling (one rule, both layers — `app_data_class_allowed()`, migration 0175). always-gate classes
-(fin/sec/pii) are the hard ceiling earned autonomy can never auto-cross (#1036). The `data_class`
-column below is **partially populated in this tracer PR** (a representative row per class); the
-full per-concept backfill is the follow-up issue. A concept file's `data_class` frontmatter is the
-authority for its row.
+(fin/sec/pii) are the hard ceiling earned autonomy can never auto-cross (#1036). The **Class**
+column below is **fully populated** (#1210 backfill): every ✅ concept-bearing row's class is the
+authority value carried in that concept file's `data_class` frontmatter; ⏳ / `n/a` rows are
+classed here by the same content rule (the file inherits it when authored). A concept file's
+`data_class` frontmatter remains the authority for its row.
 
 ## CRM core
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [account](tables/account.md) | kernel | A | ✅ | research / QBR-prep; lead dedupe |
-| [contact](tables/contact.md) | kernel | A | ✅ | research; lead-response |
-| [device](tables/device.md) | Service Desk | A | ✅ | asset/security context (Datto RMM precedence + BCDR backup posture, #683) |
-| [cloud_asset](tables/cloud_asset.md) | Service Desk | A | ✅ | CMDB cloud-asset CI (#874, ADR-0097) |
-| [external_identity](tables/external_identity.md) | horizontal | H | ✅ | identity resolution |
-| [contact_social_identity](tables/contact_social_identity.md) | kernel | B | ✅ | enrichment |
-| [contact_enrichment](tables/contact_enrichment.md) | kernel | B | ✅ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [account](tables/account.md) | kernel | A | op | ✅ | research / QBR-prep; lead dedupe |
+| [contact](tables/contact.md) | kernel | A | pii | ✅ | research; lead-response |
+| [device](tables/device.md) | Service Desk | A | op | ✅ | asset/security context (Datto RMM precedence + BCDR backup posture, #683) |
+| [cloud_asset](tables/cloud_asset.md) | Service Desk | A | op | ✅ | CMDB cloud-asset CI (#874, ADR-0097) |
+| [external_identity](tables/external_identity.md) | horizontal | H | op | ✅ | identity resolution |
+| [contact_social_identity](tables/contact_social_identity.md) | kernel | B | pii | ✅ | enrichment |
+| [contact_enrichment](tables/contact_enrichment.md) | kernel | B | pii | ✅ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
 
 ## Sales
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [opportunity](tables/opportunity.md) | Sales | A | ✅ | sale→delivery; forecasting |
-| [quota](tables/quota.md) | Sales | B | ✅ | forecasting (attainment) |
-| [forecast_snapshot](tables/forecast_snapshot.md) | Sales | C | ✅ | forecasting (nightly trend/accuracy) |
-| [proposal](tables/proposal.md) | Sales | B | ✅ | proposal-draft |
-| [esign_envelope](tables/esign_envelope.md) | Sales | B (DocuSign SoR) | ✅ | e-signature (sale→delivery, DocuSign-gated) |
-| [assessment](tables/assessment.md) | Sales | B | ✅ | assessment delivery |
-| [assessment_artifact](tables/assessment_artifact.md) | Sales | B | ✅ | assessment evidence |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [opportunity](tables/opportunity.md) | Sales | A | fin | ✅ | sale→delivery; forecasting |
+| [quota](tables/quota.md) | Sales | B | fin | ✅ | forecasting (attainment) |
+| [forecast_snapshot](tables/forecast_snapshot.md) | Sales | C | fin | ✅ | forecasting (nightly trend/accuracy) |
+| [proposal](tables/proposal.md) | Sales | B | fin | ✅ | proposal-draft |
+| [esign_envelope](tables/esign_envelope.md) | Sales | B (DocuSign SoR) | pii | ✅ | e-signature (sale→delivery, DocuSign-gated) |
+| [assessment](tables/assessment.md) | Sales | B | pii | ✅ | assessment delivery |
+| [assessment_artifact](tables/assessment_artifact.md) | Sales | B | pii | ✅ | assessment evidence |
 
 ## Delivery / PM
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [project](tables/project.md) | Delivery | B | ✅ | provisioning |
-| [delivery_template](tables/delivery_template.md) | Delivery | B | ✅ | provisioning (instantiation) |
-| [task](tables/task.md) | Delivery | B | ✅ | service-desk / onboarding |
-| [sprint](tables/sprint.md) | Delivery | B | ✅ | provisioning / delivery (iteration planning) |
-| [project_baseline](tables/project_baseline.md) | Delivery | B | ✅ | provisioning / delivery (planned-vs-actual) |
-| [project_template](tables/project_template.md) | Delivery | B | ✅ | provisioning / delivery (project instantiation) |
-| [project_provisioning](tables/project_provisioning.md) | Delivery | D | ✅ | provisioning executor (autonomy-dialed) |
-| [task_ticket_fire](tables/task_ticket_fire.md) | Delivery | D | ✅ | JIT ticket-fire executor |
-| project_milestone, delivery_template_phase/_task, onboarding_step, meeting_action_item | Delivery | B | ⏳ | provisioning / onboarding |
-| project_type | Delivery | H | ⏳ | n/a (reference) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [project](tables/project.md) | Delivery | B | op | ✅ | provisioning |
+| [delivery_template](tables/delivery_template.md) | Delivery | B | op | ✅ | provisioning (instantiation) |
+| [task](tables/task.md) | Delivery | B | op | ✅ | service-desk / onboarding |
+| [sprint](tables/sprint.md) | Delivery | B | op | ✅ | provisioning / delivery (iteration planning) |
+| [project_baseline](tables/project_baseline.md) | Delivery | B | op | ✅ | provisioning / delivery (planned-vs-actual) |
+| [project_template](tables/project_template.md) | Delivery | B | op | ✅ | provisioning / delivery (project instantiation) |
+| [project_provisioning](tables/project_provisioning.md) | Delivery | D | op | ✅ | provisioning executor (autonomy-dialed) |
+| [task_ticket_fire](tables/task_ticket_fire.md) | Delivery | D | op | ✅ | JIT ticket-fire executor |
+| project_milestone, delivery_template_phase/_task, onboarding_step, meeting_action_item | Delivery | B | op | ⏳ | provisioning / onboarding |
+| project_type | Delivery | H | op | ⏳ | n/a (reference) |
 
 ## Engagement / service
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [discovery_call](tables/discovery_call.md) | Sales | B | ✅ | discovery-prep |
-| [strategic_business_review](tables/strategic_business_review.md) | Customer Success | B | ✅ | QBR / SBR-prep |
-| [ticket](tables/ticket.md) | Service Desk | B (Autotask SoR) | ✅ | service-desk |
-| [chat_session](tables/chat_session.md) | Service Desk | B (native pre-ticket + deflection) | ✅ | service-desk (chatbot deflection / routing) |
-| [ci_relationship](tables/ci_relationship.md) | Service Desk | D (app-native CMDB overlay; IT Glue write-back is a separate gated slice) | ✅ | CMDB / impact analysis (#647, ADR-0078) |
-| [cmdb_ci_overlay](tables/cmdb_ci_overlay.md) | Service Desk | D (app-native per-CI criticality overlay; effective = override ?? derived_default; IT Glue write-back is a separate gated slice) | ✅ | CMDB / impact analysis (#648, ADR-0078/0097) |
-| [change_request](tables/change_request.md) (+ change_affected_ci) | Service Desk | D (app-native ITIL change working object; Autotask is the eventual record SoR via the gated route #661) | ✅ | Change Enablement (#656, ADR-0079; risk #658 / approval #659 / calendar #660 / route #661) |
-| sbr_dimension_score, sbr_ticket | Customer Success | B | ⏳ | SBR-prep |
-| question_template, question, engagement_answer | Sales | B | ⏳ | discovery / assessment capture |
-| [contract](tables/contract.md) | kernel | B | ✅ | sale→delivery (DocuSign-gated) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [discovery_call](tables/discovery_call.md) | Sales | B | pii | ✅ | discovery-prep |
+| [strategic_business_review](tables/strategic_business_review.md) | Customer Success | B | pii | ✅ | QBR / SBR-prep |
+| [ticket](tables/ticket.md) | Service Desk | B (Autotask SoR) | op | ✅ | service-desk |
+| [chat_session](tables/chat_session.md) | Service Desk | B (native pre-ticket + deflection) | op | ✅ | service-desk (chatbot deflection / routing) |
+| [ci_relationship](tables/ci_relationship.md) | Service Desk | D (app-native CMDB overlay; IT Glue write-back is a separate gated slice) | op | ✅ | CMDB / impact analysis (#647, ADR-0078) |
+| [cmdb_ci_overlay](tables/cmdb_ci_overlay.md) | Service Desk | D (app-native per-CI criticality overlay; effective = override ?? derived_default; IT Glue write-back is a separate gated slice) | op | ✅ | CMDB / impact analysis (#648, ADR-0078/0097) |
+| [change_request](tables/change_request.md) (+ change_affected_ci) | Service Desk | D (app-native ITIL change working object; Autotask is the eventual record SoR via the gated route #661) | op | ✅ | Change Enablement (#656, ADR-0079; risk #658 / approval #659 / calendar #660 / route #661) |
+| sbr_dimension_score, sbr_ticket | Customer Success | B | pii | ⏳ | SBR-prep |
+| question_template, question, engagement_answer | Sales | B | pii | ⏳ | discovery / assessment capture |
+| [contract](tables/contract.md) | kernel | B | op | ✅ | sale→delivery (DocuSign-gated) |
 
 ## Communications
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [interaction](tables/interaction.md) | Knowledge | B (+ gold) | ✅ | every workflow's research stage |
-| [meeting](tables/meeting.md) | Knowledge | B | ✅ | meeting follow-up |
-| [conversation](tables/conversation.md) | Knowledge | B (+ gold) | ✅ | conversational intelligence (transcribe→analyze→embed) |
-| [conversation_segment](tables/conversation_segment.md) (embedding unit), [conversation_insight](tables/conversation_insight.md) (AI output) | Knowledge | B / G | ✅ | conversational intelligence; risk/objection → forecasting |
-| memory_drawer (bronze verbatim, 0167/ADR-0113) | Knowledge | bronze | ⏳ | verbatim capture (#303); recall drills gold→bronze |
-| [memory_enrichment](tables/memory_enrichment.md) | Knowledge | B | ✅ | verbatim-memory write-time enrichment (Haiku type/topics/people/action-items; #1199, BE ADR-0086, writer BE #331) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [interaction](tables/interaction.md) | Knowledge | B (+ gold) | pii | ✅ | every workflow's research stage |
+| [meeting](tables/meeting.md) | Knowledge | B | pii | ✅ | meeting follow-up |
+| [conversation](tables/conversation.md) | Knowledge | B (+ gold) | pii | ✅ | conversational intelligence (transcribe→analyze→embed) |
+| [conversation_segment](tables/conversation_segment.md) (embedding unit), [conversation_insight](tables/conversation_insight.md) (AI output) | Knowledge | B / G | pii | ✅ | conversational intelligence; risk/objection → forecasting |
+| memory_drawer (bronze verbatim, 0167/ADR-0113) | Knowledge | bronze | pii | ⏳ | verbatim capture (#303); recall drills gold→bronze |
+| [memory_enrichment](tables/memory_enrichment.md) | Knowledge | B | pii | ✅ | verbatim-memory write-time enrichment (Haiku type/topics/people/action-items; #1199, BE ADR-0086, writer BE #331) |
 
 ## Consent / enrichment / exposure
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [consent_event](tables/consent_event.md) → current_consent | horizontal | C → F | ✅ | **gates all sends & ads** (Governance) |
-| [credential_exposure](tables/credential_exposure.md) | Security | A | ✅ | exposure-response |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [consent_event](tables/consent_event.md) → current_consent | horizontal | C → F | pii | ✅ | **gates all sends & ads** (Governance) |
+| [credential_exposure](tables/credential_exposure.md) | Security | A | sec | ✅ | exposure-response |
 
 ## Demand generation
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [campaign](tables/campaign.md) | Marketing | B | ✅ | lead-response / nurture |
-| [workflow](tables/workflow.md) → step/enrollment | Marketing | B | ✅ | nurture executor |
-| [workflow](tables/workflow.md) kind=journey (definition jsonb) | Marketing | B | ✅ | journey runner (ADR-0073, #398) |
-| [lead_score](tables/lead_score.md) | Marketing | C | ✅ | lead scoring (rule; routing/journeys/forecast) |
-| [segment](tables/segment.md) → segment_member | Marketing | B | ✅ | journey enrollment / list-views (CRM contact set, distinct from ad audience) |
-| ad, campaign_metric, campaign_send | Marketing | B | ⏳ | campaign ops |
-| audience, audience_member | Marketing | B | ⏳ | ad targeting (paid-media audience; distinct from segment) |
-| event, event_registration, lead_hook, lead_capture_event | Marketing | B | ⏳ | lead-response |
-| social_metric | Marketing | B | ⏳ | BI / reporting |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [campaign](tables/campaign.md) | Marketing | B | op | ✅ | lead-response / nurture |
+| [workflow](tables/workflow.md) → step/enrollment | Marketing | B | op | ✅ | nurture executor |
+| [workflow](tables/workflow.md) kind=journey (definition jsonb) | Marketing | B | op | ✅ | journey runner (ADR-0073, #398) |
+| [lead_score](tables/lead_score.md) | Marketing | C | op | ✅ | lead scoring (rule; routing/journeys/forecast) |
+| [segment](tables/segment.md) → segment_member | Marketing | B | pii | ✅ | journey enrollment / list-views (CRM contact set, distinct from ad audience) |
+| ad, campaign_metric, campaign_send | Marketing | B | op | ⏳ | campaign ops |
+| audience, audience_member | Marketing | B | pii | ⏳ | ad targeting (paid-media audience; distinct from segment) |
+| event, event_registration, lead_hook, lead_capture_event | Marketing | B | pii | ⏳ | lead-response |
+| social_metric | Marketing | B | op | ⏳ | BI / reporting |
 
 ## Time
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [time_record](tables/time_record.md) | Finance | A | ✅ | monthly-close |
-| [timesheet](tables/timesheet.md) | Finance | B | ✅ | time-approval |
-| [time_ticket](tables/time_ticket.md) | Finance | D | ✅ | Time Ticket writer (→ Autotask) |
-| employee_profile, pay_rate | People | H | ⏳ | n/a (comp-gated) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [time_record](tables/time_record.md) | Finance | A | fin | ✅ | monthly-close |
+| [timesheet](tables/timesheet.md) | Finance | B | fin | ✅ | time-approval |
+| [time_ticket](tables/time_ticket.md) | Finance | D | fin | ✅ | Time Ticket writer (→ Autotask) |
+| employee_profile, pay_rate | People | H | hr | ⏳ | n/a (comp-gated) |
 
 ## Expense
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [expense_item](tables/expense_item.md) | Finance | A | ✅ | monthly-close |
-| [expense_report](tables/expense_report.md) | Finance | B | ✅ | expense-approval |
-| [autotask_expense_report](tables/autotask_expense_report.md) | Finance | D | ✅ | ExpenseReport writer (→ Autotask) |
-| expense_reconciliation | Finance | F | ⏳ | monthly-close (QBO match) |
-| receipt_attachment | Finance | B | ⏳ | receipt handling |
-| expense_category, qbo_expense_account, mileage_rate | Finance | H | ⏳ | n/a (config; rate comp-gated) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [expense_item](tables/expense_item.md) | Finance | A | fin | ✅ | monthly-close |
+| [expense_report](tables/expense_report.md) | Finance | B | fin | ✅ | expense-approval |
+| [autotask_expense_report](tables/autotask_expense_report.md) | Finance | D | fin | ✅ | ExpenseReport writer (→ Autotask) |
+| expense_reconciliation | Finance | F | fin | ⏳ | monthly-close (QBO match) |
+| receipt_attachment | Finance | B | fin | ⏳ | receipt handling |
+| expense_category, qbo_expense_account, mileage_rate | Finance | H | fin | ⏳ | n/a (config; rate comp-gated) |
 
 ## Revenue / AR
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [invoice](tables/invoice.md) | Finance | B (QBO read-only mirror) | ✅ | collections / AR-dunning; reconciliation-assurance (#667) |
-| [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | ✅ | collections / AR-dunning (#677/#678) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [invoice](tables/invoice.md) | Finance | B (QBO read-only mirror) | fin | ✅ | collections / AR-dunning; reconciliation-assurance (#667) |
+| [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | fin | ✅ | collections / AR-dunning (#677/#678) |
 
 ## Security / MSSP
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [posture_snapshot](tables/posture_snapshot.md) (+pillar) | Security | C (INSERT-only) | ✅ | posture-report |
-| [tenant_posture](tables/tenant_posture.md) | Security | E | ✅ | drift-monitor |
-| [dns_domain](tables/dns_domain.md) | Security | E | ✅ | DNS drift-monitor |
-| [dns_golden](tables/dns_golden.md) | Security | E | ✅ | golden approval (human-gated) |
-| [posture_policy](tables/posture_policy.md), *_golden (CA / Intune / Autopilot / device-config / Defender XDR / Purview compliance) | Security | E | ✅ | drift-monitor (autonomy-dialed) |
-| account_domain | Security | H | ⏳ | domain registry (operator-curated) |
-| defender_incidents, defender_alerts | Security | B | ⏳ | incident triage |
-| [defender_incident_ticket_link](tables/defender_incident_ticket_link.md) | Security | D | ✅ | incident→ticket (ADR-0059) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [posture_snapshot](tables/posture_snapshot.md) (+pillar) | Security | C (INSERT-only) | sec | ✅ | posture-report |
+| [tenant_posture](tables/tenant_posture.md) | Security | E | sec | ✅ | drift-monitor |
+| [dns_domain](tables/dns_domain.md) | Security | E | sec | ✅ | DNS drift-monitor |
+| [dns_golden](tables/dns_golden.md) | Security | E | sec | ✅ | golden approval (human-gated) |
+| [posture_policy](tables/posture_policy.md), *_golden (CA / Intune / Autopilot / device-config / Defender XDR / Purview compliance) | Security | E | sec | ✅ | drift-monitor (autonomy-dialed) |
+| account_domain | Security | H | op | ⏳ | domain registry (operator-curated) |
+| defender_incidents, defender_alerts | Security | B | sec | ⏳ | incident triage |
+| [defender_incident_ticket_link](tables/defender_incident_ticket_link.md) | Security | D | sec | ✅ | incident→ticket (ADR-0059) |
 
 ## Knowledge (gold)
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [knowledge_object](tables/knowledge_object.md) | Knowledge | G | ✅ | RAG for all workflows |
-| knowledge_embedding | Knowledge | G | ⏳ | (vector pair; Voyage 1024d) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [knowledge_object](tables/knowledge_object.md) | Knowledge | G | op | ✅ | RAG for all workflows |
+| knowledge_embedding | Knowledge | G | op | ⏳ | (vector pair; Voyage 1024d) |
 
 ## Reference / config / identity
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| [app_user](tables/app_user.md) | horizontal | H | ✅ | n/a (Identity / RBAC) |
-| [connection](tables/connection.md) | horizontal | H | ✅ | n/a (Data Platform / sync config) |
-| [source_skill](tables/source_skill.md) | horizontal | H | ✅ | the tool-routing hop OKF points at (per-provider sanctioned skill; ADR-0104) |
-| connector_instance | horizontal | H | ⏳ | n/a (Data Platform / connector catalog — #416/#747, migration 0125) |
-| [agent_tool_grant](tables/agent_tool_grant.md) | horizontal | H | ✅ | the tool-routing authority (ADR-0104; OKF grounds, this grants) |
-| agent, agent_settings | horizontal | H | ⏳ | n/a (Governance / agent config) |
-| [agent_autopilot_policy](tables/agent_autopilot_policy.md) | horizontal | H | ✅ | the autonomy dial — every tier reads its rung (#721, ADR-0087) |
-| account_tenant, saved_view | horizontal | H | ⏳ | n/a |
-| report_definition, dashboard, dashboard_item | horizontal | B/H | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
-| [metric_definition](tables/metric_definition.md) | horizontal | H | ✅ | the headless-BI metric contract — one governed definition agents & dashboards share (#1050/#1055) |
-| [entity_xref](tables/entity_xref.md) | horizontal | H | ✅ | the identity spine — every source id → one internal entity; agents resolve before acting (#1049/#1054) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [app_user](tables/app_user.md) | horizontal | H | hr | ✅ | n/a (Identity / RBAC) |
+| [connection](tables/connection.md) | horizontal | H | sec | ✅ | n/a (Data Platform / sync config) |
+| [source_skill](tables/source_skill.md) | horizontal | H | op | ✅ | the tool-routing hop OKF points at (per-provider sanctioned skill; ADR-0104) |
+| connector_instance | horizontal | H | op | ⏳ | n/a (Data Platform / connector catalog — #416/#747, migration 0125) |
+| [agent_tool_grant](tables/agent_tool_grant.md) | horizontal | H | op | ✅ | the tool-routing authority (ADR-0104; OKF grounds, this grants) |
+| agent, agent_settings | horizontal | H | op | ⏳ | n/a (Governance / agent config) |
+| [agent_autopilot_policy](tables/agent_autopilot_policy.md) | horizontal | H | op | ✅ | the autonomy dial — every tier reads its rung (#721, ADR-0087) |
+| account_tenant, saved_view | horizontal | H | op | ⏳ | n/a |
+| report_definition, dashboard, dashboard_item | horizontal | B/H | op | ⏳ | n/a (BI hub — saved reports & dashboards, ADR-0062, migration 0124) |
+| [metric_definition](tables/metric_definition.md) | horizontal | H | op | ✅ | the headless-BI metric contract — one governed definition agents & dashboards share (#1050/#1055) |
+| [entity_xref](tables/entity_xref.md) | horizontal | H | op | ✅ | the identity spine — every source id → one internal entity; agents resolve before acting (#1049/#1054) |
 
 ## Audit / governance
 
-| Object | Domain | Archetype | IKF | Acting ICM workflow |
-|---|---|---|---|---|
-| audit_log | horizontal | C | n/a | (Observability — the audit substrate) |
-| agent_run, agent_message, agent_memory | horizontal | C / B / G | n/a | Observability — orchestrator telemetry |
-| agent_event | horizontal | H | n/a | Wake-event inbox — durable/idempotent/replayable; the backend dispatcher drains it (#998, ADR-0111) |
-| agent_subscription | horizontal | H | n/a | Predicate fan-out — (event_type → workflow) + structured predicate; one event → N matching runs, skips non-matches (#999, ADR-0111). Contract: [docs/agents/event-subscription-predicate.md](../../agents/event-subscription-predicate.md) |
-| board_session (+member/+message/+recommendation) | horizontal | B | n/a | Governance — board deliberation |
-| feature_request (+vote/+status_history) | horizontal | B | n/a | Engineering — feedback (GitHub-coupled) |
-| domain_owner | horizontal | H | n/a | Governance — per concept/domain → the business owner who resolves grounding conflicts (#1035, ADR-0119) |
-| grounding_conflict (+event) | horizontal | H | n/a | Governance — canon·company·personal disagreement → domain-owner resolution; never auto-resolved, ledgered (#1035, ADR-0119) |
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| audit_log | horizontal | C | op | n/a | (Observability — the audit substrate) |
+| agent_run, agent_message, agent_memory | horizontal | C / B / G | pii | n/a | Observability — orchestrator telemetry (transcripts/memory may carry client content → restrictive class; agent_conversation carries a per-row data_class, 0163/0175) |
+| agent_event | horizontal | H | op | n/a | Wake-event inbox — durable/idempotent/replayable; the backend dispatcher drains it (#998, ADR-0111) |
+| agent_subscription | horizontal | H | op | n/a | Predicate fan-out — (event_type → workflow) + structured predicate; one event → N matching runs, skips non-matches (#999, ADR-0111). Contract: [docs/agents/event-subscription-predicate.md](../../agents/event-subscription-predicate.md) |
+| board_session (+member/+message/+recommendation) | horizontal | B | op | n/a | Governance — board deliberation |
+| feature_request (+vote/+status_history) | horizontal | B | op | n/a | Engineering — feedback (GitHub-coupled) |
+| domain_owner | horizontal | H | op | n/a | Governance — per concept/domain → the business owner who resolves grounding conflicts (#1035, ADR-0119) |
+| grounding_conflict (+event) | horizontal | H | op | n/a | Governance — canon·company·personal disagreement → domain-owner resolution; never auto-resolved, ledgered (#1035, ADR-0119) |
 
 ## Bronze source tables (raw, per-source — archetype inputs)
 
 Bronze never gets its own concept file (it is raw, lossless input) and carries no domain
-of its own — it inherits the domain of the silver entity it feeds.
+or data_class of its own — it inherits both the **domain** and the **data_class** of the
+silver entity it feeds (so e.g. the `qbo_*`/`website_expense_*` feeds are `fin`, the
+`darkwebid`/`televy` feeds are `sec`, the M365 mail/Teams + social feeds are `pii`).
 
 | Feeds | Bronze tables |
 |---|---|

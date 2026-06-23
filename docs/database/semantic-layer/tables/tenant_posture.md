@@ -6,7 +6,8 @@ archetype: E
 description: Per-M365-tenant security rollup — current Secure Score plus policy drift classification counts; keyed by tenant, surfaces unmapped.
 resource: ../../../decision-records/ADR-0051-security-posture-model-imperion-secure-score.md
 tags: [silver, security, posture, tenant, drift]
-timestamp: 2026-06-15T00:00:00Z
+data_class: security_credentials
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # tenant_posture

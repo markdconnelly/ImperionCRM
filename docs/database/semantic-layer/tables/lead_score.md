@@ -6,7 +6,8 @@ archetype: C
 description: A rule-based (and later predicted) lead score per contact — fit + weighted engagement → 0..100 with an explainable breakdown. A shared signal for routing, journeys, and forecasting. Website system of record (backend/LP scoring pass).
 resource: ../../../decision-records/ADR-0073-marketing-automation-journeys.md
 tags: [silver, marketing, lead, scoring, routing]
-timestamp: 2026-06-15T23:30:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # lead_score

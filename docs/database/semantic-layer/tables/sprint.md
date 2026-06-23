@@ -6,7 +6,8 @@ archetype: B
 description: Time-boxed iteration / backlog container that scopes a task board to a window of work — website system of record.
 resource: ../../../decision-records/ADR-0069-pm-planning-time-workload-goals-portfolio.md
 tags: [silver, delivery, sprint, pm]
-timestamp: 2026-06-15T18:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # sprint

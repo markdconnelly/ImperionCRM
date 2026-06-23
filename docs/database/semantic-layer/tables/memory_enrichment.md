@@ -6,6 +6,7 @@ archetype: B
 description: App-native silver extraction over verbatim memory — one row of Haiku-extracted type/topics/people/action-items for a captured turn or conversation, kept off the append-only bronze.
 resource: ../../../decision-records/ADR-0113-verbatim-memory-tier.md
 tags: [silver, knowledge, memory_enrichment, enrichment, memory]
+data_class: client_pii
 timestamp: 2026-06-22T00:00:00Z
 ---
 

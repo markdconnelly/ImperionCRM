@@ -6,6 +6,7 @@ archetype: B
 description: Per-fact contact dossier (EAV) — one row per discovered attribute, each carrying confidence, provenance, and a lawful basis.
 resource: ../../../decision-records/ADR-0025-contact-360-enrichment-and-lawful-basis.md
 tags: [silver, crm, contact_enrichment, enrichment, consent]
+data_class: client_pii
 timestamp: 2026-06-22T00:00:00Z
 ---
 

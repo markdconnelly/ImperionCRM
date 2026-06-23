@@ -6,7 +6,8 @@ archetype: D
 description: Write-back sidecar binding a native delivery project to its Autotask Project — DocuSign-gated, idempotent; the backend executor provisions, the front end only requests.
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, delivery, provisioning, write-back, sidecar, archetype-d]
-timestamp: 2026-06-19T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # project_provisioning

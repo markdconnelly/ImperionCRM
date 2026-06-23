@@ -6,7 +6,8 @@ archetype: D
 description: App-native per-CI criticality / business-impact overlay — one row per Configuration Item (polymorphic ci_type+ci_id pair over the read-only cmdb_ci union) carrying a derived_default (computed from silver attributes) and a nullable admin override. Effective criticality = override ?? derived_default; the weighting input for impact analysis. IT Glue write-back is a separate gated slice.
 resource: ../../../decision-records/ADR-0047-device-inventory.md
 tags: [silver, service-desk, cmdb, criticality, business-impact, overlay, archetype-d, app-native]
-timestamp: 2026-06-18T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # cmdb_ci_overlay

@@ -6,7 +6,8 @@ archetype: B
 description: One DocuSign e-signature envelope against a proposal — the signature event made first-class; backend sends (JWT, Key Vault), pipeline upserts status from Connect webhooks, the proposal/contract carry a status mirror.
 resource: ../../../decision-records/ADR-0071-esign-docusign-integration.md
 tags: [silver, sales, esign, docusign, signature]
-timestamp: 2026-06-15T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # esign_envelope

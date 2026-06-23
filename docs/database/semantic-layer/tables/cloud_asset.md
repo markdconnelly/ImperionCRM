@@ -6,7 +6,8 @@ archetype: A
 description: Provider-agnostic cloud resource — one row per cloud asset, merged from per-provider bronze and discriminated by provider.
 resource: ../../../decision-records/ADR-0097-cmdb-authority-model.md
 tags: [silver, service-desk, cmdb, cloud, asset, merge]
-timestamp: 2026-06-18T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # cloud_asset

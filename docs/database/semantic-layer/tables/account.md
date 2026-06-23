@@ -6,7 +6,8 @@ archetype: A
 description: Unified client/prospect company — one row per organization, merged from four bronze sources by precedence; the CRM hub everything joins to.
 resource: ../../../decision-records/ADR-0039-per-source-bronze-tables.md
 tags: [silver, crm, account, merge]
-timestamp: 2026-06-15T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # account

@@ -6,7 +6,8 @@ archetype: D
 description: Write-back sidecar for the one idempotent weekly Autotask Time Ticket per employee — front end requests, backend executor writes; re-approval updates the same ticket.
 resource: ../../../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md
 tags: [silver, finance, time, write-back, sidecar, archetype-d]
-timestamp: 2026-06-19T00:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # time_ticket

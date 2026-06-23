@@ -6,7 +6,8 @@ archetype: B
 description: Single unified task model across sales/project/onboarding/general — website system of record.
 resource: ../../../decision-records/ADR-0052-project-board-tasks-meetings-sales-activity.md
 tags: [silver, delivery, task]
-timestamp: 2026-06-15T18:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # task

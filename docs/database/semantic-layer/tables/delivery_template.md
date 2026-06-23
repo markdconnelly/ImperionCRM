@@ -6,7 +6,8 @@ archetype: B
 description: Reusable delivery playbook (phases → tasks) instantiated into projects — website system of record.
 resource: ../../../decision-records/ADR-0081-delivery-provisioning-template-model.md
 tags: [silver, delivery, template]
-timestamp: 2026-06-14T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # delivery_template

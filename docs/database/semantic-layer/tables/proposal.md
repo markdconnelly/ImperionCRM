@@ -6,7 +6,8 @@ archetype: B
 description: Quote/proposal for an opportunity — website system of record, versioned status lifecycle.
 resource: ../../../decision-records/ADR-0019-proposal-lifecycle-model.md
 tags: [silver, sales, proposal]
-timestamp: 2026-06-15T01:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # proposal

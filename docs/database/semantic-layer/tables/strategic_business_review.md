@@ -6,7 +6,8 @@ archetype: B
 description: Periodic account re-benchmark against a prior assessment — website system of record; drives expansion.
 resource: ../../../decision-records/ADR-0022-assessment-led-gtm-and-engagement-model.md
 tags: [silver, success, sbr, engagement]
-timestamp: 2026-06-15T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # strategic_business_review

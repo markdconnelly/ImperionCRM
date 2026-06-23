@@ -6,7 +6,8 @@ archetype: H
 description: The entity-resolution golden-record registry — one row per (entity_type, source_system, source_key) mapping every source identity to one stable internal entity. The identity spine an agent resolves before acting cross-client.
 resource: ../../entity-xref-registry.md
 tags: [reference, identity, entity-resolution, governance, data-integrity]
-timestamp: 2026-06-21T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # entity_xref

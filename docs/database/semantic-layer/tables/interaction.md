@@ -6,7 +6,8 @@ archetype: B
 description: Unified multi-channel timeline event — one row per email/message/call/meeting/social, carrying bronze+silver+gold in one record.
 resource: ../../../decision-records/ADR-0011-unified-interaction-timeline.md
 tags: [silver, engagement, interaction, timeline]
-timestamp: 2026-06-17T00:00:00Z
+data_class: client_pii
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # interaction

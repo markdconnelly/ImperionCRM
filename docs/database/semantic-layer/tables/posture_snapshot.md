@@ -6,7 +6,8 @@ archetype: C
 description: Immutable Imperion Secure Score capture for an account — append-only; the grade is stored at capture and never recomputed.
 resource: ../../../decision-records/ADR-0051-security-posture-model-imperion-secure-score.md
 tags: [silver, security, posture, secure-score, append-only]
-timestamp: 2026-06-14T00:00:00Z
+data_class: security_credentials
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # posture_snapshot

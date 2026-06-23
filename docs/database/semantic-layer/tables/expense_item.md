@@ -6,7 +6,8 @@ archetype: A
 description: Unified employee expense surface — one row per source fact; out-of-pocket amount entered, mileage amount derived (miles × rate) by the backend.
 resource: ../../../decision-records/ADR-0083-employee-expense-tracking-and-reimbursement.md
 tags: [silver, expense-tracking, reimbursement]
-timestamp: 2026-06-17T00:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # expense_item

@@ -6,7 +6,8 @@ archetype: B
 description: Delivery/onboarding workstream for an account — website system of record; one board across all project types.
 resource: ../../../decision-records/ADR-0020-delivery-project-model.md
 tags: [silver, delivery, project]
-timestamp: 2026-06-15T23:59:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # project

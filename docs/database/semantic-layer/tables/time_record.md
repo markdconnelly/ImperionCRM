@@ -6,7 +6,8 @@ archetype: A
 description: Unified employee time timeline — one row per source fact, website attendance authoritative, Autotask allocation corroborates.
 resource: ../../../decision-records/ADR-0082-employee-time-tracking-and-payroll-reconciliation.md
 tags: [silver, time-tracking, payroll]
-timestamp: 2026-06-15T00:00:00Z
+data_class: financial
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # time_record

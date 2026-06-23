@@ -6,7 +6,8 @@ archetype: G
 description: AI-ready gold text over any silver entity — on-prem produced; chunked + embedded into Voyage vectors; content-hash-idempotent, versioned re-embed.
 resource: ../../../decision-records/ADR-0041-gold-knowledge-vector-store.md
 tags: [gold, knowledge, retrieval, rag]
-timestamp: 2026-06-21T00:00:00Z
+data_class: operational
+timestamp: 2026-06-22T00:00:00Z
 ---
 
 # knowledge_object
