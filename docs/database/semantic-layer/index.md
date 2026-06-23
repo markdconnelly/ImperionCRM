@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**71 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**87 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -61,6 +61,12 @@ core subset). Remaining objects from the
 | [`project_baseline`](tables/project_baseline.md) | single-SoR | website system of record | ADR-0069 |
 | [`delivery_template`](tables/delivery_template.md) | single-SoR | website system of record | ADR-0081 |
 | [`project_template`](tables/project_template.md) | single-SoR | website system of record | ADR-0070 |
+| [`project_milestone`](tables/project_milestone.md) | single-SoR | website system of record (status + orthogonal RAG health) | ADR-0020 |
+| [`delivery_template_phase`](tables/delivery_template_phase.md) | single-SoR | website system of record (delivery_template child; → milestone) | ADR-0081 |
+| [`delivery_template_task`](tables/delivery_template_task.md) | single-SoR | website system of record (phase child; → task; declares JIT ticket) | ADR-0081 |
+| [`onboarding_step`](tables/onboarding_step.md) | single-SoR | website system of record (idempotent per project+code; deploy/verify hooks) | ADR-0037 |
+| [`meeting_action_item`](tables/meeting_action_item.md) | single-SoR | website system of record (anchored to meeting interaction; → task) | ADR-0011 |
+| [`project_type`](tables/project_type.md) | reference / config | website system of record (user-creatable project category) | ADR-0052 |
 | [`discovery_call`](tables/discovery_call.md) | single-SoR | website system of record | ADR-0023 |
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |
 | [`sbr_dimension_score`](tables/sbr_dimension_score.md) | single-SoR (SBR child) | website (per-dimension re-score; trend vs benchmark) | ADR-0022 |
@@ -81,6 +87,16 @@ core subset). Remaining objects from the
 | [`workflow`](tables/workflow.md) | single-SoR | website system of record | ADR-0027 |
 | [`lead_score`](tables/lead_score.md) | derived ledger | website (backend/LP scoring pass) | ADR-0073 |
 | [`segment`](tables/segment.md) | single-SoR (app-native) | website system of record | ADR-0073 |
+| [`ad`](tables/ad.md) | single-SoR | website system of record (creative; platform-linked) | ADR-0053 |
+| [`campaign_metric`](tables/campaign_metric.md) | single-SoR (platform mirror) | ad platform authoritative for values; daily grain | ADR-0053 |
+| [`campaign_send`](tables/campaign_send.md) | single-SoR | website system of record (scheduled/event send; consent-gated) | ADR-0053 |
+| [`audience`](tables/audience.md) | single-SoR (app-native) | website system of record (paid-media set; syncs OUT; consent-gated) | ADR-0026 |
+| [`audience_member`](tables/audience_member.md) | single-SoR (app-native) | website system of record (idempotent composite PK; consent-gated) | ADR-0026 |
+| [`event`](tables/event.md) | single-SoR | website system of record (webinar/live event; registration page) | ADR-0053 |
+| [`event_registration`](tables/event_registration.md) | single-SoR | website system of record (registrant + attendance) | ADR-0053 |
+| [`lead_hook`](tables/lead_hook.md) | single-SoR | website system of record (lead-capture endpoint definition) | ADR-0024 |
+| [`lead_capture_event`](tables/lead_capture_event.md) | single-SoR | website system of record (raw inbound hit → contact resolution) | ADR-0024 |
+| [`social_metric`](tables/social_metric.md) | single-SoR (platform mirror) | platform authoritative for values; from `meta_insights` | ADR-0062 |
 | [`timesheet`](tables/timesheet.md) | single-SoR | website system of record | ADR-0082 |
 | [`expense_report`](tables/expense_report.md) | single-SoR | website system of record | ADR-0083 |
 | [`time_record`](tables/time_record.md) | merge | website attendance (Autotask corroborates) | ADR-0082 |

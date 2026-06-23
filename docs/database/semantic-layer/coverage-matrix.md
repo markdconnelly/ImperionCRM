@@ -81,8 +81,12 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [project_template](tables/project_template.md) | Delivery | B | op | ✅ | provisioning / delivery (project instantiation) |
 | [project_provisioning](tables/project_provisioning.md) | Delivery | D | op | ✅ | provisioning executor (autonomy-dialed) |
 | [task_ticket_fire](tables/task_ticket_fire.md) | Delivery | D | op | ✅ | JIT ticket-fire executor |
-| project_milestone, delivery_template_phase/_task, onboarding_step, meeting_action_item | Delivery | B | op | ⏳ | provisioning / onboarding |
-| project_type | Delivery | H | op | ⏳ | n/a (reference) |
+| [project_milestone](tables/project_milestone.md) | Delivery | B | op | ✅ | provisioning / delivery (milestone roll-up + RAG health) |
+| [delivery_template_phase](tables/delivery_template_phase.md) | Delivery | B | op | ✅ | provisioning (instantiates → project_milestone) |
+| [delivery_template_task](tables/delivery_template_task.md) | Delivery | B | op | ✅ | provisioning (instantiates → task; declares JIT ticket-fire) |
+| [onboarding_step](tables/onboarding_step.md) | Delivery | B | op | ✅ | onboarding (idempotent per project+code; deploy/verify hooks) |
+| [meeting_action_item](tables/meeting_action_item.md) | Delivery | B | pii | ✅ | meeting follow-up (promote → task) |
+| [project_type](tables/project_type.md) | Delivery | H | op | ✅ | n/a (reference — user-creatable project category) |
 
 ## Engagement / service
 
@@ -127,10 +131,16 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [workflow](tables/workflow.md) kind=journey (definition jsonb) | Marketing | B | op | ✅ | journey runner (ADR-0073, #398) |
 | [lead_score](tables/lead_score.md) | Marketing | C | op | ✅ | lead scoring (rule; routing/journeys/forecast) |
 | [segment](tables/segment.md) → segment_member | Marketing | B | pii | ✅ | journey enrollment / list-views (CRM contact set, distinct from ad audience) |
-| ad, campaign_metric, campaign_send | Marketing | B | op | ⏳ | campaign ops |
-| audience, audience_member | Marketing | B | pii | ⏳ | ad targeting (paid-media audience; distinct from segment) |
-| event, event_registration, lead_hook, lead_capture_event | Marketing | B | pii | ⏳ | lead-response |
-| social_metric | Marketing | B | op | ⏳ | BI / reporting |
+| [ad](tables/ad.md) | Marketing | B | op | ✅ | campaign ops (creative; metric-attribution unit) |
+| [campaign_metric](tables/campaign_metric.md) | Marketing | B | op | ✅ | campaign ops / BI (daily spend/impressions/clicks/leads) |
+| [campaign_send](tables/campaign_send.md) | Marketing | B | op | ✅ | campaign ops (scheduled/event-triggered send; consent-gated) |
+| [audience](tables/audience.md) | Marketing | B | pii | ✅ | ad targeting (paid-media audience; distinct from segment; consent-gated) |
+| [audience_member](tables/audience_member.md) | Marketing | B | pii | ✅ | ad targeting (idempotent membership; consent-gated) |
+| [event](tables/event.md) | Marketing | B | pii | ✅ | lead-response (webinar/live event; auto-enroll workflow) |
+| [event_registration](tables/event_registration.md) | Marketing | B | pii | ✅ | lead-response (registrant; attendance) |
+| [lead_hook](tables/lead_hook.md) | Marketing | B | pii | ✅ | lead-response (capture endpoint definition) |
+| [lead_capture_event](tables/lead_capture_event.md) | Marketing | B | pii | ✅ | lead-response (raw inbound hit → contact resolution) |
+| [social_metric](tables/social_metric.md) | Marketing | B | op | ✅ | BI / reporting (normalized social metrics from `meta_insights`) |
 
 ## Time
 
