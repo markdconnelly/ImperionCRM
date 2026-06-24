@@ -397,6 +397,7 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   // ── Settings group sub-pages (#794) — all admin-only, same as the group.
   "settings-assessment-types": canSeeSettings,
   "settings-client-mapping": canSeeSettings,
+  "settings-client-mapping-unifi": canSeeSettings,
   "settings-connections": canSeeSettings,
   "settings-sla": canSeeSettings,
   consent: canSeeSettings,
