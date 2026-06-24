@@ -66,8 +66,9 @@ entering:
 
 - **Linked account** — the managed customer the console serves;
 - **Console / site id** — the per-console natural key (alphanumerics/dashes, 1–64);
-- **Connection type** — **Console** (on-prem UniFi Network Integration API on the customer's
-  controller) or **Cloud** (UniFi's hosted Site Manager API at `api.ui.com`);
+- **Connection type** — **Cloud** (UniFi's hosted Site Manager API at `api.ui.com`) is the
+  **default**, recommended for most clients; **Console** (on-prem UniFi Network Integration API
+  on the customer's controller) is the exception for clients without cloud access (#1276);
 - **Controller host** — the console hostname/IP, **required for Console** and omitted for Cloud;
 - the **API key** value (write-only).
 
