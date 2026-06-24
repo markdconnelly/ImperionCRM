@@ -85,3 +85,35 @@ and the **completeness** of the connector catalog.
   renamed `settings-tenant-mapping` → `settings-client-mapping`.
 - `apollo`/`meta` must be added to the backend `CREDENTIAL_PROVIDERS` allowlist (separate backend
   slice) before their cards can store; until then they sit pending.
+
+## Amendment — S5: structural single-grid merge (2026-06-23, #1269)
+
+Decision §1 says "one card per connector", but the first implementation shipped the page as
+**two stacked grids** — "Company systems" (the `COMPANY_PROVIDERS` credential cards) above
+"Connector catalog" (the manifest⋈instance marketplace). A connector that is **both** a
+company credential and a catalog manifest — `autotask`, `itglue`, `meta`, `darkwebid` —
+therefore rendered **twice**, one card per grid. Re-saving a credential (which only rewrites
+the Key Vault name) does nothing about this; it is a layout artifact.
+
+**S5 makes the page literally one card per connector.** A pure union model
+(`connection-cards.ts`) keys every connector once and merges its two possible halves:
+
+- the **credential** half (`company-providers.ts` → the form/consent/rotate/test/admin-consent
+  affordances), and
+- the **catalog** half (the manifest + `connector_instance` → status/cadence/enable-disable +
+  the client-mapping chain).
+
+The 6 company-credential-only providers (`pax8`, `myitprocess`, `quotemanager`, `televy`,
+`qbo`, `docusign`) have no manifest yet, so the union is `providers ∪ manifests`, not just the
+catalog. Each `CompanyProvider` gains a `category` (the fallback grouping for those six; a
+connector with a manifest takes the manifest's category), and the single grid is grouped by
+category in a fixed priority order. The two card components (`CompanyCredentialCard`, the
+catalog `ConnectorCard`) are replaced by one `ConnectionCard`. No affordance is lost — every
+save/rotate/consent/test/disconnect/enable/disable/cadence/refresh/health/ingest/mapping
+control is preserved, now co-located on the connector's single card.
+
+**Consequences.** The blast radius is contained: both retired components were used only by
+`/settings/connections`. Connectors that are both credential-and-catalog (Autotask) now show
+their cadence twice with distinct meaning — the company `connection` poll interval and the
+`connector_instance` cadence override — under the Credential and Catalog sections respectively;
+this is the existing behaviour, no longer split across two cards.

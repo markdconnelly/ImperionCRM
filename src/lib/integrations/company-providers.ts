@@ -31,6 +31,13 @@ export interface CompanyProvider {
   icon: string; // lucide name resolved by <Icon />
   /** "credential" = field form; "consent" = admin-consent connect button (QBO). */
   kind: "credential" | "consent";
+  /**
+   * Catalog grouping for the single connections grid (ADR-0122 S5, #1269). A connector that
+   * ALSO carries a manifest takes the manifest's category; this is the fallback for the
+   * company-credential-only providers (pax8/myitprocess/quotemanager/televy/qbo/docusign)
+   * that have no manifest yet, so every card still lands under a category header.
+   */
+  category: string;
   description: string;
   /** Scopes recorded on the connection row (display/audit only). */
   scopes: string[];
@@ -83,6 +90,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "Autotask (PSA)",
     icon: "Ticket",
     kind: "credential",
+    category: "PSA",
     description: "Kaseya Autotask REST API — tickets, contracts, and company records.",
     scopes: ["tickets:read", "companies:read"],
     fields: [
@@ -116,6 +124,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "IT Glue",
     icon: "BookText",
     kind: "credential",
+    category: "Documentation",
     description: "IT Glue documentation API — assets, configurations, and runbooks.",
     scopes: ["assets:read", "docs:read"],
     fields: [
@@ -139,6 +148,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "Pax8",
     icon: "ShoppingCart",
     kind: "credential",
+    category: "Procurement",
     description:
       "Pax8 distributor API — subscriptions, licenses, and orders (the procure→provision→bill loop, #1042).",
     scopes: ["subscriptions:read", "licenses:read", "orders:read", "companies:read"],
@@ -166,6 +176,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "My IT Process",
     icon: "ListChecks",
     kind: "credential",
+    category: "Strategy",
     description: "My IT Process (vCIO / strategic roadmap) API.",
     scopes: ["reviews:read", "recommendations:read"],
     fields: [
@@ -177,6 +188,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "Kaseya Quote Manager",
     icon: "Calculator",
     kind: "credential",
+    category: "Sales",
     description: "Kaseya Quote Manager API — quotes and the product catalog for proposals.",
     scopes: ["quotes:read", "quotes:write"],
     fields: [
@@ -196,6 +208,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "Televy",
     icon: "BarChart3",
     kind: "credential",
+    category: "Assessments",
     description: "Televy API — assessment reporting and scorecards.",
     scopes: ["assessments:read", "reports:read"],
     fields: [
@@ -207,6 +220,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "QuickBooks Online",
     icon: "DollarSign",
     kind: "consent",
+    category: "Finance",
     description:
       "Imperion's own QuickBooks Online company (read-only) — the authoritative payment " +
       "fact for time + expense reconciliation (ADR-0085). Connect once via Intuit OAuth; " +
@@ -218,6 +232,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "Dark Web ID",
     icon: "ShieldAlert",
     kind: "credential",
+    category: "Security",
     description:
       "Kaseya / ID Agent Dark Web ID — dark-web monitoring for compromised credentials tied to " +
       "your clients' domains. Exposures land as credential-exposure records (ADR-0040).",
@@ -231,6 +246,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "Apollo",
     icon: "Sparkles",
     kind: "credential",
+    category: "Enrichment",
     description:
       "Apollo enrichment API — augments contacts and accounts on demand (ADR-0035). Stored as " +
       "the Key Vault secret conn-company-apollo; the backend must allowlist `apollo` to custody it.",
@@ -244,6 +260,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "Meta (Facebook / Instagram)",
     icon: "MessageCircle",
     kind: "credential",
+    category: "Marketing",
     // Send-capable: the Page token authorizes OUTBOUND DM replies, so the cloud
     // pipeline stays dormant/fail-closed until this secret exists (pipeline #89 / PR #113).
     sendCapable: true,
@@ -279,6 +296,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     label: "DocuSign (e-signature)",
     icon: "FileSignature",
     kind: "credential",
+    category: "Sales",
     // Also needs a one-time admin grant after the secrets are stored — the card
     // renders a "Grant admin consent" button (JWT impersonation, #318/#392).
     adminConsent: true,
