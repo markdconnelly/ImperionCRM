@@ -16,6 +16,7 @@ import { ServiceCallError } from "@/lib/services/external-client";
 import { docusignTestResult, type DocusignTestResult } from "@/lib/integrations/docusign-test";
 import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
 import { connectorFor } from "@/lib/integrations/connector-registry";
+import { companySecretName } from "@/lib/integrations/kv-secret-name";
 import { isPersonalOAuthProvider } from "@/lib/integrations/personal-oauth";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 
@@ -126,14 +127,17 @@ export async function saveCredentialAction(formData: FormData) {
     if (v) fields[f.name] = v;
   }
 
-  let keyvaultSecretRef = `kv://imperion/conn/${provider.key}`;
+  // Record the *intended* canonical name (`conn-company-<provider>`, ADR-0122) up front; the
+  // backend store returns the identical string on success. No more `kv://imperion/conn/*`
+  // placeholder that pointed at no real secret (epic #1256).
+  let keyvaultSecretRef = companySecretName(provider.key);
   let status = "pending";
   try {
     const res = await credentialsService.store({ provider: provider.key, fields });
     keyvaultSecretRef = res.keyvaultSecretRef;
     status = "active";
   } catch (err) {
-    // Backend not wired yet (#190 taxonomy) → keep the placeholder ref + pending.
+    // Backend not wired yet (#190 taxonomy) → keep the intended ref + pending.
     // Any other failure is recorded as an error so the operator sees it on the card.
     if (!isBackendNotConfigured(err)) status = "error";
   }
@@ -182,7 +186,9 @@ export async function connectDocusignAction(formData: FormData) {
       provider: provider.key,
       displayName: `Imperion ${provider.label}`,
       scopes: provider.scopes,
-      keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
+      // Logical canonical ref for the row (`conn-company-docusign`); the engine reads its
+      // three role-suffixed secrets by App Setting (ADR-0122 / epic #1256).
+      keyvaultSecretRef: companySecretName(provider.key),
       status,
     });
   } catch (err) {
@@ -434,7 +440,9 @@ export async function connectQuickBooksAction(formData: FormData) {
     provider: provider.key,
     displayName: `Imperion ${provider.label}`,
     scopes: provider.scopes,
-    keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
+    // Canonical pending ref; the real OAuth token secret is minted by the backend callback
+    // under the same `conn-company-qbo` name (ADR-0122 / epic #1256).
+    keyvaultSecretRef: companySecretName(provider.key),
     status,
   });
   revalidatePath("/settings/connections");

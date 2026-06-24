@@ -141,24 +141,9 @@ export default async function SettingsPage({
     </section>
   );
 
-  // ── Tenant Mapping tab (ADR-0112 / E3 #1147) ────────────────────────────────
-  // Tenant Mapping is now the M365 instance of the unified Client Mapping surface; the editable
-  // panel moved there. This tab is a signpost so the old location still leads somewhere useful.
-  const tenantsPanel = (
-    <Card title="Tenant mapping">
-      <p className="text-sm text-dim">
-        Tenant mapping moved to <span className="text-text">Client Mapping</span> — Tenant Mapping
-        is now the Microsoft 365 instance of the unified mapping surface (ADR-0112). Map Customer
-        Tenants onto accounts there; the resolver treats each link as authoritative.
-      </p>
-      <Link
-        href="/settings/client-mapping/m365"
-        className="mt-3 inline-block rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
-      >
-        Open M365 client mapping
-      </Link>
-    </Card>
-  );
+  // Tenant Mapping is fully absorbed into Client Mapping (ADR-0112) — its redundant settings tab
+  // and the `/settings/tenant-mapping` redirect route were removed (epic #1256 / ADR-0122). The
+  // M365 instance is reached from the Tools panel link and from each connector card.
 
   const toolsPanel = (
     <Card title="Tools & configuration">
@@ -173,7 +158,7 @@ export default async function SettingsPage({
           { href: "/custom-fields", label: "Custom fields", hint: "Admin-definable task/project fields (ADR-0065 B4)" },
           { href: "/settings/statuses", label: "Statuses", hint: "Admin-definable status sets per project type (ADR-0065 B5)" },
           { href: "/settings/credentials", label: "Credentials", hint: "Key Vault credential registry by scope — names only, never values (ADR-0103)" },
-          { href: "/settings/client-mapping/m365", label: "Tenant mapping", hint: "Map M365 tenants onto accounts — the M365 instance of Client Mapping (ADR-0112)" },
+          { href: "/settings/client-mapping/m365", label: "Client mapping (M365)", hint: "Map M365 tenants onto accounts — the M365 instance of Client Mapping (ADR-0112)" },
         ].map((t) => (
           <li key={t.href}>
             <Link
@@ -193,15 +178,9 @@ export default async function SettingsPage({
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Settings"
-        description="Your profile, AI configuration, tenant mapping, and configuration tools. Company integration credentials live under Connections."
+        description="Your profile, AI configuration, and configuration tools. Company integration credentials live under Connections; client mapping lives under Tools."
       />
-      <SettingsTabs
-        initialTab={tab}
-        profile={profile}
-        ai={aiPanel}
-        tenants={tenantsPanel}
-        tools={toolsPanel}
-      />
+      <SettingsTabs initialTab={tab} profile={profile} ai={aiPanel} tools={toolsPanel} />
     </div>
   );
 }

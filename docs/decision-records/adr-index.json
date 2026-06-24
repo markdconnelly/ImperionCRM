@@ -1606,5 +1606,21 @@
     "file": "ADR-0121-earned-graduated-autonomy-hard-ceilings.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0122",
+    "title": "Connections surface consolidation + canonical Key Vault credential naming",
+    "status": "proposed",
+    "date": "2026-06-23",
+    "tags": [
+      "integrations",
+      "security",
+      "identity",
+      "ux"
+    ],
+    "summary": "Collapse the connections/credentials admin experience to two surfaces — /settings/connections (one card per connector, pre-cred vs post-cred state with inferred health, what-it-ingests, and poll cadence) and /settings/client-mapping/[connector] (drill-down where per-client credentials are entered per account row). Delete /settings/tenant-mapping and retire /settings/credentials. Pin a provider-always-3rd Key Vault naming grammar conn-<scope>-<provider>[-<discriminator>], replacing the non-conforming kv://imperion/conn/* placeholder. Credential scope (company/client/user) is orthogonal to data mapping; the catalog is the complete map of every expected source (Planned cards for unbuilt stores), Azure folds into the M365 connector, and Datto is two cards over one company key.",
+    "file": "ADR-0122-connections-surface-consolidation-and-kv-naming.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

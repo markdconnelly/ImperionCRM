@@ -298,7 +298,7 @@ export default async function AccountDetailPage({
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-dim">
               <span>
                 {tenantPostures.length === 0
-                  ? "No Customer Tenants mapped yet — map this company's tenants under Settings → Tenant mapping to compute the Imperion Secure Score."
+                  ? "No Customer Tenants mapped yet — map this company's tenants under Settings → Tools → Client mapping (M365) to compute the Imperion Secure Score."
                   : "Mapped tenants are not classified yet — refresh posture to compute the score."}
               </span>
               {/* DNS posture is account-keyed (not tenant-mapped), so it can read

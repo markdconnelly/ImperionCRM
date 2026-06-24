@@ -21,6 +21,7 @@ import { getRepositories } from "@/lib/data";
 import { can } from "@/lib/auth/policy";
 import { DEFAULT_ROLE } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
+import { companySecretName } from "@/lib/integrations/kv-secret-name";
 import { connectionsService } from "@/lib/services";
 import { classifyServiceError } from "@/lib/services/call-guard";
 import { ServiceCallError } from "@/lib/services/external-client";
@@ -83,7 +84,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       provider: provider.key,
       displayName: `Imperion ${provider.label}`,
       scopes: provider.scopes,
-      keyvaultSecretRef: `kv://imperion/conn/${provider.key}`,
+      // Canonical name; the real OAuth token secret is custodied by the backend under the
+      // same `conn-company-qbo` name (ADR-0122 / epic #1256).
+      keyvaultSecretRef: companySecretName(provider.key),
       status,
     });
   }

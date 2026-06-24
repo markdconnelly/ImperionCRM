@@ -171,8 +171,8 @@ export default async function AccountPosturePage({
           <p className="mb-1 font-medium text-text">No Customer Tenants mapped</p>
           <p>
             Posture data is keyed by Microsoft tenant GUID, and this company has no Tenant
-            Mapping yet. An admin can map its tenants under Settings → Tenant mapping; the
-            posture view lights up from the next refresh.
+            Mapping yet. An admin can map its tenants under Settings → Tools → Client mapping
+            (M365); the posture view lights up from the next refresh.
           </p>
         </section>
       ) : (

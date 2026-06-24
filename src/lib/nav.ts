@@ -147,7 +147,7 @@ export const navBottom: NavItem[] = [
       { key: "settings-assessment-types", label: "Assessment types", icon: "ListChecks", href: "/settings/assessment-types" },
       { key: "custom-fields", label: "Custom fields", icon: "ListPlus", href: "/custom-fields" },
       { key: "statuses", label: "Statuses", icon: "ListChecks", href: "/settings/statuses" },
-      { key: "settings-tenant-mapping", label: "Tenant mapping", icon: "Link2", href: "/settings/client-mapping/m365" },
+      { key: "settings-client-mapping", label: "Client mapping (M365)", icon: "Link2", href: "/settings/client-mapping/m365" },
       { key: "settings-connections", label: "Connections", icon: "Plug", href: "/settings/connections" },
       { key: "settings-knowledge", label: "Knowledge", icon: "BrainCircuit", href: "/knowledge" },
       { key: "settings-sla", label: "SLA settings", icon: "Timer", href: "/settings/sla" },
