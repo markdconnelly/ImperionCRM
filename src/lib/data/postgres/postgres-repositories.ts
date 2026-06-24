@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import type { Pool } from "pg";
 import { getPool } from "@/lib/db/client";
 import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback";
+import { fmtDate, fmtIso, fmtDateTime } from "@/lib/data/postgres/date-format";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
@@ -653,15 +654,6 @@ async function assembleExpenseReportDetail(
   };
 }
 
-function fmtDate(d: Date | null): string | null {
-  return d ? d.toISOString().slice(0, 10) : null;
-}
-
-/** Full ISO-8601 timestamp (UTC) or null — for read-models that carry an instant. */
-function fmtIso(d: Date | null): string | null {
-  return d ? d.toISOString() : null;
-}
-
 /**
  * Whole days from one `yyyy-mm-dd` date to another (`to − from`); positive = `to`
  * is later. Both parsed as UTC midnight so the diff is exact day-count, DST-safe.
@@ -683,10 +675,6 @@ interface PlannedDatesSnapshot {
   tasks: { id: string; title: string; dueAt: string | null }[];
 }
 
-/** "yyyy-mm-dd hh:mm" for timeline entries. */
-function fmtDateTime(d: Date | null): string | null {
-  return d ? d.toISOString().slice(0, 16).replace("T", " ") : null;
-}
 
 /**
  * Shared task-list SELECT (ADR-0066 C1 board reads) — the same columns + n/m
