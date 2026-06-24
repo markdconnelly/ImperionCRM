@@ -14,8 +14,14 @@ export const metadata = { title: "Jarvis · Imperion OS" };
  */
 export default async function JarvisPage() {
   const acting = await resolveActingUser();
+  // Only mock mode (no DB) gets the sample set. When a DB IS configured but the acting
+  // user can't be resolved — break-glass (no Entra oid) or an unprovisioned app_user —
+  // return an empty list instead of querying the uuid `created_by` column with the
+  // non-uuid "mock-user" sentinel, which threw `invalid input syntax for type uuid` (#1294).
   const conversations = acting.ok
     ? await listConversations(acting.id)
-    : await listConversations("mock-user"); // mock mode returns its sample set
+    : acting.reason === "no_database"
+      ? await listConversations("mock-user") // mock mode returns its sample set
+      : [];
   return <JarvisConsole initialConversations={conversations} />;
 }
