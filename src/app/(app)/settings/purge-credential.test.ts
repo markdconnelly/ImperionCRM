@@ -59,17 +59,17 @@ describe("purgeCredentialAction", () => {
     expect(h.requireCapability).toHaveBeenCalledWith("settings:write");
   });
 
-  it("no-ops on a missing id (no backend call, no delete)", async () => {
+  it("no-ops on a missing id (no backend call)", async () => {
     await purgeCredentialAction(fd({ id: "" }));
     expect(h.purgeCredential).not.toHaveBeenCalled();
     expect(h.disconnect).not.toHaveBeenCalled();
   });
 
-  it("purges via the backend then revalidates the connections page", async () => {
+  it("purges via the backend then revalidates — and NEVER deletes the row client-side", async () => {
     await purgeCredentialAction(fd({ id: ID }));
     expect(h.purgeCredential).toHaveBeenCalledWith({ connectionId: ID });
-    // Idempotent local delete after a successful backend purge (row already gone server-side).
-    expect(h.disconnect).toHaveBeenCalledWith(ID);
+    // The backend owns the DELETE (the web role has none, ADR-0042) — the action must not.
+    expect(h.disconnect).not.toHaveBeenCalled();
     expect(h.revalidatePath).toHaveBeenCalledWith("/settings/connections");
   });
 
@@ -78,18 +78,18 @@ describe("purgeCredentialAction", () => {
     expect(h.revalidatePath).toHaveBeenCalledWith("/settings/client-mapping/m365");
   });
 
-  it("falls back to a local row delete when the backend is not configured (501)", async () => {
+  it("leaves the row (never throws, never client-deletes) when the backend is not configured", async () => {
     const { ServiceCallError } = await import("@/lib/services/external-client");
     h.purgeCredential.mockRejectedValueOnce(new ServiceCallError("integration", 501, "not built"));
-    await purgeCredentialAction(fd({ id: ID }));
-    expect(h.disconnect).toHaveBeenCalledWith(ID);
+    await expect(purgeCredentialAction(fd({ id: ID }))).resolves.toBeUndefined();
+    expect(h.disconnect).not.toHaveBeenCalled();
     expect(h.revalidatePath).toHaveBeenCalledWith("/settings/connections");
   });
 
-  it("keeps the row (no local delete) when the backend purge errors unexpectedly", async () => {
+  it("swallows an unexpected backend error (no throw, no client-delete) so the action never 503s", async () => {
     const { ServiceCallError } = await import("@/lib/services/external-client");
     h.purgeCredential.mockRejectedValueOnce(new ServiceCallError("integration", 500, "boom"));
-    await purgeCredentialAction(fd({ id: ID }));
+    await expect(purgeCredentialAction(fd({ id: ID }))).resolves.toBeUndefined();
     expect(h.disconnect).not.toHaveBeenCalled();
     expect(h.revalidatePath).toHaveBeenCalledWith("/settings/connections");
   });

@@ -67,15 +67,17 @@ export async function disconnectAction(formData: FormData) {
 
 /**
  * Purge a registered credential (#1282, backend #390): delete the `connection` row AND its
- * backing Key Vault secret, so a wrongly-seeded credential can be re-seeded cleanly. Unlike
- * `disconnectAction` (which, for a company/client credential row, only deletes the local row
- * and orphans the KV secret), this calls the backend purge endpoint that removes both.
+ * backing Key Vault secret, so a wrongly-seeded credential can be re-seeded cleanly.
+ *
+ * The row delete + KV purge is a BACKEND process and happens entirely in the backend purge
+ * endpoint (#1284) — the web app's DB role has no DELETE on `connection` by design (ADR-0042:
+ * the front end is GUI-only; deletes are a backend process). So this action NEVER deletes the
+ * row itself; doing so threw an uncaught permission error (the 503 that blocked removals). It
+ * calls the backend purge and revalidates; an unconfigured/unreachable backend leaves the row
+ * intact (the operator can retry) rather than crashing or half-deleting.
  *
  * Keyed on the connection `id` so a same-account duplicate (e.g. a dead cert row + the correct
- * secret row for one account) is removed individually. Backend-first, then local: an
- * unconfigured backend (501) falls back to the local row delete (for a certificate row there is
- * no KV secret, so the local delete alone fully clears it); any OTHER backend error keeps the
- * row visible so the operator can retry rather than stranding a live secret in Key Vault.
+ * secret row for one account) is removed individually.
  */
 export async function purgeCredentialAction(formData: FormData) {
   await requireCapability("settings:write");
@@ -87,21 +89,16 @@ export async function purgeCredentialAction(formData: FormData) {
   try {
     await credentialsService.purgeCredential({ connectionId: id });
   } catch (err) {
+    // Unconfigured backend → nothing we can do from the GUI (the delete is the backend's job);
+    // leave the row so the operator can retry once the backend is wired. Any other failure is
+    // logged and the row likewise stays. Never throw — an uncaught error here is a 503.
     if (!isBackendNotConfigured(err)) {
-      // KV secret was NOT purged — keep the row visible rather than deleting it and stranding
-      // the secret in Key Vault.
       console.error(`purgeCredentialAction(${id}) backend purge failed:`, err);
-      revalidatePath("/settings/connections");
-      if (connector) revalidatePath(`/settings/client-mapping/${connector}`);
-      return;
     }
   }
 
-  // Backend purged the row+secret, OR the backend isn't configured yet — either way ensure the
-  // row is gone locally. On a successful backend purge the row is already deleted (shared DB),
-  // so this is an idempotent no-op; when unconfigured it does the actual delete.
-  const { connections } = getRepositories();
-  await connections.disconnect(id);
+  // The backend owns the delete; on success the row is already gone from the shared DB. We just
+  // refresh the surfaces that render it.
   revalidatePath("/settings/connections");
   if (connector) revalidatePath(`/settings/client-mapping/${connector}`);
 }
