@@ -57,32 +57,19 @@ unset), the form degrades to an honest notice and saves nothing.
 > cutover from the interim `external_account_id` onto `connection.client_id`) is backend #226 —
 > transparent to this form, which only POSTs to the endpoint.
 
-## Registering a client UniFi console (write half, #964)
+## Registering UniFi (company-scope cloud, #1278)
 
-Alongside the M365 form, the page carries the api-key twin: *Register a client UniFi console*.
-A managed client's UniFi console authenticates by **API key** (`auth_method='api_key'`), not a
-cert or secret. One account may map **many** consoles (many rows). An admin registers one by
-entering:
+UniFi is a **company** credential, not per-client (ADR-0122 amendment, #1278): the cloud **Site
+Manager API** key (`api.ui.com`) is MSP-wide — one key enumerates **every** client's sites,
+consoles, and devices. So it is entered **once** on the **UniFi card** at `/settings/connections`
+(a single `apiKey` field), custodied in **Key Vault** as `conn-company-unifi` (value never
+returned/stored here/logged, CLAUDE.md §5). Each discovered site is then mapped to its account on
+**Client mapping (UniFi)** — the Autotask pattern (company credential + per-client data mapping).
+The local-pipeline collector reads the one key and enumerates all sites (LocalPipeline #321).
 
-- **Linked account** — the managed customer the console serves;
-- **Console / site id** — the per-console natural key (alphanumerics/dashes, 1–64);
-- **Connection type** — **Cloud** (UniFi's hosted Site Manager API at `api.ui.com`) is the
-  **default**, recommended for most clients; **Console** (on-prem UniFi Network Integration API
-  on the customer's controller) is the exception for clients without cloud access (#1276);
-- **Controller host** — the console hostname/IP, **required for Console** and omitted for Cloud;
-- the **API key** value (write-only).
-
-On submit, the web app proxies server-side to the backend custody endpoint
-`POST /api/connections/client/unifi` (backend #229/#233). The backend writes the key to **Key
-Vault** under `conn-client-unifi-<consoleId>` and records the `client`-scope `unifi` `connection`
-row, with the **non-secret** `connectionType`/`controllerHost` stored on
-`connection.provider_config` (migration 0151). The key value is **never** returned, stored in
-this database, or logged (CLAUDE.md §5). Re-registering the same console **rotates** the key in
-place. The local-pipeline multi-console sweep (LocalPipeline #259) resolves each console's key
-from this registry to poll its devices.
-
-If the integration backend isn't configured (`INTEGRATION_SERVICE_URL` unset), the form degrades
-to an honest notice and saves nothing.
+> The earlier **per-console** path (a per-client API key entered on the mapping row, with an
+> on-prem `controllerHost` option) is **retired** (#1280 / backend #388) — the cloud key covers
+> every client, so per-console keys are unnecessary.
 
 ## Related surfaces
 
