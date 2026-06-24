@@ -857,6 +857,18 @@ export const credentialsService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+
+  /**
+   * Purge a registered credential (#390): delete the `connection` row AND its backing Key
+   * Vault secret. Idempotent (already-gone → `deleted: false`). Keyed on the row id so a
+   * same-account duplicate is removed individually. Backs the FE remove-credential action.
+   */
+  purgeCredential: (input: { connectionId: string }) =>
+    callService<{ deleted: boolean; connectionId: string; keyvaultSecretRef: string | null }>(
+      services.credentials,
+      "/credentials/purge",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
 };
 
 /**

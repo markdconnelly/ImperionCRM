@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { PollFrequency } from "@/components/integrations/poll-frequency";
 import { HealthDot } from "@/components/integrations/health-dot";
+import { RemoveCredentialButton } from "@/components/settings/remove-credential-button";
 import { credentialCardState } from "@/lib/integrations/credential-card-state";
 import { providerIsPollable } from "@/lib/integrations/company-providers";
 import type { ConnectionCardModel } from "@/lib/integrations/connection-cards";
@@ -401,12 +402,7 @@ export function ConnectionCard({
           )}
 
           {configured && (
-            <form action={disconnectAction}>
-              <input type="hidden" name="id" value={connection.id} />
-              <button type="submit" className="text-xs text-dim hover:text-red">
-                Remove credential
-              </button>
-            </form>
+            <RemoveCredentialButton action={disconnectAction} connectionId={connection.id} />
           )}
         </div>
       )}

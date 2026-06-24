@@ -114,6 +114,10 @@ export function getClientMappingAdapter(connector: string): ClientMappingAdapter
  * its bronze hydrates.
  */
 export interface RegisteredClientCredential {
+  /** The `connection` row id — the key the purge action targets. One account can carry TWO
+   *  rows for the same provider (e.g. a wrongly-seeded cert row + the correct secret row), so
+   *  the row id, not the account, is what disambiguates and removes exactly one (#1282). */
+  id: string;
   /** The owning Imperion account (the managed customer). */
   accountId: string;
   /** Resolved account name for display (falls back to the connection display name). */
@@ -122,32 +126,45 @@ export interface RegisteredClientCredential {
   displayName: string | null;
   /** The connection lifecycle status (active | pending | error | …). */
   status: string;
+  /** `certificate` | `secret` (enterprise app); null for OAuth. Shown so an operator can tell a
+   *  wrongly-seeded cert row from the correct secret row before removing one. */
+  authMethod: string | null;
+  /** Entra app (client) id of the row's app registration — public, never a secret. Surfaced so
+   *  a row pointing at the wrong app (e.g. the infra app, not the onboarding app) is identifiable. */
+  clientId: string | null;
 }
 
 /**
  * The client-scope credentials registered for `connector`, account-name order. Pure selection
  * over the connection list the page already holds — health is attached by the caller (it needs
  * the render clock). Rows without an `accountId` are skipped (an unowned client credential
- * cannot be shown against an account).
+ * cannot be shown against an account). One row per `connection` (NOT collapsed by account), so a
+ * same-account duplicate is visible and individually removable (#1282).
  */
 export function selectRegisteredClientCredentials(
   connections: ReadonlyArray<{
+    id: string;
     scope: string;
     provider: string;
     accountId: string | null;
     accountName: string | null;
     displayName: string | null;
     status: string;
+    authMethod: string | null;
+    clientId: string | null;
   }>,
   connector: string,
 ): RegisteredClientCredential[] {
   return connections
     .filter((c) => c.scope === "client" && c.provider === connector && c.accountId)
     .map((c) => ({
+      id: c.id,
       accountId: c.accountId as string,
       accountName: c.accountName ?? c.displayName ?? "—",
       displayName: c.displayName,
       status: c.status,
+      authMethod: c.authMethod,
+      clientId: c.clientId,
     }))
     .sort((a, b) => a.accountName.localeCompare(b.accountName));
 }

@@ -5,6 +5,7 @@ import {
   type RegisteredClientCredential,
 } from "@/lib/integrations/client-mapping";
 import { HealthDot } from "@/components/integrations/health-dot";
+import { RemoveCredentialButton } from "@/components/settings/remove-credential-button";
 import type { HealthVerdict } from "@/lib/integrations/connection-health";
 
 /** A registered client credential plus its inferred health (attached by the page). */
@@ -46,6 +47,7 @@ export function ClientMappingPanel({
   registeredCredentials,
   linkAction,
   unlinkAction,
+  purgeAction,
 }: {
   adapter: ClientMappingAdapter;
   units: ClientMappingUnit[];
@@ -58,6 +60,8 @@ export function ClientMappingPanel({
   registeredCredentials?: RegisteredCredentialRow[];
   linkAction: (formData: FormData) => void | Promise<void>;
   unlinkAction: (formData: FormData) => void | Promise<void>;
+  /** Remove a registered per-client credential (delete row + purge KV secret, #1282). */
+  purgeAction: (formData: FormData) => void | Promise<void>;
 }) {
   const showHealth = clientHealthByAccount != null;
   const mapped = units.filter((u) => u.mappedAccountId);
@@ -82,7 +86,7 @@ export function ClientMappingPanel({
           <ul className="flex flex-col gap-2">
             {registeredCredentials.map((rc) => (
               <li
-                key={rc.accountId}
+                key={rc.id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-panel-2 px-3 py-2"
               >
                 <span className="flex flex-col">
@@ -90,12 +94,30 @@ export function ClientMappingPanel({
                   {rc.displayName && (
                     <span className="text-[11px] text-dim">{rc.displayName}</span>
                   )}
+                  {/* Auth method + app id make a wrongly-seeded row identifiable (e.g. a cert
+                      row at the infra app vs the correct secret row at the onboarding app). */}
+                  {(rc.authMethod || rc.clientId) && (
+                    <span className="text-[11px] text-dim">
+                      {rc.authMethod ?? "—"}
+                      {rc.clientId && (
+                        <span className="font-mono"> · app {rc.clientId.slice(0, 8)}…</span>
+                      )}
+                    </span>
+                  )}
                 </span>
-                {rc.health ? (
-                  <HealthDot health={rc.health} />
-                ) : (
-                  <span className="text-xs text-dim">{rc.status}</span>
-                )}
+                <span className="flex items-center gap-3">
+                  {rc.health ? (
+                    <HealthDot health={rc.health} />
+                  ) : (
+                    <span className="text-xs text-dim">{rc.status}</span>
+                  )}
+                  <RemoveCredentialButton
+                    action={purgeAction}
+                    connectionId={rc.id}
+                    connector={adapter.connector}
+                    label="Remove"
+                  />
+                </span>
               </li>
             ))}
           </ul>

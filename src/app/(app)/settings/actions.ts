@@ -66,6 +66,47 @@ export async function disconnectAction(formData: FormData) {
 }
 
 /**
+ * Purge a registered credential (#1282, backend #390): delete the `connection` row AND its
+ * backing Key Vault secret, so a wrongly-seeded credential can be re-seeded cleanly. Unlike
+ * `disconnectAction` (which, for a company/client credential row, only deletes the local row
+ * and orphans the KV secret), this calls the backend purge endpoint that removes both.
+ *
+ * Keyed on the connection `id` so a same-account duplicate (e.g. a dead cert row + the correct
+ * secret row for one account) is removed individually. Backend-first, then local: an
+ * unconfigured backend (501) falls back to the local row delete (for a certificate row there is
+ * no KV secret, so the local delete alone fully clears it); any OTHER backend error keeps the
+ * row visible so the operator can retry rather than stranding a live secret in Key Vault.
+ */
+export async function purgeCredentialAction(formData: FormData) {
+  await requireCapability("settings:write");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  // Optional: the client-mapping screen passes its connector so we revalidate that page too.
+  const connector = String(formData.get("connector") ?? "").trim();
+
+  try {
+    await credentialsService.purgeCredential({ connectionId: id });
+  } catch (err) {
+    if (!isBackendNotConfigured(err)) {
+      // KV secret was NOT purged — keep the row visible rather than deleting it and stranding
+      // the secret in Key Vault.
+      console.error(`purgeCredentialAction(${id}) backend purge failed:`, err);
+      revalidatePath("/settings/connections");
+      if (connector) revalidatePath(`/settings/client-mapping/${connector}`);
+      return;
+    }
+  }
+
+  // Backend purged the row+secret, OR the backend isn't configured yet — either way ensure the
+  // row is gone locally. On a successful backend purge the row is already deleted (shared DB),
+  // so this is an idempotent no-op; when unconfigured it does the actual delete.
+  const { connections } = getRepositories();
+  await connections.disconnect(id);
+  revalidatePath("/settings/connections");
+  if (connector) revalidatePath(`/settings/client-mapping/${connector}`);
+}
+
+/**
  * Set how often the ingestion pipeline polls a connection (ADR-0038). Stored as
  * minutes on the connection row; 0 = manual/paused. The pipeline repo consumes the
  * value — this only persists the operator's choice.

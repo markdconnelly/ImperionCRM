@@ -8,12 +8,15 @@ import {
 
 function conn(over: Partial<Parameters<typeof selectRegisteredClientCredentials>[0][number]>) {
   return {
+    id: "conn-ipg",
     scope: "client",
     provider: "m365",
     accountId: "acc-1",
     accountName: "IPG",
     displayName: "IPG-M365",
     status: "active",
+    authMethod: "secret",
+    clientId: "78afc922-11e4-43c5-8474-1abfe5875115",
     ...over,
   };
 }
@@ -70,7 +73,15 @@ describe("selectRegisteredClientCredentials", () => {
   it("surfaces a client credential for the connector (the IPG-before-discovery case, #1271)", () => {
     const rows = selectRegisteredClientCredentials([conn({})], "m365");
     expect(rows).toEqual([
-      { accountId: "acc-1", accountName: "IPG", displayName: "IPG-M365", status: "active" },
+      {
+        id: "conn-ipg",
+        accountId: "acc-1",
+        accountName: "IPG",
+        displayName: "IPG-M365",
+        status: "active",
+        authMethod: "secret",
+        clientId: "78afc922-11e4-43c5-8474-1abfe5875115",
+      },
     ]);
   });
 
@@ -84,6 +95,18 @@ describe("selectRegisteredClientCredentials", () => {
       "m365",
     );
     expect(rows.map((r) => r.accountName)).toEqual(["IPG"]);
+  });
+
+  it("keeps two same-account rows distinct by id (the duplicate-credential case, #1282)", () => {
+    const rows = selectRegisteredClientCredentials(
+      [
+        conn({ id: "row-cert", authMethod: "certificate", clientId: "46f1077b-c93f-42da-abd4-192da13781ac" }),
+        conn({ id: "row-secret", authMethod: "secret", clientId: "0d6c8db7-5589-4987-b8e5-fe2d18ed2a81" }),
+      ],
+      "m365",
+    );
+    expect(rows.map((r) => r.id)).toEqual(["row-cert", "row-secret"]);
+    expect(rows.map((r) => r.authMethod)).toEqual(["certificate", "secret"]);
   });
 
   it("skips rows with no owning account (can't show against an account)", () => {

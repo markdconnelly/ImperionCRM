@@ -1,0 +1,46 @@
+# Remove credential (purge) — UI + wiring
+
+The Connections surface lets an operator **enter** a credential; this adds the matching
+**Remove** action so a wrongly-seeded or stale credential can be cleared and re-seeded. GUI-only
+(ADR-0042): the actual row delete + Key Vault secret purge happens in the backend
+(`ImperionCRM_Backend` #390, `POST /api/credentials/purge`).
+
+## Why (the live case)
+
+The Imperion account carried **two** `m365` `connection` rows — a dead **certificate** row at the
+LP infra app (no Microsoft Graph grants → every Graph read `403`) and the correct **secret** row at
+the Graph-consented onboarding app. Both keyed to one account ⇒ the credential resolver is ambiguous
+and can pick the dead one, and there was no way to remove it. Purging the dead row by **id**
+disambiguates it with no re-seed needed.
+
+## Where it appears
+
+- **Company connection cards** (`/settings/connections`) — the existing "Remove credential" control
+  now routes to `purgeCredentialAction`, which purges the Key Vault secret too (the old
+  `disconnectAction` only deleted the local row, orphaning the secret).
+- **Per-client credentials** on the client-mapping screen (`/settings/client-mapping/<connector>`,
+  M365/UniFi) — each **registered credential** row gets a **Remove** control. Rows are now listed
+  **one per `connection`** (not collapsed by account) and show their **auth method + app id**, so a
+  same-account duplicate (e.g. cert-vs-secret) is visible and individually removable.
+
+## Behaviour
+
+- Destructive **two-step confirm** (`RemoveCredentialButton`, `src/components/settings/`): first
+  click reveals "Confirm / Cancel" — no native dialog primitive exists in the repo.
+- Keyed on the connection **`id`** — the only key that disambiguates a same-account duplicate.
+- **Backend-first, then local** (`purgeCredentialAction`, `src/app/(app)/settings/actions.ts`): an
+  unconfigured backend (501) falls back to the local row delete (a certificate row has no KV secret,
+  so the local delete alone fully clears it); any other backend error keeps the row visible so the
+  operator can retry rather than stranding a live secret in Key Vault.
+- After purge the page revalidates, so the card/row health flips to "Not configured". Re-entering a
+  credential goes through the normal save path.
+
+## Source
+
+- `src/components/settings/remove-credential-button.tsx` — the confirm control.
+- `src/app/(app)/settings/actions.ts` — `purgeCredentialAction`.
+- `src/lib/services/index.ts` — `credentialsService.purgeCredential`.
+- `src/lib/integrations/client-mapping.ts` — `RegisteredClientCredential` (now carries `id`,
+  `authMethod`, `clientId`) + `selectRegisteredClientCredentials` (one row per connection).
+
+Companion: backend #390 (the delete + KV purge endpoint).
