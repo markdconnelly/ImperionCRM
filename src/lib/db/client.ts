@@ -14,6 +14,7 @@
 import "server-only";
 import { Pool, type PoolConfig } from "pg";
 import { ManagedIdentityCredential } from "@azure/identity";
+import { withQueryRetry } from "./retry";
 
 const AAD_SCOPE = "https://ossrdbms-aad.database.windows.net/.default";
 
@@ -52,10 +53,15 @@ function withErrorLogging(p: Pool): Pool {
   return p;
 }
 
+/** Build a pool with the shared tuning, the idle-error handler, and the query retry/log seam. */
+function harden(p: Pool): Pool {
+  return withQueryRetry(withErrorLogging(p));
+}
+
 function build(): Pool | null {
   const url = process.env.DATABASE_URL?.trim();
   if (url) {
-    return withErrorLogging(new Pool({ connectionString: url, ...POOL_TUNING }));
+    return harden(new Pool({ connectionString: url, ...POOL_TUNING }));
   }
 
   const host = process.env.PGHOST?.trim();
@@ -63,7 +69,7 @@ function build(): Pool | null {
   if (host && user) {
     const clientId = process.env.AZURE_MANAGED_IDENTITY_CLIENT_ID?.trim();
     const credential = new ManagedIdentityCredential(clientId ? { clientId } : {});
-    return withErrorLogging(
+    return harden(
       new Pool({
         host,
         port: Number(process.env.PGPORT ?? 5432),
