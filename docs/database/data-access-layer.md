@@ -106,3 +106,18 @@ the underlying pg error** — the per-method `catch {}` otherwise swallows it, l
 the pg pool's "Connection terminated"/"timeout" messages). Reads and idempotent upserts are
 safe to retry because a connection error means the statement never executed; a real query
 fault (constraint / permission / undefined-table) is logged and rethrown, never retried.
+
+## "Live data is unavailable" was a row-mapper crash, not the connection (#1299)
+The recurring `crm.listAccountRelatedBronze` incident turned out **not** to be a connection
+fault at all (the pool work above is sound defense-in-depth, but was a misdiagnosis of this
+symptom). The live log showed the read failing with **no `[db] query failed` line** — i.e.
+`pool.query` SUCCEEDED and the row `.map(...)` threw. `fmtDateTime(last_seen_at)` called
+`.toISOString()`, but `account_related_bronze` exposes `collected_at AS last_seen_at` and the
+LP bronze tables declare `collected_at text NOT NULL` (migration 0038), so node-postgres
+returns a **string**; `"…".toISOString()` is `undefined` → `TypeError` → the bare `catch {}`
+re-raised it as `DataUnavailableError` and blanked the page. The query is valid (it works for a
+raw client that never runs the JS map), which is why it looked role/connection-specific. The
+fix: `db/date-format.ts` (`fmtDate`/`fmtIso`/`fmtDateTime`) now coerce a `Date | string`
+defensively and return `null` for anything unparseable — a date formatter must never crash a
+read. **Lesson:** a typed query row that annotates a column `Date` is a compile-time claim, not
+a runtime guarantee — a `text` column still arrives as a string.
