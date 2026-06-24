@@ -120,7 +120,7 @@ describe("registerClientUnifiAction", () => {
       displayName: undefined,
     });
     expect(JSON.stringify(r)).not.toContain("unifi-api-key-value");
-    expect(h.revalidatePath).toHaveBeenCalledWith("/settings/credentials");
+    expect(h.revalidatePath).toHaveBeenCalledWith("/settings/client-mapping/unifi");
   });
 
   it("drops the controller host for a cloud console", async () => {

@@ -157,8 +157,7 @@ export default async function SettingsPage({
           { href: "/questions", label: "Discovery & assessment questions", hint: "Edit the question catalog" },
           { href: "/custom-fields", label: "Custom fields", hint: "Admin-definable task/project fields (ADR-0065 B4)" },
           { href: "/settings/statuses", label: "Statuses", hint: "Admin-definable status sets per project type (ADR-0065 B5)" },
-          { href: "/settings/credentials", label: "Credentials", hint: "Key Vault credential registry by scope — names only, never values (ADR-0103)" },
-          { href: "/settings/client-mapping/m365", label: "Client mapping (M365)", hint: "Map M365 tenants onto accounts — the M365 instance of Client Mapping (ADR-0112)" },
+          { href: "/settings/client-mapping/m365", label: "Client mapping (M365)", hint: "Map M365 tenants onto accounts + register each tenant's per-client credential (ADR-0112 / ADR-0122)" },
         ].map((t) => (
           <li key={t.href}>
             <Link
