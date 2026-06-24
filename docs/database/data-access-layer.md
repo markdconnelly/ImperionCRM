@@ -85,3 +85,15 @@ contact directory-groups read) treat those two codes as **empty** (`isSchemaLagE
 degrading one section to blank instead of failing the whole page. Every other error —
 connection loss, timeout, syntax — still fails closed. **Core reads** (account, contact,
 timeline, bronze-source drill) are never degraded: a failure there is a real problem.
+
+## Connection pool — recycle before the Entra token dies (`db/client.ts`, #1290)
+In Azure the pool authenticates each connection with a Microsoft Entra access token, and
+Azure Postgres **terminates a connection when its token expires** (~60–90 min) and reaps
+idle ones. A pooled client left open past that point is dead; the next query that grabs it
+fails with a connection error and — via the fail-closed seam above — surfaces as an
+intermittent, self-healing "Live data is unavailable" on an unrelated page. The pool is
+therefore tuned to never hand out a stale-token connection: `maxLifetimeSeconds` (1800)
+rotates every connection well under the token TTL, `idleTimeoutMillis` reaps idle clients
+before the server drops them, `connectionTimeoutMillis` fails fast instead of hanging a
+render, and a `pool.on('error')` handler logs the real cause (the per-query catch swallows
+it) and lets pg discard the dead client.
