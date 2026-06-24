@@ -97,3 +97,12 @@ rotates every connection well under the token TTL, `idleTimeoutMillis` reaps idl
 before the server drops them, `connectionTimeoutMillis` fails fast instead of hanging a
 render, and a `pool.on('error')` handler logs the real cause (the per-query catch swallows
 it) and lets pg discard the dead client.
+
+Tuning alone did not fully stop the incident (#1293): a request can still land on a
+connection the moment it dies. So `db/retry.ts` wraps `pool.query` in one seam that (1) **logs
+the underlying pg error** — the per-method `catch {}` otherwise swallows it, leaving only
+"which method failed", never why — and (2) **retries once** on a transient connection fault
+(`isRetryableConnectionError`: the Postgres `08*` / `57P0*` SQLSTATEs, Node socket errnos, and
+the pg pool's "Connection terminated"/"timeout" messages). Reads and idempotent upserts are
+safe to retry because a connection error means the statement never executed; a real query
+fault (constraint / permission / undefined-table) is logged and rethrown, never retried.
