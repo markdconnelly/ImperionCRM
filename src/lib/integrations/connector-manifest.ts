@@ -58,6 +58,13 @@ export interface ConnectorManifest {
   identityMap: readonly string[];
   /** What the connector can do (`ingest:* | write:* | enrich:*`). */
   capabilities: readonly ConnectorCapability[];
+  /**
+   * True for an expected data source whose backend credential store / ingestion isn't built
+   * yet (ADR-0122 epic #1256). The catalog renders it as a non-enterable **Planned** card so the
+   * catalog is the honest, complete map of everything Imperion pulls — each gap a tracked issue,
+   * never a silent omission. Omitted (falsy) for live connectors.
+   */
+  planned?: boolean;
   /** Manifest version — bumped in code when the declared shape changes (ADR-0076 §1). */
   version: number;
 }
@@ -145,6 +152,79 @@ export const CONNECTOR_MANIFESTS: readonly ConnectorManifest[] = [
     defaultCadenceMinutes: 0,
     identityMap: ["contact", "account"],
     capabilities: ["enrich:contacts"],
+    version: 1,
+  },
+  // ── Planned connectors (ADR-0122, epic #1256 S4) — expected sources whose backend store
+  //    isn't built yet. They render as non-enterable "Planned" cards so the catalog is the
+  //    complete map of everything Imperion pulls. Azure is NOT here — it folds into M365.
+  {
+    key: "dattoendpoint",
+    label: "Datto — Endpoint Backups",
+    description: "Datto BCDR endpoint backup status per protected device (one company key, mapped per client).",
+    category: "Backups",
+    icon: "HardDriveDownload",
+    authType: "api_key",
+    scopes: ["backups:read"],
+    defaultCadenceMinutes: 1440,
+    identityMap: ["device", "backup_artifact"],
+    capabilities: ["ingest:endpoint-backups"],
+    planned: true,
+    version: 1,
+  },
+  {
+    key: "dattosaas",
+    label: "Datto — SaaS Backups",
+    description: "Datto SaaS Protection backup status for M365 / Google Workspace (one company key, mapped per client).",
+    category: "Backups",
+    icon: "CloudUpload",
+    authType: "api_key",
+    scopes: ["backups:read"],
+    defaultCadenceMinutes: 1440,
+    identityMap: ["backup_artifact"],
+    capabilities: ["ingest:saas-backups"],
+    planned: true,
+    version: 1,
+  },
+  {
+    key: "cdw",
+    label: "CDW",
+    description: "CDW procurement orders for hardware/software fulfillment into the opportunity/order map.",
+    category: "Procurement",
+    icon: "ShoppingCart",
+    authType: "api_key",
+    scopes: ["orders:read"],
+    defaultCadenceMinutes: 1440,
+    identityMap: ["opportunity"],
+    capabilities: ["ingest:orders"],
+    planned: true,
+    version: 1,
+  },
+  {
+    key: "amazonbusiness",
+    label: "Amazon Business",
+    description: "Amazon Business corporate order history for procurement reconciliation.",
+    category: "Procurement",
+    icon: "Package",
+    authType: "api_key",
+    scopes: ["orders:read"],
+    defaultCadenceMinutes: 1440,
+    identityMap: ["opportunity"],
+    capabilities: ["ingest:orders"],
+    planned: true,
+    version: 1,
+  },
+  {
+    key: "easydmarc",
+    label: "EasyDMARC",
+    description: "EasyDMARC domain authentication posture (SPF/DKIM/DMARC) into the security-posture map.",
+    category: "Security",
+    icon: "MailCheck",
+    authType: "api_key",
+    scopes: ["domains:read"],
+    defaultCadenceMinutes: 1440,
+    identityMap: ["assessment_artifact"],
+    capabilities: ["ingest:dmarc-domains"],
+    planned: true,
     version: 1,
   },
 ] as const;
