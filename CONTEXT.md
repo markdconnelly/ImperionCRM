@@ -220,6 +220,85 @@ _Avoid_: convener context (that's general input), override (that's post-session)
 The human CISO's post-session review verdict on a board recommendation, with written rationale. An overruled recommendation never reads as board consensus.
 _Avoid_: approve/reject (that vocabulary belongs to ADR-0033 action proposals)
 
+### Connections & credentials
+
+**Connection**:
+A custodied link between Imperion and one external system, from which Imperion ingests
+data or to which it sends. A Connection holds only a *reference* to its secret in Key
+Vault (`keyvault_secret_ref`) — never the secret value. Distinct from a **Connector** (the
+catalog definition of an integration type) and a **Credential** (the secret material).
+_Avoid_: integration (unqualified), credential (the secret is one part of a Connection)
+
+**Connector**:
+A catalog entry describing an integration *type* (Autotask, M365, UniFi …): its
+credential shape, what it ingests, its default poll cadence. Rendered as a **card** on the
+connections page. One Connector → zero-or-many Connections.
+_Avoid_: provider (that is the `connection_provider` enum value inside a Connector), integration
+
+**Connection Scope**:
+The blast radius of one Connection — exactly `company` (one for the whole org), `client`
+(one per managed customer), or `user` (one per employee, self-service on `/profile`,
+out of scope for the admin connections surface). A *property of the credential*, not of
+the data: a company-scope Connection can still feed per-client data that needs Client
+Mapping (Autotask is the canonical case).
+_Avoid_: tenant scope, level
+
+**Credential**:
+The secret material (API key, OAuth token, certificate) for a Connection, held in Azure
+Key Vault. The DB and GUI only ever see its Key Vault *name*. Naming grammar
+(provider-always-3rd, canonical):
+`conn-<scope>-<provider>[-<discriminator>]` — e.g. `conn-company-autotask`,
+`conn-client-m365-<tenantId>`, `conn-client-unifi-<consoleId>`. Non-conforming legacy:
+`kv://imperion/conn/*` placeholder refs (a frontend fallback bug — point at no real
+secret) and user-scope `conn-<userId>-<provider>` (deferred to the `/profile` rework).
+_Avoid_: secret (unqualified), token (one kind of credential), key vault ref (that is the name only)
+
+**Credential Scope vs Data Mapping** (the two independent axes):
+*Credential scope* (above) decides how many secrets a Connector needs. *Data mapping*
+(Client Mapping) decides whether ingested data must be bound to accounts. They are
+orthogonal: Autotask = company credential **but** per-client data mapping; M365/UniFi =
+client credential **and** per-client data mapping (so the credential is entered on the
+client-mapping row); QBO/Apollo/Meta/DocuSign = company credential, no client mapping.
+_Avoid_: conflating "per-client connector" to mean both at once
+
+**Connections Page** (`/settings/connections`):
+The single admin surface for `company`- and `client`-scope Connections. One card per
+Connector, each with a **pre-credential** state (not yet configured) and a
+**post-credential** state (status + health + what it ingests + poll cadence). Absorbs the
+retired `/settings/credentials` registry table and replaces the deleted
+`/settings/tenant-mapping`.
+_Avoid_: integrations page, credentials page (retired)
+
+**Connection Health**:
+The live reachability/freshness verdict for a Connection, shown as a color-coded
+indicator on its card (and, for per-client Connectors, on each client row in Client
+Mapping). **Inferred** from data already held — `has credential?` + `connection.status` +
+`last_sync_at` freshness vs the poll cadence (green = synced within cadence, amber =
+stale/pending, red = error/no-credential). Distinct from a **Test Connection** live probe
+(an on-demand backend call that actually hits the vendor API; exists per-provider only
+where wired, DocuSign first). The passive icon is inferred; the button is the truth-check.
+_Avoid_: status (that is the stored lifecycle field), connectivity, probe (that is the on-demand button)
+
+**Planned Connector**:
+A catalog card for an expected data source whose backend credential store isn't built yet.
+Rendered in a distinct **pre-credential "Planned" state** — visible and documented but not
+enterable — so the catalog is the honest, complete map of everything Imperion pulls and
+each gap is a tracked issue, never a silent omission.
+_Avoid_: coming soon, disabled (it is not disabled, it is unbuilt)
+
+**Datto** (connector modeling):
+One company-scope Datto Credential per MSP (Imperion's own Datto account) pulls **all**
+customers, but Datto data needs per-client Data Mapping. Modeled as **two cards** —
+**Endpoint Backups** and **SaaS Backups** — each with a Client Mapping surface to validate
+each customer is bound to the right account.
+_Avoid_: per-client Datto credential (the key is company-wide), one Datto card (there are two)
+
+**Azure (in M365)**:
+Azure security-posture ingestion (cloud assets, secure score, Defender) is **not** its own
+Connector — it rides the **same per-client Entra app** as M365. The M365 card is annotated
+"M365 + Azure"; there is no separate Azure card or Azure credential.
+_Avoid_: Azure connector, Azure card (it folds into M365)
+
 ### Security posture
 
 **Customer Tenant**:
