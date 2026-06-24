@@ -103,6 +103,54 @@ export function getClientMappingAdapter(connector: string): ClientMappingAdapter
 }
 
 /**
+ * A per-client credential registered for a connector, surfaced on the mapping screen
+ * INDEPENDENTLY of bronze discovery (#1271). The mapped-unit table only lists tenants/consoles
+ * already discovered in bronze; a credential registered before its unit is discovered (the
+ * normal case while bronze is deploy-dormant) would otherwise be invisible everywhere — client-
+ * scope connections don't appear on the company connections grid either. Credential ⟂ data
+ * mapping (ADR-0122): this lists the credential; the unit still appears in the mapping table as
+ * its bronze hydrates.
+ */
+export interface RegisteredClientCredential {
+  /** The owning Imperion account (the managed customer). */
+  accountId: string;
+  /** Resolved account name for display (falls back to the connection display name). */
+  accountName: string;
+  /** Operator-supplied label for the credential, if any (e.g. "IPG-M365"). */
+  displayName: string | null;
+  /** The connection lifecycle status (active | pending | error | …). */
+  status: string;
+}
+
+/**
+ * The client-scope credentials registered for `connector`, account-name order. Pure selection
+ * over the connection list the page already holds — health is attached by the caller (it needs
+ * the render clock). Rows without an `accountId` are skipped (an unowned client credential
+ * cannot be shown against an account).
+ */
+export function selectRegisteredClientCredentials(
+  connections: ReadonlyArray<{
+    scope: string;
+    provider: string;
+    accountId: string | null;
+    accountName: string | null;
+    displayName: string | null;
+    status: string;
+  }>,
+  connector: string,
+): RegisteredClientCredential[] {
+  return connections
+    .filter((c) => c.scope === "client" && c.provider === connector && c.accountId)
+    .map((c) => ({
+      accountId: c.accountId as string,
+      accountName: c.accountName ?? c.displayName ?? "—",
+      displayName: c.displayName,
+      status: c.status,
+    }))
+    .sort((a, b) => a.accountName.localeCompare(b.accountName));
+}
+
+/**
  * Case-insensitive exact-name suggestion: the account whose name matches the unit's name. Manual
  * curation always wins, but a confident exact match is offered for one-click Accept. Fuzzy
  * matching stays the backend resolver's job (epic #1049) — this is a deliberately conservative

@@ -2,9 +2,13 @@ import type { Account, ClientMappingUnit } from "@/types";
 import {
   suggestAccountForUnit,
   type ClientMappingAdapter,
+  type RegisteredClientCredential,
 } from "@/lib/integrations/client-mapping";
 import { HealthDot } from "@/components/integrations/health-dot";
 import type { HealthVerdict } from "@/lib/integrations/connection-health";
+
+/** A registered client credential plus its inferred health (attached by the page). */
+type RegisteredCredentialRow = RegisteredClientCredential & { health?: HealthVerdict };
 
 function AccountSelect({ accounts }: { accounts: Account[] }) {
   return (
@@ -39,6 +43,7 @@ export function ClientMappingPanel({
   units,
   accounts,
   clientHealthByAccount,
+  registeredCredentials,
   linkAction,
   unlinkAction,
 }: {
@@ -48,6 +53,9 @@ export function ClientMappingPanel({
   /** Per-account inferred health for per-client-credential connectors (ADR-0122 S3a); the dot
    *  on each mapped row. Absent for fan-out adapters (no per-client credential to be healthy). */
   clientHealthByAccount?: Record<string, HealthVerdict>;
+  /** Registered per-client credentials, shown independently of bronze discovery (#1271). Absent
+   *  for fan-out adapters (their one company credential lives on the connections page). */
+  registeredCredentials?: RegisteredCredentialRow[];
   linkAction: (formData: FormData) => void | Promise<void>;
   unlinkAction: (formData: FormData) => void | Promise<void>;
 }) {
@@ -57,6 +65,43 @@ export function ClientMappingPanel({
 
   return (
     <section className="flex flex-col gap-3">
+      {/* Registered credentials — visible the moment a credential is saved, even before its
+          tenant/console is discovered in bronze (#1271). Credential ⟂ data mapping (ADR-0122):
+          the unit still appears in the mapping table below once its bronze hydrates. */}
+      {registeredCredentials && registeredCredentials.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-panel p-4">
+          <p className="text-sm font-medium text-text">
+            Registered credentials{" "}
+            <span className="text-dim">({registeredCredentials.length})</span>
+          </p>
+          <p className="text-xs text-dim">
+            Each registered credential authorizes one client&apos;s {adapter.label}{" "}
+            {adapter.unitNoun}. The {adapter.unitNoun} itself appears in the mapping table below
+            once its bronze hydrates.
+          </p>
+          <ul className="flex flex-col gap-2">
+            {registeredCredentials.map((rc) => (
+              <li
+                key={rc.accountId}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-panel-2 px-3 py-2"
+              >
+                <span className="flex flex-col">
+                  <span className="text-sm text-text">{rc.accountName}</span>
+                  {rc.displayName && (
+                    <span className="text-[11px] text-dim">{rc.displayName}</span>
+                  )}
+                </span>
+                {rc.health ? (
+                  <HealthDot health={rc.health} />
+                ) : (
+                  <span className="text-xs text-dim">{rc.status}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div>
         <h3 className="font-display text-sm font-semibold tracking-tight">
           {adapter.label} client mapping

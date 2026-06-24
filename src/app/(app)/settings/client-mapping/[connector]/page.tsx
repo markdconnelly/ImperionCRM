@@ -6,7 +6,10 @@ import { ClientUnifiCredentialForm } from "@/components/settings/client-unifi-cr
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeSettings } from "@/lib/auth/roles";
-import { getClientMappingAdapter } from "@/lib/integrations/client-mapping";
+import {
+  getClientMappingAdapter,
+  selectRegisteredClientCredentials,
+} from "@/lib/integrations/client-mapping";
 import {
   inferConnectionHealth,
   type HealthVerdict,
@@ -63,6 +66,17 @@ export default async function ClientMappingPage({
     }
   }
 
+  // Registered per-client credentials surfaced INDEPENDENTLY of bronze discovery (#1271): a
+  // credential entered for an account whose tenant/console isn't discovered yet would otherwise
+  // be invisible (the mapped table lists discovered units only, and client-scope rows never reach
+  // the company connections grid). Attach the health verdict computed above to each.
+  const registeredCredentials = adapter.bindsConnection
+    ? selectRegisteredClientCredentials(allConnections, adapter.connector).map((rc) => ({
+        ...rc,
+        health: clientHealthByAccount[rc.accountId],
+      }))
+    : [];
+
   const backendConfigured = Boolean(process.env.INTEGRATION_SERVICE_URL?.trim());
   const sourceNote = backendConfigured
     ? ""
@@ -99,6 +113,7 @@ export default async function ClientMappingPage({
         units={units}
         accounts={accounts}
         clientHealthByAccount={adapter.bindsConnection ? clientHealthByAccount : undefined}
+        registeredCredentials={adapter.bindsConnection ? registeredCredentials : undefined}
         linkAction={linkClientMappingAction}
         unlinkAction={unlinkClientMappingAction}
       />

@@ -117,3 +117,21 @@ control is preserved, now co-located on the connector's single card.
 their cadence twice with distinct meaning — the company `connection` poll interval and the
 `connector_instance` cadence override — under the Credential and Catalog sections respectively;
 this is the existing behaviour, no longer split across two cards.
+
+## Amendment — S3a follow-up: registered credentials are visible before discovery (2026-06-24, #1271)
+
+S3a put the per-client credential's health dot on each **mapped unit row** of the client-mapping
+screen. That assumed the account already had a tenant/console discovered in bronze. While bronze
+is deploy-dormant (the normal early state), a credential registered for an undiscovered account
+had **no row to attach to** — and client-scope connections never appear on the company
+connections grid — so the credential was invisible everywhere (observed: a live IPG M365
+credential, stored correctly, showing nowhere).
+
+The mapping screen now renders a **"Registered credentials"** section listing every client-scope
+`connection` for the connector — account, label, inferred health — **independently of bronze
+discovery**. This keeps credential ⟂ data mapping (Decision §3): registering a credential does
+**not** create an `entity_xref` mapping; the tenant/console still appears in the mapping table as
+its bronze hydrates. Pure selection helper `selectRegisteredClientCredentials`
+(`src/lib/integrations/client-mapping.ts`). Separate backend defects found in the same diagnosis
+(non-canonical `conn-client-<id>-<provider>` name + null `external_account_id` from
+`registerClientM365`) are tracked in ImperionCRM_Backend#383.
