@@ -5,8 +5,9 @@ import { CHANNEL_FILTERS } from "@/lib/comms";
 
 /** Channel filter chips for the Communications feed (server-side via ?source=). */
 export function ChannelFilter({ active }: { active?: string }) {
-  const chip = (href: string, label: string, isActive: boolean, icon?: string) => (
+  const chip = (key: string, href: string, label: string, isActive: boolean, icon?: string) => (
     <Link
+      key={key}
       href={href}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs",
@@ -22,9 +23,9 @@ export function ChannelFilter({ active }: { active?: string }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {chip("/communications", "All", !active)}
+      {chip("all", "/communications", "All", !active)}
       {CHANNEL_FILTERS.map((c) =>
-        chip(`/communications?source=${c.key}`, c.label, active === c.key, c.icon),
+        chip(c.key, `/communications?source=${c.key}`, c.label, active === c.key, c.icon),
       )}
     </div>
   );
