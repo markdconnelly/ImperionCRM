@@ -802,29 +802,6 @@ export const connectionsService = {
       "/connections/client/m365",
       { method: "POST", body: JSON.stringify(input) },
     ),
-
-  /**
-   * Register (or rotate) a managed client's per-console UniFi credential — the api-key twin
-   * of {@link registerClientM365} (#964, backend #229/#233). A UniFi console authenticates
-   * by API KEY (`auth_method='api_key'`), with the non-secret console config
-   * (`connectionType` console|cloud, `controllerHost`) carried alongside it → the backend
-   * custodies the key in Key Vault and writes the `client`-scope `unifi` `connection` row
-   * (key value never returned/logged/stored here, CLAUDE.md §5). 501 when the backend isn't
-   * configured → the UI degrades.
-   */
-  registerClientUnifi: (input: {
-    accountId: string;
-    consoleId: string;
-    apiKey: string;
-    connectionType: "console" | "cloud";
-    controllerHost?: string;
-    displayName?: string;
-  }) =>
-    callService<{ connectionId: string }>(
-      services.integration,
-      "/connections/client/unifi",
-      { method: "POST", body: JSON.stringify(input) },
-    ),
 };
 
 /**
