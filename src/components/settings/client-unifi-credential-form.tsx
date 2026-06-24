@@ -33,7 +33,9 @@ export function ClientUnifiCredentialForm({
   sourceNote: string;
   registerAction: (formData: FormData) => Promise<ClientCredentialResult>;
 }) {
-  const [connectionType, setConnectionType] = useState<"console" | "cloud">("console");
+  // Cloud (UniFi's hosted Site Manager API) is the default — most managed clients are
+  // cloud-hosted (#1276). Console (on-prem Network Integration API) is the exception.
+  const [connectionType, setConnectionType] = useState<"console" | "cloud">("cloud");
   const [result, setResult] = useState<ClientCredentialResult | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -48,7 +50,7 @@ export function ClientUnifiCredentialForm({
         // Clear the form on success — re-rendering the key would defeat write-only entry.
         const el = document.getElementById("client-unifi-form");
         if (el instanceof HTMLFormElement) el.reset();
-        setConnectionType("console");
+        setConnectionType("cloud");
       }
     });
   }
@@ -121,7 +123,7 @@ export function ClientUnifiCredentialForm({
           <fieldset disabled={!editable}>
             <legend className="mb-2 text-xs text-dim">Connection type</legend>
             <div className="flex flex-wrap gap-2">
-              {(["console", "cloud"] as const).map((t) => {
+              {(["cloud", "console"] as const).map((t) => {
                 const active = connectionType === t;
                 return (
                   <label
@@ -148,8 +150,8 @@ export function ClientUnifiCredentialForm({
             </div>
             <p className="mt-1.5 text-[11px] text-dim">
               {connectionType === "console"
-                ? "On-prem Network Integration API on the customer console — needs the controller host."
-                : "UniFi's hosted Site Manager API (api.ui.com) — no host needed."}
+                ? "On-prem Network Integration API on the customer console — needs the controller host. Use for clients without UniFi cloud access."
+                : "UniFi's hosted Site Manager API (api.ui.com) — no host needed. Recommended for most clients."}
             </p>
           </fieldset>
 
