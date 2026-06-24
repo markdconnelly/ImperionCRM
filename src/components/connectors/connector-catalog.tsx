@@ -105,8 +105,14 @@ function ConnectorCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-semibold text-text">{manifest.label}</h3>
-            <StatusBadge entry={entry} />
-            {healthVerdict && (
+            {manifest.planned ? (
+              <span className="rounded-full border border-dim/40 bg-panel-2 px-2 py-0.5 text-[11px] font-medium text-dim">
+                Planned
+              </span>
+            ) : (
+              <StatusBadge entry={entry} />
+            )}
+            {!manifest.planned && healthVerdict && (
               <HealthDot health={healthVerdict} showLabel={false} className="ml-auto" />
             )}
           </div>
@@ -176,7 +182,12 @@ function ConnectorCard({
       <div
         className={`flex flex-wrap items-center gap-2 pt-3 ${clientScoped && chain ? "" : "mt-auto border-t border-border/60"}`}
       >
-        {!connected ? (
+        {manifest.planned ? (
+          <p className="flex items-center gap-1.5 text-xs text-dim">
+            <Icon name="Clock" size={13} />
+            Planned — the backend store for this source isn&apos;t built yet.
+          </p>
+        ) : !connected ? (
           <form action={enableConnectorAction}>
             <input type="hidden" name="connectorKey" value={manifest.key} />
             <button

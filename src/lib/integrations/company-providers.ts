@@ -227,6 +227,19 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     ],
   },
   {
+    key: "apollo",
+    label: "Apollo",
+    icon: "Sparkles",
+    kind: "credential",
+    description:
+      "Apollo enrichment API — augments contacts and accounts on demand (ADR-0035). Stored as " +
+      "the Key Vault secret conn-company-apollo; the backend must allowlist `apollo` to custody it.",
+    scopes: ["people:read", "organizations:read"],
+    fields: [
+      { name: "apiKey", label: "API key", secret: true, type: "password", required: true },
+    ],
+  },
+  {
     key: "meta",
     label: "Meta (Facebook / Instagram)",
     icon: "MessageCircle",
