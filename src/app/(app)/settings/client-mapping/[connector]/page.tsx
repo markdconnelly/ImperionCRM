@@ -1,14 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { ClientMappingPanel } from "@/components/settings/client-mapping-panel";
+import { ClientCredentialForm } from "@/components/settings/client-credential-form";
+import { ClientUnifiCredentialForm } from "@/components/settings/client-unifi-credential-form";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeSettings } from "@/lib/auth/roles";
 import { getClientMappingAdapter } from "@/lib/integrations/client-mapping";
 import {
-  linkClientMappingAction,
-  unlinkClientMappingAction,
-} from "../actions";
+  inferConnectionHealth,
+  type HealthVerdict,
+} from "@/lib/integrations/connection-health";
+import { linkClientMappingAction, unlinkClientMappingAction } from "../actions";
+import { registerClientM365Action, registerClientUnifiAction } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -32,21 +36,69 @@ export default async function ClientMappingPage({
   if (!adapter) notFound();
 
   const { connections, crm } = getRepositories();
-  const [units, accounts] = await Promise.all([
+  // Per-client-credential connectors (m365/unifi) carry their credential ON this screen, so we
+  // also load the client-scope connection rows (for inferred health) and the account options
+  // (for the registration form). Fan-out adapters skip both — their credential is one company key.
+  const [units, accounts, accountOpts, allConnections] = await Promise.all([
     connections.listClientMappingUnits(adapter.sourceSystem),
     crm.listAccounts(),
+    adapter.bindsConnection ? crm.accountOptions() : Promise.resolve([]),
+    adapter.bindsConnection ? connections.listAllConnections() : Promise.resolve([]),
   ]);
+
+  // Inferred health per mapped account (ADR-0122 S3a) — the same verdict the main cards use,
+  // keyed by the client connection's owning account so each mapping row shows its own dot.
+  const nowMs = Date.now();
+  const clientHealthByAccount: Record<string, HealthVerdict> = {};
+  if (adapter.bindsConnection) {
+    for (const c of allConnections) {
+      if (c.scope !== "client" || c.provider !== adapter.connector || !c.accountId) continue;
+      clientHealthByAccount[c.accountId] = inferConnectionHealth({
+        hasCredential: true,
+        status: c.status,
+        lastSyncAt: c.lastSync,
+        pollIntervalMinutes: c.pollIntervalMinutes,
+        nowMs,
+      });
+    }
+  }
+
+  const backendConfigured = Boolean(process.env.INTEGRATION_SERVICE_URL?.trim());
+  const sourceNote = backendConfigured
+    ? ""
+    : "Credential custody backend isn't configured in this environment yet — registering will save nothing.";
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Client mapping"
-        description={`Map ${adapter.label} ${adapter.unitNoun}s onto Imperion accounts.`}
+        description={`Map ${adapter.label} ${adapter.unitNoun}s onto Imperion accounts.${
+          adapter.bindsConnection
+            ? ` ${adapter.label} uses a per-client credential — register each client's credential below; the dot on each row shows its connection health.`
+            : ""
+        }`}
       />
+      {adapter.bindsConnection && adapter.connector === "m365" && (
+        <ClientCredentialForm
+          accounts={accountOpts}
+          canSubmit={backendConfigured}
+          sourceNote={sourceNote}
+          registerAction={registerClientM365Action}
+        />
+      )}
+      {adapter.bindsConnection && adapter.connector === "unifi" && (
+        <ClientUnifiCredentialForm
+          accounts={accountOpts}
+          canSubmit={backendConfigured}
+          sourceNote={sourceNote}
+          registerAction={registerClientUnifiAction}
+        />
+      )}
       <ClientMappingPanel
         adapter={adapter}
         units={units}
         accounts={accounts}
+        clientHealthByAccount={adapter.bindsConnection ? clientHealthByAccount : undefined}
         linkAction={linkClientMappingAction}
         unlinkAction={unlinkClientMappingAction}
       />

@@ -3,6 +3,8 @@ import {
   suggestAccountForUnit,
   type ClientMappingAdapter,
 } from "@/lib/integrations/client-mapping";
+import { HealthDot } from "@/components/integrations/health-dot";
+import type { HealthVerdict } from "@/lib/integrations/connection-health";
 
 function AccountSelect({ accounts }: { accounts: Account[] }) {
   return (
@@ -36,15 +38,20 @@ export function ClientMappingPanel({
   adapter,
   units,
   accounts,
+  clientHealthByAccount,
   linkAction,
   unlinkAction,
 }: {
   adapter: ClientMappingAdapter;
   units: ClientMappingUnit[];
   accounts: Account[];
+  /** Per-account inferred health for per-client-credential connectors (ADR-0122 S3a); the dot
+   *  on each mapped row. Absent for fan-out adapters (no per-client credential to be healthy). */
+  clientHealthByAccount?: Record<string, HealthVerdict>;
   linkAction: (formData: FormData) => void | Promise<void>;
   unlinkAction: (formData: FormData) => void | Promise<void>;
 }) {
+  const showHealth = clientHealthByAccount != null;
   const mapped = units.filter((u) => u.mappedAccountId);
   const unmapped = units.filter((u) => !u.mappedAccountId);
 
@@ -125,6 +132,7 @@ export function ClientMappingPanel({
                 <tr className="text-left text-xs text-dim">
                   <th className="py-1.5 pr-4 font-medium">{adapter.label} {adapter.unitNoun}</th>
                   <th className="py-1.5 pr-4 font-medium">Account</th>
+                  {showHealth && <th className="py-1.5 pr-4 font-medium">Health</th>}
                   <th className="py-1.5 font-medium" />
                 </tr>
               </thead>
@@ -136,6 +144,15 @@ export function ClientMappingPanel({
                       <span className="font-mono text-[11px] text-dim">{u.sourceKey}</span>
                     </td>
                     <td className="py-2 pr-4">{u.mappedAccountName ?? "—"}</td>
+                    {showHealth && (
+                      <td className="py-2 pr-4">
+                        {u.mappedAccountId && clientHealthByAccount?.[u.mappedAccountId] ? (
+                          <HealthDot health={clientHealthByAccount[u.mappedAccountId]} />
+                        ) : (
+                          <span className="text-xs text-dim">No credential</span>
+                        )}
+                      </td>
+                    )}
                     <td className="py-2 text-right">
                       <form action={unlinkAction}>
                         <input type="hidden" name="connector" value={adapter.connector} />
