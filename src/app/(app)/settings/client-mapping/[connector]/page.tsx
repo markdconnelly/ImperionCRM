@@ -14,7 +14,7 @@ import {
   type HealthVerdict,
 } from "@/lib/integrations/connection-health";
 import { linkClientMappingAction, unlinkClientMappingAction } from "../actions";
-import { registerClientM365Action } from "../../actions";
+import { purgeCredentialAction, registerClientM365Action } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +107,7 @@ export default async function ClientMappingPage({
         registeredCredentials={adapter.bindsConnection ? registeredCredentials : undefined}
         linkAction={linkClientMappingAction}
         unlinkAction={unlinkClientMappingAction}
+        purgeAction={purgeCredentialAction}
       />
     </div>
   );

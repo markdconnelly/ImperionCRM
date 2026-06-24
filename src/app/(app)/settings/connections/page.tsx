@@ -27,7 +27,7 @@ import { QBO_CONNECT_NOTICES, isQboConnectResult } from "@/lib/integrations/qbo-
 import {
   connectDocusignAction,
   connectQuickBooksAction,
-  disconnectAction,
+  purgeCredentialAction,
   refreshNowAction,
   saveCredentialAction,
   setPollIntervalAction,
@@ -186,7 +186,7 @@ export default async function ConnectionsPage({
                 connectAction={connectQuickBooksAction}
                 consentAction={model.key === "docusign" ? connectDocusignAction : undefined}
                 testAction={model.key === "docusign" ? testDocusignConnectionAction : undefined}
-                disconnectAction={disconnectAction}
+                disconnectAction={purgeCredentialAction}
                 pollAction={setPollIntervalAction}
                 refreshAction={refreshNowAction}
               />
