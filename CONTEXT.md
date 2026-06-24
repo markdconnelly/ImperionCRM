@@ -248,7 +248,8 @@ The secret material (API key, OAuth token, certificate) for a Connection, held i
 Key Vault. The DB and GUI only ever see its Key Vault *name*. Naming grammar
 (provider-always-3rd, canonical):
 `conn-<scope>-<provider>[-<discriminator>]` — e.g. `conn-company-autotask`,
-`conn-client-m365-<tenantId>`, `conn-client-unifi-<consoleId>`. Non-conforming legacy:
+`conn-company-unifi` (one MSP-wide Site Manager key, #1278), `conn-client-m365-<tenantId>`.
+Non-conforming legacy:
 `kv://imperion/conn/*` placeholder refs (a frontend fallback bug — point at no real
 secret) and user-scope `conn-<userId>-<provider>` (deferred to the `/profile` rework).
 _Avoid_: secret (unqualified), token (one kind of credential), key vault ref (that is the name only)
@@ -256,9 +257,11 @@ _Avoid_: secret (unqualified), token (one kind of credential), key vault ref (th
 **Credential Scope vs Data Mapping** (the two independent axes):
 *Credential scope* (above) decides how many secrets a Connector needs. *Data mapping*
 (Client Mapping) decides whether ingested data must be bound to accounts. They are
-orthogonal: Autotask = company credential **but** per-client data mapping; M365/UniFi =
-client credential **and** per-client data mapping (so the credential is entered on the
-client-mapping row); QBO/Apollo/Meta/DocuSign = company credential, no client mapping.
+orthogonal: Autotask **and UniFi** = company credential **but** per-client data mapping
+(UniFi's cloud Site Manager key is MSP-wide — one key enumerates every client's sites, so the
+key is entered once on the card and each site is mapped to an account, #1278); M365 = client
+credential **and** per-client data mapping (the credential is entered on the client-mapping
+row); QBO/Apollo/Meta/DocuSign = company credential, no client mapping.
 _Avoid_: conflating "per-client connector" to mean both at once
 
 **Connections Page** (`/settings/connections`):

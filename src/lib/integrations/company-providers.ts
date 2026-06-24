@@ -335,4 +335,29 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
       },
     ],
   },
+  {
+    // UniFi is a COMPANY credential (ADR-0122 amendment, #1278): the Site Manager API key is
+    // MSP-wide — one key enumerates EVERY client's sites/consoles/devices. So it is entered once
+    // here (Autotask pattern: company credential + per-client data mapping), not per console.
+    key: "unifi",
+    label: "UniFi",
+    icon: "Wifi",
+    kind: "credential",
+    category: "Network",
+    description:
+      "Ubiquiti UniFi Site Manager API (cloud, api.ui.com) — ONE MSP-wide API key that enumerates " +
+      "every managed client's sites, consoles, and devices. Custodied as conn-company-unifi; map " +
+      "each discovered site to its account under Client mapping (UniFi).",
+    scopes: ["sites:read", "devices:read"],
+    fields: [
+      {
+        name: "apiKey",
+        label: "API key",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "UniFi Site Manager API key (unifi.ui.com → Settings → API). One key covers all your clients.",
+      },
+    ],
+  },
 ];

@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { ClientMappingPanel } from "@/components/settings/client-mapping-panel";
 import { ClientCredentialForm } from "@/components/settings/client-credential-form";
-import { ClientUnifiCredentialForm } from "@/components/settings/client-unifi-credential-form";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeSettings } from "@/lib/auth/roles";
@@ -15,7 +14,7 @@ import {
   type HealthVerdict,
 } from "@/lib/integrations/connection-health";
 import { linkClientMappingAction, unlinkClientMappingAction } from "../actions";
-import { registerClientM365Action, registerClientUnifiAction } from "../../actions";
+import { registerClientM365Action } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -98,14 +97,6 @@ export default async function ClientMappingPage({
           canSubmit={backendConfigured}
           sourceNote={sourceNote}
           registerAction={registerClientM365Action}
-        />
-      )}
-      {adapter.bindsConnection && adapter.connector === "unifi" && (
-        <ClientUnifiCredentialForm
-          accounts={accountOpts}
-          canSubmit={backendConfigured}
-          sourceNote={sourceNote}
-          registerAction={registerClientUnifiAction}
         />
       )}
       <ClientMappingPanel
