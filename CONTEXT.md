@@ -262,11 +262,14 @@ client-mapping row); QBO/Apollo/Meta/DocuSign = company credential, no client ma
 _Avoid_: conflating "per-client connector" to mean both at once
 
 **Connections Page** (`/settings/connections`):
-The single admin surface for `company`- and `client`-scope Connections. One card per
-Connector, each with a **pre-credential** state (not yet configured) and a
-**post-credential** state (status + health + what it ingests + poll cadence). Absorbs the
-retired `/settings/credentials` registry table and replaces the deleted
-`/settings/tenant-mapping`.
+The single admin surface for `company`- and `client`-scope Connections. **One card per
+Connector** in **one category-grouped grid** (ADR-0122 S5, #1269 — not two stacked grids):
+each card unions the Connector's credential half (the secret form / OAuth consent) and its
+catalog half (lifecycle status + cadence + client-mapping chain), so a Connector that is both
+(Autotask) appears once, not twice. Each card has a **pre-credential** state (not yet
+configured, or **Planned**) and a **post-credential** state (status + health + what it ingests
++ poll cadence). Absorbs the retired `/settings/credentials` registry table and replaces the
+deleted `/settings/tenant-mapping`.
 _Avoid_: integrations page, credentials page (retired)
 
 **Connection Health**:

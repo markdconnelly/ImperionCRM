@@ -1,25 +1,24 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
-import { ConnectorCatalog } from "@/components/connectors/connector-catalog";
-import { CompanyCredentialCard } from "@/components/settings/company-credential-card";
+import { ConnectionCard } from "@/components/settings/connection-card";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeSettings } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
-import {
-  listConnectorManifests,
-  getConnectorManifest,
-} from "@/lib/integrations/connector-manifest";
+import { listConnectorManifests } from "@/lib/integrations/connector-manifest";
 import { inferConnectionHealth } from "@/lib/integrations/connection-health";
 import { describeCapabilities } from "@/lib/integrations/ingest-summary";
+import {
+  buildConnectionCards,
+  groupConnectionCards,
+} from "@/lib/integrations/connection-cards";
 import {
   buildConnectorCatalog,
   GLOBAL_SCOPE,
 } from "@/lib/integrations/connector-catalog";
 import {
   connectorChainSteps,
-  isClientScopedConnector,
   type ConnectorChainStep,
 } from "@/lib/integrations/connector-chain";
 import { getClientMappingAdapter } from "@/lib/integrations/client-mapping";
@@ -38,19 +37,19 @@ import {
 export const dynamic = "force-dynamic"; // live credential + instance state, never prerendered
 
 /**
- * Connections — the single admin surface for every system-level connector (#864).
+ * Connections — the single admin surface for every system-level connector (#864, ADR-0122).
  *
- * Consolidates what used to be three overlapping pages (`/connectors`, this page's
- * old "Global connections" view, and the `/settings` Company-credentials tab) into ONE
- * interactive page, per Mark (2026-06-17):
+ * ONE card per connector in ONE category-grouped grid (ADR-0122 S5, #1269). Each card unions
+ * the two halves a connector can have — they used to be drawn as two stacked grids, so an
+ * Autotask (both a company credential AND a catalog connector) showed up twice:
  *
- *   1. **Company systems** — the interactive credential cards (`COMPANY_PROVIDERS`,
- *      ADR-0036): enter/rotate secrets, grant admin consent (DocuSign/QBO), tune
- *      poll cadence, refresh on demand. Secrets are written to Key Vault by the backend;
- *      only a reference lands on the company `connection` row — never the secret (§5).
- *   2. **Connector catalog** — the marketplace grid (`ConnectorCatalog`, ADR-0076 §4):
- *      status, enable/disable, effective poll cadence for the global-scope connector
- *      instances. No secret is collected here.
+ *   - **Credential** — enter/rotate secrets, grant admin consent (DocuSign/QBO), tune poll
+ *     cadence, refresh on demand. Secrets are written to Key Vault by the backend; only a
+ *     reference lands on the company `connection` row — never the secret (§5).
+ *   - **Catalog** — lifecycle status, enable/disable, effective poll cadence for the
+ *     global-scope connector instance.
+ *   - **Client mapping** — the 4-step chain + "Edit client mappings" for client-scoped
+ *     connectors (E2 #1146). **Planned** connectors render a non-enterable placeholder.
  *
  * Admin-only (`canSeeSettings`, ADR-0030).
  */
@@ -86,8 +85,7 @@ export default async function ConnectionsPage({
 }) {
   const { qbo, qboStatus } = await searchParams;
   const roles = await getSessionRoles();
-  // Admin-only (ADR-0030) — this surface now collects credentials, so it carries the
-  // Settings gate (stricter than the old connectors-only gate).
+  // Admin-only (ADR-0030) — this surface collects credentials, so it carries the Settings gate.
   if (!canSeeSettings(roles)) redirect("/");
 
   const { connections, connectors } = getRepositories();
@@ -95,55 +93,44 @@ export default async function ConnectionsPage({
     connections.listCompanyConnections(),
     connectors.listConnectorInstances(),
   ]);
-  const companyByProvider = new Map(company.map((c) => [c.provider, c]));
   const nowMs = Date.now(); // single render clock for all inferred-health verdicts (ADR-0122 S2)
   // buildConnectorCatalog defaults to GLOBAL_SCOPE — only global-scope instances join.
   const entries = buildConnectorCatalog(listConnectorManifests(), instances, GLOBAL_SCOPE);
 
-  // Client-mapping pipeline chain per client-scoped connector (E2 #1146). The discovery/mapping
-  // counts come from the same whitelisted bronze⋈entity_xref read the mapping page uses, so only
-  // connectors with a wired adapter (autotask today; m365/F later) incur a query — the rest report
-  // unknown counts and the chain shows them as pending, never a false green.
-  const clientScoped = entries.filter((e) => isClientScopedConnector(e.manifest.key));
+  // The unified card list: every connector exactly once, the company-credential and catalog
+  // halves merged (ADR-0122 S5). Grouped by category for the single grid.
+  const cards = buildConnectionCards(COMPANY_PROVIDERS, company, entries);
+  const groups = groupConnectionCards(cards);
+
+  // Client-mapping pipeline chain per client-scoped connector with a catalog entry (E2 #1146).
+  // The discovery/mapping counts come from the same whitelisted bronze⋈entity_xref read the
+  // mapping page uses, so only connectors with a wired adapter (autotask today) incur a query.
+  const clientScopedEntries = cards.filter((c) => c.clientScoped && c.entry !== null);
   const summaries = await Promise.all(
-    clientScoped.map(async (e) => {
-      const adapter = getClientMappingAdapter(e.manifest.key);
-      if (!adapter) return [e.manifest.key, null] as const;
+    clientScopedEntries.map(async (c) => {
+      const adapter = getClientMappingAdapter(c.key);
+      if (!adapter) return [c.key, null] as const;
       const units = await connections.listClientMappingUnits(adapter.sourceSystem);
       return [
-        e.manifest.key,
+        c.key,
         { discovered: units.length, mapped: units.filter((u) => u.mappedAccountId).length },
       ] as const;
     }),
   );
   const summaryByKey = new Map(summaries);
-
-  // Inferred health per catalog connector (ADR-0122 S2) — same verdict the company cards use,
-  // so the health language is identical across both grids.
-  const catalogHealth: Record<string, ReturnType<typeof inferConnectionHealth>> = {};
-  for (const e of entries) {
-    const cred = companyByProvider.get(e.manifest.key) ?? null;
-    catalogHealth[e.manifest.key] = inferConnectionHealth({
-      hasCredential: e.connected || cred != null,
-      status: e.instance?.status ?? cred?.status ?? null,
-      lastSyncAt: e.instance?.lastSyncAt ?? cred?.lastSync ?? null,
-      pollIntervalMinutes: e.effectiveCadenceMinutes,
-      nowMs,
-    });
-  }
-
   const chains: Record<string, ConnectorChainStep[]> = {};
-  for (const e of clientScoped) {
-    const cred = companyByProvider.get(e.manifest.key) ?? null;
-    const summary = summaryByKey.get(e.manifest.key) ?? null;
-    chains[e.manifest.key] = connectorChainSteps({
-      hasCredential: e.connected || !!cred?.keyvaultSecretRef,
-      instanceStatus: e.instance?.status ?? null,
-      lastSyncAt: e.instance?.lastSyncAt ?? cred?.lastSync ?? null,
+  for (const c of clientScopedEntries) {
+    const summary = summaryByKey.get(c.key) ?? null;
+    chains[c.key] = connectorChainSteps({
+      hasCredential: (c.entry?.connected ?? false) || !!c.connection?.keyvaultSecretRef,
+      instanceStatus: c.entry?.instance?.status ?? null,
+      lastSyncAt: c.entry?.instance?.lastSyncAt ?? c.connection?.lastSync ?? null,
       unitsDiscovered: summary ? summary.discovered : null,
       unitsMapped: summary ? summary.mapped : null,
     });
   }
+
+  const connectedCount = entries.filter((e) => e.connected).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -152,66 +139,61 @@ export default async function ConnectionsPage({
         description="Every org-wide integration in one place — enter and rotate credentials, grant admin consent, tune poll cadence. Secrets are custodied in Key Vault by the backend; this surface never stores a secret itself."
       >
         <span className="flex items-center gap-1 text-xs text-dim">
-          <Icon name="Plug" size={11} /> {entries.filter((e) => e.connected).length} connected
+          <Icon name="Plug" size={11} /> {connectedCount} connected
         </span>
       </PageHeader>
 
-      {/* ── Company systems — the interactive credential / consent cards ───────── */}
-      <section className="flex flex-col gap-3">
-        <div>
-          <h3 className="font-display text-sm font-semibold tracking-tight">Company systems</h3>
-          <p className="mt-0.5 text-sm text-dim">
-            Org-wide credentials for the integration engines. Secrets are written to Key
-            Vault by the backend — only a reference is stored here, never the secret itself.
-          </p>
-        </div>
-        <QboConnectNotice qbo={qbo} status={qboStatus} />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {COMPANY_PROVIDERS.map((p) => {
-            const cred = companyByProvider.get(p.key) ?? null;
-            const manifest = getConnectorManifest(p.key);
-            // Inferred health (ADR-0122 S2) — computed server-side so the dot never flaps on a
-            // client/server clock mismatch. No row → "Not configured" (the pre-credential state).
-            const health = inferConnectionHealth({
-              hasCredential: cred != null,
-              status: cred?.status ?? null,
-              lastSyncAt: cred?.lastSync ?? null,
-              pollIntervalMinutes: cred?.pollIntervalMinutes ?? null,
-              nowMs,
-            });
-            return (
-            <CompanyCredentialCard
-              key={p.key}
-              provider={p}
-              connection={cred}
-              health={health}
-              capabilities={manifest ? describeCapabilities(manifest.capabilities) : null}
-              saveAction={saveCredentialAction}
-              connectAction={connectQuickBooksAction}
-              consentAction={p.key === "docusign" ? connectDocusignAction : undefined}
-              testAction={p.key === "docusign" ? testDocusignConnectionAction : undefined}
-              disconnectAction={disconnectAction}
-              pollAction={setPollIntervalAction}
-              refreshAction={refreshNowAction}
-              refreshable={isRefreshable(p.key)}
-            />
-            );
-          })}
-        </div>
-      </section>
+      <QboConnectNotice qbo={qbo} status={qboStatus} />
 
-      {/* ── Connector catalog — status / enable / cadence (no secrets) ─────────── */}
-      <section className="flex flex-col gap-3">
-        <div>
-          <h3 className="font-display text-sm font-semibold tracking-tight">Connector catalog</h3>
-          <p className="mt-0.5 text-sm text-dim">
-            The marketplace of org-scope data connectors and their custody status — enable,
-            tune poll cadence, or disable each. Credentials for a connector are entered in
-            Company systems above; this grid never stores a secret.
-          </p>
-        </div>
-        <ConnectorCatalog entries={entries} chains={chains} health={catalogHealth} />
-      </section>
+      <div className="flex items-start gap-2 rounded-md border border-border bg-panel-2 px-3 py-2 text-xs text-dim">
+        <Icon name="ShieldCheck" size={13} className="mt-0.5 shrink-0 text-accent" />
+        <span>
+          One card per connector. Enter company credentials directly on the card; for
+          per-client connectors (Microsoft 365, UniFi) the credential is entered on each row of{" "}
+          <span className="text-text">Client mapping</span>. Secrets are custodied in Key Vault by
+          the backend — this surface only ever holds a reference, never the secret itself.
+        </span>
+      </div>
+
+      {groups.map((group) => (
+        <section key={group.category} className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-dim">
+            {group.category}
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {group.cards.map((model) => (
+              <ConnectionCard
+                key={model.key}
+                model={model}
+                health={inferConnectionHealth({
+                  hasCredential: model.connection != null || (model.entry?.connected ?? false),
+                  status: model.connection?.status ?? model.entry?.instance?.status ?? null,
+                  lastSyncAt:
+                    model.connection?.lastSync ?? model.entry?.instance?.lastSyncAt ?? null,
+                  pollIntervalMinutes:
+                    model.connection?.pollIntervalMinutes ??
+                    model.entry?.effectiveCadenceMinutes ??
+                    null,
+                  nowMs,
+                })}
+                capabilities={
+                  model.entry ? describeCapabilities(model.entry.manifest.capabilities) : null
+                }
+                chain={chains[model.key]}
+                refreshable={isRefreshable(model.key)}
+                mappingAdapterExists={getClientMappingAdapter(model.key) != null}
+                saveAction={saveCredentialAction}
+                connectAction={connectQuickBooksAction}
+                consentAction={model.key === "docusign" ? connectDocusignAction : undefined}
+                testAction={model.key === "docusign" ? testDocusignConnectionAction : undefined}
+                disconnectAction={disconnectAction}
+                pollAction={setPollIntervalAction}
+                refreshAction={refreshNowAction}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
