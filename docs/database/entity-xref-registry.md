@@ -88,6 +88,22 @@ it moves **0 rows now** and lights up as the connector syncs hydrate it (deploy-
 rest of the spine). The remaining merge-lineage backfills stay later #1049 slices; the resolver
 function above is now stable so they can land behind a consistent read contract.
 
+## Live write paths (going forward)
+
+Backfill seeds history; new identities enter the spine as they are curated:
+
+- **M365 client credential registration (#1286).** Registering a client tenant's M365 app
+  credential on `/settings/client-mapping/m365` (`registerClientM365Action`) now **auto-maps**
+  the tenant on success — it mirrors the client-mapping dual-write (ADR-0112): the `entity_xref`
+  account link via the backend (the authority) **and** the legacy `account_tenant` row (the join
+  key the posture rollups + the on-prem pipeline read, #1049). The admin already binds
+  account↔tenant on the form, so no separate mapping step is needed: the on-prem 365/Azure
+  collectors discover the tenant on their next run (they fail closed on an unmapped tenant —
+  `ImperionPipeline/Private/ImperionContext.ps1`). Both writes are best-effort (the credential is
+  already custodied) and idempotent (re-saving a rotated secret just refreshes the mapping).
+- **Manual curation.** `linkClientMappingAction` / `unlinkClientMappingAction` write the same
+  pair for any connector unit an admin maps by hand on the client-mapping screen.
+
 ## Data-quality autonomy gate (#1113, migration 0194 — epic #1049 pillar 3, FINAL slice)
 
 Resolving the right entity (#1111) and knowing what was true/believed when (#1112) is not enough
