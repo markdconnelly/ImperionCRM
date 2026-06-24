@@ -49,6 +49,7 @@ export interface ConnectionCardModel {
 const CATEGORY_ORDER: readonly string[] = [
   "PSA",
   "Productivity",
+  "Network",
   "Documentation",
   "Sales",
   "Finance",

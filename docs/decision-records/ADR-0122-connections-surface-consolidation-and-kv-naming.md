@@ -135,3 +135,28 @@ its bronze hydrates. Pure selection helper `selectRegisteredClientCredentials`
 (`src/lib/integrations/client-mapping.ts`). Separate backend defects found in the same diagnosis
 (non-canonical `conn-client-<id>-<provider>` name + null `external_account_id` from
 `registerClientM365`) are tracked in ImperionCRM_Backend#383.
+
+## Amendment — UniFi is a company credential, not per-client (2026-06-24, #1278)
+
+Decision §3/§4 and the seeding worklist classified **UniFi** as a *client* credential
+(`conn-client-unifi-<consoleId>`, entered per console on the client-mapping row). That was the
+**on-prem** assumption (each controller has its own Network Integration API key).
+
+The reality (Mark, 2026-06-24): the **cloud Site Manager API** key (`api.ui.com`,
+https://developer.ui.com/site-manager/v1.0.0/gettingstarted) is **MSP-wide** — one key
+enumerates **every** managed client's sites, consoles, and devices. So UniFi is a **company**
+credential with **per-client data mapping** — the **Autotask cell** of the credential-scope ⟂
+data-mapping matrix, not the M365 cell. **Cloud-only**: the per-client on-prem Console path is
+dropped.
+
+**Changes:**
+- UniFi is a **company provider** (`company-providers.ts`, one `apiKey` field) **and** a
+  connector manifest (`connector-manifest.ts`, category Network) → one Autotask-style card on
+  `/settings/connections`: enter the global key once + "Edit client mappings".
+- Credential name is `conn-company-unifi` (was `conn-client-unifi-<consoleId>`).
+- The `unifi` client-mapping adapter is `bindsConnection: false` (mapping-only, unit = "site");
+  the per-client UniFi credential form is removed from the mapping screen.
+- Backend: `unifi` added to the company `CREDENTIAL_PROVIDERS` allowlist (BE #386). LocalPipeline:
+  the collector uses the one company key + enumerates all sites via the Site Manager API (LP #321).
+- The now-dead per-client UniFi custody path (FE `ClientUnifiCredentialForm` /
+  `registerClientUnifiAction`, backend `client-unifi` endpoint) is retired in a follow-up.

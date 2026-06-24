@@ -154,6 +154,22 @@ export const CONNECTOR_MANIFESTS: readonly ConnectorManifest[] = [
     capabilities: ["enrich:contacts"],
     version: 1,
   },
+  {
+    // UniFi — a COMPANY credential mapped per client (ADR-0122 amendment, #1278). The cloud Site
+    // Manager API key (api.ui.com) is MSP-wide: one key enumerates every client's sites/devices.
+    // Credential lives in company-providers.ts (conn-company-unifi); this is its catalog shape.
+    key: "unifi",
+    label: "UniFi",
+    description: "Ubiquiti UniFi Site Manager (cloud) — network sites, consoles, and devices across all managed clients from one MSP-wide key.",
+    category: "Network",
+    icon: "Wifi",
+    authType: "api_key",
+    scopes: ["sites:read", "devices:read"],
+    defaultCadenceMinutes: 1440,
+    identityMap: ["device", "account"],
+    capabilities: ["ingest:sites", "ingest:devices"],
+    version: 1,
+  },
   // ── Planned connectors (ADR-0122, epic #1256 S4) — expected sources whose backend store
   //    isn't built yet. They render as non-enterable "Planned" cards so the catalog is the
   //    complete map of everything Imperion pulls. Azure is NOT here — it folds into M365.

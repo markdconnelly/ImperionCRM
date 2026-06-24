@@ -42,9 +42,10 @@ describe("getClientMappingAdapter", () => {
     }
   });
 
-  it("UniFi is a per-client credential (binds connection); the fan-out sources do not", () => {
-    expect(getClientMappingAdapter("unifi")?.bindsConnection).toBe(true);
-    for (const key of ["itglue", "pax8", "quotemanager", "televy", "myitprocess"]) {
+  it("only M365 binds a per-client credential; the rest (incl. UniFi, now company-cred) do not (#1278)", () => {
+    expect(getClientMappingAdapter("m365")?.bindsConnection).toBe(true);
+    // UniFi moved to a COMPANY credential (one MSP Site Manager key) → mapping-only, no bind.
+    for (const key of ["itglue", "pax8", "quotemanager", "televy", "myitprocess", "unifi"]) {
       expect(getClientMappingAdapter(key)?.bindsConnection, key).toBe(false);
     }
   });

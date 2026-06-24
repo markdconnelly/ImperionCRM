@@ -86,14 +86,16 @@ export const CLIENT_MAPPING_ADAPTERS: Record<string, ClientMappingAdapter> = {
     unitNoun: "account",
     bindsConnection: false,
   },
-  // UniFi is a per-client credential (one console per client), so the link also binds the
-  // `connection` row's account (unit D). Units are consoles/sites derived from `unifi_devices`.
+  // UniFi is a COMPANY credential mapped per client (ADR-0122 amendment, #1278): the cloud Site
+  // Manager API key is MSP-wide (one key → all clients), so it is NOT per-client — entered once on
+  // the connections card, then each discovered site is mapped here (Autotask pattern). Units are
+  // sites/consoles derived from `unifi_devices`. `bindsConnection: false` → no per-client cred form.
   unifi: {
     connector: "unifi",
     sourceSystem: "unifi",
     label: "UniFi",
-    unitNoun: "console",
-    bindsConnection: true,
+    unitNoun: "site",
+    bindsConnection: false,
   },
 };
 
