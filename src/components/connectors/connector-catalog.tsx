@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
+import { HealthDot } from "@/components/integrations/health-dot";
+import type { HealthVerdict } from "@/lib/integrations/connection-health";
 import {
   groupCatalogByCategory,
   cadenceLabel,
@@ -81,9 +83,11 @@ function ChainIcons({ steps }: { steps: ConnectorChainStep[] }) {
 function ConnectorCard({
   entry,
   chain,
+  healthVerdict,
 }: {
   entry: ConnectorCatalogEntry;
   chain?: ConnectorChainStep[];
+  healthVerdict?: HealthVerdict;
 }) {
   const { manifest, instance, connected, effectiveCadenceMinutes } = entry;
   const health = instance ? healthSummary(instance.health) : null;
@@ -102,6 +106,9 @@ function ConnectorCard({
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-semibold text-text">{manifest.label}</h3>
             <StatusBadge entry={entry} />
+            {healthVerdict && (
+              <HealthDot health={healthVerdict} showLabel={false} className="ml-auto" />
+            )}
           </div>
           <p className="mt-0.5 text-xs leading-relaxed text-dim">{manifest.description}</p>
         </div>
@@ -226,9 +233,12 @@ function ConnectorCard({
 export function ConnectorCatalog({
   entries,
   chains,
+  health,
 }: {
   entries: ConnectorCatalogEntry[];
   chains?: Record<string, ConnectorChainStep[]>;
+  /** Inferred health verdict per connector key (ADR-0122 S2). */
+  health?: Record<string, HealthVerdict>;
 }) {
   const groups = groupCatalogByCategory(entries);
 
@@ -255,6 +265,7 @@ export function ConnectorCatalog({
                 key={entry.manifest.key}
                 entry={entry}
                 chain={chains?.[entry.manifest.key]}
+                healthVerdict={health?.[entry.manifest.key]}
               />
             ))}
           </div>

@@ -3,21 +3,16 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { PollFrequency } from "@/components/integrations/poll-frequency";
+import { HealthDot } from "@/components/integrations/health-dot";
 import { credentialCardState } from "@/lib/integrations/credential-card-state";
 import {
   providerIsPollable,
   type CompanyProvider,
 } from "@/lib/integrations/company-providers";
+import type { HealthVerdict } from "@/lib/integrations/connection-health";
+import type { CapabilitySummary } from "@/lib/integrations/ingest-summary";
 import type { DocusignTestResult, DocusignTestTone } from "@/lib/integrations/docusign-test";
 import type { ConnectionRow } from "@/types";
-
-const STATUS_TONE: Record<string, string> = {
-  active: "text-green",
-  pending: "text-amber",
-  expired: "text-amber",
-  revoked: "text-red",
-  error: "text-red",
-};
 
 const TEST_TONE: Record<DocusignTestTone, string> = {
   green: "text-green",
@@ -36,6 +31,8 @@ const TEST_TONE: Record<DocusignTestTone, string> = {
 export function CompanyCredentialCard({
   provider,
   connection,
+  health,
+  capabilities,
   saveAction,
   connectAction,
   disconnectAction,
@@ -47,6 +44,10 @@ export function CompanyCredentialCard({
 }: {
   provider: CompanyProvider;
   connection: ConnectionRow | null;
+  /** Inferred health verdict (server-computed, ADR-0122 S2); null when no manifest/health. */
+  health?: HealthVerdict | null;
+  /** What this connector ingests/writes/enriches, from its manifest (ADR-0122 S2). */
+  capabilities?: CapabilitySummary | null;
   saveAction: (formData: FormData) => void | Promise<void>;
   /** Consent-connect action for a `kind: "consent"` provider (QuickBooks OAuth). */
   connectAction: (formData: FormData) => void | Promise<void>;
@@ -88,14 +89,34 @@ export function CompanyCredentialCard({
             <p className="text-xs text-dim">{statusLabel}</p>
           </div>
         </div>
-        {configured && (
-          <span className={`text-xs font-medium ${STATUS_TONE[connection.status] ?? "text-dim"}`}>
-            {connection.status}
-          </span>
+        {health ? (
+          <HealthDot health={health} />
+        ) : (
+          configured && <span className="text-xs font-medium text-dim">{connection.status}</span>
         )}
       </div>
 
       <p className="text-xs leading-relaxed text-dim">{provider.description}</p>
+
+      {/* What this connector pulls in — highlights the ingested items (ADR-0122 S2). */}
+      {capabilities && capabilities.ingests.length > 0 && (
+        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-[11px]">
+          <span className="font-medium text-dim">Ingests</span>
+          {capabilities.ingests.map((n) => (
+            <span
+              key={n}
+              className="rounded border border-border bg-panel-2 px-1.5 py-0.5 text-[10px] text-dim"
+            >
+              {n}
+            </span>
+          ))}
+        </div>
+      )}
+      {capabilities && capabilities.ingests.length === 0 && capabilities.enriches.length > 0 && (
+        <p className="text-[11px] text-dim">
+          <span className="font-medium">Enriches:</span> {capabilities.enriches.join(", ")}
+        </p>
+      )}
 
       {configured && (
         <dl className="flex flex-col gap-0.5 text-[11px] text-dim">
