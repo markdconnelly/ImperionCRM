@@ -2,8 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   CLIENT_MAPPING_ADAPTERS,
   getClientMappingAdapter,
+  selectRegisteredClientCredentials,
   suggestAccountForUnit,
 } from "./client-mapping";
+
+function conn(over: Partial<Parameters<typeof selectRegisteredClientCredentials>[0][number]>) {
+  return {
+    scope: "client",
+    provider: "m365",
+    accountId: "acc-1",
+    accountName: "IPG",
+    displayName: "IPG-M365",
+    status: "active",
+    ...over,
+  };
+}
 
 describe("getClientMappingAdapter", () => {
   it("resolves the Autotask tracer adapter (fan-out, no connection binding)", () => {
@@ -49,6 +62,42 @@ describe("getClientMappingAdapter", () => {
     for (const [key, adapter] of Object.entries(CLIENT_MAPPING_ADAPTERS)) {
       expect(adapter.connector).toBe(key);
     }
+  });
+});
+
+describe("selectRegisteredClientCredentials", () => {
+  it("surfaces a client credential for the connector (the IPG-before-discovery case, #1271)", () => {
+    const rows = selectRegisteredClientCredentials([conn({})], "m365");
+    expect(rows).toEqual([
+      { accountId: "acc-1", accountName: "IPG", displayName: "IPG-M365", status: "active" },
+    ]);
+  });
+
+  it("filters by connector and to client scope only", () => {
+    const rows = selectRegisteredClientCredentials(
+      [
+        conn({ provider: "m365", accountName: "IPG" }),
+        conn({ provider: "unifi", accountName: "Other" }),
+        conn({ scope: "company", accountName: "CompanyWide" }),
+      ],
+      "m365",
+    );
+    expect(rows.map((r) => r.accountName)).toEqual(["IPG"]);
+  });
+
+  it("skips rows with no owning account (can't show against an account)", () => {
+    expect(selectRegisteredClientCredentials([conn({ accountId: null })], "m365")).toEqual([]);
+  });
+
+  it("falls back to the display name when the account name is absent, sorted by name", () => {
+    const rows = selectRegisteredClientCredentials(
+      [
+        conn({ accountId: "a2", accountName: null, displayName: "Zeta-M365" }),
+        conn({ accountId: "a1", accountName: "Alpha", displayName: null }),
+      ],
+      "m365",
+    );
+    expect(rows.map((r) => r.accountName)).toEqual(["Alpha", "Zeta-M365"]);
   });
 });
 
