@@ -7,6 +7,8 @@ const h = vi.hoisted(() => ({
   requireCapability: vi.fn(),
   revalidatePath: vi.fn(),
   registerClientM365: vi.fn(),
+  link: vi.fn(),
+  upsertTenantMapping: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/guard", () => ({ requireCapability: h.requireCapability }));
@@ -16,9 +18,12 @@ vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 // actions.ts imports `auth` from @/auth (next-auth) at module load; next-auth fails to
 // resolve under vitest, so stub it — registerClientM365Action never calls it.
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/data", () => ({ getRepositories: () => ({}) }));
+vi.mock("@/lib/data", () => ({
+  getRepositories: () => ({ security: { upsertTenantMapping: h.upsertTenantMapping } }),
+}));
 vi.mock("@/lib/data/app-user", () => ({ resolveAppUserIdByEmail: vi.fn() }));
 vi.mock("@/lib/services", () => ({
+  clientMappingService: { link: h.link },
   connectionsService: { registerClientM365: h.registerClientM365 },
   credentialsService: {},
   pipelineService: {},
@@ -64,6 +69,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   h.requireCapability.mockResolvedValue(undefined);
   h.registerClientM365.mockResolvedValue({ connectionId: "conn-1" });
+  h.link.mockResolvedValue(undefined);
+  h.upsertTenantMapping.mockResolvedValue(undefined);
 });
 
 describe("registerClientM365Action", () => {
@@ -157,5 +164,47 @@ describe("registerClientM365Action", () => {
     );
     const r = await registerClientM365Action(fd(validSecret));
     expect(r).toMatchObject({ ok: false, tone: "amber" });
+  });
+
+  it("auto-maps account_tenant + entity_xref on a successful registration (#1286)", async () => {
+    await registerClientM365Action(fd({ ...validSecret, displayName: "IPG — M365" }));
+    expect(h.upsertTenantMapping).toHaveBeenCalledWith({
+      tenantId: TENANT.toLowerCase(),
+      accountId: ACCOUNT,
+      displayName: "IPG — M365",
+    });
+    expect(h.link).toHaveBeenCalledWith({
+      entityType: "account",
+      sourceSystem: "m365",
+      sourceKey: TENANT.toLowerCase(),
+      internalEntityId: ACCOUNT,
+      connectionId: "conn-1",
+    });
+  });
+
+  it("still maps account_tenant when the entity_xref backend isn't configured", async () => {
+    const { ServiceNotConfiguredError } = await import("@/lib/services/external-client");
+    h.link.mockRejectedValueOnce(
+      new ServiceNotConfiguredError("integration", "INTEGRATION_SERVICE_URL"),
+    );
+    const r = await registerClientM365Action(fd(validSecret));
+    expect(r.ok).toBe(true);
+    expect(h.upsertTenantMapping).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not map when validation fails before the backend call", async () => {
+    await registerClientM365Action(fd({ ...validSecret, accountId: "" }));
+    expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+    expect(h.link).not.toHaveBeenCalled();
+  });
+
+  it("does not map when the registration itself fails (501)", async () => {
+    const { ServiceCallError } = await import("@/lib/services/external-client");
+    h.registerClientM365.mockRejectedValueOnce(
+      new ServiceCallError("integration", 501, "not built"),
+    );
+    await registerClientM365Action(fd(validSecret));
+    expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+    expect(h.link).not.toHaveBeenCalled();
   });
 });

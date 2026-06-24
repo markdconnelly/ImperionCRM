@@ -6,13 +6,18 @@ import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
-import { connectionsService, credentialsService, pipelineService } from "@/lib/services";
+import {
+  clientMappingService,
+  connectionsService,
+  credentialsService,
+  pipelineService,
+} from "@/lib/services";
 import {
   callServiceWithFallback,
   classifyServiceError,
   isBackendNotConfigured,
 } from "@/lib/services/call-guard";
-import { ServiceCallError } from "@/lib/services/external-client";
+import { ServiceCallError, ServiceNotConfiguredError } from "@/lib/services/external-client";
 import { docusignTestResult, type DocusignTestResult } from "@/lib/integrations/docusign-test";
 import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
 import { connectorFor } from "@/lib/integrations/connector-registry";
@@ -333,8 +338,38 @@ export async function registerClientM365Action(
     },
   );
 
+  // Auto-map the freshly-registered tenant so the on-prem pipeline can hydrate it on the next
+  // run (#1286). Without this, the credential exists but `account_tenant` has no row, so the LP
+  // 365/Azure collectors fail closed ("tenant not mapped") and the tenant stays invisible in the
+  // mapping panel (which lists only tenants already in entity_xref / posture bronze). The admin
+  // already binds account↔tenant on this form, so mirror the client-mapping dual-write
+  // (ADR-0112): the entity_xref link via the backend (the authority) + the legacy `account_tenant`
+  // row (the join key the posture rollups + LP read, #1049). Both are best-effort — the credential
+  // is already custodied, so a mapping hiccup must never fail the registration — and idempotent, so
+  // re-saving (rotation) just refreshes the mapping.
+  if (outcome.ok) {
+    const lowerTenant = tenantId.toLowerCase();
+    try {
+      await clientMappingService.link({
+        entityType: "account",
+        sourceSystem: "m365",
+        sourceKey: lowerTenant,
+        internalEntityId: accountId,
+        connectionId: outcome.value.connectionId,
+      });
+    } catch (err) {
+      if (!(err instanceof ServiceNotConfiguredError)) throw err;
+    }
+    const { security } = getRepositories();
+    await security.upsertTenantMapping({
+      tenantId: lowerTenant,
+      accountId,
+      displayName: displayName || null,
+    });
+  }
+
   // The M365 registration form lives on the client-mapping screen (ADR-0122 S3a); refresh it so
-  // the new per-client health dot appears.
+  // the new per-client health dot + mapping appear.
   revalidatePath("/settings/client-mapping/m365");
   if (outcome.ok) {
     return {
