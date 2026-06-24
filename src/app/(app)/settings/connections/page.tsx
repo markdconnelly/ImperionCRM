@@ -7,7 +7,12 @@ import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeSettings } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
-import { listConnectorManifests } from "@/lib/integrations/connector-manifest";
+import {
+  listConnectorManifests,
+  getConnectorManifest,
+} from "@/lib/integrations/connector-manifest";
+import { inferConnectionHealth } from "@/lib/integrations/connection-health";
+import { describeCapabilities } from "@/lib/integrations/ingest-summary";
 import {
   buildConnectorCatalog,
   GLOBAL_SCOPE,
@@ -91,6 +96,7 @@ export default async function ConnectionsPage({
     connectors.listConnectorInstances(),
   ]);
   const companyByProvider = new Map(company.map((c) => [c.provider, c]));
+  const nowMs = Date.now(); // single render clock for all inferred-health verdicts (ADR-0122 S2)
   // buildConnectorCatalog defaults to GLOBAL_SCOPE — only global-scope instances join.
   const entries = buildConnectorCatalog(listConnectorManifests(), instances, GLOBAL_SCOPE);
 
@@ -111,6 +117,21 @@ export default async function ConnectionsPage({
     }),
   );
   const summaryByKey = new Map(summaries);
+
+  // Inferred health per catalog connector (ADR-0122 S2) — same verdict the company cards use,
+  // so the health language is identical across both grids.
+  const catalogHealth: Record<string, ReturnType<typeof inferConnectionHealth>> = {};
+  for (const e of entries) {
+    const cred = companyByProvider.get(e.manifest.key) ?? null;
+    catalogHealth[e.manifest.key] = inferConnectionHealth({
+      hasCredential: e.connected || cred != null,
+      status: e.instance?.status ?? cred?.status ?? null,
+      lastSyncAt: e.instance?.lastSyncAt ?? cred?.lastSync ?? null,
+      pollIntervalMinutes: e.effectiveCadenceMinutes,
+      nowMs,
+    });
+  }
+
   const chains: Record<string, ConnectorChainStep[]> = {};
   for (const e of clientScoped) {
     const cred = companyByProvider.get(e.manifest.key) ?? null;
@@ -146,11 +167,25 @@ export default async function ConnectionsPage({
         </div>
         <QboConnectNotice qbo={qbo} status={qboStatus} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {COMPANY_PROVIDERS.map((p) => (
+          {COMPANY_PROVIDERS.map((p) => {
+            const cred = companyByProvider.get(p.key) ?? null;
+            const manifest = getConnectorManifest(p.key);
+            // Inferred health (ADR-0122 S2) — computed server-side so the dot never flaps on a
+            // client/server clock mismatch. No row → "Not configured" (the pre-credential state).
+            const health = inferConnectionHealth({
+              hasCredential: cred != null,
+              status: cred?.status ?? null,
+              lastSyncAt: cred?.lastSync ?? null,
+              pollIntervalMinutes: cred?.pollIntervalMinutes ?? null,
+              nowMs,
+            });
+            return (
             <CompanyCredentialCard
               key={p.key}
               provider={p}
-              connection={companyByProvider.get(p.key) ?? null}
+              connection={cred}
+              health={health}
+              capabilities={manifest ? describeCapabilities(manifest.capabilities) : null}
               saveAction={saveCredentialAction}
               connectAction={connectQuickBooksAction}
               consentAction={p.key === "docusign" ? connectDocusignAction : undefined}
@@ -160,7 +195,8 @@ export default async function ConnectionsPage({
               refreshAction={refreshNowAction}
               refreshable={isRefreshable(p.key)}
             />
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -174,7 +210,7 @@ export default async function ConnectionsPage({
             Company systems above; this grid never stores a secret.
           </p>
         </div>
-        <ConnectorCatalog entries={entries} chains={chains} />
+        <ConnectorCatalog entries={entries} chains={chains} health={catalogHealth} />
       </section>
     </div>
   );
