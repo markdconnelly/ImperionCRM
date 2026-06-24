@@ -86,9 +86,13 @@ to an honest notice and saves nothing.
 ## Related surfaces
 
 - **Account page → Credentials panel** (#906) — the client connections for one account.
-- **Settings → Tenant mapping** (`/settings/client-mapping/m365`, ADR-0112 — the M365 instance of
-  Client Mapping; supersedes the standalone `/settings/tenant-mapping`, which now redirects) —
-  maps M365 Customer Tenants onto accounts (the registry the on-prem estate discovery enumerates).
+- **Settings → Client mapping (M365)** (`/settings/client-mapping/m365`, ADR-0112 — the M365
+  instance of Client Mapping; supersedes the standalone `/settings/tenant-mapping`, which now
+  redirects) — maps M365 Customer Tenants onto accounts (the registry the on-prem estate
+  discovery enumerates) and registers per-client M365 credentials.
+- **Settings → Client mapping (UniFi)** (`/settings/client-mapping/unifi`, #1273) — the UniFi
+  instance: registers per-client UniFi console API keys and maps consoles onto accounts. Reached
+  from its own Settings nav leaf (UniFi has no connector card on `/settings/connections` yet).
 - Credential custody (write) is the backend's job; the on-prem pipeline authenticates the M365
   enterprise app by certificate or secret per this registry (BE #217, LP #234).
 

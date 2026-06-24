@@ -241,6 +241,13 @@ describe("nav group guards + role labels (#794, ADR-0030)", () => {
     }
   });
 
+  test("both client-mapping leaves (M365 + UniFi) are admin-only (#1273)", () => {
+    for (const key of ["settings-client-mapping", "settings-client-mapping-unifi"] as const) {
+      expect(canSeeFeature(key, ["admin"])).toBe(true);
+      expect(canSeeFeature(key, ["support"])).toBe(false);
+    }
+  });
+
   test("per-domain Reports leaves ride their domain group gate", () => {
     expect(canSeeFeature("report-marketing", ["sales"])).toBe(true);
     expect(canSeeFeature("report-sales", ["sales"])).toBe(true);

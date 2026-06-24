@@ -148,6 +148,10 @@ export const navBottom: NavItem[] = [
       { key: "custom-fields", label: "Custom fields", icon: "ListPlus", href: "/custom-fields" },
       { key: "statuses", label: "Statuses", icon: "ListChecks", href: "/settings/statuses" },
       { key: "settings-client-mapping", label: "Client mapping (M365)", icon: "Link2", href: "/settings/client-mapping/m365" },
+      // UniFi is the other per-client-credential connector (#1273). Unlike M365 it has no
+      // connector card on /settings/connections, so without this leaf the UniFi mapping
+      // screen — where per-client console credentials are entered — is URL-only.
+      { key: "settings-client-mapping-unifi", label: "Client mapping (UniFi)", icon: "Link2", href: "/settings/client-mapping/unifi" },
       { key: "settings-connections", label: "Connections", icon: "Plug", href: "/settings/connections" },
       { key: "settings-knowledge", label: "Knowledge", icon: "BrainCircuit", href: "/knowledge" },
       { key: "settings-sla", label: "SLA settings", icon: "Timer", href: "/settings/sla" },
