@@ -28,10 +28,16 @@ disambiguates it with no re-seed needed.
 - Destructive **two-step confirm** (`RemoveCredentialButton`, `src/components/settings/`): first
   click reveals "Confirm / Cancel" — no native dialog primitive exists in the repo.
 - Keyed on the connection **`id`** — the only key that disambiguates a same-account duplicate.
-- **Backend-first, then local** (`purgeCredentialAction`, `src/app/(app)/settings/actions.ts`): an
-  unconfigured backend (501) falls back to the local row delete (a certificate row has no KV secret,
-  so the local delete alone fully clears it); any other backend error keeps the row visible so the
-  operator can retry rather than stranding a live secret in Key Vault.
+- **Backend owns the delete** (`purgeCredentialAction`, `src/app/(app)/settings/actions.ts`): the row
+  delete + KV purge happen entirely in the backend endpoint. The web app's DB role has **no `DELETE`
+  on `connection`** by design (ADR-0042: GUI-only; deletes are a backend process) — so the action
+  never deletes the row itself. An earlier version did a client-side `DELETE` fallback, which threw an
+  uncaught permission error (a 503 that silently blocked every removal, #1284). The action now just
+  calls the backend purge and revalidates; an unconfigured/unreachable backend leaves the row intact
+  for a retry rather than crashing.
+- **Grant dependency:** the backend MI role `mgid-imperioncrmbackendfunction` needs `DELETE ON
+  connection` — added by migration `0202_connection_delete_grant_backend.sql` (#1284). Migration 0047
+  had granted only `SELECT/INSERT/UPDATE`, so the backend purge silently failed until 0202.
 - After purge the page revalidates, so the card/row health flips to "Not configured". Re-entering a
   credential goes through the normal save path.
 
