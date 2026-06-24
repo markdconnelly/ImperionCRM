@@ -295,10 +295,9 @@ export async function registerClientM365Action(
     },
   );
 
-  // The M365 registration form now lives on the client-mapping screen (ADR-0122 S3a); refresh
-  // it (per-client health) plus the registry table on the credentials page.
+  // The M365 registration form lives on the client-mapping screen (ADR-0122 S3a); refresh it so
+  // the new per-client health dot appears.
   revalidatePath("/settings/client-mapping/m365");
-  revalidatePath("/settings/credentials");
   if (outcome.ok) {
     return {
       ok: true,
@@ -381,9 +380,8 @@ export async function registerClientUnifiAction(
     },
   );
 
-  // The UniFi registration form now lives on the client-mapping screen (ADR-0122 S3a).
+  // The UniFi registration form lives on the client-mapping screen (ADR-0122 S3a).
   revalidatePath("/settings/client-mapping/unifi");
-  revalidatePath("/settings/credentials");
   if (outcome.ok) {
     return {
       ok: true,

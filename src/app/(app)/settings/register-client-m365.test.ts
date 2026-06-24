@@ -124,7 +124,7 @@ describe("registerClientM365Action", () => {
       displayName: undefined,
     });
     expect(JSON.stringify(r)).not.toContain("s3cr3t-value");
-    expect(h.revalidatePath).toHaveBeenCalledWith("/settings/credentials");
+    expect(h.revalidatePath).toHaveBeenCalledWith("/settings/client-mapping/m365");
   });
 
   it("sends only the thumbprint for certificate auth (no secret)", async () => {
