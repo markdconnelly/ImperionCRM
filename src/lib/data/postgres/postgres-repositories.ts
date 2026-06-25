@@ -1494,8 +1494,8 @@ export const postgresRepositories: Repositories = {
                -- software CI arm: silver software_ci (an Intune app install on a device;
                -- #652). Owning account required (staff/internal exclusion — software_ci.account_id
                -- resolves through the owning device, so an account-less install can never enter).
-               -- Software is a SUPPORTING asset: no lifecycle signal (always `unknown`, badge
-               -- suppressed) and a flat `low` derived criticality (deriveCriticality), so every
+               -- Software is a SUPPORTING asset: no lifecycle signal (always 'unknown', badge
+               -- suppressed) and a flat 'low' derived criticality (deriveCriticality), so every
                -- signal column is NULL; the four key attributes carry the display facts.
                SELECT 'software'::text,
                       s.id::text,

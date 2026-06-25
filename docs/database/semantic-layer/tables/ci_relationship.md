@@ -7,7 +7,7 @@ description: App-native CMDB relationship layer — a typed, directional edge be
 resource: ../../../decision-records/ADR-0047-device-inventory.md
 tags: [silver, service-desk, cmdb, relationship, overlay, archetype-d, app-native]
 data_class: operational
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-25T00:00:00Z
 ---
 
 # ci_relationship
@@ -35,7 +35,9 @@ is ours, and pushing edges out to **IT Glue is a separate, gated round-trip slic
     (`crm.deriveCiRelationships()`, the same seed the migration runs). v1 derivations are
     limited to the FKs silver actually carries: `device belongs-to account`
     (`device.account_id`), `user belongs-to account` (`contact.account_id`), and
-    `cloud belongs-to account` (`cloud_asset.account_id`, #653). The issue also names
+    `cloud belongs-to account` (`cloud_asset.account_id`, #653), and `software runs-on
+    device` + `software belongs-to account` (`software_ci.device_id` / `.account_id`, #652).
+    The issue also names
     `device assigned-to user` and `cloud → device/service`, but silver carries **no** such
     FK today (`device` migration 0036; `cloud_asset` 0139 has only `account_id`), so those
     derivations are intentionally omitted until the link is added to silver (a future
@@ -54,9 +56,9 @@ is ours, and pushing edges out to **IT Glue is a separate, gated round-trip slic
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | surrogate PK |
-| `from_ci_type` | text | `account` \| `user` \| `device` \| `cloud` (CHECK); the subject of the relation |
+| `from_ci_type` | text | `account` \| `user` \| `device` \| `cloud` \| `software` (CHECK); the subject of the relation |
 | `from_ci_id` | text | CI business key within `from_ci_type` |
-| `to_ci_type` | text | `account` \| `user` \| `device` \| `cloud` (CHECK); the object |
+| `to_ci_type` | text | `account` \| `user` \| `device` \| `cloud` \| `software` (CHECK); the object |
 | `to_ci_id` | text | CI business key within `to_ci_type` |
 | `relation_type` | text | oriented relation read `from → to` (`belongs-to`, `assigned-to`, `depends-on`, …); loose vocabulary, not an enum — the app supplies the pick-list |
 | `source` | `ci_relation_source` enum | `derived` (recomputable) \| `manual` (human-authored, sticky) |
@@ -71,7 +73,8 @@ UPSERTs derived rows without duplicating, and a manual edge of the same shape co
 
 - `(from_ci_type, from_ci_id)` / `(to_ci_type, to_ci_id)` → the `cmdb_ci` union read-model
   (#645) — i.e. silver [`account`](account.md), [`contact`](contact.md) (the `user` CI),
-  [`device`](device.md), or [`cloud_asset`](cloud_asset.md) (the `cloud` CI). Business-key
+  [`device`](device.md), [`cloud_asset`](cloud_asset.md) (the `cloud` CI), or
+  [`software_ci`](software_ci.md) (the `software` CI). Business-key
   joins, **not FKs** (the register is a VIEW/union).
 - **Consumers:** the CI-detail "Relationships" panel + neighbourhood dependency-graph view
   (`/cmdb/<type>/<id>`); later CMDB impact analysis ([#372](https://github.com/markdconnelly/ImperionCRM/issues/372)).
