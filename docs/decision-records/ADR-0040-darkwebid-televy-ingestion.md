@@ -16,6 +16,31 @@ tags: [security-posture]
 | **Date** | 2026-06-08 |
 | **Cross-references** | pipeline ADR-0010 |
 
+## Amendment — 2026-06-24: Dark Web ID auth is HTTP Basic (username + password), not a single API key
+
+The original ingestion assumption — that Dark Web ID authenticates with a single bearer
+API key (`Authorization: Bearer <apiKey>`) — was **WRONG**. The live Kaseya / ID Agent
+Dark Web ID API uses **HTTP Basic Auth (web-services username + Dark Web ID password)**
+plus **IP allowlisting**, against base URL `https://secure.darkwebid.com/`. The username is
+a Dark Web ID web-services user; the password is a Dark Web ID-specific password (separate
+from KaseyaOne). Source: Kaseya help docs (help.darkwebid.kaseya.com, "Enabling API access").
+
+Corrections:
+
+- The `darkwebid` `COMPANY_PROVIDERS` entry now declares **two** fields — `username`
+  (text) + `password` (secret) — replacing the single `apiKey` field.
+- The `conn-company-darkwebid` Key Vault secret now holds a JSON blob `{username, password}`.
+  The backend already custodies company credentials as an opaque `JSON.stringify(fields)` blob,
+  so **no backend change** is required — this PR is purely the credential-shape contract.
+- The calling IP (cloud Pipeline / on-prem LocalPipeline egress) must be allowlisted in
+  Dark Web ID for the API to respond.
+
+The consumers are corrected in companion PRs in their own repos:
+`ImperionCRM_LocalPipelineEnrichment` (on-prem LP collector) and `ImperionCRM_Pipeline`
+(cloud Pipeline client). This amendment supersedes the single-API-key / bearer auth wording
+below in-place; the rest of the decision (the `credential_exposure` silver entity, the bronze
+shape, the merge, the cadence selector) is unchanged.
+
 ## Problem
 
 Two MSP security/assessment sources need to flow into the platform: **Dark Web ID** (Kaseya /

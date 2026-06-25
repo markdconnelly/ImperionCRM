@@ -235,10 +235,27 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     category: "Security",
     description:
       "Kaseya / ID Agent Dark Web ID — dark-web monitoring for compromised credentials tied to " +
-      "your clients' domains. Exposures land as credential-exposure records (ADR-0040).",
+      "your clients' domains. Exposures land as credential-exposure records (ADR-0040). Authenticates " +
+      "with HTTP Basic auth (web-services username + Dark Web ID password) against secure.darkwebid.com; " +
+      "the calling IP must be allowlisted in Dark Web ID.",
     scopes: ["compromises:read"],
     fields: [
-      { name: "apiKey", label: "API key", secret: true, type: "password", required: true },
+      {
+        name: "username",
+        label: "API username",
+        secret: false,
+        type: "text",
+        required: true,
+        placeholder: "your Dark Web ID web-services user",
+      },
+      {
+        name: "password",
+        label: "API password",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "The Dark Web ID-specific password (separate from KaseyaOne). Basic-auth credential; the calling IP must be allowlisted in Dark Web ID.",
+      },
     ],
   },
   {
