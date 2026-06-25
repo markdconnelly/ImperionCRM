@@ -1622,5 +1622,20 @@
     "file": "ADR-0122-connections-surface-consolidation-and-kv-naming.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0123",
+    "title": "Agent-first plumbing, human-first operation, graduated autonomy (v1 build doctrine)",
+    "status": "proposed",
+    "date": "2026-06-24",
+    "tags": [
+      "meta",
+      "agents",
+      "architecture"
+    ],
+    "summary": "Every v1 workflow is engineered as if an agent already ran it live — the agentic/OS plumbing (governed routine + action-catalog entry + grounding + gauntlet/governance hooks + OKF concept refs + agent instruction set + beneficial skills + company knowledge-layer entries + design notes) is designed and wired as part of the feature — but is OPERATED by a human first through a friction-removing GUI and must be human-verified before any agent touches it. Build order is three layers: L1 clean data → L2 GUI+routines (human-operated) → L3 the eight-agent roster lights up the SAME routines. Agents earn per-workflow autonomy only as trust is established (ADR-0121). No workflow is built GUI-only or agent-only. v1.0.0 = every workflow human-verified + eval gate (#186) + Mark sign-off.",
+    "file": "ADR-0123-agent-first-build-doctrine.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
