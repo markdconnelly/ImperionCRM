@@ -226,7 +226,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | board_session (+member/+message/+recommendation) | horizontal | B | op | n/a | Governance — board deliberation |
 | feature_request (+vote/+status_history) | horizontal | B | op | n/a | Engineering — feedback (GitHub-coupled) |
 | domain_owner | horizontal | H | op | n/a | Governance — per concept/domain → the business owner who resolves grounding conflicts (#1035, ADR-0119) |
-| grounding_conflict (+event) | horizontal | H | op | n/a | Governance — canon·company·personal disagreement → domain-owner resolution; never auto-resolved, ledgered (#1035, ADR-0119) |
+| grounding_conflict (+event) | horizontal | H | op | n/a | Governance — canon·company·personal disagreement → domain-owner resolution; never auto-resolved, ledgered; on resolve the correction is written back to canon (okf-sync issue) or company silver (merge directive) — a `writeback` ledger event (#1035, #1217, ADR-0119) |
 | dq_sla | horizontal | H | op | n/a | Governance — data-quality SLA (freshness+completeness) per `data_class`; `entity_dq_gate()` is a fail-closed dispatch gate routing stale/incomplete records to the cockpit (#1113, epic #1049 pillar 3) |
 
 ## Bronze source tables (raw, per-source — archetype inputs)

@@ -21,6 +21,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   listConflicts,
+  listConflictEvents,
   raiseConflict,
   resolveConflict,
 } from "./grounding-conflict";
@@ -177,6 +178,47 @@ describe("resolveConflict", () => {
     const res = await resolveConflict({ groups: [] }, CID, "dismissed");
     expect(res).toBeNull();
     expect(connect).not.toHaveBeenCalled();
+  });
+});
+
+describe("listConflictEvents", () => {
+  it("reads the append-only ledger oldest-first for one conflict, mapping rows", async () => {
+    clientQuery.mockImplementation(async (sql: string) =>
+      sql.includes("FROM grounding_conflict_event")
+        ? {
+            rows: [
+              {
+                id: "e1",
+                conflict_id: CID,
+                actor: "orchestrator",
+                action: "raise",
+                detail: { servedTier: "canon" },
+                at: "2026-06-01",
+              },
+              {
+                id: "e2",
+                conflict_id: CID,
+                actor: UID,
+                action: "writeback",
+                detail: { tier: "canon", target: "canon", externalRef: "https://github.com/x/1" },
+                at: "2026-06-22",
+              },
+            ],
+          }
+        : { rows: [] },
+    );
+    const events = await listConflictEvents(IDENTITY, CID);
+    const select = findSelect("grounding_conflict_event");
+    expect(select[0] as string).toContain("ORDER BY at ASC");
+    expect(select[1] as unknown[]).toEqual([CID]);
+    expect(events.map((e) => e.action)).toEqual(["raise", "writeback"]);
+    expect(events[1].detail.externalRef).toBe("https://github.com/x/1");
+  });
+
+  it("runs inside withIdentity and degrades to [] in mock mode", async () => {
+    getPool.mockReturnValue(null);
+    const events = await listConflictEvents(IDENTITY, CID);
+    expect(events).toEqual([]);
   });
 });
 

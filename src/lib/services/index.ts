@@ -380,6 +380,36 @@ export const agentService = {
       "/orchestration/icm/autonomy",
       { method: "POST", body: JSON.stringify(input), timeoutMs: 30_000 },
     ),
+
+  /**
+   * Execute the grounding-conflict resolution WRITE-BACK (#1217, BE #365, ADR-0119): after a
+   * domain owner RESOLVES a `grounding_conflict` (affirming a `resolution_tier` + free-text
+   * `resolution_note`, via {@link resolveConflictAction}), push the authoritative correction to
+   * the system of record — canon (an okf-sync issue, system CLAUDE.md §11) or company silver (a
+   * merge-correction directive, ADR-0042). Backend-owned by construction (ADR-0042 — the FE
+   * records the decision, the backend runs the cross-plane process; the web role has no write
+   * path into canon docs or sibling merge planes).
+   *
+   * The backend re-reads the resolved row itself (the conflict id is the only input — the
+   * FE-supplied claim text is NEVER trusted), dispatches by `resolution_tier`, and ledgers the
+   * dispatch as a `writeback` event (migration 0203). Idempotent: a second call on an
+   * already-dispatched conflict returns the existing `externalRef` (`dispatched: false`).
+   * Deploy-ahead-safe: when no okf-sync issue filer is wired the canon branch records the
+   * directive with a null `externalRef` (the durable artifact is the ledger row), exactly like
+   * the eval-harvester auto-filer.
+   */
+  resolveGroundingWriteback: (input: { conflictId: string; actingUserId?: string }) =>
+    callService<{
+      conflictId: string;
+      tier: "canon" | "company_silver" | "personal";
+      target: "canon" | "silver" | "none";
+      externalRef: string | null;
+      dispatched: boolean;
+    }>(services.agent, "/agent/grounding/resolve-writeback", {
+      method: "POST",
+      body: JSON.stringify(input),
+      timeoutMs: 30_000,
+    }),
 };
 
 /**

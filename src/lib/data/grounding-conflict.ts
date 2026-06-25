@@ -95,6 +95,59 @@ function mapRow(r: GroundingConflictRow): GroundingConflict {
   };
 }
 
+/** The five accountable actions on a conflict's append-only ledger (migration 0178 + 0203). */
+export type ConflictAction = "raise" | "resolve" | "dismiss" | "reassign" | "writeback";
+
+/** One row of the `grounding_conflict_event` ledger — the accountability trail of a conflict. */
+export interface GroundingConflictEvent {
+  id: string;
+  conflictId: string;
+  actor: string;
+  action: ConflictAction;
+  /** PII-free context jsonb (e.g. `{ tier, target, externalRef }` for a `writeback`). */
+  detail: Record<string, unknown>;
+  at: string;
+}
+
+interface GroundingConflictEventRow {
+  id: string;
+  conflict_id: string;
+  actor: string;
+  action: ConflictAction;
+  detail: Record<string, unknown>;
+  at: string;
+}
+
+/**
+ * The append-only ledger for one conflict, oldest first — the accountability trail surfaced on the
+ * cockpit so an employee can see the raise, the owner's resolution, and the write-back dispatch
+ * (the `writeback` event carries the okf-sync issue URL / silver directive ref in `detail`). Broad
+ * employee read (transparency), like {@link listConflicts}; degrades to `[]` in mock mode.
+ */
+export async function listConflictEvents(
+  identity: IdentityContext,
+  conflictId: string,
+): Promise<GroundingConflictEvent[]> {
+  const rows = await withIdentity(identity, async (client) => {
+    const { rows } = await client.query<GroundingConflictEventRow>(
+      `SELECT id, conflict_id, actor, action, detail, at
+         FROM grounding_conflict_event
+        WHERE conflict_id = $1
+        ORDER BY at ASC`,
+      [conflictId],
+    );
+    return rows;
+  });
+  return (rows ?? []).map((r) => ({
+    id: r.id,
+    conflictId: r.conflict_id,
+    actor: r.actor,
+    action: r.action,
+    detail: r.detail ?? {},
+    at: r.at,
+  }));
+}
+
 /**
  * The conflict queue, newest first. Filter by `status` (default `open` — the actionable set) and/or
  * `domain`. Broad employee read (transparency); the resolve path is what's scoped.
