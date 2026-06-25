@@ -94,6 +94,9 @@ export const navGroups: NavItem[] = [
       { key: "changes", label: "Changes", icon: "GitPullRequestArrow", href: "/changes" },
       { key: "service-desk-sla", label: "SLA dashboard", icon: "Timer", href: "/service-desk/sla" },
       { key: "knowledge", label: "Knowledgebase", icon: "BrainCircuit", href: "/knowledge" },
+      // Grounding-conflict cockpit (#1217, ADR-0119): tri-tier disagreements awaiting a domain
+      // owner's resolution. Broad read (transparency); resolving is owner-scoped at the DB.
+      { key: "grounding-conflicts", label: "Grounding conflicts", icon: "Scale", href: "/knowledge/grounding-conflicts" },
       { key: "sbr", label: "Business Reviews", icon: "CalendarCheck", href: "/sbr" },
     ],
   },
