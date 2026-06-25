@@ -271,8 +271,8 @@
   <div class="hero-stats reveal in d3">
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
-    <div class="hs"><div class="n" id="hero-commits">950+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="170"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n" id="hero-commits">1350+</div><div class="l">commits</div></div>
+    <div class="hs"><div class="n"><span data-count="203"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -320,28 +320,28 @@
     <p class="say reveal d1">A deliberate division of labor: <b>front end = GUI · backend = processes · cloud pipeline = live data · on-prem = heavy lifting.</b></p>
     <div class="repos reveal d2">
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.23.0</span></div>
+        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.25.0</span></div>
         <div class="role">Front end · the GUI</div>
-        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration (now past <b>0170</b>), plus the self-serve reporting BI hub that reads the whole gold layer.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 428 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
+        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration (now past <b>0203</b>), plus the self-serve reporting BI hub and the governed metrics + data-integrity planes that read the whole gold layer.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 713 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.10.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.11.0</span></div>
         <div class="role">Backend · every process</div>
-        <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the AI Board of Directors, the self-hosted Managed-Agents runtime + ICM glass-box approval, OAuth token custody, consent-gated sends, the AR-dunning agent, and per-process cost metering.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 112 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
+        <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the named agent roster summoned by Jarvis, the self-hosted Managed-Agents runtime + ICM glass-box approval, the graduated-autonomy gauntlet, grounding-conflict resolution write-back, OAuth token custody, consent-gated sends, and per-process cost metering.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 238 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Pipeline" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.7.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.8.0</span></div>
         <div class="role">Cloud · live data</div>
-        <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, manifest-driven poll registration from the connector catalog, a source-schema registry that fails loudly on drift, and the bronze→silver merge.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 91 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
+        <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, manifest-driven poll registration from the connector catalog, a source-schema registry that fails loudly on drift, and the live/webhook-driven bronze→silver merge.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 113 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-built">Built · v0.13.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-live">Live · v0.14.0</span></div>
         <div class="role">On-prem · heavy lifting</div>
-        <p>PowerShell 7 scheduled tasks on a home server. Collectors for ten+ sources (now incl. per-client Azure ARM cloud-resource inventory), the medallion transforms, and all vectorization — 700+ tests green, awaiting server bringup.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 224 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
+        <p>PowerShell 7 scheduled tasks, now <b>running on the on-prem host</b>. Collectors for ten+ sources (incl. per-client Azure ARM cloud-resource inventory) are hydrating bronze and silver; the medallion transforms run beside them. All vectorization (the gold embeddings) is the last step still to fire.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 288 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
       </a>
     </div>
     <p class="repos-note reveal d2">Each repo reads and writes the same Postgres — but only the front end owns migrations.</p>
@@ -384,7 +384,7 @@
     </div>
     <div class="flow-note reveal d2">
       <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div>
-      <p><b>Cloud catches the live edge; the home server does the bulk.</b> Webhooks and GDAP checks run in Azure Functions; scheduled bulk loads, transforms, and embeddings run on-prem — all into one shared PostgreSQL 18 + pgvector.</p>
+      <p><b>Cloud catches the live edge; the home server does the bulk.</b> Webhooks and on-demand refreshes run in Azure Functions; scheduled bulk loads, transforms, and embeddings run on-prem — all into one shared PostgreSQL 18 + pgvector.</p>
     </div>
   </article>
 
@@ -576,20 +576,20 @@
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.23.0</span></div>
-        <p>Running on Azure with Entra SSO. The schema runs past <b>0170</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the verticals that were merely <em>designed &amp; queued</em> a day ago have since <b>shipped as schema + surface</b>: <b>premium service management</b> (an asset/identity <b>CMDB</b> with derived relationships, criticality, lifecycle states and n-hop impact analysis, plus <b>ITIL change enablement</b> — change requests, CMDB-derived risk, type-based approval and a change calendar), an <b>AR collections agent</b> (aging worklist, dunning panel, gated reminder sends), a <b>self-serve report builder</b> over a governed semantic model with shareable dashboards and per-domain report pages, a <b>connector marketplace</b> (catalog GUI + manifest registry), and <b>marketing journeys, segments and a message-template composer</b>. The <b>ICM glass-box</b> — run viewer, approval queue and autonomy dial — is live. <b>Employee time and expense tracking are both live on real data</b>, with Autotask/QuickBooks reconciliation — expense now covering out-of-pocket entry with a policy memory-jogger and a hard attestation gate alongside mileage. All real screens over a typed data layer, behind a new role-driven grouped navigation.</p>
+        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.25.0</span></div>
+        <p>Running on Azure with Entra SSO. The schema runs past <b>0203</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the verticals that were merely <em>designed &amp; queued</em> a day ago have since <b>shipped as schema + surface</b>: <b>premium service management</b> (an asset/identity <b>CMDB</b> with derived relationships, criticality, lifecycle states and n-hop impact analysis, plus <b>ITIL change enablement</b> — change requests, CMDB-derived risk, type-based approval and a change calendar), an <b>AR collections agent</b> (aging worklist, dunning panel, gated reminder sends), a <b>self-serve report builder</b> over a governed semantic model with shareable dashboards and per-domain report pages, a <b>connector marketplace</b> (catalog GUI + manifest registry), and <b>marketing journeys, segments and a message-template composer</b>. The <b>ICM glass-box</b> — run viewer, approval queue and autonomy dial — is live. <b>Employee time and expense tracking are both live on real data</b>, with Autotask/QuickBooks reconciliation — expense now covering out-of-pocket entry with a policy memory-jogger and a hard attestation gate alongside mileage. All real screens over a typed data layer, behind a new role-driven grouped navigation. Since then the foundation under the agents has landed: a <b>data-integrity plane</b> (entity resolution, bitemporal cross-system keys, a data-quality SLA that gates autonomy), a <b>governed metrics layer</b> with per-client profitability &amp; ROI, a <b>three-axis row-level-security spine</b> (owner · company · data-class) with an audited admin god-view, the <b>graduated-autonomy</b> dial with a cross-agent approval cockpit and an oversight/undo view, and the reworked <b>connections &amp; credential registry</b> — one card per connector, canonical Key-Vault naming, and remove-credential that purges the secret.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.10.0</span></div>
+        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.11.0</span></div>
         <p>The orchestrator and its specialist sub-agents (Autotask, IT Glue, CRM, M365, documentation, advisors), the board runtime with resumable deputy sessions, the <b>self-hosted Managed-Agents worker</b> (agent.yaml manifests, event-mirrored to the run ledger) with <b>ICM glass-box approval + autonomy endpoints</b>, the journey runner, the AR-dunning detect→draft agent, M365 mail/calendar ingestion, Autotask ticket creation, lead capture, contact enrichment, and per-process cost metering.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.7.0</span></div>
+        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.8.0</span></div>
         <p>Autotask ticket webhooks are live in production. Per-tenant Graph subscription upkeep (per-client app model, ADR-0018), a source-schema registry that fails loudly on drift, the 5-minute bronze→silver merge, and on-demand posture snapshots.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-built">Built · v0.13.0</span></div>
-        <p>Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, per-client <b>Azure ARM cloud-resource inventory</b>, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 700+ tests green — the unattended-service runbook is written and the server bringup is the last step.</p>
+        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-live">Live · v0.14.0</span></div>
+        <p>Now <b>running on the on-prem host</b> (~75 scheduled tasks) and hydrating bronze/silver in production. Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, per-client <b>Azure ARM cloud-resource inventory</b>, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 700+ tests green — the collectors are live; <b>vectorization (the gold embeddings) is the one step still to fire</b>, which is why semantic recall stays a finished contract rather than a live index.</p>
       </div>
     </div>
     <div class="deferred reveal d2">
@@ -637,14 +637,14 @@
     <h2 class="reveal d1">We went looking for the state of the art in agent memory — and found we were 70% of the way there</h2>
     <p class="say reveal d1">Late in the build a question turned outward: how do the serious people give AI agents <em>durable memory and context</em>? So the method read the field — <b>MemPalace</b>, <b>Open Brain (OB1)</b>, <b>Claude-Mem</b>, the Claude-Code-memory practitioners, and a run of talks on folder-as-architecture and agent loops. The blueprint they all describe was unmistakable: memory that is <b>tiered, provenance-tagged, semantically grounded, citation-backed, and identity-scoped</b>.</p>
     <p class="say reveal d2">The surprise was how much of it already existed here — not as a memory product, but as <em>plain data engineering</em>. The <b>medallion</b> pipeline was provenance and freshness. The <b>OKF semantic layer</b> was meaning and authority — which source wins, how entities join. <b>Gold + Voyage <span style="font-family:var(--mono);color:var(--cyan-bright)">voyage-3-large</span> @ 1024-dim vectors</b> were citation-backed recall. A second brain for agents had been built without anyone calling it one. Roughly <em>seventy percent</em> of the blueprint was already shipped.</p>
-    <p class="say reveal d3">The last thirty percent was then built <em>deliberately</em>, not stumbled into: <b>tiered knowledge</b> — canon · company · personal, six personal brains (epic #966); the <b>RLS access spine</b> that scopes every memory to an identity (#967); the <b>1–5 autonomy dial</b> and approval cockpit (ADR-0107); the <b>agent eval / quality plane</b> (#983); and the <b>action / tool-grant</b> and <b>event / trigger</b> governance planes (#990 · #991).</p>
+    <p class="say reveal d3">The last thirty percent was then built <em>deliberately</em>, not stumbled into: <b>tiered knowledge</b> — canon · company · personal, six personal brains; the <b>three-axis RLS access spine</b> (owner · company · data-class) that scopes every memory — and every action — to an identity; the <b>1–5 graduated-autonomy dial</b> and approval cockpit (ADR-0107); the <b>agent eval / quality plane</b>; and the <b>action / tool-grant</b> and <b>event / trigger</b> governance planes.</p>
     <p class="say reveal d3">Which forced the reframe. This was never a CRM with AI bolted on — <b>the data substrate had been an operating system for agents the whole time.</b> So the product took the name the architecture had already earned: <em>Imperion OS</em> (ADR-0110).</p>
 
     <!-- the OS map -->
     <p class="say reveal d2" style="margin-top:30px">One line, the whole machine — <em>data-as-kernel, second-brain-as-OS</em>:</p>
     <div class="secgrid reveal d2">
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg></div><div><b>Kernel</b><span>The data platform — the medallion filesystem, the OKF semantic layer as the type system, and gold + Voyage 1024-dim vectors as addressable long-term memory.</span></div></div>
-      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0-2 7 4 4 0 0 0 6 5 4 4 0 0 0 6-5 4 4 0 0 0-2-7 4 4 0 0 0-4-4z"/><path d="M12 6v14"/></svg></div><div><b>Memory</b><span>A tiered second brain — canon · company · personal, six personal brains, addressed through a two-axis RLS ring/permission model.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0-2 7 4 4 0 0 0 6 5 4 4 0 0 0 6-5 4 4 0 0 0-2-7 4 4 0 0 0-4-4z"/><path d="M12 6v14"/></svg></div><div><b>Memory</b><span>A tiered second brain — canon · company · personal, six personal brains, addressed through a three-axis RLS ring/permission model (owner · company · data-class).</span></div></div>
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M12 12H5v4M12 12h7v4"/></svg></div><div><b>Scheduler &amp; syscalls</b><span>The orchestrator + ICM + the autonomy dial, the <span style="font-family:var(--mono)">agent_run</span> ledger, the eval plane, and the action/tool-grant + event/trigger planes.</span></div></div>
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div><b>Processes</b><span>The agents — one orchestrator routing to specialist sub-agents and self-hosted managed workers.</span></div></div>
       <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div><div><b>I/O</b><span>The two pipelines — cloud webhooks catch the live edge; the on-prem plane does the scheduled bulk and all vectorization.</span></div></div>
@@ -716,6 +716,8 @@
     <div class="ch-eyebrow reveal">The second brain, built</div>
     <h2 class="reveal d1">The deliberate 30% — built, not just designed</h2>
     <p class="say reveal d1">The reframe said the platform was <em>~70%</em> of the agent-memory blueprint already, with a deliberate 30% to finish. That 30% has now <b>landed in the schema</b> — migrations <b>0166–0170</b> applied to production, governed by four decision records (<b>ADR-0113 → ADR-0116</b>).</p>
+    <p class="say reveal d1">These four pieces now have one name: the <em>Imperion OS Brain</em> — the single memory-and-knowledge contract every agent reads and writes through. It is a <b>hard requirement for v1</b>, and it is treated as a <em>contract</em>, not a finished feature: the schema is provisioned, but the index is not yet hydrated, so what follows describes the shape the agents will think with, not a live recall yet.</p>
+    <p class="say reveal d1">What makes that contract safe is four invariants that hold no matter how the brain grows: a personal note <b>can never cross into the company tier</b> except through one privileged, append-only-ledgered curator; the shared memory tool can only write a caller's <b>own</b> personal scope; the three row-level-security axes <b>fail closed</b>; and personal, verbatim text <b>stays out of the shared meaning layer</b> — recall returns a citation and a summary, never raw words. The boundary is a database invariant, not a promise.</p>
     <div class="repos reveal d2">
       <div class="repo">
         <div class="role">Verbatim memory · ADR-0113</div>
@@ -731,7 +733,7 @@
       </div>
       <div class="repo">
         <div class="role">Universal Memory MCP · ADR-0116</div>
-        <p>One memory surface for every agent — <span style="font-family:var(--mono);color:var(--cyan-bright)">store</span> / <span style="font-family:var(--mono);color:var(--cyan-bright)">recall</span> / <span style="font-family:var(--mono);color:var(--cyan-bright)">list_agents</span> (0170) — over the same medallion kernel, scoped by the two-axis RLS spine.</p>
+        <p>One memory surface for every agent — <span style="font-family:var(--mono);color:var(--cyan-bright)">store</span> / <span style="font-family:var(--mono);color:var(--cyan-bright)">recall</span> / <span style="font-family:var(--mono);color:var(--cyan-bright)">list_agents</span> (0170) — over the same medallion kernel, scoped by the three-axis RLS spine (owner · company · data-class).</p>
       </div>
     </div>
     <div class="deferred reveal d2">
@@ -774,7 +776,10 @@
       <li class="tlrow"><span class="tldate">Jun 18</span><div class="tlbody"><b>The build audits itself</b><span>An automated architecture pass swept all four repos for copied patterns — nine candidates, seven consolidated and two deliberately refused — while the expense and CMDB verticals deepened (out-of-pocket entry, Azure cloud-asset merge).</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 19–21</span><div class="tlbody"><b>The reframe → Imperion OS</b><span>A research pass on agent memory (MemPalace, OB1, Claude-Mem, the practitioners) found the platform was already ~70% of the blueprint. The deliberate 30% landed — tiered knowledge, the RLS access spine, the autonomy dial + cockpit, the eval and tool-grant/trigger planes — and the product was renamed <b>Imperion OS</b> (ADR-0110) across all four repos.</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 22</span><div class="tlbody"><b>The second brain, built</b><span>The deliberate 30% landed as schema: client mapping + entity resolution live, the AI-Technician wedge (Felix) and the eight-agent roster shipped, and the unified agent-memory substrate — verbatim bronze, a two-substrate personal store with a temporal knowledge graph, the gold hybrid ranker, and a universal memory MCP — applied to production (migrations 0166–0170, ADR-0113→0116), provisioned and awaiting hydration.</span></div></li>
-      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time, now also deepening the foundation under itself. The self-hosted Managed-Agents runtime is live, and the remaining gates are activation settings and the on-prem server bringup, not missing code.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 23</span><div class="tlbody"><b>The foundation under the agents</b><span>The data-trust and governance planes landed and applied to production: entity resolution and bitemporal cross-system keys, a data-quality SLA that gates autonomy, a governed metrics layer with per-client profitability &amp; ROI, and a three-axis row-level-security spine (owner · company · data-class) with an audited admin god-view.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 23–24</span><div class="tlbody"><b>Connections rework &amp; on-prem go-live</b><span>Connections and credentials were reworked into one card per connector with canonical Key-Vault naming and a remove-credential path that purges the secret — and the on-prem pipeline started <b>running for real on the home server</b>, ~75 scheduled collectors hydrating bronze and silver in production.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 24–25</span><div class="tlbody"><b>The v1 doctrine &amp; the OS Brain</b><span>The path to v1 was settled as a written doctrine — agent-first plumbing, human-first operation, autonomy earned in graduated steps — and the <b>Imperion OS Brain</b> was named as the single memory/knowledge contract the whole platform converges on. Grounding-conflict resolution with audited write-back shipped alongside it.</span></div></li>
+      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time, now also deepening the foundation under itself. The collectors are live and hydrating; the self-hosted Managed-Agents runtime is up; the remaining gates are activation settings and vectorization, not missing code.</span></div></li>
     </ol>
 
     <!-- capability tracker (checked as it ships) -->
@@ -804,6 +809,12 @@
       <div class="tk"><span class="tkc tk-live">✓</span><div><b>Client mapping · entity resolution</b><small>LIVE</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>AI-Technician wedge · Felix</b><small>SHIPPED · GATED</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>Named agent roster (8)</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Data integrity · entity resolution</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Governed metrics · profitability &amp; ROI</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Three-axis RLS · data-class governance</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Graduated autonomy · approval cockpit</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Agent eval · quality plane</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-live">✓</span><div><b>Connections · credential registry</b><small>LIVE</small></div></div>
       <div class="tk"><span class="tkc tk-dev">◐</span><div><b>Unified agent memory · second brain</b><small>SUBSTRATE · HYDRATING</small></div></div>
     </div>
     <p class="tracknote reveal d2"><span><span class="tkc tk-live">✓</span> live on real data</span><span><span class="tkc tk-built">✓</span> shipped, activation-gated</span><span><span class="tkc tk-dev">◐</span> in build</span><span><span class="tkc tk-plan">○</span> designed &amp; queued</span></p>

@@ -36,8 +36,9 @@ product but as plain data engineering:
 | **Citation-backed recall** | **gold** knowledge objects + Voyage `voyage-3-large` @ 1024d |
 
 The remaining 30% was then built *deliberately*: the **tiered knowledge** memory hierarchy
-+ **two-axis RLS** access spine, the **autonomy dial + cockpit**, the **eval/quality**
-plane, and the **action/tool-grant + event/trigger** governance planes. That forced the
++ **three-axis RLS** access spine (owner · company · data-class), the **graduated-autonomy
+dial + cockpit**, the **eval/quality** plane, and the **action/tool-grant + event/trigger**
+governance planes. That forced the
 rename: this was never a CRM with AI bolted on — the substrate had been an **operating
 system for agents** the whole time ([ADR-0110](../../decision-records/ADR-0110-rebrand-imperion-os.md)).
 
@@ -91,8 +92,11 @@ human-readable = machine-readable, human-in-the-loop by default with autonomy as
 ## 3. The memory hierarchy — three tiers, one ring model
 
 A second brain needs **boundaries enforced where the data lives**, not where the app asks
-nicely. Imperion's memory hierarchy is three tiers under a **two-axis RLS access spine**
-([ADR-0105](../../decision-records/ADR-0105-two-axis-rls-access-spine.md)):
+nicely. Imperion's memory hierarchy is three tiers under a **three-axis RLS access spine**
+([ADR-0105](../../decision-records/ADR-0105-two-axis-rls-access-spine.md), extended by
+[ADR-0118](../../decision-records/ADR-0118-data-class-third-rls-axis-action-ceiling.md) with a
+**data-class** axis that gates read scope *and* the autonomy ceiling for any action touching
+the class):
 
 | Tier | What it holds | Scope axis |
 | --- | --- | --- |
@@ -117,11 +121,14 @@ together, and a **Universal Memory MCP** ([ADR-0116](../../decision-records/ADR-
 migration 0170) exposes `store` / `recall` / `list_agents` so any agent uses one memory
 surface.
 
-> **Status (verified vs prod 2026-06-22).** The substrate is real and provisioned
+> **Status (verified vs prod 2026-06-25).** The substrate is real and provisioned
 > (migrations through 0170; per-owner vault containers + RBAC + the curator identity live),
 > but **unhydrated** — `memory_drawer` / `personal_fact` are empty and **embedding
-> generation has not yet run** (LocalPipeline #176). The architecture is complete; recall
-> lights up when the on-prem collectors and vectorization run.
+> generation has not yet run** (`knowledge_embedding` = 0; LocalPipeline #176). The on-prem
+> collectors are now running on the host and hydrating bronze/silver, but vectorization (the
+> gold embeddings) is the one step still to fire. The architecture is complete; recall lights
+> up when vectorization runs. This is the **Imperion OS Brain** — a v1 hard requirement,
+> described here as the contract, not yet a live index.
 
 ---
 
@@ -131,7 +138,7 @@ Trust to *read* is the data half; trust to *act* is the action half. Raising aut
 only safe because four governance planes hold at once (the doctrine's actuation stack):
 
 - **Trust to act** — the deny-by-default action/tool-grant plane ([ADR-0107](../../decision-records/ADR-0107-governed-action-tool-grant-plane.md)).
-- **Metered action** — the 1–5 autonomy dial + native approval cockpit ([ADR-0109](../../decision-records/ADR-0109-actuation-autonomy-dial.md)).
+- **Metered, graduated action** — the 1–5 autonomy dial ([ADR-0109](../../decision-records/ADR-0109-actuation-autonomy-dial.md)) where trust is *earned in steps* with hard ceilings on money / customer-facing / production ([ADR-0121](../../decision-records/ADR-0121-earned-graduated-autonomy-hard-ceilings.md)) + native approval cockpit and an oversight/undo view.
 - **Proof of what happened** — the append-only `agent_run` / `agent_message` ledger.
 - **Proof it was right** — the eval / quality plane ([ADR-0106](../../decision-records/ADR-0106-agent-eval-quality-plane.md)).
 
@@ -149,7 +156,7 @@ and routes anything above its ceiling to a human.
 | **Kernel — filesystem** | medallion bronze → silver → gold | [medallion](medallion-architecture.md) |
 | **Kernel — type system** | OKF semantic layer / grounding cortex | [OKF](open-knowledge-format.md) |
 | **Long-term memory** | gold knowledge objects + Voyage 1024d + hybrid ranker | [medallion](medallion-architecture.md) · [MemPalace](https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment/blob/main/docs/architecture/deep-dives/mempalace-memory-architecture.md) |
-| **Memory hierarchy** | canon · company · personal (×6) under two-axis RLS | [Open Brain](https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment/blob/main/docs/architecture/deep-dives/open-brain-second-brain.md) |
+| **Memory hierarchy** | canon · company · personal (×6) under three-axis RLS (owner · company · data-class) | [Open Brain](https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment/blob/main/docs/architecture/deep-dives/open-brain-second-brain.md) |
 | **Scheduler & syscalls** | orchestrator + ICM + autonomy dial + grants | [MWP / ICM](https://github.com/markdconnelly/ImperionCRM_Backend/blob/main/docs/architecture/deep-dives/model-workspace-protocol.md) |
 | **I/O** | Pipeline (live) + LocalPipeline (bulk + vectorization) | [medallion](medallion-architecture.md) §5 |
 
@@ -170,7 +177,9 @@ bolted on.** The argument for *why that ordering wins* is
 [ADR-0115 gold hybrid ranker](../../decision-records/ADR-0115-gold-hybrid-ranker-contract.md) ·
 [ADR-0116 universal memory MCP](../../decision-records/ADR-0116-universal-memory-mcp-contract.md) ·
 [ADR-0105 two-axis RLS](../../decision-records/ADR-0105-two-axis-rls-access-spine.md) ·
+[ADR-0118 data-class third axis](../../decision-records/ADR-0118-data-class-third-rls-axis-action-ceiling.md) ·
 [ADR-0106 eval plane](../../decision-records/ADR-0106-agent-eval-quality-plane.md) ·
 [ADR-0107 action/tool-grant](../../decision-records/ADR-0107-governed-action-tool-grant-plane.md) ·
 [ADR-0109 autonomy dial](../../decision-records/ADR-0109-actuation-autonomy-dial.md) ·
+[ADR-0121 earned/graduated autonomy](../../decision-records/ADR-0121-earned-graduated-autonomy-hard-ceilings.md) ·
 [ADR-0110 Imperion OS](../../decision-records/ADR-0110-rebrand-imperion-os.md).

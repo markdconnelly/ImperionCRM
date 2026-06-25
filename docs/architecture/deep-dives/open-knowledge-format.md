@@ -43,7 +43,7 @@ layer to drift.
 
 The bundle lives at
 [`docs/database/semantic-layer/`](../../database/semantic-layer/index.md) — **one markdown
-file per silver entity** (~58 today and expanding via issue #536), plus an
+file per silver entity** (~89 today and still expanding via the OKF batch issues), plus an
 [`index.md`](../../database/semantic-layer/index.md), the
 [`coverage-matrix.md`](../../database/semantic-layer/coverage-matrix.md), and
 [`AUTHORING.md`](../../database/semantic-layer/AUTHORING.md).
