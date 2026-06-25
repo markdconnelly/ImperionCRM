@@ -153,7 +153,7 @@
       <tr><td><b>Kernel — filesystem</b></td><td><span>Medallion data platform: bronze (raw, lossless) → silver (merged, authoritative) → gold (AI-ready).</span></td></tr>
       <tr><td><b>Kernel — type system</b></td><td><span>OKF semantic layer — concept-per-file meaning, authority, and joins; the orchestrator's grounding cortex.</span></td></tr>
       <tr><td><b>Long-term memory</b></td><td><span>Gold knowledge objects + Voyage <span class="k">voyage-3-large</span> @ 1024d — one citation-backed object per entity, one vector space.</span></td></tr>
-      <tr><td><b>Ring / permission model</b></td><td><span>Two-axis row-level-security spine — role-scoped company + owner-scoped personal, enforced in PostgreSQL.</span></td></tr>
+      <tr><td><b>Ring / permission model</b></td><td><span>Three-axis row-level-security spine — company role · owner-scoped personal · data-class (a class gates both what an agent may <i>read</i> and the actions it may <i>take</i>), enforced in PostgreSQL.</span></td></tr>
       <tr><td><b>Memory hierarchy</b></td><td><span>Tiered knowledge — canon · company · personal (six per-user brains): the agent's second brain.</span></td></tr>
       <tr><td><b>Scheduler & syscalls</b></td><td><span>Backend orchestrator + ICM workflows + the 1–5 autonomy dial + the <span class="k">agent_run</span> ledger.</span></td></tr>
       <tr><td><b>Protected mode</b></td><td><span>Deny-by-default action/tool-grants + approval cockpit — nothing that widens privilege runs without a human.</span></td></tr>
@@ -183,8 +183,8 @@
     <p>Trust to <b>read</b> is the data half; trust to <b>act</b> is the action half. Raising autonomy is only safe because four governance planes hold at once:</p>
     <ul class="tight">
       <li><b>Trust to act</b> — deny-by-default action / tool-grants with evaluated scopes; a prompt-injected agent cannot reach a tool it was never granted.</li>
-      <li><b>Metered action</b> — a 1–5 autonomy dial; anything above an agent's ceiling routes to a native approval cockpit instead of executing.</li>
-      <li><b>Proof of what happened</b> — an append-only <span class="k">agent_run</span> / <span class="k">agent_message</span> ledger; every grant decision is auditable.</li>
+      <li><b>Metered, graduated action</b> — a 1–5 autonomy dial where trust is <i>earned in steps</i> with hard ceilings on money, customer-facing, and production actions; anything above an agent's ceiling routes to a native approval cockpit instead of executing.</li>
+      <li><b>Proof of what happened</b> — an append-only <span class="k">agent_run</span> / <span class="k">agent_message</span> ledger plus an oversight view with an undo window; every grant decision is auditable.</li>
       <li><b>Proof it was right</b> — an eval / quality plane that gates regressions in CI against committed baselines.</li>
     </ul>
     <p><b>Honest limits.</b> This is not "one autonomous AI that just runs the business" — by design it is staged, contracted, and gated; reframe "fully autonomous" as "fully automated with supervision you can dial." It is near-real-time (webhooks + on-demand refresh), not streaming analytics. And the curated meaning layer is load-bearing: a stale semantic layer would lie with confidence, which is why freshness is enforced as a CI gate.</p>

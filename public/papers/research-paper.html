@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Imperion OS — Research Paper: data-structure decisions for an agentic operating system</title>
-<meta name="description" content="The long-form rationale for every data-structure decision behind Imperion OS: why medallion bronze/silver/gold, why pgvector + Voyage voyage-3-large @ 1024d in a single vector space, why concept-per-file OKF meaning, why a two-substrate personal memory with a temporal knowledge graph, why two-axis RLS, and how the gold hybrid ranker scores. Cited." />
+<meta name="description" content="The long-form rationale for every data-structure decision behind Imperion OS: why medallion bronze/silver/gold, why pgvector + Voyage voyage-3-large @ 1024d in a single vector space, why concept-per-file OKF meaning, why a two-substrate personal memory with a temporal knowledge graph, why three-axis RLS, and how the gold hybrid ranker scores. Cited." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -99,7 +99,7 @@
     <p class="meta">Imperion · internal architecture paper · companion to <span class="k">docs/architecture/data-design-for-agents.md</span> · external sources retrieved 2026-06-21</p>
     <div class="abstract">
       <div class="t">Abstract</div>
-      <p>The default way to add AI to a business application is to bolt an LLM + RAG onto a schema shaped for a human clicking a UI. It demos well and fails in production: the agent cannot tell where a fact came from or whether it is stale, which of three conflicting sources wins, where one user's memory ends and another's begins, or what it is allowed to <i>do</i> with what it retrieves. Imperion OS inverts the ordering — the data design came first, shaped for agents, and the UI renders over it. This paper defends six structural decisions that follow from that inversion: the medallion tiering, a single pinned vector space, concept-per-file semantics, a two-substrate personal memory with a temporal knowledge graph, two-axis row-level security, and a hybrid recall ranker.</p>
+      <p>The default way to add AI to a business application is to bolt an LLM + RAG onto a schema shaped for a human clicking a UI. It demos well and fails in production: the agent cannot tell where a fact came from or whether it is stale, which of three conflicting sources wins, where one user's memory ends and another's begins, or what it is allowed to <i>do</i> with what it retrieves. Imperion OS inverts the ordering — the data design came first, shaped for agents, and the UI renders over it. This paper defends six structural decisions that follow from that inversion: the medallion tiering, a single pinned vector space, concept-per-file semantics, a two-substrate personal memory with a temporal knowledge graph, three-axis row-level security, and a hybrid recall ranker.</p>
     </div>
   </section>
 
@@ -109,7 +109,7 @@
     <a href="#vectors">3 · Why pgvector + Voyage voyage-3-large @ 1024d, one vector space</a>
     <a href="#okf">4 · Why concept-per-file meaning (OKF)</a>
     <a href="#personal">5 · Why a two-substrate personal memory with a temporal KG</a>
-    <a href="#rls">6 · Why two-axis row-level security</a>
+    <a href="#rls">6 · Why three-axis row-level security</a>
     <a href="#ranker">7 · How the gold hybrid ranker scores</a>
     <a href="#limits">8 · Honest limits</a>
     <a href="#references">References</a>
@@ -130,7 +130,7 @@
     <p>Silver is one row per real-world entity, <b>recomputed field-by-field, each field from the highest-precedence non-empty source</b> (e.g. <span class="k">contact</span>: website &gt; autotask &gt; itglue &gt; m365 &gt; apollo). The precedence order <i>is</i> the authority rule, documented per entity. This is where correctness lives or dies — matching keys, out-of-order arrivals, empty-vs-null — so it is tested and versioned, never hand-waved.</p>
     <h3>Gold: distilled, AI-ready</h3>
     <p>Gold is one citation-backed knowledge object per entity, derived from a known silver row, so a recalled summary traces back through silver to its bronze origin — <b>RAG over a curated, provenanced substrate</b> rather than a scraped pile, the single biggest lever on whether an agent hallucinates from noise. Drafts carry no embedding, so memory never recalls something unapproved.</p>
-    <div class="callout"><b>Honest status.</b> The gold schema and ~900 knowledge objects exist; embedding generation has not yet run (the vector column is empty), so semantic search is the contract and pipeline, not a live index at the time of writing.</div>
+    <div class="callout"><b>Honest status.</b> The gold schema and ~1,500 knowledge objects exist; embedding generation has not yet run (the vector column is empty), so semantic search is the contract and pipeline, not a live index at the time of writing.</div>
   </section>
 
   <section id="vectors">
@@ -168,14 +168,15 @@
   </section>
 
   <section id="rls">
-    <h2>6 · Why two-axis row-level security</h2>
-    <p>An agent's memory must have boundaries enforced <b>where the data lives, not where the app asks nicely</b>. A bolt-on system enforces memory boundaries in application code — one missed check and a personal note surfaces in a shared answer. Imperion pushes the boundary into PostgreSQL <b>row-level security</b> along two axes:</p>
+    <h2>6 · Why three-axis row-level security</h2>
+    <p>An agent's memory must have boundaries enforced <b>where the data lives, not where the app asks nicely</b>. A bolt-on system enforces memory boundaries in application code — one missed check and a personal note surfaces in a shared answer. Imperion pushes the boundary into PostgreSQL <b>row-level security</b> along three axes:</p>
     <table>
       <tr><th>Axis</th><th>Scopes</th><th>Enforces</th></tr>
       <tr><td><b>Company</b></td><td>role → canon · company tiers</td><td>what a role may read across the shared estate</td></tr>
       <tr><td><b>Personal</b></td><td>owner → that owner's brain only</td><td>one user's personal memory is invisible to another</td></tr>
+      <tr><td><b>Data-class</b></td><td>sensitivity class → read + action ceiling</td><td>which classes of data an agent may read <i>and</i> what it may do with them — the same axis caps autonomy, so a class an agent cannot touch is also a class it cannot act on</td></tr>
     </table>
-    <p>A personal brain <b>cannot leak</b> into the company tier — it is a database invariant, not a convention. Cross-tier curation (personal → company) is done only by a privileged, <b>non-BYPASSRLS</b> service identity under an append-only god-view ledger, so even the curator's reach is itself scoped and audited. This is the OS ring/permission model applied to memory: the leak is made <i>structurally impossible</i> rather than <i>conventionally discouraged</i>.</p>
+    <p>The third axis is what makes the data half and the action half one system: a sensitivity class does not just hide rows, it lowers the autonomy ceiling for anything that touches them, so reading and acting are governed by the same fail-closed predicate. A personal brain <b>cannot leak</b> into the company tier — it is a database invariant, not a convention. Cross-tier curation (personal → company) is done only by a privileged, <b>non-BYPASSRLS</b> service identity under an append-only god-view ledger, so even the curator's reach is itself scoped and audited. This is the OS ring/permission model applied to memory <i>and</i> action: the leak is made <i>structurally impossible</i> rather than <i>conventionally discouraged</i>.</p>
   </section>
 
   <section id="ranker">

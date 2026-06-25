@@ -128,11 +128,12 @@ how the ranker composes these. **Verbatim drill-down** (ADR-0113): hybrid-search
 gold summaries first, then follow the reference to the faithful bronze turns only when the
 exact words matter — search stays cheap, recall stays complete.
 
-> **Honest status (verified against prod 2026-06-22).** The gold schema, knowledge objects
-> (~900 modelled), and the hybrid-search substrate are in place; **embedding generation has
-> not yet run** (`knowledge_embedding` is empty — owned by LocalPipeline #176). Semantic
-> search lights up when vectorization runs. This doc describes the **contract and the
-> pipeline that realizes it**, not a live semantic index.
+> **Honest status (verified against prod 2026-06-25).** The gold schema, knowledge objects
+> (~1,500 modelled), and the hybrid-search substrate are in place; the on-prem collectors are
+> now running on the host and **hydrating bronze/silver** (e.g. silver `contact` ≈260,
+> `device` ≈430), but **embedding generation has not yet run** (`knowledge_embedding` = 0 —
+> owned by LocalPipeline #176). Semantic search lights up when vectorization runs. This doc
+> describes the **contract and the pipeline that realizes it**, not a live semantic index.
 
 ---
 
