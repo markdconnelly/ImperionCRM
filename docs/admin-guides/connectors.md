@@ -112,7 +112,7 @@ Poll cadence + Refresh now appear only for *pollable* providers (`providerIsPoll
 | Kaseya Quote Manager (`quotemanager`) | credential | Quote Manager API key + tenant/account id. |
 | Televy (`televy`) | credential | Assessment-report ingestion API key. |
 | QuickBooks Online (`qbo`) | consent | QuickBooks company connect (OAuth) — read-only financial facts. |
-| Dark Web ID (`darkwebid`) | credential | Compromised-credential exposure API key. |
+| Dark Web ID (`darkwebid`) | credential | HTTP Basic auth — web-services username + Dark Web ID password (not a single API key); the calling IP must be allowlisted in Dark Web ID. |
 | Meta — Facebook / Instagram (`meta`) | credential, **send-capable** | Page access token + Page id. |
 | DocuSign (`docusign`) | credential, **adminConsent** | Integration key + RSA private key (PEM) + impersonated user → 3 named Key Vault secrets; then Grant admin consent. Account id + environment are ops App Settings. |
 

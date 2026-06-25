@@ -106,3 +106,28 @@ describe("COMPANY_PROVIDERS — Pax8 provider (#1052)", () => {
     expect(secret?.required).toBe(true);
   });
 });
+
+describe("COMPANY_PROVIDERS — Dark Web ID provider (#1312)", () => {
+  const darkwebid = COMPANY_PROVIDERS.find((p) => p.key === "darkwebid");
+
+  it("is a pollable credential ingest source (ADR-0040)", () => {
+    expect(darkwebid).toBeDefined();
+    expect(darkwebid?.kind).toBe("credential");
+    expect(darkwebid?.sendCapable).not.toBe(true);
+    expect(providerIsPollable(darkwebid!)).toBe(true);
+  });
+
+  it("collects an HTTP Basic-auth pair — username (public) + password (write-only), not a single API key", () => {
+    // ADR-0040 amendment (2026-06-24): Dark Web ID uses Basic auth + IP allowlist,
+    // NOT a bearer apiKey. Stored as the conn-company-darkwebid Key Vault JSON blob.
+    const fieldNames = darkwebid?.fields?.map((f) => f.name) ?? [];
+    expect(fieldNames).toEqual(["username", "password"]);
+    expect(fieldNames).not.toContain("apiKey");
+    const username = darkwebid?.fields?.find((f) => f.name === "username");
+    const password = darkwebid?.fields?.find((f) => f.name === "password");
+    expect(username?.secret).toBe(false);
+    expect(username?.required).toBe(true);
+    expect(password?.secret).toBe(true);
+    expect(password?.required).toBe(true);
+  });
+});

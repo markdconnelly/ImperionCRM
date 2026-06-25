@@ -92,7 +92,7 @@ this declares the *marketplace shape*, ADR-0076 — distinct concerns, shared ke
 | `autotask` | Autotask (PSA) | PSA | api_key | 60 min | account, contact, ticket | `ingest:tickets`, `ingest:companies`, `write:tickets` |
 | `itglue` | IT Glue | Documentation | api_key | 1440 min (daily) | device, account | `ingest:assets`, `ingest:documents` |
 | `meta` | Meta (Facebook / Instagram) | Marketing | oauth | 30 min | campaign, lead, interaction | `ingest:posts`, `ingest:messages`, `ingest:leads`, `write:messages` |
-| `darkwebid` | Dark Web ID | Security | api_key | 1440 min (daily) | credential_exposure | `ingest:credential-exposures` |
+| `darkwebid` | Dark Web ID | Security | basic_auth (username + password) | 1440 min (daily) | credential_exposure | `ingest:credential-exposures` |
 | `apollo` | Apollo | Enrichment | api_key | 0 (on-demand) | contact, account | `enrich:contacts` |
 
 Notes that matter for onboarding:
