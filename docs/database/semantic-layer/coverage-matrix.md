@@ -53,6 +53,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [contact](tables/contact.md) | kernel | A | pii | ✅ | research; lead-response |
 | [device](tables/device.md) | Service Desk | A | op | ✅ | asset/security context (Datto RMM precedence + BCDR backup posture, #683; UniFi `mac` key + `source`/precedence + firmware cols + LP write grant, #1241/0195) |
 | [cloud_asset](tables/cloud_asset.md) | Service Desk | A | op | ✅ | CMDB cloud-asset CI (#874, ADR-0097) |
+| [software_ci](tables/software_ci.md) | Service Desk | A | op | ✅ | CMDB software CI + device→software edges (#652, ADR-0097) |
 | [external_identity](tables/external_identity.md) | horizontal | H | op | ✅ | identity resolution |
 | [contact_social_identity](tables/contact_social_identity.md) | kernel | B | pii | ✅ | enrichment |
 | [contact_enrichment](tables/contact_enrichment.md) | kernel | B | pii | ✅ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
@@ -240,6 +241,7 @@ silver entity it feeds (so e.g. the `qbo_*`/`website_expense_*` feeds are `fin`,
 |---|---|
 | account / contact / device (A) | `{autotask,apollo,itglue,m365,website}_contacts` · `{autotask,apollo,itglue,website}_companies` · `{itglue,m365,website}_devices` · `datto_rmm_devices` · `unifi_devices` (network infra: switches/APs/gateways + firmware compliance, #1053/0162; collector LP #73/#259, merge LP follow-up) · `datto_bcdr_backups` (backup-posture field merge, #683) · `intune_managed_apps` (device app-inventory drill, #261/0148) |
 | cloud_asset (A) | `cloud_resources` (source `azure_arm`, 0130; Azure first, `aws_*`/`gcp_*` later) |
+| software_ci (A) | `intune_managed_apps` (source `intune`, #261/0148; one silver install row per app on a device, device-resolved → account; #652/0204) |
 | opportunity (A) | `kqm_opportunities` (+lines/+sections/+sales_orders) · `autotask_opportunities` · `website_opportunities` |
 | contract / ticket (B) | `autotask_contracts` · `docusign_contracts` · `autotask_tickets` |
 | time_record (A) | `website_time_entry` · `autotask_time_entry` |

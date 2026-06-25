@@ -27,15 +27,17 @@ const account = (over: Partial<ConfigurationItem> = {}): ConfigurationItem => ({
 });
 
 describe("CI taxonomy", () => {
-  test("CI types are account, user, device, cloud", () => {
-    expect([...CI_TYPES]).toEqual(["account", "user", "device", "cloud"]);
+  test("CI types are account, user, device, cloud, software", () => {
+    expect([...CI_TYPES]).toEqual(["account", "user", "device", "cloud", "software"]);
     expect(CI_TYPE_LABEL.user).toBe("End-user");
     expect(CI_TYPE_LABEL.cloud).toBe("Cloud");
+    expect(CI_TYPE_LABEL.software).toBe("Software");
   });
 
   test("asCiType narrows known types and rejects junk", () => {
     expect(asCiType("device")).toBe("device");
     expect(asCiType("cloud")).toBe("cloud");
+    expect(asCiType("software")).toBe("software");
     expect(asCiType("staff")).toBeNull();
     expect(asCiType(undefined)).toBeNull();
   });

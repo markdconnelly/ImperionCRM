@@ -109,6 +109,12 @@ export function deriveCriticality(ciType: CiType, inputs: CiCriticalityInputs): 
       // admin override is the escape hatch until such a signal is added (a future
       // front-end schema change, ADR-0042).
       return "medium";
+    case "software":
+      // A software install is a SUPPORTING asset — silver `software_ci` carries no
+      // business-impact signal (criticality lives with what the software RUNS ON, the
+      // device CI). A flat `low` baseline; an admin override (cmdb:write) promotes a
+      // business-critical app. Matches the migration 0204 seed and never auto-`critical`.
+      return "low";
   }
 }
 
