@@ -66,6 +66,7 @@ passes through its browser.
 | [Connector registry & marketplace](connector-registry.md) | The declarative connector marketplace (ADR-0076): the in-code manifest registry, the `connector_instance` lifecycle, and the admin catalog GUI at `/connectors`. |
 | [MileIQ External API](mileiq-api.md) | The MileIQ mileage source — its request-gated access model, OAuth 2.1 tiers, and the open questions that gate provisioning (ADR-0083). |
 | [Pax8](pax8-integration.md) | The Pax8 distributor source — company-scoped OAuth credential, the bronze tables (subscriptions/licenses/orders/companies), and the planned license→agreement/device silver mapping (the procure→bill loop, #1042). |
+| [Autotask Opportunities API](autotask-opportunities-api.md) | The Autotask Opportunity entity read shape — the `autotask_opportunities` bronze columns, the `entityInformation/fields` probe, and the join path to silver `opportunity` / forecast (spike #430, ADR-0080). |
 | [Front-end-driven back-end requirements](frontend-driven-backend-requirements.md) | The engines the GUI already expects from the sibling repos — RBAC claim, OAuth + Key Vault, ingestion -> bronze -> silver, enrichment, ticket creation, the agent runtime. The cross-repo to-do list, with status. |
 
 ## 3. See also

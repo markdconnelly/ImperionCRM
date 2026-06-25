@@ -7,7 +7,7 @@ description: Merged silver opportunity from three bronze sources (KQM quote head
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, sales, opportunity, kqm, autotask, forecast]
 data_class: financial
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-25T00:00:00Z
 ---
 
 # opportunity
@@ -25,7 +25,9 @@ joins the sources together.
 
 - **KQM** (`kqm_opportunities`) — quote header; KQM is the quote system of record
   (read-only, native CPQ gutted per the sale→delivery pivot).
-- **Autotask** (`autotask_opportunities`) — the Autotask Opportunity entity.
+- **Autotask** (`autotask_opportunities`) — the Autotask Opportunity entity; read shape
+  (columns, `entityInformation` probe, join keys) in
+  [Autotask Opportunities API](../../../integrations/autotask-opportunities-api.md) (#430).
 - **Website** (`website_opportunities`) — manual sales-team entry, highest
   precedence (a human override wins). The sales team captures the context a machine
   feed can't: running **`notes`** and uploaded **`knowledge_blob_refs`** (documents
