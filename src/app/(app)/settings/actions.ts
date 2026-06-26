@@ -347,6 +347,11 @@ export async function registerClientM365Action(
   // row (the join key the posture rollups + LP read, #1049). Both are best-effort — the credential
   // is already custodied, so a mapping hiccup must never fail the registration — and idempotent, so
   // re-saving (rotation) just refreshes the mapping.
+  // Truly best-effort: the credential is already custodied, so NEITHER auto-map step may fail the
+  // registration or throw to the route error boundary ("Live data is unavailable"). A backend
+  // hiccup on the link (e.g. the entity_xref upsert) must not blank the page — log it, keep going,
+  // and tell the admin the credential saved but the map needs a manual retry on this screen.
+  let autoMapFailed = false;
   if (outcome.ok) {
     const lowerTenant = tenantId.toLowerCase();
     try {
@@ -358,28 +363,44 @@ export async function registerClientM365Action(
         connectionId: outcome.value.connectionId,
       });
     } catch (err) {
-      if (!(err instanceof ServiceNotConfiguredError)) throw err;
+      // Backend not wired yet = expected no-op; any other error is a real map failure we swallow.
+      if (!(err instanceof ServiceNotConfiguredError)) {
+        autoMapFailed = true;
+        console.error("[registerClientM365] auto-map link failed (credential is saved)", err);
+      }
     }
-    const { security } = getRepositories();
-    await security.upsertTenantMapping({
-      tenantId: lowerTenant,
-      accountId,
-      displayName: displayName || null,
-    });
+    try {
+      const { security } = getRepositories();
+      await security.upsertTenantMapping({
+        tenantId: lowerTenant,
+        accountId,
+        displayName: displayName || null,
+      });
+    } catch (err) {
+      autoMapFailed = true;
+      console.error("[registerClientM365] account_tenant upsert failed (credential is saved)", err);
+    }
   }
 
   // The M365 registration form lives on the client-mapping screen (ADR-0122 S3a); refresh it so
   // the new per-client health dot + mapping appear.
   revalidatePath("/settings/client-mapping/m365");
   if (outcome.ok) {
-    return {
-      ok: true,
-      tone: "green",
-      message:
-        authMethod === "secret"
-          ? "Client M365 app registered — the secret is custodied in Key Vault and the connection is live."
-          : "Client M365 app registered — the certificate thumbprint is recorded and the connection is live.",
-    };
+    const custody =
+      authMethod === "secret"
+        ? "the secret is custodied in Key Vault and the connection is live"
+        : "the certificate thumbprint is recorded and the connection is live";
+    return autoMapFailed
+      ? {
+          ok: true,
+          tone: "amber",
+          message: `Client M365 app registered — ${custody}. The account mapping didn't complete; map this tenant from the table below.`,
+        }
+      : {
+          ok: true,
+          tone: "green",
+          message: `Client M365 app registered — ${custody}.`,
+        };
   }
   return {
     ok: false,

@@ -192,6 +192,23 @@ describe("registerClientM365Action", () => {
     expect(h.upsertTenantMapping).toHaveBeenCalledTimes(1);
   });
 
+  it("does not blank the page when the link backend errors — saves, still maps tenant, amber notice (#1343)", async () => {
+    const { ServiceCallError } = await import("@/lib/services/external-client");
+    // The backend entity_xref upsert 500s (the prod 42P10). The credential is already custodied,
+    // so the action must NOT throw to the error boundary — it returns ok+amber and still writes
+    // account_tenant.
+    h.link.mockRejectedValueOnce(new ServiceCallError("integration", 500, "42P10"));
+    const r = await registerClientM365Action(fd(validSecret));
+    expect(r).toMatchObject({ ok: true, tone: "amber" });
+    expect(h.upsertTenantMapping).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not blank the page when the account_tenant write fails — saves, amber notice (#1343)", async () => {
+    h.upsertTenantMapping.mockRejectedValueOnce(new Error("permission denied"));
+    const r = await registerClientM365Action(fd(validSecret));
+    expect(r).toMatchObject({ ok: true, tone: "amber" });
+  });
+
   it("does not map when validation fails before the backend call", async () => {
     await registerClientM365Action(fd({ ...validSecret, accountId: "" }));
     expect(h.upsertTenantMapping).not.toHaveBeenCalled();
