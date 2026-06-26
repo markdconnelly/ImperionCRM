@@ -190,6 +190,48 @@ _Avoid_: blast (in UI copy), broadcast, workflow (that's a per-contact journey)
 A guided, per-channel form that produces a previewable, typed configuration — for an ad, an email, an SMS, or an event. Not a drag-drop canvas.
 _Avoid_: designer, editor (unqualified)
 
+### Social media management
+
+**Social Channel**:
+One connected presence Imperion manages on one external social network — the Imperion Facebook Page, Instagram professional account, Messenger inbox, Threads profile, or LinkedIn page. The unit Belle (Marketing agent) manages. A unified abstraction: one inbox, one publishing surface, one analytics view across all channels, each backed by a per-network **Connector** + collector + send-adapter underneath (one domain model, per-network adapters — the plane shape). The credential is irreducibly per-network (each network its own API/OAuth/token); the domain model above it is shared.
+_Avoid_: social account (unqualified — that may be a contact's profile), social profile (that's an external person's), platform (use network)
+
+**Social DM**:
+A **private** message on a social network (Facebook Messenger, Instagram Direct, LinkedIn message). Lands on the unified **Interaction** timeline (ADR-0011, `kind=dm`, `source=<network>`) and spawns a **lead_hook** when lead-worthy — the same path Meta Messenger DMs already use. Person-addressed, so it is always a candidate to attach to a Contact.
+_Avoid_: social message (unqualified), comment (that is public — a Social Engagement)
+
+**Social Engagement**:
+A **public** inbound social item — a **comment** on one of our posts, or a **mention** of the brand — captured in a dedicated Social Engagement store (NOT the Interaction timeline), and linked to a Contact only when the author is matched to a known contact. Kept off the contact-centric Interaction timeline so anonymous public chatter never pollutes Contact-360. Discriminated by `kind` (`comment` | `mention`). Distinct from a **Social DM** (private → Interaction).
+_Avoid_: interaction (a Social Engagement is public and may be anonymous), social mention (that is one kind), engagement (unqualified — also an ads metric)
+
+**Social Post**:
+A unit of **organic** content Imperion authors once and publishes to one or more **Social Channels** (compose-once → fan-out). Per-channel adapters adapt the single composition to each network's constraints (char limits, media types, mention syntax). Lifecycle: **Draft → Scheduled → Published**, with a per-channel publish status and back-synced metrics. Optionally linked to a marketing **Campaign** for attribution. Authored via a **Builder**. Distinct from a **Campaign Send** (recipient-targeted, consent-gated email/SMS) and an **Ad** (paid).
+_Avoid_: post (unqualified), status/tweet, campaign send (that is recipient email/SMS), broadcast
+
+**Social Action**:
+Any **outbound** act on a Social Channel — publish a Social Post, reply to a Social Engagement or Social DM, deploy/pause an Ad, change an ad budget. Every Social Action is a **ProposedAction** through the one gauntlet + pending-action cockpit (one funnel, one audit trail; ADR-0058 path). Each action **type** carries its own **autonomy ceiling**: **money** (ad spend) and **customer-facing** (DMs, public replies) are HARD-capped (ADR-0055/0109); low-risk organic scheduled posts may earn higher autonomy later. **v1: every Social Action is human-approved.** Belle drafts; a human approves.
+_Avoid_: send (unqualified), composer action (that is the email/SMS path), auto-post (nothing auto in v1)
+
+**Ad**:
+A **paid** placement on a social network — creative + audience + budget — run via the Meta Marketing API (and per-network equivalents). A distinct object grouped under a marketing **Campaign**, carrying the network's ids (Meta `act_`/campaign/adset/ad). Authored via the **ad-builder**, or spawned by **Boosting** a Social Post. Deploy/pause/re-budget are **money-class Social Actions** (HARD-capped). Distinct from a Social Post (organic, free).
+_Avoid_: campaign (that is the marketing grouping above the Ad), promoted post (use Ad, note it was boosted), boost (that is the verb)
+
+**Boost**:
+Promoting a published **Social Post** into an **Ad** that reuses that post as its creative — the bridge from organic to paid. Produces an Ad under a Campaign; the spend is a money-class Social Action.
+_Avoid_: promote (unqualified), sponsor
+
+**Ad Lead**:
+A lead captured from a paid lead-generation ad (Meta Lead Ads) — lands in the **capture inbox** as a **lead_hook** (`source=meta_lead_ad`), the same path as every other lead. Distinct from an organic Social DM that becomes a lead.
+_Avoid_: form lead, paid lead (unqualified)
+
+**Social Connectors** (topology):
+Three credentials cover the whole social plane — **`conn-company-meta`** (one Meta app token, union of scopes: Facebook Page + Instagram + Messenger + Ads), **`conn-company-threads`** (separate Threads OAuth), **`conn-company-linkedin`** (separate). All **company-scope, no client mapping** (the Meta precedent). The Meta card MAY render as two views — **Meta Social** and **Meta Ads** — over the one secret (the Datto 2-cards/1-key precedent), but it is a single Credential.
+_Avoid_: per-surface Meta credentials (one token, many scopes), Azure-style fold (these are distinct networks, not one app)
+
+**Social Metric**:
+A performance figure for a Social Post, Ad, or Social Channel — reach, impressions, engagement, spend, results, cost-per-lead — ingested as a silver **time-series snapshot** (per post / ad / channel), with each network's unstable metric names normalized at the silver step (resolving #135). Surfaced in the **BI hub** (ADR-0062, the single intel surface) and an at-a-glance in-plane analytics view; ad results feed **Marketing Attribution** (#1316).
+_Avoid_: insight (that is Meta's API term), stat, KPI (unqualified)
+
 ### Board of Directors (ADR-0054)
 
 **Influence Profile**:
