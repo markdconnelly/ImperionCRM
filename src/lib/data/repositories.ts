@@ -199,6 +199,9 @@ import type {
   ChangeRequestInput,
   ApprovalDecision,
   ClientMappingUnit,
+  SocialInboxItem,
+  SocialPostRow,
+  SocialPostDetail,
 } from "@/types";
 import type { ActualCountRow } from "@/lib/recon/actual-count";
 
@@ -3089,6 +3092,29 @@ export interface ChangesRepository {
   deleteChangeRequest(id: string): Promise<void>;
 }
 
+/**
+ * Social Media Management plane (ADR-0124, epic #1338, slice B #1340) — READ-ONLY.
+ *
+ * The web role has SELECT-only on `social_post`/`social_post_channel` (migration 0210
+ * grant) and SELECT on `social_engagement`/`interaction`, so this repository renders
+ * the social surface but never writes it. Persisting a compose-once post + dispatching
+ * its publish/reply/boost is a backend *process* (every process calls the backend,
+ * ADR-0042 §1) routed through the pending-action cockpit (ADR-0058) — see
+ * `src/lib/services` (`socialService`, backend follow-up).
+ */
+export interface SocialRepository {
+  /**
+   * The unified inbox: private DMs (`interaction` where `kind='dm'`) merged with public
+   * comments/mentions (`social_engagement`), newest first. `limit` caps each source
+   * before the merge (default 100 each). Optional `channel` filters to one network.
+   */
+  listInbox(filter: { channel?: string; limit?: number }): Promise<SocialInboxItem[]>;
+  /** Compose-once posts (parents) + their per-channel fan-out summary, newest first. */
+  listPosts(): Promise<SocialPostRow[]>;
+  /** One post + its per-network fan-out rows; null when absent. */
+  getPost(id: string): Promise<SocialPostDetail | null>;
+}
+
 /** The full set of repositories a request can resolve. */
 export interface Repositories {
   dashboard: DashboardRepository;
@@ -3116,4 +3142,5 @@ export interface Repositories {
   connectors: ConnectorRepository;
   segments: SegmentsRepository;
   changes: ChangesRepository;
+  social: SocialRepository;
 }

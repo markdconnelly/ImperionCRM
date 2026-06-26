@@ -86,6 +86,9 @@ import type {
   MessageTemplateOption,
   MessageTemplateInput,
   SegmentInput,
+  SocialInboxItem,
+  SocialPostRow,
+  SocialPostDetail,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { resolveMentions } from "@/lib/mentions";
@@ -2970,6 +2973,21 @@ export const mockRepositories: Repositories = {
     async deleteTemplate(id: string): Promise<void> {
       const i = mockMessageTemplates.findIndex((x) => x.id === id);
       if (i !== -1) mockMessageTemplates.splice(i, 1);
+    },
+  },
+
+  // ── Social Media Management plane (ADR-0124, #1340) — read-only; empty in mock ──
+  // The surface hydrates from migration 0210 + collectors (slice H); without a DB the
+  // inbox and publishing list are simply empty (deploy-dormant, not broken).
+  social: {
+    async listInbox(): Promise<SocialInboxItem[]> {
+      return [];
+    },
+    async listPosts(): Promise<SocialPostRow[]> {
+      return [];
+    },
+    async getPost(): Promise<SocialPostDetail | null> {
+      return null;
     },
   },
 };

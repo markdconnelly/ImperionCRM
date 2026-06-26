@@ -50,6 +50,9 @@ export const navGroups: NavItem[] = [
     children: [
       { key: "segments", label: "Segments", icon: "Users", href: "/segments" },
       { key: "campaigns", label: "Campaigns", icon: "Megaphone", href: "/campaigns" },
+      // Social Media Management plane (ADR-0124, epic #1338) — unified inbox + publishing.
+      // Belle owns the channel, so it rides the marketing group gate.
+      { key: "social", label: "Social", icon: "Share2", href: "/social" },
       { key: "journeys", label: "Journeys", icon: "Waypoints", href: "/journeys" },
       { key: "message-templates", label: "Message templates", icon: "Mail", href: "/message-templates" },
       { key: "events", label: "Events", icon: "CalendarDays", href: "/events" },

@@ -382,6 +382,8 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   // The Threads management surface (epic #1334 S5, ADR-0125) rides the marketing group gate;
   // the explicit leaf guard keeps it in lockstep if the group ever opens wider.
   threads: canSeeMarketing,
+  // The Social Media Management plane (ADR-0124, epic #1338) — Belle-owned, marketing gate.
+  social: canSeeMarketing,
   "grp-sales": canSeeSales,
   "grp-projects": canSeeProjects,
   "grp-service": canSeeService,

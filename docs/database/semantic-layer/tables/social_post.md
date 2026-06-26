@@ -57,3 +57,10 @@ public social presence). Keep specific copy/assets out of this doc; resolve agai
 read-only DB (CLAUDE.md §8). Outbound publishing is governed: every publish is a Social
 Action through the gauntlet + pending-action cockpit (`agent_pending_action`, ADR-0124 #4),
 v1 fully human-approved. No secrets.
+
+**Consumed by.** The Social publishing surface (`/social/publishing`, slice B #1340) lists
+each post with its [`social_post_channel`](social_post_channel.md) fan-out summary; the
+compose-once Builder authors `content` + the selected fan-out channels. The web role is
+**SELECT-only** on this table (migration 0210 grant), so the GUI renders posts but never
+writes them — persisting a draft is a backend process (ADR-0042 §1), and publish/schedule are
+cockpit-gated Social Actions (ADR-0058).

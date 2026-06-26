@@ -14,6 +14,7 @@ import { getPool } from "@/lib/db/client";
 import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback";
 import { fmtDate, fmtIso, fmtDateTime } from "@/lib/data/postgres/date-format";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
+import { mergeInbox, type SortableInboxItem } from "@/lib/social";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import { labelDeviceOrigins } from "@/lib/cmdb/ci";
@@ -361,6 +362,10 @@ import type {
   ChangeStatus,
   ChangeApprovalStatus,
   ApprovalDecision,
+  SocialInboxItem,
+  SocialPostRow,
+  SocialPostDetail,
+  SocialPostChannelRow,
 } from "@/types";
 
 /** Add `n` days to a yyyy-mm-dd date, returning yyyy-mm-dd. */
@@ -15037,7 +15042,238 @@ export const postgresRepositories: Repositories = {
       await pool.query(`DELETE FROM change_request WHERE id = $1`, [id]);
     },
   },
+
+  // ── Social Media Management plane (ADR-0124, #1340) — READ-ONLY ───────────────
+  // Web has SELECT on interaction / social_engagement / social_post(_channel); it
+  // renders the surface and never writes it (publish/reply/boost are backend Social
+  // Actions through the cockpit, ADR-0058). Each method falls back to the (empty)
+  // mock on a missing pool or a query error, so the surface degrades quietly.
+  social: {
+    async listInbox(filter: { channel?: string; limit?: number }): Promise<SocialInboxItem[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.social.listInbox(filter);
+      const cap = Math.min(Math.max(filter.limit ?? 100, 1), 300);
+      try {
+        // Origin 1 — private DMs on the Interaction timeline (ADR-0124 #2 inbound split).
+        // kind='dm'; source is the social channel (facebook/instagram/messenger/…).
+        const dmWhere = ["i.kind = 'dm'"];
+        const dmParams: unknown[] = [];
+        if (filter.channel) {
+          dmParams.push(filter.channel);
+          dmWhere.push(`i.source = $${dmParams.length}::interaction_source`);
+        }
+        const dms = await pool.query<{
+          id: string;
+          channel: string;
+          body: string | null;
+          contact: string | null;
+          occurred_at: Date | null;
+        }>(
+          `SELECT i.id, i.source::text AS channel,
+                  COALESCE(i.summary_gold, i.subject) AS body,
+                  c.full_name AS contact, i.occurred_at
+           FROM interaction i
+           LEFT JOIN contact c ON c.id = i.contact_id
+           WHERE ${dmWhere.join(" AND ")}
+           ORDER BY i.occurred_at DESC NULLS LAST
+           LIMIT ${cap}`,
+          dmParams,
+        );
+        // Origin 2 — public comments/mentions (social_engagement), with triage fields.
+        const engWhere: string[] = [];
+        const engParams: unknown[] = [];
+        if (filter.channel) {
+          engParams.push(filter.channel);
+          engWhere.push(`e.channel = $${engParams.length}::social_channel`);
+        }
+        const engs = await pool.query<{
+          id: string;
+          channel: string;
+          kind: string;
+          body: string | null;
+          author_display_name: string | null;
+          author_handle: string | null;
+          contact: string | null;
+          posted_at: Date | null;
+          ingested_at: Date | null;
+          status: string;
+          intent: string | null;
+          assigned_agent_key: string | null;
+          source_url: string | null;
+        }>(
+          `SELECT e.id, e.channel::text AS channel, e.kind::text AS kind, e.body,
+                  e.author_display_name, e.author_handle, c.full_name AS contact,
+                  e.posted_at, e.ingested_at, e.status::text AS status,
+                  e.intent, e.assigned_agent_key, e.source_url
+           FROM social_engagement e
+           LEFT JOIN contact c ON c.id = e.contact_id
+           ${engWhere.length ? `WHERE ${engWhere.join(" AND ")}` : ""}
+           ORDER BY COALESCE(e.posted_at, e.ingested_at) DESC NULLS LAST
+           LIMIT ${cap}`,
+          engParams,
+        );
+
+        // Pair each row with a numeric sort key (epoch ms) for the cross-origin merge.
+        const dmRows: SortableInboxItem[] = dms.rows.map((r) => ({
+          sort: r.occurred_at ? r.occurred_at.getTime() : 0,
+          item: {
+            id: r.id,
+            origin: "dm",
+            kind: "dm",
+            channel: r.channel,
+            body: r.body,
+            author: r.contact,
+            contact: r.contact,
+            occurredAt: fmtDateTime(r.occurred_at),
+            engagementStatus: null,
+            intent: null,
+            assignedAgentKey: null,
+            sourceUrl: null,
+          },
+        }));
+        const engRows: SortableInboxItem[] = engs.rows.map((r) => {
+          const when = r.posted_at ?? r.ingested_at;
+          return {
+            sort: when ? when.getTime() : 0,
+            item: {
+              id: r.id,
+              origin: "engagement",
+              kind: r.kind === "mention" ? "mention" : "comment",
+              channel: r.channel,
+              body: r.body,
+              author: r.author_display_name ?? r.author_handle,
+              contact: r.contact,
+              occurredAt: fmtDateTime(when),
+              engagementStatus: r.status,
+              intent: r.intent,
+              assignedAgentKey: r.assigned_agent_key,
+              sourceUrl: r.source_url,
+            },
+          };
+        });
+        // Merge both origins newest-first, cap, then drop the sort key.
+        return mergeInbox(dmRows, engRows, cap);
+      } catch {
+        return mockRepositories.social.listInbox(filter);
+      }
+    },
+
+    async listPosts(): Promise<SocialPostRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.social.listPosts();
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          content: { body?: string } | null;
+          status: string;
+          campaign_name: string | null;
+          author: string | null;
+          scheduled_at: Date | null;
+          created_at: Date | null;
+          channels: { channel: string; publish_status: string }[] | null;
+        }>(
+          `SELECT p.id, p.content, p.status::text AS status, cmp.name AS campaign_name,
+                  u.display_name AS author, p.scheduled_at, p.created_at,
+                  COALESCE(
+                    json_agg(json_build_object('channel', spc.channel::text,
+                                               'publish_status', spc.publish_status::text)
+                             ORDER BY spc.channel)
+                      FILTER (WHERE spc.id IS NOT NULL),
+                    '[]'::json) AS channels
+           FROM social_post p
+           LEFT JOIN campaign cmp ON cmp.id = p.campaign_id
+           LEFT JOIN app_user u ON u.id = p.created_by_user_id
+           LEFT JOIN social_post_channel spc ON spc.social_post_id = p.id
+           GROUP BY p.id, cmp.name, u.display_name
+           ORDER BY p.created_at DESC NULLS LAST`,
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          summary: summarizePostContent(r.content),
+          status: r.status,
+          campaignName: r.campaign_name,
+          author: r.author,
+          scheduledAt: fmtDateTime(r.scheduled_at),
+          channels: (r.channels ?? []).map((c) => ({
+            channel: c.channel,
+            publishStatus: c.publish_status,
+          })),
+          createdAt: fmtDateTime(r.created_at),
+        }));
+      } catch {
+        return mockRepositories.social.listPosts();
+      }
+    },
+
+    async getPost(id: string): Promise<SocialPostDetail | null> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.social.getPost(id);
+      try {
+        const { rows } = await pool.query<{
+          id: string;
+          content: { body?: string } | null;
+          status: string;
+          campaign_name: string | null;
+          author: string | null;
+          scheduled_at: Date | null;
+          created_at: Date | null;
+        }>(
+          `SELECT p.id, p.content, p.status::text AS status, cmp.name AS campaign_name,
+                  u.display_name AS author, p.scheduled_at, p.created_at
+           FROM social_post p
+           LEFT JOIN campaign cmp ON cmp.id = p.campaign_id
+           LEFT JOIN app_user u ON u.id = p.created_by_user_id
+           WHERE p.id = $1`,
+          [id],
+        );
+        const p = rows[0];
+        if (!p) return null;
+        const ch = await pool.query<{
+          id: string;
+          channel: string;
+          publish_status: string;
+          external_id: string | null;
+          published_at: Date | null;
+          error: string | null;
+        }>(
+          `SELECT id, channel::text AS channel, publish_status::text AS publish_status,
+                  external_id, published_at, error
+           FROM social_post_channel
+           WHERE social_post_id = $1
+           ORDER BY channel`,
+          [id],
+        );
+        const channels: SocialPostChannelRow[] = ch.rows.map((r) => ({
+          id: r.id,
+          channel: r.channel,
+          publishStatus: r.publish_status,
+          externalId: r.external_id,
+          publishedAt: fmtDateTime(r.published_at),
+          error: r.error,
+        }));
+        return {
+          id: p.id,
+          body: p.content?.body ?? "",
+          status: p.status,
+          campaignName: p.campaign_name,
+          author: p.author,
+          scheduledAt: fmtDateTime(p.scheduled_at),
+          channels,
+          createdAt: fmtDateTime(p.created_at),
+        };
+      } catch {
+        return mockRepositories.social.getPost(id);
+      }
+    },
+  },
 };
+
+/** First ~120 chars of a social_post's authored copy (`content.body`), for the list. */
+function summarizePostContent(content: { body?: string } | null): string {
+  const body = (content?.body ?? "").trim();
+  if (!body) return "(no copy)";
+  return body.length > 120 ? `${body.slice(0, 117)}…` : body;
+}
 
 /** Compute a change's CMDB-derived risk (#658) from its (already-validated) affected-CI
  *  set: reads the full CI union + edge set the impact read-model needs, then delegates the

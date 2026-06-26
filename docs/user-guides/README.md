@@ -84,6 +84,9 @@ half of the platform; the full motion is the
 - **[Segments](segments.md)** — build reusable CRM contact sets (manual, bulk, or
   rule-based) — the enrollment source for journeys and a building block for comms and
   list views. Marketing-gated; distinct from ad audiences.
+- **[Social](social.md)** — the Social Media Management plane: a unified inbox (DMs +
+  comments + brand mentions across every network) and compose-once → fan-out publishing,
+  with all outbound routed through the approval cockpit.
 
 ## ERP — running the work and the money
 

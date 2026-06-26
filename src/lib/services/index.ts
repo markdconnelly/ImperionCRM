@@ -413,6 +413,44 @@ export const agentService = {
 };
 
 /**
+ * Social Media Management plane (ADR-0124, epic #1338, slice B #1340) — the outbound
+ * boundary. The web role is SELECT-only on `social_post`/`social_post_channel`
+ * (migration 0210 grant), so persisting a compose-once post is a backend *process*
+ * (ADR-0042 §1), not a direct web write — unlike the campaign_send Builder (which the
+ * web role writes directly) the social-post grant is deliberately narrower.
+ *
+ * `saveDraft` persists the authored composition + its selected fan-out channels as a
+ * draft `social_post` (+ `social_post_channel` rows). A subsequent schedule/publish is a
+ * Social Action that the backend dispatcher (BE #418) parks on the pending-action cockpit
+ * (`agent_pending_action`, ADR-0058) — every outbound is human-approved in v1 (ADR-0124 #4).
+ *
+ * STUB STATUS: the backend save/schedule endpoint does not exist yet. The web app builds
+ * everything up to this call; until the endpoint lands, `saveDraft` surfaces a
+ * {@link ServiceNotConfiguredError} (the compose action degrades honestly — it does NOT
+ * fake a persisted post). Backend follow-up issue is referenced in the slice-B PR.
+ */
+export const socialService = {
+  /** Persist a compose-once draft post + its selected channels (backend POST /social/posts). */
+  saveDraft: (input: {
+    /** The authored composition (copy + asset refs) — stored to `social_post.content`. */
+    content: { body: string };
+    /** Networks to fan out to — one `social_post_channel` row each (ADR-0124 #3). */
+    channels: string[];
+    /** Optional marketing campaign attribution link. */
+    campaignId?: string | null;
+    /** Optional schedule instant (ISO); omitted = save as plain draft. */
+    scheduledAt?: string | null;
+    /** The composing employee (app_user.id) — the post's author + audit actor. */
+    actingUserId: string;
+  }) =>
+    callService<{ socialPostId: string; status: string }>(services.agent, "/social/posts", {
+      method: "POST",
+      body: JSON.stringify(input),
+      timeoutMs: 30_000,
+    }),
+};
+
+/**
  * The single governed-metric result shape (backend `src/shared/metrics.ts` `MetricResult`,
  * #259/ADR-0078). `value` is null unless `status==='ok'`; `status` carries `unbound`
  * (definition not yet executable), `not_found`, or `error` as DATA, never an HTTP failure —
