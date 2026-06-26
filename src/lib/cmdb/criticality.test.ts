@@ -103,12 +103,19 @@ describe("deriveCriticality — cloud (category)", () => {
   });
 });
 
+describe("deriveCriticality — software", () => {
+  test("software is a flat low baseline (supporting asset; no silver impact signal)", () => {
+    expect(deriveCriticality("software", {})).toBe("low");
+  });
+});
+
 describe("deriveCriticality never auto-assigns critical", () => {
   test("no input combination yields critical (reserved for override)", () => {
     const combos = [
       deriveCriticality("account", { accountRelationship: "customer", accountLifecycleStage: "managed_active" }),
       deriveCriticality("device", { deviceType: "server" }),
       deriveCriticality("cloud", { cloudCategory: "database" }),
+      deriveCriticality("software", {}),
       deriveCriticality("user", {}),
     ];
     expect(combos).not.toContain("critical");

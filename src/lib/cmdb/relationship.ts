@@ -26,6 +26,7 @@ export const CI_RELATION_TYPES: readonly string[] = [
   "depends-on",
   "connects-to",
   "runs",
+  "runs-on",
   "hosts",
   "member-of",
   "related-to",

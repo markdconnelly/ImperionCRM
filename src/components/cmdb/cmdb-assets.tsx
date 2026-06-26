@@ -25,11 +25,12 @@ import type { ConfigurationItem, DeviceInventoryRow } from "@/types";
  * view switch + account filter are purely presentational, so they run in the browser
  * for instant response.
  */
-type ViewKey = "device" | "cloud" | "user" | "account";
+type ViewKey = "device" | "cloud" | "software" | "user" | "account";
 
 const VIEWS: { key: ViewKey; label: string; icon: string }[] = [
   { key: "device", label: "Devices", icon: CI_TYPE_ICON.device },
   { key: "cloud", label: "Cloud", icon: CI_TYPE_ICON.cloud },
+  { key: "software", label: "Software", icon: CI_TYPE_ICON.software },
   { key: "user", label: "End-users", icon: CI_TYPE_ICON.user },
   { key: "account", label: "Accounts", icon: CI_TYPE_ICON.account },
 ];
@@ -73,9 +74,9 @@ export function CmdbAssets({
 
   // Per-chip counts reflect the active account filter.
   const counts = useMemo<Record<ViewKey, number>>(() => {
-    const base = { device: filteredDevices.length, cloud: 0, user: 0, account: 0 };
+    const base = { device: filteredDevices.length, cloud: 0, software: 0, user: 0, account: 0 };
     for (const c of cis) {
-      if ((c.ciType === "cloud" || c.ciType === "user" || c.ciType === "account") &&
+      if ((c.ciType === "cloud" || c.ciType === "software" || c.ciType === "user" || c.ciType === "account") &&
           (!accountId || c.accountId === accountId)) {
         base[c.ciType] += 1;
       }

@@ -1488,6 +1488,40 @@ export const postgresRepositories: Repositories = {
                  FROM cloud_asset ca
                  JOIN account a ON a.id = ca.account_id
                 WHERE ca.account_id IS NOT NULL
+
+               UNION ALL
+
+               -- software CI arm: silver software_ci (an Intune app install on a device;
+               -- #652). Owning account required (staff/internal exclusion — software_ci.account_id
+               -- resolves through the owning device, so an account-less install can never enter).
+               -- Software is a SUPPORTING asset: no lifecycle signal (always 'unknown', badge
+               -- suppressed) and a flat 'low' derived criticality (deriveCriticality), so every
+               -- signal column is NULL; the four key attributes carry the display facts.
+               SELECT 'software'::text,
+                      s.id::text,
+                      s.account_id::text,
+                      a.name,
+                      coalesce(s.name, 'Software'),
+                      NULL::text,
+                      NULL::text,
+                      NULL::text,
+                      NULL::text, -- device_status (no asset lifecycle for software)
+                      NULL::text, -- last_seen_at (not a lifecycle input for software)
+                      NULL::text,
+                      NULL::text,
+                      NULL::text,
+                      NULL::text, -- compliance_state (software arm: n/a)
+                      NULL::text, -- last_sync_date_time
+                      NULL::text, -- device_origin
+                      jsonb_build_array(
+                        jsonb_build_object('label','Publisher','value',coalesce(s.publisher,'—')),
+                        jsonb_build_object('label','Version','value',coalesce(s.version,'—')),
+                        jsonb_build_object('label','Platform','value',coalesce(s.platform,'—')),
+                        jsonb_build_object('label','Install state','value',coalesce(s.install_state,'—'))
+                      )
+                 FROM software_ci s
+                 JOIN account a ON a.id = s.account_id
+                WHERE s.account_id IS NOT NULL
              ) ci
             ORDER BY account_name NULLS LAST, ci_type, display_name`,
         );
@@ -1872,6 +1906,25 @@ export const postgresRepositories: Repositories = {
            ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
            DO NOTHING`,
         );
+        // software runs-on device (software_ci.device_id — a REAL FK, #652) + software
+        // belongs-to account (software_ci.account_id). software→user is omitted (no silver FK).
+        await client.query(
+          `INSERT INTO ci_relationship
+             (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           SELECT 'software', s.id::text, 'device', s.device_id::text, 'runs-on', 'derived'
+             FROM software_ci s
+           ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           DO NOTHING`,
+        );
+        await client.query(
+          `INSERT INTO ci_relationship
+             (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           SELECT 'software', s.id::text, 'account', s.account_id::text, 'belongs-to', 'derived'
+             FROM software_ci s
+            WHERE s.account_id IS NOT NULL
+           ON CONFLICT (from_ci_type, from_ci_id, to_ci_type, to_ci_id, relation_type, source)
+           DO NOTHING`,
+        );
         const { rows } = await client.query<{ count: string }>(
           `SELECT count(*)::text AS count FROM ci_relationship WHERE source = 'derived'`,
         );
@@ -1962,6 +2015,16 @@ export const postgresRepositories: Repositories = {
                    END)::ci_criticality
              FROM cloud_asset ca
             WHERE ca.account_id IS NOT NULL
+           ON CONFLICT (ci_type, ci_id)
+           DO UPDATE SET derived_default = EXCLUDED.derived_default, updated_at = now()`,
+        );
+        // software → flat `low` baseline (supporting asset; mirrors deriveSoftwareCriticality
+        // in src/lib/cmdb/criticality.ts and the migration 0204 seed, #652).
+        await client.query(
+          `INSERT INTO cmdb_ci_overlay (ci_type, ci_id, derived_default)
+           SELECT 'software', s.id::text, 'low'::ci_criticality
+             FROM software_ci s
+            WHERE s.account_id IS NOT NULL
            ON CONFLICT (ci_type, ci_id)
            DO UPDATE SET derived_default = EXCLUDED.derived_default, updated_at = now()`,
         );

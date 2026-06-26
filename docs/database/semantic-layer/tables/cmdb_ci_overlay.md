@@ -7,7 +7,7 @@ description: App-native per-CI criticality / business-impact overlay — one row
 resource: ../../../decision-records/ADR-0047-device-inventory.md
 tags: [silver, service-desk, cmdb, criticality, business-impact, overlay, archetype-d, app-native]
 data_class: operational
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-25T00:00:00Z
 ---
 
 # cmdb_ci_overlay
@@ -46,6 +46,8 @@ separate, gated round-trip slice** (a later
       front-end schema change, ADR-0042).
     - **cloud** → `cloud_asset.category`: `database` | `identity` | `security` → **high**;
       `compute` | `network` → **medium**; else → **low** (#653).
+    - **software** → flat **low** baseline — a supporting CI carries no business-impact
+      signal of its own; an admin override is the escape hatch (#652).
     The derived rule **never** assigns `critical` — a machine should not silently declare a
     CI business-critical; that level is reserved for an explicit human override. The
     IDENTICAL rule is encoded in `src/lib/cmdb/criticality.ts::deriveCriticality` (the
@@ -66,7 +68,7 @@ separate, gated round-trip slice** (a later
 
 | Column | Type | Notes |
 |---|---|---|
-| `ci_type` | text | `account` \| `user` \| `device` \| `cloud` (CHECK); part of the PK |
+| `ci_type` | text | `account` \| `user` \| `device` \| `cloud` \| `software` (CHECK); part of the PK |
 | `ci_id` | text | CI business key within `ci_type`; part of the PK |
 | `derived_default` | `ci_criticality` enum | computed from silver attributes; recomputed by the derivation (rewrites THIS column only); never `critical` |
 | `override` | `ci_criticality` enum | admin's explicit rating; NULL = use `derived_default`; survives re-derivation |
@@ -80,7 +82,8 @@ PRIMARY KEY `(ci_type, ci_id)` — one overlay row per CI.
 
 - `(ci_type, ci_id)` → the `cmdb_ci` union read-model (#645) — i.e. silver
   [`account`](account.md), [`contact`](contact.md) (the `user` CI), [`device`](device.md),
-  or [`cloud_asset`](cloud_asset.md) (the `cloud` CI).
+  [`cloud_asset`](cloud_asset.md) (the `cloud` CI), or [`software_ci`](software_ci.md)
+  (the `software` CI).
   Business-key join, **not an FK** (the register is a union/projection).
 - **Consumers:** the CI register badge + CI-detail criticality panel (`/cmdb`,
   `/cmdb/<type>/<id>`); later CMDB impact analysis

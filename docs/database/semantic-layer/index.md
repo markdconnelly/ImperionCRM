@@ -47,6 +47,7 @@ core subset). Remaining objects from the
 | [`contact_enrichment`](tables/contact_enrichment.md) | single-SoR (EAV) | app-native per-fact dossier (each fact self-attributes source + lawful basis) | ADR-0025 |
 | [`device`](tables/device.md) | merge | website > itglue > m365 | ADR-0039 |
 | [`cloud_asset`](tables/cloud_asset.md) | merge | cloud provider (read-only; Azure ARM first, on-prem LP merge) | ADR-0097 |
+| [`software_ci`](tables/software_ci.md) | merge | Intune managed-apps (read-only; device-resolved; on-prem LP merge) | ADR-0097 |
 | [`opportunity`](tables/opportunity.md) | merge | website > autotask > KQM | ADR-0080 |
 | [`quota`](tables/quota.md) | single-SoR | website system of record | ADR-0072 |
 | [`forecast_snapshot`](tables/forecast_snapshot.md) | derived ledger | website (nightly snapshot job) | ADR-0072 |

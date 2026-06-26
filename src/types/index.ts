@@ -3233,7 +3233,7 @@ export interface QueueSummary {
  *  - `cloud`    → silver `cloud_asset` (a provider-agnostic cloud resource — azure
  *                 now, aws/gcp later; #874/#875, owning client via `account_tenant`)
  */
-export type CiType = "account" | "user" | "device" | "cloud";
+export type CiType = "account" | "user" | "device" | "cloud" | "software";
 
 /**
  * One Configuration Item in the `cmdb_ci` union read-model (#645). A CI is a
