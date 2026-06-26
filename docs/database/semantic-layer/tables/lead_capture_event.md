@@ -56,7 +56,7 @@ the processing state (received → resolved → routed). The capture is the immu
 
 Captures arrive from many channels. Besides website hooks, the local pipeline machine-merges
 two Meta channels (LP ADR-0026): Messenger DM senders (`facebook_dm` hook, 0075) and **Meta
-Lead Ads instant-form submitters** (`facebook_lead` hook, migration 0206 / LP #362). For Lead
+Lead Ads instant-form submitters** (`facebook_lead` hook, migration 0207 / LP #362). For Lead
 Ads, `payload_bronze` carries `source='meta_lead_ad'`, the Meta leadgen id, the form/ad/
 campaign ids, and the field-data answers; resolution is **idempotent on the Meta leadgen id**
 (one capture per submitted lead), and the submitter resolves to (or mints) a

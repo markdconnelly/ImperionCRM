@@ -31,7 +31,7 @@ the hook accepts hits. A hook of kind `event_registration` is the capture surfac
 Two channels are **machine-merged from the local pipeline**, not configured on the website:
 a single `kind='facebook_dm'` hook ('Facebook page inbox') for Messenger DM senders
 (migration 0075), and a single `kind='facebook_lead'` hook ('Facebook Lead Ads') for Meta
-Lead Ads instant-form submitters (migration 0206, LP #362, front-end ADR-0124 #6). The Lead
+Lead Ads instant-form submitters (migration 0207, LP #362, front-end ADR-0124 #6). The Lead
 Ads hook's `config` records `source='meta_lead_ad'` plus the leadgen form id(s); its capture
 events carry `source='meta_lead_ad'` in `payload_bronze`. Both are kept singular/idempotent
 by the `Invoke-ImperionMetaMerge` / `Invoke-ImperionMetaLeadAdsMerge` co-located merges
