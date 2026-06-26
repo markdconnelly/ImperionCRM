@@ -124,3 +124,45 @@ layer **above** that.
   plane); reconciles LinkedIn epic #1007 as another adapter; Meta ads execution = Backend #406.
 - **Future:** webhook inbound via event substrate #991; attribution via #1316; metric-name normalization
   #135.
+
+## Implementation note — slice A schema (2026-06-26)
+
+Slice A (#1339, epic #1338) is the silver schema only — read-model, no app code/UI (slices B/G).
+The grilled (`grill-with-docs`) reframe: most ADR-0124 entities already exist, so slice A is **2 new
+content tables + 1 new inbound store + EXTEND `ad` + REUSE the metric tables + governance-by-reference**,
+not five new tables. The six locked decisions, recorded verbatim against migration `0210_social_plane_schema.sql`
+(number claimed at merge, §10.3):
+
+1. **Metrics — reuse, no new table.** Organic (post/channel) → existing `social_metric` (mig 0075;
+   `entity_kind` widened in vocabulary to cover `threads`/`linkedin` post entities — free-text, no
+   migration). Paid (ad) → existing `campaign_metric` (mig 0023). A BI union view (`social_performance`)
+   is deferred to slice D. No new metric entity.
+
+2. **Ad — extend `ad` (mig 0023), no new table.** +4 columns: `adset_external_ref` (the missing middle of
+   the Meta act_/campaign/**adset**/ad hierarchy — ad-id stays in `external_ref`), `daily_budget` (ad-level;
+   campaign-level `budget` already exists), `audience_id` → `audience` (NULL), `boosted_from_social_post_id`
+   → `social_post` (NULL — the Boost bridge). `act_<adAccountId>` is a `conn-company-meta` credential-blob
+   value (BE #426), **not** a row column.
+
+3. **Social Post — new parent + child.** `social_post` = compose-once single composition
+   (draft→scheduled→published→archived intent), optional `campaign_id`. `social_post_channel` = per-network
+   fan-out result, `UNIQUE (social_post_id, channel)`, publish status incl. `failed`, platform `external_id`
+   + `error`. New enum `social_channel` (facebook│instagram│threads│linkedin│messenger); **no** channel-registry
+   table — "connected" is derived from `connection` rows.
+
+4. **Social Engagement — new table** (the #2 inbound-split store): public comments on our posts + brand
+   mentions, `UNIQUE (channel, external_id)` for idempotent poll-in merge, author captured inline,
+   `contact_id` set only on match (slice G), `on_social_post_channel_id` for comments on our posts. **NOT on
+   the Interaction timeline** (#2). v1 scope = organic-post comments + mentions; ad-comment ingestion deferred.
+
+5. **Social Action — no schema.** The existing `agent_pending_action` (mig 0158) + the 11 social
+   `action_kind`s (#418), seeded/ceiled by 0209, paid-wired by #426. Direction is action→object via the
+   action payload; no back-FK on the content tables. Slice A deliverable = OKF documentation of the linkage
+   + per-type ceilings only.
+
+6. **data_class + grants.** `data_class = operational` for all (matching `social_metric`/`campaign`/
+   `campaign_metric`). `social_engagement` third-party **author PII** is handled by an OKF lawful-basis note
+   (ADR-0025), not by over-classing the table's read-gate. Grants (ADR-0042 §1): `social_post`/`_channel` =
+   web SELECT, backend RW, pipeline SELECT; `social_engagement` = web SELECT, backend UPDATE (triage),
+   pipeline/LP RW (poll-in merge, ADR-0026); `ad` = + backend INSERT (Boost mints an ad, beyond 0205's
+   SELECT,UPDATE). Defensive `DO $$ … pg_roles … $$` idiom (0158/0123).

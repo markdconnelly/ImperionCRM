@@ -7,7 +7,7 @@ description: A normalized social-platform metric value (reach, impressions, foll
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [silver, marketing, social, metric, bi, reporting, demand-gen]
 data_class: operational
-timestamp: 2026-06-25T00:00:00Z
+timestamp: 2026-06-26T00:00:00Z
 ---
 
 # social_metric
@@ -31,13 +31,21 @@ deliberately decoupled from any one entity table). `metric` is the measure name 
 its window (e.g. lifetime vs day); both are free text so new platform metrics ride in
 without a migration.
 
+Under the unified Social plane (ADR-0124), this stays the **organic** metric home for every
+Social Channel — `campaign_metric` remains paid-only (ADR-0012). `entity_kind` is the
+metric-name-driven polymorphic pointer and is **free text**, so it widens *by vocabulary, not
+migration* to cover Threads and LinkedIn post entities (e.g. `threads_post`, `linkedin_post`)
+alongside the existing `page` / `post` / `media` / `account` values as those adapters land
+(Threads ADR-0125; LinkedIn #1007). A published [`social_post_channel`](social_post_channel.md)
+is the organic object these metrics attribute to, keyed by its platform `external_id`.
+
 ## Schema
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK |
 | `platform` | text | source platform (e.g. facebook, instagram) |
-| `entity_kind` | text | the kind of platform object measured (page / post / account / …) — polymorphic pointer |
+| `entity_kind` | text | the kind of platform object measured (page / post / media / account / `threads_post` / `linkedin_post` / …) — free-text polymorphic pointer; new kinds ride in without a migration |
 | `entity_external_id` | text | the platform object's external id — polymorphic pointer |
 | `metric` | text | the measure name (reach, impressions, followers, …) |
 | `period` | text | the metric window (lifetime, day, …); nullable |

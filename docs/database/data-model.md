@@ -1534,6 +1534,33 @@ lead-capture grant — Threads mentions are not leads, unlike FB DMs); web role 
 until the token + Meta App Review land. No secrets (token in Key Vault as `conn-company-threads`,
 by name only).
 
+### Social Media Management plane — slice A schema (migration 0210, #1339, epic #1338, ADR-0124)
+
+The unified Social plane's silver schema (ADR-0124 slice A — read-model only; app code/UI are
+slices B/G). Most ADR-0124 entities already exist, so this migration is deliberately small:
+**2 new content tables + 1 new inbound store + EXTEND `ad` + reuse the metric tables**.
+
+| Table | What | Notes |
+| --- | --- | --- |
+| `social_post` (new) | Compose-once organic composition | `content` jsonb · optional `campaign_id` · `created_by_user_id` · enum `social_post_status` (draft/scheduled/published/archived) · `scheduled_at`. The fan-out parent (ADR-0124 #3). |
+| `social_post_channel` (new) | Per-network fan-out result | FK→`social_post` `ON DELETE CASCADE` · enum `social_channel` (facebook/instagram/threads/linkedin/messenger) · `adapted_payload` · enum `social_publish_status` (+`failed`) · `external_id`/`published_at`/`error`. **UNIQUE (social_post_id, channel)**. |
+| `social_engagement` (new) | Inbound public comments + brand mentions | enum `social_channel` · `external_id` · enum `social_engagement_kind` (comment/mention) · `body`/`posted_at`/`ingested_at` · author inline (`author_external_id`/`_handle`/`_display_name`/`_profile_url`) · `contact_id` (matched in slice G) · `on_social_post_channel_id` · `source_url` · triage (`status` enum, `intent`, `assigned_agent_key`). **UNIQUE (channel, external_id)**. **NOT on the Interaction timeline** (ADR-0124 #2). |
+| `ad` (extend, mig 0023) | +4 cols | `adset_external_ref` (Meta act_/campaign/**adset**/ad middle) · `daily_budget` (ad-level) · `audience_id`→`audience` · `boosted_from_social_post_id`→`social_post` (the Boost bridge, ADR-0124 #6). |
+
+Five new enums: `social_channel`, `social_post_status`, `social_publish_status`,
+`social_engagement_kind`, `social_engagement_status`. **Metrics reuse** the existing tables —
+organic → `social_metric` (0075; `entity_kind` widens by vocabulary to `threads_post`/
+`linkedin_post`, no migration), paid → `campaign_metric` (0023); a BI union view is deferred to
+slice D. **Social Action = no schema** — the existing `agent_pending_action` (0158) + the 11
+social `action_kind`s (#418, seeded 0209, paid-wired #426); linkage is OKF-documented, not a
+back-FK. `data_class=operational` for all (the demand-gen plane class); `social_engagement`'s
+third-party author PII is governed by an OKF lawful-basis note (ADR-0025) + the consent gate on
+any outbound, not by over-classing the read-gate. Grants (ADR-0042 §1): web SELECT on the three
+tables; backend RW `social_post`/`_channel`, UPDATE `social_engagement` (triage), + INSERT on
+`ad` (Boost mints an ad, beyond 0205); pipeline SELECT `social_post`/`_channel` + RW
+`social_engagement` (poll-in merge, ADR-0026; LP runs as the pipeline identity). Dormant until
+the `conn-company-*` credentials land + Meta App Review clears. No secrets.
+
 ### Defender incidents + alerts bronze and Autotask layering (migration 0076, #256, ADR-0059)
 
 `defender_incidents` (Graph `/security/incidents`) and `defender_alerts`

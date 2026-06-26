@@ -132,7 +132,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [workflow](tables/workflow.md) kind=journey (definition jsonb) | Marketing | B | op | ✅ | journey runner (ADR-0073, #398) |
 | [lead_score](tables/lead_score.md) | Marketing | C | op | ✅ | lead scoring (rule; routing/journeys/forecast) |
 | [segment](tables/segment.md) → segment_member | Marketing | B | pii | ✅ | journey enrollment / list-views (CRM contact set, distinct from ad audience) |
-| [ad](tables/ad.md) | Marketing | B | op | ✅ | campaign ops (creative; metric-attribution unit) |
+| [ad](tables/ad.md) | Marketing | B | op | ✅ | campaign ops (creative; metric-attribution unit; +adset_external_ref/daily_budget/audience_id/boosted_from_social_post_id Boost bridge, #1339/0210, ADR-0124 #6) |
 | [campaign_metric](tables/campaign_metric.md) | Marketing | B | op | ✅ | campaign ops / BI (daily spend/impressions/clicks/leads); cloud Pipeline writes daily Meta insights, idempotent replace-from-source (PL #168, ADR-0021) |
 | [campaign_send](tables/campaign_send.md) | Marketing | B | op | ✅ | campaign ops (scheduled/event-triggered send; consent-gated) |
 | [audience](tables/audience.md) | Marketing | B | pii | ✅ | ad targeting (paid-media audience; distinct from segment; consent-gated) |
@@ -141,7 +141,10 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [event_registration](tables/event_registration.md) | Marketing | B | pii | ✅ | lead-response (registrant; attendance) |
 | [lead_hook](tables/lead_hook.md) | Marketing | B | pii | ✅ | lead-response (capture endpoint definition; + machine `facebook_dm` / `facebook_lead` hooks merged from the local pipeline) |
 | [lead_capture_event](tables/lead_capture_event.md) | Marketing | B | pii | ✅ | lead-response (raw inbound hit → contact resolution; sources incl. website + Meta `facebook_dm` / `meta_lead_ad`) |
-| [social_metric](tables/social_metric.md) | Marketing | B | op | ✅ | BI / reporting (normalized social metrics from `meta_insights`) |
+| [social_metric](tables/social_metric.md) | Marketing | B | op | ✅ | BI / reporting (normalized social metrics from `meta_insights`; the **organic** metric home for every Social Channel — `entity_kind` widens by vocabulary to `threads_post`/`linkedin_post`, no migration, #1339, ADR-0124 #1) |
+| [social_post](tables/social_post.md) | Marketing | B | op | ✅ | campaign ops (compose-once organic composition → fan-out; #1339/0210, ADR-0124 #3) |
+| [social_post_channel](tables/social_post_channel.md) | Marketing | B | op | ✅ | campaign ops (per-network fan-out result; UNIQUE (social_post_id, channel); #1339/0210, ADR-0124 #3) |
+| [social_engagement](tables/social_engagement.md) | Marketing | B | op | ✅ | inbound triage (public comments + brand mentions; NOT on the Interaction timeline; contact-linked on match in slice G; lawful-basis ADR-0025; #1339/0210, ADR-0124 #2) |
 
 ## Time
 
