@@ -1,3 +1,13 @@
+---
+adr: 0126
+title: "Client communications capture model"
+status: proposed
+date: 2026-06-26
+repo: frontend
+summary: "Client communications are captured from Imperion's OWN tenant, filtered to only clients present in the DB (account_domain + onboarded contacts; onboarding adds a client's users/domains to the filter) — covering direct client<->employee email, Teams chats, Teams meetings, and social-media DM histories (ADR-0124) as one unified client-communications history. Client tenants are NOT granted Mail.Read / Chat.Read / Calendars.Read; comms are never pulled from client tenants. Per-client security posture IS pulled from client tenants under allowed scopes (m365_incidents, m365_alerts, m365_evidence, m365_service_principals, entra_conditional_access_policies), fanned out across mapped tenants like the directory collectors. Texting on personal cell phones is explicitly out of scope. Tracking: epic #1366 (sub-issues a-f), docs issue #1367. ADR number is a placeholder claimed at merge (system CLAUDE.md 10.3)."
+tags: [m365, communications, security-posture, privacy, integrations]
+---
+
 # ADR-0126: Client communications capture model
 
 | Field | Value |
