@@ -1503,6 +1503,37 @@ id back onto `external_ref`. Metric *writes* stay split per ADR-0053 decision 7:
 only metric-side write is `campaign_send.delivered_count` reconciliation (already granted in
 0071). The backend is **not** granted `campaign_metric`.
 
+### Threads bronze + interaction/social-metric mapping (migration 0208, #1336, ADR-0125)
+
+Threads (`graph.threads.net`) is a **separate API with its own Threads OAuth** — it shares
+no token or code with the FB/IG Graph Meta integration (0075), so it is a net-new connector
+(`conn-company-threads`, company-scope; enum `connection_provider += 'threads'`) and a
+net-new bronze set, but its data rides the **existing** unified timeline and social-metric
+layer — no silo (epic #1334 slice S2; ADR-0125, plane ADR-0124). Four local-pipeline-envelope
+bronze tables for Imperion's own Threads presence, collected + merged on-prem (LP ADR-0026,
+S3 LP #356):
+
+| Table | What | Silver destination |
+| --- | --- | --- |
+| `threads_posts` | Our own published Threads posts | `interaction` (`social_post`, source `threads`, direction outbound) |
+| `threads_replies` | Replies on our Threads posts | `interaction` (`social_comment`, source `threads`, direction by author) |
+| `threads_mentions` | Public Threads mentions of us | `interaction` (`mention`, source `threads`, direction inbound) |
+| `threads_insights` | Raw Threads insight snapshots | `social_metric` (platform `threads`) |
+
+No new silver table — both `interaction` and `social_metric` already exist (0018/0075); this
+migration only enables the `threads` mapping. Enum: `interaction_source += 'threads'` (the
+`mention`/`social_post`/`social_comment` `kind`s are free text, no enum). Per ADR-0124's
+inbound split, v1 mentions are *of us* → ride the contact-centric timeline; anonymous public
+brand chatter would later route to the plane's Social Engagement store, not here. Writer:
+`imperion-localpipeline` (bronze write + `interaction` insert + `social_metric` upsert; **no**
+lead-capture grant — Threads mentions are not leads, unlike FB DMs); web role reads bronze +
+`social_metric`. Six App Review scopes (`threads_basic`, `threads_content_publish`,
+`threads_manage_replies`, `threads_read_replies`, `threads_manage_mentions`,
+`threads_manage_insights`) bound the build; outbound publish/reply is a governed Social Action
+(backend, S4 BE #417) with a HARD customer-facing autonomy ceiling — **dormant/fail-closed**
+until the token + Meta App Review land. No secrets (token in Key Vault as `conn-company-threads`,
+by name only).
+
 ### Defender incidents + alerts bronze and Autotask layering (migration 0076, #256, ADR-0059)
 
 `defender_incidents` (Graph `/security/incidents`) and `defender_alerts`
