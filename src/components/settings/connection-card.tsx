@@ -7,7 +7,7 @@ import { PollFrequency } from "@/components/integrations/poll-frequency";
 import { HealthDot } from "@/components/integrations/health-dot";
 import { RemoveCredentialButton } from "@/components/settings/remove-credential-button";
 import { credentialCardState } from "@/lib/integrations/credential-card-state";
-import { providerIsPollable } from "@/lib/integrations/company-providers";
+import { providerIsPollable, type CompanyProvider } from "@/lib/integrations/company-providers";
 import type { ConnectionCardModel } from "@/lib/integrations/connection-cards";
 import type { HealthVerdict } from "@/lib/integrations/connection-health";
 import type { CapabilitySummary } from "@/lib/integrations/ingest-summary";
@@ -51,6 +51,57 @@ function StatusBadge({ entry }: { entry: ConnectorCatalogEntry }) {
     >
       {STATUS_LABEL[entry.status]}
     </span>
+  );
+}
+
+/** A flat row of scope chips (display/audit only — no secret material, ADR-0086). */
+function ScopeChips({ scopes }: { scopes: readonly string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {scopes.map((s) => (
+        <span
+          key={s}
+          className="rounded border border-border bg-panel-2 px-1.5 py-0.5 font-mono text-[10px] text-dim"
+        >
+          {s}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The granted scopes for a company credential. When the provider declares `scopeGroups`
+ * (Meta = Social + Ads over the one `conn-company-meta` secret, ADR-0124 #7 / Datto
+ * 2-cards/1-key precedent, ADR-0122) it renders as one labelled view PER GROUP over the
+ * single credential; otherwise it shows the flat scope list. Either way it is metadata for
+ * display/audit — there is exactly ONE Credential and ONE Key Vault secret.
+ */
+function ScopeViews({ provider }: { provider: CompanyProvider }) {
+  if (provider.scopes.length === 0) return null;
+  const groups = provider.scopeGroups;
+  return (
+    <div className="flex flex-col gap-1.5 text-[11px]">
+      {groups && groups.length > 0 ? (
+        <>
+          <span className="font-medium text-dim">Scopes (one secret, {groups.length} views)</span>
+          {groups.map((g) => (
+            <div key={g.label} className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-text">
+                {g.label}
+              </span>
+              {g.description && <span className="text-[10px] text-dim">{g.description}</span>}
+              <ScopeChips scopes={g.scopes} />
+            </div>
+          ))}
+        </>
+      ) : (
+        <>
+          <span className="font-medium text-dim">Scopes</span>
+          <ScopeChips scopes={provider.scopes} />
+        </>
+      )}
+    </div>
   );
 }
 
@@ -193,6 +244,10 @@ export function ConnectionCard({
           <span className="font-medium">Enriches:</span> {capabilities.enriches.join(", ")}
         </p>
       )}
+
+      {/* Granted scopes — grouped into card views when the provider declares scopeGroups
+          (Meta Social / Meta Ads over the one secret, ADR-0124 #7 / Datto precedent ADR-0122). */}
+      {provider && <ScopeViews provider={provider} />}
 
       {/* Catalog facts (auth / cadence / maps-to / last sync) — manifest-backed connectors only */}
       {entry && (

@@ -211,7 +211,7 @@ the authoritative list (verified against source):
 | `televy` | Credential | API key\* — assessment reporting & scorecards |
 | `qbo` | OAuth connect | none — "Connect QuickBooks" (Intuit OAuth; read-only; see §6.2) |
 | `darkwebid` | Credential | API key\* — Kaseya / ID Agent Dark Web ID compromised-credential monitoring |
-| `meta` | Credential (**send-capable**) | Page access token\*, Facebook Page ID — FB / IG DM replies (see §6.1) |
+| `meta` | Credential (**send-capable**) | Access token\*, Facebook Page ID — ONE secret spanning FB Page + Instagram + Messenger + Ads, rendered as Meta Social / Meta Ads views (see §6.1) |
 
 \* write-only secret — stored in Key Vault, never returned to the client.
 
@@ -221,21 +221,40 @@ the authoritative list (verified against source):
 > connector's *marketplace shape* (auth type, scopes, cadence, what it maps, what it can
 > do, ADR-0076). Both key off the same connector `key`; do not conflate them.
 
-### 6.1 Meta (Facebook / Instagram) send credential (`meta`)
+### 6.1 Meta (Facebook / Instagram / Messenger / Ads) credential (`meta`)
 
-`meta` is the platform's first **send-capable** company credential: its long-lived Page
-access token authorizes **outbound** Facebook & Instagram DM replies
-(`pages_messaging` / `instagram_manage_messages`), not just ingest. The cloud pipeline
-reads it from Key Vault (`conn-company-meta`, fields `pageAccessToken` + `pageId`) and
-stays **dormant / fail-closed** until the secret exists (pipeline `credentials.ts`, issue
-#89 / PR #113). Because nothing *polls* a send token, the card renders **no poll cadence
-and no Refresh button** (`sendCapable: true` → `providerIsPollable()` is false).
+`meta` is the **send-capable** company credential backing the whole Social Media plane
+(ADR-0124 #7). It is **ONE app token, one secret** (`conn-company-meta`) spanning the full
+scope **union**: Facebook Page + Instagram + Messenger DMs **AND** Meta Ads. Meta issues a
+single scoped token per app, so storing the same token once and recording many scopes is the
+right shape (the rejected alternative — one credential per surface — would store the same
+token N times). The token authorizes **outbound** action — DM replies, post publishing, and
+ad management — not just ingest.
 
-**Security gate.** Entering this token is a **Mark-approved security event**: Meta App
-Review / Advanced Access for the messaging permissions must be granted before the token is
-valid, and Mark approves before the field goes live. The field naming mirrors the
-pipeline's `credentials.ts` exactly (`pageAccessToken`, `pageId`) so the two provider
-lists stay in sync.
+**Two card views over the one secret.** The card renders the granted scopes as two labelled
+views — **Meta Social** (`pages_messaging`, `pages_manage_metadata`, `pages_read_engagement`,
+`pages_manage_posts`, `instagram_basic`, `instagram_manage_messages`,
+`instagram_content_publish`) and **Meta Ads** (`ads_management`, `ads_read`,
+`business_management`) — the **Datto "2 cards / 1 key" precedent** (ADR-0122). This is purely
+a display/audit grouping (`scopeGroups` in `company-providers.ts`); there is still exactly ONE
+`Credential`, ONE write-only token field, and ONE Key Vault secret. **Company-scope, no client
+mapping** (the Meta precedent, ADR-0122).
+
+The cloud pipeline reads the secret from Key Vault (`conn-company-meta`, fields
+`pageAccessToken` + `pageId`) and stays **dormant / fail-closed** until it exists (pipeline
+`credentials.ts`, issue #89 / PR #113; ads push = Backend #406). The existing **Meta-DM
+messaging path is unchanged** — `pages_messaging` / `instagram_manage_messages` are retained
+in the union, so DM ingest + reply keep resolving exactly as before. Because nothing *polls*
+a send token, the card renders **no poll cadence and no Refresh button** (`sendCapable: true`
+→ `providerIsPollable()` is false).
+
+**Security gate.** The recorded scopes are **display/audit metadata only — never the secret**;
+the token lives in Key Vault, never in code or the DB (CLAUDE.md §5). Entering it is a
+**Mark-approved security event**: Meta App Review / Advanced Access for the messaging, content,
+and ads permissions must be granted before the token is valid (Threads/ads/Instagram in review;
+Messenger + Page "Testing complete"), and Mark approves before the field goes live. The field
+naming mirrors the pipeline's `credentials.ts` exactly (`pageAccessToken`, `pageId`) so the two
+provider lists stay in sync.
 
 ### 6.2 QuickBooks Online connect (`qbo`, OAuth — ADR-0048 / ADR-0085)
 
