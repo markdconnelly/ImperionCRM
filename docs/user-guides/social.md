@@ -36,8 +36,12 @@ list (newest first), filterable by network:
   (new / triaged / replied / dismissed), its **intent** (lead / support / brand), and
   the **routed agent** (Chase / Felix / Belle) once slice G classifies it.
 
-Replying is a cockpit-gated Social Action (wired in the follow-up). The inbox itself is
-fully live the moment the collectors hydrate the source tables (slice H).
+Each inbox row carries a **Reply** button (marketing role only) on the channels that have a
+seeded reply action — Facebook, Instagram, Messenger, Threads. Drafting a reply **proposes**
+a governed Social Action (`social_reply_*`, mapped from the row's channel; an Instagram DM
+routes to `social_reply_ig_direct`) to the **approval cockpit** — it is **human-approved in
+v1, never sent directly** (ADR-0124 #4, ADR-0058). The inbox itself is fully live the moment
+the collectors hydrate the source tables (slice H).
 
 ## Publishing
 
@@ -52,18 +56,35 @@ network, coloured by publish status). **Compose post** opens the Builder (ADR-00
 3. Optionally attribute it to a marketing **campaign**.
 4. **Save as draft**, or schedule a publish time.
 
-Saving **drafts** the post — nothing publishes from here. Publishing, scheduling, and
-boosting a post into a paid ad are Social Actions through the approval cockpit.
+Saving **persists** the draft via the backend save endpoint (`POST /api/social/posts`,
+BE #429) — nothing publishes from here. Clicking a post opens its **detail page**
+(`/social/publishing/[id]`): the authored copy, the per-network fan-out rows
+(`social_post_channel`, coloured by publish status), and the **Outbound actions** strip.
+
+From there (marketing role only):
+
+- **Publish `<channel>`** proposes the channel's seeded publish action
+  (`social_publish_fb_post` / `social_publish_ig_media` / `social_post_threads`) to the
+  approval cockpit.
+- **Boost post** proposes `social_boost_post` — minting a paid ad
+  (`boosted_from_social_post_id`, ADR-0124 #6) with the budget the approver sets. Boost is
+  a **`financial`** action (ADR-0109 HARD money ceiling) and is only offered once a channel
+  is published.
+
+Every one of these is **human-approved in v1, never sent directly** (ADR-0124 #4, ADR-0058).
 
 ## Why the GUI never writes the post directly
 
 The web role has **SELECT-only** on `social_post` / `social_post_channel` (migration
 0210 grant). Persisting a composition is a backend *process* (every process calls the
 backend, ADR-0042 §1) — so the compose Builder forwards the draft to the backend save
-endpoint rather than writing the table. Until that endpoint is wired the composer
-degrades **honestly**: it tells you nothing was persisted rather than faking a saved
-draft (stubbed-not-broken). The backend save/schedule endpoint + the reply/publish/boost
-action wiring are tracked as follow-ups under epic #1338.
+endpoint (`POST /api/social/posts`, BE #429) rather than writing the table. The reply,
+publish, and boost actions are the **11 seeded Social Action kinds** (`agent_tool_grant`
+for Belle, migration 0209): the GUI **proposes** the right `action_kind` and the backend
+dispatcher (BE #418) parks it on the pending-action cockpit + executes on approval. The
+front end holds no publishing credential and calls no network directly. These flows are
+**deploy-dormant** until the backend trigger-sync (#119) and the per-channel tokens land —
+the expected state, not a bug.
 
 ## Security
 

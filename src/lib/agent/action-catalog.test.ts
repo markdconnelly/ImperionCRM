@@ -198,3 +198,40 @@ describe("no-endpoint-edit property — a new action is a catalog entry alone (#
     expect(bad.ok).toBe(false);
   });
 });
+
+describe("catalog registration — the 11 Social Action kinds (ADR-0124 #4, #1358)", () => {
+  const ORGANIC = [
+    "social_publish_fb_post",
+    "social_reply_fb_comment",
+    "social_publish_ig_media",
+    "social_reply_ig_comment",
+    "social_reply_ig_direct",
+    "social_post_threads",
+    "social_reply_threads",
+  ];
+  const MONEY = ["social_boost_post", "social_ad_deploy", "social_ad_pause", "social_ad_rebudget"];
+
+  it("registers all 11 kinds as T3 customer-facing, consentClass none, social_dispatch executor", () => {
+    for (const kind of [...ORGANIC, ...MONEY]) {
+      const def = getActionDef(kind);
+      expect(def, kind).toBeDefined();
+      expect(def!.tier).toBe("T3");
+      expect(def!.consentClass).toBe("none");
+      expect(def!.executor).toBe("social_dispatch");
+    }
+  });
+
+  it("classes the 7 organic kinds client_pii and the 4 ad kinds financial (ADR-0109 money ceiling)", () => {
+    for (const kind of ORGANIC) expect(getActionDef(kind)!.dataClass, kind).toBe("client_pii");
+    for (const kind of MONEY) expect(getActionDef(kind)!.dataClass, kind).toBe("financial");
+  });
+
+  it("validates a publish/reply/boost payload through the same resolve path", () => {
+    expect(resolveAction({ kind: "social_publish_fb_post", socialPostId: "p1" }).ok).toBe(true);
+    expect(resolveAction({ kind: "social_reply_fb_comment", engagementId: "e1", text: "hi" }).ok).toBe(true);
+    expect(resolveAction({ kind: "social_boost_post", socialPostId: "p1", budgetUsd: 50 }).ok).toBe(true);
+    // A registered kind with a malformed payload is refused locally before any round-trip.
+    expect(resolveAction({ kind: "social_publish_fb_post" }).ok).toBe(false); // missing socialPostId
+    expect(resolveAction({ kind: "social_boost_post", socialPostId: "p1" }).ok).toBe(false); // missing budgetUsd
+  });
+});
