@@ -1,15 +1,14 @@
 ---
+adr: 0125
+title: "Threads integration — separate graph.threads.net adapter under the social plane"
 status: proposed
 date: 2026-06-25
+repo: frontend
+summary: "Threads is integrated as a separate-API adapter under the Social Media Management plane (ADR-0124): graph.threads.net with its own Threads OAuth and a fourth social credential conn-company-threads. It reuses the platform spine — the interaction timeline, the governed Social Action plane, the KV credential registry — but its API, OAuth, and credential are irreducibly its own (no token or code shared with the FB/IG Graph). Outbound publish/reply is customer-facing HARD-capped (ADR-0109/0121) and dormant/fail-closed until the token lands and Meta App Review clears the six threads_* scopes (threads_basic, threads_content_publish, threads_manage_replies, threads_read_replies, threads_manage_mentions, threads_manage_insights). Belle drafts; humans approve through the gauntlet + pending-action cockpit. Implements epic #1334 (S1 connector #1335 / S2 schema #1336 / S3 ingest LP #356 / S4 publish BE #417 / S5 GUI #1337 / S6 webhook PL #167)."
+tags: [social, threads, marketing, integrations]
 ---
 
-# ADR-00NN: Threads integration — separate `graph.threads.net` adapter under the social plane
-
-> **Number is a placeholder.** Per system CLAUDE.md §10.3, the real ADR number is claimed at
-> MERGE (rebase on `main`, take the next free number, rename this file, fix every reference).
-> Authored as ADR-00NN. Any migration the Threads epic authors (the bronze tables + the
-> `interaction` mapping, S2 #1336) is likewise authored against a placeholder number and
-> renumbered at merge.
+# ADR-0125: Threads integration — separate `graph.threads.net` adapter under the social plane
 
 | Field | Value |
 |---|---|
