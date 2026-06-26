@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-23T00:00:00Z
+timestamp: 2026-06-26T00:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**87 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**90 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -98,6 +98,9 @@ core subset). Remaining objects from the
 | [`lead_hook`](tables/lead_hook.md) | single-SoR | website system of record (lead-capture endpoint definition) | ADR-0024 |
 | [`lead_capture_event`](tables/lead_capture_event.md) | single-SoR | website system of record (raw inbound hit → contact resolution) | ADR-0024 |
 | [`social_metric`](tables/social_metric.md) | single-SoR (platform mirror) | platform authoritative for values; from `meta_insights` | ADR-0062 |
+| [`social_post`](tables/social_post.md) | single-SoR | website system of record (compose-once organic composition) | ADR-0124 |
+| [`social_post_channel`](tables/social_post_channel.md) | single-SoR | website system of record (per-network fan-out result) | ADR-0124 |
+| [`social_engagement`](tables/social_engagement.md) | single-SoR | website system of record for triage; platform source of content | ADR-0124 |
 | [`timesheet`](tables/timesheet.md) | single-SoR | website system of record | ADR-0082 |
 | [`expense_report`](tables/expense_report.md) | single-SoR | website system of record | ADR-0083 |
 | [`time_record`](tables/time_record.md) | merge | website attendance (Autotask corroborates) | ADR-0082 |
