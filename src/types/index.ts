@@ -2195,6 +2195,28 @@ export interface ContractRow {
   source: string;
 }
 
+/**
+ * One row of the expiry radar (#1323, renewals epic #1304): an active `contract`
+ * whose `end_date` falls inside the look-ahead window. Read-only projection over
+ * the `contract` silver (Autotask SoR, ADR-0044) — no new entity. `estimatedRevenue`
+ * is RBAC-gated at render (`canSeeRevenue`, ADR-0030), never in this shape.
+ */
+export interface ExpiringContractRow {
+  id: string;
+  account: string | null;
+  name: string | null;
+  number: string | null;
+  status: string | null;
+  /** Service line (Autotask-native), the renewal repricing lens. */
+  category: string | null;
+  /** Term end (ISO date) — the expiry the radar watches. */
+  endDate: string | null;
+  /** Whole days from today to `endDate`; computed in SQL, ≥ 0 (forward only). */
+  leadDays: number | null;
+  /** Block sizing; numeric or null. Money — gate behind `canSeeRevenue` at render. */
+  estimatedRevenue: number | null;
+}
+
 /** An admin-managed Tenant Mapping row (ADR-0051): Microsoft tenant GUID → account. */
 export interface TenantMapping {
   tenantId: string;

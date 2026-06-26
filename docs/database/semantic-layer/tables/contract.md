@@ -7,7 +7,7 @@ description: Managed-services contract — Autotask is the external system of re
 resource: ../../../decision-records/ADR-0044-silver-contracts-tickets.md
 tags: [silver, service, contract, autotask]
 data_class: operational
-timestamp: 2026-06-23T20:00:00Z
+timestamp: 2026-06-26T00:00:00Z
 ---
 
 # contract
@@ -57,6 +57,11 @@ operational contract record, not the signing ceremony.
   `estimated_revenue`, for active contracts, feed the derived `revenue_allocation` view's
   **contracted leg** (per client × service line × month) — the contracted/recurring revenue
   side of the per-client / per-service revenue join that mirrors `cost_allocation` (#1091).
+- **Expiry radar (#1323, renewals epic #1304).** A forward read-projection: active contracts
+  (`status <> '2'`) whose `end_date` falls in a look-ahead window, ordered by lead time
+  (`end_date − CURRENT_DATE`), surfaced with `category` and `estimated_revenue` as the renewal
+  worklist. Read-only over this silver — Autotask stays authoritative; no new entity, no
+  write-back. `estimated_revenue` is RBAC-gated at render (`canSeeRevenue`, ADR-0030).
 
 ## Notes
 

@@ -371,6 +371,10 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   // The collections / AR-dunning worklist (#678) is the finance gate — finance∨admin
   // (`collections:read`). The UI lands in a follow-up; the nav guard is wired now.
   collections: canSeeCollections,
+  // Renewals expiry radar (#1323, epic #1304) — finance∨admin, same gate as the
+  // Finance group it lives in. Revenue columns get a second `canSeeRevenue` gate at
+  // render (ADR-0030), so Support never reaches the page and money is double-guarded.
+  renewals: canSeeFinance,
 
   // ── Collapsible GROUP headers (#794). A group hides entirely (header + all
   // children) when the role lacks its guard. Employee has no entry → all roles.
