@@ -49,6 +49,36 @@ describe("catalog registration — send_email + send_sms migrated in", () => {
   });
 });
 
+describe("Threads outbound — publish_threads + reply_threads (ADR-0125 D3 / #1337)", () => {
+  it("registers both as T3 customer-facing, non-consent, threads_publish executor", () => {
+    const publish = getActionDef("publish_threads");
+    const reply = getActionDef("reply_threads");
+    expect(publish).toBeDefined();
+    expect(reply).toBeDefined();
+    for (const def of [publish!, reply!]) {
+      // Public Threads post/reply is customer-facing → HARD ceiling (ADR-0109/0121): T3.
+      expect(def.tier).toBe("T3");
+      // Broadcast on our own presence — not a 1:1 contact send → no consent gate.
+      expect(def.consentClass).toBe("none");
+      expect(def.executor).toBe("threads_publish");
+    }
+  });
+
+  it("validates a publish payload + rejects an empty post", () => {
+    const def = getActionDef("publish_threads")!;
+    expect(validateInput(def.schema, { text: "Hello Threads" })).toEqual({ ok: true });
+    const bad = validateInput(def.schema, { text: "   " });
+    expect(bad.ok).toBe(false);
+  });
+
+  it("a reply requires both replyToId and text", () => {
+    const r = resolveAction({ kind: "reply_threads", text: "thanks!" }); // missing replyToId
+    expect(r.ok).toBe(false);
+    const ok = resolveAction({ kind: "reply_threads", replyToId: "ext-1", text: "thanks!" });
+    expect(ok.ok && ok.mode === "registered").toBe(true);
+  });
+});
+
 describe("validateInput — schema validation rejects bad input", () => {
   const def = getActionDef("send_email")!;
 

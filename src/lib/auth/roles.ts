@@ -375,6 +375,9 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   // ── Collapsible GROUP headers (#794). A group hides entirely (header + all
   // children) when the role lacks its guard. Employee has no entry → all roles.
   "grp-marketing": canSeeMarketing,
+  // The Threads management surface (epic #1334 S5, ADR-0125) rides the marketing group gate;
+  // the explicit leaf guard keeps it in lockstep if the group ever opens wider.
+  threads: canSeeMarketing,
   "grp-sales": canSeeSales,
   "grp-projects": canSeeProjects,
   "grp-service": canSeeService,

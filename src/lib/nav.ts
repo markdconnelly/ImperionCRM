@@ -53,6 +53,7 @@ export const navGroups: NavItem[] = [
       { key: "journeys", label: "Journeys", icon: "Waypoints", href: "/journeys" },
       { key: "message-templates", label: "Message templates", icon: "Mail", href: "/message-templates" },
       { key: "events", label: "Events", icon: "CalendarDays", href: "/events" },
+      { key: "threads", label: "Threads", icon: "AtSign", href: "/threads" },
       { key: "service-desk-chat", label: "Live Chat", icon: "Headset", href: "/service-desk/chat" },
       { key: "service-desk", label: "Omnichannel queue", icon: "Inbox", href: "/service-desk" },
       { key: "intake", label: "Intake forms", icon: "FilePlus2", href: "/intake" },
