@@ -1503,13 +1503,13 @@ id back onto `external_ref`. Metric *writes* stay split per ADR-0053 decision 7:
 only metric-side write is `campaign_send.delivered_count` reconciliation (already granted in
 0071). The backend is **not** granted `campaign_metric`.
 
-### Threads bronze + interaction/social-metric mapping (migration NNNN, #1336, ADR-00NN)
+### Threads bronze + interaction/social-metric mapping (migration 0208, #1336, ADR-0125)
 
 Threads (`graph.threads.net`) is a **separate API with its own Threads OAuth** — it shares
 no token or code with the FB/IG Graph Meta integration (0075), so it is a net-new connector
 (`conn-company-threads`, company-scope; enum `connection_provider += 'threads'`) and a
 net-new bronze set, but its data rides the **existing** unified timeline and social-metric
-layer — no silo (epic #1334 slice S2; ADR-00NN, plane ADR-0124). Four local-pipeline-envelope
+layer — no silo (epic #1334 slice S2; ADR-0125, plane ADR-0124). Four local-pipeline-envelope
 bronze tables for Imperion's own Threads presence, collected + merged on-prem (LP ADR-0026,
 S3 LP #356):
 

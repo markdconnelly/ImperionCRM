@@ -1,10 +1,10 @@
--- NNNN: Threads bronze tables + `interaction`/`social_metric` silver mapping enablement
--- (Threads epic #1334, slice S2 #1336; ADR-00NN-threads-integration D1/D2, PR #1345).
+-- 0208: Threads bronze tables + `interaction`/`social_metric` silver mapping enablement
+-- (Threads epic #1334, slice S2 #1336; ADR-0125-threads-integration D1/D2, PR #1345).
 --
--- Migration number NNNN claimed at MERGE per system CLAUDE.md §10.3 — authored against a
--- PLACEHOLDER (NNNN_threads_bronze.sql). The rebased branch takes the next free number just
+-- Migration number 0208 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
+-- PLACEHOLDER (0208_threads_bronze.sql). The rebased branch takes the next free number just
 -- before squash; if another migration merges during the CI window, renumber this file + every
--- reference. The ADR it cites (ADR-00NN-threads-integration, PR #1345) is likewise a placeholder.
+-- reference. The ADR it cites (ADR-0125-threads-integration, PR #1345) is likewise a placeholder.
 --
 -- WHY THIS EXISTS. Imperion OS runs OUR OWN Threads business presence (post · reply · monitor
 -- mentions · insights) — Belle drafts, humans approve outbound (epic #1334, plane ADR-0124).
@@ -12,21 +12,21 @@
 -- token or code with the FB/IG Graph Meta integration (0075, `conn-company-meta`). So it is a
 -- net-new connector (`conn-company-threads`, company-scope) + a net-new bronze set, but its data
 -- rides the EXISTING unified timeline and its insights ride the EXISTING social-metric layer —
--- no silo (ADR-00NN D2, the Meta 0075 precedent). This slice (S2) owns the SCHEMA: the bronze
+-- no silo (ADR-0125 D2, the Meta 0075 precedent). This slice (S2) owns the SCHEMA: the bronze
 -- tables, the two enum values the connector + timeline need, and the documented silver mapping.
 --
 -- WHAT IT ADDS.
---   1. `connection_provider += 'threads'` (ADR-00NN D1) — makes the S1 connector row writable.
+--   1. `connection_provider += 'threads'` (ADR-0125 D1) — makes the S1 connector row writable.
 --      S1 (#1335 / PR #1345) shipped the GUI card with a TS-string `key`; this value ends that
 --      dormancy on the credential-write path (the 0127 Meta precedent: provider-list GUI first,
 --      enum value in the paired schema migration). No row uses it here.
 --   2. `interaction_source += 'threads'` — Threads posts/replies/mentions are `interaction`
---      rows with `source='threads'` (ADR-00NN D2; the unified timeline already spans channels,
+--      rows with `source='threads'` (ADR-0125 D2; the unified timeline already spans channels,
 --      ADR-0011 / 0018 / 0075). `kind` is free-text (0018) so `social_post` / `social_comment`
 --      (replies) / `mention` need NO enum change.
 --   3. Four bronze tables (standard ADR-0042/0038 envelope, source `threads`):
 --      `threads_posts`, `threads_replies`, `threads_mentions`, `threads_insights`. The six App
---      Review scopes (ADR-00NN D4) map: `threads_basic`+`threads_content_publish` → posts;
+--      Review scopes (ADR-0125 D4) map: `threads_basic`+`threads_content_publish` → posts;
 --      `threads_manage_replies`+`threads_read_replies` → replies; `threads_manage_mentions` →
 --      mentions; `threads_manage_insights` → insights.
 --

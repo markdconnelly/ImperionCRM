@@ -54,7 +54,7 @@ value per metric/entity/period/capture; ingest is idempotent (UPSERT).
   the platform object, deliberately decoupled from any one silver table (the metric layer
   is metric-name-driven, not entity-FK-driven).
 - Fed from the `meta_insights` bronze feed (`platform` ∈ facebook/instagram) and the
-  `threads_insights` bronze feed (`platform='threads'`, NNNN / ADR-00NN Threads adapter);
+  `threads_insights` bronze feed (`platform='threads'`, 0208 / ADR-0125 Threads adapter);
   consumed by the BI / reporting hub
   ([`metric_definition`](metric_definition.md), ADR-0062) for social dashboards.
 

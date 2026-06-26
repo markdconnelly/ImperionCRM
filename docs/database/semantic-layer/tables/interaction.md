@@ -33,9 +33,9 @@ the gold text on the row, while the retrieval **vector** lives out-of-row in
 |---|---|---|
 | `id` | uuid | PK |
 | `account_id` / `contact_id` / `opportunity_id` | uuid | subjects (nullable); `account_id` CASCADE, `contact_id` / `opportunity_id` SET NULL |
-| `source` | enum `interaction_source` | `m365_email` · `m365_teams` · `plaud` · `sms` · `email` · `facebook` · `system` (0001) · `youtube` · `linkedin` · `whatsapp` · `phone_call` · `in_person` · `meeting` · `web_form` (0018) · `instagram` (0075) · `m365_call` (0127, ADR-0049 call-records path) · `threads` (NNNN, ADR-00NN Threads adapter — posts/replies/mentions of our own Threads presence) |
+| `source` | enum `interaction_source` | `m365_email` · `m365_teams` · `plaud` · `sms` · `email` · `facebook` · `system` (0001) · `youtube` · `linkedin` · `whatsapp` · `phone_call` · `in_person` · `meeting` · `web_form` (0018) · `instagram` (0075) · `m365_call` (0127, ADR-0049 call-records path) · `threads` (0208, ADR-0125 Threads adapter — posts/replies/mentions of our own Threads presence) |
 | `channel` | text | free-form sub-channel label |
-| `kind` | text | comm shape: `email` · `message` · `call` · `meeting` · `transcript` · `summary` · `social_post` · `social_comment` · `mention` (e.g. Threads mentions of us, NNNN) · `dm` · `ad_engagement` · `note` (free text — new shapes ride in without a migration) |
+| `kind` | text | comm shape: `email` · `message` · `call` · `meeting` · `transcript` · `summary` · `social_post` · `social_comment` · `mention` (e.g. Threads mentions of us, 0208) · `dm` · `ad_engagement` · `note` (free text — new shapes ride in without a migration) |
 | `direction` | enum `interaction_direction` | `inbound` · `outbound` · `internal` |
 | `subject` | text | |
 | `payload_bronze` | jsonb | lossless source |
