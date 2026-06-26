@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-23T00:00:00Z
+timestamp: 2026-06-26T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -133,7 +133,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [lead_score](tables/lead_score.md) | Marketing | C | op | ✅ | lead scoring (rule; routing/journeys/forecast) |
 | [segment](tables/segment.md) → segment_member | Marketing | B | pii | ✅ | journey enrollment / list-views (CRM contact set, distinct from ad audience) |
 | [ad](tables/ad.md) | Marketing | B | op | ✅ | campaign ops (creative; metric-attribution unit) |
-| [campaign_metric](tables/campaign_metric.md) | Marketing | B | op | ✅ | campaign ops / BI (daily spend/impressions/clicks/leads) |
+| [campaign_metric](tables/campaign_metric.md) | Marketing | B | op | ✅ | campaign ops / BI (daily spend/impressions/clicks/leads); cloud Pipeline writes daily Meta insights, idempotent replace-from-source (PL #168, ADR-0021) |
 | [campaign_send](tables/campaign_send.md) | Marketing | B | op | ✅ | campaign ops (scheduled/event-triggered send; consent-gated) |
 | [audience](tables/audience.md) | Marketing | B | pii | ✅ | ad targeting (paid-media audience; distinct from segment; consent-gated) |
 | [audience_member](tables/audience_member.md) | Marketing | B | pii | ✅ | ad targeting (idempotent membership; consent-gated) |

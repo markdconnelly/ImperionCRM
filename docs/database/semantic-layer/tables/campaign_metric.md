@@ -7,7 +7,7 @@ description: A daily performance row (spend/impressions/clicks/leads) for a camp
 resource: ../../../decision-records/ADR-0053-campaign-builders-events-scheduled-sends.md
 tags: [silver, marketing, campaign, metric, demand-gen, bi]
 data_class: operational
-timestamp: 2026-06-23T00:00:00Z
+timestamp: 2026-06-26T00:00:00Z
 ---
 
 # campaign_metric
@@ -22,12 +22,19 @@ authority** for the numbers. Governed by
 
 ## Source of record / authority
 
-**Ad platform is authoritative for the metric values**; the row is the app's normalized
-mirror keyed by `metric_date`. A metric attributes to either the whole campaign
-(`campaign_id` set) or a specific creative (`ad_id` set) — both FKs are nullable so the
-grain can be campaign-level or ad-level. `raw` preserves the platform's original metric
-payload (the lossless input behind the normalized numeric columns). Re-pulling a day's
-metrics replaces that day's values rather than accumulating — the numbers are a restated
+**Ad platform is authoritative for the metric values** (never the app's system of
+record — ADR-0012); the row is the app's normalized mirror keyed by `metric_date`.
+**The cloud Pipeline writes these rows** (`ImperionCRM_Pipeline`, managed identity
+`mgid-imperioncrmpipeline`): it pulls the Meta Marketing API daily insights per
+campaign (`platform = 'facebook' AND external_ref IS NOT NULL`) and upserts them as an
+idempotent replace-from-source — assigned by pipeline ADR-0021 and front-end ADR-0053
+decision 7, and confirmed by front-end migration 0205, which grants the backend
+`SELECT,UPDATE` on `campaign`/`ad` but deliberately withholds any `campaign_metric`
+write. A metric attributes to either the whole campaign (`campaign_id` set) or a
+specific creative (`ad_id` set) — both FKs are nullable so the grain can be
+campaign-level or ad-level. `raw` preserves the platform's original metric payload (the
+lossless input behind the normalized numeric columns). Re-pulling a day's metrics
+replaces that day's values rather than accumulating — the numbers are a restated
 snapshot per date, not an append-only ledger.
 
 ## Schema
