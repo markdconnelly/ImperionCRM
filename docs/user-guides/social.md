@@ -4,9 +4,9 @@
 
 The Social surface (left nav → **Marketing → Social**, route `/social`) is the
 Social Media Management plane's operator front end (ADR-0124, epic #1338). It does
-two things: a **unified inbound inbox** and a **compose-once → fan-out publishing**
-surface. Belle (Marketing) owns the channel; the surface rides the marketing role
-gate (admin | sales).
+three things: a **unified inbound inbox**, a **compose-once → fan-out publishing**
+surface, and an **in-plane analytics** view. Belle (Marketing) owns the channel; the
+surface rides the marketing role gate (admin | sales).
 
 It is a **view + a composer, not a system of record for outbound.** It reads the
 silver social tables directly for rendering, and every outbound act (reply, publish,
@@ -72,6 +72,33 @@ From there (marketing role only):
   is published.
 
 Every one of these is **human-approved in v1, never sent directly** (ADR-0124 #4, ADR-0058).
+
+## Analytics
+
+The **Analytics** tab (`/social/analytics`, slice D #1342) is the plane's in-plane
+performance view. It folds two silver time-series together **in the data layer** (no DB
+view, no migration — `SocialRepository.analytics()`):
+
+- **Organic — per channel & per post.** Every named measure from
+  [`social_metric`](../database/semantic-layer/tables/social_metric.md) (reach, impressions,
+  followers, engagement, …), grouped per platform (lifetime latest + the 28-day daily sum)
+  and per published post (a [`social_post_channel`](../database/semantic-layer/tables/social_post_channel.md)
+  joined to its post-grain snapshots by platform `external_id`). The view is
+  **metric-name-tolerant** (#135 normalization is still in flight, slice H): it humanizes and
+  renders whatever metric names exist rather than a fixed whitelist, so new/retuned names
+  still show.
+- **Paid — per ad.** The [`campaign_metric`](../database/semantic-layer/tables/campaign_metric.md)
+  ad grain (paid-only, ADR-0012) rolled up to spend / impressions / clicks / **results**
+  (attributed leads) / **cost-per-lead**. This is the shape **Marketing Attribution (#1316)**
+  consumes — ad results exposed as `{ adId, results, cpl }`.
+
+The same read powers the **social/ad tiles on the BI hub** (`/reporting#marketing`, ADR-0062):
+channels-reporting, ad spend, ad results, blended CPL, and a top-ads table that deep-links
+back to this view. **Ad spend and CPL are revenue figures** — redacted server-side by the
+revenue gate (ADR-0030, `canSeeRevenue`) before reaching the client; counts always show.
+
+The view is fully live the moment the collectors hydrate `social_metric` / `campaign_metric`
+(slice H); until then it renders the dormant empty state, never an error.
 
 ## Why the GUI never writes the post directly
 

@@ -1,4 +1,9 @@
-import type { SocialChannel, SocialInboxItem } from "@/types";
+import type {
+  SocialChannel,
+  SocialChannelMetrics,
+  SocialInboxItem,
+  SocialMetricDatum,
+} from "@/types";
 
 /**
  * Social Media Management plane shared constants (ADR-0124, epic #1338, slice B #1340).
@@ -67,4 +72,42 @@ export function mergeInbox(
     .sort((a, b) => b.sort - a.sort)
     .slice(0, Math.max(limit, 0))
     .map((x) => x.item);
+}
+
+/**
+ * Group flat `social_metric` data (slice D analytics, ADR-0124) into a per-channel
+ * rollup. Pure: the data layer hands over the mapped {@link SocialMetricDatum} rows, this
+ * folds them by `platform`. **Metric-name-tolerant (#135)** — it never whitelists metric
+ * names, it just groups whatever exists, so unknown/retuned names still render. Channels
+ * are ordered by total metric volume desc (busiest first); within a channel, lifetime
+ * metrics lead the 28-day window, then alphabetically by metric for a stable view.
+ */
+export function summarizeChannelMetrics(rows: SocialMetricDatum[]): SocialChannelMetrics[] {
+  const byPlatform = new Map<string, SocialMetricDatum[]>();
+  for (const r of rows) {
+    const list = byPlatform.get(r.platform);
+    if (list) list.push(r);
+    else byPlatform.set(r.platform, [r]);
+  }
+  const windowRank = (w: SocialMetricDatum["window"]) => (w === "lifetime" ? 0 : 1);
+  const channels: SocialChannelMetrics[] = [...byPlatform.entries()].map(
+    ([platform, metrics]) => ({
+      platform,
+      metrics: [...metrics].sort(
+        (a, b) => windowRank(a.window) - windowRank(b.window) || a.metric.localeCompare(b.metric),
+      ),
+    }),
+  );
+  // Busiest channel first — by summed metric value, breaking ties by platform name.
+  return channels.sort((a, b) => {
+    const av = a.metrics.reduce((n, m) => n + m.value, 0);
+    const bv = b.metrics.reduce((n, m) => n + m.value, 0);
+    return bv - av || a.platform.localeCompare(b.platform);
+  });
+}
+
+/** Cost per lead for a paid ad row: spend ÷ results, or null when there are no results. */
+export function costPerLead(spend: number, results: number): number | null {
+  if (results <= 0) return null;
+  return Math.round((spend / results) * 100) / 100;
 }

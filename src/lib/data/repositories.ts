@@ -202,6 +202,7 @@ import type {
   SocialInboxItem,
   SocialPostRow,
   SocialPostDetail,
+  SocialAnalyticsReport,
 } from "@/types";
 import type { ActualCountRow } from "@/lib/recon/actual-count";
 
@@ -3113,6 +3114,14 @@ export interface SocialRepository {
   listPosts(): Promise<SocialPostRow[]>;
   /** One post + its per-network fan-out rows; null when absent. */
   getPost(id: string): Promise<SocialPostDetail | null>;
+  /**
+   * In-plane analytics (ADR-0124 D, slice D #1342): per-channel + per-post organic
+   * performance from silver `social_metric` UNIONed with per-ad paid results from silver
+   * `campaign_metric` (ad results shaped for Marketing Attribution, #1316). The union is
+   * a data-layer fold (no DB view → no migration); both source tables are SELECT-able by
+   * the web role. Falls back to empty arrays on a missing pool or query error.
+   */
+  analytics(): Promise<SocialAnalyticsReport>;
 }
 
 /** The full set of repositories a request can resolve. */

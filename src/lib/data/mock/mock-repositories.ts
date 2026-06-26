@@ -89,6 +89,7 @@ import type {
   SocialInboxItem,
   SocialPostRow,
   SocialPostDetail,
+  SocialAnalyticsReport,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { resolveMentions } from "@/lib/mentions";
@@ -2988,6 +2989,9 @@ export const mockRepositories: Repositories = {
     },
     async getPost(): Promise<SocialPostDetail | null> {
       return null;
+    },
+    async analytics(): Promise<SocialAnalyticsReport> {
+      return { byChannel: [], topPosts: [], adResults: [] };
     },
   },
 };

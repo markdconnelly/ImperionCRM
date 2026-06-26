@@ -3711,3 +3711,67 @@ export interface SocialPostChannelRow {
   publishedAt: string | null;
   error: string | null;
 }
+
+// ── Social analytics (ADR-0124 D, epic #1338, slice D #1342) ─────────────────
+
+/**
+ * One named organic metric (`social_metric`) value for the in-plane analytics view.
+ * `metric`/`period` stay free text — names are not yet normalized (#135, slice H), so
+ * the surface renders whatever exists rather than a fixed whitelist.
+ */
+export interface SocialMetricDatum {
+  platform: string; // social_metric.platform (facebook|instagram|threads|…)
+  metric: string; // raw measure name, humanized in the UI
+  value: number;
+  /** "lifetime" = latest snapshot per metric; "28d" = summed daily window. */
+  window: "lifetime" | "28d";
+}
+
+/**
+ * Per-channel organic rollup: every `social_metric` measure for one platform, grouped.
+ * The metric list is whatever the source carries (metric-name-tolerant, #135).
+ */
+export interface SocialChannelMetrics {
+  platform: string;
+  metrics: SocialMetricDatum[];
+}
+
+/**
+ * Per-post organic performance: a published `social_post_channel` (keyed by its platform
+ * `external_id`) paired with the latest `social_metric` snapshots attributed to it.
+ */
+export interface SocialPostMetric {
+  channel: string;
+  externalId: string;
+  summary: string; // first ~80 chars of the post copy
+  metrics: SocialMetricDatum[]; // post-grain organic metrics (entity_kind='post')
+}
+
+/**
+ * Per-ad paid result — the `campaign_metric` ad-grain rollup in a shape Marketing
+ * Attribution (#1316) can consume: spend, results (leads), and derived CPL. `spend`
+ * rides the revenue gate (ADR-0030) and is redacted before render for non-revenue roles.
+ */
+export interface SocialAdResult {
+  adId: string;
+  adName: string;
+  campaignName: string;
+  platform: string;
+  spend: number; // dollars
+  impressions: number;
+  clicks: number;
+  results: number; // attributed leads — the "result" attribution counts
+  cpl: number | null; // cost per lead = spend / results; null when results = 0
+}
+
+/**
+ * The in-plane Social analytics payload (ADR-0124 D, #1342): organic (`social_metric`)
+ * per-channel and per-post UNION paid (`campaign_metric`) per-ad results. The union is
+ * done in the data layer (no DB view, no migration); both source tables are SELECT-able
+ * by the web role. Empty arrays are the dormant state until collectors hydrate.
+ */
+export interface SocialAnalyticsReport {
+  byChannel: SocialChannelMetrics[]; // organic, grouped by platform
+  topPosts: SocialPostMetric[]; // organic, per-post (entity_kind='post')
+  adResults: SocialAdResult[]; // paid, per-ad — attribution-consumable (#1316)
+}
