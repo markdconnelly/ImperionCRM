@@ -377,4 +377,54 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
       },
     ],
   },
+  {
+    // Threads is a SEPARATE API (graph.threads.net) with its OWN Threads OAuth — it shares no
+    // token or code with the Meta (graph.facebook.com) integration above (epic #1334, ADR Threads
+    // adapter under the social plane ADR-0124). Company-scope, NO client mapping (our own presence).
+    key: "threads",
+    label: "Threads",
+    icon: "AtSign",
+    kind: "credential",
+    category: "Marketing",
+    // Send-capable: the Threads user token authorizes OUTBOUND publish/reply, so the outbound path
+    // stays dormant/fail-closed until this secret exists AND Meta App Review clears (mirrors the
+    // Meta DM send precedent, pipeline #89 / PR #113). Entering it is a Mark-approved security event.
+    sendCapable: true,
+    description:
+      "Threads organic management — long-lived Threads user token (graph.threads.net, its OWN OAuth, " +
+      "separate from the Meta Facebook/Instagram integration) used to post, reply, monitor mentions, " +
+      "and read insights for our own Threads presence. SEND-CAPABLE: entering it is a Mark-approved " +
+      "security event (Meta App Review of the Threads use case must be granted first). Stored as the " +
+      "Key Vault secret conn-company-threads; the outbound path stays dormant until it exists and " +
+      "review clears.",
+    // The six App Review scopes for the Threads use case (display/audit only): read paths drive
+    // ingest (S2/S3); write paths (content_publish / manage_replies) drive the dormant outbound.
+    scopes: [
+      "threads_basic",
+      "threads_content_publish",
+      "threads_manage_replies",
+      "threads_read_replies",
+      "threads_manage_mentions",
+      "threads_manage_insights",
+    ],
+    fields: [
+      {
+        name: "userToken",
+        label: "Threads user token",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "Long-lived Threads user access token (graph.threads.net) granting the six threads_* scopes. Written to Key Vault, never the DB.",
+      },
+      {
+        name: "threadsUserId",
+        label: "Threads user ID",
+        secret: false,
+        type: "text",
+        required: true,
+        placeholder: "1234567890",
+        help: "The Threads account id the token acts for (the `me` user id on graph.threads.net).",
+      },
+    ],
+  },
 ];

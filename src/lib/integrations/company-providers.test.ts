@@ -131,3 +131,45 @@ describe("COMPANY_PROVIDERS — Dark Web ID provider (#1312)", () => {
     expect(password?.required).toBe(true);
   });
 });
+
+describe("COMPANY_PROVIDERS — Threads provider (#1335)", () => {
+  const threads = COMPANY_PROVIDERS.find((p) => p.key === "threads");
+
+  it("is a send-capable credential, NOT pollable (the token is outbound, nothing polls it)", () => {
+    expect(threads).toBeDefined();
+    expect(threads?.kind).toBe("credential");
+    expect(threads?.sendCapable).toBe(true);
+    expect(providerIsPollable(threads!)).toBe(false);
+  });
+
+  it("records exactly the six Threads use-case App Review scopes", () => {
+    // graph.threads.net use case (epic #1334) — read paths drive ingest, write paths drive
+    // the dormant outbound (S4). Display/audit only; no secret lives here.
+    expect(threads?.scopes).toEqual([
+      "threads_basic",
+      "threads_content_publish",
+      "threads_manage_replies",
+      "threads_read_replies",
+      "threads_manage_mentions",
+      "threads_manage_insights",
+    ]);
+  });
+
+  it("collects a write-only Threads user token + a public Threads user id", () => {
+    const fieldNames = threads?.fields?.map((f) => f.name) ?? [];
+    expect(fieldNames).toEqual(["userToken", "threadsUserId"]);
+    const token = threads?.fields?.find((f) => f.name === "userToken");
+    const userId = threads?.fields?.find((f) => f.name === "threadsUserId");
+    expect(token?.secret).toBe(true);
+    expect(token?.required).toBe(true);
+    expect(userId?.secret).toBe(false);
+    expect(userId?.required).toBe(true);
+  });
+
+  it("is a Marketing card distinct from the Meta (Facebook/Instagram) credential", () => {
+    // Threads is a separate API + OAuth + credential — must not be folded into conn-company-meta.
+    const meta = COMPANY_PROVIDERS.find((p) => p.key === "meta");
+    expect(threads?.category).toBe("Marketing");
+    expect(threads?.key).not.toBe(meta?.key);
+  });
+});
