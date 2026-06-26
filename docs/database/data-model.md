@@ -1495,6 +1495,14 @@ Writer: `imperion-localpipeline` (bronze write + widened silver merge surface:
 `interaction` insert, lead capture, contact create, `contact_social_identity`); web role
 reads. Collector contract: local-pipeline `docs/integrations/meta.md` (local #126).
 
+**Backend Meta push grants (#1332, ADR-0053 slice E — backend #416/#406).** The backend
+Function App role `mgid-imperioncrmbackendfunction` holds **`SELECT, UPDATE` on `campaign`
+and `ad`** — it reads the `facebook`-platform worklist and writes the created Meta object
+id back onto `external_ref`. Metric *writes* stay split per ADR-0053 decision 7: the
+**pipeline** role owns `campaign_metric` (its daily Meta pull, ADR-0012), and the backend's
+only metric-side write is `campaign_send.delivered_count` reconciliation (already granted in
+0071). The backend is **not** granted `campaign_metric`.
+
 ### Defender incidents + alerts bronze and Autotask layering (migration 0076, #256, ADR-0059)
 
 `defender_incidents` (Graph `/security/incidents`) and `defender_alerts`
