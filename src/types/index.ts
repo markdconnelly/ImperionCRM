@@ -3637,3 +3637,77 @@ export interface SegmentInput {
   /** The rule predicate blob for a rule segment; null/ignored for a manual segment. */
   ruleJson: Record<string, unknown> | null;
 }
+
+// ── Social Media Management plane (ADR-0124, epic #1338, slice B #1340) ──────────
+// The unified social surface: an inbound inbox (DMs from the interaction timeline +
+// public comments/mentions from social_engagement) and a compose-once → fan-out
+// publishing surface (social_post → social_post_channel). Reads only here; every
+// outbound act is a Social Action through the pending-action cockpit (ADR-0058).
+
+/** The five Social Channels (ADR-0124 #1; mirrors the `social_channel` enum). */
+export type SocialChannel =
+  | "facebook"
+  | "instagram"
+  | "threads"
+  | "linkedin"
+  | "messenger";
+
+/**
+ * One unified inbox row. Two origins are folded into a single shape:
+ *  - `dm`      — a private DM from the `interaction` timeline (`kind='dm'`).
+ *  - `comment` / `mention` — a public `social_engagement` (ADR-0124 #2 inbound split).
+ * `kind` carries the origin; the triage fields are present only for engagement rows,
+ * null for DM rows.
+ */
+export interface SocialInboxItem {
+  /** Stable list key — `interaction.id` for a DM, `social_engagement.id` for an engagement. */
+  id: string;
+  origin: "dm" | "engagement";
+  kind: "dm" | "comment" | "mention";
+  channel: string; // social_channel value, or the interaction source for a DM
+  body: string | null; // DM summary_gold / engagement body
+  author: string | null; // display name or @handle (engagement) / contact (DM)
+  contact: string | null; // linked contact full name, when known
+  occurredAt: string | null; // formatted timestamp
+  /** Engagement-only triage fields (null for DM rows). */
+  engagementStatus: string | null; // new|triaged|replied|dismissed
+  intent: string | null; // lead|support|brand
+  assignedAgentKey: string | null; // Chase|Felix|Belle
+  sourceUrl: string | null; // a mention's origin page
+}
+
+/** A compose-once social post (parent) for the publishing list. */
+export interface SocialPostRow {
+  id: string;
+  /** First ~120 chars of the authored copy, for the list summary. */
+  summary: string;
+  status: string; // draft|scheduled|published|archived
+  campaignName: string | null;
+  author: string | null;
+  scheduledAt: string | null;
+  /** The channels this post fans out to + each channel's publish status. */
+  channels: { channel: string; publishStatus: string }[];
+  createdAt: string | null;
+}
+
+/** Detail view of one compose-once post + its per-channel fan-out rows. */
+export interface SocialPostDetail {
+  id: string;
+  body: string; // the authored copy (content.body)
+  status: string;
+  campaignName: string | null;
+  author: string | null;
+  scheduledAt: string | null;
+  channels: SocialPostChannelRow[];
+  createdAt: string | null;
+}
+
+/** One per-network fan-out result (`social_post_channel`). */
+export interface SocialPostChannelRow {
+  id: string;
+  channel: string;
+  publishStatus: string; // draft|scheduled|published|failed
+  externalId: string | null;
+  publishedAt: string | null;
+  error: string | null;
+}

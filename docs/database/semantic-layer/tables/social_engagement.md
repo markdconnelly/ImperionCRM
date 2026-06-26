@@ -81,8 +81,14 @@ support routing rests on **legitimate interest** under the Contact-360 lawful-ba
 ([ADR-0025](../../../decision-records/ADR-0025-contact-360-enrichment-and-lawful-basis.md)).
 Having an engagement is **never** consent to contact: any outbound (a reply, or promoting the
 author to a contact for outreach) re-asserts consent via the
-[`consent_event`](consent_event.md) ledger, exactly as Contact-360 enrichment does. The table
-stays `data_class=operational` (matching the demand-gen plane) deliberately — the author-PII
+[`consent_event`](consent_event.md) ledger, exactly as Contact-360 enrichment does.
+
+**Consumed by.** The unified Social inbox (`/social`, slice B #1340) reads this table merged
+with private DMs from the [`interaction`](interaction.md) timeline (`kind='dm'`) into one
+newest-first view — the two halves of the ADR-0124 #2 inbound split, recombined for the
+operator. Read-only render (web has SELECT); replying is a cockpit-gated Social Action.
+
+The table stays `data_class=operational` (matching the demand-gen plane) deliberately — the author-PII
 risk is governed by this lawful-basis note + the consent gate on any outbound, **not** by
 over-classing the read-gate (ADR-0124 #6). No row-level personal data in this doc; resolve
 specifics against the live read-only DB (CLAUDE.md §8). No secrets.
