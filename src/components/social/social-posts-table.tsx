@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import type { SocialPostRow } from "@/types";
 import { SOCIAL_CHANNELS, PUBLISH_STATUS_TONE } from "@/lib/social";
@@ -26,7 +27,12 @@ export function SocialPostsTable({ posts }: { posts: SocialPostRow[] }) {
             {posts.map((p) => (
               <tr key={p.id} className="border-t border-border align-top hover:bg-panel-2">
                 <td className="max-w-md px-4 py-3">
-                  <span className="line-clamp-2">{p.summary}</span>
+                  <Link
+                    href={`/social/publishing/${p.id}`}
+                    className="line-clamp-2 text-accent hover:underline"
+                  >
+                    {p.summary}
+                  </Link>
                 </td>
                 <td className={`px-4 py-3 capitalize ${PUBLISH_STATUS_TONE[p.status] ?? "text-dim"}`}>
                   {p.status}

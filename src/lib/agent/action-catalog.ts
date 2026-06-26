@@ -183,6 +183,119 @@ const REGISTRY: Record<string, ActionDef> = {
       text: { type: "string", required: true },
     },
   },
+  // Social Media Management plane outbound (ADR-0124 #4, epic #1338 slice B #1358). The
+  // unified set of 11 Social Action kinds — the AUTHORITATIVE deny-by-default copies are the
+  // `agent_tool_grant` rows seeded for Belle (migration 0209) + the backend dispatcher (BE
+  // #418); this catalog is the front-end half the GUI validates/labels against, kept in
+  // lockstep with that seed (exactly like the Threads kinds above). EVERY social outbound is a
+  // CUSTOMER-FACING public broadcast on OUR own presence → tier T3, `consentClass:'none'` (no
+  // 1:1 contact-consent gate), HARD-ceiling, always cockpit-gated (v1 human-approves-all,
+  // ADR-0124 #4). The backend re-asserts the grant + ceiling + per-channel token dormancy at
+  // execution; the front end only PROPOSES. The 7 ORGANIC kinds are `client_pii` (third-party
+  // author handles in the payload); the 4 MONEY/ad kinds are `financial` — ADR-0109 HARD money
+  // ceiling, can NEVER be auto-granted, always Mark-gated.
+  social_publish_fb_post: {
+    kind: "social_publish_fb_post",
+    label: "Publish Facebook post",
+    tier: "T3",
+    dataClass: "client_pii",
+    consentClass: "none",
+    executor: "social_dispatch",
+    // socialPostId = the draft social_post being fanned out to this channel.
+    schema: { socialPostId: { type: "string", required: true } },
+  },
+  social_reply_fb_comment: {
+    kind: "social_reply_fb_comment",
+    label: "Reply to Facebook comment",
+    tier: "T3",
+    dataClass: "client_pii",
+    consentClass: "none",
+    executor: "social_dispatch",
+    // engagementId = the social_engagement / interaction id being replied to.
+    schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
+  },
+  social_publish_ig_media: {
+    kind: "social_publish_ig_media",
+    label: "Publish Instagram media",
+    tier: "T3",
+    dataClass: "client_pii",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { socialPostId: { type: "string", required: true } },
+  },
+  social_reply_ig_comment: {
+    kind: "social_reply_ig_comment",
+    label: "Reply to Instagram comment",
+    tier: "T3",
+    dataClass: "client_pii",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
+  },
+  social_reply_ig_direct: {
+    kind: "social_reply_ig_direct",
+    label: "Reply to Instagram DM",
+    tier: "T3",
+    dataClass: "client_pii",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
+  },
+  social_post_threads: {
+    kind: "social_post_threads",
+    label: "Publish Threads post",
+    tier: "T3",
+    dataClass: "client_pii",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { socialPostId: { type: "string", required: true } },
+  },
+  social_reply_threads: {
+    kind: "social_reply_threads",
+    label: "Reply on Threads",
+    tier: "T3",
+    dataClass: "client_pii",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
+  },
+  social_boost_post: {
+    kind: "social_boost_post",
+    label: "Boost post (paid)",
+    tier: "T3",
+    dataClass: "financial",
+    consentClass: "none",
+    executor: "social_dispatch",
+    // socialPostId = the published post to boost; budgetUsd = the spend cap the approver sets.
+    schema: { socialPostId: { type: "string", required: true }, budgetUsd: { type: "number", required: true } },
+  },
+  social_ad_deploy: {
+    kind: "social_ad_deploy",
+    label: "Deploy paid ad",
+    tier: "T3",
+    dataClass: "financial",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { campaignId: { type: "string", required: true }, budgetUsd: { type: "number", required: true } },
+  },
+  social_ad_pause: {
+    kind: "social_ad_pause",
+    label: "Pause paid ad",
+    tier: "T3",
+    dataClass: "financial",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { adId: { type: "string", required: true } },
+  },
+  social_ad_rebudget: {
+    kind: "social_ad_rebudget",
+    label: "Rebudget paid ad",
+    tier: "T3",
+    dataClass: "financial",
+    consentClass: "none",
+    executor: "social_dispatch",
+    schema: { adId: { type: "string", required: true }, budgetUsd: { type: "number", required: true } },
+  },
 };
 
 /**
