@@ -7,7 +7,7 @@ description: A normalized social-platform metric value (reach, impressions, foll
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [silver, marketing, social, metric, bi, reporting, demand-gen]
 data_class: operational
-timestamp: 2026-06-23T00:00:00Z
+timestamp: 2026-06-25T00:00:00Z
 ---
 
 # social_metric
@@ -53,7 +53,9 @@ value per metric/entity/period/capture; ingest is idempotent (UPSERT).
 - No hard FK — `entity_kind` + `entity_external_id` are a **generic external pointer** to
   the platform object, deliberately decoupled from any one silver table (the metric layer
   is metric-name-driven, not entity-FK-driven).
-- Fed from the `meta_insights` bronze feed; consumed by the BI / reporting hub
+- Fed from the `meta_insights` bronze feed (`platform` ∈ facebook/instagram) and the
+  `threads_insights` bronze feed (`platform='threads'`, NNNN / ADR-00NN Threads adapter);
+  consumed by the BI / reporting hub
   ([`metric_definition`](metric_definition.md), ADR-0062) for social dashboards.
 
 ## Notes
