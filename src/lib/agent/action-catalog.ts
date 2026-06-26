@@ -150,6 +150,39 @@ const REGISTRY: Record<string, ActionDef> = {
       body: { type: "string", required: true },
     },
   },
+  // Threads outbound (ADR-0125 D3 / epic #1334 S5). A public Threads post or reply is
+  // CUSTOMER-FACING → a HARD autonomy ceiling (ADR-0109/0121): tier T3, never auto-executes
+  // above the dial ceiling, always routes to the approval cockpit, v1 every Social Action is
+  // human-approved (ADR-0124 D4). No `contact_channel` consent gate — these are broadcast on
+  // OUR own company presence, not a 1:1 contact message; `consentClass:'none'`. The backend
+  // `threads_publish` executor (S4 BE #417) resolves the conn-company-threads token from Key
+  // Vault and calls graph.threads.net; it stays dormant/fail-closed until the token lands and
+  // Meta App Review clears the threads_content_publish / threads_manage_replies scopes (D5).
+  publish_threads: {
+    kind: "publish_threads",
+    label: "Publish Threads post",
+    tier: "T3",
+    dataClass: "operational",
+    consentClass: "none",
+    executor: "threads_publish",
+    schema: {
+      text: { type: "string", required: true },
+    },
+  },
+  reply_threads: {
+    kind: "reply_threads",
+    label: "Reply on Threads",
+    tier: "T3",
+    dataClass: "operational",
+    consentClass: "none",
+    executor: "threads_publish",
+    schema: {
+      // The Threads post/reply id we are replying to (the external_ref carried on the
+      // interaction row, source=threads, kind=social_post|social_comment|mention).
+      replyToId: { type: "string", required: true },
+      text: { type: "string", required: true },
+    },
+  },
 };
 
 /**

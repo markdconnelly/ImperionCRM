@@ -131,6 +131,18 @@ not data-enslaved. Polished, on-brand, per-channel voice.
 - Defers the final send on large or new-audience blasts to a human; drafts and
   stages.
 
+**Tool grants (→ config):**
+- **Threads** (epic #1334 S5, ADR-0125 D3/D6): granted `publish_threads` +
+  `reply_threads`. A public Threads post/reply is **customer-facing — a HARD
+  autonomy ceiling** (ADR-0109/0121): `mark_gated`, tier T3, **never auto-executes
+  above the ceiling**; every Threads Social Action routes to the pending-action
+  cockpit for human approval (v1, ADR-0124 D4). Belle drafts; humans approve. The
+  front-end grant contract is `BELLE_THREADS_GRANT` in
+  `src/lib/agent/threads-grant.ts` (kept in lockstep with the action catalog); the
+  authoritative deny-by-default `agent_tool_grant` row is seeded by the S4 backend
+  migration (BE #417). Dormant/fail-closed until the `conn-company-threads` token +
+  Meta App Review land (ADR-0125 D5).
+
 ---
 
 ### Audrey — Finance
