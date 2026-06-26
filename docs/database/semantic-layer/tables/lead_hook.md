@@ -7,7 +7,7 @@ description: A configured lead-capture endpoint (web form, Facebook lead, QR, in
 resource: ../../../decision-records/ADR-0024-per-user-personal-connections-and-lead-hooks.md
 tags: [silver, marketing, lead, hook, capture, demand-gen, lead-response]
 data_class: client_pii
-timestamp: 2026-06-23T00:00:00Z
+timestamp: 2026-06-25T00:00:00Z
 ---
 
 # lead_hook
@@ -34,7 +34,7 @@ the hook accepts hits. A hook of kind `event_registration` is the capture surfac
 |---|---|---|
 | `id` | uuid | PK |
 | `name` | text | hook label |
-| `kind` | enum `lead_hook_kind` | `web_form` · `facebook_lead` · `youtube_comment` · `linkedin_message` · `inbound_email` · `qr` · `manual` · `event_registration` · `facebook_dm` |
+| `kind` | enum `lead_hook_kind` | `web_form` · `facebook_lead` · `youtube_comment` · `linkedin_message` · `inbound_email` · `qr` · `manual` · `event_registration` · `facebook_dm` · `instagram_dm` (0206, the IG twin of `facebook_dm` — inbound IG DM senders, LocalPipeline #361) |
 | `config` | jsonb | channel-specific configuration (field map, bindings, external ids) — not secrets |
 | `active` | bool | whether the hook accepts hits |
 | `created_by_user_id` | uuid | FK → `app_user` |

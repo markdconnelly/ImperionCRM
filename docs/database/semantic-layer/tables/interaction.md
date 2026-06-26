@@ -7,7 +7,7 @@ description: Unified multi-channel timeline event — one row per email/message/
 resource: ../../../decision-records/ADR-0011-unified-interaction-timeline.md
 tags: [silver, engagement, interaction, timeline]
 data_class: client_pii
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-06-25T00:00:00Z
 ---
 
 # interaction
