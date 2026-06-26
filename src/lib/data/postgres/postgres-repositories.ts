@@ -14,7 +14,12 @@ import { getPool } from "@/lib/db/client";
 import { mockRepositories, isSchemaLagError } from "@/lib/data/postgres/fallback";
 import { fmtDate, fmtIso, fmtDateTime } from "@/lib/data/postgres/date-format";
 import { ASSESSMENT_DIMENSIONS } from "@/lib/assessment";
-import { mergeInbox, type SortableInboxItem } from "@/lib/social";
+import {
+  costPerLead,
+  mergeInbox,
+  summarizeChannelMetrics,
+  type SortableInboxItem,
+} from "@/lib/social";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { classifyDevicePolicy } from "@/lib/security/device-policy";
 import { labelDeviceOrigins } from "@/lib/cmdb/ci";
@@ -365,6 +370,10 @@ import type {
   SocialInboxItem,
   SocialPostRow,
   SocialPostDetail,
+  SocialAnalyticsReport,
+  SocialMetricDatum,
+  SocialPostMetric,
+  SocialAdResult,
   SocialPostChannelRow,
 } from "@/types";
 
@@ -15263,6 +15272,152 @@ export const postgresRepositories: Repositories = {
         };
       } catch {
         return mockRepositories.social.getPost(id);
+      }
+    },
+
+    async analytics(): Promise<SocialAnalyticsReport> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.social.analytics();
+      try {
+        // Three reads, then a data-layer union (ADR-0124 D, #1342) — no DB view, so no
+        // migration. Organic = social_metric (per-channel + per-post); paid = campaign_metric
+        // ad grain. Metric-generic over social_metric.metric (names shift, #135): the SQL
+        // never whitelists names, the helper just groups whatever exists.
+        const [lifetime, daily, posts, ads] = await Promise.all([
+          // Per-channel organic — latest lifetime snapshot per (platform, metric).
+          pool.query<{ platform: string; metric: string; value: string | null }>(
+            `SELECT DISTINCT ON (platform, metric) platform, metric, value
+             FROM social_metric WHERE period = 'lifetime'
+             ORDER BY platform, metric, captured_at DESC`,
+          ),
+          // Per-channel organic — 28-day daily sum per (platform, metric).
+          pool.query<{ platform: string; metric: string; value: string | null }>(
+            `SELECT platform, metric, sum(value) AS value
+             FROM social_metric
+             WHERE period = 'day' AND captured_at >= now() - interval '28 days'
+             GROUP BY 1, 2`,
+          ),
+          // Per-post organic — published social_post_channel joined to its post-grain
+          // social_metric snapshots by the platform external_id (entity_kind='post').
+          // Latest value per (post, metric); newest 12 posts by publish time.
+          pool.query<{
+            channel: string;
+            external_id: string;
+            body: string | null;
+            metric: string;
+            value: string | null;
+          }>(
+            `WITH pub AS (
+               SELECT spc.channel::text AS channel, spc.external_id,
+                      p.content->>'body' AS body, spc.published_at
+               FROM social_post_channel spc
+               JOIN social_post p ON p.id = spc.social_post_id
+               WHERE spc.publish_status = 'published' AND spc.external_id IS NOT NULL
+               ORDER BY spc.published_at DESC NULLS LAST
+               LIMIT 12
+             )
+             SELECT pub.channel, pub.external_id, pub.body, sm.metric, sm.value
+             FROM pub
+             LEFT JOIN LATERAL (
+               SELECT DISTINCT ON (m.metric) m.metric, m.value
+               FROM social_metric m
+               WHERE m.entity_kind = 'post'
+                     AND m.platform = pub.channel
+                     AND m.entity_external_id = pub.external_id
+               ORDER BY m.metric, m.captured_at DESC
+             ) sm ON true
+             ORDER BY pub.published_at DESC NULLS LAST, sm.metric`,
+          ),
+          // Per-ad paid results — campaign_metric ad grain rolled up, shaped for
+          // attribution (#1316): spend / impressions / clicks / results(leads).
+          pool.query<{
+            ad_id: string;
+            ad_name: string;
+            campaign_name: string;
+            platform: string;
+            spend: string | null;
+            impressions: string | null;
+            clicks: string | null;
+            results: string | null;
+          }>(
+            `SELECT ad.id AS ad_id, ad.name AS ad_name, c.name AS campaign_name,
+                    c.platform::text AS platform,
+                    coalesce(sum(m.spend), 0)       AS spend,
+                    coalesce(sum(m.impressions), 0) AS impressions,
+                    coalesce(sum(m.clicks), 0)      AS clicks,
+                    coalesce(sum(m.leads), 0)       AS results
+             FROM ad
+             JOIN campaign c ON c.id = ad.campaign_id
+             JOIN campaign_metric m ON m.ad_id = ad.id
+             GROUP BY ad.id, ad.name, c.name, c.platform
+             ORDER BY 5 DESC LIMIT 20`,
+          ),
+        ]);
+
+        const channelRows: SocialMetricDatum[] = [
+          ...lifetime.rows.map((r) => ({
+            platform: r.platform,
+            metric: r.metric,
+            value: Number(r.value ?? 0),
+            window: "lifetime" as const,
+          })),
+          ...daily.rows.map((r) => ({
+            platform: r.platform,
+            metric: r.metric,
+            value: Number(r.value ?? 0),
+            window: "28d" as const,
+          })),
+        ];
+
+        // Fold per-post rows (LEFT JOIN LATERAL → one row per post×metric, metric null
+        // when a post has no snapshots yet) into one SocialPostMetric per post.
+        const postMap = new Map<string, SocialPostMetric>();
+        for (const r of posts.rows) {
+          const key = `${r.channel}:${r.external_id}`;
+          let entry = postMap.get(key);
+          if (!entry) {
+            const body = (r.body ?? "").trim();
+            entry = {
+              channel: r.channel,
+              externalId: r.external_id,
+              summary: body ? (body.length > 80 ? `${body.slice(0, 77)}…` : body) : "(no copy)",
+              metrics: [],
+            };
+            postMap.set(key, entry);
+          }
+          if (r.metric) {
+            entry.metrics.push({
+              platform: r.channel,
+              metric: r.metric,
+              value: Number(r.value ?? 0),
+              window: "lifetime",
+            });
+          }
+        }
+
+        const adResults: SocialAdResult[] = ads.rows.map((r) => {
+          const spend = Number(r.spend ?? 0);
+          const results = Number(r.results ?? 0);
+          return {
+            adId: r.ad_id,
+            adName: r.ad_name,
+            campaignName: r.campaign_name,
+            platform: r.platform,
+            spend,
+            impressions: Number(r.impressions ?? 0),
+            clicks: Number(r.clicks ?? 0),
+            results,
+            cpl: costPerLead(spend, results),
+          };
+        });
+
+        return {
+          byChannel: summarizeChannelMetrics(channelRows),
+          topPosts: [...postMap.values()],
+          adResults,
+        };
+      } catch {
+        return mockRepositories.social.analytics();
       }
     },
   },

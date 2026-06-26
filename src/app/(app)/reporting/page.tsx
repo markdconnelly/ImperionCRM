@@ -54,7 +54,7 @@ const fmtCount = new Intl.NumberFormat("en-US");
 const humanizeMetric = (m: string) => m.replace(/_/g, " ");
 
 export default async function ReportingPage() {
-  const { reports } = getRepositories();
+  const { reports, social } = getRepositories();
   const [
     roles,
     summary,
@@ -65,6 +65,7 @@ export default async function ReportingPage() {
     conversion,
     sbrAverages,
     marketing,
+    socialAnalytics,
     serviceDesk,
     fleet,
   ] = await Promise.all([
@@ -77,9 +78,18 @@ export default async function ReportingPage() {
     reports.assessmentConversion(),
     reports.sbrDimensionAverages(),
     reports.marketingSocial(),
+    // Social plane analytics (ADR-0124 D, #1342) — ad results feed the BI hub's social
+    // tiles + Marketing Attribution (#1316). Organic∪paid union is a data-layer fold.
+    social.analytics(),
     reports.serviceDesk(),
     reports.securityFleet(),
   ]);
+
+  // Paid ad-result rollup for the BI tiles (attribution-consumable shape, #1316).
+  const totalAdSpend = socialAnalytics.adResults.reduce((n, a) => n + a.spend, 0);
+  const totalAdResults = socialAnalytics.adResults.reduce((n, a) => n + a.results, 0);
+  const blendedCpl = totalAdResults > 0 ? totalAdSpend / totalAdResults : null;
+  const topAds = socialAnalytics.adResults.slice(0, 5);
 
   // Support cannot see revenue (ADR-0030): blank money figures and zero the
   // per-stage MRR so the pipeline chart still shows deal counts.
@@ -309,6 +319,78 @@ export default async function ReportingPage() {
           </div>
         ) : (
           <p className="py-6 text-center text-sm text-dim">No paid campaign metrics yet.</p>
+        )}
+      </div>
+
+      {/* Social/ad performance tiles (ADR-0124 D, #1342) — per-ad results from the Social
+          plane analytics read; deep-links to the in-plane analytics view. */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label="Channels reporting"
+          value={fmtCount.format(socialAnalytics.byChannel.length)}
+          hint="organic metric coverage (social_metric)"
+        />
+        <StatTile
+          label="Ad spend (paid)"
+          value={showRevenue ? `$${fmtCount.format(totalAdSpend)}` : REDACTED_MONEY}
+          hint="all-time per-ad spend"
+        />
+        <StatTile
+          label="Ad results"
+          value={fmtCount.format(totalAdResults)}
+          hint="attributed leads — feeds #1316"
+        />
+        <StatTile
+          label="Blended CPL"
+          value={blendedCpl != null ? (showRevenue ? `$${fmtCount.format(Math.round(blendedCpl * 100) / 100)}` : REDACTED_MONEY) : "—"}
+          hint="cost per lead across all ads"
+        />
+      </div>
+
+      <div className="rounded-lg border border-border bg-panel p-4">
+        <div className="mb-3 flex items-baseline justify-between gap-2">
+          <div>
+            <h3 className="font-display text-sm font-semibold tracking-tight">Top ads by results</h3>
+            <p className="text-xs text-dim">Per-ad paid performance (campaign_metric, paid-only)</p>
+          </div>
+          <Link
+            href="/social/analytics"
+            className="shrink-0 text-xs text-dim transition-colors hover:text-text"
+          >
+            Social analytics →
+          </Link>
+        </div>
+        {topAds.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-dim">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Ad</th>
+                  <th className="px-3 py-2 font-medium">Campaign</th>
+                  <th className="px-3 py-2 font-medium">Spend</th>
+                  <th className="px-3 py-2 font-medium">Results</th>
+                  <th className="px-3 py-2 font-medium">CPL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topAds.map((a) => (
+                  <tr key={a.adId} className="border-t border-border/60">
+                    <td className="px-3 py-2">{a.adName}</td>
+                    <td className="px-3 py-2 text-dim">{a.campaignName}</td>
+                    <td className="px-3 py-2">
+                      {showRevenue ? `$${fmtCount.format(a.spend)}` : REDACTED_MONEY}
+                    </td>
+                    <td className="px-3 py-2">{fmtCount.format(a.results)}</td>
+                    <td className="px-3 py-2">
+                      {a.cpl != null ? (showRevenue ? `$${fmtCount.format(a.cpl)}` : REDACTED_MONEY) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="py-6 text-center text-sm text-dim">No paid ad metrics yet.</p>
         )}
       </div>
 

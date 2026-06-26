@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-/** The two Social plane surfaces (ADR-0124, #1340): the inbound inbox + publishing. */
+/** The Social plane surfaces (ADR-0124): inbox + publishing (#1340) + analytics (#1342). */
 const TABS = [
   { key: "inbox", label: "Inbox", href: "/social" },
   { key: "publishing", label: "Publishing", href: "/social/publishing" },
+  { key: "analytics", label: "Analytics", href: "/social/analytics" },
 ] as const;
 
-export function SocialTabs({ active }: { active: "inbox" | "publishing" }) {
+export function SocialTabs({ active }: { active: "inbox" | "publishing" | "analytics" }) {
   return (
     <div className="flex gap-1 border-b border-border">
       {TABS.map((t) => (
