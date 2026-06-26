@@ -107,6 +107,8 @@ export const navGroups: NavItem[] = [
     href: "#finance",
     children: [
       { key: "contracts", label: "Contracts", icon: "FileSignature", href: "/contracts" },
+      // Expiry radar (#1323, renewals epic #1304) — the renewal worklist read-view.
+      { key: "renewals", label: "Renewals", icon: "CalendarClock", href: "/renewals" },
       { key: "collections", label: "Collections", icon: "BadgeDollarSign", href: "/collections" },
       { key: "monthly-close", label: "Monthly close", icon: "CalendarRange", href: "/monthly-close" },
     ],
