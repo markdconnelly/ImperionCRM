@@ -139,8 +139,8 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [audience_member](tables/audience_member.md) | Marketing | B | pii | ✅ | ad targeting (idempotent membership; consent-gated) |
 | [event](tables/event.md) | Marketing | B | pii | ✅ | lead-response (webinar/live event; auto-enroll workflow) |
 | [event_registration](tables/event_registration.md) | Marketing | B | pii | ✅ | lead-response (registrant; attendance) |
-| [lead_hook](tables/lead_hook.md) | Marketing | B | pii | ✅ | lead-response (capture endpoint definition) |
-| [lead_capture_event](tables/lead_capture_event.md) | Marketing | B | pii | ✅ | lead-response (raw inbound hit → contact resolution) |
+| [lead_hook](tables/lead_hook.md) | Marketing | B | pii | ✅ | lead-response (capture endpoint definition; + machine `facebook_dm` / `facebook_lead` hooks merged from the local pipeline) |
+| [lead_capture_event](tables/lead_capture_event.md) | Marketing | B | pii | ✅ | lead-response (raw inbound hit → contact resolution; sources incl. website + Meta `facebook_dm` / `meta_lead_ad`) |
 | [social_metric](tables/social_metric.md) | Marketing | B | op | ✅ | BI / reporting (normalized social metrics from `meta_insights`) |
 
 ## Time
