@@ -116,17 +116,41 @@ export const CONNECTOR_MANIFESTS: readonly ConnectorManifest[] = [
     version: 1,
   },
   {
+    // ONE Meta app token spans the full Social Media plane: FB Page + Instagram + Messenger +
+    // Ads (ADR-0124 #7). The credential form (conn-company-meta) renders as two views over this
+    // one secret — Meta Social / Meta Ads (company-providers.ts scopeGroups). Reply/publish/ad
+    // push are gated; ads execution = Backend #406.
     key: "meta",
     label: "Meta (Facebook / Instagram)",
-    description: "Meta business — posts, DMs, and lead forms for marketing + conversational ingestion (reply send is gated).",
+    description: "Meta business — Page/Instagram posts, Messenger DMs, lead forms, and ad campaigns for the social plane + conversational ingestion (publish/reply/ad send is gated).",
     category: "Marketing",
     icon: "MessageCircle",
     authType: "oauth",
-    scopes: ["pages_read_engagement", "pages_messaging", "leads_retrieval"],
+    scopes: [
+      "pages_messaging",
+      "pages_manage_metadata",
+      "pages_read_engagement",
+      "pages_manage_posts",
+      "instagram_basic",
+      "instagram_manage_messages",
+      "instagram_content_publish",
+      "ads_management",
+      "ads_read",
+      "business_management",
+      "leads_retrieval",
+    ],
     defaultCadenceMinutes: 30,
-    identityMap: ["campaign", "lead", "interaction"],
-    capabilities: ["ingest:posts", "ingest:messages", "ingest:leads", "write:messages"],
-    version: 1,
+    identityMap: ["campaign", "ad", "lead", "interaction", "social_post"],
+    capabilities: [
+      "ingest:posts",
+      "ingest:messages",
+      "ingest:leads",
+      "ingest:ad-metrics",
+      "write:messages",
+      "write:posts",
+      "write:ads",
+    ],
+    version: 2,
   },
   {
     key: "darkwebid",

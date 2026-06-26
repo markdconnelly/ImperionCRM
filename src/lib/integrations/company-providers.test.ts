@@ -65,13 +65,14 @@ describe("COMPANY_PROVIDERS — DocuSign provider (#862)", () => {
   });
 });
 
-describe("COMPANY_PROVIDERS — Meta provider (#586)", () => {
+describe("COMPANY_PROVIDERS — Meta provider (#586, extended #1341)", () => {
   const meta = COMPANY_PROVIDERS.find((p) => p.key === "meta");
 
-  it("is present as a credential provider", () => {
+  it("is present as a send-capable credential provider, not pollable", () => {
     expect(meta).toBeDefined();
     expect(meta?.kind).toBe("credential");
     expect(meta?.sendCapable).toBe(true);
+    expect(providerIsPollable(meta!)).toBe(false);
   });
 
   it("collects pageAccessToken (secret) + pageId — mirroring the pipeline's credentials.ts", () => {
@@ -83,6 +84,58 @@ describe("COMPANY_PROVIDERS — Meta provider (#586)", () => {
     expect(token?.required).toBe(true);
     expect(pageId?.secret).toBe(false);
     expect(pageId?.required).toBe(true);
+  });
+
+  it("records the full FB+IG+Messenger+Ads scope union, one secret (ADR-0124 #7)", () => {
+    // The exact union the issue requires recorded for display/audit (ADR-0124 #7). Existing DM
+    // messaging scopes (pages_messaging / instagram_manage_messages) are RETAINED so the Meta-DM
+    // path keeps resolving; the rest extend the one app token to Page management, IG content, Ads.
+    expect(meta?.scopes).toEqual([
+      "pages_messaging",
+      "pages_manage_metadata",
+      "pages_read_engagement",
+      "pages_manage_posts",
+      "instagram_basic",
+      "instagram_manage_messages",
+      "instagram_content_publish",
+      "ads_management",
+      "ads_read",
+      "business_management",
+    ]);
+    // DM messaging is preserved (the acceptance criterion: existing DM messaging still resolves).
+    expect(meta?.scopes).toContain("pages_messaging");
+    expect(meta?.scopes).toContain("instagram_manage_messages");
+  });
+
+  it("renders as two card views (Meta Social / Meta Ads) over the ONE secret", () => {
+    // Datto 2-cards/1-key precedent (ADR-0122); single credential, two scope views (ADR-0124 #7).
+    const groups = meta?.scopeGroups ?? [];
+    expect(groups.map((g) => g.label)).toEqual(["Meta Social", "Meta Ads"]);
+    // Still ONE secret: a single write-only token field, not one per view.
+    const secretFields = meta?.fields?.filter((f) => f.secret) ?? [];
+    expect(secretFields).toHaveLength(1);
+    expect(secretFields[0]?.name).toBe("pageAccessToken");
+  });
+
+  it("every grouped scope is a subset of the flat union, and the union is fully covered", () => {
+    const flat = new Set(meta?.scopes ?? []);
+    const grouped = new Set<string>();
+    for (const g of meta?.scopeGroups ?? []) {
+      for (const s of g.scopes) {
+        expect(flat.has(s)).toBe(true); // subset
+        grouped.add(s);
+      }
+    }
+    // Union of groups covers every declared scope (no orphan scope hidden from both views).
+    expect([...flat].every((s) => grouped.has(s))).toBe(true);
+  });
+
+  it("puts the ads scopes only in the Meta Ads view, messaging only in Meta Social", () => {
+    const social = meta?.scopeGroups?.find((g) => g.label === "Meta Social");
+    const ads = meta?.scopeGroups?.find((g) => g.label === "Meta Ads");
+    expect(ads?.scopes).toEqual(["ads_management", "ads_read", "business_management"]);
+    expect(social?.scopes).toContain("pages_messaging");
+    expect(social?.scopes).not.toContain("ads_management");
   });
 });
 

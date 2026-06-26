@@ -41,6 +41,15 @@ export interface CompanyProvider {
   description: string;
   /** Scopes recorded on the connection row (display/audit only). */
   scopes: string[];
+  /**
+   * Optional named groupings of `scopes` so ONE credential can render as several
+   * card *views* over the one secret (the Datto "2 cards / 1 key" precedent, ADR-0122;
+   * Meta = Social + Ads over `conn-company-meta`, ADR-0124 #7). Each group's `scopes`
+   * MUST be a subset of `scopes`; the union of all groups SHOULD cover `scopes`. When
+   * absent the card shows the flat `scopes` list. Display/audit metadata only — there
+   * is still exactly ONE Credential and ONE Key Vault secret.
+   */
+  scopeGroups?: { label: string; description?: string; scopes: string[] }[];
   /** Present for kind "credential". */
   fields?: CredentialField[];
   /**
@@ -278,24 +287,64 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     icon: "MessageCircle",
     kind: "credential",
     category: "Marketing",
-    // Send-capable: the Page token authorizes OUTBOUND DM replies, so the cloud
-    // pipeline stays dormant/fail-closed until this secret exists (pipeline #89 / PR #113).
+    // Send-capable: the Page/app token authorizes OUTBOUND DM replies, post publishing,
+    // and ad management, so the cloud pipeline stays dormant/fail-closed until this secret
+    // exists (pipeline #89 / PR #113; ads = Backend #406).
     sendCapable: true,
     description:
-      "Meta (Facebook / Instagram) Page messaging — long-lived Page access token used to send " +
-      "Facebook & Instagram DM replies. SEND-CAPABLE: entering it is a Mark-approved security " +
-      "event (Meta App Review / Advanced Access for the messaging permissions must be granted " +
-      "first). Stored as the Key Vault secret conn-company-meta; the pipeline stays dormant " +
+      "Meta business — ONE app token (one secret) spanning the full Social Media plane: Facebook " +
+      "Page + Instagram + Messenger DMs AND Meta Ads (ADR-0124 #7). Renders as two views over the " +
+      "one secret — Meta Social and Meta Ads (the Datto 2-cards/1-key precedent, ADR-0122) — but it " +
+      "is a SINGLE Credential. SEND-CAPABLE: entering it is a Mark-approved security event (Meta App " +
+      "Review / Advanced Access for the messaging, content, and ads permissions must be granted " +
+      "first). Stored as the Key Vault secret conn-company-meta; the pipeline + ad push stay dormant " +
       "until it exists.",
-    scopes: ["pages_messaging", "instagram_manage_messages"],
+    // The full scope union for the one app token (display/audit only — no secret here). Existing
+    // DM messaging scopes are RETAINED so the Meta-DM send/ingest path keeps resolving; the rest
+    // extend the token to FB Page management, Instagram content, and Ads (ADR-0124 #7).
+    scopes: [
+      "pages_messaging",
+      "pages_manage_metadata",
+      "pages_read_engagement",
+      "pages_manage_posts",
+      "instagram_basic",
+      "instagram_manage_messages",
+      "instagram_content_publish",
+      "ads_management",
+      "ads_read",
+      "business_management",
+    ],
+    // Two card VIEWS over the one secret (ADR-0124 #7 / Datto precedent ADR-0122). Social = the
+    // FB Page / Instagram / Messenger surface (includes the retained DM messaging scopes); Ads =
+    // the paid surface. Together they cover the full union above.
+    scopeGroups: [
+      {
+        label: "Meta Social",
+        description: "Facebook Page, Instagram & Messenger — posts, DMs, and engagement.",
+        scopes: [
+          "pages_messaging",
+          "pages_manage_metadata",
+          "pages_read_engagement",
+          "pages_manage_posts",
+          "instagram_basic",
+          "instagram_manage_messages",
+          "instagram_content_publish",
+        ],
+      },
+      {
+        label: "Meta Ads",
+        description: "Ad campaigns, ad sets, and ads — create, manage, and measure.",
+        scopes: ["ads_management", "ads_read", "business_management"],
+      },
+    ],
     fields: [
       {
         name: "pageAccessToken",
-        label: "Page access token",
+        label: "Access token",
         secret: true,
         type: "password",
         required: true,
-        help: "Long-lived Facebook Page token granting pages_messaging / instagram_manage_messages.",
+        help: "Long-lived Meta token (one secret) granting the Social + Ads scopes above (pages_*, instagram_*, ads_*, business_management).",
       },
       {
         name: "pageId",
@@ -303,7 +352,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
         secret: false,
         type: "text",
         required: true,
-        placeholder: "1234567890",
+        placeholder: "106025565604796",
         help: "The Facebook Page id the Instagram account is linked to.",
       },
     ],
