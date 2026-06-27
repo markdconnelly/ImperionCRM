@@ -2232,6 +2232,18 @@ export interface UnmappedTenant {
 }
 
 /**
+ * An Imperion account that has NO `account_tenant` row (issue #1371, epic #1366 gap (f)).
+ * The inverse of {@link UnmappedTenant}: that surfaces a *discovered tenant* with no account;
+ * this surfaces an *account* with no tenant — the case where the tenant GUID was never collected
+ * (no posture bronze) nor linked, so the tenant-first Client Mapping table has nothing to show.
+ * An operator pastes the M365 tenant GUID here to finish the mapping (ADR-0126). PII-free.
+ */
+export interface AccountNeedingTenant {
+  accountId: string;
+  accountName: string;
+}
+
+/**
  * One external unit of a per-client connector (a company / tenant / site) as seen on the
  * Client Mapping surface (ADR-0112, epic #1141). `sourceKey` is the unit's id within its source
  * system (e.g. an Autotask company id); `mappedAccountId` is the current **manual** `entity_xref`

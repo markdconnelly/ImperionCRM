@@ -53,6 +53,7 @@ Every runbook in this area follows the same shape, so a newcomer can trust the f
 | --- | --- |
 | [dev-node-blocked-by-intune-firewall](dev-node-blocked-by-intune-firewall.md) | Local `npm` / Node is blocked from the network by an Intune/Defender firewall rule on a managed dev workstation. |
 | [activate-company-credential-wiring](activate-company-credential-wiring.md) | You want saving a **company credential** in Settings to actually write to Key Vault and flip the row to `active` — enable backend Easy Auth + the web-app MI token (backend ADR-0036). |
+| [finish-tenant-mappings](finish-tenant-mappings.md) | An account has **no M365 tenant mapping** (4/26 mapped at the 2026-06-26 audit) so it gets no per-client posture/directory collection — map each client's tenant GUID via the GUI (ADR-0126, #1371). |
 
 ### Related runbooks living in other areas
 

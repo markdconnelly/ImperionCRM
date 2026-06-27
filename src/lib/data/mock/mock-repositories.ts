@@ -2191,6 +2191,9 @@ export const mockRepositories: Repositories = {
     async listUnmappedTenants() {
       return [];
     },
+    async listAccountsNeedingTenant() {
+      return [];
+    },
     async listTenantPostureForAccount() {
       return [];
     },

@@ -56,6 +56,47 @@ export async function linkClientMappingAction(formData: FormData) {
   revalidatePath(`/settings/client-mapping/${connector}`);
 }
 
+/**
+ * Account-first tenant mapping (issue #1371, epic #1366 gap (f), ADR-0126). The standard
+ * `linkClientMappingAction` only maps tenants already DISCOVERED as units (posture bronze or an
+ * existing link). For an account whose tenant GUID was never collected/linked there is no unit to
+ * pick, so this action takes the GUID directly from the operator (account → typed tenant GUID) and
+ * performs the SAME dual-write: the `entity_xref` link (ADR-0112 authority, via the backend) plus
+ * the legacy `account_tenant` row the posture rollups still join on (#1049). No GUIDs are ever
+ * seeded — the operator supplies each one from M365 admin discovery (see the runbook). The GUID is
+ * a tenant identifier, not PII and not a secret. Silent no-op on a malformed GUID (the form also
+ * enforces the pattern client-side); a real validation surface is out of scope for this chore.
+ */
+export async function mapAccountTenantAction(formData: FormData) {
+  await requireCapability("settings:write");
+  const accountId = String(formData.get("accountId") ?? "").trim();
+  const tenantId = String(formData.get("tenantId") ?? "")
+    .trim()
+    .toLowerCase();
+  const displayName = String(formData.get("displayName") ?? "").trim() || null;
+  if (!accountId || !TENANT_GUID.test(tenantId)) return;
+
+  const adapter = getClientMappingAdapter("m365");
+  if (!adapter) return;
+
+  try {
+    await clientMappingService.link({
+      entityType: "account",
+      sourceSystem: adapter.sourceSystem,
+      sourceKey: tenantId,
+      internalEntityId: accountId,
+    });
+  } catch (err) {
+    if (!(err instanceof ServiceNotConfiguredError)) throw err;
+  }
+
+  // Legacy account_tenant row — the join key the posture rollups read until the cutover (#1049).
+  const { security } = getRepositories();
+  await security.upsertTenantMapping({ tenantId, accountId, displayName });
+
+  revalidatePath("/settings/client-mapping/m365");
+}
+
 export async function unlinkClientMappingAction(formData: FormData) {
   await requireCapability("settings:write");
   const connector = String(formData.get("connector") ?? "").trim();

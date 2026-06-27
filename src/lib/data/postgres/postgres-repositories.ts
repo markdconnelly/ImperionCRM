@@ -320,6 +320,7 @@ import type {
   AutonomyRung,
   AgentPlane,
   UnmappedTenant,
+  AccountNeedingTenant,
   WorkflowDetail,
   WorkflowRow,
   JourneyRow,
@@ -12916,6 +12917,27 @@ export const postgresRepositories: Repositories = {
         return rows.map((r) => ({ tenantId: r.tenant_id }));
       } catch {
         return mockRepositories.security.listUnmappedTenants();
+      }
+    },
+
+    async listAccountsNeedingTenant(): Promise<AccountNeedingTenant[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.security.listAccountsNeedingTenant();
+      try {
+        // Active accounts with NO account_tenant row (issue #1371, epic #1366 gap (f)). Inverse of
+        // listUnmappedTenants: these clients have a tenant in the real world but its GUID was never
+        // collected (no posture bronze) nor linked, so the tenant-first table has nothing to show.
+        // Inactive accounts are excluded — they don't get posture/comms collection (ADR-0126).
+        const { rows } = await pool.query<{ account_id: string; name: string }>(
+          `SELECT a.id::text AS account_id, a.name
+             FROM account a
+            WHERE a.is_active
+              AND NOT EXISTS (SELECT 1 FROM account_tenant m WHERE m.account_id = a.id)
+            ORDER BY a.name`,
+        );
+        return rows.map((r) => ({ accountId: r.account_id, accountName: r.name }));
+      } catch {
+        return mockRepositories.security.listAccountsNeedingTenant();
       }
     },
 
