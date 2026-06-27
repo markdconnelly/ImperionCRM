@@ -1702,5 +1702,19 @@
     "file": "ADR-0127-web-role-least-privilege-write-allowlist.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0128",
+    "title": "Canonical agent autonomy ladder — per-level capability semantics + per-action auto_at_level",
+    "status": "accepted",
+    "date": "2026-06-27",
+    "tags": [
+      "agents",
+      "governance"
+    ],
+    "summary": "Pin a single canonical 1–5 (+L0) autonomy ladder with universal per-level capability semantics that EVERY agent maps onto, plus a deterministic per-action rule (auto_at_level + dial-proof always_gate) for what auto-executes at a given dial. Extends ADR-0109 (which gave the dial + routeAction + hard ceilings but never pinned what each LEVEL means as a capability class). Chase (Sales) is the first worked instance.",
+    "file": "ADR-0128-canonical-agent-autonomy-ladder.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

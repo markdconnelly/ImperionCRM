@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0128
 title: "Canonical agent autonomy ladder — per-level capability semantics + per-action auto_at_level"
 status: accepted
 date: 2026-06-27
