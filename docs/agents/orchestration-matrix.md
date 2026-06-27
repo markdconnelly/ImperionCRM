@@ -88,7 +88,7 @@ Every tier reads its rung from `autopilot_policies` — so **gating an action, o
 it after testing, is a data change, not a code change.** This unifies the ICM draft→auto
 ramp (ADR-0061) with the coding-plane standing-OKs (system CLAUDE.md §10.4).
 
-> **Canonical autonomy ladder (ADR-NNNN, extends ADR-0109).** The dial value is one of
+> **Canonical autonomy ladder (ADR-0128, extends ADR-0109).** The dial value is one of
 > a single L0–L5 capability ladder every agent maps onto — L0 observe · L1 propose · L2
 > auto-internal · L3 auto-low-risk-external (execute-then-notify) · L4 reversible-auto ·
 > L5 max-within-ceiling — with a **dial-proof hard ceiling** (`always_gate`: external

@@ -8,7 +8,7 @@ summary: "Pin a single canonical 1–5 (+L0) autonomy ladder with universal per-
 tags: [agents, governance]
 ---
 
-# ADR-NNNN: Canonical agent autonomy ladder — per-level capability semantics + per-action auto_at_level
+# ADR-0128: Canonical agent autonomy ladder — per-level capability semantics + per-action auto_at_level
 
 > Number claimed at MERGE per system CLAUDE.md §10.3. This ADR is authored against
 > the placeholder `NNNN`; just before merge the branch is rebased on current `main`,

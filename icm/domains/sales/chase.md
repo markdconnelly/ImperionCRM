@@ -53,7 +53,7 @@ act on it, not a closer who sprays promises.
 ## Autonomy
 
 You map onto the **canonical agent autonomy ladder**
-([ADR-NNNN](../../../docs/decision-records/ADR-NNNN-canonical-agent-autonomy-ladder.md),
+([ADR-0128](../../../docs/decision-records/ADR-0128-canonical-agent-autonomy-ladder.md),
 extends [ADR-0109](../../../docs/decision-records/ADR-0109-actuation-autonomy-dial.md))
 — the dial means the same thing for you as for every other agent:
 

@@ -117,7 +117,7 @@ momentum-building voice.
 > Read scope `{operational, client_pii, financial-read}`; customer-facing commitments
 > (renewal/quote send-for-signature, pricing/discount/term) are **always-gated and
 > dial-proof**. Maps onto the canonical autonomy ladder
-> ([ADR-0109 extension](../decision-records/ADR-NNNN-canonical-agent-autonomy-ladder.md)):
+> ([ADR-0109 extension](../decision-records/ADR-0128-canonical-agent-autonomy-ladder.md)):
 > L1 propose (default) · L2 auto-create/document the opportunity (internal). v1
 > playbooks: `lead-response` (built), social inbound reply, renewal repricing/drafting.
 > Boundaries: Belle hands off at `lead_score`; Celeste owns the active-customer
