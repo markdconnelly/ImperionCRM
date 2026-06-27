@@ -52,6 +52,16 @@ _Avoid_: sales ticket, activity (unqualified)
 A rep's ordered list of their open sales tasks, grouped by due date and deal — the working surface of the sales activity page. A read model, not a stored object.
 _Avoid_: sales pipeline (that's deals by stage), task list (unqualified)
 
+### Sales & renewals
+
+**Contract renewal**:
+An app-native record of a contract's upcoming expiration worked as a sales motion (Imperion is its source of record). Holds the renewal lifecycle (identified→priced→quoted→sent→renewed|repriced|churned) and proposed pricing; links the expiring `contract`, an optional `kind=renewal` `opportunity`, and an optional `esign_envelope`. The opportunity merge never writes it.
+_Avoid_: renewal opportunity, contract extension
+
+**Opportunity kind**:
+The type discriminator on `opportunity` (new | renewal | upsell | …). A renewal is an opportunity *kind*, spawned by a contract's expiration (a sales event); the opportunity documents the pursuit while `contract_renewal` holds the renewal data.
+_Avoid_: opportunity type
+
 ### Time tracking
 
 **Employee**:

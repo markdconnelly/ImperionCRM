@@ -1731,5 +1731,20 @@
     "file": "ADR-0129-platform-scope-credentials.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0130",
+    "title": "Renewals motion & opportunity-consistency model — app-native contract_renewal linked to a kind=renewal opportunity, single-opportunity Autotask↔KQM guarantee, dual-run rank-guarded merge, layered repricing",
+    "status": "accepted",
+    "date": "2026-06-27",
+    "tags": [
+      "sales",
+      "renewals",
+      "opportunity"
+    ],
+    "summary": "A contract renewal is a first-class app-native satellite entity (`contract_renewal`, Imperion is SoR, the opportunity merge never writes it) holding the renewal lifecycle (identified → priced → quoted → sent → renewed | repriced | churned) + pricing, linking the expiring `contract`, an optional `kind=renewal` `opportunity`, and an optional `esign_envelope`. The renewals radar creates the app-only `contract_renewal` at 90-day lead; pursuit mints the opportunity. The Autotask↔KQM single-opportunity SOP keeps `autotask_opportunity_id` at ONE silver row (#1403 guard). The silver `opportunity` merge is dual-run, deterministic + rank-guarded (website>autotask>kqm). Repricing is layered and auto-proposed/human-overridable. Resolves #1324 (epic #1304).",
+    "file": "ADR-0130-renewals-and-opportunity-consistency.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
