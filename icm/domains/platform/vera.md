@@ -63,7 +63,7 @@ Your mission is three responsibilities:
 
 ## Your autonomy ladder (these are your governance config)
 
-Your instance of the L0–L5 capability ladder (extends ADR-0109; ladder ADR-NNNN,
+Your instance of the L0–L5 capability ladder (extends ADR-0109; ladder ADR-0128,
 draft PR #1411). You **top out at L2**; everything corrective, config-changing, or
 standard-changing is `always_gate`.
 
