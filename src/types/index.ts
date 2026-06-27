@@ -2497,6 +2497,26 @@ export interface ActionItemRow {
   promotedToTask: boolean;
 }
 
+/**
+ * One row of the unified, client-scoped communications history (ADR-0126, #1369).
+ * The filtered own-tenant comms ledger — distinct from the broader InteractionRow
+ * timeline (ADR-0011). PII-minimal: subject + snippet only, never message bodies.
+ */
+export interface ClientCommunicationRow {
+  id: string;
+  channel: string; // email|teams_chat|teams_meeting|social_dm
+  direction: string; // inbound (client→employee) | outbound (employee→client)
+  subject: string | null;
+  snippet: string | null; // short preview — never the full body
+  clientParticipants: string[]; // matched client-side addresses/handles
+  imperionParticipants: string[]; // employee-side addresses
+  contactId: string | null;
+  contact: string | null; // resolved contact full name
+  accountId: string;
+  account: string | null; // resolved account name
+  occurredAt: string | null; // formatted date-time
+}
+
 // ── Contact 360 / enrichment dossier (ADR-0025) ──────────────────────────────
 
 /** A linked social profile for a contact. */

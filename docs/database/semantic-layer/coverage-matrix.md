@@ -110,6 +110,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
 |---|---|---|---|---|---|
 | [interaction](tables/interaction.md) | Knowledge | B (+ gold) | pii | ✅ | every workflow's research stage |
+| [client_communication](tables/client_communication.md) | Knowledge | B | pii | ✅ | client-relationship history (filtered own-tenant comms scoped to DB clients via account_domain + onboarded contacts; email/teams_chat/teams_meeting/social_dm; subject+snippet only, NO bodies; #1369/0211, ADR-0126; merge co-locates w/ ingestion, LP ADR-0026) |
 | [meeting](tables/meeting.md) | Knowledge | B | pii | ✅ | meeting follow-up |
 | [conversation](tables/conversation.md) | Knowledge | B (+ gold) | pii | ✅ | conversational intelligence (transcribe→analyze→embed) |
 | [conversation_segment](tables/conversation_segment.md) (embedding unit), [conversation_insight](tables/conversation_insight.md) (AI output) | Knowledge | B / G | pii | ✅ | conversational intelligence; risk/objection → forecasting |
@@ -252,6 +253,7 @@ silver entity it feeds (so e.g. the `qbo_*`/`website_expense_*` feeds are `fin`,
 | invoice (B, QBO read-only mirror) | `qbo_invoices` (+ `qbo_customers` join; `qbo_payments` future match) |
 | credential_exposure / assessment_artifact (A/B) | `darkwebid_exposures` · `televy_reports` |
 | interaction (B) | `m365_mail_messages` · `m365_teams_chats/_meetings` · `facebook_posts/_comments/_messages` · `instagram_media/_comments/_messages` · `threads_posts/_replies/_mentions` (source `threads`, 0208/ADR-0125; our own Threads presence — posts/replies + public mentions of us) |
+| client_communication (B) | `m365_mail_messages` · `m365_teams_chats/_meetings` · Meta Messenger/IG DM bronze — **filtered** to DB clients via `account_domain` (0081) + onboarded `contact` (ADR-0126/#1369). Subject+snippet only, no bodies. Merge co-locates w/ ingestion (LP ADR-0026) — sibling follow-up |
 | posture / dns (C/E) | `secure_scores` · `defender_incidents/_alerts` · `entra_*` · `intune_*` · `*_golden` · `dns_zones` · `dns_records` · `sharepoint_sites` · `azure_*` · `sentinel_*` |
 | social_metric (B) | `meta_insights` · `threads_insights` (platform `threads`, 0208/ADR-0125) |
 | account (via `entity_xref`) + license_assignment (A) | `pax8_companies` · `pax8_subscriptions` · `pax8_licenses` · `pax8_orders` (0161; collector LP #279). Merge LP #280 resolves company→`account` into `entity_xref`; license facts → `license_assignment` (0185) |

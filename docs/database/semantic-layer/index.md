@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**90 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**91 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -79,6 +79,7 @@ core subset). Remaining objects from the
 | [`change_request`](tables/change_request.md) | write-back sidecar (app-native ITIL) | app-native change working object (Autotask eventual record SoR, gated) | ADR-0079 |
 | [`contract`](tables/contract.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`interaction`](tables/interaction.md) | single-SoR | per-source / per-channel | ADR-0011 |
+| [`client_communication`](tables/client_communication.md) | single-SoR (filtered own-tenant merge) | Imperion home tenant, scoped to DB clients (account_domain + onboarded contacts) | ADR-0126 |
 | [`meeting`](tables/meeting.md) | single-SoR | per-platform (1:1 with interaction) | ADR-0011 |
 | [`conversation`](tables/conversation.md) | single-SoR (+ gold) | app SoR; source supplies the capture (ACS/Teams/upload) | ADR-0068 |
 | [`conversation_segment`](tables/conversation_segment.md) | single-SoR (embedding unit) | app-native (diarized from transcript; the embed/citation unit) | ADR-0068 |
