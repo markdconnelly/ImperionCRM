@@ -137,6 +137,8 @@ describe("resolveDispatch — a freshly registered action is dispatched by the c
     tier: "T1",
     dataClass: "operational",
     consentClass: "none",
+    autoAtLevel: 2,
+    alwaysGate: false,
     executor: "noop",
     schema: {},
   };
@@ -164,6 +166,8 @@ describe("resolveDispatch — earned / graduated autonomy (#1036, ADR-0121)", ()
     tier: "T2",
     dataClass: "operational",
     consentClass: "none",
+    autoAtLevel: 2,
+    alwaysGate: false,
     executor: "noop",
     schema: {},
   };

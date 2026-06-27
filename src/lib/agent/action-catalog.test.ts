@@ -13,9 +13,11 @@ import {
   listActionKinds,
   registerActionDef,
   resolveAction,
+  selectActuation,
   validateInput,
   type ActionDef,
 } from "./action-catalog";
+import { LADDER_LEVELS, type LadderLevel } from "./action-autonomy";
 
 describe("catalog registration — send_email + send_sms migrated in", () => {
   it("registers send_email + send_sms with identical comms semantics", () => {
@@ -170,6 +172,8 @@ describe("no-endpoint-edit property — a new action is a catalog entry alone (#
       tier: "T1",
       dataClass: "operational",
       consentClass: "none",
+      autoAtLevel: 2, // internal reversible write → L2 (auto-internal)
+      alwaysGate: false,
       executor: "task_create",
       schema: {
         title: { type: "string", required: true },
@@ -233,5 +237,47 @@ describe("catalog registration — the 11 Social Action kinds (ADR-0124 #4, #135
     // A registered kind with a malformed payload is refused locally before any round-trip.
     expect(resolveAction({ kind: "social_publish_fb_post" }).ok).toBe(false); // missing socialPostId
     expect(resolveAction({ kind: "social_boost_post", socialPostId: "p1" }).ok).toBe(false); // missing budgetUsd
+  });
+});
+
+describe("ADR-0128 ladder tags — auto_at_level + always_gate (#1412)", () => {
+  const MONEY = ["social_boost_post", "social_ad_deploy", "social_ad_pause", "social_ad_rebudget"];
+
+  it("every registered def carries a valid ladder rung (0–5) and a boolean always_gate", () => {
+    for (const def of listActionDefs()) {
+      expect(LADDER_LEVELS, def.kind).toContain(def.autoAtLevel);
+      expect(typeof def.alwaysGate, def.kind).toBe("boolean");
+    }
+  });
+
+  it("the four money/ad kinds set the dial-proof always_gate (ADR-0109 hard money ceiling)", () => {
+    for (const kind of MONEY) expect(getActionDef(kind)!.alwaysGate, kind).toBe(true);
+  });
+
+  it("the 1:1 comms sends are L3 (auto-low-risk-external), not always-gated", () => {
+    for (const kind of ["send_email", "send_sms"]) {
+      expect(getActionDef(kind)!.autoAtLevel, kind).toBe(3);
+      expect(getActionDef(kind)!.alwaysGate, kind).toBe(false);
+    }
+  });
+
+  it("selectActuation implements D4: auto IFF dial ≥ auto_at_level AND NOT always_gate", () => {
+    const email = getActionDef("send_email")!; // L3, not gated
+    expect(selectActuation(email, 2)).toBe("park"); // below floor
+    expect(selectActuation(email, 3)).toBe("auto"); // at floor
+    expect(selectActuation(email, 5)).toBe("auto"); // above floor
+  });
+
+  it("an always_gate action parks at EVERY level — the ceiling is dial-proof", () => {
+    const boost = getActionDef("social_boost_post")!; // always_gate
+    for (const dial of LADDER_LEVELS) {
+      expect(selectActuation(boost, dial as LadderLevel), `dial ${dial}`).toBe("park");
+    }
+  });
+
+  it("a high-floor organic kind parks until the dial reaches its rung", () => {
+    const fb = getActionDef("social_publish_fb_post")!; // L5, not gated
+    expect(selectActuation(fb, 4)).toBe("park");
+    expect(selectActuation(fb, 5)).toBe("auto");
   });
 });

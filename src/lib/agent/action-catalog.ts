@@ -21,7 +21,11 @@
  * caller MUST treat that as "refuse", never "pass through".
  */
 
-import type { AutonomyTier } from "@/lib/agent/action-autonomy";
+import {
+  type AutonomyTier,
+  type LadderLevel,
+  ladderAutoExecutes,
+} from "@/lib/agent/action-autonomy";
 
 /**
  * Consent class for an action (ADR-0014 / ADR-0058). `none` = no contact-consent gate
@@ -62,6 +66,22 @@ export interface ActionDef {
   dataClass: string;
   /** ADR-0014/0058 consent class — whether the backend re-checks contact consent. */
   consentClass: ConsentClass;
+  /**
+   * ADR-0128 D3: the minimum canonical-ladder rung (L0–L5) at which this action
+   * AUTO-EXECUTES. Below it the action parks to the cockpit. This is the action's inherent
+   * risk floor on the universal ladder (`@/lib/agent/action-autonomy` {@link LadderLevel}),
+   * NOT the operator's dial setting — the dial is the input, this is the threshold.
+   */
+  autoAtLevel: LadderLevel;
+  /**
+   * ADR-0128 D2/D3: the DIAL-PROOF hard ceiling. When true the action NEVER auto-executes at
+   * any dial level — it always parks (gauntlet gate 8). Reserved for external commitments that
+   * bind the company (send-for-signature, pricing/discount/term) and the hard money ceiling
+   * (ADR-0109). The always-gate `data_class`es (`financial` / `security_credentials` /
+   * `client_pii`, ADR-0118) are enforced SEPARATELY by the data-class ceiling — not duplicated
+   * here — so this flag stays the explicit per-action commitment/money declaration.
+   */
+  alwaysGate: boolean;
   /** The backend executor binding name (documentation/audit; the backend owns dispatch). */
   executor: string;
   /** The action's input contract (validated before forwarding). */
@@ -129,6 +149,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T2",
     dataClass: "client_pii",
     consentClass: "contact_channel",
+    // L3 — a standard 1:1 external touch (ADR-0128 L3 auto-low-risk-external). Not an external
+    // commitment, so `alwaysGate:false`; the client_pii data-class ceiling (ADR-0118) keeps it
+    // parked in v1 until that ceiling is relaxed — capability is L3, posture is conservative.
+    autoAtLevel: 3,
+    alwaysGate: false,
     executor: "comms_send",
     schema: {
       contactId: { type: "string", required: true },
@@ -143,6 +168,8 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T2",
     dataClass: "client_pii",
     consentClass: "contact_channel",
+    autoAtLevel: 3,
+    alwaysGate: false,
     executor: "comms_send",
     schema: {
       contactId: { type: "string", required: true },
@@ -164,6 +191,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "operational",
     consentClass: "none",
+    // L5 — a customer-facing public broadcast on OUR presence: only the maximal rung auto-runs
+    // it (ADR-0128 L5). `operational` is NOT an always-gate data-class, so the conservative dial
+    // (not a hard ceiling) is what keeps v1 human-approving every Social Action (ADR-0124 D4).
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "threads_publish",
     schema: {
       text: { type: "string", required: true },
@@ -175,6 +207,8 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "operational",
     consentClass: "none",
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "threads_publish",
     schema: {
       // The Threads post/reply id we are replying to (the external_ref carried on the
@@ -200,6 +234,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
+    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
+    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
+    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "social_dispatch",
     // socialPostId = the draft social_post being fanned out to this channel.
     schema: { socialPostId: { type: "string", required: true } },
@@ -210,6 +249,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
+    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
+    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
+    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "social_dispatch",
     // engagementId = the social_engagement / interaction id being replied to.
     schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
@@ -220,6 +264,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
+    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
+    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
+    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "social_dispatch",
     schema: { socialPostId: { type: "string", required: true } },
   },
@@ -229,6 +278,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
+    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
+    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
+    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "social_dispatch",
     schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
   },
@@ -238,6 +292,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
+    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
+    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
+    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "social_dispatch",
     schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
   },
@@ -247,6 +306,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
+    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
+    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
+    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "social_dispatch",
     schema: { socialPostId: { type: "string", required: true } },
   },
@@ -256,6 +320,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
+    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
+    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
+    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
+    autoAtLevel: 5,
+    alwaysGate: false,
     executor: "social_dispatch",
     schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
   },
@@ -265,6 +334,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "financial",
     consentClass: "none",
+    // HARD MONEY CEILING (ADR-0128 D2 / ADR-0109): paid spend binds the company → DIAL-PROOF.
+    // `alwaysGate:true` parks at every level regardless of the dial; `auto_at_level` is moot but
+    // pinned to the max rung for self-description. `financial` is also an always-gate data-class.
+    autoAtLevel: 5,
+    alwaysGate: true,
     executor: "social_dispatch",
     // socialPostId = the published post to boost; budgetUsd = the spend cap the approver sets.
     schema: { socialPostId: { type: "string", required: true }, budgetUsd: { type: "number", required: true } },
@@ -275,6 +349,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "financial",
     consentClass: "none",
+    // HARD MONEY CEILING (ADR-0128 D2 / ADR-0109): paid spend binds the company → DIAL-PROOF.
+    // `alwaysGate:true` parks at every level regardless of the dial; `auto_at_level` is moot but
+    // pinned to the max rung for self-description. `financial` is also an always-gate data-class.
+    autoAtLevel: 5,
+    alwaysGate: true,
     executor: "social_dispatch",
     schema: { campaignId: { type: "string", required: true }, budgetUsd: { type: "number", required: true } },
   },
@@ -284,6 +363,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "financial",
     consentClass: "none",
+    // HARD MONEY CEILING (ADR-0128 D2 / ADR-0109): paid spend binds the company → DIAL-PROOF.
+    // `alwaysGate:true` parks at every level regardless of the dial; `auto_at_level` is moot but
+    // pinned to the max rung for self-description. `financial` is also an always-gate data-class.
+    autoAtLevel: 5,
+    alwaysGate: true,
     executor: "social_dispatch",
     schema: { adId: { type: "string", required: true } },
   },
@@ -293,6 +377,11 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "financial",
     consentClass: "none",
+    // HARD MONEY CEILING (ADR-0128 D2 / ADR-0109): paid spend binds the company → DIAL-PROOF.
+    // `alwaysGate:true` parks at every level regardless of the dial; `auto_at_level` is moot but
+    // pinned to the max rung for self-description. `financial` is also an always-gate data-class.
+    autoAtLevel: 5,
+    alwaysGate: true,
     executor: "social_dispatch",
     schema: { adId: { type: "string", required: true }, budgetUsd: { type: "number", required: true } },
   },
@@ -368,4 +457,20 @@ export function resolveAction(input: Record<string, unknown>): ResolveResult {
   const validation = validateInput(def.schema, input);
   if (!validation.ok) return { ok: false, reason: "invalid", def, errors: validation.errors };
   return { ok: true, mode: "registered", def };
+}
+
+/** The actuation decision for an action at a dial level: auto-execute inline, or park to the cockpit. */
+export type Actuation = "auto" | "park";
+
+/**
+ * Project a catalog action + a dial level onto the ADR-0128 D4 selection rule (gauntlet gate 7
+ * `actuation_level` + gate 8 `hard_ceiling`): an action auto-executes IFF
+ * `dial ≥ def.autoAtLevel AND NOT def.alwaysGate` — otherwise it PARKS. This is the front-end
+ * MIRROR of the backend gauntlet's enforcement (#435); the backend is the runtime authority and
+ * re-asserts the same rule (plus the data-class ceiling, consent, and grants) at dispatch. The
+ * gauntlet-passes term of D4 is NOT modeled here — a caller may only treat `auto` as permission
+ * once its own gauntlet has passed. Fail-closed: a non-ladder `dial` yields `park`.
+ */
+export function selectActuation(def: ActionDef, dial: LadderLevel): Actuation {
+  return ladderAutoExecutes(dial, def.autoAtLevel, def.alwaysGate) ? "auto" : "park";
 }
