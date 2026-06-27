@@ -142,10 +142,10 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [event_registration](tables/event_registration.md) | Marketing | B | pii | ✅ | lead-response (registrant; attendance) |
 | [lead_hook](tables/lead_hook.md) | Marketing | B | pii | ✅ | lead-response (capture endpoint definition; + machine `facebook_dm` / `facebook_lead` hooks merged from the local pipeline) |
 | [lead_capture_event](tables/lead_capture_event.md) | Marketing | B | pii | ✅ | lead-response (raw inbound hit → contact resolution; sources incl. website + Meta `facebook_dm` / `meta_lead_ad`) |
-| [social_metric](tables/social_metric.md) | Marketing | B | op | ✅ | BI / reporting (normalized social metrics from `meta_insights`; the **organic** metric home for every Social Channel — `entity_kind` widens by vocabulary to `threads_post`/`linkedin_post`, no migration, #1339, ADR-0124 #1) |
+| [social_metric](tables/social_metric.md) | Marketing | B | op | ✅ | BI / reporting (normalized social metrics from `meta_insights`; the **organic** metric home for every Social Channel — `entity_kind` widens by vocabulary to `threads_post`/`linkedin_post`, no migration, #1339, ADR-0124 #1; canonical metric-name vocabulary normalized at silver, resolves #135, LP slice H #357/#1365) |
 | [social_post](tables/social_post.md) | Marketing | B | op | ✅ | campaign ops (compose-once organic composition → fan-out; #1339/0210, ADR-0124 #3) |
 | [social_post_channel](tables/social_post_channel.md) | Marketing | B | op | ✅ | campaign ops (per-network fan-out result; UNIQUE (social_post_id, channel); #1339/0210, ADR-0124 #3) |
-| [social_engagement](tables/social_engagement.md) | Marketing | B | op | ✅ | inbound triage (public comments + brand mentions; NOT on the Interaction timeline; contact-linked on match in slice G; lawful-basis ADR-0025; #1339/0210, ADR-0124 #2) |
+| [social_engagement](tables/social_engagement.md) | Marketing | B | op | ✅ | inbound triage (public comments + brand mentions; NOT on the Interaction timeline; contact-linked on match in slice G; lawful-basis ADR-0025; #1339/0210, ADR-0124 #2; Meta poll-in: comments ← `facebook_comments`/`instagram_comments` (slice H #357), mentions ← `meta_mentions` bronze (0213, #1365)) |
 
 ## Time
 
@@ -256,6 +256,7 @@ silver entity it feeds (so e.g. the `qbo_*`/`website_expense_*` feeds are `fin`,
 | client_communication (B) | `m365_mail_messages` · `m365_teams_chats/_meetings` (→ `account_domain` 0081 + onboarded `contact` filter) · **`facebook_messages` (0075, `meta_messenger`)** + **`instagram_messages` (0206, `instagram_dm`)** for `channel=social_dm` (→ `contact_social_identity` handle-link filter, **no domain path**; #1370/ADR-0124, see social-dm-foldin.md). Subject+snippet only, no bodies. Merge co-locates w/ ingestion (LP ADR-0026) — sibling follow-up |
 | posture / dns (C/E) | `secure_scores` · `defender_incidents/_alerts` · `entra_*` · `intune_*` · `*_golden` · `dns_zones` · `dns_records` · `sharepoint_sites` · `azure_*` · `sentinel_*` |
 | social_metric (B) | `meta_insights` · `threads_insights` (platform `threads`, 0208/ADR-0125) |
+| social_engagement (B) | `facebook_comments` · `instagram_comments` (kind `comment`, slice H LP #357) · `meta_mentions` (kind `mention`, public FB Page / IG brand mentions of us; 0213/#1365). Poll-first (ADR-0124 #8), merge co-locates w/ ingestion (LP ADR-0026) — Threads mentions ride `interaction` instead (ADR-0125) |
 | account (via `entity_xref`) + license_assignment (A) | `pax8_companies` · `pax8_subscriptions` · `pax8_licenses` · `pax8_orders` (0161; collector LP #279). Merge LP #280 resolves company→`account` into `entity_xref`; license facts → `license_assignment` (0185) |
 
 ## Seams to resolve (the one-domain rule)
