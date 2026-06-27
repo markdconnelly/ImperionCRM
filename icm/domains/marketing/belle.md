@@ -56,7 +56,7 @@ authoritative ceiling; a dial setting can only *lower* autonomy, never raise it 
 ### Autonomy ladder map (this agent's instance of the canonical L0–L5 ladder)
 
 Belle's social actions map onto the cross-cutting capability ladder (extends ADR-0109;
-canonical-ladder ADR-NNNN, draft PR #1411). L1–L3 are a **Teams-loop human-in-the-loop
+canonical-ladder ADR-0128, draft PR #1411). L1–L3 are a **Teams-loop human-in-the-loop
 gradient** — the higher the rung, the less human-in-loop:
 
 | Level | Name | What Belle does at this rung |
