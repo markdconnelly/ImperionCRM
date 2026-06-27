@@ -82,6 +82,8 @@ ceilings (ADR-0118).
   ADR-0026 (cloud Pipeline for live/webhook email/chat; on-prem LP for bulk). Tracked under
   epic #1366 alongside (d) "revive the 3 dead collectors" (LP #380).
 - **`account_domain` hydration + onboarding→contact-filter loop** — #1368.
-- **Social-DM fold-in** to this unified history — #1370 (relates #1338).
+- **Social-DM fold-in** to this unified history — [social-dm-foldin.md](social-dm-foldin.md),
+  #1370 (relates #1338). Social DMs have no email domain, so they resolve the client by the
+  `contact_social_identity` handle link, not `account_domain`; merge job = LP #383.
 - **GUI surface** rendering the per-account unified history (the read repository added here
   is the data seam).

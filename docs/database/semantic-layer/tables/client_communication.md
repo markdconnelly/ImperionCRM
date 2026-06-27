@@ -7,7 +7,7 @@ description: Unified, client-scoped direct client↔employee communications (ema
 resource: ../../../decision-records/ADR-0126-client-communications-capture-model.md
 tags: [silver, communications, m365, privacy, client_pii]
 data_class: client_pii
-timestamp: 2026-06-26T00:00:00Z
+timestamp: 2026-06-26T12:00:00Z
 ---
 
 # client_communication
@@ -51,9 +51,17 @@ DM counterparty) resolves to a DB client by either:
 2. **Contact match** — the address exactly equals an onboarded
    [`contact`](contact.md) email for an account; resolves `account_id` (+ `contact_id`).
 
-Imperion's own domains are excluded from the "client participant" test, so purely-internal
-threads never match. **Onboarding a client adds its domains/users to the filter** (ADR-0126
-#2). Until `account_domain` is populated (#1368) the filter has no substrate and capture
+For **`social_dm`** there is **no email address** — the counterparty is a Meta/IG
+**handle/PSID**, so neither email test applies. Social DMs resolve the client by the
+**social-handle link** instead: the DM counterparty is matched against
+[`contact_social_identity`](contact_social_identity.md) (the link the Meta merge already maintains), which
+resolves the `contact_id` and its `account_id`. There is **no domain fallback** for social
+DMs. Full mapping: [social-dm-foldin.md](../../social-dm-foldin.md) (#1370, ADR-0124).
+
+Imperion's own domains (and its own Page/IG account) are excluded from the "client
+participant" test, so purely-internal threads never match. **Onboarding a client adds its
+domains/users — and, for social, its linked handles — to the filter** (ADR-0126 #2). Until
+`account_domain` is populated (#1368) the email/Teams filter has no substrate and capture
 stays unfiltered/home-tenant-only — the dependency the epic tracks.
 
 ## Schema
@@ -86,8 +94,11 @@ stays unfiltered/home-tenant-only — the dependency the epic tracks.
 - `contact_id` → [`contact`](contact.md) (SET NULL) — the specific client person, when
   resolvable.
 - **Bronze feeds:** `m365_mail_messages`, `m365_teams_chats`, `m365_teams_meetings`
-  (mig 0065) + the Meta DM bronze (`*_messages`, social plane) → filtered by
-  [`account_domain`](account.md) + `contact`.
+  (mig 0065) → filtered by [`account_domain`](account.md) + `contact`; **+ the Meta DM
+  bronze** `facebook_messages` (0075, `source_system = meta_messenger`) and
+  `instagram_messages` (0206, `source_system = instagram_dm`) for `channel = social_dm`,
+  filtered by `contact_social_identity` (handle link, **no domain path**) — see
+  [social-dm-foldin.md](../../social-dm-foldin.md) (#1370, ADR-0124).
 - **Neighbor (not a FK):** [`interaction`](interaction.md) is the broader timeline over the
   same bronze; `client_communication` is the filtered, PII-minimal client-relationship
   projection. The two are kept separate by design (ADR-0126).
