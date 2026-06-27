@@ -25,7 +25,7 @@ _Avoid_: smoke test, vibe check
 ### Projects & delivery
 
 **Project Type**:
-A user-creatable category of project (table, not enum), created from the project board. Onboarding is the seeded, protected, foundational type — it gets its own dedicated page; all other types live on the project board.
+A user-creatable category of project (table, not enum), created from the project board. Onboarding is the seeded, protected, foundational type — it gets its own dedicated page; all other types live on the project board. **Project types are catalog-anchored**: a project type / delivery template maps to a product in the product/service catalog (#1306), so when an opportunity is `won` the sold product line-items select the delivery template — provisioning is catalog-driven, not hand-picked.
 _Avoid_: project category
 
 **Project Task**:
@@ -43,6 +43,10 @@ _Avoid_: auto-complete, step sync
 **Project Board**:
 The general surface where projects of every type are created and tracked. Onboarding projects appear here like any other; their dedicated Onboarding page is the easy-mode surface, not their home.
 _Avoid_: board (unqualified — the Board of Directors page owns that word), kanban
+
+**RAID Register**:
+The project manager's running log of **Risks, Assumptions, Issues, and Dependencies** for a project — the PMO control surface Pierce maintains (L2, internal), flags from, and escalates against. Includes dependency / critical-path conflict tracking. Pierce maintains and flags it; a scope/timeline change it surfaces still routes as a change request, never a silent re-scope.
+_Avoid_: risk log (unqualified — RAID is the four-quadrant register), issue tracker (that's GitHub Issues)
 
 **Sales Task**:
 A task with the sales category — a rep's next concrete sales action on a deal or contact. Same task object as everything else; the category is the discriminator.
@@ -481,3 +485,7 @@ _Avoid_: autopilot, trust level
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
 _Avoid_: skill (unqualified where ambiguous), agent prompt
+
+**Pierce (Projects agent)**:
+The Projects / Delivery department agent — the **project manager (PMO)**. Owns sale→delivery, onboarding, provisioning, and the full PM lifecycle (initiate → plan → execute → monitor/control → close), starting at opportunity `won` (Chase→Pierce seam, ADR-0096). Pierce works the **PM layer** of the shared `task` model; **Felix and the technicians work the technical layer** — a delivery task carries both a PM-level and a technical-level autonomy and the **most-restrictive applies**. Auto-provisioning a won opportunity is an **L4 (reversible-auto) action with an undo path, gated on `contract_state='signed'`** (DocuSign, ADR-0096) — not the low-dial default, which is human-trigger from the board ("ready to provision"). Project types are **catalog-anchored**: the sold product line-items select the delivery template (#1306), not a hand-picked one. Persona + the full L0–L5 ladder, hard ceiling, and refuse-preconditions live at `icm/domains/projects/pierce.md` (the canonical ladder is ADR-NNNN / draft PR #1411 — not restated here).
+_Avoid_: Pierce as task executor (he manages; Felix executes), delivery agent (he is the PM)
