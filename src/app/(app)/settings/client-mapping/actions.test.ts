@@ -34,7 +34,11 @@ vi.mock("@/lib/data", () => ({
 
 const TENANT = "11111111-1111-1111-1111-111111111111";
 
-import { linkClientMappingAction, unlinkClientMappingAction } from "./actions";
+import {
+  linkClientMappingAction,
+  mapAccountTenantAction,
+  unlinkClientMappingAction,
+} from "./actions";
 
 function form(fields: Record<string, string>): FormData {
   const fd = new FormData();
@@ -116,6 +120,65 @@ describe("linkClientMappingAction", () => {
   it("m365: skips the account_tenant dual-write when the sourceKey isn't a tenant GUID", async () => {
     await linkClientMappingAction(form({ connector: "m365", sourceKey: "not-a-guid", accountId: "a1" }));
     expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+  });
+});
+
+describe("mapAccountTenantAction (account-first, #1371)", () => {
+  it("requires settings:write before writing anything", async () => {
+    h.requireCapability.mockRejectedValueOnce(new Error("forbidden"));
+    await expect(
+      mapAccountTenantAction(form({ accountId: "a1", tenantId: TENANT })),
+    ).rejects.toThrow("forbidden");
+    expect(h.link).not.toHaveBeenCalled();
+    expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+  });
+
+  it("dual-writes entity_xref (backend) + account_tenant for a valid GUID, lowercased", async () => {
+    await mapAccountTenantAction(
+      form({ accountId: "a1", tenantId: TENANT.toUpperCase(), displayName: "Acme M365" }),
+    );
+    expect(h.link).toHaveBeenCalledWith({
+      entityType: "account",
+      sourceSystem: "m365",
+      sourceKey: TENANT,
+      internalEntityId: "a1",
+    });
+    expect(h.upsertTenantMapping).toHaveBeenCalledWith({
+      tenantId: TENANT,
+      accountId: "a1",
+      displayName: "Acme M365",
+    });
+    expect(h.revalidatePath).toHaveBeenCalledWith("/settings/client-mapping/m365");
+  });
+
+  it("normalizes a blank display name to null", async () => {
+    await mapAccountTenantAction(form({ accountId: "a1", tenantId: TENANT, displayName: "  " }));
+    expect(h.upsertTenantMapping).toHaveBeenCalledWith({
+      tenantId: TENANT,
+      accountId: "a1",
+      displayName: null,
+    });
+  });
+
+  it("no-ops on a malformed tenant GUID (never seeds a bad row)", async () => {
+    await mapAccountTenantAction(form({ accountId: "a1", tenantId: "not-a-guid" }));
+    expect(h.link).not.toHaveBeenCalled();
+    expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+  });
+
+  it("no-ops when the accountId is missing", async () => {
+    await mapAccountTenantAction(form({ tenantId: TENANT }));
+    expect(h.link).not.toHaveBeenCalled();
+    expect(h.upsertTenantMapping).not.toHaveBeenCalled();
+  });
+
+  it("degrades quietly when the backend isn't configured (still writes account_tenant)", async () => {
+    h.link.mockRejectedValueOnce(new h.ServiceNotConfiguredError("not configured"));
+    await expect(
+      mapAccountTenantAction(form({ accountId: "a1", tenantId: TENANT })),
+    ).resolves.toBeUndefined();
+    expect(h.upsertTenantMapping).toHaveBeenCalled();
+    expect(h.revalidatePath).toHaveBeenCalledWith("/settings/client-mapping/m365");
   });
 });
 

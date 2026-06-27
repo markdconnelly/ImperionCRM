@@ -156,6 +156,7 @@ import type {
   CiRelationshipInput,
   CiCriticalityOverrideInput,
   UnmappedTenant,
+  AccountNeedingTenant,
   WorkflowDetail,
   WorkflowRow,
   JourneyRow,
@@ -2551,6 +2552,13 @@ export interface SecurityRepository {
   deleteTenantMapping(tenantId: string): Promise<void>;
   /** Tenant GUIDs present in posture bronze with no mapping — surfaced, never hidden (ADR-0051). */
   listUnmappedTenants(): Promise<UnmappedTenant[]>;
+  /**
+   * Accounts with NO `account_tenant` row (issue #1371, epic #1366 gap (f)) — the inverse of
+   * {@link listUnmappedTenants}. Drives the account-first "needs tenant mapping" surface so an
+   * operator can finish the 22/26 unmapped clients whose tenant GUID was never collected/linked
+   * (the tenant-first table can't show them — there is no discovered unit). Name-ordered.
+   */
+  listAccountsNeedingTenant(): Promise<AccountNeedingTenant[]>;
 
   // ── Account-scoped posture reads (#93 — all keyed through account_tenant) ──
   /** Every mapped Customer Tenant with its tenant_posture rollup (LEFT JOIN — unrefreshed tenants still surface). */

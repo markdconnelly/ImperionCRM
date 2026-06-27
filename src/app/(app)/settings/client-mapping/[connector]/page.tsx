@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { ClientMappingPanel } from "@/components/settings/client-mapping-panel";
 import { ClientCredentialForm } from "@/components/settings/client-credential-form";
+import { AccountsNeedingTenant } from "@/components/settings/accounts-needing-tenant";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeSettings } from "@/lib/auth/roles";
@@ -13,7 +14,11 @@ import {
   inferConnectionHealth,
   type HealthVerdict,
 } from "@/lib/integrations/connection-health";
-import { linkClientMappingAction, unlinkClientMappingAction } from "../actions";
+import {
+  linkClientMappingAction,
+  mapAccountTenantAction,
+  unlinkClientMappingAction,
+} from "../actions";
 import { purgeCredentialAction, registerClientM365Action } from "../../actions";
 
 export const dynamic = "force-dynamic";
@@ -37,15 +42,21 @@ export default async function ClientMappingPage({
   const adapter = getClientMappingAdapter(connector);
   if (!adapter) notFound();
 
-  const { connections, crm } = getRepositories();
+  const { connections, crm, security } = getRepositories();
   // Per-client-credential connectors (m365/unifi) carry their credential ON this screen, so we
   // also load the client-scope connection rows (for inferred health) and the account options
   // (for the registration form). Fan-out adapters skip both — their credential is one company key.
-  const [units, accounts, accountOpts, allConnections] = await Promise.all([
+  // M365 also loads the account-first "needs tenant mapping" list (#1371): accounts with no
+  // account_tenant row, whose tenant GUID was never discovered so the tenant-first table can't
+  // surface them. Only M365 maps to a tenant, so the list is empty for other connectors.
+  const [units, accounts, accountOpts, allConnections, accountsNeedingTenant] = await Promise.all([
     connections.listClientMappingUnits(adapter.sourceSystem),
     crm.listAccounts(),
     adapter.bindsConnection ? crm.accountOptions() : Promise.resolve([]),
     adapter.bindsConnection ? connections.listAllConnections() : Promise.resolve([]),
+    adapter.connector === "m365"
+      ? security.listAccountsNeedingTenant()
+      : Promise.resolve([]),
   ]);
 
   // Inferred health per mapped account (ADR-0122 S3a) — the same verdict the main cards use,
@@ -97,6 +108,12 @@ export default async function ClientMappingPage({
           canSubmit={backendConfigured}
           sourceNote={sourceNote}
           registerAction={registerClientM365Action}
+        />
+      )}
+      {adapter.connector === "m365" && (
+        <AccountsNeedingTenant
+          accounts={accountsNeedingTenant}
+          mapAction={mapAccountTenantAction}
         />
       )}
       <ClientMappingPanel
