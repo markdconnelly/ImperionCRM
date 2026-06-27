@@ -138,6 +138,19 @@ export default async function SettingsPage({
         sourceNote={settingsSourceNote(agentSettings.source)}
         saveAction={saveAgentSettingsAction}
       />
+      <Card title="Governance">
+        <p className="text-sm text-dim">
+          Tune the agent action-plane gates — kill-switch (global / per-agent / per-workflow),
+          per-client opt-out default, rate / fan-out / cost caps, circuit-breaker error rate, and
+          approval TTL (ADR-0080/0081). Enforced by the backend gauntlet at dispatch.
+        </p>
+        <Link
+          href="/settings/governance"
+          className="mt-3 inline-block rounded-md border border-border px-3 py-1.5 text-sm text-dim hover:text-text"
+        >
+          Open AI governance
+        </Link>
+      </Card>
     </section>
   );
 
@@ -157,6 +170,7 @@ export default async function SettingsPage({
           { href: "/questions", label: "Discovery & assessment questions", hint: "Edit the question catalog" },
           { href: "/custom-fields", label: "Custom fields", hint: "Admin-definable task/project fields (ADR-0065 B4)" },
           { href: "/settings/statuses", label: "Statuses", hint: "Admin-definable status sets per project type (ADR-0065 B5)" },
+          { href: "/settings/governance", label: "AI governance", hint: "Kill-switch, opt-out default, rate/fan-out/cost caps, circuit breaker, approval TTL (ADR-0080/0081)" },
           { href: "/settings/client-mapping/m365", label: "Client mapping (M365)", hint: "Map M365 tenants onto accounts + register each tenant's per-client credential (ADR-0112 / ADR-0122)" },
         ].map((t) => (
           <li key={t.href}>

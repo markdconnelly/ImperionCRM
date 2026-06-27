@@ -73,6 +73,7 @@ flowchart LR
 | [Settings & configuration](settings.md) | `/settings` | admin | Profile, AI budget, your connections, **company credentials**, tenant mapping, and configuration tools. |
 | [Connectors](connectors.md) | `/connectors` | admin | The integration marketplace — enable, tune, and disable org-wide data connectors. |
 | [Status administration](status-administration.md) | `/settings/statuses` | admin | Admin-definable task/project status sets per project type; reporting rolls up by **category**, not label. |
+| [AI governance](agent-governance.md) | `/settings/governance` | admin | The agent action-plane gates — kill-switch, per-client opt-out default, rate/fan-out/cost caps, circuit breaker, approval TTL. |
 | [CMDB CI register](cmdb-ci-register.md) | `/cmdb` | admin | Read-only Configuration Item view over the client managed estate. |
 | [Time administration](timesheet-administration.md) | `/timesheets/admin` | admin ∨ finance | The unified all-users timesheet lifecycle table. |
 | ↳ [Time approvals](timesheet-approvals.md) | (inside Time admin) | admin | The correctness gate — review & approve a submitted week. |
