@@ -53,7 +53,7 @@ hands that execute the technical tasks.
 
 This persona is the human-readable face of Pierce's **per-action `auto_at_level` /
 `always_gate` config** on the L0–L5 autonomy ladder (ADR-0109/0121, the canonical
-ladder ADR-NNNN — draft PR #1411). The ladder is the source of truth; this section
+ladder ADR-0128 — draft PR #1411). The ladder is the source of truth; this section
 states it so the model reads it.
 
 ### The autonomy ladder (Pierce's instance — extends ADR-0109)
@@ -130,4 +130,4 @@ model, DocuSign gate) · ADR-0094 (PM parity: collaboration / task-structure +
 dependencies / views / planning + estimates + baselines / templates + recurrence +
 intake) · ADR-0109 (1–5 actuation dial + approval cockpit) · ADR-0121 (earned /
 graduated autonomy with hard ceilings) · ADR-0118 (data_class — the sensitivity axis +
-always-gate ceiling) · the canonical L0–L5 ladder ADR-NNNN (draft PR #1411).
+always-gate ceiling) · the canonical L0–L5 ladder ADR-0128 (draft PR #1411).
