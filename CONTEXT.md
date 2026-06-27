@@ -296,6 +296,13 @@ Non-conforming legacy:
 secret) and user-scope `conn-<userId>-<provider>` (deferred to the `/profile` rework).
 _Avoid_: secret (unqualified), token (one kind of credential), key vault ref (that is the name only)
 
+**Platform credential**:
+A system-wide infrastructure secret the runtime resolves — an AI provider API key (Voyage
+embeddings, Claude generation) — custodied in Key Vault as `conn-platform-<provider>` and
+registered as a `connection` with `scope=platform`, `auth_method=api_key`. Custody-only:
+never a synced data source.
+_Avoid_: AI key (in code/identifiers), platform secret (as a separate concept)
+
 **Credential Scope vs Data Mapping** (the two independent axes):
 *Credential scope* (above) decides how many secrets a Connector needs. *Data mapping*
 (Client Mapping) decides whether ingested data must be bound to accounts. They are
