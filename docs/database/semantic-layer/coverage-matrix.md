@@ -62,7 +62,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 
 | Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
 |---|---|---|---|---|---|
-| [opportunity](tables/opportunity.md) | Sales | A | fin | ✅ | sale→delivery; forecasting |
+| [opportunity](tables/opportunity.md) | Sales | A | fin | ✅ | sale→delivery; forecasting; renewals (`kind=renewal`, dual-run rank-guarded merge) |
 | [quota](tables/quota.md) | Sales | B | fin | ✅ | forecasting (attainment) |
 | [forecast_snapshot](tables/forecast_snapshot.md) | Sales | C | fin | ✅ | forecasting (nightly trend/accuracy) |
 | [proposal](tables/proposal.md) | Sales | B | fin | ✅ | proposal-draft |

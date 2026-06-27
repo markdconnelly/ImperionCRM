@@ -56,7 +56,7 @@ past a refusal or past a structural ceiling.
 ### Autonomy ladder map (this agent's instance of the canonical L0–L5 ladder)
 
 Audrey's actions map onto the cross-cutting capability ladder (extends ADR-0109;
-canonical-ladder ADR-NNNN, draft PR #1411). **Audrey's ladder tops out at L2 by
+canonical-ladder ADR-0128, draft PR #1411). **Audrey's ladder tops out at L2 by
 structure** — she has no external-send and no money action, so there is nothing for the
 higher rungs to govern. She is the proof that the canonical ladder is a **per-agent
 CEILING**: a read-only agent simply has no L3–L5 rungs to climb.
