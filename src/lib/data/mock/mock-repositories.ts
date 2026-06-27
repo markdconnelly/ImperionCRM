@@ -1699,6 +1699,14 @@ export const mockRepositories: Repositories = {
       }
       return [];
     },
+    async listAccountDomains() {
+      // No DB → empty tracked-domain registry (ADR-0063 / ADR-0126).
+      return [];
+    },
+    async hydrateAccountDomainsFromTenants(accountId: string) {
+      // No DB → nothing to derive; report a zero-effect pass (ADR-0126 gap (b)).
+      return { accountId, tenants: 0, candidates: 0, inserted: 0 };
+    },
     async connect() {
       throw new Error(NO_DB);
     },

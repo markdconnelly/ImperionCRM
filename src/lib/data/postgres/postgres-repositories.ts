@@ -290,6 +290,8 @@ import type {
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
+  AccountDomain,
+  AccountDomainHydrationResult,
   DnsDomainRollup,
   DnsRecordDrift,
   SecureScoreControl,
@@ -11449,6 +11451,93 @@ export const postgresRepositories: Repositories = {
       } catch {
         return mockRepositories.connections.listClientMappingUnits(sourceSystem);
       }
+    },
+
+    async listAccountDomains(accountId): Promise<AccountDomain[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listAccountDomains(accountId);
+      try {
+        const { rows } = await pool.query<{
+          domain: string;
+          note: string | null;
+          created_by: string | null;
+          created_at: string | null;
+        }>(
+          `SELECT domain, note, created_by, created_at::text AS created_at
+             FROM account_domain
+            WHERE account_id = $1::uuid
+            ORDER BY domain`,
+          [accountId],
+        );
+        return rows.map((r) => ({
+          domain: r.domain,
+          note: r.note,
+          createdBy: r.created_by,
+          createdAt: r.created_at,
+        }));
+      } catch (err) {
+        if (isSchemaLagError(err)) return [];
+        return mockRepositories.connections.listAccountDomains(accountId);
+      }
+    },
+
+    async hydrateAccountDomainsFromTenants(
+      accountId,
+      actor,
+    ): Promise<AccountDomainHydrationResult> {
+      const pool = getPool();
+      if (!pool)
+        return mockRepositories.connections.hydrateAccountDomainsFromTenants(accountId, actor);
+      // ADR-0126 gap (b): derive the account's tracked client domains from its mapped tenant(s).
+      // account → account_tenant (account→tenant) → entra_domains (verified domains per tenant).
+      // Idempotent: ON CONFLICT DO NOTHING preserves any operator-curated row + its note/provenance.
+      // Verified, non-initial domains only — *.onmicrosoft.com initial domains are not mail domains.
+      const createdBy = actor ?? "derived:entra";
+      const ins = await pool.query<{ domain: string }>(
+        `WITH candidate AS (
+           SELECT DISTINCT lower(d.domain_name) AS domain
+             FROM account_tenant t
+             JOIN entra_domains d ON d.tenant_id = t.tenant_id
+            WHERE t.account_id = $1::uuid
+              AND d.domain_name IS NOT NULL AND d.domain_name <> ''
+              AND d.is_verified = 'true'
+              AND COALESCE(d.is_initial, 'false') <> 'true'
+         )
+         INSERT INTO account_domain (account_id, domain, note, created_by)
+         SELECT $1::uuid, c.domain, 'Derived from M365 verified domains (ADR-0126)', $2::text
+           FROM candidate c
+         ON CONFLICT (account_id, domain) DO NOTHING
+         RETURNING domain`,
+        [accountId, createdBy],
+      );
+      const counts = await pool.query<{ tenants: string; candidates: string }>(
+        `SELECT
+           (SELECT count(*) FROM account_tenant WHERE account_id = $1::uuid)::text AS tenants,
+           (SELECT count(DISTINCT lower(d.domain_name))
+              FROM account_tenant t
+              JOIN entra_domains d ON d.tenant_id = t.tenant_id
+             WHERE t.account_id = $1::uuid
+               AND d.domain_name IS NOT NULL AND d.domain_name <> ''
+               AND d.is_verified = 'true'
+               AND COALESCE(d.is_initial, 'false') <> 'true')::text AS candidates`,
+        [accountId],
+      );
+      const inserted = ins.rowCount ?? 0;
+      if (inserted > 0) {
+        await pool.query(
+          `INSERT INTO audit_log (action, entity_type, entity_id, detail)
+           VALUES ('account_domain.hydrate', 'account', $1::uuid,
+                   jsonb_build_object('inserted', $2::int, 'source', 'entra_domains',
+                                      'domains', $3::jsonb))`,
+          [accountId, inserted, JSON.stringify(ins.rows.map((r) => r.domain))],
+        );
+      }
+      return {
+        accountId,
+        tenants: Number(counts.rows[0]?.tenants ?? 0),
+        candidates: Number(counts.rows[0]?.candidates ?? 0),
+        inserted,
+      };
     },
 
     async connect(input: ConnectionInput): Promise<void> {
