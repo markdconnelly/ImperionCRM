@@ -8,7 +8,8 @@ they enforce, and the single human gate.
 [← The AI suite](README.md) · Governing decision:
 [ADR-0091](../decision-records/ADR-0091-agent-icm-platform-consolidated.md) (from
 ADR-0055 the four-tier policy · ADR-0087 the one dial · ADR-0061 the ICM
-draft→auto ramp).
+draft→auto ramp · [ADR-0128](../decision-records/ADR-0128-canonical-agent-autonomy-ladder.md)
+the canonical L0–L5 capability ladder + per-action `auto_at_level`).
 
 ---
 
@@ -73,6 +74,56 @@ repos** — it is what the rungs map onto:
 > **T2 whitelisting is proposed for v3.** The ADR is accepted in v1; grant
 > *enforcement* is wired by v3. Until then, treat every client-visible action as
 > propose-only.
+
+---
+
+## 3.5 The canonical L0–L5 capability ladder (ADR-0128)
+
+The rungs above tell an agent *how much it may do*; the **canonical ladder** pins what
+each **dial level means as a capability class** so the dial means the *same thing for
+every agent* (no per-agent drift). It is the actuation-plane companion to the ICM rungs:
+the ADR-0109 dial value `1–5` selects rungs **L1–L5**, with **L0** the implicit
+read-only floor.
+
+| Level | Capability class — what it auto-executes |
+|---|---|
+| **L0 · observe** | Read, research, surface. No writes, no proposals. |
+| **L1 · propose** | Drafts/proposals only — everything **parks**. The default-safe wedge posture. |
+| **L2 · auto-internal** | Internal, **reversible** writes (CRM hygiene, records, notes). Customer-facing parks. |
+| **L3 · auto-low-risk-external** | Standard low-risk external touches, **execute-then-notify**. Higher-stakes parks. |
+| **L4 · reversible-auto** | Broad auto-execution of **reversible** actions behind an undo window. |
+| **L5 · max-within-ceiling** | Maximal autonomy — everything auto-executes **except the hard ceiling**. |
+
+**Per-action tags.** Every catalog action declares two fields (front-end-owned schema,
+[action-catalog.ts](../../src/lib/agent/action-catalog.ts), ADR-0042 §1):
+
+- **`auto_at_level`** — the **minimum rung at which the action auto-executes**; below it,
+  it parks. The action's inherent risk floor, *not* the operator's dial.
+- **`always_gate`** — the **dial-proof** hard ceiling. When set, the action **never**
+  auto-executes at any level. Reserved for external commitments that bind the company
+  (send-for-signature, pricing/discount/term) and the ADR-0109 money ceiling. The
+  always-gate `data_class`es (`financial`/`security_credentials`/`client_pii`, ADR-0118)
+  carry their *own* ceiling via `data_class.always_gate` (mig 0175) and are enforced
+  separately — so `always_gate` stays the explicit per-action commitment/money flag.
+
+**Selection (ADR-0128 D4) — total and deterministic.** An action auto-executes IFF
+
+```
+dial ≥ auto_at_level   AND   NOT always_gate   AND   the gauntlet passes
+```
+
+otherwise it **parks to the cockpit**. Enforced at runtime by the gauntlet's gate 7
+(`actuation_level`) + gate 8 (`hard_ceiling`); the front end mirrors the dial/ceiling
+half in `selectActuation()` for the dial-legend + cockpit preview.
+
+**Where the tags live as data.** The catalog is materialized as the kind-keyed
+**`agent_action_catalog`** table (migration `0217`) — the DB twin the backend gauntlet
+(BE #435) reads at dispatch, kept in lockstep with the TS catalog (the 0156/0209 FE↔BE
+twin pattern). `auto_at_level`/`always_gate` are therefore queryable:
+`SELECT kind, auto_at_level, always_gate FROM agent_action_catalog`. The dial value
+itself stays in `agent_action_autonomy` (mig 0158); the ladder defines what that value
+*means*. Chase (Sales) is the first agent mapped onto the ladder (ADR-0128 §worked
+instance); the remaining agents map onto the same rungs as their workspaces are built.
 
 ---
 

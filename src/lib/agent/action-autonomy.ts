@@ -92,3 +92,58 @@ export function routeAction(
   if (!tierWithinCeiling(tier, ceiling)) return "cockpit";
   return lvl === 4 ? "execute_notify" : "execute";
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The canonical L0–L5 autonomy LADDER (ADR-0128, extends ADR-0109).
+//
+// Distinct plane from the 1–5 actuation dial above: the dial value `1–5` selects
+// the ladder rungs `L1–L5` (L0 is the implicit floor below the dial). Each rung is a
+// universal CAPABILITY CLASS that means the same thing for EVERY agent (the drift the
+// ADR closes). An ACTION declares the minimum rung at which it auto-executes
+// (`auto_at_level`) plus a dial-proof `always_gate`; the gauntlet selects auto-vs-park
+// deterministically (gate 7 actuation_level + gate 8 hard_ceiling). The backend keeps
+// its own copy of this predicate (repos don't share code) — keep the two in lockstep.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The canonical ladder's six rungs (ADR-0128 D1). L0 = observe; L5 = max-within-ceiling. */
+export type LadderLevel = 0 | 1 | 2 | 3 | 4 | 5;
+export const LADDER_LEVELS: readonly LadderLevel[] = [0, 1, 2, 3, 4, 5] as const;
+
+/**
+ * Per-rung capability semantics (ADR-0128 D1) — the legend the dial UI derives from.
+ * Ordered by the reversibility / blast-radius of what each rung auto-executes (the G3
+ * doctrine made concrete): observe → propose → internal-reversible → low-risk-external →
+ * broadly-reversible-with-undo → everything-but-the-ceiling.
+ */
+export const LADDER_META: Record<LadderLevel, { name: string; blurb: string }> = {
+  0: { name: "Observe", blurb: "Read, research, surface. No writes, no proposals." },
+  1: { name: "Propose", blurb: "Drafts and proposals only — everything parks. Default-safe wedge posture." },
+  2: { name: "Auto-internal", blurb: "Auto-executes internal, reversible writes. Customer-facing parks." },
+  3: { name: "Auto-low-risk-external", blurb: "Auto-sends standard low-risk external touches, execute-then-notify." },
+  4: { name: "Reversible-auto", blurb: "Broad auto-execution of reversible actions behind an undo window." },
+  5: { name: "Max-within-ceiling", blurb: "Maximal autonomy — everything auto-executes except the hard ceiling." },
+};
+
+/** Type guard — fail closed on anything outside 0–5. */
+export function isLadderLevel(value: unknown): value is LadderLevel {
+  return (
+    value === 0 || value === 1 || value === 2 || value === 3 || value === 4 || value === 5
+  );
+}
+
+/**
+ * The ADR-0128 D4 selection rule, as a pure predicate. An action auto-executes IFF
+ * `dial ≥ auto_at_level AND NOT always_gate` (the gauntlet-passes term is the caller's —
+ * this function answers only the dial/ceiling half). `always_gate` is dial-proof: a true
+ * value parks at EVERY level, regardless of `auto_at_level` or the dial. Fail-closed: a
+ * non-ladder `dial` or `auto_at_level` is treated as the most-restrictive (no auto).
+ */
+export function ladderAutoExecutes(
+  dial: unknown,
+  autoAtLevel: unknown,
+  alwaysGate: boolean,
+): boolean {
+  if (alwaysGate) return false;
+  if (!isLadderLevel(dial) || !isLadderLevel(autoAtLevel)) return false;
+  return dial >= autoAtLevel;
+}

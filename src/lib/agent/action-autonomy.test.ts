@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   coerceLevel,
   isAutonomyLevel,
+  isLadderLevel,
+  ladderAutoExecutes,
   resolveTierCeiling,
   routeAction,
   tierWithinCeiling,
   DEFAULT_AUTONOMY_LEVEL,
+  LADDER_LEVELS,
+  LADDER_META,
 } from "./action-autonomy";
 
 describe("action-autonomy dial (#1012 / ADR-0109)", () => {
@@ -53,5 +57,42 @@ describe("action-autonomy dial (#1012 / ADR-0109)", () => {
     expect(routeAction("T3", 5)).toBe("execute");
     // T0 read always executes regardless of level.
     expect(routeAction("T0", 1)).toBe("execute");
+  });
+});
+
+describe("canonical L0–L5 ladder (ADR-0128)", () => {
+  it("validates ladder rungs fail-closed (0–5 only)", () => {
+    for (const n of [0, 1, 2, 3, 4, 5]) expect(isLadderLevel(n)).toBe(true);
+    expect(isLadderLevel(6)).toBe(false);
+    expect(isLadderLevel(-1)).toBe(false);
+    expect(isLadderLevel("3")).toBe(false); // strict: not a number
+    expect(isLadderLevel(null)).toBe(false);
+  });
+
+  it("exposes a capability legend for all six rungs", () => {
+    expect(LADDER_LEVELS).toEqual([0, 1, 2, 3, 4, 5]);
+    for (const lvl of LADDER_LEVELS) {
+      expect(LADDER_META[lvl].name.length).toBeGreaterThan(0);
+      expect(LADDER_META[lvl].blurb.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ladderAutoExecutes: auto IFF dial ≥ auto_at_level AND NOT always_gate", () => {
+    expect(ladderAutoExecutes(3, 3, false)).toBe(true); // at floor
+    expect(ladderAutoExecutes(5, 3, false)).toBe(true); // above floor
+    expect(ladderAutoExecutes(2, 3, false)).toBe(false); // below floor
+    expect(ladderAutoExecutes(5, 5, false)).toBe(true); // L5 floor met at L5
+  });
+
+  it("always_gate is dial-proof — never auto, even at L5", () => {
+    expect(ladderAutoExecutes(5, 0, true)).toBe(false);
+    expect(ladderAutoExecutes(5, 5, true)).toBe(false);
+  });
+
+  it("fail-closed on a non-ladder dial or floor", () => {
+    expect(ladderAutoExecutes(6, 3, false)).toBe(false);
+    expect(ladderAutoExecutes("3", 3, false)).toBe(false);
+    expect(ladderAutoExecutes(3, 99, false)).toBe(false);
+    expect(ladderAutoExecutes(null, 0, false)).toBe(false);
   });
 });
