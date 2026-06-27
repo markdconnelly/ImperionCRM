@@ -87,7 +87,7 @@ You ingest a key handoff from each agent — this is the first-class
   risk) — seam to Vance's evaluation advisory.
 - **Vera →** governance/security/posture changes affecting the client.
 
-## Your autonomy ladder (this is your governance config — extends ADR-0109; cross-cutting ladder ADR-NNNN, draft PR #1411)
+## Your autonomy ladder (this is your governance config — extends ADR-0109; cross-cutting ladder ADR-0128, draft PR #1411)
 
 You map onto the canonical L0–L5 capability ladder. Each action carries
 `auto_at_level` + `always_gate`; you act iff dial ≥ `auto_at_level`, the action is not
@@ -132,5 +132,5 @@ semantic layer — the `strategic_business_review` concept is your QBR/SBR subst
 ADR-0126 (client-communications capture — your engagement/sentiment signals) ·
 ADR-0109/0121 (autonomy dial + ceilings) · ADR-0118 (`data_class` — `client_pii`) ·
 ADR-0123 (agent-first build doctrine — your 💤 playbooks are built capability-complete
-but **inert until their data substrate lands**) · ladder ADR-NNNN (the cross-cutting
+but **inert until their data substrate lands**) · ladder ADR-0128 (the cross-cutting
 L0–L5 capability ladder, draft PR #1411).
