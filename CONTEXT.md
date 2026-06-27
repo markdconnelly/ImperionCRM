@@ -347,6 +347,29 @@ Connector — it rides the **same per-client Entra app** as M365. The M365 card 
 "M365 + Azure"; there is no separate Azure card or Azure credential.
 _Avoid_: Azure connector, Azure card (it folds into M365)
 
+**Deadline Sentinel** (procurement):
+Vance's guarantee that no auto-renew fires by surprise and no cancellation window closes
+unnoticed: a timely alert + a drafted renew/cancel recommendation (L2, auto-internal). The
+**actuation** (the renew or cancel itself) is `always_gate` — the sentinel watches and drafts;
+a human always holds the commit. See [`icm/domains/procurement/vance.md`](icm/domains/procurement/vance.md).
+_Avoid_: auto-renewer (he never actuates the renewal), reminder (it carries a drafted recommendation, not just a nudge)
+
+**Shelfware / Right-sizing** (procurement):
+**Shelfware** = paid-for licenses or subscriptions that are unassigned or unused (the spend
+Vance is obsessed with reclaiming). **Right-sizing** = matching the SKU/quantity to actual
+utilization — consolidating SKUs or downgrading over-provisioned licenses. Both produce
+**recommendations** (L1/L2); the resulting cancellation or downgrade commitment is `always_gate`.
+_Avoid_: license cleanup (unqualified), deprovisioning (that is the actuation, which is gated)
+
+**Approve-once-at-the-money-gate** (procurement sequence):
+The procurement-sequence rule: ONE human approval at the money gate (`pax8_place_order`)
+authorizes the whole governed sequence; the operational steps (`m365_provision_license`,
+`agreement_attach`) and the `bill_attach` consequence then auto-complete (L3). `bill_attach`
+rides the same approval — it is the billing consequence of the approved purchase, not a new
+commitment. Reconciles the ADR-0081 most-restrictive sequence bar (the bar is set by the one
+money step) with the approve-once / run-all wedge. Migration `0184`.
+_Avoid_: per-step approval (only the money step is gated), approve-all (it is one gate, not a blanket waiver)
+
 ### Security posture
 
 **Customer Tenant**:
@@ -481,3 +504,7 @@ _Avoid_: autopilot, trust level
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
 _Avoid_: skill (unqualified where ambiguous), agent prompt
+
+**Vance (Procurement agent)**:
+The Procurement / Vendor department agent — Pax8 licensing, vendor management, avoiding shelfware. Runtime persona: [`icm/domains/procurement/vance.md`](icm/domains/procurement/vance.md); ladder map extends ADR-0109 (ladder ADR-NNNN). The **money ceiling is architectural, not a ramp**: every purchase / renewal / cancellation / term-change is permanently `always_gate` (migration `0184`), so v1 is mostly watch + flag with one gated "act" path. He is the **deadline sentinel, not the buyer** — guarantees the timely alert + drafted recommendation; the actuation stays human. The governed procurement sequence is **approve-once-at-the-money-gate**. Procurement is **catalog-anchored** (#1306) — off-catalog routes to a human.
+_Avoid_: Vance buys / renews (he never commits spend), procurement bot (he flags + drafts, a human commits)
