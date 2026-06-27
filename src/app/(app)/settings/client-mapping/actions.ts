@@ -45,12 +45,21 @@ export async function linkClientMappingAction(formData: FormData) {
 
   // Transitional: keep the legacy account_tenant row in sync for m365 tenants (#1049).
   if (adapter.sourceSystem === "m365" && TENANT_GUID.test(sourceKey)) {
-    const { security } = getRepositories();
+    const { connections, security } = getRepositories();
     await security.upsertTenantMapping({
       tenantId: sourceKey.toLowerCase(),
       accountId,
       displayName: null,
     });
+    // ADR-0126 gap (b): mapping a client tenant is the onboarding→contact-filter loop's trigger —
+    // the tenant's verified M365 domains become the account's tracked client domains so the
+    // client-communications filter (#1369) can scope comms to this DB client. Idempotent; never
+    // clobbers an operator-curated row. Best-effort — a derivation hiccup must not fail the link.
+    try {
+      await connections.hydrateAccountDomainsFromTenants(accountId, "derived:entra");
+    } catch {
+      // entra_domains not yet hydrated for this tenant (or schema lag) — domains fill on next link.
+    }
   }
 
   revalidatePath(`/settings/client-mapping/${connector}`);

@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-26T00:00:00Z
+timestamp: 2026-06-26T12:00:00Z
 ---
 
 # Master coverage matrix
@@ -193,7 +193,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [dns_domain](tables/dns_domain.md) | Security | E | sec | ✅ | DNS drift-monitor |
 | [dns_golden](tables/dns_golden.md) | Security | E | sec | ✅ | golden approval (human-gated) |
 | [posture_policy](tables/posture_policy.md), *_golden (CA / Intune / Autopilot / device-config / Defender XDR / Purview compliance) | Security | E | sec | ✅ | drift-monitor (autonomy-dialed) |
-| account_domain | Security | H | op | ⏳ | domain registry (operator-curated) |
+| [account_domain](tables/account_domain.md) | Security | H | op | ✅ | domain registry (operator-curated + entra-derived); DNS worklist + client-comms filter substrate (ADR-0126) |
 | defender_incidents, defender_alerts | Security | B | sec | ⏳ | incident triage |
 | [defender_incident_ticket_link](tables/defender_incident_ticket_link.md) | Security | D | sec | ✅ | incident→ticket (ADR-0059) |
 

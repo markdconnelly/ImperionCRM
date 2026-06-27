@@ -2288,6 +2288,34 @@ export interface PosturePolicyRow {
 }
 
 /**
+ * One row of the account's tracked-domain registry (`account_domain`, migration 0081).
+ * The registry is the substrate the DNS public-resolve worklist reads (ADR-0063) and the
+ * client-communications filter scopes against (ADR-0126, epic #1366): a captured comm is
+ * retained only if its counterpart's domain is a tracked client domain. `createdBy` records
+ * provenance — `'derived:entra'` for rows hydrated from the account→tenant→entra_domains path,
+ * or an operator identity for a manual GUI add (#1161).
+ */
+export interface AccountDomain {
+  domain: string;
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string | null;
+}
+
+/**
+ * Outcome of an `account_domain` hydration pass (ADR-0126 gap (b), issue #1368). The
+ * derivation reads the account's mapped tenant(s) (`account_tenant`) → that tenant's verified
+ * domains (`entra_domains` bronze) and idempotently upserts them as tracked client domains.
+ * `inserted` counts genuinely new rows; `tenants` is how many mapped tenants were inspected.
+ */
+export interface AccountDomainHydrationResult {
+  accountId: string;
+  tenants: number;
+  candidates: number;
+  inserted: number;
+}
+
+/**
  * Per-domain DNS posture rollup (ADR-0063, account-keyed per the 2026-06-12 amendment).
  * One row per domain in the account's GUI-managed `account_domain` list, LEFT JOINed to its
  * `dns_domain` rollup — so a tracked-but-not-yet-captured domain still surfaces (verdict null).

@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   unlink: vi.fn(),
   upsertTenantMapping: vi.fn(),
   deleteTenantMapping: vi.fn(),
+  hydrateAccountDomainsFromTenants: vi.fn(),
   // A stand-in ServiceNotConfiguredError (a plain 1-arg Error subclass) so the degrade path is
   // exercised faithfully without depending on the real 2-arg constructor signature.
   ServiceNotConfiguredError: class ServiceNotConfiguredError extends Error {},
@@ -28,6 +29,9 @@ vi.mock("@/lib/data", () => ({
     security: {
       upsertTenantMapping: h.upsertTenantMapping,
       deleteTenantMapping: h.deleteTenantMapping,
+    },
+    connections: {
+      hydrateAccountDomainsFromTenants: h.hydrateAccountDomainsFromTenants,
     },
   }),
 }));
@@ -108,6 +112,31 @@ describe("linkClientMappingAction", () => {
       accountId: "a1",
       displayName: null,
     });
+  });
+
+  it("m365: hydrates the account's tracked domains from the mapped tenant (ADR-0126 gap (b))", async () => {
+    h.hydrateAccountDomainsFromTenants.mockResolvedValueOnce({
+      accountId: "a1",
+      tenants: 1,
+      candidates: 2,
+      inserted: 2,
+    });
+    await linkClientMappingAction(form({ connector: "m365", sourceKey: TENANT, accountId: "a1" }));
+    expect(h.hydrateAccountDomainsFromTenants).toHaveBeenCalledWith("a1", "derived:entra");
+  });
+
+  it("m365: a domain-hydration hiccup never fails the link (best-effort)", async () => {
+    h.hydrateAccountDomainsFromTenants.mockRejectedValueOnce(new Error("entra not hydrated"));
+    await expect(
+      linkClientMappingAction(form({ connector: "m365", sourceKey: TENANT, accountId: "a1" })),
+    ).resolves.toBeUndefined();
+    expect(h.upsertTenantMapping).toHaveBeenCalled();
+    expect(h.revalidatePath).toHaveBeenCalled();
+  });
+
+  it("does not hydrate domains for a fan-out connector (autotask — not tenant-keyed)", async () => {
+    await linkClientMappingAction(form({ connector: "autotask", sourceKey: "AT-1", accountId: "a1" }));
+    expect(h.hydrateAccountDomainsFromTenants).not.toHaveBeenCalled();
   });
 
   it("m365: carries the bound connectionId through to the backend (bindsConnection)", async () => {

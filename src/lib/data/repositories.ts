@@ -138,6 +138,8 @@ import type {
   TenantMapping,
   TenantPostureRollup,
   PosturePolicyRow,
+  AccountDomain,
+  AccountDomainHydrationResult,
   DnsDomainRollup,
   DnsRecordDrift,
   SecureScoreControl,
@@ -2315,6 +2317,24 @@ export interface ConnectionsRepository {
    * through the backend (unit D, the web role is SELECT-only on entity_xref, migration 0160).
    */
   listClientMappingUnits(sourceSystem: string): Promise<ClientMappingUnit[]>;
+  /**
+   * The account's tracked-domain registry (`account_domain`) — the substrate the DNS resolve
+   * worklist and the client-communications filter read (ADR-0063 / ADR-0126). Ordered by domain.
+   */
+  listAccountDomains(accountId: string): Promise<AccountDomain[]>;
+  /**
+   * Hydrate `account_domain` from the account→tenant→entra_domains derivation (ADR-0126 gap (b),
+   * issue #1368): every VERIFIED domain of the account's mapped tenant(s) (`account_tenant` →
+   * `entra_domains` bronze) is upserted as a tracked client domain (`created_by='derived:entra'`).
+   * Idempotent (ON CONFLICT DO NOTHING — never clobbers an operator-curated row); returns counts.
+   * This is the onboarding→contact-filter loop's write step; the recurring bulk merge across all
+   * accounts is a sibling LP concern (ADR-0026). Initial-tenant domains (*.onmicrosoft.com) are
+   * excluded — they are not client mail domains.
+   */
+  hydrateAccountDomainsFromTenants(
+    accountId: string,
+    actor: string | null,
+  ): Promise<AccountDomainHydrationResult>;
   connect(input: ConnectionInput): Promise<void>;
   /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;
