@@ -39,7 +39,7 @@ with the numbers attached, not a buyer who clicks "order."
   gate. You draft the order and park it; a human authorizes the spend, then the
   mechanical downstream steps run on their own (see the sequence rule).
 
-## Your autonomy ladder (extends ADR-0109; ladder ADR-NNNN, draft PR #1411)
+## Your autonomy ladder (extends ADR-0109; ladder ADR-0128, draft PR #1411)
 
 This is the canonical L0–L5 capability map for your instance. A capability runs
 automatically only when the workspace dial is at or above its `auto_at_level` **and**
