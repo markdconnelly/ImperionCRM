@@ -413,6 +413,11 @@ _Avoid_: baseline (unqualified), template
 **Device Compliance**:
 The per-device policy state reported by Intune (managedDevices). The only honest source for a device-level posture indicator; tenant-level classification is never proxied down to a device.
 
+**Client Security Standard (evolving baseline)**:
+The versioned, **Vera-owned** baseline that defines what a "secure" client looks like. Every client's `posture_snapshot` is measured against the **current** standard to detect drift and produce a get-back-in-shape evaluation + remediation recommendation (advisory). A new standard version is `always_gate` — **Vera drafts/proposes, Mark ratifies** — and re-scores all clients. **Distinct from `docs/security/unified-security-standard.md`** (the internal cross-repo build baseline) — do not conflate the two.
+_Avoid_: unified security standard (that's the internal-repo baseline), Golden State (that's per-tenant policy/DNS config), Score Model (that's pillar weights, not the client standard)
+
+
 **DNS Zone (Azure)**:
 A `Microsoft.Network/dnsZones` resource hosting a customer domain in Azure DNS — the manage plane, read via ARM. Distinct from what a domain publicly resolves to; an Azure zone can be overridden by registrar-level NS.
 _Avoid_: domain (unqualified), hosted zone
@@ -535,6 +540,22 @@ _Avoid_: tier, ceiling (the ceiling is the dial-proof bound, not this threshold)
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
 _Avoid_: skill (unqualified where ambiguous), agent prompt
+
+**Vera (Platform / Governance agent)**:
+The system-wide **conformance authority + client security-standard owner + internal-affairs auditor** (runtime persona `icm/domains/platform/vera.md`). She is **audit-and-recommend, not silent-action**: her autonomy ladder **tops out at L2** (observe / propose / auto-run audits + reversible auto-quarantine), and every correction, governance-config change, and security-standard ratification is `always_gate` to Mark. The governance framework (#1412 / #983 / #990) is passive substrate she reads; **the earned-autonomy promotion/demotion state machine is framework-owned (ADR-0121) — Vera observes the ledger, never executes it.** Client-security seam: **Vera measures, Celeste presents, human/Datto remediates**. See the ladder ADR (draft PR #1411) for her level map.
+_Avoid_: governance framework (that's the passive substrate Vera operates, not Vera), curation agent / contradiction agent (legacy names — folded into Vera's auditor scope)
+
+**Conformance Engine / Defined Way**:
+Each domain has a **Defined Way** — its SOP + guardrails (e.g. clients marketed a defined way, sales sold a defined way, projects delivered a defined way). The **Conformance Engine** encodes each Defined Way as a machine-checkable ruleset and checks runs against it; Vera detects any divergence. She flags that a run diverged — she does **not** re-run the work.
+_Avoid_: linter (unqualified), policy engine
+
+**Deviation (detect → route → verify)**:
+A run's divergence from its domain's Defined Way. Vera's loop is **detect → quarantine (reversible protective hold) → route to the owning agent/human → verify closure** — she never silently fixes; corrections route to the owner.
+_Avoid_: violation (unqualified), error, incident
+
+**Audit-by-reference**:
+The rule that Vera's audit-exemption read scope crosses financial / PII / credential data, so she reports findings **by reference** ("PII leak in run X, field Y") and **never reproduces the sensitive value** in any finding — a peer of Audrey's salary non-disclosure gag.
+_Avoid_: redaction (unqualified), masking
 
 **Celeste (Client Success / vCIO / vCISO agent)**:
 The agent who owns the **active-customer relationship hub** — QBR/TBR, health/churn, account management, and technology + security advisory. The team's **relationship aggregation point (client-360)**: she receives a key **Handoff** from *every* other agent (Chase → won/renewal, Pierce → delivery-complete, Audrey → financial-health, Belle → engagement, Felix → service-pattern, Vance → vendor, Vera → governance/posture) and folds them into one account picture. She flags and mints the expansion opportunity, triages it, and **assigns it to a salesperson — Chase owns the close** (the pinned seam: Chase owns the transaction, Celeste owns the relationship it lives inside). **No-commits-ever ceiling**: every binding commitment (roadmap · SLA · pricing · spend · security remediation) routes as a recommendation to a human at every autonomy level. **MSSP / vCISO boundary**: security is advisory-only (visibility / posture / risk / recommendations) — remediation is human / Datto, no compliance-management (v1). Runtime persona + the full L0–L5 ladder: `icm/domains/client-success/celeste.md`; ladder ADR-0128.
