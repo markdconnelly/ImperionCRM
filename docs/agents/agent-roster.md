@@ -223,6 +223,15 @@ saying "no." Measured, evidence-first, neutral.
 - Elevated / system access is **audit-and-recommend, not silent-action**;
   escalates anything touching controls, identity, or governance.
 
+> **Runtime persona is canon at [`icm/domains/platform/vera.md`](../../icm/domains/platform/vera.md).**
+> Vera holds three jobs — system-wide conformance fact-checker (detect → quarantine →
+> route → verify closure), owner of the evolving **client** security standard
+> (measure → Celeste presents → human/Datto remediates), and internal-affairs auditor
+> of the other seven agents. She is **audit-and-recommend**: her ladder tops out at
+> **L2** and every correction, governance-config change, and standard ratification is
+> `always_gate` to Mark. The earned-autonomy state machine is framework-owned
+> (ADR-0121) — Vera observes the ledger, never executes promotions/demotions.
+
 ---
 
 ## 3. Related guides
@@ -235,6 +244,7 @@ saying "no." Measured, evidence-first, neutral.
 - [ICM — business-process automation](icm.md) — the factory each workspace's
   workflows are authored in.
 - [The Service workspace](../../icm/domains/service/room.md) · [Felix runtime persona](../../icm/domains/service/felix.md) — the wedge, built first.
+- [Vera runtime persona](../../icm/domains/platform/vera.md) — the Platform / Governance auditor (conformance · client security standard · internal affairs).
 
 ## 4. Governing decisions
 
