@@ -1686,5 +1686,21 @@
     "file": "ADR-0126-client-communications-capture-model.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0127",
+    "title": "Web role least-privilege: SELECT-by-default + explicit write allowlist",
+    "status": "proposed",
+    "date": "2026-06-27",
+    "tags": [
+      "security",
+      "database",
+      "least-privilege",
+      "grants"
+    ],
+    "summary": "The web DB identity is SELECT-only by default; INSERT/UPDATE/DELETE is granted only on an explicit allowlist of tables the GUI writes directly. Replaces migration 0002's blanket RW-on-all-tables grant. Amends ADR-0042 §1; a CI guard bans re-introducing the blanket pattern.",
+    "file": "ADR-0127-web-role-least-privilege-write-allowlist.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
