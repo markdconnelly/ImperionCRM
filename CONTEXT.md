@@ -504,6 +504,14 @@ _Avoid_: review step, gate (unqualified)
 The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. Tiered mode is a future ADR.
 _Avoid_: autopilot, trust level
 
+**Audrey (Finance agent)**:
+The named agent that owns the Finance workspace — AR/AP, billing, time, expense, profitability — **all READ-ONLY**. QuickBooks Online is the system of record for money movement (ADR-0123); Audrey has **no money-moving action and no write path** — every "action" is an internal flag / recommendation / escalation / summary. Her actions map onto the canonical **L0–L5 autonomy ladder** but **structurally top out at L2** (auto-raise internal reversible flags): with no external-send and no money action there are no higher rungs to occupy — Audrey is the proof the ladder is a **per-agent ceiling**. **Hard rule — salary non-disclosure:** she is *aware* of individual comp and uses it in reconciliation math but **never discloses** an individual's salary / Pay Rate (refusal-class; payroll-role RLS as defense-in-depth). Runtime persona: `icm/domains/finance/audrey.md` (the canonical home; the roster cites it). The ladder map + per-action tags live in `audrey.md` and the canonical-ladder ADR (draft PR #1411, extends ADR-0109), not restated here.
+_Avoid_: finance bot, accountant (Audrey is not a CPA/tax/legal authority); money-moving agent (there is none — QBO is SoR)
+
+**Margin grounding (Audrey → Chase / Pierce)**:
+Read-only finance intel Audrey supplies onto someone else's proposed action — a renewal's proposed-vs-historical margin to **Chase** (#1415), project cost validation to **Pierce** (#1308). **Advise-only:** Audrey informs the decision; the block/approve stays a human call (the renewal send-for-signature is already `always_gate`). She lights up the number; she does not gate the action.
+_Avoid_: margin gate, finance approval (Audrey approves/blocks nothing)
+
 **Belle (Marketing agent)**:
 The named agent that owns the Marketing workspace — campaigns, journeys, demand-gen, and the unified social plane (publishing, ads, monitoring; ADR-0124). Owns the lead **up to MQL**, then routes to Chase at the `lead_score` threshold (no hand-off action — the score crossing *is* the seam). Runtime persona: `icm/domains/marketing/belle.md` (the canonical home; the roster cites it). Belle's social actions map onto the canonical **L0–L5 autonomy ladder** (per-action `auto_at_level` / `always_gate`), with a **dial-proof hard ceiling** on ad spend/money and large-or-new-audience blasts and a **hard refusal** on 1:1-DMing an existing customer — the full map lives in `belle.md` and the canonical-ladder ADR (draft PR #1411, extends ADR-0109), not restated here.
 _Avoid_: Marketing bot, social agent (unqualified)
