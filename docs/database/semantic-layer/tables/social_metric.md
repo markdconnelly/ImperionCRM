@@ -7,7 +7,7 @@ description: A normalized social-platform metric value (reach, impressions, foll
 resource: ../../../decision-records/ADR-0062-reporting-bi-hub.md
 tags: [silver, marketing, social, metric, bi, reporting, demand-gen]
 data_class: operational
-timestamp: 2026-06-26T00:00:00Z
+timestamp: 2026-06-26T18:00:00Z
 ---
 
 # social_metric
@@ -66,9 +66,20 @@ value per metric/entity/period/capture; ingest is idempotent (UPSERT).
   consumed by the BI / reporting hub
   ([`metric_definition`](metric_definition.md), ADR-0062) for social dashboards.
 
+## Canonical metric vocabulary
+
+Raw Meta insight metric names are **normalized to a canonical vocabulary at silver** during the
+on-prem merge (slice H, LP #357 — the canon map lives in LP `Get-ImperionSocialMetricCanonSql`),
+which is what finally stabilizes the long-standing metric-name instability (#135) **at the data
+layer** rather than per-dashboard. The authority for the *naming* is therefore this canonical
+vocabulary (silver), while the platform stays authoritative for the *values*; BI/reporting
+(`metric_definition`, ADR-0062) charts against the canonical names, so a new platform-side
+metric is mapped once at merge instead of forking every dashboard. The names remain free text
+(no enum), so the vocabulary extends without a migration.
+
 ## Notes
 
 Aggregate social performance numbers — no client PII (the measured entities are our own
-public social presence, addressed by external id). Metric names have been unstable
-historically (#135); resolve specific values and the live metric vocabulary against the
-read-only DB (CLAUDE.md §8). No secrets.
+public social presence, addressed by external id). The canonical-vocabulary note above resolves
+the historic metric-name instability (#135) at silver; resolve specific values and the live
+canonical metric vocabulary against the read-only DB (CLAUDE.md §8). No secrets.

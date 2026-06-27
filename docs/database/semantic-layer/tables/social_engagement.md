@@ -7,7 +7,7 @@ description: Inbound public social engagements — comments on our posts + brand
 resource: ../../../decision-records/ADR-0124-social-media-management-plane.md
 tags: [silver, marketing, social, social_engagement, inbound]
 data_class: operational
-timestamp: 2026-06-26T00:00:00Z
+timestamp: 2026-06-26T18:00:00Z
 ---
 
 # social_engagement
@@ -35,6 +35,17 @@ on our own posts; `source_url` carries a mention's origin. Triage (`status` / `i
 `assigned_agent_key`) records the routing decision (lead → Chase, support → Felix, brand →
 Belle; ADR-0124 #5). v1 scope: comments on our **organic** posts + brand **mentions** only
 (ad-comment ingestion deferred).
+
+**Poll-in feed (Meta, ADR-0026).** For the Meta channels (`facebook` / `instagram`) the rows are
+merged on-prem by LocalPipeline (merge co-locates with ingestion, ADR-0026), poll-first (ADR-0124
+#8) — the platform is the source-of-record for *comment* and *mention* engagements:
+- **comments** (`kind=comment`) ← the `facebook_comments` / `instagram_comments` bronze feeds
+  (0075), hydrated by slice H (LP #357) → `Invoke-ImperionSocialEngagementMerge`.
+- **mentions** (`kind=mention`) ← the `meta_mentions` bronze feed (0213, #1365) — public FB Page /
+  IG brand mentions of us, the second half of the ADR-0124 #2 inbound split. The merge is the same
+  idempotent UPSERT on `(channel, external_id)`. (Threads channel mentions ride the
+  [`interaction`](interaction.md) timeline instead, per ADR-0125 — only anonymous Meta brand
+  chatter lands here.)
 
 ## Schema
 
