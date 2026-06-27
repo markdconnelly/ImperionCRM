@@ -1686,5 +1686,50 @@
     "file": "ADR-0126-client-communications-capture-model.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0127",
+    "title": "Web role least-privilege: SELECT-by-default + explicit write allowlist",
+    "status": "proposed",
+    "date": "2026-06-27",
+    "tags": [
+      "security",
+      "database",
+      "least-privilege",
+      "grants"
+    ],
+    "summary": "The web DB identity is SELECT-only by default; INSERT/UPDATE/DELETE is granted only on an explicit allowlist of tables the GUI writes directly. Replaces migration 0002's blanket RW-on-all-tables grant. Amends ADR-0042 §1; a CI guard bans re-introducing the blanket pattern.",
+    "file": "ADR-0127-web-role-least-privilege-write-allowlist.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0128",
+    "title": "Canonical agent autonomy ladder — per-level capability semantics + per-action auto_at_level",
+    "status": "accepted",
+    "date": "2026-06-27",
+    "tags": [
+      "agents",
+      "governance"
+    ],
+    "summary": "Pin a single canonical 1–5 (+L0) autonomy ladder with universal per-level capability semantics that EVERY agent maps onto, plus a deterministic per-action rule (auto_at_level + dial-proof always_gate) for what auto-executes at a given dial. Extends ADR-0109 (which gave the dial + routeAction + hard ceilings but never pinned what each LEVEL means as a capability class). Chase (Sales) is the first worked instance.",
+    "file": "ADR-0128-canonical-agent-autonomy-ladder.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0129",
+    "title": "Platform-scope credentials — AI provider keys custodied through the connection registry",
+    "status": "accepted",
+    "date": "2026-06-27",
+    "tags": [
+      "connections",
+      "security",
+      "ai"
+    ],
+    "summary": "Custody the AI provider keys (Voyage embeddings, Claude generation) through the connection credential registry (ADR-0103) instead of hand-seeded App Service settings (ADR-0034). Adds a system-wide `platform` connection scope (no account, custody-only — no sync cadence/poll/bronze), a raw-scalar `auth_method='api_key'` shape (resolver branches: api_key→scalar, connection→JSON blob), the KV naming standard `conn-platform-<provider>` (`conn-platform-voyage`, `conn-platform-anthropic`, superseding the ADR-0034 names), a dedicated write-only card on the admin-only connections page (ADR-0122) gated by the existing app-admin gate, and validate-before-write (one cheap live provider call). The backend writes to Key Vault via its managed identity; the model-router resolves platform keys through the registry, dropping the app-setting indirection; LP repoints the embedding-key read and the mis-named starter secret is retired (folds LP #389). Supersedes the ADR-0034 KV-name note; amends ADR-0103.",
+    "file": "ADR-0129-platform-scope-credentials.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

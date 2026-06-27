@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0129
 title: "Platform-scope credentials — AI provider keys custodied through the connection registry"
 status: accepted
 date: 2026-06-27
@@ -7,8 +7,7 @@ repo: frontend
 summary: "Custody the AI provider keys (Voyage embeddings, Claude generation) through the connection credential registry (ADR-0103) instead of hand-seeded App Service settings (ADR-0034). Adds a system-wide `platform` connection scope (no account, custody-only — no sync cadence/poll/bronze), a raw-scalar `auth_method='api_key'` shape (resolver branches: api_key→scalar, connection→JSON blob), the KV naming standard `conn-platform-<provider>` (`conn-platform-voyage`, `conn-platform-anthropic`, superseding the ADR-0034 names), a dedicated write-only card on the admin-only connections page (ADR-0122) gated by the existing app-admin gate, and validate-before-write (one cheap live provider call). The backend writes to Key Vault via its managed identity; the model-router resolves platform keys through the registry, dropping the app-setting indirection; LP repoints the embedding-key read and the mis-named starter secret is retired (folds LP #389). Supersedes the ADR-0034 KV-name note; amends ADR-0103."
 tags: [connections, security, ai]
 ---
-<!-- ADR number is a placeholder; claim the next free number at merge per CLAUDE.md §10.3 -->
-# ADR-NNNN: Platform-scope credentials — AI provider keys custodied through the connection registry
+# ADR-0129: Platform-scope credentials — AI provider keys custodied through the connection registry
 
 | Field | Value |
 |---|---|
