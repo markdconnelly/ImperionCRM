@@ -52,6 +52,16 @@ _Avoid_: sales ticket, activity (unqualified)
 A rep's ordered list of their open sales tasks, grouped by due date and deal — the working surface of the sales activity page. A read model, not a stored object.
 _Avoid_: sales pipeline (that's deals by stage), task list (unqualified)
 
+### Sales & renewals
+
+**Contract renewal**:
+An app-native record of a contract's upcoming expiration worked as a sales motion (Imperion is its source of record). Holds the renewal lifecycle (identified→priced→quoted→sent→renewed|repriced|churned) and proposed pricing; links the expiring `contract`, an optional `kind=renewal` `opportunity`, and an optional `esign_envelope`. The opportunity merge never writes it.
+_Avoid_: renewal opportunity, contract extension
+
+**Opportunity kind**:
+The type discriminator on `opportunity` (new | renewal | upsell | …). A renewal is an opportunity *kind*, spawned by a contract's expiration (a sales event); the opportunity documents the pursuit while `contract_renewal` holds the renewal data.
+_Avoid_: opportunity type
+
 ### Time tracking
 
 **Employee**:
@@ -296,6 +306,13 @@ Non-conforming legacy:
 secret) and user-scope `conn-<userId>-<provider>` (deferred to the `/profile` rework).
 _Avoid_: secret (unqualified), token (one kind of credential), key vault ref (that is the name only)
 
+**Platform credential**:
+A system-wide infrastructure secret the runtime resolves — an AI provider API key (Voyage
+embeddings, Claude generation) — custodied in Key Vault as `conn-platform-<provider>` and
+registered as a `connection` with `scope=platform`, `auth_method=api_key`. Custody-only:
+never a synced data source.
+_Avoid_: AI key (in code/identifiers), platform secret (as a separate concept)
+
 **Credential Scope vs Data Mapping** (the two independent axes):
 *Credential scope* (above) decides how many secrets a Connector needs. *Data mapping*
 (Client Mapping) decides whether ingested data must be bound to accounts. They are
@@ -477,6 +494,14 @@ _Avoid_: review step, gate (unqualified)
 **Autonomy Dial**:
 The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. Tiered mode is a future ADR.
 _Avoid_: autopilot, trust level
+
+**Autonomy Ladder**:
+The canonical L0–L5 capability levels every agent maps onto, so the dial means the same thing everywhere (ADR-0128, extends ADR-0109): **L0** observe · **L1** propose (default-safe, everything parks) · **L2** auto-internal reversible writes · **L3** auto low-risk external (execute-then-notify) · **L4** reversible-auto behind an undo window · **L5** max-within-ceiling. A **dial-proof hard ceiling** sits outside the dial — `always_gate` actions (external commitments + the ADR-0118 always-gate `data_class`es) never auto-execute at any level. The dial raises the floor, never breaches the ceiling.
+_Avoid_: trust level, actuation tier (that's the ADR-0055 T0–T3 scale the dial resolves to)
+
+**auto_at_level**:
+The per-action tag naming the **minimum dial level at which an action auto-executes**; below it the action parks to the cockpit. Paired with `always_gate` (dial-proof — an `always_gate` action never auto-executes regardless of `auto_at_level` or the dial). Selection is deterministic: an action auto-runs IFF `dial ≥ auto_at_level AND NOT always_gate AND the gauntlet passes` (ADR-0128 D4).
+_Avoid_: tier, ceiling (the ceiling is the dial-proof bound, not this threshold)
 
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
