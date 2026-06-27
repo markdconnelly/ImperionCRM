@@ -481,3 +481,19 @@ _Avoid_: autopilot, trust level
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
 _Avoid_: skill (unqualified where ambiguous), agent prompt
+
+**Workflow**:
+The staged ICM orchestration unit with per-stage checkpoints (e.g. triage's five stages); may pause for a human at any checkpoint. The in-app Workflows-module sense — distinct from `pipeline` (data ingestion).
+_Avoid_: playbook, sequence
+
+**Sequence** (governed task sequence):
+An ordered set of actions proposed as ONE governed unit — **approve-once / run-all** — evaluated by the gauntlet as a single decision (ADR-0081). The actuation unit a workflow stage emits. Steps run in `plan_seq` order; a failed step **HALTS** the rest (no auto-rollback).
+_Avoid_: workflow, playbook
+
+**Playbook**:
+A vetted, reusable template a Sequence or Workflow is instantiated from (e.g. `delivery_template`). The recipe, not the run.
+_Avoid_: sequence
+
+**Park / Refuse / Escalate** (agent action dispositions):
+**Refuse** = the gauntlet denies an action outright (out-of-scope `data_class` / missing grant / replay / non-sanctioned sink / cost-100%) — a hard no. **Park** = the action is above the autonomy ceiling and waits in the cockpit for human approval (recoverable). **Escalate** = a triage/domain decision (a high-risk symptom, e.g. identity / backup / DC) that skips troubleshooting and emits an escalation proposal into the handoff, which then parks for a human.
+_Avoid_: conflating escalate (a workflow outcome) with park/refuse (gauntlet verdicts)
