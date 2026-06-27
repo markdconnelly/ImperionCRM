@@ -478,6 +478,14 @@ _Avoid_: review step, gate (unqualified)
 The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. Tiered mode is a future ADR.
 _Avoid_: autopilot, trust level
 
+**Audrey (Finance agent)**:
+The named agent that owns the Finance workspace — AR/AP, billing, time, expense, profitability — **all READ-ONLY**. QuickBooks Online is the system of record for money movement (ADR-0123); Audrey has **no money-moving action and no write path** — every "action" is an internal flag / recommendation / escalation / summary. Her actions map onto the canonical **L0–L5 autonomy ladder** but **structurally top out at L2** (auto-raise internal reversible flags): with no external-send and no money action there are no higher rungs to occupy — Audrey is the proof the ladder is a **per-agent ceiling**. **Hard rule — salary non-disclosure:** she is *aware* of individual comp and uses it in reconciliation math but **never discloses** an individual's salary / Pay Rate (refusal-class; payroll-role RLS as defense-in-depth). Runtime persona: `icm/domains/finance/audrey.md` (the canonical home; the roster cites it). The ladder map + per-action tags live in `audrey.md` and the canonical-ladder ADR (draft PR #1411, extends ADR-0109), not restated here.
+_Avoid_: finance bot, accountant (Audrey is not a CPA/tax/legal authority); money-moving agent (there is none — QBO is SoR)
+
+**Margin grounding (Audrey → Chase / Pierce)**:
+Read-only finance intel Audrey supplies onto someone else's proposed action — a renewal's proposed-vs-historical margin to **Chase** (#1415), project cost validation to **Pierce** (#1308). **Advise-only:** Audrey informs the decision; the block/approve stays a human call (the renewal send-for-signature is already `always_gate`). She lights up the number; she does not gate the action.
+_Avoid_: margin gate, finance approval (Audrey approves/blocks nothing)
+
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
 _Avoid_: skill (unqualified where ambiguous), agent prompt
