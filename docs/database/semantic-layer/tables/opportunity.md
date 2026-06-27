@@ -7,7 +7,7 @@ description: Merged silver opportunity from three bronze sources (KQM quote head
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, sales, opportunity, kqm, autotask, forecast]
 data_class: financial
-timestamp: 2026-06-25T00:00:00Z
+timestamp: 2026-06-27T00:00:00Z
 ---
 
 # opportunity
@@ -22,6 +22,21 @@ migration `0083` (union view `opportunity_bronze_all`).
 Three bronze sources merge; **precedence is `website` > `autotask` > `kqm`**.
 The KQM `autotask_*` ids are the **cross-source join keys** — `autotask_opportunity_id`
 joins the sources together.
+
+The merge is **dual-run** (corrected ADR-0026 pipeline-parity framing): the **local
+pipeline runs it on a timed cycle**, the **cloud Pipeline runs the SAME merge
+event-driven** on website manual edits — **neither plane owns it**. It is **deterministic
++ rank-guarded** on the precedence above, so a lower-precedence source never clobbers a
+higher one and concurrent dual-run converges to the same result. The merge DML is granted
+to both pipeline DB roles.
+
+**Single-opportunity guarantee (Autotask↔KQM).** A KQM quote **attaches to a pre-existing
+Autotask opportunity** (never "create new"), and won updates that **same** opportunity, so
+the `autotask_opportunity_id` join key keeps it **ONE silver row** — no duplicate. The
+operator SOP that enforces this is
+[sales-kqm-autotask-opportunity-sop](../../../runbooks/sales-kqm-autotask-opportunity-sop.md);
+an Autotask opportunity set closed/lost while a quote is still linked is surfaced by the
+#1403 integrity guard.
 
 - **KQM** (`kqm_opportunities`) — quote header; KQM is the quote system of record
   (read-only, native CPQ gutted per the sale→delivery pivot).
@@ -71,6 +86,16 @@ attainment) is the **runtime computation** in `lib/forecast.ts`, not stored on t
 row; point-in-time history lives in [`forecast_snapshot`](forecast_snapshot.md), and
 targets in [`quota`](quota.md). Revenue + quota are RBAC-gated (ADR-0030 —
 `canSeeRevenue`).
+
+## Kind discriminator
+
+`opportunity.kind` (`new` | `renewal` | `upsell` | …) types the opportunity. A **renewal**
+is an opportunity *kind*, spawned by a contract's expiration (a sales event): the
+opportunity documents the pursuit while the app-native
+[`contract_renewal`](../../../decision-records/ADR-0130-renewals-and-opportunity-consistency.md)
+satellite holds the renewal-specific lifecycle and pricing (the opportunity merge never
+writes that satellite). A `kind=renewal` opportunity is minted at *pursuit*, not when the
+renewal is first identified.
 
 ## Joins
 
