@@ -10,7 +10,7 @@ quote hangs off **one** pre-existing Autotask opportunity, there is **one** silv
 clean forecast. The only way to get a duplicate (and a polluted pipeline) is a **human**
 creating a second opportunity. This SOP prevents that.
 
-> Governed by [ADR-NNNN — Renewals motion & opportunity-consistency model](../decision-records/ADR-NNNN-renewals-and-opportunity-consistency.md).
+> Governed by [ADR-0130 — Renewals motion & opportunity-consistency model](../decision-records/ADR-0130-renewals-and-opportunity-consistency.md).
 
 ## The SOP
 

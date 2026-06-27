@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0130
 title: "Renewals motion & opportunity-consistency model — app-native contract_renewal linked to a kind=renewal opportunity, single-opportunity Autotask↔KQM guarantee, dual-run rank-guarded merge, layered repricing"
 status: accepted
 date: 2026-06-27
@@ -7,8 +7,7 @@ repo: frontend
 summary: "Resolves the #1324 design fork (epic #1304): a contract renewal is NOT a flavor of opportunity — it is a first-class app-native satellite entity (`contract_renewal`, Imperion is SoR, the opportunity merge never writes it) holding the renewal lifecycle (identified → priced → quoted → sent → renewed | repriced | churned) + pricing, linking the expiring `contract` (required), an optional `kind=renewal` `opportunity` (new discriminator), and an optional `esign_envelope`. A two-stage trigger keeps Autotask clean: the renewals radar (#1323, over `contract.term_end`) creates the app-only `contract_renewal` at a 90-day lead time; pursuit mints the opportunity. The Autotask↔KQM single-opportunity SOP (quote attaches to a pre-existing opportunity, never 'create new') keeps the `autotask_opportunity_id` join key at ONE silver row, with a #1403 integrity guard. The silver `opportunity` merge is dual-run (LP timed cycle + cloud website-event), deterministic + rank-guarded on precedence website>autotask>kqm — neither plane owns it. Repricing is layered (per-contract clause % ELSE 5% baseline + term incentive + cost pass-through), auto-proposed and human-overridable, with the full derivation in `proposed_pricing` jsonb. Revenue columns are financial-gated."
 tags: [sales, renewals, opportunity]
 ---
-<!-- ADR number placeholder; claim next free number at merge per CLAUDE.md §10.3 -->
-# ADR-NNNN: Renewals motion & opportunity-consistency model
+# ADR-0130: Renewals motion & opportunity-consistency model
 
 | Field | Value |
 |---|---|

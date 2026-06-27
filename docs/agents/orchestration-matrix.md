@@ -88,6 +88,15 @@ Every tier reads its rung from `autopilot_policies` — so **gating an action, o
 it after testing, is a data change, not a code change.** This unifies the ICM draft→auto
 ramp (ADR-0061) with the coding-plane standing-OKs (system CLAUDE.md §10.4).
 
+> **Canonical autonomy ladder (ADR-0128, extends ADR-0109).** The dial value is one of
+> a single L0–L5 capability ladder every agent maps onto — L0 observe · L1 propose · L2
+> auto-internal · L3 auto-low-risk-external (execute-then-notify) · L4 reversible-auto ·
+> L5 max-within-ceiling — with a **dial-proof hard ceiling** (`always_gate`: external
+> commitments + the ADR-0118 always-gate `data_class`es) that never auto-executes at any
+> level. Each action carries `auto_at_level` (the min dial level at which it auto-runs);
+> selection is deterministic (`dial ≥ auto_at_level AND NOT always_gate`).
+> [Chase (Sales)](../../icm/domains/sales/chase.md) is the first worked instance.
+
 ```mermaid
 flowchart LR
     L0["L0 · Observe<br/>read-only"] --> L1["L1 · Draft<br/>propose, hold for human"] --> L2["L2 · Act-gated<br/>idempotent write"] --> L3["L3 · Auto<br/>autonomous"]

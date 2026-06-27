@@ -92,7 +92,7 @@ targets in [`quota`](quota.md). Revenue + quota are RBAC-gated (ADR-0030 —
 `opportunity.kind` (`new` | `renewal` | `upsell` | …) types the opportunity. A **renewal**
 is an opportunity *kind*, spawned by a contract's expiration (a sales event): the
 opportunity documents the pursuit while the app-native
-[`contract_renewal`](../../../decision-records/ADR-NNNN-renewals-and-opportunity-consistency.md)
+[`contract_renewal`](../../../decision-records/ADR-0130-renewals-and-opportunity-consistency.md)
 satellite holds the renewal-specific lifecycle and pricing (the opportunity merge never
 writes that satellite). A `kind=renewal` opportunity is minted at *pursuit*, not when the
 renewal is first identified.
