@@ -190,6 +190,14 @@ _Avoid_: blast (in UI copy), broadcast, workflow (that's a per-contact journey)
 A guided, per-channel form that produces a previewable, typed configuration — for an ad, an email, an SMS, or an event. Not a drag-drop canvas.
 _Avoid_: designer, editor (unqualified)
 
+**Marketing Qualified Lead (MQL)**:
+A lead whose accumulated `lead_score` crosses the **marketing-qualified threshold**. The MQL crossing is the **Belle → Chase seam**: Belle (Marketing) owns demand-gen and nurture **up to MQL**; at the threshold the lead routes to Chase (Sales) via Jarvis + `lead_score` + ADR-0024 routing. There is **no separate hand-off action** — the seam *is* the score crossing. Chase then validates the lead → SQL (Sales Qualified Lead).
+_Avoid_: hot lead (unqualified — a band, not the threshold), hand-off action (there is no action; the score is the seam)
+
+**Lead vs. existing customer (the 1:1 distinction)**:
+A **lead** is a prospect not yet a customer; a **1:1 reply to a lead** is Belle's job — she replies like a human to push the lead through the pipeline (auto at L3). An **existing customer** is a converted account; **Belle never 1:1-DMs an existing customer** — that is a hard prohibition (refuse, not gate), routing instead to **Celeste** (relationship) or **Felix** (service). Existing-customer marketing (retention/expansion) coordinates through Celeste, who can flag an account for non-interest.
+_Avoid_: contact (unqualified — could be either), customer DM (Belle has none)
+
 ### Social media management
 
 **Social Channel**:
@@ -477,6 +485,10 @@ _Avoid_: review step, gate (unqualified)
 **Autonomy Dial**:
 The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. Tiered mode is a future ADR.
 _Avoid_: autopilot, trust level
+
+**Belle (Marketing agent)**:
+The named agent that owns the Marketing workspace — campaigns, journeys, demand-gen, and the unified social plane (publishing, ads, monitoring; ADR-0124). Owns the lead **up to MQL**, then routes to Chase at the `lead_score` threshold (no hand-off action — the score crossing *is* the seam). Runtime persona: `icm/domains/marketing/belle.md` (the canonical home; the roster cites it). Belle's social actions map onto the canonical **L0–L5 autonomy ladder** (per-action `auto_at_level` / `always_gate`), with a **dial-proof hard ceiling** on ad spend/money and large-or-new-audience blasts and a **hard refusal** on 1:1-DMing an existing customer — the full map lives in `belle.md` and the canonical-ladder ADR (draft PR #1411, extends ADR-0109), not restated here.
+_Avoid_: Marketing bot, social agent (unqualified)
 
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
