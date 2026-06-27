@@ -7,7 +7,7 @@ description: Per-account registry of tracked client domains — the operator-cur
 resource: ../../../decision-records/ADR-0126-client-communications-capture-model.md
 tags: [silver, security, identity, domain, dns, communications, registry]
 data_class: operational
-timestamp: 2026-06-26T12:00:00Z
+timestamp: 2026-06-26T18:00:00Z
 ---
 
 # account_domain
@@ -42,7 +42,10 @@ has `SELECT, INSERT, DELETE`):
   (`ON CONFLICT (account_id, domain) DO NOTHING` — a derivation pass **never** clobbers an
   operator-curated row). `*.onmicrosoft.com` initial domains are excluded (not mail domains).
 
-The derivation runs on tenant-mapping (FE write step, ADR-0126 gap (b)). The **recurring bulk
+The derivation runs on tenant-mapping (FE write step, ADR-0126 gap (b)). Tenants mapped **before**
+that write step existed were back-filled once by migration `0214` ([#1387](https://github.com/markdconnelly/ImperionCRM/issues/1387)) —
+the same derivation rule applied set-based across every `account_tenant` row (idempotent, same
+`created_by='derived:entra'`), so a back-filled row is indistinguishable from an on-map one. The **recurring bulk
 re-derivation across all accounts** co-locates with the Entra-domains ingestion in the local
 pipeline (LocalPipeline ADR-0026, *merge co-locates with ingestion* — the cross-repo contract in
 the system CLAUDE.md §11) — a sibling concern, not a front-end process; both copies are
