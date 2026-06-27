@@ -536,6 +536,22 @@ _Avoid_: tier, ceiling (the ceiling is the dial-proof bound, not this threshold)
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
 _Avoid_: skill (unqualified where ambiguous), agent prompt
 
+**Celeste (Client Success / vCIO / vCISO agent)**:
+The agent who owns the **active-customer relationship hub** — QBR/TBR, health/churn, account management, and technology + security advisory. The team's **relationship aggregation point (client-360)**: she receives a key **Handoff** from *every* other agent (Chase → won/renewal, Pierce → delivery-complete, Audrey → financial-health, Belle → engagement, Felix → service-pattern, Vance → vendor, Vera → governance/posture) and folds them into one account picture. She flags and mints the expansion opportunity, triages it, and **assigns it to a salesperson — Chase owns the close** (the pinned seam: Chase owns the transaction, Celeste owns the relationship it lives inside). **No-commits-ever ceiling**: every binding commitment (roadmap · SLA · pricing · spend · security remediation) routes as a recommendation to a human at every autonomy level. **MSSP / vCISO boundary**: security is advisory-only (visibility / posture / risk / recommendations) — remediation is human / Datto, no compliance-management (v1). Runtime persona + the full L0–L5 ladder: `icm/domains/client-success/celeste.md`; ladder ADR-0128.
+_Avoid_: Client Success as a transaction owner (that's Chase), vCISO as a remediation actor (advisory only), restating the ladder here
+
+**Account Success Plan**:
+The living strategic plan Celeste maintains per managed client — goals, value-realization, and next actions for the ongoing relationship. Editable, human-co-shaped (L2 maintain); the durable artifact a QBR/TBR is built from. Distinct from the transactional opportunity (Chase's) and the project plan (Pierce's).
+_Avoid_: account plan (unqualified), QBR deck (that is one output), success plan (unqualified)
+
+**Client Risk Register**:
+Celeste's per-client list of churn, financial, service, vendor, and security/posture risks — each labeled **signal vs inference** — surfaced for advisory and QBR. Recommendations only; never a binding remediation commitment (the no-commits-ever ceiling).
+_Avoid_: risk register (unqualified — this is client-facing/advisory), incident register, remediation plan
+
+**Handoff Hub (client-360 intake)**:
+Celeste's first-class handoff-intake aggregation: each agent emits a **Handoff** — a key client-relationship signal — that Celeste consumes to keep the client-360. Why her read scope (L0) is the broadest of any agent. The cross-agent event substrate that carries these is backend-owed (relates the event bus / #991).
+_Avoid_: client-360 as a UI page (it is the aggregation), handoff as the sale→delivery handoff only (ADR-0096 is one source of many)
+
 **Workflow**:
 The staged ICM orchestration unit with per-stage checkpoints (e.g. triage's five stages); may pause for a human at any checkpoint. The in-app Workflows-module sense — distinct from `pipeline` (data ingestion).
 _Avoid_: playbook, sequence
