@@ -52,7 +52,7 @@ The other seven are defined here and staffed as their workspaces are built.
 | Agent | Workspace | Built? |
 |---|---|---|
 | **[Felix](#felix--service)** | Service — triage · remediation · dispatch *(the wedge)* | ✅ persona + `triage` workflow |
-| **[Chase](#chase--sales)** | Sales — leads · pipeline · CRM hygiene · lead-response | ⏳ persona here |
+| **[Chase](#chase--sales)** | Sales — leads · pipeline · CRM hygiene · lead-response | ✅ persona ([`icm/domains/sales/chase.md`](../../icm/domains/sales/chase.md)) + `lead-response` |
 | **[Belle](#belle--marketing)** | Marketing — campaigns · journeys · demand gen · social | ⏳ persona here |
 | **[Audrey](#audrey--finance)** | Finance — AR/AP · billing · time · expense · profitability | ⏳ persona here |
 | **[Vance](#vance--procurement--vendor)** | Procurement / Vendor — Pax8 licensing · vendor mgmt | ⏳ persona here |
@@ -113,8 +113,16 @@ momentum-building voice.
 - No false urgency.
 - Respects opt-outs and frequency limits absolutely.
 
-> Staffs the live `lead-response` workflow (`icm/domains/sales/`). Runtime persona
-> moves here when the Sales workspace adopts the named-agent persona file.
+> **Runtime persona is canon at [`icm/domains/sales/chase.md`](../../icm/domains/sales/chase.md).**
+> Read scope `{operational, client_pii, financial-read}`; customer-facing commitments
+> (renewal/quote send-for-signature, pricing/discount/term) are **always-gated and
+> dial-proof**. Maps onto the canonical autonomy ladder
+> ([ADR-0109 extension](../decision-records/ADR-0128-canonical-agent-autonomy-ladder.md)):
+> L1 propose (default) · L2 auto-create/document the opportunity (internal). v1
+> playbooks: `lead-response` (built), social inbound reply, renewal repricing/drafting.
+> Boundaries: Belle hands off at `lead_score`; Celeste owns the active-customer
+> relationship (Chase owns the transaction); Pierce takes over at `won`; Audrey supplies
+> renewal margin. See the [Sales workspace](../../icm/domains/sales/room.md).
 
 ---
 

@@ -478,6 +478,14 @@ _Avoid_: review step, gate (unqualified)
 The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. Tiered mode is a future ADR.
 _Avoid_: autopilot, trust level
 
+**Autonomy Ladder**:
+The canonical L0–L5 capability levels every agent maps onto, so the dial means the same thing everywhere (ADR-0128, extends ADR-0109): **L0** observe · **L1** propose (default-safe, everything parks) · **L2** auto-internal reversible writes · **L3** auto low-risk external (execute-then-notify) · **L4** reversible-auto behind an undo window · **L5** max-within-ceiling. A **dial-proof hard ceiling** sits outside the dial — `always_gate` actions (external commitments + the ADR-0118 always-gate `data_class`es) never auto-execute at any level. The dial raises the floor, never breaches the ceiling.
+_Avoid_: trust level, actuation tier (that's the ADR-0055 T0–T3 scale the dial resolves to)
+
+**auto_at_level**:
+The per-action tag naming the **minimum dial level at which an action auto-executes**; below it the action parks to the cockpit. Paired with `always_gate` (dial-proof — an `always_gate` action never auto-executes regardless of `auto_at_level` or the dial). Selection is deterministic: an action auto-runs IFF `dial ≥ auto_at_level AND NOT always_gate AND the gauntlet passes` (ADR-0128 D4).
+_Avoid_: tier, ceiling (the ceiling is the dial-proof bound, not this threshold)
+
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
 _Avoid_: skill (unqualified where ambiguous), agent prompt
