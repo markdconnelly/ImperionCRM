@@ -51,4 +51,7 @@ every proposed next action parks for a human until a workflow is admin-flipped t
 ADR-0061/0087). **Identity, backups, and domain controllers escalate** rather than
 auto-proceed (Felix's guardrail). Money, customer-facing actions, prod changes, and
 `X.0.0` route to the single human queue regardless of rung (CONSTITUTION §5.4).
-Sends exit only through ADR-0058.
+Sends exit only through ADR-0058. The full **L0–L5 capability mapping** (which Service
+action auto-executes at which rung, and the dial-proof ceiling) is Felix's — see
+[`felix.md` §Autonomy](felix.md) (canonical, ADR-0128); this room states the posture, the
+persona carries the rung semantics.
