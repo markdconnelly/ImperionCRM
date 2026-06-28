@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0133
 title: "Operating Procedure catalog — a provable-coverage map of every MSP procedure, value-stream-first, one owning agent each"
 status: proposed
 date: 2026-06-28
@@ -8,7 +8,7 @@ summary: "Introduce the Operating Procedure catalog: the enumerated, provable ma
 tags: [agents, governance, workflows]
 ---
 
-# ADR-NNNN: Operating Procedure catalog — a provable-coverage map of every MSP procedure
+# ADR-0133: Operating Procedure catalog — a provable-coverage map of every MSP procedure
 
 > Number claimed at MERGE per system CLAUDE.md §10.3. Authored against the
 > placeholder `NNNN`; just before merge the branch is rebased on current `main`,

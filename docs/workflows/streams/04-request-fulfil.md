@@ -1,7 +1,7 @@
 # Stream 04 — Request → Fulfil
 
 > **Operating Procedure catalog stream file.** Part of [`../operating-procedure-catalog.md`](../operating-procedure-catalog.md);
-> architecture [ADR-NNNN](../../decision-records/ADR-NNNN-operating-procedure-catalog.md). Terms
+> architecture [ADR-0133](../../decision-records/ADR-0133-operating-procedure-catalog.md). Terms
 > **Operating Procedure** / **Procedure Step** are defined in [`CONTEXT.md`](../../../CONTEXT.md).
 >
 > **D9 global principles apply to every procedure below** (encoded in each Human-in-loop field,

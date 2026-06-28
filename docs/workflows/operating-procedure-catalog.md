@@ -6,7 +6,7 @@ unit onto its one owning agent, and makes ownership holes, overlaps, and cross-a
 seams explicit. This is the **catalog (docs) layer**; the per-procedure `icm/`
 workspaces are a later build phase.
 
-- **Architecture decision:** [ADR-NNNN — Operating Procedure catalog](../decision-records/ADR-NNNN-operating-procedure-catalog.md).
+- **Architecture decision:** [ADR-0133 — Operating Procedure catalog](../decision-records/ADR-0133-operating-procedure-catalog.md).
 - **Canonical terms:** **Operating Procedure** and **Procedure Step** in [`CONTEXT.md`](../../CONTEXT.md) (Agent automation section).
 - **Per-stream detail:** [`streams/`](streams/) — one file per value stream, full D6/D7 entry schema.
 - **The org it projects onto:** the 26-agent roster (epic #1534, `imperion-os-org-recast`).

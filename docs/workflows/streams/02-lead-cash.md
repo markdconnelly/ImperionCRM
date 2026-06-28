@@ -1,7 +1,7 @@
 # Stream 02 — Lead → Cash
 
 > **Operating Procedure catalog stream file.** Part of [`../operating-procedure-catalog.md`](../operating-procedure-catalog.md);
-> architecture [ADR-NNNN](../../decision-records/ADR-NNNN-operating-procedure-catalog.md). Terms in
+> architecture [ADR-0133](../../decision-records/ADR-0133-operating-procedure-catalog.md). Terms in
 > [`CONTEXT.md`](../../../CONTEXT.md).
 >
 > **D9 global principles apply to every procedure** (encoded in Human-in-loop, not restated):
