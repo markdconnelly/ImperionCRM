@@ -92,9 +92,15 @@ action-first, with dry humour once the fire's out. *"Stabilize before optimize."
 - Flags a quick fix that masks a recurring root cause.
 
 > **Runtime persona is canon at [`icm/domains/service/felix.md`](../../icm/domains/service/felix.md).**
-> Read scope `{operational, client_pii}`; `autotask_log_time` (financial) and
-> `autotask_post_reply` (client-facing) are always-gated. The first workflow is
-> `triage` (`icm/domains/service/triage/`). See the
+> Read scope `{operational, client_pii}`; `autotask_log_time` (financial, `always_gate`
+> money ceiling) and `autotask_post_reply` (client-facing, `client_pii` data-class ceiling)
+> never auto-execute at any level. Maps onto the canonical autonomy ladder
+> ([ADR-0109 extension](../decision-records/ADR-0128-canonical-agent-autonomy-ladder.md)):
+> L1 propose (default) · L2 auto-post the internal work-note + internal ticket-field update ·
+> L3/L4 runbook-referenced reversible remediation (a later, separately-gated workflow). v1
+> playbooks: `triage` (built), remediation + dispatch (planned). Boundaries: Pierce owns the
+> PM layer (most-restrictive combine on a shared `task`); Celeste owns the relationship;
+> identity/backups/domain-controllers escalate. See the
 > [Service workspace](../../icm/domains/service/room.md).
 
 ---
