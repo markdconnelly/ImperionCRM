@@ -22,6 +22,7 @@ import { docusignTestResult, type DocusignTestResult } from "@/lib/integrations/
 import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
 import { connectorFor } from "@/lib/integrations/connector-registry";
 import { companySecretName } from "@/lib/integrations/kv-secret-name";
+import { PLATFORM_PROVIDERS, platformSecretName } from "@/lib/integrations/platform-providers";
 import { isPersonalOAuthProvider } from "@/lib/integrations/personal-oauth";
 import { resolveAppUserIdByEmail } from "@/lib/data/app-user";
 
@@ -202,6 +203,77 @@ export async function saveCredentialAction(formData: FormData) {
     externalAccountId,
   });
   revalidatePath("/settings/connections");
+}
+
+/** Outcome of saving a platform AI key, rendered inline on the card. Never carries the key. */
+export type PlatformCredentialResult = {
+  ok: boolean;
+  tone: "green" | "amber" | "red";
+  message: string;
+};
+
+/**
+ * Save (or rotate) a PLATFORM-scope AI provider key — Voyage / Anthropic (ADR-0129, #1400).
+ *
+ * The key is a RAW SCALAR handed to the backend, which VALIDATES it with one cheap live provider
+ * call and writes it to Key Vault (`conn-platform-<provider>`) ONLY on success — the secret never
+ * touches this DB (CLAUDE.md §5). We then persist the custody reference on a `scope='platform'`
+ * `connection` row. Until the backend endpoint is wired the call throws ServiceNotConfiguredError;
+ * we record the intended canonical ref + `pending` so the card reflects intent. Gated on
+ * `settings:write` (the existing app-admin gate, ADR-0129 #6 — no new role); returns a result the
+ * card renders inline. The key is NEVER logged, returned, or stored here.
+ */
+export async function savePlatformCredentialAction(
+  formData: FormData,
+): Promise<PlatformCredentialResult> {
+  await requireCapability("settings:write");
+  const providerKey = String(formData.get("provider") ?? "");
+  const provider = PLATFORM_PROVIDERS.find((p) => p.key === providerKey);
+  if (!provider) return { ok: false, tone: "red", message: "Unknown platform provider." };
+
+  const apiKey = String(formData.get("apiKey") ?? "").trim();
+  if (!apiKey) return { ok: false, tone: "red", message: `Enter the ${provider.label} key.` };
+
+  // Record the intended canonical name (`conn-platform-<provider>`) up front; the backend store
+  // returns the identical string on success (ADR-0129 #3).
+  let keyvaultSecretRef = platformSecretName(provider.key);
+  let status = "pending";
+  let result: PlatformCredentialResult = {
+    ok: true,
+    tone: "amber",
+    message: `Saved nothing — the credential custody backend isn't configured in this environment yet.`,
+  };
+  try {
+    const res = await credentialsService.storePlatform({ provider: provider.key, apiKey });
+    keyvaultSecretRef = res.keyvaultSecretRef;
+    status = "active";
+    result = {
+      ok: true,
+      tone: "green",
+      message: `${provider.label} key validated and custodied in Key Vault.`,
+    };
+  } catch (err) {
+    if (!isBackendNotConfigured(err)) {
+      // A real failure — most often the key failed the backend's validate-before-write probe.
+      status = "error";
+      console.error(`savePlatformCredentialAction(${provider.key}) failed:`, err);
+      result = {
+        ok: false,
+        tone: "red",
+        message: `Couldn't save the ${provider.label} key — the backend rejected it (it may have failed validation).`,
+      };
+    }
+  }
+
+  const { connections } = getRepositories();
+  await connections.savePlatformCredential({
+    provider: provider.key,
+    displayName: `Imperion ${provider.label}`,
+    keyvaultSecretRef,
+    status,
+  });
+  revalidatePath("/settings/connections");
+  return result;
 }
 
 /**

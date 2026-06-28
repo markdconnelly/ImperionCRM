@@ -70,6 +70,7 @@ import type {
   CampaignSendInput,
   ClientCredentialInput,
   CompanyCredentialInput,
+  PlatformCredentialInput,
   ConnectionInput,
   ConsentEventInput,
   ContactEditable,
@@ -11261,6 +11262,25 @@ export const postgresRepositories: Repositories = {
       }
     },
 
+    async listPlatformConnections(): Promise<ConnectionRow[]> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.listPlatformConnections();
+      try {
+        // Platform-scope AI provider keys (ADR-0129) — custody-only rows (no account, no
+        // cadence). Renders the KV secret NAME + status, never a secret value.
+        const { rows } = await pool.query<ConnectionDbRow>(
+          `SELECT cn.id, cn.scope::text AS scope, cn.provider::text AS provider, cn.display_name,
+                  cn.status::text AS status, cn.scopes, NULL::text AS owner,
+                  cn.keyvault_secret_ref, cn.last_sync_at, cn.connected_at, cn.poll_interval_minutes,
+                  cn.auth_method
+           FROM connection cn WHERE cn.scope = 'platform' ORDER BY cn.provider`,
+        );
+        return rows.map(mapConnection);
+      } catch {
+        return mockRepositories.connections.listPlatformConnections();
+      }
+    },
+
     async listAllConnections(): Promise<ConnectionRow[]> {
       const pool = getPool();
       if (!pool) return mockRepositories.connections.listAllConnections();
@@ -11593,6 +11613,35 @@ export const postgresRepositories: Repositories = {
           externalAccountId,
         ],
       );
+    },
+
+    async savePlatformCredential(input: PlatformCredentialInput): Promise<void> {
+      const pool = getPool();
+      if (!pool) return mockRepositories.connections.savePlatformCredential(input);
+      // Platform scope has no partial unique index (only company does, 0027), so rotate via
+      // UPDATE-then-INSERT keyed on (scope='platform', provider) — one row per AI provider.
+      // auth_method='api_key' (the raw-scalar shape, ADR-0129); account_id stays NULL (system-wide).
+      // The secret lives in Key Vault; we persist only its reference + status (never the key).
+      const ref = nullIfEmpty(input.keyvaultSecretRef);
+      const { rowCount } = await pool.query(
+        `UPDATE connection
+            SET display_name        = $2,
+                keyvault_secret_ref = $3,
+                status              = $4::connection_status,
+                auth_method         = 'api_key',
+                connected_at        = now(),
+                updated_at          = now()
+          WHERE scope = 'platform' AND provider = $1::connection_provider`,
+        [input.provider, nullIfEmpty(input.displayName), ref, input.status],
+      );
+      if (!rowCount) {
+        await pool.query(
+          `INSERT INTO connection
+             (scope, provider, display_name, scopes, auth_method, keyvault_secret_ref, status)
+           VALUES ('platform', $1::connection_provider, $2, ARRAY[]::text[], 'api_key', $3, $4::connection_status)`,
+          [input.provider, nullIfEmpty(input.displayName), ref, input.status],
+        );
+      }
     },
 
     async saveClientCredential(input: ClientCredentialInput): Promise<void> {

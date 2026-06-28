@@ -2,10 +2,12 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/ui/icon";
 import { ConnectionCard } from "@/components/settings/connection-card";
+import { PlatformCredentialCard } from "@/components/settings/platform-credential-card";
 import { getRepositories } from "@/lib/data";
 import { getSessionRoles } from "@/lib/auth/session";
 import { canSeeSettings } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
+import { PLATFORM_PROVIDERS } from "@/lib/integrations/platform-providers";
 import { listConnectorManifests } from "@/lib/integrations/connector-manifest";
 import { inferConnectionHealth } from "@/lib/integrations/connection-health";
 import { describeCapabilities } from "@/lib/integrations/ingest-summary";
@@ -30,6 +32,7 @@ import {
   purgeCredentialAction,
   refreshNowAction,
   saveCredentialAction,
+  savePlatformCredentialAction,
   setPollIntervalAction,
   testDocusignConnectionAction,
 } from "../actions";
@@ -89,10 +92,12 @@ export default async function ConnectionsPage({
   if (!canSeeSettings(roles)) redirect("/");
 
   const { connections, connectors } = getRepositories();
-  const [company, instances] = await Promise.all([
+  const [company, platform, instances] = await Promise.all([
     connections.listCompanyConnections(),
+    connections.listPlatformConnections(),
     connectors.listConnectorInstances(),
   ]);
+  const platformByProvider = new Map(platform.map((c) => [c.provider, c]));
   const nowMs = Date.now(); // single render clock for all inferred-health verdicts (ADR-0122 S2)
   // buildConnectorCatalog defaults to GLOBAL_SCOPE — only global-scope instances join.
   const entries = buildConnectorCatalog(listConnectorManifests(), instances, GLOBAL_SCOPE);
@@ -194,6 +199,27 @@ export default async function ConnectionsPage({
           </div>
         </section>
       ))}
+
+      {/* Platform — system-wide AI provider keys (ADR-0129, #1400). Custody-only: no account,
+          no poll, no mapping. Seeded/rotated here so an app-admin needs no Azure-portal rights. */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-dim">Platform</h2>
+        <p className="text-[11px] text-dim">
+          System-wide AI provider keys the runtime resolves — custodied in Key Vault as{" "}
+          <span className="font-mono">conn-platform-&lt;provider&gt;</span>. The key is validated
+          with one live call before it is stored; this surface only ever holds a reference.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {PLATFORM_PROVIDERS.map((provider) => (
+            <PlatformCredentialCard
+              key={provider.key}
+              provider={provider}
+              connection={platformByProvider.get(provider.key) ?? null}
+              action={savePlatformCredentialAction}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

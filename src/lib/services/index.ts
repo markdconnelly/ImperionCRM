@@ -943,6 +943,21 @@ export const credentialsService = {
     }),
 
   /**
+   * Write a PLATFORM-scope AI provider key to Key Vault (ADR-0129, #1400). The value is a RAW
+   * SCALAR (the API key), custodied as `conn-platform-<provider>`. The backend VALIDATES the key
+   * with one cheap live provider call (a tiny Voyage embed / 1-token Claude ping) and writes ONLY
+   * on success — a key that fails its probe is never persisted (validate-before-write). Returns the
+   * reference + a validation flag; the key never touches this DB (CLAUDE.md §5). Until the backend
+   * endpoint is wired this throws ServiceNotConfiguredError and the action degrades gracefully.
+   */
+  storePlatform: (input: { provider: string; apiKey: string }) =>
+    callService<{ keyvaultSecretRef: string; validated?: boolean }>(
+      services.credentials,
+      "/credentials/platform",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+
+  /**
    * Purge a registered credential (#390): delete the `connection` row AND its backing Key
    * Vault secret. Idempotent (already-gone → `deleted: false`). Keyed on the row id so a
    * same-account duplicate is removed individually. Backs the FE remove-credential action.

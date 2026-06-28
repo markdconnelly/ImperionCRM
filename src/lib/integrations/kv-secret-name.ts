@@ -21,8 +21,8 @@
  * connection row's logical ref is the bare `conn-company-docusign`.
  */
 
-/** A connection's blast radius — mirrors the `connection_scope` enum (ADR-0103). */
-export type ConnectionScope = "company" | "client" | "user";
+/** A connection's blast radius — mirrors the `connection_scope` enum (ADR-0103/ADR-0129). */
+export type ConnectionScope = "company" | "client" | "user" | "platform";
 
 /** Azure Key Vault object-name charset + length (alphanumerics and dashes, ≤127). */
 const KV_NAME_RE = /^[0-9a-zA-Z-]{1,127}$/;
@@ -69,5 +69,5 @@ export function companySecretName(provider: string): string {
 /** True when a stored ref already follows the canonical grammar (used to flag legacy refs). */
 export function isCanonicalSecretRef(ref: string | null | undefined): boolean {
   if (!ref) return false;
-  return /^conn-(company|client|user)-[0-9a-z]+(-[0-9a-zA-Z-]+)?$/.test(ref);
+  return /^conn-(company|client|user|platform)-[0-9a-z]+(-[0-9a-zA-Z-]+)?$/.test(ref);
 }
