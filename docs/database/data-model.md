@@ -3020,25 +3020,35 @@ connection — the app never writes to QBO. Field names model the Intuit Account
 0092 and is NOT recreated.)
 
 - `qbo_invoices` — Invoices (A/R). Flat: doc_number, customer_ref, customer_name, txn_date,
-  due_date, total_amount, balance, currency, email_status, last_updated_time. `external_id` =
-  QBO Invoice Id; `customer_ref` joins `qbo_customers`.
+  due_date, total_amount, balance, currency, email_status, created_time, last_updated_time.
+  `external_id` = QBO Invoice Id; `customer_ref` joins `qbo_customers`.
 - `qbo_payments` — customer Payments received against invoices. Flat: customer_ref,
   customer_name, txn_date, total_amount, unapplied_amount, payment_method, deposit_account,
-  currency, last_updated_time. Applied-invoice links in `raw_payload`.
+  currency, created_time, last_updated_time. Applied-invoice links in `raw_payload`.
 - `qbo_customers` — Customers (the billed entity → maps LP-side to the silver account). Flat:
-  customer_id, display_name, company_name, active, balance, currency, created_time,
-  last_updated_time. Join target for the invoice/payment/estimate refs. PII in `raw_payload`.
+  customer_id, display_name, company_name, active, balance, currency, primary_email,
+  primary_phone, created_time, last_updated_time. Join target for the invoice/payment/estimate
+  refs. PII in `raw_payload`.
 - `qbo_estimates` — Estimates (quotes). Flat: doc_number, customer_ref, customer_name,
-  txn_date, expiration_date, txn_status, total_amount, currency, last_updated_time.
+  txn_date, expiration_date, txn_status, total_amount, currency, created_time, last_updated_time.
 - `qbo_bills` — Bills (A/P; feature-limited on Simple Start, cf. 0092). Flat: doc_number,
-  vendor_ref, vendor_name, txn_date, due_date, total_amount, balance, currency,
-  last_updated_time.
+  vendor_ref, vendor_name, txn_date, due_date, total_amount, balance, currency, ap_account_ref,
+  created_time, last_updated_time.
 - `qbo_accounts` — chart of accounts. Flat: account_id, name, fully_qualified_name,
   account_type, account_sub_type, classification, active, current_balance, currency,
-  last_updated_time. The CFO expense-account mapping (cf. 0092) resolves against this list.
+  created_time, last_updated_time. The CFO expense-account mapping (cf. 0092) resolves against
+  this list.
 - `qbo_profit_and_loss` — Profit & Loss **report** snapshot. Flat (header only): report_name,
   period_start, period_end, accounting_method, summarize_by, currency, generated_at. The full
-  report Rows tree is lossless in `raw_payload`; `external_id` = an LP-minted period+basis key.
+  report Rows tree (line items + all totals) is lossless in `raw_payload`; `external_id` = an
+  LP-minted period+basis key. **Deliberately header-only** (#1496): the collector retargets its
+  `-ColumnSet` to this shape rather than projecting flat totals into bronze (totals are curated
+  out of `raw_payload` in the silver merge — bronze = lossless envelope, ADR-0005/0039).
+- `qbo_expense_account` (0088) — QBO chart-of-accounts subset that is the Expense Category SoR
+  (ADR-0083); `expense_category` FKs `qbo_account_id`. Brought to the standard bronze envelope
+  (tenant_id/source/external_id/collected_at/raw_payload/content_hash + classification/
+  created_time/last_updated_time) **additively** in 0219/#1496 so the uniform LP collector can
+  write it; legacy `id`/`qbo_account_id`/`name`/… preserved. `external_id` = qbo_account_id.
 
 **Logistics (LP #198):** procurement orders + shipment/tracking + spend; per-line detail is
 lossless in `raw_payload`.
