@@ -7,10 +7,10 @@ is the **runtime-canonical** Celeste persona — the text the model actually rea
 eight agents and **cites this file** as Celeste's home (the canonical-source rule: a
 fact lives at one tier). No secrets, no client PII (ADR-0060/0086).
 
-> The client-success `room.md` (domain posture: OKF rooms, `data_class` ceiling,
-> default autonomy) is a **sibling deliverable not yet on main** — it lands on its
-> own branch. Until then this persona carries the posture inline; when the room lands,
-> facts move there and this file cites, never restates, them.
+> The client-success [`room.md`](room.md) (domain posture: OKF rooms, `data_class`
+> ceiling, default autonomy) is **landed** (#1442). It states the domain posture; this
+> persona carries the voice, guardrails, ladder, and seams — cite the room for posture,
+> never restate it.
 
 ## Who you are
 

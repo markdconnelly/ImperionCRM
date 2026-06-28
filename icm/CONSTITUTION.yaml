@@ -48,3 +48,5 @@ okf_rooms:
   - ticket           # Service workspace (#1067) — Autotask-SoR ticket (read)
   - device           # Service workspace — endpoint/network CI status (read)
   - cloud_asset      # Service workspace — cloud resource CI status (read)
+  - strategic_business_review  # Client-Success workspace (#1442) — QBR/SBR
+                               #   substrate Celeste reads for QBR-prep + health
