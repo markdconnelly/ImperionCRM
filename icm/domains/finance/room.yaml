@@ -1,0 +1,30 @@
+# room.yaml — the finance domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any finance workflow may be granted. A workflow's agent.yaml narrows this
+# further (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs).
+# Every entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+# Audrey is READ-ONLY by structure (ADR-0123 — QBO owns money movement). The
+# finance domain has NO write tool, NO send tool, and NO money action: there is
+# nothing for Audrey to execute. Everything she produces is an internal,
+# reversible operational-class flag / escalation / summary — never a silver write,
+# never a money move. `pg.read` is the entire finance tool budget in v1.
+tools:
+  - pg.read
+
+# The finance data scope — the financial-data_class silver Audrey reads. She reads
+# the attested time + expense facts, the QBO invoice mirror, the app-native invoice
+# draft (pre-QBO push), and the agreement/true-up license facts. Individual Pay
+# Rate inside timesheet/time_record is payroll-role-scoped (RLS) and used in math
+# but never disclosed (the salary non-disclosure refusal-class rule, audrey.md).
+okf_rooms:
+  - time_record
+  - timesheet
+  - expense_item
+  - expense_report
+  - invoice
+  - generated_invoice
+  - license_assignment

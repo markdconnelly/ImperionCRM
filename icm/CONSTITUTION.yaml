@@ -50,3 +50,10 @@ okf_rooms:
   - cloud_asset      # Service workspace — cloud resource CI status (read)
   - strategic_business_review  # Client-Success workspace (#1442) — QBR/SBR
                                #   substrate Celeste reads for QBR-prep + health
+  - time_record       # Finance workspace (#1423) — monthly-close time fact (read)
+  - timesheet         # Finance workspace — attested timesheet (read)
+  - expense_item      # Finance workspace — monthly-close expense fact (read)
+  - expense_report    # Finance workspace — attested expense report (read)
+  - invoice           # Finance workspace — QBO read-only invoice mirror (read)
+  - generated_invoice # Finance workspace — app-native invoice draft pre-QBO (read)
+  - license_assignment # Finance workspace — agreement/true-up license facts (read)
