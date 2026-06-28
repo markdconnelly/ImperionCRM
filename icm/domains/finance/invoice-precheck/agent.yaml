@@ -1,0 +1,13 @@
+name: invoice-precheck
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> finance room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [generated_invoice, time_record, timesheet, license_assignment]   # subset of domains/finance/room.yaml
+tools: [pg.read]                      # subset of domains/finance/room.yaml — read-only by structure (ADR-0123)
+skills:
+  - ./skills/precheck-rubric              # Tier 3 — workflow-local
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the INTERNAL anomaly flag / escalation to the cockpit when the tie-out is fully measured (draft hours/rate both have a matching attested-time and contract-rate signal) and at least one anomaly is found; reversible internal flag only. Audrey never pushes to QBO, never edits the invoice — the QBO push stays Mark-gated in every mode. A data gap (missing attested time or contract rate) parks for a human instead of self-approving."
