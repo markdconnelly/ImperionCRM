@@ -1,0 +1,13 @@
+name: ar-aging
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [invoice]                                                # subset of domains/finance/room.yaml — the QBO read-only AR mirror
+tools: [pg.read]                                                    # read + summarize only; no write, no send, no money move
+skills:
+  - ./skills/aging-rubric               # Tier 3 — workflow-local (AR aging buckets + cash-position structure + NOT-dunning boundary)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the internal AR aging + cash-position summary for the CFO / board from MEASURED invoice-mirror facts (internal, reversible — a summary can be dismissed) at L2, always labeling measured figure vs derived and stamping its as-of date. EXPLICITLY NOT DUNNING: this summarizes only — it never sends a payment reminder or any external message (that is the future collections agent #667, ADR-0058). No send, no posting, no money move, no QBO push at any rung (QBO is the system of record, ADR-0123)."
