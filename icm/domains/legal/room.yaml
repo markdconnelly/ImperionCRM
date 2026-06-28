@@ -1,0 +1,26 @@
+# room.yaml — the legal domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any legal (Internal Ops / G&A) workflow may be granted. A workflow's agent.yaml
+# narrows this further (workflow ⊆ domain ⊆ Constitution; gate:
+# scripts/agent-yaml-gate.mjs). Every entry here MUST itself appear in
+# icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: chief-of-staff   # Laurel reports to Rachel (Chief of Staff, Internal Ops / G&A)
+
+# Legal workers read, redline, and flag; v1 does not send, execute, or bind.
+# The retrieval pair (knowledge.search + memory.recall) gives memory beyond the
+# structured rooms (CONSTITUTION §8). No execution/signature tool is in budget —
+# binding the company is always a human's call.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+# The legal data scope — the rooms a legal worker may read to ground a contract in
+# the counterparty and the deal it attaches to.
+okf_rooms:
+  - account
+  - opportunity
