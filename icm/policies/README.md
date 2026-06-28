@@ -1,76 +1,98 @@
-# Imperion — Information Security Policy Set (2026)
+# Imperion Policy Canon
 
-**Internal master set.** Modernized from the legacy client policies, rebuilt for Imperion as a managed service provider. Aligned to **NIST CSF 2.0**, **AICPA SOC 2** Trust Services Criteria, and the **NIST AI Risk Management Framework**.
+**One policy set, read the same way by a human and by an AI agent.** Imperion runs on a single
+workforce of humans and named AI agents (ADR-0131); both are governed by these policies. Every
+policy is a single document — plain-language rules plus an explicit *Application to autonomous
+agents* section — so a human employee and an agent read the **same obligation**. Architecture:
+ADR-0134 (policy canon) + the [top umbrella](00-imperion-operating-policy-and-code-of-conduct.md).
 
-> These are internal master policies. Adapt per-client versions from these as needed. Placeholders (owner names, dates, contact details) are marked `_________` for you to complete.
+> Supersedes the legacy "Information Security Policy Set (IM001–026)" framing: those policies are
+> re-sorted into the **Cybersecurity** and **Information Technology** categories and rewritten
+> dual-audience. `"Policy"` is a canonical term in CONTEXT.md.
 
-## Technology Stack Represented
+## Structure
 
-- Microsoft 365 Business Premium · Entra ID · Intune
-- Microsoft Azure (DNS, Entra, Sentinel logs; Key Vault)
-- Microsoft Sentinel (SIEM) integrated with Defender XDR
-- Always-on MFA; phishing-resistant authentication
-- Kaseya (RMM/patching, backup & recovery, documentation, QBR, phishing simulation)
-- 1Password (credential & secrets management)
-- AI: Microsoft 365 Copilot and client AI deployments
-- Environment: hybrid — small office with limited on-prem, mostly cloud
+- **Top umbrella** — [`00-imperion-operating-policy-and-code-of-conduct.md`](00-imperion-operating-policy-and-code-of-conduct.md): the dual-actor model + the cross-cutting autonomy/oversight framework (ladder/dial/gauntlet/`always_gate`/human-in-loop/easy-button/pool/no-fabrication/P1–P4) + the D4 binding model. Every policy inherits it.
+- **Three categories** (subfolders), each with an **umbrella** + **distinct** policies + a `procedures/` folder for **procedure-specific** policies:
+  - [`cybersecurity/`](cybersecurity/) — `CS-NN`
+  - [`information-technology/`](information-technology/) — `IT-NN`
+  - [`business-operations/`](business-operations/) — `BO-NN`
+- **Authoring template** — [`_TEMPLATE.md`](_TEMPLATE.md) (dual-audience; copy for every new policy).
+- **Coverage proof** — [`coverage-matrix.md`](coverage-matrix.md): every Operating Procedure → its driving policy(ies); every policy → procedures governed.
 
-## Document Index
+## Binding model (D4 — two layers)
 
-### Program-Level
-| File | Purpose |
-| --- | --- |
-| `Enterprise_Information_Security_Program.md` | Umbrella program tying all policies together |
-| `Technical_Incident_Response_Program.md` | Full IR lifecycle (scrubbed and modernized) |
+1. **Universal baseline** (inherited by every Operating Procedure, never restated per entry): the
+   top umbrella + the cross-cutting policies — **CS-19** Acceptable Use, **CS-07** AI Governance,
+   **CS-08** Data Classification & Handling, **CS-10** Logging & SIEM, **CS-14** Privacy, and
+   each category umbrella.
+2. **Per-procedure drivers**: each procedure names its **1–3 specific** distinct/procedure-specific
+   policies in its catalog `Driving policy` field.
 
-### Core Policies (original set, modernized)
-| # | Title |
-| --- | --- |
-| IM001 | Information Security Strategy |
-| IM002 | Patch & Vulnerability Management |
-| IM003 | Information System Ownership & Access Management |
-| IM004 | Remote Access & MFA |
-| IM005 | Encryption |
-| IM006 | Risk Management & Analysis |
-| IM007 | Network Access Termination |
-| IM008 | User Account Management |
-| IM009 | Cloud Security |
+## The set (all ✅ authored; "From" = provenance of the re-sorted source)
 
-### New Policies (gaps closed)
-| # | Title | Why added |
-| --- | --- | --- |
-| IM010 | Acceptable Use & AI Acceptable Use | Workforce + AI use |
-| IM011 | AI Governance & Secure Deployment | AI systems/deployment (centerpiece) |
-| IM012 | Data Classification & Handling | SOC 2 foundation |
-| IM013 | Vendor & Third-Party Risk Management | Supply chain |
-| IM014 | Logging, Monitoring & SIEM | Sentinel/Defender XDR |
-| IM015 | Backup, Data Recovery & Business Continuity | Kaseya BCDR |
-| IM016 | Change & Configuration Management | SOC 2 CC8.1 |
-| IM017 | Human Resources & Personnel Security | Screening, onboarding, sanctions |
-| IM018 | Physical & Environmental Security | Hybrid office/on-prem |
-| IM019 | Privacy & Data Protection | Personal data, processor role |
-| IM020 | Mobile Device, BYOD & Endpoint Baseline | Intune/device posture |
-| IM021 | Email Security & Anti-Phishing | Defender O365, DMARC, simulation |
-| IM022 | Security Awareness & Training | Standalone awareness program |
-| IM023 | Network Security | Firewall, segmentation, wireless |
-| IM024 | Data Retention & Disposal | Retention schedule, SP 800-88 |
-| IM025 | Audit & Compliance Management | SOC 2 audit cycle, evidence |
-| IM026 | Client Shared Responsibility Policy & Matrix | MSP CUECs — critical for client versions |
+### Cybersecurity (CS)
+| ID | Title | Status | From |
+|---|---|---|---|
+| CS-00 | Information Security Program (umbrella) | ✅ | Enterprise Program |
+| CS-01 | Information Security Strategy | ✅ | IM001 |
+| CS-02 | Identity & Access Management | ✅ | IM003 |
+| CS-03 | Remote Access & MFA | ✅ | IM004 |
+| CS-04 | Encryption | ✅ | IM005 |
+| CS-05 | Risk Management & Analysis | ✅ | IM006 |
+| CS-06 | Cloud Security | ✅ | IM009 |
+| CS-07 | AI Governance & Secure Deployment | ✅ | IM011 |
+| CS-08 | Data Classification & Handling | ✅ | IM012 |
+| CS-09 | Vendor & Third-Party Security Risk | ✅ | IM013 |
+| CS-10 | Logging, Monitoring & SIEM | ✅ | IM014 |
+| CS-11 | Email Security & Anti-Phishing | ✅ | IM021 |
+| CS-12 | Security Awareness & Training | ✅ | IM022 |
+| CS-13 | Network Security | ✅ | IM023 |
+| CS-14 | Privacy & Data Protection | ✅ | IM019 |
+| CS-15 | Physical & Environmental Security | ✅ | IM018 |
+| CS-16 | Data Retention & Disposal | ✅ | IM024 |
+| CS-17 | Audit & Compliance Management | ✅ | IM025 |
+| CS-18 | Client Shared Responsibility | ✅ | IM026 |
+| CS-19 | Acceptable Use | ✅ | IM010 |
+| CS-20 | Personnel Security | ✅ | IM017 |
+| CS-IR | Technical Incident Response Program | ✅ | IR Program |
 
-**Total: 26 IM-series policies + Enterprise Program + Technical Incident Response Program = 28 documents.**
+### Information Technology (IT)
+| ID | Title | Status | From |
+|---|---|---|---|
+| IT-00 | IT Operations Program (umbrella) | ✅ | new |
+| IT-01 | Service Delivery & SLA Management | ✅ | new |
+| IT-02 | Change & Configuration Management | ✅ | IM016 |
+| IT-03 | Patch & Vulnerability Management | ✅ | IM002 |
+| IT-04 | Monitoring & Event Management (NOC) | ✅ | new |
+| IT-05 | Incident & Problem Management | ✅ | new |
+| IT-06 | Backup, Recovery & Business Continuity | ✅ | IM015 |
+| IT-07 | Endpoint & Device Baseline (BYOD/Intune) | ✅ | IM020 |
+| IT-08 | Account & Access Lifecycle (JML) | ✅ | IM008 |
+| IT-09 | Network Operations & Access Termination | ✅ | IM007 |
+| IT-10 | Provisioning, Asset & CMDB Management | ✅ | new |
+| IT-11 | Documentation & Knowledge Management (IT Glue) | ✅ | new |
 
-## What Changed From the Legacy Set
+### Business Operations (BO)
+| ID | Title | Status | From |
+|---|---|---|---|
+| BO-00 | Business Operations Program (umbrella) | ✅ | new |
+| BO-01 | Marketing & Communications | ✅ | new |
+| BO-02 | Sales, Pricing & Commitment Authority | ✅ | new |
+| BO-03 | Procurement & Vendor Commitment | ✅ | new |
+| BO-04 | Client Success & Advisory | ✅ | new |
+| BO-05 | Billing, AR & Collections | ✅ | new |
+| BO-06 | Financial Management & Controls | ✅ | new |
+| BO-07 | Expense & Reimbursement | ✅ | docs/policies/expense-policy.md (#493) |
+| BO-08 | Time, Attendance & Payroll | ✅ | new |
+| BO-09 | Legal & Contract Lifecycle | ✅ | new |
+| BO-10 | Human Resources & People | ✅ | new |
 
-- **Re-platformed** from Fortinet/Carbon Black/Proofpoint to the current Microsoft + Kaseya + 1Password stack.
-- **Removed cross-contamination** — the legacy Incident Response Program still referenced "Imperion Technology Solutions" mixed with "Pavlov Media"; the new version is cleanly Imperion's.
-- **Added 17 new policies** the original set lacked (IM010–IM026).
-- **Modernized controls**: Zero Trust, phishing-resistant MFA, Entra PIM, tightened inactivity thresholds (120→90 days), modern password guidance, immutable backups.
-- **Framework mapping** added to every policy (NIST CSF 2.0 / SOC 2 / AI RMF).
-
-## Suggested Next Steps
-
-1. Fill placeholders (owners, dates, CERT contacts).
-2. Have Legal review contract-provision and privacy/processor language (IM009, IM013, IM019, IM026).
-3. Run the IM011 permissions/oversharing remediation before enabling Copilot broadly.
-4. Finalize the IM024 retention schedule with specific periods.
-5. Build per-client deployable versions from these masters — IM026 is your starting point for client-vs-Imperion boundaries.
+## Authoring rules
+- One canon, zero drift (OKF §11 / skills §9 doctrine). No policies outside this tree.
+- Every policy uses [`_TEMPLATE.md`](_TEMPLATE.md) and includes the *Application to autonomous
+  agents* section. Governance terms are defined once in the top umbrella; policies localize them.
+- A new Operating Procedure or a changed agent capability updates the governing policy + the
+  [coverage-matrix](coverage-matrix.md) in the same change set.
+- No secrets, no PII, no client identifiers in a policy (reference data classes, never restate).
+- Per-client policy versions are derived from these masters (start from **CS-18**).

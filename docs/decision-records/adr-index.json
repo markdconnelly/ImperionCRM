@@ -1790,5 +1790,20 @@
     "file": "ADR-0133-operating-procedure-catalog.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0134",
+    "title": "Policy canon architecture — a single dual-audience policy set governing humans and agents alike, in three categories",
+    "status": "proposed",
+    "date": "2026-06-28",
+    "tags": [
+      "governance",
+      "agents",
+      "policy"
+    ],
+    "summary": "Establish ONE policy canon under icm/policies/ that governs the hybrid human+agent workforce uniformly: every policy is a single document read the same way by a human and by an AI agent (plain-language rules + an explicit 'Application to autonomous agents' section). Organized in three CATEGORIES (Cybersecurity / Information Technology / Business Operations) and three TIERS (umbrella / distinct / procedure-specific), under one top-level umbrella (Imperion Operating Policy & Code of Conduct) that carries the dual-actor model and the cross-cutting autonomy/oversight framework (ladder/dial/gauntlet/always_gate/oversight/pool/no-fabrication), referencing ADR-0128/0109/0058 rather than restating them. Rejects a separate agent-governance policy series (agent behavior lives inside each policy) and a by-governance-type split (IM/AG/OP). The merged IM001-026 info-sec set is re-sorted into Cybersecurity (most) and Information Technology (patch/change/backup/device/account-lifecycle/network) and rewritten dual-audience. Binding is two-layer (a universal baseline every procedure inherits + 1-3 named per-procedure drivers); a coverage-matrix proves every Operating Procedure/step is governed. This is the D4 driving-policy layer of the Operating Procedure catalog (ADR for the catalog: companion).",
+    "file": "ADR-0134-policy-canon-architecture.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
