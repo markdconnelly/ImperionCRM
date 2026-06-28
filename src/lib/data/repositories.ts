@@ -2277,6 +2277,14 @@ export interface CompanyCredentialInput {
   scopes: string[];
   keyvaultSecretRef: string | null; // reference only — never the secret
   status: string; // active|pending|error|expired|revoked
+  /**
+   * A PUBLIC external identifier the provider's connect step resolved from the credential and
+   * we persist on the row — never a secret. Used by Meta (the FB Page id the backend resolves
+   * from the one Business-Suite token via Graph, ADR-0124 #7 / #1568) so the owned asset is
+   * discovered once and never re-prompted. Omitted/undefined leaves the column untouched on
+   * rotation; null is not written for providers that don't resolve one.
+   */
+  externalAccountId?: string | null;
 }
 
 /**

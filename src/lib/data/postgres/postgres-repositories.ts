@@ -11567,16 +11567,21 @@ export const postgresRepositories: Repositories = {
       const pool = getPool();
       if (!pool) return mockRepositories.connections.saveCompanyCredential(input);
       // Upsert by provider for company scope (uq_connection_company_provider, 0027).
-      // The secret lives in Key Vault; we persist only its reference + status.
+      // The secret lives in Key Vault; we persist only its reference + status (+ any PUBLIC
+      // external_account_id the connect step resolved — Meta's FB Page id, #1568). On rotation
+      // a not-provided external_account_id (NULL param) PRESERVES the prior value via COALESCE,
+      // so a re-save never wipes a once-resolved owned-asset id.
+      const externalAccountId = nullIfEmpty(input.externalAccountId ?? null);
       await pool.query(
         `INSERT INTO connection
-           (scope, provider, display_name, scopes, keyvault_secret_ref, status)
-         VALUES ('company', $1::connection_provider, $2, $3, $4, $5::connection_status)
+           (scope, provider, display_name, scopes, keyvault_secret_ref, status, external_account_id)
+         VALUES ('company', $1::connection_provider, $2, $3, $4, $5::connection_status, $6)
          ON CONFLICT (provider) WHERE scope = 'company'
          DO UPDATE SET display_name        = EXCLUDED.display_name,
                        scopes              = EXCLUDED.scopes,
                        keyvault_secret_ref = EXCLUDED.keyvault_secret_ref,
                        status              = EXCLUDED.status,
+                       external_account_id = COALESCE(EXCLUDED.external_account_id, connection.external_account_id),
                        connected_at        = now(),
                        updated_at          = now()`,
         [
@@ -11585,6 +11590,7 @@ export const postgresRepositories: Repositories = {
           input.scopes,
           nullIfEmpty(input.keyvaultSecretRef),
           input.status,
+          externalAccountId,
         ],
       );
     },

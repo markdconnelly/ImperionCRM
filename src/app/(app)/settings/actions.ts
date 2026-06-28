@@ -175,9 +175,16 @@ export async function saveCredentialAction(formData: FormData) {
   // placeholder that pointed at no real secret (epic #1256).
   let keyvaultSecretRef = companySecretName(provider.key);
   let status = "pending";
+  // A PUBLIC owned-asset id the backend resolved from the credential (Meta = the FB Page id the
+  // ONE Business-Suite token owns, resolved via Graph — ADR-0124 #7 / #1568). `undefined` leaves
+  // the column untouched (so a pending/degraded save never wipes a previously-resolved id).
+  let externalAccountId: string | undefined;
   try {
     const res = await credentialsService.store({ provider: provider.key, fields });
     keyvaultSecretRef = res.keyvaultSecretRef;
+    // Persist the resolved owned-asset id (Meta page id) so it is discovered once, never
+    // re-prompted. The id is a public identifier — never a secret (CLAUDE.md §5).
+    if (res.externalAccountId) externalAccountId = res.externalAccountId;
     status = "active";
   } catch (err) {
     // Backend not wired yet (#190 taxonomy) → keep the intended ref + pending.
@@ -192,6 +199,7 @@ export async function saveCredentialAction(formData: FormData) {
     scopes: provider.scopes,
     keyvaultSecretRef,
     status,
+    externalAccountId,
   });
   revalidatePath("/settings/connections");
 }

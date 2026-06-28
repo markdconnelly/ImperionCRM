@@ -337,6 +337,10 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
         scopes: ["ads_management", "ads_read", "business_management"],
       },
     ],
+    // ONE token, NO Page ID prompt (#1568, ADR-0124 #7). The token already OWNS the Facebook
+    // Page + linked Instagram account — on save the backend resolves those ids from the token
+    // via the Graph API and persists them (external_account_id = page id), so the operator never
+    // types or re-enters an id. (The old required `pageId` field was a stored-value re-prompt.)
     fields: [
       {
         name: "pageAccessToken",
@@ -344,16 +348,7 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
         secret: true,
         type: "password",
         required: true,
-        help: "Long-lived Meta token (one secret) granting the Social + Ads scopes above (pages_*, instagram_*, ads_*, business_management).",
-      },
-      {
-        name: "pageId",
-        label: "Facebook Page ID",
-        secret: false,
-        type: "text",
-        required: true,
-        placeholder: "106025565604796",
-        help: "The Facebook Page id the Instagram account is linked to.",
+        help: "Long-lived Meta Business Suite token (one secret) granting the Social + Ads scopes above (pages_*, instagram_*, ads_*, business_management). The Facebook Page and Instagram account it owns are resolved automatically — no Page ID to enter.",
       },
     ],
   },

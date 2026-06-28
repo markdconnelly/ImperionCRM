@@ -75,15 +75,16 @@ describe("COMPANY_PROVIDERS — Meta provider (#586, extended #1341)", () => {
     expect(providerIsPollable(meta!)).toBe(false);
   });
 
-  it("collects pageAccessToken (secret) + pageId — mirroring the pipeline's credentials.ts", () => {
+  it("collects ONLY the token — NO Page ID prompt (#1568, ADR-0124 #7)", () => {
+    // The ONE Business-Suite token owns the FB Page + IG account; the backend resolves those
+    // ids from the token via Graph on save (backend #457), so the operator never types a Page
+    // ID. The old required `pageId` field was a stored-value re-prompt and is removed.
     const fieldNames = meta?.fields?.map((f) => f.name) ?? [];
-    expect(fieldNames).toEqual(["pageAccessToken", "pageId"]);
+    expect(fieldNames).toEqual(["pageAccessToken"]);
+    expect(fieldNames).not.toContain("pageId");
     const token = meta?.fields?.find((f) => f.name === "pageAccessToken");
-    const pageId = meta?.fields?.find((f) => f.name === "pageId");
     expect(token?.secret).toBe(true);
     expect(token?.required).toBe(true);
-    expect(pageId?.secret).toBe(false);
-    expect(pageId?.required).toBe(true);
   });
 
   it("records the full FB+IG+Messenger+Ads scope union, one secret (ADR-0124 #7)", () => {
