@@ -159,4 +159,4 @@ streams. **Related policies:** [CS-00 Information Security Program](CS-00-inform
 [CS-05 Risk Management & Analysis](CS-05-risk-management-and-analysis.md) ·
 [CS-17 Audit & Compliance Management] · the Technical Incident Response Program (CS-IR).
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) ·
-ADR-0131 (executive suite) · ADR-NNNN (policy-canon architecture).
+ADR-0131 (executive suite) · ADR-0134 (policy-canon architecture).

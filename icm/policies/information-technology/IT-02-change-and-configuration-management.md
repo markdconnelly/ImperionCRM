@@ -218,5 +218,5 @@ the agent's dial or trip the kill-switch.
 [IT-05 Incident & Problem Management](IT-05-incident-and-problem-management.md) ·
 [IT-10 Provisioning, Asset & CMDB Management] · the Cybersecurity risk-management and
 incident-response policies. **ADRs:** ADR-0079 (problem/change) · ADR-0128 (autonomy ladder) ·
-ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-NNNN (policy-canon architecture).
+ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-0134 (policy-canon architecture).
 **Schema:** #1579 (rollback artifact / `change_freeze` / standard-change catalog).

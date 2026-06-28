@@ -148,4 +148,4 @@ aging, and dunning entries. **Related policies:**
 [BO-03](BO-03-procurement-and-vendor-commitment.md) (vendor-cost vs customer-billing) · BO-06
 (Financial Management & Controls) · Privacy & Data Protection · Data Classification & Handling.
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

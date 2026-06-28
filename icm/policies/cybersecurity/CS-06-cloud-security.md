@@ -144,7 +144,7 @@ change, and any Stream 07 step touching a cloud service (see the
 [CS-10 Logging, Monitoring & SIEM](CS-10-logging-monitoring-and-siem.md) ·
 [CS-07 AI Governance & Secure Deployment](CS-07-ai-governance-and-secure-deployment.md).
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) ·
-ADR-0129 (platform credentials) · ADR-NNNN (policy-canon architecture).
+ADR-0129 (platform credentials) · ADR-0134 (policy-canon architecture).
 
 ### Exhibit A — Approved Cloud Service Providers (Imperion core stack)
 

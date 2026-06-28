@@ -137,4 +137,4 @@ Streams 04–06. **Related policies:**
 [IT-07 Endpoint & Device Baseline](IT-07-endpoint-and-device-baseline.md) ·
 [CS-02 Identity & Access Management] · [CS-04 Remote Access & MFA] · [CS-13 Logging, Monitoring &
 SIEM]. **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058
-(gauntlet) · ADR-NNNN (policy-canon architecture).
+(gauntlet) · ADR-0134 (policy-canon architecture).

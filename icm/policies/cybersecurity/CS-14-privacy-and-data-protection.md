@@ -150,4 +150,4 @@ escalates; repeated or high-severity violations lower the agent's dial or trip t
 [CS-09](CS-09-vendor-and-third-party-security-risk.md) ·
 [CS-16](CS-16-data-retention-and-disposal.md) · [CS-IR](CS-IR-technical-incident-response-program.md).
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) ·
-ADR-0118 (data-class action ceiling) · ADR-NNNN (policy-canon architecture).
+ADR-0118 (data-class action ceiling) · ADR-0134 (policy-canon architecture).

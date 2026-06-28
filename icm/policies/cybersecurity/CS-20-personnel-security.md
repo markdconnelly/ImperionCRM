@@ -102,4 +102,4 @@ relevant Operating Procedures (Stream 04 JML, Stream 10 HR).
 [IT-08](../information-technology/IT-08-account-and-access-lifecycle.md) ·
 [IT-09](../information-technology/IT-09-network-operations-and-access-termination.md) ·
 [BO-10](../business-operations/BO-10-human-resources-and-people.md) (HR/people operations).
-**ADRs:** ADR-0128/0109/0058; ADR-NNNN (policy canon).
+**ADRs:** ADR-0128/0109/0058; ADR-0134 (policy canon).

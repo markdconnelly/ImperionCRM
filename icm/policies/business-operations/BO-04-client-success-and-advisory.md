@@ -149,5 +149,5 @@ posture, and retention entries. **Related policies:**
 [BO-03](BO-03-procurement-and-vendor-commitment.md) (client-driven procurement) ·
 [BO-01](BO-01-marketing-and-communications.md) (existing-customer communication ownership) ·
 Cybersecurity Client Shared Responsibility · Privacy & Data Protection. **ADRs:** ADR-0128
-(autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) · ADR-NNNN (policy-canon
+(autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) · ADR-0134 (policy-canon
 architecture).

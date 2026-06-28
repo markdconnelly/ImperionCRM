@@ -165,4 +165,4 @@ access, and MSP delegated-admin steps in Stream 07 and the security baseline. **
 [CS-08 Data Classification & Handling] · [CS-09 Vendor & Third-Party Security Risk] ·
 [CS-10 Logging, Monitoring & SIEM]. **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard
 ceilings) · ADR-0058 (gauntlet) · ADR-0088 (room budget) · ADR-0118 (data-class action ceiling) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

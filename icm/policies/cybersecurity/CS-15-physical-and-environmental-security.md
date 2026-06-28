@@ -126,4 +126,4 @@ repeated or high-severity violations are handled per the umbrella enforcement mo
 **Related policies:** [CS-02](CS-02-identity-and-access-management.md) ·
 [CS-08](CS-08-data-classification-and-handling.md) · [CS-14](CS-14-privacy-and-data-protection.md) ·
 [CS-16](CS-16-data-retention-and-disposal.md). **ADRs:** ADR-0128 (autonomy ladder) ·
-ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) · ADR-NNNN (policy-canon architecture).
+ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) · ADR-0134 (policy-canon architecture).

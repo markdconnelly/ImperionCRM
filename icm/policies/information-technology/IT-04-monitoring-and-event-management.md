@@ -167,4 +167,4 @@ repeated or high-severity violations lower the agent's dial or trip the kill-swi
 [IT-03 Patch & Vulnerability Management](IT-03-patch-and-vulnerability-management.md) ·
 [IT-06 Backup, Recovery & Business Continuity] · the Cybersecurity logging/SIEM and incident-response
 policies. **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058
-(gauntlet) · ADR-NNNN (policy-canon architecture). **Schema:** #1578 (monitoring/alert bronze feed).
+(gauntlet) · ADR-0134 (policy-canon architecture). **Schema:** #1578 (monitoring/alert bronze feed).

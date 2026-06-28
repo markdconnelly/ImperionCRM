@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0134
 title: "Policy canon architecture — a single dual-audience policy set governing humans and agents alike, in three categories"
 status: proposed
 date: 2026-06-28
@@ -8,12 +8,12 @@ summary: "Establish ONE policy canon under icm/policies/ that governs the hybrid
 tags: [governance, agents, policy]
 ---
 
-# ADR-NNNN: Policy canon architecture — one dual-audience set governing humans and agents
+# ADR-0134: Policy canon architecture — one dual-audience set governing humans and agents
 
 > Number claimed at MERGE per system CLAUDE.md §10.3. Authored against the placeholder `NNNN`;
 > the next free number is taken at merge (current max 0132; the Operating Procedure catalog ADR
 > is a sibling placeholder claiming around the same time — sequence at merge), the file is
-> renamed, and every `ADR-NNNN` reference in icm/policies/ + CONTEXT.md is fixed.
+> renamed, and every `ADR-0134` reference in icm/policies/ + CONTEXT.md is fixed.
 
 | Field | Value |
 |---|---|

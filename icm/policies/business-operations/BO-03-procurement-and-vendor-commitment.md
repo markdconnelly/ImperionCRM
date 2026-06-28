@@ -147,4 +147,4 @@ renewal entries shared with BO-02. **Related policies:**
 discipline) · [BO-05](BO-05-billing-ar-and-collections.md) (vendor-cost vs customer-billing) ·
 Cybersecurity third-party/vendor-risk policy · AI Acceptable Use. **ADRs:** ADR-0130 (renewals &
 auto-renew watch) · ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058
-(gauntlet) · ADR-NNNN (policy-canon architecture).
+(gauntlet) · ADR-0134 (policy-canon architecture).

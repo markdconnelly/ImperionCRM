@@ -125,4 +125,4 @@ finding-remediation steps (catalog links). **Related policies:**
 Monitoring & SIEM) · [CS-16](CS-16-data-retention-and-disposal.md) · CS-IR (Incident Response) ·
 [CS-18](CS-18-client-shared-responsibility.md). **ADRs:** ADR-0128 (autonomy ladder) ·
 ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) · ADR-0087 (orchestration/observability ledger) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

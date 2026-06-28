@@ -144,5 +144,5 @@ incident escalation, and monitoring reporting (see the
 [CS-06 Cloud Security](CS-06-cloud-security.md) ·
 [CS-09 Vendor & Third-Party Security Risk](CS-09-vendor-and-third-party-security-risk.md) · CS-IR
 (Technical Incident Response). **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard
-ceilings) · ADR-0058 (gauntlet) · ADR-0087 (orchestration/observability ledger) · ADR-NNNN
+ceilings) · ADR-0058 (gauntlet) · ADR-0087 (orchestration/observability ledger) · ADR-0134
 (policy-canon architecture).

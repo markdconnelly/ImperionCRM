@@ -159,5 +159,5 @@ umbrella §6). **Related policies:** [CS-00](CS-00-information-security-program.
 Governance & Secure Deployment) · CS-08 (Data Classification & Handling) · CS-10 (Logging,
 Monitoring & SIEM) · [CS-18](CS-18-client-shared-responsibility.md) · top-umbrella Code of
 Conduct (§5). **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058
-(gauntlet) · ADR-0043 (settled AI stack) · ADR-0129 (platform credentials) · ADR-NNNN
+(gauntlet) · ADR-0043 (settled AI stack) · ADR-0129 (platform credentials) · ADR-0134
 (policy-canon architecture).

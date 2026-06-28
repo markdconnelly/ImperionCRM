@@ -117,5 +117,5 @@ trip the kill-switch.
 [BO-07 Expense & Reimbursement](BO-07-expense-and-reimbursement.md) ·
 [BO-10 Human Resources & People](BO-10-human-resources-and-people.md) ·
 [BO-05 Billing, AR & Collections](BO-05-billing-ar-and-collections.md).
-**ADRs:** ADR-0082 (time tracking, epic #458) · ADR-0128/0109/0058 · ADR-NNNN (policy-canon
+**ADRs:** ADR-0082 (time tracking, epic #458) · ADR-0128/0109/0058 · ADR-0134 (policy-canon
 architecture).

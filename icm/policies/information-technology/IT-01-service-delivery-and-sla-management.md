@@ -171,5 +171,5 @@ OP-04-08 (SLA-aware assignment), OP-04-09 (onsite dispatch); plus the restoratio
 [IT-05 Incident & Problem Management](IT-05-incident-and-problem-management.md) ·
 [IT-04 Monitoring & Event Management](IT-04-monitoring-and-event-management.md) ·
 [IT-02 Change & Configuration Management](IT-02-change-and-configuration-management.md). **ADRs:**
-ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-NNNN
+ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-0134
 (policy-canon architecture).

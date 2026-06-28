@@ -120,4 +120,4 @@ kill-switch.
 [CS-12 Security Awareness](../cybersecurity/CS-12-security-awareness-and-training.md) ·
 [BO-08 Time, Attendance & Payroll](BO-08-time-attendance-and-payroll.md) ·
 [BO-09 Legal & Contract Lifecycle](BO-09-legal-and-contract-lifecycle.md). **ADRs:** ADR-0128/0109/0058 ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

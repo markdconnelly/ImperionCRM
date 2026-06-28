@@ -140,4 +140,4 @@ steps. **Related policies:** [IT-00 IT Operations Program](IT-00-it-operations-p
 [IT-02 Change & Configuration Management] · [CS-12 Data Classification & Handling] ·
 [CS-19 Data Retention & Disposal]. **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard
 ceilings) · ADR-0058 (gauntlet) · ADR-0060 (skills/docs change control) · ADR-0086 (OKF semantic
-layer — *meaning* projection) · ADR-NNNN (policy-canon architecture).
+layer — *meaning* projection) · ADR-0134 (policy-canon architecture).

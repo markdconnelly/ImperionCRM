@@ -177,4 +177,4 @@ AI deployment (see the
 [CS-09 Vendor & Third-Party Security Risk](CS-09-vendor-and-third-party-security-risk.md) · CS-19
 (Acceptable Use). **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058
 (gauntlet) · ADR-0043/0034 (pinned generation stack) · ADR-0041 (pinned vector contract) · ADR-0129
-(platform credentials) · ADR-NNNN (policy-canon architecture).
+(platform credentials) · ADR-0134 (policy-canon architecture).

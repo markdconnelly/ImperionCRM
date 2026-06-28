@@ -171,4 +171,4 @@ policies:** [CS-00 Information Security Program](CS-00-information-security-prog
 [CS-09 Vendor & Third-Party Security Risk] · [CS-17 Audit & Compliance Management] ·
 the Technical Incident Response Program (CS-IR). **ADRs:** ADR-0128 (autonomy ladder) ·
 ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-0118 (data-class action ceiling) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

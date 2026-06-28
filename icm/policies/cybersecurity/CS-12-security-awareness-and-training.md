@@ -126,4 +126,4 @@ remediated.
 **Related policies:** [CS-07](CS-07-ai-governance-and-secure-deployment.md) ·
 [CS-11](CS-11-email-security-and-anti-phishing.md) · [CS-19](CS-19-acceptable-use.md).
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

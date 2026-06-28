@@ -151,5 +151,5 @@ changes) + asset-lifecycle steps. **Related policies:**
 [IT-08 Account & Access Lifecycle](IT-08-account-and-access-lifecycle.md) ·
 [IT-11 Documentation & Knowledge Management](IT-11-documentation-and-knowledge-management.md) ·
 [CS-12 Data Classification & Handling]. **ADRs:** ADR-0078 (CMDB) · ADR-0128 (autonomy ladder) ·
-ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-0086 (OKF semantic layer) · ADR-NNNN
+ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-0086 (OKF semantic layer) · ADR-0134
 (policy-canon architecture).

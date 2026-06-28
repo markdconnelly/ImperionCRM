@@ -192,5 +192,5 @@ repeated or high-severity violations lower the agent's dial or trip the kill-swi
 [IT-02 Change & Configuration Management](IT-02-change-and-configuration-management.md) · the
 Cybersecurity incident-response program (for security incidents). **ADRs:** ADR-0079
 (problem/change) · ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058
-(gauntlet) · ADR-NNNN (policy-canon architecture). **Schema:** #1577 (`problem` / `known_error`
+(gauntlet) · ADR-0134 (policy-canon architecture). **Schema:** #1577 (`problem` / `known_error`
 silver).

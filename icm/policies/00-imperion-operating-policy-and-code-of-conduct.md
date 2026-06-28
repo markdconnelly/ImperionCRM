@@ -133,4 +133,4 @@ escalates; repeated or high-severity violations lower the agent's dial or trip t
 **Catalog:** [Operating Procedure catalog](../../docs/workflows/operating-procedure-catalog.md).
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) ·
 ADR-0118 (data-class action ceiling) · ADR-0087 (orchestration/observability) · ADR-0131
-(executive suite) · ADR-0129 (platform credentials) · ADR-NNNN (policy-canon architecture).
+(executive suite) · ADR-0129 (platform credentials) · ADR-0134 (policy-canon architecture).

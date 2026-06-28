@@ -148,4 +148,4 @@ review, and remote-session monitoring steps in Stream 07. **Related policies:**
 [CS-04 Encryption](CS-04-encryption.md) · [CS-09 Vendor & Third-Party Security Risk] ·
 [CS-10 Logging, Monitoring & SIEM] · [CS-13 Network Security] · [CS-19 Acceptable Use].
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) ·
-ADR-0088 (room budget) · ADR-NNNN (policy-canon architecture).
+ADR-0088 (room budget) · ADR-0134 (policy-canon architecture).

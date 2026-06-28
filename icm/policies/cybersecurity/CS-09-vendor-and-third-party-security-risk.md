@@ -128,4 +128,4 @@ reassessment, and vendor offboarding (see the
 [CS-08 Data Classification & Handling](CS-08-data-classification-and-handling.md) ·
 [CS-10 Logging, Monitoring & SIEM](CS-10-logging-monitoring-and-siem.md) · CS-IR (Technical
 Incident Response). **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) ·
-ADR-0058 (gauntlet) · ADR-0129 (platform credentials) · ADR-NNNN (policy-canon architecture).
+ADR-0058 (gauntlet) · ADR-0129 (platform credentials) · ADR-0134 (policy-canon architecture).

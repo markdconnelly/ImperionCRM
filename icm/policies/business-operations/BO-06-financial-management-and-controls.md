@@ -127,4 +127,4 @@ top umbrella) up to disciplinary action.
 [BO-07 Expense & Reimbursement](BO-07-expense-and-reimbursement.md) ·
 [BO-08 Time, Attendance & Payroll](BO-08-time-attendance-and-payroll.md).
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard ceilings) · ADR-0058 (gauntlet) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

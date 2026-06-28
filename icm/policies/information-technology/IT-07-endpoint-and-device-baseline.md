@@ -142,4 +142,4 @@ Release — baseline changes) + endpoint hygiene steps. **Related policies:**
 [IT-10 Provisioning, Asset & CMDB Management](IT-10-provisioning-asset-and-cmdb-management.md) ·
 [CS-04 Remote Access & MFA] · [CS-03 Patch & Vulnerability Management] ·
 [CS-12 Data Classification & Handling]. **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial +
-hard ceilings) · ADR-0058 (gauntlet) · ADR-NNNN (policy-canon architecture).
+hard ceilings) · ADR-0058 (gauntlet) · ADR-0134 (policy-canon architecture).

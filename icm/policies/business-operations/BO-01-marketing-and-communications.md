@@ -156,4 +156,4 @@ and outbound entries. **Related policies:** [BO-00](BO-00-business-operations-pr
 [BO-04](BO-04-client-success-and-advisory.md) (existing-customer communication) · AI Acceptable
 Use · Privacy & Data Protection · Data Classification & Handling. **ADRs:** ADR-0124 (Social
 plane) · ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

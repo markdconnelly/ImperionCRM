@@ -240,5 +240,5 @@ CS-05 (Risk Management) · CS-07 (AI Governance) · CS-09 (Vendor & Third-Party 
 CS-10 (Logging, Monitoring & SIEM) · [CS-17](CS-17-audit-and-compliance-management.md) ·
 [CS-18](CS-18-client-shared-responsibility.md) · [CS-19](CS-19-acceptable-use.md) · BCDR (Backup,
 Recovery & Business Continuity). **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial +
-ceilings) · ADR-0058 (gauntlet / send-path) · ADR-0118 (data-class action ceiling) · ADR-NNNN
+ceilings) · ADR-0058 (gauntlet / send-path) · ADR-0118 (data-class action ceiling) · ADR-0134
 (policy-canon architecture).

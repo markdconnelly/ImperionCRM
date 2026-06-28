@@ -138,4 +138,4 @@ data — is a violation that parks the work, escalates, and may lower the respon
 CS-08 (Data Classification & Handling) · CS-10 (Logging, Monitoring & SIEM) · CS-14 (Privacy &
 Data Protection) · CS-17 (Audit & Compliance Management) · [CS-18](CS-18-client-shared-responsibility.md).
 **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet) ·
-ADR-0113 (verbatim-bronze / memory lifecycle) · ADR-NNNN (policy-canon architecture).
+ADR-0113 (verbatim-bronze / memory lifecycle) · ADR-0134 (policy-canon architecture).

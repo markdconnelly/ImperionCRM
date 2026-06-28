@@ -126,4 +126,4 @@ kill-switch.
 [BO-08 Time, Attendance & Payroll](BO-08-time-attendance-and-payroll.md) ·
 [BO-05 Billing, AR & Collections](BO-05-billing-ar-and-collections.md).
 **ADRs:** ADR-0083 (expense tracking, epic #482, closes #493) · ADR-0128/0109/0058 ·
-ADR-NNNN (policy-canon architecture). **Legacy source migrated:** `docs/policies/expense-policy.md`.
+ADR-0134 (policy-canon architecture). **Legacy source migrated:** `docs/policies/expense-policy.md`.

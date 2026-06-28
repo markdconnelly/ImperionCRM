@@ -148,4 +148,4 @@ including termination, and where applicable civil or criminal referral.
 [CS-08 Data Classification & Handling] · [CS-14 Privacy & Data Protection] ·
 [CS-16 Data Retention & Disposal]. **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial + hard
 ceilings) · ADR-0058 (gauntlet) · ADR-0088 (room budget) · ADR-0129 (platform credentials) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).

@@ -168,5 +168,5 @@ termination.
 [CS-07 AI Governance & Secure Deployment](CS-07-ai-governance-and-secure-deployment.md) ·
 [CS-10 Logging, Monitoring & SIEM](CS-10-logging-monitoring-and-siem.md) · CS-14 (Privacy & Data
 Protection) · CS-16 (Data Retention & Disposal). **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109
-(dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-0118 (data-class action ceiling) · ADR-NNNN
+(dial + hard ceilings) · ADR-0058 (gauntlet) · ADR-0118 (data-class action ceiling) · ADR-0134
 (policy-canon architecture).

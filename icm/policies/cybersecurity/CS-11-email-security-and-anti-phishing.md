@@ -142,4 +142,4 @@ client-comms procedures). **Related policies:** [CS-08](CS-08-data-classificatio
 [CS-10](CS-10-logging-monitoring-and-siem.md) · [CS-12](CS-12-security-awareness-and-training.md) ·
 [CS-14](CS-14-privacy-and-data-protection.md) · [CS-19](CS-19-acceptable-use.md) ·
 [CS-IR](CS-IR-technical-incident-response-program.md). **ADRs:** ADR-0128 (autonomy ladder) ·
-ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet / send path) · ADR-NNNN (policy-canon architecture).
+ADR-0109 (dial + ceilings) · ADR-0058 (gauntlet / send path) · ADR-0134 (policy-canon architecture).

@@ -4,7 +4,7 @@
 workforce of humans and named AI agents (ADR-0131); both are governed by these policies. Every
 policy is a single document — plain-language rules plus an explicit *Application to autonomous
 agents* section — so a human employee and an agent read the **same obligation**. Architecture:
-ADR-NNNN (policy canon) + the [top umbrella](00-imperion-operating-policy-and-code-of-conduct.md).
+ADR-0134 (policy canon) + the [top umbrella](00-imperion-operating-policy-and-code-of-conduct.md).
 
 > Supersedes the legacy "Information Security Policy Set (IM001–026)" framing: those policies are
 > re-sorted into the **Cybersecurity** and **Information Technology** categories and rewritten

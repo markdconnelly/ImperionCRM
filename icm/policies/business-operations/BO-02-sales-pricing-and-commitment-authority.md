@@ -138,4 +138,4 @@ close entries; renewal entries shared with BO-03. **Related policies:**
 [BO-04](BO-04-client-success-and-advisory.md) (no-commits boundary) ·
 [BO-05](BO-05-billing-ar-and-collections.md) (quote → invoice accuracy). **ADRs:** ADR-0130
 (renewals & commitment authority) · ADR-0128 (autonomy ladder) · ADR-0109 (dial + ceilings) ·
-ADR-0058 (gauntlet) · ADR-NNNN (policy-canon architecture).
+ADR-0058 (gauntlet) · ADR-0134 (policy-canon architecture).

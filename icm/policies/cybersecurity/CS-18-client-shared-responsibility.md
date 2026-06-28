@@ -153,4 +153,4 @@ CS-08 (Data Classification & Handling) · CS-09 (Vendor & Third-Party Security R
 [CS-17](CS-17-audit-and-compliance-management.md) · CS-IR (Incident Response) ·
 [CS-19](CS-19-acceptable-use.md). **ADRs:** ADR-0128 (autonomy ladder) · ADR-0109 (dial +
 ceilings) · ADR-0058 (gauntlet) · ADR-0118 (data-class action ceiling — the pool boundary) ·
-ADR-NNNN (policy-canon architecture).
+ADR-0134 (policy-canon architecture).
