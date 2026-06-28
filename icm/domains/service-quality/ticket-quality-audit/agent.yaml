@@ -1,0 +1,12 @@
+name: ticket-quality-audit
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Tess persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../tess.md
+  - ./prose.md
+okf_rooms: [ticket, account]          # subset of domains/service-quality/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/service-quality/room.yaml — watcher: read-only, no send/write
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "auto-run the sampling + scoring sweep and surface scores/flags to the assurance dashboard; every recommendation, and any ticket touch or client notification, parks for a human"

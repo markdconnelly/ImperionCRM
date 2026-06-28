@@ -1,0 +1,12 @@
+name: doc-sync
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Lexicon persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../lexicon.md
+  - ./prose.md
+okf_rooms: [account, device, cloud_asset]   # subset of domains/knowledge/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/knowledge/room.yaml — drafter: read + recall, publish gated (not a tool here)
+skills: []
+autonomy_rung: L3
+auto_may_self_approve: "auto-poll, auto-draft/update the working doc, and auto-flag a stale/contradictory/missing doc (low-risk, reversible); publishing the diff to IT Glue (the SoR) parks for a human until the publish action is earned"
