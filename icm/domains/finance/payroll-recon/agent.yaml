@@ -1,0 +1,13 @@
+name: payroll-recon
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [timesheet, time_record, expense_report, expense_item]   # subset of domains/finance/room.yaml
+tools: [pg.read]                                                     # read + flag only; no write, no money move, no QBO push
+skills:
+  - ./skills/recon-rubric               # Tier 3 — workflow-local (payroll/reimbursement recon method + tie-out + salary non-disclosure)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the internal payroll/reimbursement recon-mismatch flag to the CFO from MEASURED attested facts (internal, reversible — a flag can be dismissed) at L2, always showing the tie-out arithmetic with as-of dates and labeling measured figure vs derived. No posting, no money move, no QBO push at any rung (QBO is the system of record, ADR-0123). Individual salary / Pay Rate enters the expected-pay math but the per-person figure is NEVER disclosed in any output — report only matched / outstanding / mismatch by amount (salary non-disclosure refusal-class, audrey.md). Don't estimate into a data gap — escalate it."
