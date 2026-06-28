@@ -1,0 +1,13 @@
+name: month-end-close
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> finance room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [time_record, timesheet, expense_item, expense_report, invoice]   # subset of domains/finance/room.yaml
+tools: [pg.read]                      # subset of domains/finance/room.yaml — read-only, no write/send/money action
+skills:
+  - ./skills/close-checklist-rubric   # Tier 3 — workflow-local
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the INTERNAL close-readiness checklist + blocker flags to the cockpit / CFO — internal, reversible (a flag can be dismissed). Audrey never closes the month, posts an entry, alters an invoice, or pushes to QBO (ADR-0123); there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate."
