@@ -1,0 +1,12 @@
+name: security-alert-triage
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Cyrus persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../cyrus.md
+  - ./prose.md
+okf_rooms: [device, cloud_asset, account, posture_snapshot]   # subset of domains/soc/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]             # subset of domains/soc/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "record the triage verdict for a benign-positive/false-positive alert with an audit-clean evidence chain; every containment action and every true-positive parks for Roman"

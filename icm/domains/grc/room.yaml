@@ -1,0 +1,25 @@
+# room.yaml — the grc domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any GRC workflow may be granted. A workflow's agent.yaml narrows this further
+# (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs). Every
+# entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: deputy-ciso   # Grace reports to Roman (Deputy CISO; Mark is CISO)
+
+# GRC workers collect control evidence and detect gaps against frameworks. They
+# read posture + policy facts only; control changes and attestations always gate.
+# v1 tracers do NOT actuate. Audit-by-reference: no client PII.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+# The GRC data scope — posture, drift, policy baselines, and the owning account.
+okf_rooms:
+  - posture_snapshot
+  - tenant_posture
+  - posture_policy
+  - account

@@ -1,0 +1,24 @@
+# room.yaml — the identity domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any identity workflow may be granted. A workflow's agent.yaml narrows this
+# further (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs).
+# Every entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: deputy-ciso   # Osiris reports to Roman (Deputy CISO; Mark is CISO)
+
+# Identity (IAM) workers run the joiner-mover-leaver lifecycle. They read identity
+# + asset context only; grants, elevation, and break-glass always gate. v1 tracers
+# do NOT actuate — deprovision/grant proposals hand off. No actuation tool here.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+# The identity data scope — the customer, the identity spine, and asset context.
+okf_rooms:
+  - account
+  - entity_xref
+  - device
