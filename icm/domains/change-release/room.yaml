@@ -1,0 +1,27 @@
+# room.yaml — the change-release domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any change/release workflow may be granted. A workflow's agent.yaml narrows this
+# further (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs).
+# Every entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: cto   # Marshall reports to Dexter (CTO / Delivery division)
+
+# Change & Release is a GATE: it risk-scores, schedules, and drafts the
+# rollback/comms for a proposed change, then PARKS for approval. It may write an
+# INTERNAL Autotask work-note (the change-record draft — operational, never
+# client-facing). No send budget — the approval and the change itself are gated.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+  - ticket.note
+
+# The change/release data scope.
+okf_rooms:
+  - ticket
+  - device
+  - cloud_asset
+  - account
