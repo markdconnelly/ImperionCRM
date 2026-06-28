@@ -2544,10 +2544,13 @@ schedule; the app **materialises** the next occurrence when the task is complete
   (ON DELETE CASCADE, **UNIQUE** = one live series per task), rule (RRULE subset),
   next_run_at (date — the next occurrence's due date), ends_at? (series end date),
   count_remaining? (CHECK ≥ 0 — how many MORE occurrences to spawn; NULL =
-  unbounded), created_at, updated_at }`. `rule` is an RFC-5545 **subset** —
-  `FREQ=DAILY|WEEKLY|MONTHLY;INTERVAL=n` — authored by the GUI and parsed by
+  unbounded), created_at, updated_at }`. `rule` is an RFC-5545 **subset** parsed by
   [`src/lib/recurrence.ts`](../../src/lib/recurrence.ts) (no RRULE engine in the DB;
-  next-date math is DST-safe UTC arithmetic, with end-of-month clamping for MONTHLY).
+  next-date math is DST-safe UTC arithmetic). The supported subset (#636):
+  `FREQ=DAILY|WEEKLY|MONTHLY;INTERVAL=n`, plus `WEEKLY` on specific weekdays
+  (`BYDAY=MO,WE,FR`), `MONTHLY` on a fixed day-of-month (`BYMONTHDAY=15`, clamped to
+  the month's last day), and `MONTHLY` on an nth weekday (`BYDAY=2TU` / `-1FR` = last).
+  WKST is Monday; an unsupported/malformed `BY*` part degrades to the plain frequency.
 
 The series row is **attached to the task that currently holds it** (the UNIQUE
 `task_id`). On completion (`moveTaskAction` / edit-form status→done →
@@ -2561,8 +2564,10 @@ is the **idempotency guard**: completing an already-done task no longer owns the
 series, so it can never double-spawn.
 
 v1 ships daily/weekly/monthly + interval + end-by-date/count and edits the whole
-series; richer RRULE (BYDAY/BYMONTHDAY) and edit-this-vs-edit-series for a single
-spawned instance are documented follow-ups. A **scheduled backend catch-up job**
+series. The **richer RRULE subset** (BYDAY / BYMONTHDAY / nth-weekday) now lands in
+the parser/next-date engine (#636); the GUI picker to author those options and
+edit-this-vs-edit-series for a single spawned instance remain follow-ups on #636. A
+**scheduled backend catch-up job**
 (generate due occurrences for tasks left un-completed past `next_run_at`) is the
 sibling-repo half of E2 — filed separately; the on-completion spawn satisfies the
 #353 acceptance on its own. `task_recurrence` is an **app-native operational table,
