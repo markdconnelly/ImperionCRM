@@ -1,0 +1,27 @@
+# room.yaml — the problem-mgmt domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any problem-management workflow may be granted. A workflow's agent.yaml narrows
+# this further (workflow ⊆ domain ⊆ Constitution; gate:
+# scripts/agent-yaml-gate.mjs). Every entry here MUST itself appear in
+# icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: cto   # Sage reports to Dexter (CTO / Delivery division)
+
+# Problem-management workers read the incident/CI substrate a root-cause
+# investigation grounds on, and may write an INTERNAL Autotask work-note (the
+# problem-record finding — operational, never client-facing). No send budget.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+  - ticket.note
+
+# The problem-management data scope.
+okf_rooms:
+  - ticket
+  - device
+  - cloud_asset
+  - account

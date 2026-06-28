@@ -1,0 +1,12 @@
+name: problem-investigation
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Sage persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../sage.md
+  - ./prose.md
+okf_rooms: [ticket, device, cloud_asset, account]   # subset of domains/problem-mgmt/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/problem-mgmt/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal problem-record finding for a cluster whose root cause is grounded and whose proposed fix carries no production/irreversible blast radius; every production or irreversible fix parks for a human and routes to Change & Release"

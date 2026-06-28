@@ -1,0 +1,12 @@
+name: dispatch-assign
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Scout persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../scout.md
+  - ./prose.md
+okf_rooms: [ticket, account, device]   # subset of domains/dispatch/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/dispatch/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal proposed-assignment work-note for an onsite ticket with a grounded skill/location/availability match; the customer-facing schedule confirmation always parks for a human"

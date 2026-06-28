@@ -1,0 +1,12 @@
+name: change-intake
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Marshall persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../marshall.md
+  - ./prose.md
+okf_rooms: [ticket, device, cloud_asset, account]   # subset of domains/change-release/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/change-release/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal change-record draft (risk score, schedule, rollback, comms draft) for a change whose package is audit-clean; the change approval and the change execution always park for a human — there is no rung at which they auto-execute"

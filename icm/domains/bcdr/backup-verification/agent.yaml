@@ -1,0 +1,12 @@
+name: backup-verification
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Phoenix persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../phoenix.md
+  - ./prose.md
+okf_rooms: [device, cloud_asset, account]   # subset of domains/bcdr/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/bcdr/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal verification finding for a backup job confirmed successful with an audit-clean RPO/RTO evidence record; the sandbox test-restore and any production restore are gated — a production restore always parks for a human at every rung"
