@@ -1,0 +1,12 @@
+name: risk-assurance-sweep
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Jessica persona -> tracer prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../jessica.md
+  - ./prose.md
+okf_rooms: [agent_autopilot_policy, posture_snapshot, account, entity_xref]   # subset of executive/cro/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall]   # subset of the exec budget; read + synthesize only — no delegate/handoff/actuation in the v1 tracer
+skills: []
+autonomy_rung: L1                     # propose — the risk brief parks for Mark; the exec ceiling is L2 delegate-only (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled risk-assurance sweep when every section is grounded and cited by reference; any quarantine flag, gap, or recall miss parks for Mark — the assurance line never actuates the fix"
