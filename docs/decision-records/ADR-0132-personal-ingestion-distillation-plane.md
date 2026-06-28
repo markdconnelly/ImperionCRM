@@ -1,5 +1,5 @@
 ---
-adr: 0131
+adr: 0132
 title: "Personal Ingestion & Distillation Plane — the feed for the Personal Knowledge Store"
 status: proposed
 date: 2026-06-28
@@ -8,9 +8,9 @@ summary: "The feed half of the OS Brain's personal tier: a COLLECT -> DISTILL ->
 tags: [meta, knowledge-tiers, security]
 ---
 
-# ADR-0131: Personal Ingestion & Distillation Plane — the feed for the Personal Knowledge Store
+# ADR-0132: Personal Ingestion & Distillation Plane — the feed for the Personal Knowledge Store
 
-> **Number is a placeholder.** ADR-0131 is claimed at MERGE per system CLAUDE.md §10.3 —
+> **Number is a placeholder.** ADR-0132 is claimed at MERGE per system CLAUDE.md §10.3 —
 > the branch that merges second renumbers. Issue/PR numbers are race-free and used for all
 > cross-references; the ADR index is regenerated (`node scripts/adr-index.mjs`) at merge.
 
