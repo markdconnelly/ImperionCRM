@@ -2575,13 +2575,13 @@ not silver tier** (like `time_entry` / `work_comment` / `notification`) — no
 semantic-layer concept file applies, and the migration only `REFERENCES task` (it
 does not alter the `task` concept).
 
-## Dispatch — technician + skill model (epic #1039, migration 0220, #1071)
+## Dispatch — technician + skill model (epic #1039, migration 0222, #1071)
 
 The service-delivery dispatch substrate (#1039) needs a routable-resource registry and
 a skill taxonomy before any skill+load auto-assignment (#1073) can exist. The existing
 people model is **human-only and keyed on `app_user`** — `user_capacity` (0105, weekly
 hours per employee) and `work_assignment` (0099, who is attached to a task/project) —
-and carries no agent dimension or skill model. Migration 0220 adds three **app-native
+and carries no agent dimension or skill model. Migration 0222 adds three **app-native
 operational tables, not silver tier** (like `user_capacity` / `task_recurrence`) — no
 medallion source, so no semantic-layer concept file applies. No client PII (employees +
 agents only). Schema-foundation only (the `user_capacity`/#346 precedent): the admin GUI

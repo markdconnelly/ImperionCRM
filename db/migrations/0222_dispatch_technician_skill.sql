@@ -1,6 +1,6 @@
--- 0220: dispatch technician + skill model (epic #1039, child #1071). Foundation for
+-- 0222: dispatch technician + skill model (epic #1039, child #1071). Foundation for
 -- skill + load routing (#1073 auto-assign · #1074 utilization); capacity is #1072.
--- Migration number 0220 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
+-- Migration number 0222 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
 -- the rebased branch takes the next free number and renames the file.
 --
 -- WHY. The service-delivery dispatch substrate (#1039, Jocko) needs a routable-resource
