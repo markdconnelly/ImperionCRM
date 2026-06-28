@@ -1,0 +1,12 @@
+name: joiner-mover-leaver
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Osiris persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../osiris.md
+  - ./prose.md
+okf_rooms: [account, entity_xref, device]   # subset of domains/identity/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/identity/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "record the lifecycle verdict for a verified leaver/joiner/mover with an audit-clean resolution chain; every grant, elevation, and break-glass parks for Roman"
