@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0131
 title: "Executive Suite tier — orchestrator + C-suite as delegate-only agents above domains"
 status: proposed
 date: 2026-06-28
@@ -8,7 +8,7 @@ summary: "Introduce a structural tier ABOVE icm/domains/: a single feminine orch
 tags: [agents, governance]
 ---
 
-# ADR-NNNN: Executive Suite tier — orchestrator + C-suite as delegate-only agents above domains
+# ADR-0131: Executive Suite tier — orchestrator + C-suite as delegate-only agents above domains
 
 > Number claimed at MERGE per system CLAUDE.md §10.3. Authored against the
 > placeholder `NNNN`; just before merge the branch is rebased on current `main`,
