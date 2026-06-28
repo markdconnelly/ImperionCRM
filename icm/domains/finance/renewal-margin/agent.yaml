@@ -1,0 +1,13 @@
+name: renewal-margin
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [invoice, license_assignment]                            # subset of domains/finance/room.yaml
+tools: [pg.read]                                                    # read + flag only; no write, no money move, no send
+skills:
+  - ./skills/margin-rubric              # Tier 3 — workflow-local (margin compute + floor + flag thresholds + tie-out)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the internal renewal-margin flag + margin intel (historical invoice margin, proposed-vs-floor-vs-historical) from MEASURED facts, parked back to Chase (internal, reversible — a flag can be dismissed) at L2, always labeling measured figure vs derived and stating the as-of date. ADVISE-ONLY: never block, approve, post, move money, or push to QBO at any rung (QBO is the system of record, ADR-0123) — the renewal block/approve is a human call and the renewal send-for-signature is already always_gate on the Chase side (#1415). Cost-allocation views are unbuilt (#1044) — work from invoice margin and escalate the gap, never estimate into it."
