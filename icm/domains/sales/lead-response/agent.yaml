@@ -1,8 +1,9 @@
 name: lead-response
 model: claude-sonnet-4-5
-system_compose:                       # ordered; Constitution -> domain room -> workflow prose
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
   - ../../../CONSTITUTION.md
   - ../room.md
+  - ../chase.md
   - ./prose.md
 okf_rooms: [contact, account, interaction, consent_event, lead_score, campaign]   # subset of domains/sales/room.yaml
 tools: [pg.read, consent.check, send.email, send.dm, booking.link]                # subset of domains/sales/room.yaml

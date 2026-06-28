@@ -172,6 +172,34 @@ export function checkSubset(dim, workflow, domain, constitution) {
   return errs;
 }
 
+// ── The domain-persona composition invariant (ADR-0088 §2) ───────────────────
+// A workflow's `system_compose` is the ordered system prompt: Constitution ->
+// domain room -> **domain persona** -> workflow prose. The persona file (felix.md,
+// chase.md, …) is what gives the worker its voice + guardrails; a workflow that
+// composes the room + prose but SKIPS the persona runs un-personated (the gap that
+// left lead-response without Chase before #1413). validateShape can't see the tree,
+// so this cross-file check lives here: every workflow must compose its domain's
+// runtime persona — the domain-dir `.md` that is not `room.md`.
+
+/**
+ * @param {string[]} systemCompose       the manifest's system_compose paths
+ * @param {string[]} domainPersonaFiles  basenames of the domain's persona file(s)
+ *        (domain-dir `.md` minus room.md). Empty => domain has no persona yet (skip).
+ * @returns {string[]} violations ([] == a persona is composed, or none to enforce)
+ */
+export function checkPersonaComposed(systemCompose, domainPersonaFiles) {
+  if (!Array.isArray(systemCompose) || domainPersonaFiles.length === 0) return [];
+  const composed = new Set(systemCompose.map((p) => String(p).split("/").pop()));
+  const hit = domainPersonaFiles.some((f) => composed.has(f));
+  return hit
+    ? []
+    : [
+        `system_compose must include the domain runtime persona (one of ` +
+          `${JSON.stringify(domainPersonaFiles)}) so the worker is personated, not ` +
+          `un-voiced (ADR-0088 §2: Constitution -> room -> persona -> prose)`,
+      ];
+}
+
 // ── OKF room resolution against the coverage matrix (#702) ───────────────────
 // The matrix (docs/database/semantic-layer/coverage-matrix.md) is the canonical
 // object → domain → IKF-status map (ADR-0086). Every room an agent may read MUST
@@ -467,6 +495,7 @@ function main() {
     const dTools = domain.tools ?? (Array.isArray(manifest.tools) ? manifest.tools : []);
     const dRooms = domain.okf_rooms ?? (Array.isArray(manifest.okf_rooms) ? manifest.okf_rooms : []);
 
+    const label = relative(repoRoot, file).replace(/\\/g, "/");
     const { errors } = evaluateManifest({
       manifest,
       domainTools: dTools,
@@ -474,9 +503,19 @@ function main() {
       constitutionTools: cTools ?? dTools,
       constitutionRooms: cRooms ?? dRooms,
       matrix,
-      label: relative(repoRoot, file).replace(/\\/g, "/"),
+      label,
     });
     allErrors.push(...errors);
+
+    // The domain persona must be composed (ADR-0088 §2): the domain-dir `.md`
+    // files that are not room.md are the runtime persona(s); a workflow must
+    // compose one. Only enforced once the domain has a persona file.
+    const domainPersonaFiles = readdirSync(domainDir, { withFileTypes: true })
+      .filter((e) => e.isFile() && e.name.endsWith(".md") && e.name !== "room.md")
+      .map((e) => e.name);
+    allErrors.push(
+      ...checkPersonaComposed(manifest.system_compose, domainPersonaFiles).map((e) => `${label}: ${e}`),
+    );
 
     // ADR-0104 §5: a stage's `okf:` markers must be within the workflow's okf_rooms.
     const stagesDir = join(dirname(file), "stages");
