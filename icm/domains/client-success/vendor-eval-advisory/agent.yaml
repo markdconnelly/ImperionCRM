@@ -1,0 +1,13 @@
+name: vendor-eval-advisory
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, opportunity, interaction, strategic_business_review]   # subset of domains/client-success/room.yaml
+tools: [pg.read]                                                                      # read + evaluate only; the recommendation parks
+skills:
+  - ./skills/evaluation-rubric          # Tier 3 — workflow-local (how to structure a vendor/solution evaluation)
+autonomy_rung: L2
+auto_may_self_approve: "assemble the vendor/solution evaluation and compute the options/weighted-criteria/tradeoff matrix from MEASURED client need + signals (internal, reversible) at L2 — always labeling measured signal vs Celeste's inference. Every recommendation, every binding commitment (spend / a procurement direction), and every client-facing touch parks for a human in every mode — the NO-COMMITS-EVER ceiling is dial-proof (celeste.md guardrail 1). Procurement is not Celeste's seam: the parked recommendation hands to Vance (#1398), who sources/buys under human-gated money."
