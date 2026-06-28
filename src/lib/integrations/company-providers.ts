@@ -471,4 +471,56 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
       },
     ],
   },
+  {
+    // Datto = ONE company key driving BOTH catalog views — Endpoint Backups (dattoendpoint)
+    // and SaaS Backups (dattosaas) — over the single conn-company-datto secret (the 2-cards/
+    // 1-key precedent, ADR-0122 / epic #1256 S4). This is the credential-entry provider; the
+    // two `planned: true` manifest cards (connector-manifest.ts) are the read/ingest views and
+    // stay Planned until their bronze collectors are built. The Datto BCDR REST API issues a
+    // public/secret key pair; both are custodied as the one JSON-blob secret by reference.
+    key: "datto",
+    label: "Datto BCDR",
+    icon: "HardDriveDownload",
+    kind: "credential",
+    category: "Backups",
+    description:
+      "Datto BCDR — ONE company API key (public key + secret key pair) covering both Datto " +
+      "backup surfaces: Endpoint Backups (protected-device backup status) and SaaS Backups " +
+      "(M365 / Google Workspace protection). Custodied as the Key Vault secret conn-company-datto; " +
+      "each managed client's devices are bound under Client mapping. The Endpoint and SaaS catalog " +
+      "cards are two views over this one key.",
+    scopes: ["backups:read"],
+    // Two card VIEWS over the one secret (Datto precedent, ADR-0122 S4): Endpoint + SaaS.
+    scopeGroups: [
+      {
+        label: "Datto Endpoint Backups",
+        description: "Per-device protected-endpoint backup status.",
+        scopes: ["backups:read"],
+      },
+      {
+        label: "Datto SaaS Backups",
+        description: "M365 / Google Workspace SaaS Protection backup status.",
+        scopes: ["backups:read"],
+      },
+    ],
+    fields: [
+      {
+        name: "publicKey",
+        label: "Public key",
+        secret: false,
+        type: "text",
+        required: true,
+        placeholder: "Datto BCDR REST API public key",
+        help: "The Datto BCDR REST API public key (Datto Partner Portal → Integrations). Public identifier, not a secret.",
+      },
+      {
+        name: "secretKey",
+        label: "Secret key",
+        secret: true,
+        type: "password",
+        required: true,
+        help: "The Datto BCDR REST API secret key paired with the public key. Written to Key Vault, never the DB.",
+      },
+    ],
+  },
 ];

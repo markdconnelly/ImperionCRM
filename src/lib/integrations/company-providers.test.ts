@@ -227,3 +227,39 @@ describe("COMPANY_PROVIDERS — Threads provider (#1335)", () => {
     expect(threads?.key).not.toBe(meta?.key);
   });
 });
+
+describe("COMPANY_PROVIDERS — Datto provider (#1569, ADR-0122 S4)", () => {
+  const datto = COMPANY_PROVIDERS.find((p) => p.key === "datto");
+
+  it("is a pollable credential ingest source under Backups (one company key)", () => {
+    expect(datto).toBeDefined();
+    expect(datto?.kind).toBe("credential");
+    expect(datto?.category).toBe("Backups");
+    expect(datto?.sendCapable).not.toBe(true);
+    expect(datto?.adminConsent).not.toBe(true);
+    expect(providerIsPollable(datto!)).toBe(true);
+  });
+
+  it("collects a Datto BCDR public key (public) + secret key (write-only) pair", () => {
+    const fieldNames = datto?.fields?.map((f) => f.name) ?? [];
+    expect(fieldNames).toEqual(["publicKey", "secretKey"]);
+    const publicKey = datto?.fields?.find((f) => f.name === "publicKey");
+    const secretKey = datto?.fields?.find((f) => f.name === "secretKey");
+    expect(publicKey?.secret).toBe(false);
+    expect(publicKey?.required).toBe(true);
+    expect(secretKey?.secret).toBe(true);
+    expect(secretKey?.required).toBe(true);
+  });
+
+  it("renders as two card views (Endpoint / SaaS) over the ONE secret", () => {
+    // ADR-0122 S4: Datto = two cards over one company key. Two scope views, one secret.
+    const groups = datto?.scopeGroups ?? [];
+    expect(groups.map((g) => g.label)).toEqual([
+      "Datto Endpoint Backups",
+      "Datto SaaS Backups",
+    ]);
+    const secretFields = datto?.fields?.filter((f) => f.secret) ?? [];
+    expect(secretFields).toHaveLength(1);
+    expect(secretFields[0]?.name).toBe("secretKey");
+  });
+});
