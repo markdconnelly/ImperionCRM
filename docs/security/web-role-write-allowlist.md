@@ -1,7 +1,7 @@
 # Web role write allowlist (ADR-0127 / #1390)
 
 The web DB identity `mgid-imperioncrm-web-prd` is **SELECT-by-default**
-(migration 0216). It holds `INSERT/UPDATE/DELETE` **only** on the 107 tables below — the
+(migration 0216). It holds `INSERT/UPDATE/DELETE` **only** on the 110 tables below — the
 tables the Next.js front end writes **directly** (server actions / route handlers / the typed
 data layer `src/lib/data/postgres/postgres-repositories.ts`), as audited from every
 `INSERT/UPDATE/DELETE` literal in `src/`. Everything else is written by the backend, the
@@ -29,7 +29,7 @@ GROUP BY table_name
 ORDER BY table_name;
 ```
 
-## The allowlist (107 tables — web keeps INSERT/UPDATE/DELETE)
+## The allowlist (110 tables — web keeps INSERT/UPDATE/DELETE)
 
 - `account`
 - `account_domain`
@@ -111,6 +111,7 @@ ORDER BY table_name;
 - `sbr_ticket`
 - `segment`
 - `segment_member`
+- `skill`
 - `sprint`
 - `status_def`
 - `strategic_business_review`
@@ -119,6 +120,8 @@ ORDER BY table_name;
 - `task_dependency`
 - `task_recurrence`
 - `task_ticket_fire`
+- `technician`
+- `technician_skill`
 - `template_item`
 - `ticket`
 - `time_entry`
