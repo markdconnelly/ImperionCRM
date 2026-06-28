@@ -1,0 +1,13 @@
+name: finance-conformance
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vera persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vera.md
+  - ./prose.md
+okf_rooms: [entity_xref]                                            # subset of domains/platform/room.yaml — identity spine, to resolve which client/account a finding is about; the Audrey trace itself is governance substrate (agent_run, IKF n/a), read by pg.read, not an okf_room
+tools: [pg.read]                                                    # read + evaluate only; no correction, no re-run, no money movement, no config change (audit-and-recommend)
+skills:
+  - ./skills/finance-defined-way        # Tier 3 — workflow-local (Audrey's Defined Way as a checkable ruleset: read-only, salary-gag, attestation-chain, qbo-precheck, no-money-move)
+autonomy_rung: L2
+auto_may_self_approve: "auto-RUN the finance conformance audit (read a completed Audrey process trace + the finance Defined-Way ruleset) and AUTO-SURFACE the resulting conformance finding (conform / diverged, with the rule + the evidence BY REFERENCE) to the governance dashboard at L2 — internal, reversible (a finding can be dismissed), always labeling measured divergence vs inference. AUDIT-BY-REFERENCE: cite the location (run X, field Y), NEVER reproduce the sensitive value — salary/comp, invoice amounts, account numbers (vera.md). NO correction, NO re-run, NO money movement, NO config change at any rung — every correction is always_gate to Audrey / a human; deviation routing + closure is A9 (deviation-lifecycle, #1467). Vera audits the levers; she never holds them."
