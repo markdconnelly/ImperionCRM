@@ -385,6 +385,140 @@ const REGISTRY: Record<string, ActionDef> = {
     executor: "social_dispatch",
     schema: { adId: { type: "string", required: true }, budgetUsd: { type: "number", required: true } },
   },
+  // ── Backend executor kinds (FE↔BE lockstep, #1497) ────────────────────────────────────────
+  // The backend EXECUTES a broader set than the comms/social kinds above (the AI Technician
+  // ticket loop #257 + the Pax8 procure→provision→bill sequence #360). These were absent from the
+  // FE catalog + 0217, so the cockpit/dial-legend couldn't render them and the FE↔BE catalogs
+  // diverged. Added here in lockstep with the backend `ActionDef` tags (ImperionCRM_Backend
+  // src/shared/agent/action-catalog.ts, PR #441) — tier/dataClass/autoAtLevel/alwaysGate match
+  // verbatim; schemas mirror the backend zod (the backend stays the authoritative validator —
+  // its `at least one of status/queueId` refine and uuid checks are NOT re-modeled in the flat FE
+  // schema, which only pre-flights presence/type). All are approval-gated, no contact-consent
+  // channel (a ticket the client opened / internal procurement IS the context) → consentClass none.
+  // The three FINANCIAL kinds (log_time, place_order, bill_attach) sit under the ADR-0109 hard
+  // money ceiling → alwaysGate:true. The backend keeps each executor deploy-ahead safe
+  // (unconfigured credential ⇒ `skipped`, never a fake success).
+  autotask_update_ticket: {
+    kind: "autotask_update_ticket",
+    label: "Update Autotask ticket",
+    tier: "T2",
+    dataClass: "operational", // internal ticket field change — auto-eligible by class
+    consentClass: "none",
+    autoAtLevel: 2, // L2 auto-internal: an internal operational write, no external commitment.
+    alwaysGate: false,
+    executor: "autotask_write",
+    // Backend requires at least one of status/queueId (refine) — both optional here; backend enforces.
+    schema: {
+      ticketId: { type: "number", required: true },
+      status: { type: "number", required: false },
+      queueId: { type: "number", required: false },
+    },
+  },
+  autotask_post_reply: {
+    kind: "autotask_post_reply",
+    label: "Post Autotask client reply",
+    tier: "T2",
+    dataClass: "client_pii", // client-visible reply, customer-facing
+    consentClass: "none",
+    // L3 auto-low-risk-external: a client-visible touch. Not a commitment → alwaysGate:false; the
+    // client_pii data-class ceiling (ADR-0118) is what keeps it parked in v1, enforced separately.
+    autoAtLevel: 3,
+    alwaysGate: false,
+    executor: "autotask_write",
+    schema: {
+      ticketId: { type: "number", required: true },
+      idempotencyKey: { type: "string", required: true },
+      body: { type: "string", required: true },
+      title: { type: "string", required: false },
+    },
+  },
+  autotask_log_time: {
+    kind: "autotask_log_time",
+    label: "Log Autotask time entry",
+    tier: "T2",
+    dataClass: "financial", // billable time → invoicing
+    consentClass: "none",
+    // HARD MONEY CEILING (ADR-0128 D2 / ADR-0109): billable time feeds the invoice → DIAL-PROOF.
+    // `auto_at_level` moot under always_gate but pinned to the max rung for self-description.
+    autoAtLevel: 5,
+    alwaysGate: true,
+    executor: "autotask_write",
+    schema: {
+      ticketId: { type: "number", required: true },
+      idempotencyKey: { type: "string", required: true },
+      resourceId: { type: "number", required: true },
+      dateWorked: { type: "string", required: true },
+      hoursWorked: { type: "number", required: true },
+      summaryNotes: { type: "string", required: true },
+      internalNotes: { type: "string", required: false },
+      billableToAccount: { type: "boolean", required: false },
+    },
+  },
+  pax8_place_order: {
+    kind: "pax8_place_order",
+    label: "Place Pax8 order",
+    tier: "T3",
+    dataClass: "financial", // spends money
+    consentClass: "none",
+    // HARD MONEY CEILING (ADR-0128 D2 / ADR-0109): external money commit → DIAL-PROOF, always parks.
+    autoAtLevel: 5,
+    alwaysGate: true,
+    executor: "procurement_dispatch",
+    schema: {
+      accountId: { type: "string", required: true },
+      productId: { type: "string", required: true },
+      quantity: { type: "number", required: true },
+      idempotencyKey: { type: "string", required: true },
+    },
+  },
+  m365_provision_license: {
+    kind: "m365_provision_license",
+    label: "Provision M365 license",
+    tier: "T2",
+    dataClass: "operational", // license assignment in the client tenant
+    consentClass: "none",
+    autoAtLevel: 2, // L2 auto-internal provisioning write — no external commitment.
+    alwaysGate: false,
+    executor: "procurement_dispatch",
+    schema: {
+      accountId: { type: "string", required: true },
+      licenseSku: { type: "string", required: true },
+      assignToUserPrincipalName: { type: "string", required: true },
+      idempotencyKey: { type: "string", required: true },
+    },
+  },
+  agreement_attach_license: {
+    kind: "agreement_attach_license",
+    label: "Attach license to agreement",
+    tier: "T2",
+    dataClass: "operational", // links a license_assignment row to a contract — internal
+    consentClass: "none",
+    autoAtLevel: 2, // L2 auto-internal — an internal record link, no external commitment.
+    alwaysGate: false,
+    executor: "procurement_dispatch",
+    schema: {
+      accountId: { type: "string", required: true },
+      contractId: { type: "string", required: true },
+      licenseAssignmentRef: { type: "string", required: true },
+      idempotencyKey: { type: "string", required: true },
+    },
+  },
+  bill_attach_license: {
+    kind: "bill_attach_license",
+    label: "Attach license to bill",
+    tier: "T3",
+    dataClass: "financial", // feeds invoicing / true-up
+    consentClass: "none",
+    // HARD MONEY CEILING (ADR-0128 D2 / ADR-0109): surfaces on billing / feeds the true-up → DIAL-PROOF.
+    autoAtLevel: 5,
+    alwaysGate: true,
+    executor: "procurement_dispatch",
+    schema: {
+      accountId: { type: "string", required: true },
+      contractId: { type: "string", required: true },
+      idempotencyKey: { type: "string", required: true },
+    },
+  },
 };
 
 /**

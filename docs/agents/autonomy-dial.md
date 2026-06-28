@@ -120,7 +120,13 @@ half in `selectActuation()` for the dial-legend + cockpit preview.
 **`agent_action_catalog`** table (migration `0217`) — the DB twin the backend gauntlet
 (BE #435) reads at dispatch, kept in lockstep with the TS catalog (the 0156/0209 FE↔BE
 twin pattern). `auto_at_level`/`always_gate` are therefore queryable:
-`SELECT kind, auto_at_level, always_gate FROM agent_action_catalog`. The dial value
+`SELECT kind, auto_at_level, always_gate FROM agent_action_catalog`. The catalog covers
+both the comms/social kinds (mig `0217`) **and** the backend executor kinds the cockpit
+must render — the Autotask ticket loop (`autotask_update_ticket` L2 · `autotask_post_reply`
+L3 · `autotask_log_time` money-gated) and the Pax8 procure→provision→bill sequence
+(`pax8_place_order`/`bill_attach_license` money-gated · `m365_provision_license`/
+`agreement_attach_license` L2) — added in lockstep with the backend `ActionDef` tags by
+mig `0218` (#1497). The dial value
 itself stays in `agent_action_autonomy` (mig 0158); the ladder defines what that value
 *means*. Chase (Sales) is the first agent mapped onto the ladder (ADR-0128 §worked
 instance); the remaining agents map onto the same rungs as their workspaces are built.
