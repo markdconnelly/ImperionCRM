@@ -1,0 +1,12 @@
+name: employee-onboarding
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Holly persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../holly.md
+  - ./prose.md
+okf_rooms: []                         # subset of domains/people/room.yaml (empty — no HR silver entity yet)
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/people/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "sequence + request internal onboarding steps (provisioning handoff, per-employee-brain spin-up, IT-setup requests) for a standard accepted offer; everything employment/comp/PII parks for a human"

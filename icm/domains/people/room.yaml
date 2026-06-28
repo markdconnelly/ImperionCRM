@@ -1,0 +1,26 @@
+# room.yaml — the people domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any people (Internal Ops / G&A) workflow may be granted. A workflow's agent.yaml
+# narrows this further (workflow ⊆ domain ⊆ Constitution; gate:
+# scripts/agent-yaml-gate.mjs). Every entry here MUST itself appear in
+# icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: chief-of-staff   # Holly reports to Rachel (Chief of Staff, Internal Ops / G&A)
+
+# People (internal HR/G&A) workers read and reason; v1 does not send or actuate.
+# The retrieval pair (knowledge.search + memory.recall) gives memory beyond the
+# structured rooms (CONSTITUTION §8). No customer-facing send tool is in budget —
+# this is an internal, HR-facing domain.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+# People is internal/HR-facing: there is no HR silver entity in the OKF coverage
+# matrix yet, so the domain reads NO OKF room. An empty budget is valid (the
+# subset check passes vacuously). When an HR entity is curated (concept file + a
+# coverage-matrix row), it is added here first, then narrowed per-workflow.
+okf_rooms: []
