@@ -34,6 +34,7 @@ import {
 import { summariseJourney } from "@/lib/journey";
 import type {
   Repositories,
+  PlatformCredentialInput,
   WorkCommentInput,
   WorkEventInput,
   WorkAttachmentInput,
@@ -90,6 +91,7 @@ import type {
   SocialPostRow,
   SocialPostDetail,
   SocialAnalyticsReport,
+  ConnectionRow,
 } from "@/types";
 import { ONBOARDING_TEMPLATE } from "@/lib/onboarding-template";
 import { resolveMentions } from "@/lib/mentions";
@@ -344,6 +346,12 @@ function toFieldDef(d: MockFieldDef): CustomFieldDef {
 
 /** Lifecycle stages mock contacts are spread across (ADR-0031). */
 const MOCK_STAGES = ["audience", "lead", "prospect", "client"] as const;
+
+/**
+ * In-memory platform-scope AI credentials (ADR-0129) — no fixtures seeded, so the platform-key
+ * card renders "Not configured" until a save (which upserts here for the no-DB dev experience).
+ */
+const platformConnections: ConnectionRow[] = [];
 
 export const mockRepositories: Repositories = {
   dashboard: {
@@ -1647,6 +1655,9 @@ export const mockRepositories: Repositories = {
     async listCompanyConnections() {
       return companyConnections;
     },
+    async listPlatformConnections() {
+      return platformConnections;
+    },
     async listAllConnections() {
       // The credential registry (ADR-0103): every scope, client first. Names only.
       return [...clientConnections, ...companyConnections, ...userConnections];
@@ -1734,6 +1745,35 @@ export const mockRepositories: Repositories = {
           accountId: null,
           accountName: null,
           authMethod: null,
+          certThumbprint: null,
+          clientId: null,
+        });
+      }
+    },
+    async savePlatformCredential(input: PlatformCredentialInput) {
+      // In-memory upsert by provider so the platform-key card reflects saves without a DB
+      // (ADR-0129). Custody-only: no account, no cadence; auth_method='api_key'.
+      const existing = platformConnections.find((c) => c.provider === input.provider);
+      if (existing) {
+        existing.displayName = input.displayName;
+        existing.keyvaultSecretRef = input.keyvaultSecretRef;
+        existing.status = input.status;
+      } else {
+        platformConnections.push({
+          id: `cn_platform_${input.provider}`,
+          scope: "platform",
+          provider: input.provider,
+          displayName: input.displayName,
+          status: input.status,
+          scopes: [],
+          owner: null,
+          keyvaultSecretRef: input.keyvaultSecretRef,
+          lastSync: null,
+          connectedAt: null,
+          pollIntervalMinutes: 0,
+          accountId: null,
+          accountName: null,
+          authMethod: "api_key",
           certThumbprint: null,
           clientId: null,
         });

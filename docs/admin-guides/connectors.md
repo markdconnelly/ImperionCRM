@@ -165,12 +165,36 @@ trusts via `trustHost: true`), falling back to `nextUrl.origin` for local dev.
 If a callback still lands on a wrong host, set the **`APP_PUBLIC_ORIGIN`** app setting
 (e.g. `https://imperioncrm.azurewebsites.net`) — it overrides header detection.
 
+## Platform AI keys (Voyage / Anthropic)
+
+The **Platform** section of the Connections page (ADR-0129, #1400) seeds and rotates the
+system-wide AI provider keys the runtime resolves — **Voyage** (`voyage-3-large` @ 1024
+embeddings) and **Anthropic** (Claude generation). These are **platform-scope** credentials:
+custody-only (no account, no poll cadence, no client mapping), custodied in Key Vault as
+`conn-platform-voyage` / `conn-platform-anthropic`.
+
+To seed or rotate a key:
+
+1. Open **Settings → Connections**, scroll to **Platform**.
+2. On the provider card, paste the API key and **Save key** (or **Rotate key** when one is
+   already set). The card shows provider · last-set · validation status — never the value.
+3. The backend **validates the key with one cheap live call** (a tiny Voyage embed / a
+   1-token Claude ping) and writes it to Key Vault **only on success** — a key that fails its
+   probe is never persisted. A failed save reads red on the card.
+
+An **app-admin needs no Azure-portal rights** to do this (ADR-0129 #6); the backend writes to
+Key Vault via its managed identity. The card never re-prompts a stored key (vault presence,
+#1567) — it collapses to **Rotate key**. This supersedes the hand-seeded App Service settings
+(`Voyage-Embedding-API-Key` / `Claude-Platform-API-Key-Main`, ADR-0034); the read-side repoint
++ starter-secret retirement are the backend/LP follow-ups (LP #389).
+
 ## Security notes
 
 - **Secrets are write-only and never persisted in the app.** The Company-systems
   cards POST secrets to the backend, which holds them in **Key Vault**; only a
   reference lands on the connection row. The **catalog** section exposes no secret
-  material at all.
+  material at all. The **Platform** cards follow the same rule (key → backend → Key
+  Vault; only the `conn-platform-<provider>` name on the row).
 - Admin-only at both the nav/route gate and (for mutations) the capability check.
 - See the [unified security standard](../security/unified-security-standard.md) for
   the binding controls on credential custody and integration security.

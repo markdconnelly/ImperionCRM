@@ -2288,6 +2288,20 @@ export interface CompanyCredentialInput {
 }
 
 /**
+ * Upsert a PLATFORM-scope AI provider credential (ADR-0129). A system-wide infrastructure secret
+ * (Voyage / Anthropic key) the runtime resolves by `(scope='platform', provider)` — custody-only:
+ * NO account, NO poll cadence, NO bronze. The raw scalar key lives in Key Vault by reference
+ * (`conn-platform-<provider>`, `auth_method='api_key'`) — only its NAME is recorded here, never the
+ * value (CLAUDE.md §5). Keyed by provider for platform scope so re-saving rotates, not duplicates.
+ */
+export interface PlatformCredentialInput {
+  provider: string; // voyage | anthropic
+  displayName: string | null;
+  keyvaultSecretRef: string | null; // reference only — never the secret
+  status: string; // active|pending|error
+}
+
+/**
  * Upsert a per-CLIENT credential (ADR-0103 credential registry). The credential-entry
  * form (#950) writes one `scope='client'` `connection` row linking a managed client
  * `account` to a per-client read source (m365 enterprise app or unifi console). Mirrors
@@ -2314,6 +2328,8 @@ export interface ConnectionsRepository {
   /** Personal connections for the signed-in employee, resolved by email (ADR-0024). */
   listUserConnections(userEmail: string): Promise<ConnectionRow[]>;
   listCompanyConnections(): Promise<ConnectionRow[]>;
+  /** Platform-scope credentials (ADR-0129) — the system-wide AI provider keys (Voyage, Anthropic); secret NAMES only. */
+  listPlatformConnections(): Promise<ConnectionRow[]>;
   /** The credential registry (ADR-0103): every connection across scopes, with linked account names; secret NAMES only. */
   listAllConnections(): Promise<ConnectionRow[]>;
   /** Connections linked to one account (ADR-0103) — the account-page credentials panel; secret NAMES only. */
@@ -2346,6 +2362,8 @@ export interface ConnectionsRepository {
   connect(input: ConnectionInput): Promise<void>;
   /** Upsert a company-wide credential by provider (ADR-0036). */
   saveCompanyCredential(input: CompanyCredentialInput): Promise<void>;
+  /** Upsert a platform-scope AI provider credential by provider (ADR-0129) — custody-only, no account/cadence. */
+  savePlatformCredential(input: PlatformCredentialInput): Promise<void>;
   /** Upsert a per-client credential (ADR-0103) — the foundation the client credential-entry form (#950) writes. */
   saveClientCredential(input: ClientCredentialInput): Promise<void>;
   /** Set how often (minutes) the pipeline polls a connection; 0 = manual/paused (ADR-0038). */
