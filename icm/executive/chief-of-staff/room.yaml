@@ -1,0 +1,18 @@
+# room.yaml — Chief of Staff (Rachel) executive budget (ADR-0088 §3; Executive-Suite tier).
+#
+# DELEGATE-ONLY: no direct-actuation tool (gate allow-list {pg.read,
+# knowledge.search, memory.recall, delegate, handoff}). Every entry ⊆ Constitution.
+# No secrets, no client PII (ADR-0060).
+
+reports_to: orchestrator   # Rachel reports to Nova (serves Derek)
+
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+  - delegate
+  - handoff
+
+okf_rooms:
+  - account
+  - contact

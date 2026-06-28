@@ -7,6 +7,8 @@
 #
 # No secrets, no client PII (ADR-0060). Names are references, never values.
 
+reports_to: deputy-cfo   # Audrey reports to Sterling (Revenue/Client/Finance division)
+
 # Audrey is READ-ONLY by structure (ADR-0123 — QBO owns money movement). The
 # finance domain has NO write tool, NO send tool, and NO money action: there is
 # nothing for Audrey to execute. Everything she produces is an internal,

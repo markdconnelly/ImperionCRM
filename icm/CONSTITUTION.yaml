@@ -34,6 +34,15 @@ tools:
                          #   effect; approval-gated executor, never a direct silver
                          #   write). Sales workspace, #1416 — the L2 auto-internal
                          #   capability on the canonical ladder (ADR-0128).
+  - knowledge.search     # OKF-grounded semantic recall over gold (#1537 retrieval
+                         #   tier; read-only; returns cited gold knowledge objects).
+  - memory.recall        # deliberate long-term memory recall (Memory MCP, ADR-0116;
+                         #   read-only; returns cited memory_drawer captures).
+  - delegate             # EXECUTIVE-ONLY: hand a unit of work to exactly one
+                         #   sub-agent. Orchestration, not actuation — no business
+                         #   effect of its own (Executive-Suite tier ADR, #1535).
+  - handoff              # EXECUTIVE-ONLY: transfer an in-flight context to another
+                         #   agent or the human queue. Orchestration, not actuation.
 
 # OKF rooms: the union of every silver entity any worker may read. Each name
 # resolves to a docs/database/semantic-layer/ coverage-matrix row (ADR-0086).

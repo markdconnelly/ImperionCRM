@@ -7,6 +7,8 @@
 #
 # No secrets, no client PII (ADR-0060). Names are references, never values.
 
+reports_to: deputy-cfo   # Chase reports to Sterling (Revenue/Client/Finance division)
+
 # Sales workers may read/draft/send on the lead→opportunity motion. SMS is NOT
 # in the sales budget (channel-rules: SMS is follow-up-only and opt-in — granted
 # per-workflow if/when a workflow needs it, not domain-wide).

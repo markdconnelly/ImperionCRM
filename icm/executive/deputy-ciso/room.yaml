@@ -1,0 +1,22 @@
+# room.yaml — Deputy CISO (Roman) executive budget (ADR-0088 §3; Executive-Suite tier).
+#
+# DELEGATE-ONLY: no direct-actuation tool (gate allow-list {pg.read,
+# knowledge.search, memory.recall, delegate, handoff}). Every entry ⊆ Constitution.
+# No secrets, no client PII (ADR-0060).
+
+reports_to: orchestrator   # Roman reports to Nova (serves Mark, the CISO)
+
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+  - delegate
+  - handoff
+
+okf_rooms:
+  - account
+  - device
+  - cloud_asset
+  - posture_snapshot
+  - tenant_posture
+  - posture_policy

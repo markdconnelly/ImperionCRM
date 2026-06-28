@@ -87,3 +87,36 @@ security-of-our-own-agents is this Governance wrapper. Do not conflate them.
 Changing this file, a `room.md`, or an `agent.yaml` is a normal unit of work: issue →
 micro-PR (ADR-0060/0061). An ADR that supersedes a clause here updates this file in the
 same PR. Conformance is gated by CI (#702).
+
+## 8. The retrieval tier (#1537)
+
+Two read-only capabilities give a worker memory beyond its structured rooms:
+`knowledge.search` (OKF-grounded semantic recall over gold) and `memory.recall`
+(deliberate long-term captures, Memory MCP, ADR-0116). They are granted **per
+room.yaml**, never implicitly, and they return **cited** results — gold knowledge
+objects or memory captures with their source reference. The doctrine every worker
+obeys: **structured reads for facts** (OKF rooms carry the authority rule),
+**semantic recall for context**, **always cite the source**, and **never fabricate
+— a recall miss is "I don't know", routed to the agent or human who would.**
+Retrieval returns nothing until the gold vector store is hydrated (LP #389); a
+worker treats an empty recall as absence of memory, not absence of fact.
+
+## 9. The executive tier (#1535 / #1536)
+
+Above `icm/domains/` sits a structural **Executive Suite**: one orchestrator
+(Nova) + 5 C-suite agents in `icm/executive/<role>/`, each over a division of
+domains. The org tree — orchestrator → executives → domains, plus the human each
+serves — is **data in [`org.yaml`](org.yaml)**, the source of truth the GUI (/org)
+and conformance derive from. Two invariants the gate enforces
+(`scripts/agent-yaml-gate.mjs`):
+
+1. **`reports_to` resolves.** Every domain `room.yaml` declares `reports_to: <c-suite
+   role>`; every executive `room.yaml` declares `reports_to: orchestrator`; the
+   orchestrator declares none. An unresolvable `reports_to` is a conformance failure.
+2. **The executive tier is delegate-only.** An executive `room.yaml` may grant only
+   `{pg.read, knowledge.search, memory.recall, delegate, handoff}` — **no actuation
+   tool**. The ADR-0128 **L2 ceiling is therefore structural**, not merely dialed:
+   an executive has nothing to auto-execute. Every business effect runs inside a
+   sub-agent under its own gauntlet; the executive orchestrates, synthesizes, and
+   advises a human. The `workflow ⊆ executive ⊆ Constitution` subset (§3) extends
+   unchanged to the new tier.

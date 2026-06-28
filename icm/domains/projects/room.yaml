@@ -1,0 +1,22 @@
+# room.yaml — the projects domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to pierce.md. Narrows icm/CONSTITUTION.yaml; a
+# workflow's agent.yaml narrows further (workflow ⊆ domain ⊆ Constitution; gate:
+# scripts/agent-yaml-gate.mjs). Every entry MUST appear in icm/CONSTITUTION.yaml.
+# No secrets, no client PII (ADR-0060).
+
+reports_to: cto   # Pierce reports to Dexter (Service Delivery & Engineering division)
+
+# Projects takes over at opportunity `won` → delivery (ADR-0096); it reads
+# delivery facts and writes internal work-notes through the approval-gated executor.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+  - ticket.note
+
+okf_rooms:
+  - account
+  - opportunity
+  - ticket
+  - time_record

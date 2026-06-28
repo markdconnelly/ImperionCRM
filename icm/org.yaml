@@ -1,0 +1,94 @@
+# org.yaml — the Imperion OS agent org tree (single source of truth).
+#
+# The Executive-Suite tier ADR (#1535) pins a structural tier ABOVE icm/domains/:
+# one orchestrator (Nova) + 5 C-suite agents in icm/executive/<role>/, each over a
+# division of domain agents. This file is DATA — the org SoT the GUI (/org, #1539)
+# and the conformance gate derive from. It is NOT a DB schema.
+#
+# Structure mirrors the filesystem: each `role` is a dir under icm/executive/;
+# each `domain` is a dir under icm/domains/. A domain's `reports_to` (in its
+# room.yaml) MUST name the C-suite role over its division — the conformance gate
+# (scripts/agent-yaml-gate.mjs) enforces it. Executives report to the orchestrator;
+# the orchestrator reports to no one. C-suite budgets are delegate-only (the
+# ADR-0128 L2 ceiling, enforced structurally).
+#
+# `serves` = the human each part of the org serves (org-design intent; not a gate).
+# No secrets, no client PII (ADR-0060). Persona names are references, not values.
+
+orchestrator:
+  role: orchestrator
+  persona: Nova
+  dir: icm/executive/orchestrator
+  ceiling: L2-delegate-only
+  serves: company
+  note: replaces the prior "Jarvis" working name (ADR #1535).
+
+executives:
+  - role: chief-of-staff
+    persona: Rachel
+    dir: icm/executive/chief-of-staff
+    reports_to: orchestrator
+    serves: Derek
+    division: Internal Ops / G&A
+    ceiling: L2-delegate-only
+    domains: [people, legal]
+
+  - role: cto
+    persona: Dexter
+    dir: icm/executive/cto
+    reports_to: orchestrator
+    serves: Derek/Mark/Luke/Brandon/Anna
+    division: Service Delivery & Engineering
+    ceiling: L2-delegate-only
+    domains: [service, noc, problem-mgmt, change-release, dispatch, bcdr, projects]
+
+  - role: deputy-ciso
+    persona: Roman
+    dir: icm/executive/deputy-ciso
+    reports_to: orchestrator
+    serves: Mark
+    division: Security & Compliance
+    ceiling: L2-delegate-only
+    domains: [soc, grc, identity]
+
+  - role: deputy-cfo
+    persona: Sterling
+    dir: icm/executive/deputy-cfo
+    reports_to: orchestrator
+    serves: Nick
+    division: Revenue / Client / Finance
+    ceiling: L2-delegate-only
+    domains: [sales, marketing, client-success, procurement, finance]
+
+  - role: cro
+    persona: Jessica
+    dir: icm/executive/cro
+    reports_to: orchestrator
+    serves: Mark
+    division: Platform & Assurance
+    ceiling: L2-delegate-only
+    domains: [platform, service-quality, knowledge]
+
+# Domain agents (icm/domains/<domain>/). `built` = has a room.yaml today; the rest
+# are scaffolded by their epics (#1551-1562). The persona file is the domain-dir
+# `.md` that is not room.md. Ceilings are the agent's PERSONA ceiling (the per-
+# workflow agent.yaml autonomy_rung is L0-L3 and narrows from it).
+domains:
+  - { domain: service,        persona: Felix,   reports_to: cto,         ceiling: L1, built: true }
+  - { domain: noc,            persona: Ozzie,   reports_to: cto,         ceiling: L4, built: false }
+  - { domain: problem-mgmt,   persona: Sage,    reports_to: cto,         ceiling: L3, built: false }
+  - { domain: change-release, persona: Marshall, reports_to: cto,        ceiling: L2, built: false }
+  - { domain: dispatch,       persona: Scout,   reports_to: cto,         ceiling: L3, built: false }
+  - { domain: bcdr,           persona: Phoenix, reports_to: cto,         ceiling: L3, built: false }
+  - { domain: projects,       persona: Pierce,  reports_to: cto,         ceiling: L2, built: true }
+  - { domain: soc,            persona: Cyrus,   reports_to: deputy-ciso, ceiling: L4, built: false }
+  - { domain: grc,            persona: Grace,   reports_to: deputy-ciso, ceiling: L2, built: false }
+  - { domain: identity,       persona: Osiris,  reports_to: deputy-ciso, ceiling: L3, built: false }
+  - { domain: sales,          persona: Chase,   reports_to: deputy-cfo,  ceiling: L3, built: true }
+  - { domain: marketing,      persona: Belle,   reports_to: deputy-cfo,  ceiling: L2, built: true }
+  - { domain: client-success, persona: Celeste, reports_to: deputy-cfo,  ceiling: L3, built: true }
+  - { domain: procurement,    persona: Vance,   reports_to: deputy-cfo,  ceiling: L2, built: true }
+  - { domain: finance,        persona: Audrey,  reports_to: deputy-cfo,  ceiling: L2, built: true }
+  - { domain: platform,       persona: Vera,    reports_to: cro,         ceiling: L2, built: true }
+  - { domain: service-quality, persona: Tess,   reports_to: cro,         ceiling: L2, built: false }
+  - { domain: knowledge,      persona: Lexicon, reports_to: cro,         ceiling: L3, built: false }

@@ -360,6 +360,83 @@ export function checkStageMarkers(markers, workflowRooms, stageLabel) {
   return errs;
 }
 
+// ── The executive tier: reports_to + delegate-only (#1535 / #1536) ──────────
+// Above icm/domains/ sits icm/executive/<role>/: one orchestrator + 5 C-suite
+// agents, each a room.yaml with the same {tools, okf_rooms} shape PLUS a
+// reports_to scalar. The org tree is data in icm/org.yaml; these two checks make
+// the structure a gate, not just documentation (CONSTITUTION.md §9).
+
+export const EXEC_DIR = "icm/executive";
+export const DOMAINS_DIR = "icm/domains";
+export const ORCHESTRATOR_SLUG = "orchestrator";
+// The executive tier is delegate-only: an executive room.yaml may grant only
+// these — no actuation tool — so the ADR-0128 L2 ceiling is structural (#1535).
+export const ALLOWED_EXECUTIVE_TOOLS = [
+  "pg.read",
+  "knowledge.search",
+  "memory.recall",
+  "delegate",
+  "handoff",
+];
+
+/**
+ * Every domain/executive room must report to a valid manager. Domains report to
+ * a C-suite role (an icm/executive/<role>/ dir, excluding the orchestrator);
+ * executives report to the orchestrator; the orchestrator reports to no one.
+ * @param {object} o
+ * @param {"domain"|"executive"} o.tier
+ * @param {string} o.slug            the dir name (domain or executive role)
+ * @param {string|null} o.reportsTo  the room.yaml reports_to value (null if absent)
+ * @param {string[]} o.executiveSlugs  C-suite role slugs (exec dirs minus orchestrator)
+ * @returns {string[]} violations ([] == resolves)
+ */
+export function checkReportsTo({ tier, slug, reportsTo, executiveSlugs }) {
+  const errs = [];
+  if (tier === "executive" && slug === ORCHESTRATOR_SLUG) {
+    if (reportsTo) errs.push(`the orchestrator ('${slug}') is the top node and must not declare reports_to (got '${reportsTo}')`);
+    return errs;
+  }
+  if (!reportsTo) {
+    errs.push(`${tier} '${slug}' must declare reports_to in its room.yaml`);
+    return errs;
+  }
+  if (tier === "executive") {
+    if (reportsTo !== ORCHESTRATOR_SLUG) {
+      errs.push(`executive '${slug}' must report to '${ORCHESTRATOR_SLUG}' (got '${reportsTo}')`);
+    }
+  } else {
+    if (!executiveSlugs.includes(reportsTo)) {
+      errs.push(
+        `domain '${slug}' reports_to '${reportsTo}', which is not a C-suite role — ` +
+          `must be one of ${JSON.stringify(executiveSlugs)} (an icm/executive/<role>/ dir)`,
+      );
+    }
+  }
+  return errs;
+}
+
+/**
+ * The executive tier is delegate-only: no actuation tool may appear in an
+ * executive room.yaml (the L2 ceiling is structural, #1535).
+ * @param {string[]} execTools   the executive room.yaml tools
+ * @param {string} label         path for messages
+ * @param {string[]} [allowed]   the delegate-only allow-list
+ * @returns {string[]} violations ([] == delegate-only)
+ */
+export function checkExecutiveDelegateOnly(execTools, label, allowed = ALLOWED_EXECUTIVE_TOOLS) {
+  const allow = new Set(allowed);
+  const errs = [];
+  for (const t of execTools || []) {
+    if (!allow.has(t)) {
+      errs.push(
+        `${label}: executive tier is delegate-only — tool '${t}' is an actuation/` +
+          `direct tool not permitted at the executive tier (allowed: ${JSON.stringify(allowed)})`,
+      );
+    }
+  }
+  return errs;
+}
+
 // ── Minimal YAML reader (flow-style, no dependency) ─────────────────────────
 // The manifests are deliberately simple: scalars, `[a, b]` flow sequences, and
 // `- item` block sequences. We parse exactly that subset rather than add a YAML
@@ -435,7 +512,17 @@ function readBudget(path) {
   return {
     tools: Array.isArray(obj.tools) ? obj.tools : [],
     okf_rooms: Array.isArray(obj.okf_rooms) ? obj.okf_rooms : [],
+    reports_to: typeof obj.reports_to === "string" ? obj.reports_to : null,
   };
+}
+
+/** Directory names (with a room.yaml) directly under a root, sorted. */
+function roomDirsUnder(root) {
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && existsSync(join(root, e.name, "room.yaml")))
+    .map((e) => e.name)
+    .sort();
 }
 
 /** Recursively find every agent.yaml under a root. */
@@ -457,11 +544,6 @@ function main() {
   const icmRoot = join(repoRoot, ICM_DIR);
   const manifests = findAgentManifests(icmRoot);
 
-  if (manifests.length === 0) {
-    console.log("✓ agent.yaml gate: no workflow manifests yet (domain tier not populated) — schema + validator in place.");
-    process.exit(0);
-  }
-
   const constitution =
     readBudget(join(icmRoot, "CONSTITUTION.yaml")) || { tools: null, okf_rooms: null };
 
@@ -475,6 +557,35 @@ function main() {
   }
 
   const allErrors = [];
+
+  // ── Executive-tier conformance (#1535 / #1536): reports_to resolution +
+  // delegate-only budgets. Runs over room.yaml files (not agent.yaml manifests),
+  // so it holds even before a domain has any workflow. Manager slugs come from the
+  // filesystem (icm/executive/<role>/), so org.yaml stays the human/GUI SoT while
+  // the gate stays self-contained.
+  const execSlugs = roomDirsUnder(join(repoRoot, EXEC_DIR));
+  const cSuiteSlugs = execSlugs.filter((s) => s !== ORCHESTRATOR_SLUG);
+  for (const slug of execSlugs) {
+    const roomPath = join(repoRoot, EXEC_DIR, slug, "room.yaml");
+    const budget = readBudget(roomPath) || { tools: [], okf_rooms: [], reports_to: null };
+    const label = relative(repoRoot, roomPath).replace(/\\/g, "/");
+    allErrors.push(
+      ...checkReportsTo({ tier: "executive", slug, reportsTo: budget.reports_to, executiveSlugs: cSuiteSlugs }).map((e) => `${label}: ${e}`),
+    );
+    allErrors.push(...checkExecutiveDelegateOnly(budget.tools, label));
+    if (matrix && Array.isArray(budget.okf_rooms)) {
+      allErrors.push(...checkRoomResolution(budget.okf_rooms, matrix).map((e) => `${label}: ${e}`));
+    }
+  }
+  for (const slug of roomDirsUnder(join(repoRoot, DOMAINS_DIR))) {
+    const roomPath = join(repoRoot, DOMAINS_DIR, slug, "room.yaml");
+    const budget = readBudget(roomPath) || { tools: [], okf_rooms: [], reports_to: null };
+    const label = relative(repoRoot, roomPath).replace(/\\/g, "/");
+    allErrors.push(
+      ...checkReportsTo({ tier: "domain", slug, reportsTo: budget.reports_to, executiveSlugs: cSuiteSlugs }).map((e) => `${label}: ${e}`),
+    );
+  }
+
   for (const file of manifests) {
     const manifest = parseAgentYaml(readFileSync(file, "utf8"));
     // Domain budget: the manifest sits at icm/domains/<d>/<wf>/agent.yaml.

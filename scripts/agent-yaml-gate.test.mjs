@@ -9,6 +9,9 @@ import {
   checkRoomResolution,
   extractStageOkfMarkers,
   checkStageMarkers,
+  checkReportsTo,
+  checkExecutiveDelegateOnly,
+  ALLOWED_EXECUTIVE_TOOLS,
   VALID_MODELS,
 } from "./agent-yaml-gate.mjs";
 
@@ -348,5 +351,55 @@ describe("parseAgentYaml", () => {
       "autonomy_rung: L2",
     ].join("\n");
     expect(validateShape(parseAgentYaml(yaml))).toEqual([]);
+  });
+});
+
+describe("checkReportsTo (#1535/#1536 — org tree resolves)", () => {
+  const execs = ["chief-of-staff", "cto", "deputy-ciso", "deputy-cfo", "cro"];
+
+  it("passes a domain that reports to a real C-suite role", () => {
+    expect(checkReportsTo({ tier: "domain", slug: "sales", reportsTo: "deputy-cfo", executiveSlugs: execs })).toEqual([]);
+  });
+  it("FAILS a domain reporting to a non-executive", () => {
+    const errs = checkReportsTo({ tier: "domain", slug: "sales", reportsTo: "felix", executiveSlugs: execs });
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toContain("not a C-suite role");
+  });
+  it("FAILS a domain with no reports_to", () => {
+    const errs = checkReportsTo({ tier: "domain", slug: "sales", reportsTo: null, executiveSlugs: execs });
+    expect(errs[0]).toContain("must declare reports_to");
+  });
+  it("passes an executive that reports to the orchestrator", () => {
+    expect(checkReportsTo({ tier: "executive", slug: "cto", reportsTo: "orchestrator", executiveSlugs: execs })).toEqual([]);
+  });
+  it("FAILS an executive reporting to anything but the orchestrator", () => {
+    const errs = checkReportsTo({ tier: "executive", slug: "cto", reportsTo: "deputy-cfo", executiveSlugs: execs });
+    expect(errs[0]).toContain("must report to 'orchestrator'");
+  });
+  it("passes the orchestrator with no reports_to", () => {
+    expect(checkReportsTo({ tier: "executive", slug: "orchestrator", reportsTo: null, executiveSlugs: execs })).toEqual([]);
+  });
+  it("FAILS the orchestrator if it declares a reports_to", () => {
+    const errs = checkReportsTo({ tier: "executive", slug: "orchestrator", reportsTo: "cto", executiveSlugs: execs });
+    expect(errs[0]).toContain("top node");
+  });
+});
+
+describe("checkExecutiveDelegateOnly (#1535 — executive tier is delegate-only)", () => {
+  it("passes a budget within the delegate-only allow-list", () => {
+    expect(checkExecutiveDelegateOnly(ALLOWED_EXECUTIVE_TOOLS, "icm/executive/cto/room.yaml")).toEqual([]);
+  });
+  it("passes a read+retrieval+delegate subset", () => {
+    expect(checkExecutiveDelegateOnly(["pg.read", "delegate"], "x")).toEqual([]);
+  });
+  it("FAILS an executive that grants an actuation tool", () => {
+    const errs = checkExecutiveDelegateOnly(["pg.read", "send.email"], "icm/executive/cto/room.yaml");
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toContain("send.email");
+    expect(errs[0]).toContain("delegate-only");
+  });
+  it("is a no-op on an empty/absent tool list", () => {
+    expect(checkExecutiveDelegateOnly([], "x")).toEqual([]);
+    expect(checkExecutiveDelegateOnly(undefined, "x")).toEqual([]);
   });
 });

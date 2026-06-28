@@ -1,0 +1,20 @@
+# room.yaml — the procurement domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to vance.md. Narrows icm/CONSTITUTION.yaml; a
+# workflow's agent.yaml narrows further (workflow ⊆ domain ⊆ Constitution; gate:
+# scripts/agent-yaml-gate.mjs). Every entry MUST appear in icm/CONSTITUTION.yaml.
+# No secrets, no client PII (ADR-0060).
+
+reports_to: deputy-cfo   # Vance reports to Sterling (Revenue/Client/Finance division)
+
+# Procurement reads spend/agreement facts and drafts vendor recommendations;
+# every customer/vendor-facing commitment parks for a human.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+okf_rooms:
+  - account
+  - license_assignment
+  - invoice
