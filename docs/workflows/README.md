@@ -115,6 +115,11 @@ and reasoned about as one object (ADR-0073 decision 1, migration 0115). Enrollme
 
 ## Where this fits
 
+- **The full map of business processes** — every **Operating Procedure** that runs the
+  MSP, projected onto its one owning agent — is the
+  [Operating Procedure catalog](operating-procedure-catalog.md) (value-stream-first; the
+  outline layer of the 26-agent org recast, ADR-0133 / epic #1534). The catalog is the
+  provable-coverage map; the per-procedure `icm/` workspaces are its automated realization.
 - **Business processes** beyond marketing/nurture (the MSP's operational automations)
   are modeled as **ICM workspaces** under `icm/` and executed by the backend orchestrator
   with a per-workflow autonomy dial (ADR-0061). See [agents/icm](../agents/icm.md) and

@@ -537,6 +537,14 @@ _Avoid_: agent id, the named roster (that is a subset), authored_by_agent flag (
 One business workflow defined as files under `icm/domains/<domain>/<workflow>/` (the domain tier, ADR-0088) — Layer-1 routing CONTEXT.md, the `agent.yaml` manifest, composed `prose.md`, numbered stage contracts, workflow-local runtime skills. The factory; runs are platform records, never files. Reference: `icm/domains/sales/lead-response/`.
 _Avoid_: workflow (unqualified — that's the in-app Workflows module), pipeline (that's data ingestion)
 
+**Operating Procedure**:
+One end-to-end MSP procedure with a named trigger, **exactly one owning agent**, and a terminal business outcome — runbook-sized (the one runbook you would hand a new hire). The top unit of the Operating Procedure catalog (`docs/workflows/operating-procedure-catalog.md`), enumerated value-stream-first then projected onto its owner. A procedure with ≥1 automatable step is **realized IN its ICM Workspace = its live system of record** (D5); it must NOT create a competing file home — the catalog index points at that canonical home, and a generated `docs/runbooks/` projection is a view of it, never an independent SoR. A fully-human procedure (every step a [gui-step]) lives as a `docs/runbooks/<stream>/<proc>.md` document UNTIL it graduates (gains an automatable step), at which point its ICM Workspace becomes the SoR. Each Operating Procedure ↔ at most one ICM Workspace. (Catalog architecture: ADR-0133.)
+_Avoid_: workflow (ICM-reserved — that's the staged in-app orchestration unit), playbook (the reusable template a Sequence/Workflow instantiates from)
+
+**Procedure Step**:
+One step of an **Operating Procedure**, tagged `[automation]` (agent-actuated) / `[gui-step]` (human in-app) / `[hybrid]`. An automated step **maps onto an ICM Stage** when the procedure is realized in its workspace; a cross-agent hand-off is written as an explicit Procedure Step (never a separate procedure). Shared sub-steps invoked by many procedures (resolve Client Mapping, send-for-esignature, post the work-note) are referenced as Procedure Steps, not duplicated. It is **NOT** the unified `task` object — a Procedure Step is a unit of the *catalog definition*; the `task` is a runtime work item.
+_Avoid_: task (the one unified object — sales/project/ad-hoc differ by category, never by table), stage (the ICM Stage is the realized form, not the catalog unit)
+
 **Stage Contract**:
 A stage's CONTEXT.md: Job, Inputs table, Process, Outputs, Audit, optional Checkpoint. The agent loads only what the Inputs table lists.
 _Avoid_: prompt, stage config
