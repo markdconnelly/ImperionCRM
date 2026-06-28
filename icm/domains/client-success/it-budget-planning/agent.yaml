@@ -1,0 +1,13 @@
+name: it-budget-planning
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, opportunity, strategic_business_review]   # subset of domains/client-success/room.yaml; NO financial rooms — cost is an Audrey handoff
+tools: [pg.read]                                                        # read-only; the drafted budget parks (no commit, no send)
+skills:
+  - ./skills/budget-rubric             # Tier 3 — workflow-local (budget structure + forecast method + Audrey-handoff discipline)
+autonomy_rung: L1
+auto_may_self_approve: "nothing leaves and nothing commits — this is L1 propose-only. The drafted IT budget plan + forecast parks for a human in every mode; spend is a recommendation, never an executed commitment (the NO-COMMITS-EVER ceiling is dial-proof, celeste.md guardrail 1). Celeste reads no financials directly: cost figures arrive as an Audrey read-only handoff."
