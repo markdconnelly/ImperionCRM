@@ -1,5 +1,5 @@
--- 0219: platform-scope credentials — AI provider keys in the connection registry (#1400,
--- ADR-0129). Migration number 0219 claimed at MERGE per system CLAUDE.md §10.3 — authored
+-- 0221: platform-scope credentials — AI provider keys in the connection registry (#1400,
+-- ADR-0129). Migration number 0221 claimed at MERGE per system CLAUDE.md §10.3 — authored
 -- against a placeholder; the rebased branch takes the next free number just before squash. If
 -- another migration merges during the review window, renumber this file.
 --
