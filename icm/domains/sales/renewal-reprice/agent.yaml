@@ -1,0 +1,14 @@
+name: renewal-reprice
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [account, contact, opportunity, interaction]   # subset of domains/sales/room.yaml
+tools: [pg.read, send.email]                              # subset of domains/sales/room.yaml
+skills:
+  - domains/sales/skills/voice-and-tone   # Tier 2 — domain-shared
+  - ./skills/renewal-rules                 # Tier 3 — workflow-local (reprice guardrails)
+autonomy_rung: L1
+auto_may_self_approve: "nothing customer-facing. Chase drafts the renewal reprice + proposal; the customer-facing send (the priced proposal / send-for-signature) is an always-gated, DIAL-PROOF hard ceiling (pricing/discount/term commitment — ADR-0128 D2) and NEVER auto-executes at any rung. Internal context-gathering and drafting proceed; the send always parks for a human, in every mode."
