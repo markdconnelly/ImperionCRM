@@ -16,6 +16,9 @@ tools:
   - send.email
   - send.dm
   - booking.link
+  - opportunity.write    # internal CRM opportunity create/update (reversible, no
+                         #   customer-facing effect) — the L2 auto-internal write
+                         #   for the opportunity-create workflow (#1416, ADR-0128).
 
 # The sales data scope — the rooms a sales worker may read.
 okf_rooms:

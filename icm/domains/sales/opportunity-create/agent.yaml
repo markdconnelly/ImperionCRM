@@ -1,0 +1,13 @@
+name: opportunity-create
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [contact, account, opportunity, lead_score, interaction]   # subset of domains/sales/room.yaml
+tools: [pg.read, opportunity.write]                                   # subset of domains/sales/room.yaml
+skills:
+  - ./skills/qualification-rubric       # Tier 3 — workflow-local (MQL->SQL bar)
+autonomy_rung: L2
+auto_may_self_approve: "create + document the opportunity record (opportunity.write) when the stage-01 qualification audit is green and the lead clears the MQL->SQL bar — an internal, reversible CRM write with no customer-facing side effect. Pricing, quotes, send-for-signature, any customer-facing touch, and any audit failure park for a human in every mode."

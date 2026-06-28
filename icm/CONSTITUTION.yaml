@@ -29,6 +29,11 @@ tools:
   - ticket.note          # write an INTERNAL Autotask work-note (operational, not
                          #   client-facing; approval-gated executor, never a direct
                          #   silver write). Service workspace, #1067.
+  - opportunity.write    # create/update the INTERNAL CRM opportunity record
+                         #   (operational, reversible; no customer-facing side
+                         #   effect; approval-gated executor, never a direct silver
+                         #   write). Sales workspace, #1416 — the L2 auto-internal
+                         #   capability on the canonical ladder (ADR-0128).
 
 # OKF rooms: the union of every silver entity any worker may read. Each name
 # resolves to a docs/database/semantic-layer/ coverage-matrix row (ADR-0086).
