@@ -1,0 +1,13 @@
+name: marketing-conformance
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vera persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vera.md
+  - ./prose.md
+okf_rooms: [entity_xref]                                            # subset of domains/platform/room.yaml — identity spine, to resolve which client/campaign a finding is about; the Belle trace itself is governance substrate (agent_run, IKF n/a), read by pg.read, not an okf_room
+tools: [pg.read]                                                    # read + evaluate only; no correction, no re-run, no re-send, no config change (audit-and-recommend)
+skills:
+  - ./skills/marketing-defined-way      # Tier 3 — workflow-local (Belle's Defined Way as a checkable ruleset: all-social-approved, compose-once/fan-out, public-vs-DM, ad-budget ceiling)
+autonomy_rung: L2
+auto_may_self_approve: "auto-RUN the marketing conformance audit (read a completed Belle process trace + the marketing Defined-Way ruleset) and AUTO-SURFACE the resulting conformance finding (conform / diverged, with the rule + the evidence BY REFERENCE) to the governance dashboard at L2 — internal, reversible (a finding can be dismissed), always labeling measured divergence vs inference. AUDIT-BY-REFERENCE: cite the location (run X, field Y), NEVER reproduce the sensitive value — audience PII, ad spend, campaign terms (vera.md). NO correction, NO re-run, NO re-send of a social post/comment/DM, NO config change at any rung — every correction is always_gate to Belle / a human; deviation routing + closure is A9 (deviation-lifecycle, #1467). Vera audits the levers; she never holds them."
