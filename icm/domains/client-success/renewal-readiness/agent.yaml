@@ -1,0 +1,13 @@
+name: renewal-readiness
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, opportunity, interaction, ticket, strategic_business_review]   # subset of domains/client-success/room.yaml
+tools: [pg.read]                                                                              # read + assess only; recommendation parks
+skills:
+  - ./skills/renewal-readiness-rubric   # Tier 3 — workflow-local (readiness dimensions + posture rule)
+autonomy_rung: L2
+auto_may_self_approve: "compute the internal renewal-readiness picture from MEASURED signals (health, service track record, posture, Audrey's margin handoff) at L2 — always labeling measured signal vs Celeste's inference. The recommended renewal posture, every binding commitment, and every client-facing touch park for a human; the renewal price + close are Chase's (gated). The NO-COMMITS-EVER ceiling is dial-proof (celeste.md guardrail 1)."
