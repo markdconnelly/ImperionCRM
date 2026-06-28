@@ -1,0 +1,13 @@
+name: expansion-create
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, opportunity, interaction, lead_score]   # subset of domains/client-success/room.yaml
+tools: [pg.read, opportunity.write]                                   # subset of domains/client-success/room.yaml — the L2 expansion seam
+skills:
+  - ./skills/expansion-rubric           # Tier 3 — workflow-local (real expansion vs non-interest upsell + triage/routing)
+autonomy_rung: L2
+auto_may_self_approve: "auto-create the internal expansion opportunity (opportunity.write), triage it, and assign it to a salesperson when stage 02 qualifies REAL client-interest expansion and its audit is green — an internal, reversible, idempotent CRM write with no customer-facing side effect; Chase owns the close (the Chase ↔ Celeste seam, ADR-0096). A non-interest upsell, any pricing/spend/binding commitment, any client-facing touch, and any audit failure park for a human in every mode — the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1–2)."
