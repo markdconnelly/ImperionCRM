@@ -920,9 +920,24 @@ export const clientMappingService = {
  * are set these throw ServiceNotConfiguredError and callers degrade gracefully.
  */
 export const credentialsService = {
-  /** Write a company credential to Key Vault; returns the reference to persist. */
+  /**
+   * Write a company credential to Key Vault; returns the reference to persist.
+   *
+   * For providers whose ONE token OWNS external assets (Meta — the Business Suite token
+   * owns the FB Page + linked Instagram account, ADR-0124 #7 / #1568, backend #457), the
+   * backend RESOLVES those public ids from the token via Graph and returns them. The FE
+   * persists `externalAccountId` (the resolved FB Page id) on the row so the owned asset is
+   * discovered once and never re-prompted. Absent for providers that resolve nothing — all
+   * fields beyond `keyvaultSecretRef` are optional so the contract stays additive.
+   */
   store: (input: { provider: string; fields: Record<string, string> }) =>
-    callService<{ keyvaultSecretRef: string }>(services.credentials, "/credentials", {
+    callService<{
+      keyvaultSecretRef: string;
+      /** Public external identifier the backend resolved from the credential (Meta = FB Page id). */
+      externalAccountId?: string | null;
+      /** Provider-specific resolved owned-asset ids (public, never secret), e.g. Meta page/IG ids. */
+      resolved?: { pageId?: string; pageName?: string; instagramUserId?: string } | null;
+    }>(services.credentials, "/credentials", {
       method: "POST",
       body: JSON.stringify(input),
     }),
