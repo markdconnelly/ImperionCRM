@@ -1,0 +1,14 @@
+name: social-inbound-reply
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [contact, account, interaction, consent_event, lead_score]   # subset of domains/sales/room.yaml
+tools: [pg.read, consent.check, send.dm]                                # subset of domains/sales/room.yaml
+skills:
+  - domains/sales/skills/voice-and-tone   # Tier 2 — domain-shared (every sales reply sounds the same)
+  - ./skills/social-reply-rules           # Tier 3 — workflow-local (social channel constraints)
+autonomy_rung: L1
+auto_may_self_approve: "nothing customer-facing — every social reply (DM or public comment) parks for a human in v1; all 1:1/public social replies are human-approved (ADR-0124 D4 posture). Internal triage, research, and drafting proceed; the send always parks, in every mode."
