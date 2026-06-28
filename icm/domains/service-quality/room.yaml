@@ -1,0 +1,29 @@
+# room.yaml — the service-quality domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any service-quality workflow may be granted. A workflow's agent.yaml narrows
+# this further (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs).
+# Every entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: cro   # Tess reports to Jessica (Platform & Assurance division)
+
+# Tess is a WATCHER by structure (peer of Vera). The service-quality domain has NO
+# write tool, NO send tool, and NO corrective action in v1: she audits delivery,
+# scores it, flags systemic issues, and recommends to Dexter (CTO) / Jessica (CRO)
+# — she never touches a ticket, never closes or reopens, never notifies a client.
+# Every correction is some other owner's act. `pg.read` + read-only recall is the
+# entire budget; the audit reach is in the read scope, not a tool.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+# The service-quality data scope — the delivery record Tess audits. She reads the
+# ticket (Autotask-SoR, the unit of delivered service) and its account (whose
+# service it is, to roll quality up by client). She sits OUTSIDE the Service domain
+# so she audits delivery rather than performing it.
+okf_rooms:
+  - ticket
+  - account

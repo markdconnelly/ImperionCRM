@@ -1,0 +1,29 @@
+# room.yaml — the knowledge domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any knowledge workflow may be granted. A workflow's agent.yaml narrows this
+# further (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs).
+# Every entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: cro   # Lexicon reports to Jessica (Platform & Assurance division)
+
+# Lexicon is a DOC-KEEPER. In v1 the domain has NO send tool and NO direct silver
+# write: she polls, detects stale/contradictory/missing docs, DRAFTS updates, and
+# PROPOSES a diff — publish-to-SoT (IT Glue) is gated until trusted, and is a
+# human / framework executor's act, never a free tool here. `pg.read` +
+# knowledge.search (OKF-grounded recall over gold) + memory.recall are the entire
+# budget; the IT Glue write she proposes is not in this list because it is gated.
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+# The knowledge data scope — the CI surface Lexicon documents. She reads the
+# account (whose runbooks these are), the device, and the cloud_asset (the
+# endpoints/cloud resources a runbook describes) so a doc maps to the real CI.
+okf_rooms:
+  - account
+  - device
+  - cloud_asset
