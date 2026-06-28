@@ -1018,6 +1018,25 @@
     "consolidated_into": null
   },
   {
+    "adr": "0079",
+    "title": "Change Enablement & Problem Management (ITIL 4 working objects)",
+    "status": "accepted",
+    "date": "2026-06-28",
+    "tags": [
+      "service-desk",
+      "change-enablement",
+      "problem-management",
+      "itil",
+      "cmdb",
+      "app-native",
+      "archetype-d"
+    ],
+    "summary": "ITIL 4 Change Enablement and Problem Management as app-native working objects on the incident/CMDB spine: change_request (typed standard|normal|emergency, lightweight approval, schedule) plus the governance trio change_freeze/rollback_plan/standard_change_catalog, and problem/known_error as the root-cause investigation register. The website is SoR for the working objects; Autotask remains the incident/change RECORD SoR via gated write-back.",
+    "file": "ADR-0079-change-enablement.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
     "adr": "0080",
     "title": "Sale → delivery orchestration (KQM quote → Autotask project/ticket spine)",
     "status": "consolidated",
