@@ -1,0 +1,30 @@
+# room.yaml — the platform/governance domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any platform/governance workflow may be granted. A workflow's agent.yaml narrows
+# this further (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs).
+# Every entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+# Vera is AUDIT-AND-RECOMMEND by structure. The platform domain has NO write tool,
+# NO send tool, and NO corrective action in v1: every correction / governance-config
+# change / standard ratification is always_gate to Mark (vera.md), executed by a
+# human or the owning agent — never by Vera. Quarantine (a reversible protective
+# hold) is a framework-owned action she requests, not a free tool here. `pg.read` is
+# the entire platform tool budget in v1; the audit reach is in the read scope, not a
+# tool.
+tools:
+  - pg.read
+
+# The platform data scope — the curated security-posture + governance-config rooms
+# Vera reads. The raw agent telemetry she audits (agent_run / eval / grounding_conflict
+# / audit_log) is read as governance SUBSTRATE (IKF n/a — not a curated okf_room) and
+# so is described in prose, never listed here. These five are the meaning-bearing OKF
+# rooms her workflows ground on.
+okf_rooms:
+  - posture_snapshot
+  - tenant_posture
+  - posture_policy
+  - agent_autopilot_policy
+  - entity_xref

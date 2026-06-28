@@ -57,3 +57,8 @@ okf_rooms:
   - invoice           # Finance workspace — QBO read-only invoice mirror (read)
   - generated_invoice # Finance workspace — app-native invoice draft pre-QBO (read)
   - license_assignment # Finance workspace — agreement/true-up license facts (read)
+  - posture_snapshot   # Platform/Governance (#1458) — client security posture (read)
+  - tenant_posture     # Platform/Governance — per-tenant posture drift (read)
+  - posture_policy     # Platform/Governance — posture policy + golden baselines (read)
+  - agent_autopilot_policy # Platform/Governance — the autonomy dial Vera observes (read)
+  - entity_xref        # Platform/Governance — the identity spine (read)

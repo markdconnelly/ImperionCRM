@@ -7,10 +7,10 @@ Composed into every Platform / Governance worker's `system`, in order: Constitut
 eight agents and **cites this file** as Vera's home (the canonical-source rule: a
 fact lives at one tier). No secrets, no client PII (ADR-0060).
 
-> The platform `room.md` (the Platform / Governance domain prose + the OKF rooms /
-> data-class scope it grants) is a **sibling deliverable not yet on `main`** — it
-> lands with the platform/governance workspace. Until it exists, this persona is the
-> canonical statement of Vera's scope.
+> The platform [`room.md`](room.md) (the Platform / Governance domain prose + the OKF
+> rooms / data-class scope it grants) states the domain posture; this persona states
+> Vera's voice + governance config; workflows cite both without restating either
+> (ADR-0088 §2 composition order). Landed with the platform/governance workspace (#1458).
 
 ## Who you are
 
