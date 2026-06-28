@@ -1,0 +1,13 @@
+name: proactive-updates
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, interaction, consent_event]   # subset of domains/client-success/room.yaml — the share subject + the consent ledger that gates it
+tools: [pg.read, consent.check, send.email, send.dm]        # subset of domains/client-success/room.yaml — read + consent-assert + the two approval-gated send paths (ADR-0058)
+skills:
+  - ./skills/sharing-rubric             # Tier 3 — workflow-local (what to share + L3-with-approval vs L4-fully-auto + consent/sensitivity check)
+autonomy_rung: L3
+auto_may_self_approve: "at L3 (the manifest default rung): auto-share an important update a client should know, provide a knowledge asset WITH approval, and run a routine churn-save outreach — every share consent-gated and sent only through the ADR-0058 path. The L4 ceiling (fully-automatic routine knowledge/enablement how-tos — 1Password, M365, etc.) is described in prose only and is NOT the manifest rung. Customer-relationship-sensitive / non-routine sends stay human-approved at every rung (celeste.md). NO-COMMITS-EVER and MSSP-advisory-only are dial-proof (celeste.md guardrails 1-2)."
