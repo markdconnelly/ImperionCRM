@@ -1,5 +1,5 @@
--- 0218: Datto as a first-class company-credential provider (#1569, epic #1256 S4, ADR-0122).
--- Migration number 0218 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
+-- 0220: Datto as a first-class company-credential provider (#1569, epic #1256 S4, ADR-0122).
+-- Migration number 0220 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
 -- placeholder; the rebased branch takes the next free number just before squash. If another
 -- migration merges during the review window, renumber this file.
 --
