@@ -1,0 +1,39 @@
+# room.yaml — the client-success domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any client-success workflow may be granted. A workflow's agent.yaml narrows this
+# further (workflow ⊆ domain ⊆ Constitution; gate: scripts/agent-yaml-gate.mjs).
+# Every entry here MUST itself appear in icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+# Client-Success workers READ broadly (Celeste is the client-360 — the broadest
+# read scope of any agent) and act narrowly: draft/propose, share advisories with
+# consent, and mint the expansion opportunity to hand to Chase (opportunity.write,
+# the L2 seam). The dial-proof NO-COMMITS ceiling means no tool here ever commits a
+# roadmap/SLA/price/spend/remediation — those route to a human, always (celeste.md
+# guardrail 1). No silver write tool for the Account Success Plan / risk register in
+# v1 — those run products are Postgres run rows (Layer 4), granted a tool if/when a
+# workflow needs to persist beyond the run.
+tools:
+  - pg.read
+  - consent.check        # assert a current consent basis (gates any client send)
+  - send.email           # approval-gated advisory / save-outreach (ADR-0058 path)
+  - send.dm              # approval-gated in-channel touch (ADR-0058 path)
+  - opportunity.write    # the L2 seam: auto-create the expansion opportunity →
+                         #   assign to Chase (Chase owns the close, celeste.md §Seams)
+
+# The client-success data scope — the rooms a CS worker may read. Celeste's read is
+# the broadest of any agent: the whole relationship picture (account/contact),
+# the transaction (opportunity), engagement + service signals (interaction/ticket),
+# the QBR substrate (strategic_business_review), expansion (lead_score), and the
+# consent ledger that gates every client touch.
+okf_rooms:
+  - account
+  - contact
+  - opportunity
+  - interaction
+  - ticket
+  - strategic_business_review
+  - lead_score
+  - consent_event

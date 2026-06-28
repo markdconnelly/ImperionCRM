@@ -57,7 +57,7 @@ The other seven are defined here and staffed as their workspaces are built.
 | **[Audrey](#audrey--finance)** | Finance — AR/AP · billing · time · expense · profitability | ⏳ persona here |
 | **[Vance](#vance--procurement--vendor)** | Procurement / Vendor — Pax8 licensing · vendor mgmt | ⏳ persona here |
 | **[Pierce](#pierce--projects--delivery)** | Projects / Delivery — sale→delivery · onboarding · provisioning · PM | ⏳ persona here |
-| **[Celeste](#celeste--client-success--vcio)** | Client Success / vCIO — QBR/TBR · health/churn · advisory | ⏳ persona here |
+| **[Celeste](#celeste--client-success--vcio)** | Client Success / vCIO — QBR/TBR · health/churn · advisory | ✅ persona + domain + `client-360` workflow |
 | **[Vera](#vera--platform--governance)** | Platform / Governance — data integrity · agent telemetry *(watches the others)* | ⏳ persona here |
 
 ```mermaid
