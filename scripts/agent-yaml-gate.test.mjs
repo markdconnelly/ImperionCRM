@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   validateShape,
   checkSubset,
+  checkPersonaComposed,
   evaluateManifest,
   parseAgentYaml,
   parseCoverageMatrix,
@@ -10,6 +11,28 @@ import {
   checkStageMarkers,
   VALID_MODELS,
 } from "./agent-yaml-gate.mjs";
+
+describe("checkPersonaComposed (ADR-0088 §2 — domain persona must be composed)", () => {
+  const lead = ["../../../CONSTITUTION.md", "../room.md", "../chase.md", "./prose.md"];
+
+  it("passes when the workflow composes its domain persona", () => {
+    expect(checkPersonaComposed(lead, ["chase.md"])).toEqual([]);
+  });
+  it("fails when the persona is omitted (the pre-#1413 lead-response gap)", () => {
+    const errs = checkPersonaComposed(["../../../CONSTITUTION.md", "../room.md", "./prose.md"], ["chase.md"]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toMatch(/chase\.md/);
+  });
+  it("is a no-op when the domain has no persona file yet", () => {
+    expect(checkPersonaComposed(lead, [])).toEqual([]);
+  });
+  it("accepts any one of multiple domain persona candidates", () => {
+    expect(checkPersonaComposed(lead, ["chase.md", "extra.md"])).toEqual([]);
+  });
+  it("matches on basename regardless of the relative path used", () => {
+    expect(checkPersonaComposed(["x/CONSTITUTION.md", "../felix.md", "./prose.md"], ["felix.md"])).toEqual([]);
+  });
+});
 
 describe("extractStageOkfMarkers / checkStageMarkers (ADR-0104 §5)", () => {
   const stage = [
