@@ -1,0 +1,13 @@
+name: cyber-risk-register
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, interaction, strategic_business_review]   # subset of domains/client-success/room.yaml
+tools: [pg.read]                                                        # read + curate only; the register parks, the send is ADR-0058
+skills:
+  - ./skills/risk-register-rubric       # Tier 3 — workflow-local (risk-register structure + signal-vs-inference + MSSP boundary)
+autonomy_rung: L2
+auto_may_self_approve: "assemble the INTERNAL draft risk register from Vera's measured posture/risk findings (reversible, signal-labeled) at L2 — every risk and its recommended mitigation labeled measured signal vs Celeste's inference. The client-facing risk register, every recommended mitigation, and every client-facing send park for a human in every mode, and NO recommendation is ever a remediation commitment — the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1-2; remediation is human/Datto)."
