@@ -1,10 +1,28 @@
 {
-  "_comment": "Eval CI quality-gate baselines (ADR-0106, epic #983 slice 4). Per-suite minimum aggregate_score the backend eval runner (POST /api/agent/eval/run) must hold. A suite falling below (baseline - tolerance) fails the gate. Raise a baseline only with a green run on the new bar; never lower it to make a red gate pass. Suites match the seeded golden-set modules (migration 0155 + 0172 'technician').",
+  "_comment": "Eval CI quality-gate baselines (ADR-0106, epic #983 slice 4). Per-suite minimum aggregate_score the backend eval runner (POST /api/agent/eval/run) must hold. A suite falling below (baseline - tolerance) fails the gate. Raise a baseline only with a green run on the new bar; never lower it to make a red gate pass. Suites match the seeded golden-set modules (0155 + 0172 'technician' + 0225 the 26-agent org recast, #1538). The gate's default selection is every baselined suite; narrow it per run with the EVAL_SUITES env var. 0.75 is the guardrail-suite bar (per 0172). Gate stays dormant until AGENT_EVAL_BASE_URL is set.",
   "tolerance": 0.05,
   "suites": {
     "reporting": 0.75,
     "sales": 0.75,
     "crm": 0.75,
-    "technician": 0.75
+    "technician": 0.75,
+    "noc": 0.75,
+    "problem-mgmt": 0.75,
+    "change-release": 0.75,
+    "dispatch": 0.75,
+    "bcdr": 0.75,
+    "soc": 0.75,
+    "grc": 0.75,
+    "identity": 0.75,
+    "people": 0.75,
+    "legal": 0.75,
+    "service-quality": 0.75,
+    "knowledge": 0.75,
+    "orchestrator": 0.75,
+    "chief-of-staff": 0.75,
+    "cto": 0.75,
+    "deputy-ciso": 0.75,
+    "deputy-cfo": 0.75,
+    "cro": 0.75
   }
 }

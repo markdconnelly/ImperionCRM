@@ -181,6 +181,11 @@ Structure as Agentic Architecture"* (arXiv:2603.16021, 2026).
   replicate everywhere). Reference data by id/location, not by value.
 - **Changing a workflow/domain/Constitution = issue → micro-PR.** Definitions
   are code; conformance is gated by CI (`icm-conformance`, #702).
+- **Goldens are part of a new agent's artifact set** (#1538). A new agent's
+  build PR ships two eval goldens — a grounding/no-fabrication case and a
+  park-or-delegate guardrail — plus its `eval/baselines.json` entry, in the same
+  change set as its `room.yaml`/persona/workflow. The standard + the seed pattern
+  are [`docs/agents/eval-quality-plane.md`](../docs/agents/eval-quality-plane.md) §5b.
 
 ## Naming
 
