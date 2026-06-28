@@ -11,12 +11,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "node scripts/agent-quality-eval.mjs",
-    "eval:gate": "node scripts/eval-gate.mjs"
+    "eval:gate": "node scripts/eval-gate.mjs",
+    "gen:org-graph": "node scripts/gen-org-graph.mjs"
   },
   "dependencies": {
     "@azure/identity": "^4.5.0",
     "@fontsource/ibm-plex-sans": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",
+    "@xyflow/react": "^12.11.1",
     "clsx": "2.1.1",
     "jose": "^5.9.6",
     "lucide-react": "0.469.0",

@@ -355,6 +355,9 @@ const NAV_GUARD: Partial<Record<string, (roles: readonly AppRole[] | undefined) 
   // agent layer, ADR-0050); the controls additionally require `agents:operate`.
   "operator-cockpit": canSeeAgentPages,
   board: canSeeAgentPages,
+  // The org-tree visualization (#1539) — renders the agent org + live dials/queue;
+  // same admin gate as the agent surfaces it visualizes.
+  org: canSeeAgentPages,
   cmdb: canSeeCmdb,
   // Change Enablement (ADR-0079, #656) — the ITIL Service practice; admin∨support, the
   // same gate as the Service group it lives in (and the CMDB it draws affected CIs from).
