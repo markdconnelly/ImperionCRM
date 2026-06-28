@@ -2575,6 +2575,41 @@ not silver tier** (like `time_entry` / `work_comment` / `notification`) — no
 semantic-layer concept file applies, and the migration only `REFERENCES task` (it
 does not alter the `task` concept).
 
+## Dispatch — technician + skill model (epic #1039, migration 0220, #1071)
+
+The service-delivery dispatch substrate (#1039) needs a routable-resource registry and
+a skill taxonomy before any skill+load auto-assignment (#1073) can exist. The existing
+people model is **human-only and keyed on `app_user`** — `user_capacity` (0105, weekly
+hours per employee) and `work_assignment` (0099, who is attached to a task/project) —
+and carries no agent dimension or skill model. Migration 0220 adds three **app-native
+operational tables, not silver tier** (like `user_capacity` / `task_recurrence`) — no
+medallion source, so no semantic-layer concept file applies. No client PII (employees +
+agents only). Schema-foundation only (the `user_capacity`/#346 precedent): the admin GUI
+and the routing data layer are later slices of #1039.
+
+- **`skill`** — the skill taxonomy: `{ id, key (UNIQUE slug, e.g. `m365-admin`), name,
+  category? (e.g. cloud|network|security), description?, is_active, created_at,
+  updated_at }`. App-authored vocabulary the router matches a ticket's required skills
+  against.
+- **`technician`** — the unified routable resource, **human OR agent**:
+  `{ id, kind (human|agent), app_user_id? → app_user (CASCADE), agent_id? → agent
+  (CASCADE, the 0056 registry), display_name, is_dispatchable, created_at, updated_at }`.
+  A CHECK ties the identity to `kind` (exactly one of `app_user_id`/`agent_id` set,
+  matching `kind`); partial unique indexes give one technician row per human and per
+  agent. `is_dispatchable` removes someone from the auto-assignment pool (#1073) without
+  losing their skills/history. A human technician's capacity stays in `user_capacity`
+  (keyed on `app_user`); agent capacity/calendar is future #1072 work.
+- **`technician_skill`** — skills a technician holds: `{ technician_id → technician
+  (CASCADE), skill_id → skill (CASCADE), proficiency (smallint 1..5), created_at,
+  PK (technician_id, skill_id) }`. The match surface for skill+load routing; the PK
+  makes assigning a skill idempotent, and `idx_technician_skill_skill` answers "who has
+  skill X?" for the router.
+
+The web role gets explicit per-table write grants (admin config GUI authors all three;
+post-0216 baseline → tables are web-SELECT-only by default, so writes are granted
+deliberately, added to `docs/security/web-role-write-allowlist.md` in lockstep); the
+backend reads them for routing.
+
 ## Intake forms — form → task on submit (ADR-0070 E3, migration 0111, #354)
 
 PM templates/recurrence E3 lets staff author internal **intake forms** that create a
