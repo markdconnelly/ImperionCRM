@@ -1760,5 +1760,20 @@
     "file": "ADR-0131-executive-suite-tier.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0132",
+    "title": "Personal Ingestion & Distillation Plane — the feed for the Personal Knowledge Store",
+    "status": "proposed",
+    "date": "2026-06-28",
+    "tags": [
+      "meta",
+      "knowledge-tiers",
+      "security"
+    ],
+    "summary": "The feed half of the OS Brain's personal tier: a COLLECT -> DISTILL -> SYNC -> RECALL loop that turns raw material (browsing, app logs, OneDrive/SharePoint, AI-tool chats, dropped PDFs/Visio) into cleaned, deduped, queryable personal knowledge. Load-bearing principle: MCP is the agent's recall surface, a deterministic SDK pipeline is ingestion. No Sentinel MCP (SCU-billed) — pull via Azure Monitor Query SDK. OneDrive ingests personal-first + flag; SharePoint ingests company-tier. Distillation is a scheduled Claude Code routine on the owner's subscription (ADR-0043 untouched, no company AI key). Records the substrate it feeds (ADR-0114/0116/0115) and the four HARD invariants the build must not violate.",
+    "file": "ADR-0132-personal-ingestion-distillation-plane.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
