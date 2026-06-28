@@ -281,3 +281,59 @@ describe("ADR-0128 ladder tags — auto_at_level + always_gate (#1412)", () => {
     expect(selectActuation(fb, 5)).toBe("auto");
   });
 });
+
+describe("backend executor kinds — FE↔BE lockstep (#1497)", () => {
+  // The expected tags, verbatim from the backend ActionDef tags (PR #441) + migration 0218.
+  const EXPECTED: Record<string, { tier: string; dataClass: string; autoAtLevel: LadderLevel; alwaysGate: boolean; executor: string }> = {
+    autotask_update_ticket: { tier: "T2", dataClass: "operational", autoAtLevel: 2, alwaysGate: false, executor: "autotask_write" },
+    autotask_post_reply: { tier: "T2", dataClass: "client_pii", autoAtLevel: 3, alwaysGate: false, executor: "autotask_write" },
+    autotask_log_time: { tier: "T2", dataClass: "financial", autoAtLevel: 5, alwaysGate: true, executor: "autotask_write" },
+    pax8_place_order: { tier: "T3", dataClass: "financial", autoAtLevel: 5, alwaysGate: true, executor: "procurement_dispatch" },
+    m365_provision_license: { tier: "T2", dataClass: "operational", autoAtLevel: 2, alwaysGate: false, executor: "procurement_dispatch" },
+    agreement_attach_license: { tier: "T2", dataClass: "operational", autoAtLevel: 2, alwaysGate: false, executor: "procurement_dispatch" },
+    bill_attach_license: { tier: "T3", dataClass: "financial", autoAtLevel: 5, alwaysGate: true, executor: "procurement_dispatch" },
+  };
+
+  it("all 7 backend executor kinds are registered with the backend-matching tags", () => {
+    for (const [kind, tags] of Object.entries(EXPECTED)) {
+      const def = getActionDef(kind);
+      expect(def, kind).toBeDefined();
+      expect({ tier: def!.tier, dataClass: def!.dataClass, autoAtLevel: def!.autoAtLevel, alwaysGate: def!.alwaysGate, executor: def!.executor }, kind).toEqual(tags);
+      expect(def!.consentClass, kind).toBe("none"); // no contact channel — ticket/procurement is the context
+    }
+  });
+
+  it("the three financial kinds carry the dial-proof money ceiling — park at every level", () => {
+    for (const kind of ["autotask_log_time", "pax8_place_order", "bill_attach_license"]) {
+      const def = getActionDef(kind)!;
+      expect(def.alwaysGate, kind).toBe(true);
+      for (const dial of LADDER_LEVELS) expect(selectActuation(def, dial as LadderLevel), `${kind}@${dial}`).toBe("park");
+    }
+  });
+
+  it("the operational L2 kinds auto-execute once the dial reaches L2", () => {
+    for (const kind of ["autotask_update_ticket", "m365_provision_license", "agreement_attach_license"]) {
+      const def = getActionDef(kind)!;
+      expect(selectActuation(def, 1), `${kind}@1`).toBe("park");
+      expect(selectActuation(def, 2), `${kind}@2`).toBe("auto");
+    }
+  });
+
+  it("validates the executor-kind schemas (presence/type pre-flight; backend is authoritative)", () => {
+    expect(
+      resolveAction({
+        kind: "autotask_log_time",
+        ticketId: 555,
+        idempotencyKey: "k1",
+        resourceId: 7,
+        dateWorked: "2026-06-27",
+        hoursWorked: 1.5,
+        summaryNotes: "Fixed it.",
+      }).ok,
+    ).toBe(true);
+    // missing required idempotencyKey → invalid
+    expect(resolveAction({ kind: "pax8_place_order", accountId: "a", productId: "p", quantity: 1 }).ok).toBe(false);
+    // ticketId present, status optional — valid (backend refine enforces "≥1 of status/queueId")
+    expect(resolveAction({ kind: "autotask_update_ticket", ticketId: 9, status: 5 }).ok).toBe(true);
+  });
+});
