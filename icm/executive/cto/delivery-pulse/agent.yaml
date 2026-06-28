@@ -1,0 +1,12 @@
+name: delivery-pulse
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Dexter persona -> tracer prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../dexter.md
+  - ./prose.md
+okf_rooms: [ticket, device, cloud_asset, account]   # subset of executive/cto/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall]   # subset of the exec budget; read + synthesize only — no delegate/handoff/actuation in the v1 tracer
+skills: []
+autonomy_rung: L1                     # propose — the pulse parks for Derek; the exec ceiling is L2 delegate-only (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled delivery pulse when every section is grounded and cited; any risk item, gap, or recall miss parks for the human"

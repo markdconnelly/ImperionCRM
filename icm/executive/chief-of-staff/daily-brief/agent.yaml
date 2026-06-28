@@ -1,0 +1,12 @@
+name: daily-brief
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Rachel persona -> tracer prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../rachel.md
+  - ./prose.md
+okf_rooms: [account, contact]         # subset of executive/chief-of-staff/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall]   # subset of the exec budget; read + synthesize only — no delegate/handoff/actuation in the v1 tracer
+skills: []
+autonomy_rung: L1                     # propose — the brief parks for Derek; the exec ceiling is L2 delegate-only (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled daily brief when every section is grounded and cited; any decision-needed item, gap, or recall miss parks for Derek"
