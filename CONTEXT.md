@@ -319,6 +319,19 @@ Non-conforming legacy:
 secret) and user-scope `conn-<userId>-<provider>` (deferred to the `/profile` rework).
 _Avoid_: secret (unqualified), token (one kind of credential), key vault ref (that is the name only)
 
+**Configured (vault presence)**:
+A Connection card reads as **Configured** — credential form collapsed to *Rotate only*, never
+re-prompting a stored value — whenever the credential is present in Key Vault under its
+canonical name. "Present" is read from two independent signals (`credentialCardState`, #1567):
+a stored lifecycle `status` (`active`/`expired` — the backend confirmed the write) **or** a
+canonical `keyvault_secret_ref` on the row (the save path records the intended
+`conn-<scope>-<provider>` name even before the backend write is confirmed). Two statuses
+override and force the form open regardless of any ref: `error` (a save failed → *Needs
+attention*) and `revoked` (custody was deleted on disconnect → *Not configured*). A legacy
+non-canonical ref (`kv://imperion/conn/*`) does not count as present. Validate-before-write
+happens at write time (ADR-0129 §7), so a present credential never re-prompts on render.
+_Avoid_: connected (that is Connection Health), saved (ambiguous about where)
+
 **Platform credential**:
 A system-wide infrastructure secret the runtime resolves — an AI provider API key (Voyage
 embeddings, Claude generation) — custodied in Key Vault as `conn-platform-<provider>` and

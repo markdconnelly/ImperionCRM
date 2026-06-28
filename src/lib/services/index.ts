@@ -850,7 +850,8 @@ export const connectionsService = {
    * ADR-0076): every managed client tenant has its OWN Entra app registration — a
    * distinct app (client) id + its own credential. The admin enters the tenant's app
    * id + a credential (a client secret OR a certificate thumbprint); the backend
-   * custodies a `secret` in Key Vault under `conn-client-<tenantId>-m365` and writes the
+   * custodies a `secret` in Key Vault under the canonical provider-3rd name
+   * `conn-client-m365-<tenantId>` (ADR-0103/0122, BE #384) and writes the
    * `client`-scope m365 `connection` row. The secret VALUE is sent once over the
    * server-to-backend boundary and never returned, logged, or stored in this DB
    * (CLAUDE.md §5). The browser never calls this — the web app proxies server-side
