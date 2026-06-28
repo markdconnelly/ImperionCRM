@@ -19,8 +19,8 @@ the file's first commit date. Also see `CLAUDE.md` §8 and the project standards
 > **Cross-references** metadata row uses.
 >
 > **Gaps are expected.** Numbers are claimed at merge ([ADR-0084](./ADR-0084-merge-time-number-assignment.md)),
-> so some slots (e.g. **0079**) are abandoned collisions, not missing files. Each
-> number resolves to exactly one ADR in this folder.
+> so some slots are abandoned collisions, not missing files. Each number resolves to
+> exactly one ADR in this folder.
 
 ## Index
 
@@ -109,6 +109,7 @@ authoritative record.
 | [0076](./ADR-0076-integration-marketplace.md) | Integration marketplace — declarative connector registry | Accepted | crm-parity | Connectors are declared by a manifest (B). |
 | [0077](./ADR-0077-premium-service-management-boundary.md) | Premium service-management boundary — CMDB, ITIL, and asset lifecycle on top of Autotask SoR | Accepted | crm-parity | Adopt a premium service-management layer under epic #371, governed by these |
 | [0078](./ADR-0078-feedback-files-to-app-dev-queue.md) | Feedback files to the app-dev queue (supersedes ADR-0013) | Accepted | surfaces | The Feedback page files an idempotent Autotask ticket in the app-dev queue via backend #19, superseding the ADR-0013 GitHub coupling. Renumbered from a duplicate 0058 (claim-at-merge collision, ADR-0084). |
+| [0079](./ADR-0079-change-enablement.md) | Change Enablement & Problem Management (ITIL 4 working objects) | Accepted | service-desk, change-enablement, problem-management, itil, cmdb, app-native, archetype-d | ITIL 4 Change Enablement and Problem Management as app-native working objects on the incident/CMDB spine: change_request (typed standard\|normal\|emergency, lightweight approval, schedule) plus the governance trio change_freeze/rollback_plan/standard_change_catalog, and problem/known_error as the root-cause investigation register. The website is SoR for the working objects; Autotask remains the incident/change RECORD SoR via gated write-back. |
 | [0080](./ADR-0080-sale-to-delivery-orchestration.md) | Sale → delivery orchestration (KQM quote → Autotask project/ticket spine) | Consolidated | sale-delivery | KQM is the read-only quote SoR; Imperion builds no native quote engine. |
 | [0081](./ADR-0081-delivery-provisioning-template-model.md) | Delivery provisioning — template model, human-triggered bridge, contract gate | Proposed | sale-delivery | Data-driven delivery templates. New frontend-owned schema (migration 0084) |
 | [0082](./ADR-0082-employee-time-tracking-and-payroll-reconciliation.md) | Employee time tracking — website-authoritative timesheets, Autotask documentation, QuickBooks payment reconciliation | Accepted | finance | Data model (per ADR-0039). |
