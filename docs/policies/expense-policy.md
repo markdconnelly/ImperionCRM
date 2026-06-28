@@ -1,5 +1,10 @@
 # Employee Expense Policy
 
+> **⚠️ Migrated to the policy canon.** This policy now lives in the Imperion policy canon as
+> **[BO-07 — Expense & Reimbursement](../../icm/policies/business-operations/BO-07-expense-and-reimbursement.md)**
+> (Business Operations), rewritten dual-audience (human + agent). Edit BO-07 going forward; this
+> file is retained as a stable redirect until references are repointed. (Policy-canon ADR-NNNN.)
+
 > **Source of record:** This document is the canonical Employee Expense Policy. It is
 > published to **IT Glue** for employee access; this repository copy is the authoritative
 > master. Update here first, then sync to IT Glue.

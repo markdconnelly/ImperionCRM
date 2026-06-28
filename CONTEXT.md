@@ -549,6 +549,10 @@ _Avoid_: task (the one unified object — sales/project/ad-hoc differ by categor
 A stage's CONTEXT.md: Job, Inputs table, Process, Outputs, Audit, optional Checkpoint. The agent loads only what the Inputs table lists.
 _Avoid_: prompt, stage config
 
+**Policy**:
+A binding rule-set in the Imperion policy canon (`icm/policies/`), read the **same way by a human employee and by an AI agent** — plain-language rules plus an explicit *Application to autonomous agents* section (autonomy ceiling, `always_gate` actions, easy-button, escalation). The single set is organized in three **categories** (Cybersecurity `CS-NN` · Information Technology `IT-NN` · Business Operations `BO-NN`) and three **tiers** (umbrella · distinct · procedure-specific), under one top umbrella (`00-imperion-operating-policy-and-code-of-conduct.md`) that carries the dual-actor governance framework. An Operating Procedure names the policy/policies that drive it in its `Driving policy` field (the two-layer D4 binding: a universal baseline every procedure inherits + 1–3 named specific drivers). Distinct from an **ADR** (which records *why* a decision was made; a Policy states the *binding rule*, owned and auditable) and from a **Procedure Step** (a unit of work a policy governs). Catalog architecture: ADR-NNNN (policy canon).
+_Avoid_: standard (an ADR/standards-doc term), guardrail (the prose source for an agent's config, not the governing rule), the IM/AG/OP series naming (superseded by the CS/IT/BO categories)
+
 **Checkpoint**:
 A stage boundary where the run parks for human approval/edit in the approval queue. In `auto` mode a checkpoint may self-approve only what its contract explicitly allows.
 _Avoid_: review step, gate (unqualified)
