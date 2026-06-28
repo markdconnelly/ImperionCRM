@@ -7,6 +7,8 @@
 #
 # No secrets, no client PII (ADR-0060). Names are references, never values.
 
+reports_to: cro   # Vera reports to Jessica (Platform & Assurance division)
+
 # Vera is AUDIT-AND-RECOMMEND by structure. The platform domain has NO write tool,
 # NO send tool, and NO corrective action in v1: every correction / governance-config
 # change / standard ratification is always_gate to Mark (vera.md), executed by a

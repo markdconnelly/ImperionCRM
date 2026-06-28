@@ -1,0 +1,25 @@
+# room.yaml — Deputy CFO (Sterling) executive budget (ADR-0088 §3; Executive-Suite tier).
+#
+# DELEGATE-ONLY + read-heavy: no direct-actuation tool (gate allow-list {pg.read,
+# knowledge.search, memory.recall, delegate, handoff}). Every entry ⊆ Constitution.
+# No secrets, no client PII (ADR-0060).
+
+reports_to: orchestrator   # Sterling reports to Nova (serves Nick)
+
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+  - delegate
+  - handoff
+
+okf_rooms:
+  - account
+  - opportunity
+  - invoice
+  - generated_invoice
+  - time_record
+  - timesheet
+  - expense_item
+  - expense_report
+  - license_assignment

@@ -7,6 +7,8 @@
 #
 # No secrets, no client PII (ADR-0060). Names are references, never values.
 
+reports_to: deputy-cfo   # Celeste reports to Sterling (Revenue/Client/Finance division)
+
 # Client-Success workers READ broadly (Celeste is the client-360 — the broadest
 # read scope of any agent) and act narrowly: draft/propose, share advisories with
 # consent, and mint the expansion opportunity to hand to Chase (opportunity.write,

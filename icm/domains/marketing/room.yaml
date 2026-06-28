@@ -1,0 +1,25 @@
+# room.yaml — the marketing domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to belle.md. Narrows icm/CONSTITUTION.yaml; a
+# workflow's agent.yaml narrows further (workflow ⊆ domain ⊆ Constitution; gate:
+# scripts/agent-yaml-gate.mjs). Every entry MUST appear in icm/CONSTITUTION.yaml.
+# No secrets, no client PII (ADR-0060).
+
+reports_to: deputy-cfo   # Belle reports to Sterling (Revenue/Client/Finance division)
+
+# Marketing nurtures demand and hands off to Sales at the lead_score threshold.
+tools:
+  - pg.read
+  - consent.check
+  - send.email
+  - send.dm
+  - knowledge.search
+  - memory.recall
+
+okf_rooms:
+  - contact
+  - account
+  - interaction
+  - consent_event
+  - lead_score
+  - campaign

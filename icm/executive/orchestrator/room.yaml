@@ -1,0 +1,24 @@
+# room.yaml — the orchestrator's least-privilege budget (ADR-0088 §3; Executive-Suite tier).
+#
+# The executive tier is DELEGATE-ONLY: budgets grant no direct-actuation tool, so
+# the ADR-0128 L2 ceiling is enforced structurally, not just dialed. The gate
+# (scripts/agent-yaml-gate.mjs) rejects any executive tool outside the allow-list
+# {pg.read, knowledge.search, memory.recall, delegate, handoff}. Every entry here
+# MUST also appear in icm/CONSTITUTION.yaml (workflow ⊆ executive ⊆ Constitution).
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+# The orchestrator is the top node — it reports to no one.
+# (reports_to is omitted; the conformance gate treats the orchestrator specially.)
+
+tools:
+  - pg.read          # read the identity spine + kernel rooms to route correctly
+  - knowledge.search # OKF-grounded semantic recall over gold (retrieval tier, #1537)
+  - memory.recall    # deliberate long-term memory recall (ADR-0116)
+  - delegate         # hand a unit of work to exactly one sub-agent (does not actuate)
+  - handoff          # transfer an in-flight context to another agent/human
+
+okf_rooms:
+  - account
+  - contact
+  - entity_xref

@@ -7,6 +7,8 @@
 #
 # No secrets, no client PII (ADR-0060). Names are references, never values.
 
+reports_to: cto   # Felix reports to Dexter (Service Delivery & Engineering division)
+
 # Service workers may read the ticket + its grounding context and write ONE thing
 # in v1: the internal operational work-note. Sends (email/dm/sms), booking links,
 # and consent.check are NOT in the service budget — triage neither contacts a
