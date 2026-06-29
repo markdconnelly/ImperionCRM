@@ -1,6 +1,6 @@
--- 0231: Agent eval golden — Orchestrator (Nova), the pool-never-bleed / RLS guardrail.
--- Eval-plane seed (#1668, #1538, epic #1534, ADR-0106). Migration number 0231 claimed at MERGE per
--- system CLAUDE.md §10.3 — authored against a placeholder; renumber if another migration merges first.
+-- 0233: Agent eval golden — Orchestrator (Nova), the pool-never-bleed / RLS guardrail.
+-- Eval-plane seed (#1668, #1538, epic #1534, ADR-0106). Renumbered 0231 -> 0233 at apply per system
+-- CLAUDE.md §10.3 (0231/0232 were taken by the sales/client-success goldens that merged first).
 --
 -- WHY THIS EXISTS. The 0225 org-recast seed gave the orchestrator module two goldens — (a) grounding /
 -- no-fabrication and (b) delegate-only refusal (never actuates, delegates to one owner). It did NOT
