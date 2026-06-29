@@ -1,0 +1,1115 @@
+{
+  "_generated": "scripts/gen-org-graph.mjs from icm/org.yaml + icm/** — DO NOT EDIT BY HAND",
+  "orchestrator": "orchestrator",
+  "nodes": [
+    {
+      "id": "orchestrator",
+      "kind": "orchestrator",
+      "persona": "Nova",
+      "reportsTo": null,
+      "ceiling": "L2-delegate-only",
+      "serves": "company",
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "delegate",
+        "handoff"
+      ],
+      "okfRooms": [
+        "account",
+        "contact",
+        "entity_xref"
+      ],
+      "workflows": []
+    },
+    {
+      "id": "chief-of-staff",
+      "kind": "executive",
+      "persona": "Rachel",
+      "reportsTo": "orchestrator",
+      "ceiling": "L2-delegate-only",
+      "serves": "Derek",
+      "division": "Internal Ops / G&A",
+      "built": true,
+      "memberDomains": [
+        "people",
+        "legal"
+      ],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "delegate",
+        "handoff"
+      ],
+      "okfRooms": [
+        "account",
+        "contact"
+      ],
+      "workflows": [
+        {
+          "slug": "daily-brief",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cto",
+      "kind": "executive",
+      "persona": "Dexter",
+      "reportsTo": "orchestrator",
+      "ceiling": "L2-delegate-only",
+      "serves": "Derek/Mark/Luke/Brandon/Anna",
+      "division": "Service Delivery & Engineering",
+      "built": true,
+      "memberDomains": [
+        "service",
+        "noc",
+        "problem-mgmt",
+        "change-release",
+        "dispatch",
+        "bcdr",
+        "projects"
+      ],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "delegate",
+        "handoff"
+      ],
+      "okfRooms": [
+        "account",
+        "ticket",
+        "device",
+        "cloud_asset"
+      ],
+      "workflows": [
+        {
+          "slug": "delivery-pulse",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-pulse"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deputy-ciso",
+      "kind": "executive",
+      "persona": "Roman",
+      "reportsTo": "orchestrator",
+      "ceiling": "L2-delegate-only",
+      "serves": "Mark",
+      "division": "Security & Compliance",
+      "built": true,
+      "memberDomains": [
+        "soc",
+        "grc",
+        "identity"
+      ],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "delegate",
+        "handoff"
+      ],
+      "okfRooms": [
+        "account",
+        "device",
+        "cloud_asset",
+        "posture_snapshot",
+        "tenant_posture",
+        "posture_policy"
+      ],
+      "workflows": [
+        {
+          "slug": "security-posture-brief",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deputy-cfo",
+      "kind": "executive",
+      "persona": "Sterling",
+      "reportsTo": "orchestrator",
+      "ceiling": "L2-delegate-only",
+      "serves": "Nick",
+      "division": "Revenue / Client / Finance",
+      "built": true,
+      "memberDomains": [
+        "sales",
+        "marketing",
+        "client-success",
+        "procurement",
+        "finance"
+      ],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "delegate",
+        "handoff"
+      ],
+      "okfRooms": [
+        "account",
+        "opportunity",
+        "invoice",
+        "generated_invoice",
+        "time_record",
+        "timesheet",
+        "expense_item",
+        "expense_report",
+        "license_assignment"
+      ],
+      "workflows": [
+        {
+          "slug": "financial-pulse",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-pulse"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cro",
+      "kind": "executive",
+      "persona": "Jessica",
+      "reportsTo": "orchestrator",
+      "ceiling": "L2-delegate-only",
+      "serves": "Mark",
+      "division": "Platform & Assurance",
+      "built": true,
+      "memberDomains": [
+        "platform",
+        "service-quality",
+        "knowledge"
+      ],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "delegate",
+        "handoff"
+      ],
+      "okfRooms": [
+        "account",
+        "entity_xref",
+        "posture_snapshot",
+        "agent_autopilot_policy"
+      ],
+      "workflows": [
+        {
+          "slug": "risk-assurance-sweep",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "kind": "domain",
+      "persona": "Felix",
+      "reportsTo": "cto",
+      "ceiling": "L1",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "ticket.note"
+      ],
+      "okfRooms": [
+        "ticket",
+        "account",
+        "contact",
+        "device",
+        "cloud_asset",
+        "interaction"
+      ],
+      "workflows": [
+        {
+          "slug": "triage",
+          "stages": [
+            "01-research",
+            "02-asset-status",
+            "03-classify-path",
+            "04-troubleshoot",
+            "05-summary-handoff"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "noc",
+      "kind": "domain",
+      "persona": "Ozzie",
+      "reportsTo": "cto",
+      "ceiling": "L4",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "ticket.note"
+      ],
+      "okfRooms": [
+        "device",
+        "cloud_asset",
+        "ticket",
+        "account"
+      ],
+      "workflows": [
+        {
+          "slug": "alert-triage",
+          "stages": [
+            "01-correlate",
+            "02-classify",
+            "03-route"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "problem-mgmt",
+      "kind": "domain",
+      "persona": "Sage",
+      "reportsTo": "cto",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "ticket.note"
+      ],
+      "okfRooms": [
+        "ticket",
+        "device",
+        "cloud_asset",
+        "account"
+      ],
+      "workflows": [
+        {
+          "slug": "problem-investigation",
+          "stages": [
+            "01-cluster-review",
+            "02-root-cause",
+            "03-propose-fix"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "change-release",
+      "kind": "domain",
+      "persona": "Marshall",
+      "reportsTo": "cto",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "ticket.note"
+      ],
+      "okfRooms": [
+        "ticket",
+        "device",
+        "cloud_asset",
+        "account"
+      ],
+      "workflows": [
+        {
+          "slug": "change-intake",
+          "stages": [
+            "01-assess",
+            "02-plan",
+            "03-park-for-approval"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dispatch",
+      "kind": "domain",
+      "persona": "Scout",
+      "reportsTo": "cto",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "ticket.note"
+      ],
+      "okfRooms": [
+        "ticket",
+        "account",
+        "device"
+      ],
+      "workflows": [
+        {
+          "slug": "dispatch-assign",
+          "stages": [
+            "01-match",
+            "02-propose-schedule"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bcdr",
+      "kind": "domain",
+      "persona": "Phoenix",
+      "reportsTo": "cto",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "ticket.note"
+      ],
+      "okfRooms": [
+        "device",
+        "cloud_asset",
+        "account"
+      ],
+      "workflows": [
+        {
+          "slug": "backup-verification",
+          "stages": [
+            "01-verify",
+            "02-test-restore",
+            "03-report"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "kind": "domain",
+      "persona": "Pierce",
+      "reportsTo": "cto",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall",
+        "ticket.note"
+      ],
+      "okfRooms": [
+        "account",
+        "opportunity",
+        "ticket",
+        "time_record"
+      ],
+      "workflows": []
+    },
+    {
+      "id": "soc",
+      "kind": "domain",
+      "persona": "Cyrus",
+      "reportsTo": "deputy-ciso",
+      "ceiling": "L4",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "device",
+        "cloud_asset",
+        "account",
+        "posture_snapshot"
+      ],
+      "workflows": [
+        {
+          "slug": "security-alert-triage",
+          "stages": [
+            "01-triage",
+            "02-enrich",
+            "03-contain-or-propose"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "grc",
+      "kind": "domain",
+      "persona": "Grace",
+      "reportsTo": "deputy-ciso",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "posture_snapshot",
+        "tenant_posture",
+        "posture_policy",
+        "account"
+      ],
+      "workflows": [
+        {
+          "slug": "control-evidence-sweep",
+          "stages": [
+            "01-collect-evidence",
+            "02-detect-gaps",
+            "03-gap-report"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "identity",
+      "kind": "domain",
+      "persona": "Osiris",
+      "reportsTo": "deputy-ciso",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "account",
+        "entity_xref",
+        "device"
+      ],
+      "workflows": [
+        {
+          "slug": "joiner-mover-leaver",
+          "stages": [
+            "01-resolve-event",
+            "02-scope-access",
+            "03-decide-handoff"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sales",
+      "kind": "domain",
+      "persona": "Chase",
+      "reportsTo": "deputy-cfo",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "consent.check",
+        "send.email",
+        "send.dm",
+        "booking.link",
+        "opportunity.write"
+      ],
+      "okfRooms": [
+        "contact",
+        "account",
+        "opportunity",
+        "interaction",
+        "consent_event",
+        "lead_score",
+        "campaign"
+      ],
+      "workflows": [
+        {
+          "slug": "lead-response",
+          "stages": [
+            "01-intake-triage",
+            "02-research",
+            "03-draft-response",
+            "04-review-send",
+            "05-follow-up"
+          ]
+        },
+        {
+          "slug": "opportunity-create",
+          "stages": [
+            "01-qualify-confirm",
+            "02-create-document",
+            "03-summary-handoff"
+          ]
+        },
+        {
+          "slug": "renewal-reprice",
+          "stages": [
+            "01-renewal-context",
+            "02-margin-input",
+            "03-draft-reprice",
+            "04-review-send"
+          ]
+        },
+        {
+          "slug": "social-inbound-reply",
+          "stages": [
+            "01-intent-confirm",
+            "02-research",
+            "03-draft-reply",
+            "04-review-send"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marketing",
+      "kind": "domain",
+      "persona": "Belle",
+      "reportsTo": "deputy-cfo",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "consent.check",
+        "send.email",
+        "send.dm",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "contact",
+        "account",
+        "interaction",
+        "consent_event",
+        "lead_score",
+        "campaign"
+      ],
+      "workflows": []
+    },
+    {
+      "id": "client-success",
+      "kind": "domain",
+      "persona": "Celeste",
+      "reportsTo": "deputy-cfo",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "consent.check",
+        "send.email",
+        "send.dm",
+        "opportunity.write"
+      ],
+      "okfRooms": [
+        "account",
+        "contact",
+        "opportunity",
+        "interaction",
+        "ticket",
+        "strategic_business_review",
+        "lead_score",
+        "consent_event"
+      ],
+      "workflows": [
+        {
+          "slug": "account-success-plan",
+          "stages": [
+            "01-gather-context",
+            "02-assess-trajectory",
+            "03-draft-plan"
+          ]
+        },
+        {
+          "slug": "client-360",
+          "stages": [
+            "01-ingest-handoff",
+            "02-aggregate-360",
+            "03-assess-flag"
+          ]
+        },
+        {
+          "slug": "cyber-risk-register",
+          "stages": [
+            "01-ingest-findings",
+            "02-assess-risks",
+            "03-curate-register"
+          ]
+        },
+        {
+          "slug": "expansion-create",
+          "stages": [
+            "01-detect-expansion",
+            "02-qualify-triage",
+            "03-create-assign-handoff"
+          ]
+        },
+        {
+          "slug": "health-intervention",
+          "stages": [
+            "01-monitor-health",
+            "02-plan-intervention",
+            "03-intervene"
+          ]
+        },
+        {
+          "slug": "it-budget-planning",
+          "stages": [
+            "01-budget-context",
+            "02-build-forecast",
+            "03-draft-budget"
+          ]
+        },
+        {
+          "slug": "proactive-updates",
+          "stages": [
+            "01-identify-update",
+            "02-draft-share",
+            "03-review-send"
+          ]
+        },
+        {
+          "slug": "qbr-prep",
+          "stages": [
+            "01-period-recap",
+            "02-health-and-forward",
+            "03-assemble-pack"
+          ]
+        },
+        {
+          "slug": "renewal-readiness",
+          "stages": [
+            "01-renewal-context",
+            "02-assess-readiness",
+            "03-recommend-posture"
+          ]
+        },
+        {
+          "slug": "security-awareness",
+          "stages": [
+            "01-ingest-gaps",
+            "02-assess-needs",
+            "03-recommend-enablement"
+          ]
+        },
+        {
+          "slug": "security-posture-review",
+          "stages": [
+            "01-ingest-posture",
+            "02-assess-report",
+            "03-finalize-report"
+          ]
+        },
+        {
+          "slug": "tech-lifecycle",
+          "stages": [
+            "01-estate-context",
+            "02-assess-lifecycle",
+            "03-draft-refresh-plan"
+          ]
+        },
+        {
+          "slug": "tech-roadmap",
+          "stages": [
+            "01-strategic-context",
+            "02-shape-roadmap",
+            "03-draft-plan"
+          ]
+        },
+        {
+          "slug": "vendor-eval-advisory",
+          "stages": [
+            "01-need-context",
+            "02-evaluate-options",
+            "03-recommend"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "procurement",
+      "kind": "domain",
+      "persona": "Vance",
+      "reportsTo": "deputy-cfo",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "account",
+        "license_assignment",
+        "invoice"
+      ],
+      "workflows": []
+    },
+    {
+      "id": "finance",
+      "kind": "domain",
+      "persona": "Audrey",
+      "reportsTo": "deputy-cfo",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read"
+      ],
+      "okfRooms": [
+        "time_record",
+        "timesheet",
+        "expense_item",
+        "expense_report",
+        "invoice",
+        "generated_invoice",
+        "license_assignment"
+      ],
+      "workflows": [
+        {
+          "slug": "ar-aging",
+          "stages": [
+            "01-read-ar",
+            "02-summarize"
+          ]
+        },
+        {
+          "slug": "attestation-context",
+          "stages": [
+            "01-read-attested",
+            "02-flag-deviations"
+          ]
+        },
+        {
+          "slug": "invoice-precheck",
+          "stages": [
+            "01-read-draft",
+            "02-flag-anomalies"
+          ]
+        },
+        {
+          "slug": "month-end-close",
+          "stages": [
+            "01-gather-close-state",
+            "02-checklist-blockers"
+          ]
+        },
+        {
+          "slug": "payroll-recon",
+          "stages": [
+            "01-expected-pay",
+            "02-match-qbo",
+            "03-escalate-mismatch"
+          ]
+        },
+        {
+          "slug": "renewal-margin",
+          "stages": [
+            "01-margin-context",
+            "02-flag-margin",
+            "03-supply-chase"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "kind": "domain",
+      "persona": "Vera",
+      "reportsTo": "cro",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read"
+      ],
+      "okfRooms": [
+        "posture_snapshot",
+        "tenant_posture",
+        "posture_policy",
+        "agent_autopilot_policy",
+        "entity_xref"
+      ],
+      "workflows": [
+        {
+          "slug": "client-success-conformance",
+          "stages": [
+            "01-load-client-success-trace",
+            "02-evaluate-client-success-conformance",
+            "03-record-client-success-finding"
+          ]
+        },
+        {
+          "slug": "conformance-engine",
+          "stages": [
+            "01-load-trace-rulebook",
+            "02-evaluate-conformance",
+            "03-record-finding"
+          ]
+        },
+        {
+          "slug": "delivery-conformance",
+          "stages": [
+            "01-load-delivery-trace",
+            "02-evaluate-delivery-conformance",
+            "03-record-delivery-finding"
+          ]
+        },
+        {
+          "slug": "finance-conformance",
+          "stages": [
+            "01-load-finance-trace",
+            "02-evaluate-finance-conformance",
+            "03-record-finance-finding"
+          ]
+        },
+        {
+          "slug": "marketing-conformance",
+          "stages": [
+            "01-load-marketing-trace",
+            "02-evaluate-marketing-conformance",
+            "03-record-marketing-finding"
+          ]
+        },
+        {
+          "slug": "procurement-conformance",
+          "stages": [
+            "01-load-procurement-trace",
+            "02-evaluate-procurement-conformance",
+            "03-record-procurement-finding"
+          ]
+        },
+        {
+          "slug": "sales-conformance",
+          "stages": [
+            "01-load-sales-trace",
+            "02-evaluate-sales-conformance",
+            "03-record-sales-finding"
+          ]
+        },
+        {
+          "slug": "service-conformance",
+          "stages": [
+            "01-load-service-trace",
+            "02-evaluate-service-conformance",
+            "03-record-service-finding"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "service-quality",
+      "kind": "domain",
+      "persona": "Tess",
+      "reportsTo": "cro",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "ticket",
+        "account"
+      ],
+      "workflows": [
+        {
+          "slug": "ticket-quality-audit",
+          "stages": [
+            "01-sample-scope",
+            "02-score-quality",
+            "03-flag-recommend"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "knowledge",
+      "kind": "domain",
+      "persona": "Lexicon",
+      "reportsTo": "cro",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "built": false,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "account",
+        "device",
+        "cloud_asset"
+      ],
+      "workflows": [
+        {
+          "slug": "doc-sync",
+          "stages": [
+            "01-detect-drift",
+            "02-draft-update",
+            "03-propose-diff"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "orchestrator",
+      "to": "chief-of-staff"
+    },
+    {
+      "from": "orchestrator",
+      "to": "cto"
+    },
+    {
+      "from": "orchestrator",
+      "to": "deputy-ciso"
+    },
+    {
+      "from": "orchestrator",
+      "to": "deputy-cfo"
+    },
+    {
+      "from": "orchestrator",
+      "to": "cro"
+    },
+    {
+      "from": "cto",
+      "to": "service"
+    },
+    {
+      "from": "cto",
+      "to": "noc"
+    },
+    {
+      "from": "cto",
+      "to": "problem-mgmt"
+    },
+    {
+      "from": "cto",
+      "to": "change-release"
+    },
+    {
+      "from": "cto",
+      "to": "dispatch"
+    },
+    {
+      "from": "cto",
+      "to": "bcdr"
+    },
+    {
+      "from": "cto",
+      "to": "projects"
+    },
+    {
+      "from": "deputy-ciso",
+      "to": "soc"
+    },
+    {
+      "from": "deputy-ciso",
+      "to": "grc"
+    },
+    {
+      "from": "deputy-ciso",
+      "to": "identity"
+    },
+    {
+      "from": "deputy-cfo",
+      "to": "sales"
+    },
+    {
+      "from": "deputy-cfo",
+      "to": "marketing"
+    },
+    {
+      "from": "deputy-cfo",
+      "to": "client-success"
+    },
+    {
+      "from": "deputy-cfo",
+      "to": "procurement"
+    },
+    {
+      "from": "deputy-cfo",
+      "to": "finance"
+    },
+    {
+      "from": "cro",
+      "to": "platform"
+    },
+    {
+      "from": "cro",
+      "to": "service-quality"
+    },
+    {
+      "from": "cro",
+      "to": "knowledge"
+    }
+  ]
+}

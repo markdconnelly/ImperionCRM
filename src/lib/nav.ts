@@ -27,6 +27,10 @@ export const navTop: NavItem[] = [
   { key: "contacts", label: "Contacts", icon: "Contact", href: "/contacts" },
   // CMDB CI register (ADR-0078) — admin | support(Technician), `canSeeCmdb`.
   { key: "cmdb", label: "CMDB", icon: "Network", href: "/cmdb" },
+  // Org tree (#1539) — the agent org (Nova → C-suite → domains → playbooks) derived
+  // from icm/org.yaml + the live dial/queue overlay. Admin gate (`canSeeAgentPages`),
+  // same as the agent surfaces it visualizes.
+  { key: "org", label: "Org", icon: "Workflow", href: "/org" },
 ];
 
 // ── MID band: collapsible groups. Each group header carries a `grp-*` key whose
