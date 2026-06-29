@@ -6236,7 +6236,351 @@
       "id": "marketing",
       "persona": "Belle",
       "kind": "domain",
-      "procedures": []
+      "procedures": [
+        {
+          "slug": "social-content",
+          "title": "social-content (marketing v1)",
+          "job": "compose one on-brand Social Post once, adapt it per network, and get it published — drafted by Belle, approved by a human (v1), to our own established audience. This is Belle's signature outbound act and her ladder tracer: it exercises L0 grounding → L2 internal compose → the L3 routine-post gate → the always-gate blast escalation. (Stream 01-A; ADR-0124 compose-once → fan-out.)",
+          "trigger": "a content-calendar slot is due, a campaign milestone fires, or an operator says \"post this.\" One run per Social Post.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "a ROUTINE organic post — pre-substantiated, on-brand, to an established channel/audience within frequency limits, with a clean audit (ADR-0128 L3 routine, externally reversible via unpublish); a large/new-audience posture, any unsubstantiated claim, an empty brand room, or any audit failure parks for a human in every mode. Money (boost/ad) never enters this workflow.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "social_post",
+            "social_post_channel",
+            "campaign",
+            "social_metric"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice",
+            "./skills/channel-norms",
+            "./skills/substantiation-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "assemble the grounded brief for one Social Post — voice, channel norms, the linked campaign, recent performance, and the slot — each cited with its as-of.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the slot: target channel set, scheduled time, linked `campaign` id (if any). Dedupe against an existing `social_post` for the slot."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read recent `social_metric` for the channel(s); note what to lean into. A dormant/stale collector → flag stale, never present as live."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: the objective, the angle, the audience, the key message — **cite each source + as-of**. If the brand room is empty/missing, **park** — never invent a voice or a claim."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The slot / request",
+                    "trigger payload",
+                    "the one post",
+                    "what we're posting and when"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "how we sound (domain-tier skill)"
+                  ],
+                  [
+                    "Channel norms",
+                    "`./skills/channel-norms.md`",
+                    "the target channels",
+                    "hard format constraints"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the slot's campaign",
+                    "objective, theme, the angle to serve"
+                  ],
+                  [
+                    "Recent performance",
+                    "`` `okf:social_metric` ``",
+                    "this channel, recent window",
+                    "what's landed lately"
+                  ],
+                  [
+                    "Calendar slot / draft",
+                    "`` `okf:social_post` ``",
+                    "the scheduled slot, if any",
+                    "dedupe against an existing draft"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — channel set, scheduled time, linked campaign id, the objective + angle + audience + key message, and the cited sources (each with as-of).",
+              "audit": [
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Brand voice + channel norms loaded and reflected in the angle",
+                "Linked campaign resolved (or explicitly \"none — standalone\")",
+                "Not a duplicate of an existing post for the slot",
+                "Empty/missing brand room → parked, not improvised"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-compose",
+              "name": "compose",
+              "job": "author one composition and its per-network adaptations, every claim substantiated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the **single composition** from the brief — on-brand, one idea, one CTA. Front-load the hook."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "For each target channel, **adapt** the composition per `channel-norms.md` (length, links, hashtags, media) — adapt, don't duplicate."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Run `substantiation-rules.md` over every claim: name a source + as-of, or **cut/soften**. No fabricated stat, testimonial, quote, capability, or scarcity. A claim that cannot be sourced → **park** (do not ship the draft)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stage the composition on the `social_post` and one `social_post_channel` row per target channel (internal, reversible — L2)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 01 output",
+                    "all",
+                    "objective, angle, audience, message"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "tone (domain-tier skill)"
+                  ],
+                  [
+                    "Channel norms",
+                    "`./skills/channel-norms.md`",
+                    "the brief's channels",
+                    "length/format/link rules"
+                  ],
+                  [
+                    "Substantiation rules",
+                    "`./skills/substantiation-rules.md`",
+                    "all",
+                    "cite-or-cut"
+                  ],
+                  [
+                    "Post record",
+                    "`` `okf:social_post` ``",
+                    "the draft being written",
+                    "where the composition is staged"
+                  ],
+                  [
+                    "Channel rows",
+                    "`` `okf:social_post_channel` ``",
+                    "the brief's channels",
+                    "the fan-out targets to adapt for"
+                  ]
+                ]
+              },
+              "outputs": "`composition.md` — the single composition, the per-channel adaptations, the substantiation reference for each claim, and the audience descriptor (established vs new/large — feeds the stage-03 gate).",
+              "audit": [
+                "Every claim has a substantiation reference + as-of, or was cut (no fabrication)",
+                "One CTA per post; on-brand; channel constraints met (length/links/media/alt-text)",
+                "Adaptations differ per channel — not a copy-paste",
+                "Audience descriptor stated (established | new/large) for the gate",
+                "No client identity / confidential data in public copy"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-publish-gate",
+              "name": "publish-gate",
+              "job": "route the publish as a Social Action through the gauntlet to the cockpit, escalating a large/new-audience posture to an always-gate blast.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Classify the audience posture from the composition's descriptor: **routine** (established audience, within frequency cap) vs **blast** (new or materially larger audience)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Emit the publish as a Social Action (`social_dispatch`) → the gauntlet. A **routine** post carries the L3 routine-post rung (ADR-0128); a **blast** escalates to `always_gate` (ADR-0136 A2 class-2) — staged, never auto."
+                },
+                {
+                  "tag": "script",
+                  "text": "Present the **4-part easy-button** (A4): the drafted post + the grounded why (substantiation refs) + one-click **Publish** + one-click **unpublish** (the reversible inverse), with the reach/audience preview."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Composition",
+                    "stage 02 output",
+                    "all",
+                    "what's being published + the substantiation refs"
+                  ],
+                  [
+                    "Post record",
+                    "`` `okf:social_post` ``",
+                    "this post",
+                    "the draft to publish"
+                  ],
+                  [
+                    "Channel rows",
+                    "`` `okf:social_post_channel` ``",
+                    "this post's channels",
+                    "the per-channel publish targets"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-publish.md` — the per-channel publish actions, the audience posture (routine | blast), the substantiation summary, and the gauntlet routing decision.",
+              "audit": [
+                "Audience posture classified (routine | blast); a blast is marked `always_gate`",
+                "Substantiation summary attached for every claim (no unsourced claim proceeds)",
+                "The easy-button carries the reversible inverse (unpublish)",
+                "Money (boost/ad) is NOT in this action — that is procedure 01-B/01-C"
+              ],
+              "checkpoint": "**Human approves / edits the publish in the cockpit.** In `draft` mode every publish parks. In `auto` mode, stage 03 may self-approve **only a routine** organic post — pre-substantiated, on-brand, to an established audience, within frequency caps, with a clean audit (the L3 routine carve-out). A **blast**, any **unsubstantiated** claim, or **any audit failure** parks for a human in every mode."
+            },
+            {
+              "slug": "04-dispatch",
+              "name": "dispatch",
+              "job": "publish the approved post per channel, idempotently, and read back the status.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each approved channel, dispatch via the per-network adapter (`social_dispatch`, ADR-0124), **idempotency-keyed so a retry is a no-op** (A9b). A channel with a dormant/missing token is **skipped and flagged**, never silently dropped."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Read back** the publish status + external post id per channel before advancing (A9c); record it on the `social_post_channel` row."
+                },
+                {
+                  "tag": "script",
+                  "text": "Advance the `social_post` to **Published** (or **Partially-published** if a channel was dormant), with the per-channel result."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Approved publish",
+                    "stage 03 output",
+                    "all",
+                    "the human-approved per-channel actions"
+                  ],
+                  [
+                    "Channel rows",
+                    "`` `okf:social_post_channel` ``",
+                    "this post's channels",
+                    "the dispatch targets + external refs"
+                  ],
+                  [
+                    "Post record",
+                    "`` `okf:social_post` ``",
+                    "this post",
+                    "the status to advance"
+                  ]
+                ]
+              },
+              "outputs": "`dispatch-result.md` — per-channel: published | skipped-dormant | failed, the external post id where published, and the resulting `social_post` status.",
+              "audit": [
+                "Every dispatch is idempotency-keyed (a retry is a no-op)",
+                "Status read back per channel before close (no assume-success)",
+                "Dormant/failed channels flagged, not presented as published",
+                "`social_post` status reflects the true per-channel outcome"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "05-reconcile",
+              "name": "reconcile",
+              "job": "back-sync the published post's early metrics and close the run.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Register the published external post ids for metric collection so the next run's stage 01 grounds on real numbers (the collector hydrates async; this stage only registers the link, ADR-0124)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stamp the run outcome on the `social_post` (published channels, approver, as-of). Cross-post performance correlation stays internal/aggregated (A7 — pool, never bleed)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Close the run."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Dispatch result",
+                    "stage 04 output",
+                    "all",
+                    "what published, with external ids"
+                  ],
+                  [
+                    "Metric store",
+                    "`` `okf:social_metric` ``",
+                    "this post's channels",
+                    "where performance lands"
+                  ],
+                  [
+                    "Post record",
+                    "`` `okf:social_post` ``",
+                    "this post",
+                    "the run to close"
+                  ]
+                ]
+              },
+              "outputs": "`reconcile.md` — the registered metric links, the run outcome stamp, and the close state.",
+              "audit": [
+                "Metric links registered for every published channel",
+                "Run outcome stamped (channels, approver, as-of)",
+                "No cross-client/audience data bled into the record (internal/aggregated only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        }
+      ]
     },
     "client-success": {
       "id": "client-success",

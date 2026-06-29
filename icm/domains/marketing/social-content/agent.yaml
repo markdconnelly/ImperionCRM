@@ -1,0 +1,15 @@
+name: social-content
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [social_post, social_post_channel, campaign, social_metric]   # subset of domains/marketing/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]                        # subset of domains/marketing/room.yaml — ground + compose only; the publish is a gauntlet-gated Social Action, not a room.yaml tool
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+  - ./skills/channel-norms                   # Tier 3 — workflow-local
+  - ./skills/substantiation-rules            # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "a ROUTINE organic post — pre-substantiated, on-brand, to an established channel/audience within frequency limits, with a clean audit (ADR-0128 L3 routine, externally reversible via unpublish); a large/new-audience posture, any unsubstantiated claim, an empty brand room, or any audit failure parks for a human in every mode. Money (boost/ad) never enters this workflow."

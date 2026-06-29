@@ -54,6 +54,19 @@ okf_rooms:
   - consent_event
   - lead_score
   - campaign
+  # Marketing / Demand workspace (ADR-0124 unified social plane; ADR-0073 journeys) —
+  # Belle's Stream 01 (Demand → Lead) read surface. Owned by the marketing agent; the
+  # social/ad/journey entities the demand engine grounds, composes, and reports on.
+  - social_post              # compose-once social post (the single composition)
+  - social_post_channel      # its per-network adaptation (fan-out target)
+  - social_engagement        # inbound social interaction (DM / comment / mention)
+  - social_metric            # organic post/channel performance
+  - ad                       # paid placement (Belle drafts; spend stays always_gate)
+  - campaign_send            # the per-send email/campaign fact (consent-gated)
+  - campaign_metric          # campaign performance (attribution, reporting)
+  - lead_hook                # raw inbound lead-capture hook (pre-dedupe)
+  - workflow                 # journey / nurture cadence definition (ADR-0073)
+  - contact_social_identity  # social handle → contact match (inbound author-link)
   - ticket           # Service workspace (#1067) — Autotask-SoR ticket (read)
   - device           # Service workspace — endpoint/network CI status (read)
   - cloud_asset      # Service workspace — cloud resource CI status (read)

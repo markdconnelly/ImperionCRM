@@ -7,19 +7,39 @@
 
 reports_to: deputy-cfo   # Belle reports to Sterling (Revenue/Client/Finance division)
 
-# Marketing nurtures demand and hands off to Sales at the lead_score threshold.
+# Marketing runs the Demand → Lead engine (Stream 01) and hands off to Sales at the
+# lead_score threshold. This budget is Belle's read/grant surface; it MUST stay a
+# subset of CONSTITUTION.yaml (workflow ⊆ domain ⊆ Constitution, agent-yaml-gate.mjs).
+#
+# Note on outbound: a public Social Action (publish/reply) is NOT a room.yaml tool —
+# it runs through the action-catalog `social_dispatch` executor gated by an
+# agent_tool_grant (migration 0209, BE #418), never a direct silver write. The send.*
+# tools below are the approval-gated email/DM send paths (ADR-0058 only).
 tools:
-  - pg.read
-  - consent.check
-  - send.email
-  - send.dm
-  - knowledge.search
-  - memory.recall
+  - pg.read              # read-only silver/gold across the demand read surface
+  - consent.check        # per-recipient consent basis at send time (CAN-SPAM gate)
+  - send.email           # approval-gated campaign/lead email (ADR-0058 path only)
+  - send.dm              # approval-gated in-channel social DM reply (ADR-0058 only)
+  - knowledge.search     # OKF-grounded recall (brand voice, claims, prior content)
+  - memory.recall        # deliberate long-term memory recall (ADR-0116)
 
 okf_rooms:
+  # Core demand entities
   - contact
   - account
   - interaction
   - consent_event
   - lead_score
   - campaign
+  - lead_hook                # raw inbound capture (01-F)
+  # Social plane (ADR-0124) — compose/fan-out, inbound, performance
+  - social_post              # 01-A compose-once
+  - social_post_channel      # 01-A per-network fan-out
+  - social_engagement        # 01-D/01-E inbound DM/comment + listening
+  - social_metric            # 01-A/01-E/01-M organic performance
+  - contact_social_identity  # 01-D/01-F author → contact match
+  - ad                       # 01-B/01-C/01-K paid (draft only; spend always_gate)
+  # Campaigns, journeys, reporting
+  - campaign_send            # 01-I per-send fact (consent-gated)
+  - campaign_metric          # 01-M campaign performance / attribution
+  - workflow                 # 01-H nurture journey definition (ADR-0073)

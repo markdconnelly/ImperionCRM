@@ -242,6 +242,15 @@ describe("catalog registration — the 11 Social Action kinds (ADR-0124 #4, #135
 
 describe("ADR-0128 ladder tags — auto_at_level + always_gate (#1412)", () => {
   const MONEY = ["social_boost_post", "social_ad_deploy", "social_ad_pause", "social_ad_rebudget"];
+  const ORGANIC = [
+    "social_publish_fb_post",
+    "social_reply_fb_comment",
+    "social_publish_ig_media",
+    "social_reply_ig_comment",
+    "social_reply_ig_direct",
+    "social_post_threads",
+    "social_reply_threads",
+  ];
 
   it("every registered def carries a valid ladder rung (0–5) and a boolean always_gate", () => {
     for (const def of listActionDefs()) {
@@ -275,10 +284,15 @@ describe("ADR-0128 ladder tags — auto_at_level + always_gate (#1412)", () => {
     }
   });
 
-  it("a high-floor organic kind parks until the dial reaches its rung", () => {
-    const fb = getActionDef("social_publish_fb_post")!; // L5, not gated
-    expect(selectActuation(fb, 4)).toBe("park");
-    expect(selectActuation(fb, 5)).toBe("auto");
+  it("the organic post/reply kinds are L3 routine (Stream 01-A/01-D) — park below, auto at the rung", () => {
+    // A routine organic post/reply on our own presence is low-risk-external (ADR-0128 L3); the
+    // client_pii data-class ceiling (ADR-0118) is enforced at the backend gauntlet, not here.
+    for (const kind of ORGANIC) {
+      const def = getActionDef(kind)!;
+      expect(def.autoAtLevel, kind).toBe(3);
+      expect(selectActuation(def, 2), kind).toBe("park"); // below the L3 floor
+      expect(selectActuation(def, 3), kind).toBe("auto"); // at the floor, execute-then-notify
+    }
   });
 });
 

@@ -226,18 +226,24 @@ const REGISTRY: Record<string, ActionDef> = {
   // 1:1 contact-consent gate), HARD-ceiling, always cockpit-gated (v1 human-approves-all,
   // ADR-0124 #4). The backend re-asserts the grant + ceiling + per-channel token dormancy at
   // execution; the front end only PROPOSES. The 7 ORGANIC kinds are `client_pii` (third-party
-  // author handles in the payload); the 4 MONEY/ad kinds are `financial` — ADR-0109 HARD money
-  // ceiling, can NEVER be auto-granted, always Mark-gated.
+  // author handles in the payload) at `autoAtLevel:3` — a routine organic post/reply on OUR own
+  // presence is low-risk-external (Stream 01-A/01-D, ADR-0128 L3; the send_email/
+  // autotask_post_reply L3 precedent). The PII guard is the client_pii data-class ceiling
+  // (ADR-0118, backend gauntlet), NOT the rung; a large/new-audience escalation is a
+  // workflow-layer always_gate (01-A); v1 keeps every kind withheld (grant 0209). The 4 MONEY/ad
+  // kinds are `financial` — ADR-0109 HARD money ceiling, can NEVER be auto-granted, Mark-gated.
   social_publish_fb_post: {
     kind: "social_publish_fb_post",
     label: "Publish Facebook post",
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
-    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
-    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
-    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
-    autoAtLevel: 5,
+    // L3 — a routine organic post/reply on OUR OWN presence is low-risk-external, execute-then-
+    // notify (Stream 01-A/01-D; ADR-0128 L3; the send_email / autotask_post_reply L3 precedent).
+    // client_pii (third-party author handles in the payload) → the data-class ceiling (ADR-0118)
+    // is the PII guard at the BACKEND gauntlet, NOT this rung; a large/new-audience escalation is
+    // a workflow-layer always_gate (01-A). v1 keeps it withheld (grant 0209). alwaysGate:false.
+    autoAtLevel: 3,
     alwaysGate: false,
     executor: "social_dispatch",
     // socialPostId = the draft social_post being fanned out to this channel.
@@ -249,10 +255,12 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
-    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
-    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
-    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
-    autoAtLevel: 5,
+    // L3 — a routine organic post/reply on OUR OWN presence is low-risk-external, execute-then-
+    // notify (Stream 01-A/01-D; ADR-0128 L3; the send_email / autotask_post_reply L3 precedent).
+    // client_pii (third-party author handles in the payload) → the data-class ceiling (ADR-0118)
+    // is the PII guard at the BACKEND gauntlet, NOT this rung; a large/new-audience escalation is
+    // a workflow-layer always_gate (01-A). v1 keeps it withheld (grant 0209). alwaysGate:false.
+    autoAtLevel: 3,
     alwaysGate: false,
     executor: "social_dispatch",
     // engagementId = the social_engagement / interaction id being replied to.
@@ -264,10 +272,12 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
-    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
-    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
-    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
-    autoAtLevel: 5,
+    // L3 — a routine organic post/reply on OUR OWN presence is low-risk-external, execute-then-
+    // notify (Stream 01-A/01-D; ADR-0128 L3; the send_email / autotask_post_reply L3 precedent).
+    // client_pii (third-party author handles in the payload) → the data-class ceiling (ADR-0118)
+    // is the PII guard at the BACKEND gauntlet, NOT this rung; a large/new-audience escalation is
+    // a workflow-layer always_gate (01-A). v1 keeps it withheld (grant 0209). alwaysGate:false.
+    autoAtLevel: 3,
     alwaysGate: false,
     executor: "social_dispatch",
     schema: { socialPostId: { type: "string", required: true } },
@@ -278,10 +288,12 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
-    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
-    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
-    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
-    autoAtLevel: 5,
+    // L3 — a routine organic post/reply on OUR OWN presence is low-risk-external, execute-then-
+    // notify (Stream 01-A/01-D; ADR-0128 L3; the send_email / autotask_post_reply L3 precedent).
+    // client_pii (third-party author handles in the payload) → the data-class ceiling (ADR-0118)
+    // is the PII guard at the BACKEND gauntlet, NOT this rung; a large/new-audience escalation is
+    // a workflow-layer always_gate (01-A). v1 keeps it withheld (grant 0209). alwaysGate:false.
+    autoAtLevel: 3,
     alwaysGate: false,
     executor: "social_dispatch",
     schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
@@ -292,10 +304,12 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
-    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
-    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
-    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
-    autoAtLevel: 5,
+    // L3 — a routine organic post/reply on OUR OWN presence is low-risk-external, execute-then-
+    // notify (Stream 01-A/01-D; ADR-0128 L3; the send_email / autotask_post_reply L3 precedent).
+    // client_pii (third-party author handles in the payload) → the data-class ceiling (ADR-0118)
+    // is the PII guard at the BACKEND gauntlet, NOT this rung; a large/new-audience escalation is
+    // a workflow-layer always_gate (01-A). v1 keeps it withheld (grant 0209). alwaysGate:false.
+    autoAtLevel: 3,
     alwaysGate: false,
     executor: "social_dispatch",
     schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },
@@ -306,10 +320,12 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
-    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
-    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
-    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
-    autoAtLevel: 5,
+    // L3 — a routine organic post/reply on OUR OWN presence is low-risk-external, execute-then-
+    // notify (Stream 01-A/01-D; ADR-0128 L3; the send_email / autotask_post_reply L3 precedent).
+    // client_pii (third-party author handles in the payload) → the data-class ceiling (ADR-0118)
+    // is the PII guard at the BACKEND gauntlet, NOT this rung; a large/new-audience escalation is
+    // a workflow-layer always_gate (01-A). v1 keeps it withheld (grant 0209). alwaysGate:false.
+    autoAtLevel: 3,
     alwaysGate: false,
     executor: "social_dispatch",
     schema: { socialPostId: { type: "string", required: true } },
@@ -320,10 +336,12 @@ const REGISTRY: Record<string, ActionDef> = {
     tier: "T3",
     dataClass: "client_pii",
     consentClass: "none",
-    // L5 — customer-facing public broadcast/reply on OUR presence (ADR-0128 L5). client_pii
-    // (third-party author handles in the payload) → the data-class ceiling (ADR-0118) gates it;
-    // v1 human-approves every Social Action (ADR-0124 D4). Not a commitment → alwaysGate:false.
-    autoAtLevel: 5,
+    // L3 — a routine organic post/reply on OUR OWN presence is low-risk-external, execute-then-
+    // notify (Stream 01-A/01-D; ADR-0128 L3; the send_email / autotask_post_reply L3 precedent).
+    // client_pii (third-party author handles in the payload) → the data-class ceiling (ADR-0118)
+    // is the PII guard at the BACKEND gauntlet, NOT this rung; a large/new-audience escalation is
+    // a workflow-layer always_gate (01-A). v1 keeps it withheld (grant 0209). alwaysGate:false.
+    autoAtLevel: 3,
     alwaysGate: false,
     executor: "social_dispatch",
     schema: { engagementId: { type: "string", required: true }, text: { type: "string", required: true } },

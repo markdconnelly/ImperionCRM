@@ -816,7 +816,7 @@
       "persona": "Belle",
       "reportsTo": "deputy-cfo",
       "humanManager": "derek",
-      "ceiling": "L2",
+      "ceiling": "L3",
       "serves": null,
       "division": null,
       "title": "Marketing",
@@ -837,9 +837,30 @@
         "interaction",
         "consent_event",
         "lead_score",
-        "campaign"
+        "campaign",
+        "lead_hook",
+        "social_post",
+        "social_post_channel",
+        "social_engagement",
+        "social_metric",
+        "contact_social_identity",
+        "ad",
+        "campaign_send",
+        "campaign_metric",
+        "workflow"
       ],
-      "workflows": []
+      "workflows": [
+        {
+          "slug": "social-content",
+          "stages": [
+            "01-ground",
+            "02-compose",
+            "03-publish-gate",
+            "04-dispatch",
+            "05-reconcile"
+          ]
+        }
+      ]
     },
     {
       "id": "client-success",

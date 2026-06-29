@@ -112,7 +112,7 @@ domains:
   - { domain: grc,             persona: Grace,    reports_to: deputy-ciso, human_manager: mark,    ceiling: L2, built: false, title: "GRC",                       summary: "Holds posture, evidence, and control gaps." }
   - { domain: identity,        persona: Osiris,   reports_to: deputy-ciso, human_manager: mark,    ceiling: L3, built: false, title: "Identity & Access",         summary: "Manages joiner-mover-leaver and least-privilege access." }
   - { domain: sales,           persona: Chase,    reports_to: deputy-cfo,  human_manager: derek,   ceiling: L3, built: true,  title: "Sales",                     summary: "Qualifies leads and moves the pipeline." }
-  - { domain: marketing,       persona: Belle,    reports_to: deputy-cfo,  human_manager: derek,   ceiling: L2, built: true,  title: "Marketing",                 summary: "Runs demand generation and protects the brand." }
+  - { domain: marketing,       persona: Belle,    reports_to: deputy-cfo,  human_manager: derek,   ceiling: L3, built: true,  title: "Marketing",                 summary: "Runs demand generation and protects the brand." }
   - { domain: client-success,  persona: Celeste,  reports_to: deputy-cfo,  human_manager: caity,   ceiling: L3, built: true,  title: "Client Success",            summary: "Owns client health and renewals." }
   - { domain: procurement,     persona: Vance,    reports_to: deputy-cfo,  human_manager: nick,    ceiling: L2, built: true,  title: "Procurement",               summary: "Manages vendor spend and renewals." }
   - { domain: finance,         persona: Audrey,   reports_to: deputy-cfo,  human_manager: nick,    ceiling: L2, built: true,  title: "Finance",                   summary: "Read-only finance reporting and the monthly close." }
