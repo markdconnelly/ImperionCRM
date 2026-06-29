@@ -83,3 +83,8 @@ okf_rooms:
   - posture_policy     # Platform/Governance — posture policy + golden baselines (read)
   - agent_autopilot_policy # Platform/Governance — the autonomy dial Vera observes (read)
   - entity_xref        # Platform/Governance — the identity spine (read)
+  - partner            # Partnerships workspace (#1623/#1624) — app-native channel/
+                       #   alliance partner (SELL-side; the twin of buy-side
+                       #   procurement). Bridget reads (read)
+  - partner_deal       # Partnerships workspace (#1623/#1624) — co-sell/referral
+                       #   registration + attribution (the Bridget→Chase seam) (read)

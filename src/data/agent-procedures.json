@@ -9912,6 +9912,332 @@
         }
       ]
     },
+    "partnerships": {
+      "id": "partnerships",
+      "persona": "Bridget",
+      "kind": "domain",
+      "procedures": [
+        {
+          "slug": "partner-deal-routing",
+          "title": "partner-deal-routing (partnerships v1)",
+          "job": "every co-sell / partner-sourced opportunity that comes in gets its partner resolved, its deal classified, clean attribution stamped, and a managed hand-off to Sales — drafted by Bridget, the close owned by Chase.",
+          "trigger": "a partner-sourced or co-sell signal lands — a partner registers a deal, a partner-influenced lead arrives, or a marketplace/co-sell notification is routed to Bridget. One run per partner-sourced opportunity.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "resolve the partner + classify the deal (co_sell|referral|direct) + stamp a drafted attribution and prepare the parked hand-off to Chase, when every audit is clean and the partner resolves unambiguously; a channel-conflict collision, any commitment/money, an unresolved partner, or any audit failure parks for a human in every mode",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "partner",
+            "partner_deal",
+            "account",
+            "opportunity"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "turn a partner-sourced signal into one grounded context record — the partner, the account, and (if opened) the opportunity, each cited with an as-of.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Extract identity fields (partner name/external_ref, account name/domain, opportunity ref if present, deal-type hint, message text) from the payload's known keys. No partner identifier at all → audit fail."
+                },
+                {
+                  "tag": "script",
+                  "text": "Look up the partner by name/external_ref; the account by name/domain; the opportunity by ref if present. Record each match (id) or `unresolved`, **with the as-of of each read** (A5)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Summarize the grounded context in two sentences: who the partner is, what account/opportunity is in play, and what is still unknown. State unknowns plainly — do not infer a partner or an account that did not resolve."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Partner signal",
+                    "the triggering row (partner registration / partner-influenced lead / co-sell notification)",
+                    "full payload",
+                    "the subject"
+                  ],
+                  [
+                    "Partner",
+                    "silver `partner` · `okf:partner`",
+                    "match candidate by name/external_ref",
+                    "identify the registering partner"
+                  ],
+                  [
+                    "Registered deals",
+                    "silver `partner_deal` · `okf:partner_deal`",
+                    "deals on this partner + this account",
+                    "prior-state for conflict/attribution"
+                  ],
+                  [
+                    "Account",
+                    "silver `account` · `okf:account`",
+                    "the target client by name/domain",
+                    "the co-sell target"
+                  ],
+                  [
+                    "Opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "the opportunity if already opened",
+                    "the close seam"
+                  ]
+                ]
+              },
+              "outputs": "`ground.md` — the resolved partner id (or `unresolved`), account id (or `new`/ `unresolved`), opportunity id (or `none`), each with its as-of, plus the two-sentence context summary.",
+              "audit": [
+                "A partner identifier was present in the signal (else the run parks)",
+                "Each lookup states a matched id or `unresolved`/`new`/`none` (blank is not valid)",
+                "Each grounded fact carries an as-of; no inferred partner or account"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-resolve-partner",
+              "name": "resolve-partner",
+              "job": "resolve the registering partner unambiguously and draft an honest, evidence-cited attribution of what the partner did.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Confirm the partner resolved to exactly one `partner` row; pull its `tier`, `program`, `status`. Ambiguous or `unresolved` → audit fail (park for a human to disambiguate — never guess the partner)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Gather the attribution signals: how the deal reached us (registration, referral, co-sell motion), what the partner contributed, citing the source + as-of from `ground.md` and `partner_deal`."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the attribution in one short paragraph — what the partner *actually did*, never inflated. No fabricated capability or tier; if the contribution can't be grounded, say so and mark the attribution `needs-human`."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Ground record",
+                    "stage 01 `ground.md`",
+                    "all",
+                    "the resolved context"
+                  ],
+                  [
+                    "Partner",
+                    "silver `partner` · `okf:partner`",
+                    "the resolved partner row (tier/program/status)",
+                    "confirm identity + tier"
+                  ],
+                  [
+                    "Registered deals",
+                    "silver `partner_deal` · `okf:partner_deal`",
+                    "this partner's prior deals on this account",
+                    "attribution evidence"
+                  ]
+                ]
+              },
+              "outputs": "`attribution.md` — the confirmed partner id + tier/program/status, the drafted attribution paragraph (cited), and an `attribution_confidence` flag (`grounded` | `needs-human`).",
+              "audit": [
+                "Exactly one partner resolved (else park)",
+                "Attribution cites its source + as-of; no inflated or fabricated contribution",
+                "`attribution_confidence` is set (`grounded` or `needs-human`)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-classify-route",
+              "name": "classify-route",
+              "job": "classify the deal `co_sell | referral | direct` and check the account for a channel-conflict collision before any hand-off.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Classify the deal type from the attribution + signal: `co_sell` (joint pursuit), `referral` (partner hands the lead, we close), or `direct` (partner is reseller of record). One sentence of reasoning."
+                },
+                {
+                  "tag": "script",
+                  "text": "Channel-conflict check: read every `partner_deal` already registered against this account (`okf:partner_deal` on `account_id`). If another partner holds a registered, non-closed deal on the same account → flag `channel_conflict = true` with the colliding partner/deal ids."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "If `channel_conflict`, draft a proposed resolution (who registered first, the fair-dealing read) — **as a proposal for a human, never a decision** (BO-02 §5). No conflict → note `clear`."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Ground record",
+                    "stage 01 `ground.md`",
+                    "all",
+                    "the resolved context"
+                  ],
+                  [
+                    "Attribution",
+                    "stage 02 `attribution.md`",
+                    "all",
+                    "the partner + contribution"
+                  ],
+                  [
+                    "Registered deals",
+                    "silver `partner_deal` · `okf:partner_deal`",
+                    "ALL deals registered against this account",
+                    "conflict detection"
+                  ],
+                  [
+                    "Account",
+                    "silver `account` · `okf:account`",
+                    "the target account",
+                    "the collision axis"
+                  ]
+                ]
+              },
+              "outputs": "`routing.md` — the deal-type classification + reasoning, the channel-conflict flag (`clear` | colliding ids + proposed resolution).",
+              "audit": [
+                "Exactly one deal type (`co_sell`/`referral`/`direct`) with reasoning",
+                "Channel-conflict check ran; result is `clear` or names the colliding deal(s)",
+                "If `channel_conflict`, the resolution is framed as a proposal (the run parks at stage 04 regardless; a conflict never self-resolves)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "04-handoff-chase",
+              "name": "handoff-chase",
+              "job": "assemble the attributed, classified opportunity into a parked hand-off proposal for Chase — the checkpoint where a human approves routing the deal to the close.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the hand-off packet: partner + attribution + deal type + account + opportunity ref (if any) + the channel-conflict status."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the hand-off note to Chase — the partner-sourced context and the attribution to stamp on the opportunity, in two or three sentences. This is a *proposal*: Bridget does not open, modify, or close the opportunity, commit terms, or move money (the close is Chase's; BO-02 §5)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the packet for human approval. A `channel_conflict = true` from stage 03, an `attribution_confidence = needs-human`, or any prior audit failure parks unconditionally (never auto-hand-off a contested or ungrounded deal)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Ground record",
+                    "stage 01 `ground.md`",
+                    "all",
+                    "the resolved context"
+                  ],
+                  [
+                    "Attribution",
+                    "stage 02 `attribution.md`",
+                    "all",
+                    "the partner + contribution"
+                  ],
+                  [
+                    "Routing",
+                    "stage 03 `routing.md`",
+                    "all",
+                    "deal type + conflict status"
+                  ],
+                  [
+                    "Opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "the opportunity if opened",
+                    "the close target Chase owns"
+                  ]
+                ]
+              },
+              "outputs": "`handoff.md` — the hand-off packet + the drafted note to Chase, parked for human approval (the attribution to be stamped on the opportunity by Chase's workflow, not here).",
+              "audit": [
+                "The packet names the partner, deal type, account, and attribution",
+                "No opportunity write, term commitment, or money movement is proposed here (Chase owns the close)",
+                "Conflicted / `needs-human` / audit-failed runs are parked, not handed off"
+              ],
+              "checkpoint": "**Human approves the hand-off to Chase.** When `auto` (admin-flipped), the run may self-approve ONLY a `clear`, `grounded`, audit-clean hand-off; a channel-conflict collision, a `needs-human` attribution, any commitment/money, or any audit failure parks for a human in every mode (Bridget's L3 ceiling; CONSTITUTION §5.4)."
+            },
+            {
+              "slug": "05-summary",
+              "name": "summary",
+              "job": "write the partnership work-note recording what was registered, the attribution, and the routing decision — attributed up the chain.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the run facts: partner id, account, deal type, attribution summary, channel-conflict status, hand-off outcome (approved / parked)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write a concise partnership work-note (three to four sentences) — the partnership touch, what was registered, where it routed, and any open human-decision (a conflict or `needs-human` attribution still pending)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Ground record",
+                    "stage 01 `ground.md`",
+                    "all",
+                    "the resolved context"
+                  ],
+                  [
+                    "Attribution",
+                    "stage 02 `attribution.md`",
+                    "all",
+                    "the partner + contribution"
+                  ],
+                  [
+                    "Routing",
+                    "stage 03 `routing.md`",
+                    "all",
+                    "deal type + conflict status"
+                  ],
+                  [
+                    "Hand-off",
+                    "stage 04 `handoff.md`",
+                    "all",
+                    "the routing outcome"
+                  ]
+                ]
+              },
+              "outputs": "`summary.md` — the partnership work-note (the run product is a Postgres row, not a committed file). No external send (ADR-0058); this is an internal record.",
+              "audit": [
+                "The note states the partner, deal type, account, and routing outcome",
+                "Any open human-decision (conflict / `needs-human`) is named, not dropped",
+                "No client/partner PII beyond what the record already holds; no fabricated detail"
+              ],
+              "checkpoint": null
+            }
+          ]
+        }
+      ]
+    },
     "platform": {
       "id": "platform",
       "persona": "Vera",

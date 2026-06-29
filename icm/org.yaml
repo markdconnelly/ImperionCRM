@@ -5,7 +5,7 @@
 # is NOT a DB schema.
 #
 # Two layers, one chart:
-#   1. The AGENT tree — one orchestrator (Nova) + 5 C-suite + 20 domain agents.
+#   1. The AGENT tree — one orchestrator (Nova) + 5 C-suite + 21 domain agents.
 #      Structure mirrors the filesystem: each `role` is a dir under icm/executive/;
 #      each `domain` is a dir under icm/domains/. A domain's `reports_to` names its
 #      C-suite role; executives report to the orchestrator; the orchestrator to no
@@ -80,7 +80,7 @@ executives:
     ceiling: L2-delegate-only
     title: Deputy CFO
     summary: "Holds the money picture and leads with what's leaking."
-    domains: [sales, marketing, client-success, procurement, finance]
+    domains: [sales, marketing, client-success, procurement, finance, partnerships]
 
   - role: cro
     persona: Jessica
@@ -116,6 +116,7 @@ domains:
   - { domain: client-success,  persona: Celeste,  reports_to: deputy-cfo,  human_manager: caity,   ceiling: L3, built: true,  title: "Client Success",            summary: "Owns client health and renewals." }
   - { domain: procurement,     persona: Vance,    reports_to: deputy-cfo,  human_manager: nick,    ceiling: L2, built: true,  title: "Procurement",               summary: "Manages vendor spend and renewals." }
   - { domain: finance,         persona: Audrey,   reports_to: deputy-cfo,  human_manager: nick,    ceiling: L2, built: true,  title: "Finance",                   summary: "Read-only finance reporting and the monthly close." }
+  - { domain: partnerships,    persona: Bridget,  reports_to: deputy-cfo,  human_manager: nick,    ceiling: L3, built: true,  title: "Partnerships",              summary: "Builds channel/alliance/co-sell partnerships and registers partner-sourced deals." }
   - { domain: platform,        persona: Vera,     reports_to: cro,         human_manager: mark,    ceiling: L2, built: true,  title: "Platform Governance",       summary: "Watches platform conformance; recommends, never fixes." }
   - { domain: service-quality, persona: Tess,     reports_to: cro,         human_manager: mark,    ceiling: L2, built: false, title: "Service Quality",           summary: "Judges the finished service experience." }
   - { domain: knowledge,       persona: Alivia,   reports_to: cro,         human_manager: mark,    ceiling: L3, built: false, title: "Knowledge",                 summary: "Keeps documentation current and verified." }

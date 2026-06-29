@@ -1,0 +1,12 @@
+name: partner-deal-routing
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Bridget persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../bridget.md
+  - ./prose.md
+okf_rooms: [partner, partner_deal, account, opportunity]   # subset of domains/partnerships/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]          # subset of domains/partnerships/room.yaml — read+propose only, no external-commit tool
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "resolve the partner + classify the deal (co_sell|referral|direct) + stamp a drafted attribution and prepare the parked hand-off to Chase, when every audit is clean and the partner resolves unambiguously; a channel-conflict collision, any commitment/money, an unresolved partner, or any audit failure parks for a human in every mode"
