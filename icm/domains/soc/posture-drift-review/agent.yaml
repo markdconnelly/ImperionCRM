@@ -1,0 +1,12 @@
+name: posture-drift-review
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Cyrus persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../cyrus.md
+  - ./prose.md
+okf_rooms: [posture_snapshot, device, cloud_asset, account]   # subset of domains/soc/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]             # subset of domains/soc/room.yaml — read + recall only
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "record the internal drift-finding for a posture review with an audit-clean evidence chain; every proposed investigation and every hardening recommendation parks for Roman"

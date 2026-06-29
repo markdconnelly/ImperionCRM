@@ -1,0 +1,12 @@
+name: audit-readiness-report
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Grace persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../grace.md
+  - ./prose.md
+okf_rooms: [posture_snapshot, tenant_posture, posture_policy, account]   # subset of domains/grc/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]                        # subset of domains/grc/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "record the internal readiness report for a framework scope with an audit-clean citation chain; every control attestation and every remediation parks for Roman"

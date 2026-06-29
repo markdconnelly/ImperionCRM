@@ -1,0 +1,12 @@
+name: access-recertification
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Osiris persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../osiris.md
+  - ./prose.md
+okf_rooms: [account, entity_xref, device]   # subset of domains/identity/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/identity/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "record the recertification findings — the stale/excessive/orphaned-access inventory — for an audit-clean resolution chain; every revoke, disable, and recert action parks for Roman"

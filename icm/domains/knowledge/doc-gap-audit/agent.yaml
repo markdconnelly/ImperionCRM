@@ -1,0 +1,12 @@
+name: doc-gap-audit
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Lexicon persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../lexicon.md
+  - ./prose.md
+okf_rooms: [account, device, cloud_asset]   # subset of domains/knowledge/room.yaml — the asset estate to audit
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/knowledge/room.yaml — auditor: read the estate + recall, no write
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "only the internal documentation-gap backlog may self-approve — assembling and surfacing the proposed backlog of un/under-documented assets is propose-only and reversible; every publish-to-SoR (IT Glue) and every notify parks for a human (ADR-0128 hard ceiling), and nothing here ever writes the SoR or sends"

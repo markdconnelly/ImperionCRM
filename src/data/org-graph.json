@@ -517,6 +517,14 @@
       ],
       "workflows": [
         {
+          "slug": "posture-drift-review",
+          "stages": [
+            "01-read-posture",
+            "02-detect-drift",
+            "03-propose"
+          ]
+        },
+        {
           "slug": "security-alert-triage",
           "stages": [
             "01-triage",
@@ -549,6 +557,14 @@
       ],
       "workflows": [
         {
+          "slug": "audit-readiness-report",
+          "stages": [
+            "01-scope-framework",
+            "02-assemble-evidence",
+            "03-gap-report"
+          ]
+        },
+        {
           "slug": "control-evidence-sweep",
           "stages": [
             "01-collect-evidence",
@@ -579,6 +595,14 @@
         "device"
       ],
       "workflows": [
+        {
+          "slug": "access-recertification",
+          "stages": [
+            "01-enumerate-access",
+            "02-flag-exceptions",
+            "03-propose-recerts"
+          ]
+        },
         {
           "slug": "joiner-mover-leaver",
           "stages": [
@@ -1024,6 +1048,14 @@
       ],
       "workflows": [
         {
+          "slug": "sla-compliance-review",
+          "stages": [
+            "01-read-tickets",
+            "02-assess-sla",
+            "03-propose-report"
+          ]
+        },
+        {
           "slug": "ticket-quality-audit",
           "stages": [
             "01-sample-scope",
@@ -1054,6 +1086,14 @@
         "cloud_asset"
       ],
       "workflows": [
+        {
+          "slug": "doc-gap-audit",
+          "stages": [
+            "01-inventory-assets",
+            "02-match-docs",
+            "03-propose-backlog"
+          ]
+        },
         {
           "slug": "doc-sync",
           "stages": [

@@ -1,0 +1,12 @@
+name: sla-compliance-review
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Tess persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../tess.md
+  - ./prose.md
+okf_rooms: [ticket, account]          # subset of domains/service-quality/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/service-quality/room.yaml — watcher: read-only, no send/write
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "only the internal SLA-compliance summary report (the read + assessment sweep + roll-up surfaced to the assurance dashboard) may self-approve; every coaching/process recommendation, and any reopen, re-resolve, or client-facing action, parks for a human"
