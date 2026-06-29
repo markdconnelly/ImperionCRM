@@ -13,6 +13,11 @@ by the renewals motion (ADR-0130) / Jarvis. One run per renewing opportunity.
 playbook (Finance #1426) produces the grounded margin; it arrives here as a
 **handoff input**, not a direct financial read. Chase drafts within that floor.
 
+**Scope (Stream 02-A7 + 02-A8):** stages 01-03 are the **draft renewal & repricing**
+(02-A7 — `identified → priced → quoted`); stage 04 is the **send-for-signature gate**
+and stage 05 the **post-signature back-sync** (02-A8 — `sent → renewed | repriced |
+churned`). A7→A8 is one continuous renewal motion, so it lives in one workspace.
+
 ## Stages
 
 | # | Stage | Job | Checkpoint |
@@ -20,15 +25,23 @@ playbook (Finance #1426) produces the grounded margin; it arrives here as a
 | 01 | renewal-context | Read the renewal opportunity, current terms, account history | — |
 | 02 | margin-input | Take Audrey's grounded margin floor (handoff); flag if missing | — |
 | 03 | draft-reprice | Draft the reprice + renewal proposal within the margin floor | — |
-| 04 | review-send | Human approves; customer-facing send via ADR-0058 (always-gated) | **Yes** |
+| 04 | review-send | The SEND GATE — human authorizes the send-for-signature (always-gated) | **Yes** |
+| 05 | sign-and-backsync | On signature → update agreement + stamp outcome (renewed/repriced/churned); declined → Handoff to Celeste | — |
 
 ## Autonomy
 
-Starts `draft` (ADR-0061). **L1 propose-only.** The customer-facing send (the priced
-proposal / send-for-signature) is an **always-gated, dial-proof hard ceiling** —
-pricing/discount/term is a commitment that binds the company (ADR-0128 D2, Chase's
-guardrail) and **never auto-executes at any rung**. Internal context-gathering and
-drafting proceed; the send always parks for a human, in every mode.
+Starts `draft` (ADR-0061). **L1 propose-only through the gate.** The customer-facing
+send-for-signature (stage 04) is an **always-gated, dial-proof hard ceiling** —
+pricing/discount/term is a commitment that binds the company and a bound signature has
+no clean undo (ADR-0128 D2, A10 row 4, Chase's guardrail) — so it **never auto-executes
+at any rung**. The **post-signature back-sync** (stage 05) runs only AFTER the
+human-authorized signature returns: it is an internal, reversible mirror write
+(update the agreement, `opportunity.write` the outcome stamp), **idempotency-keyed +
+read-back** (A9), so it may proceed at L2. Internal context-gathering, drafting, and the
+post-signature mirror proceed; the send always parks for a human, in every mode.
+**Substrate (dormant, A5c):** the e-signature dispatch (DocuSign/`esign`, ADR-0071) and
+the Autotask write-back (#422/#425) are deploy-dormant — stage 05 ships propose-only
+until they land.
 
 ## Runtime skills
 

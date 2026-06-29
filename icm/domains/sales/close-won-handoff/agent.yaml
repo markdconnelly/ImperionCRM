@@ -1,0 +1,14 @@
+name: close-won-handoff
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [opportunity, account, contact]   # subset of domains/sales/room.yaml
+tools: [pg.read, opportunity.write]          # subset of domains/sales/room.yaml
+skills:
+  - domains/sales/skills/voice-and-tone       # Tier 2 — domain-shared
+  - ./skills/handoff-contract                 # Tier 3 — workflow-local (what each seam carries)
+autonomy_rung: L1
+auto_may_self_approve: "the closed-won state stamp (opportunity.write) is internal + reversible (L2) and may self-approve when the won-detection audit is green; the two emits (the Pierce sale->delivery hand-off + the Celeste relationship hand-off) are deterministic governed events, NOT actuations and NOT self-approvals — the won-detection IS the hand-off, nothing customer-facing originates here. Substrate dormant (#991 hand-off bus) -> propose-only."

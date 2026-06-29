@@ -1,7 +1,8 @@
 # Stage 04 — review-send
 
-**Job:** a human approves the reprice; the customer-facing proposal is sent through the
-ADR-0058 path. Always-gated — never auto.
+**Job:** the SEND GATE (Stream 02-A8). A human authorizes the reprice; the
+customer-facing send-for-signature exits through the ADR-0058 path. Always-gated —
+never auto. On authorization, the signed-outcome back-sync continues in stage 05.
 
 ## Inputs
 
@@ -16,14 +17,15 @@ ADR-0058 path. Always-gated — never auto.
    (a draft that fails stage 03's audit cannot reach a human as "ready").
 2. **Checkpoint** — present the reprice + proposal + rationale to a human. They approve,
    edit, or reject. This is a pricing/term commitment — it parks every time, at every rung.
-3. `[send.email]` On approval ONLY, send the renewal proposal via the ADR-0058
-   approval-gated path. The send-for-signature step (if used) is a separate, equally
-   always-gated action — never auto.
+3. `[send.email]` On authorization ONLY, dispatch the renewal proposal / send-for-signature
+   via the ADR-0058 approval-gated path. This is the binding customer-facing commitment —
+   never auto, at any rung.
 
 ## Outputs
 
 `sent.md` — the final proposal, the approver, and the send result (or `parked` / `rejected`
-with reason). Terminal stage.
+with reason). On a `sent` result, **stage 05 (sign-and-backsync)** continues the motion;
+a `parked` / `rejected` result is terminal here.
 
 ## Audit
 

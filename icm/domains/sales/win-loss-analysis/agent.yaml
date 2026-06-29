@@ -1,0 +1,12 @@
+name: win-loss-analysis
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [opportunity, account, campaign]                              # subset of domains/sales/room.yaml — outcome read-model only
+tools: [pg.read, knowledge.search, memory.recall]                        # subset of domains/sales/room.yaml — read-only; no write, no send path
+skills: []                                                               # grounds on the outcome read-model + OKF rooms only; no runtime skill
+autonomy_rung: L0
+auto_may_self_approve: "nothing self-actuates — this workflow only reads, synthesizes, and flags; every surfaced finding is advisory and a human acts on it through the owning procedure (02-C1 rate-card review / a Belle Stream-01 procedure). No send, no write, no commitment. Cross-deal benchmarks are anonymized/aggregated only — pool, never bleed (A7)."

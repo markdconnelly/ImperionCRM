@@ -6281,6 +6281,185 @@
       "kind": "domain",
       "procedures": [
         {
+          "slug": "close-won-handoff",
+          "title": "close-won-handoff (sales v1)",
+          "job": "when an `opportunity` reaches **`won`**, stamp it closed-won (close date + attribution — an internal, reversible write) and emit the **two governed seams** that carry the deal out of sales: the **sale→delivery hand-off to Pierce** (ADR-0096, catalog-anchored line-items select the delivery template #1306 → Stream 03) and the relationship **Hand-off to Celeste** (→ Stream 08). This is the Chase→delivery seam emitter — Chase closes; Pierce and Celeste actuate. (Stream 02-A6; the A11 seam.)",
+          "trigger": "an `opportunity` reaches **`won`** — KQM `status==3` ⇔ `salesOrderId>0` (KQM is the quote/order SoR, ADR-0080; the agent mirrors). One run per won opportunity.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "the closed-won state stamp (opportunity.write) is internal + reversible (L2) and may self-approve when the won-detection audit is green; the two emits (the Pierce sale->delivery hand-off + the Celeste relationship hand-off) are deterministic governed events, NOT actuations and NOT self-approvals — the won-detection IS the hand-off, nothing customer-facing originates here. Substrate dormant (#991 hand-off bus) -> propose-only.",
+          "tools": [
+            "pg.read",
+            "opportunity.write"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "account",
+            "contact"
+          ],
+          "skills": [
+            "domains/sales/skills/voice-and-tone",
+            "./skills/handoff-contract"
+          ],
+          "stages": [
+            {
+              "slug": "01-detect-stamp",
+              "name": "detect-stamp",
+              "job": "detect the opportunity is `won` and stamp it closed-won (close date + attribution).",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Confirm the **won crossing**: `opportunity.status == won` (KQM `status==3` ⇔ `salesOrderId>0`), **citing the KQM status + as-of** (A5). KQM is the order SoR — the agent mirrors, never sets the status (A9a). Not grounded / ambiguous → audit fail (park, never stamp a speculative close)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Idempotency check: if the opportunity is already stamped closed-won for this close, this run is a no-op replay (at most one close stamp per won opportunity)."
+                },
+                {
+                  "tag": null,
+                  "text": "`[opportunity.write]` Stamp **closed-won + close date + attribution** (won source, owning rep/account link) via the approval-gated executor — an internal, reversible CRM write (Chase's L2 auto-internal rung; never a direct silver write). **L2 self-approve** per the autonomy contract; otherwise parks. No customer is contacted."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Won opportunity",
+                    "silver `opportunity` · `` `okf:opportunity` ``",
+                    "this opportunity's status + line-items + links",
+                    "the won signal + the record to stamp; which source wins (KQM-authoritative)"
+                  ],
+                  [
+                    "Account",
+                    "silver `account` · `` `okf:account` ``",
+                    "the linked account",
+                    "the deal's account context for attribution"
+                  ]
+                ]
+              },
+              "outputs": "`close.md` — the won-detection (KQM status + as-of), the closed-won stamp (close date + attribution), and the resolved `opportunity_id` / `account_id`. The `opportunity.write` is the only effect; no customer-facing side effect.",
+              "audit": [
+                "Won crossing confirmed and cited (KQM `status==3` ⇔ `salesOrderId>0`, + as-of)",
+                "At most one close stamp touched for this opportunity (idempotent, no duplicate)",
+                "Close date + attribution stamped; `opportunity_id` / `account_id` resolved (not blank)",
+                "No customer-facing side effect emitted (internal stamp only)"
+              ],
+              "checkpoint": "A human approves the closed-won `opportunity.write` (the stamp + attribution). **`auto` (L2) may self-approve** ONLY when the won-detection audit above is green — the stamp is internal and reversible. Any customer-facing action, the provisioning itself, or any audit failure parks for a human in every mode."
+            },
+            {
+              "slug": "02-emit-delivery",
+              "name": "emit-delivery",
+              "job": "emit the sale→delivery hand-off to Pierce — the won deal's catalog-anchored line-items select the delivery template (#1306) → Stream 03.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Guard: proceed only if stage 01 stamped closed-won (fail-closed; never emit delivery off an unclosed deal)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve the won deal's **catalog-anchored line-items**; map them to the delivery template (#1306, ADR-0096). Off-catalog / unmappable items → flag for a human (refuse-precondition — do not emit a guessed template)."
+                },
+                {
+                  "tag": "script",
+                  "text": "**SEAM → emit the sale→delivery hand-off to Pierce / Stream 03** carrying the won opportunity ref, close date, attribution, and the selected line-items/template. This is a **deterministic governed event, NOT a send and NOT a new tool** — the won-detection IS the hand-off; the seam rule is governed config, executed mechanically. The DocuSign contract-signed gate is a precondition on **Pierce's provisioning**, not on this emit (A11 — the gate is on the actuator). Reference Stream 03 as the terminal actuation; do not duplicate Pierce's provisioning work here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Close stamp",
+                    "`close.md` (stage 01 output)",
+                    "full",
+                    "the closed-won opportunity ref + close date + attribution"
+                  ],
+                  [
+                    "Line-items",
+                    "silver `opportunity` · `` `okf:opportunity` ``",
+                    "this opportunity's sold line-items",
+                    "catalog-anchored items that select the delivery template (#1306)"
+                  ]
+                ]
+              },
+              "outputs": "`delivery-handoff.md` — the emitted hand-off: won opportunity ref, close date, attribution, the catalog-anchored line-items + selected delivery template (#1306), and the Stream 03 routing. #991 (hand-off bus) dormant → propose-only (A5c).",
+              "audit": [
+                "Stage 01 stamped closed-won (else parked)",
+                "Line-items catalog-anchored; template selected per #1306 (off-catalog → flagged, not guessed)",
+                "Hand-off emitted to Pierce / Stream 03 as the explicit seam (deterministic, not a send)",
+                "DocuSign gate left on Pierce's provisioning side — not asserted as cleared here",
+                "No customer-facing effect; no provisioning performed in this workflow"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-emit-relationship",
+              "name": "emit-relationship",
+              "job": "emit the relationship hand-off to Celeste → Stream 08 (terminal).",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Guard: proceed only if stage 01 stamped closed-won (fail-closed)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Assemble the relationship-hand-off context: the account, the closed-won relationship state (now an active customer, transaction closed), and the next-touch context (primary contact, what was sold, the onboarding-adjacent hand-off note). No fabricated commitment, timeline, or price (Chase's guardrail); ground or omit."
+                },
+                {
+                  "tag": "script",
+                  "text": "**SEAM → emit the relationship hand-off to Celeste / Stream 08.** A **deterministic governed event, NOT a send and NOT a new tool** — Celeste owns the active-customer relationship; Chase owned only the transaction within it (the pinned Chase↔Celeste seam). Reference Stream 08 as the terminal step; do not duplicate Celeste's relationship work here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Close stamp",
+                    "`close.md` (stage 01 output)",
+                    "full",
+                    "the closed-won opportunity ref + attribution"
+                  ],
+                  [
+                    "Account",
+                    "silver `account` · `` `okf:account` ``",
+                    "the won deal's account",
+                    "the relationship subject Celeste takes over"
+                  ],
+                  [
+                    "Primary contact",
+                    "silver `contact` · `` `okf:contact` ``",
+                    "the linked contact",
+                    "next-touch context for the relationship hand-off"
+                  ]
+                ]
+              },
+              "outputs": "`relationship-handoff.md` — the emitted hand-off: account, relationship state, next-touch context, and the Stream 08 routing. Terminal stage; the run ends with the deal handed to delivery (stage 02) and the relationship owner (here). #991 (hand-off bus) dormant → propose-only (A5c).",
+              "audit": [
+                "Stage 01 stamped closed-won (else parked)",
+                "Hand-off emitted to Celeste / Stream 08 as the explicit seam (deterministic, not a send)",
+                "Next-touch context grounded — no fabricated commitment / timeline / price",
+                "No customer-facing effect; Celeste's relationship work not duplicated here",
+                "Run closed terminal (delivery + relationship seams both emitted)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "lead-response",
           "title": "lead-response (marketing/sales v1)",
           "job": "every inbound lead gets a fast, on-brand, consent-clean first response and a managed follow-up loop, drafted by agents and sent on our behalf.",
@@ -6788,16 +6967,285 @@
           ]
         },
         {
+          "slug": "pursue-opportunity",
+          "title": "pursue-opportunity (sales pipeline management, 02-A3)",
+          "job": "keep an open `opportunity` moving — surface its next-best action, compose the pursuit touch, get it human-approved, and re-stage/re-queue — so no deal stalls unseen and every customer-facing touch is grounded and gated.",
+          "trigger": "an open `opportunity` with a due next action, or a new inbound signal on an open deal (Stream 02 02-A3, archetype B7 client-facing-send). One run per due touch.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "Nothing committal auto-executes. Only the B7 transactional-acknowledgement carve-out (templated, non-committal, deterministic trigger — e.g. a 'received' ack) may auto-send at L3 once admin-flipped to auto. Every communicative/committal touch and any pricing/discount/term assertion or send-for-signature is dial-proof always-gate and parks (ADR-0128, BO-02 §5).",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.email",
+            "send.dm",
+            "booking.link"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "interaction",
+            "contact",
+            "account",
+            "consent_event"
+          ],
+          "skills": [
+            "domains/sales/skills/voice-and-tone",
+            "./skills/pursuit-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "surface the opportunity's next-best action from its live state, cited and as-of'd, so the touch is grounded before anything is composed.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the opportunity from the trigger; read stage, owner, due next action, and last-touch timestamp by known key. Missing/unparseable opportunity state → audit fail (park)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the last 5 interactions on this opportunity and the primary contact, tenant-isolated. Absence is information, not a gap to fill."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Determine the next-best action (advance-stage nudge, answer an open question, schedule a step) in one sentence of reasoning, **citing the opportunity state + as-of** (A5). No fabrication; if the state can't ground a call, say so and park."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Trigger",
+                    "the due-action / inbound-signal event",
+                    "full payload",
+                    "which opportunity, what's due"
+                  ],
+                  [
+                    "Opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "the triggering deal only",
+                    "stage, owner, next action, as-of"
+                  ],
+                  [
+                    "Account/contact",
+                    "silver `account` / `contact` · `okf:account` `okf:contact`",
+                    "the deal's account + primary contact",
+                    "who we're pursuing"
+                  ],
+                  [
+                    "History",
+                    "`interaction` timeline · `okf:interaction`",
+                    "this opportunity, last 5 touches",
+                    "last contact, what was said"
+                  ]
+                ]
+              },
+              "outputs": "`ground.md` — opportunity id + stage + as-of, last-touch summary, the proposed next-best action + one-sentence rationale. Unknowns stated as unknowns.",
+              "audit": [
+                "Opportunity id, stage, and as-of timestamp present (none blank)",
+                "Exactly one proposed next-best action with grounded rationale",
+                "Every claim traceable to an input row (no invention)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-compose",
+              "name": "compose",
+              "job": "compose one channel-correct, voice-compliant pursuit touch with a rationale — grounded, consent-clean, no fabricated capability/timeline/price.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Check the consent ledger: an opt-out/suppression OR a tripped frequency cap (`pursuit-rules.md`) is a **HARD stop** — park the run with the reason, never compose past it."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Select channel (email default; in-channel DM for DM-sourced signals inside the messaging window) and classify the touch: transactional-ack carve-out vs communicative/committal (`pursuit-rules.md`)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the touch: advance the action, one CTA, voice-compliant. **Never invent pricing, availability, or capability** — pricing intent is a handling note, not numbers (chase.md §5). No false urgency (BO-02 §5)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write a 2–3 sentence rationale: the angle, the CTA, what was left out, and the touch class (carve-out vs committal) for stage 03's gate."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "all",
+                    "the action being pursued"
+                  ],
+                  [
+                    "Consent",
+                    "consent ledger · `okf:consent_event`",
+                    "this contact's entries",
+                    "opt-out + frequency-cap gate"
+                  ],
+                  [
+                    "Voice",
+                    "`../../../skills/voice-and-tone.md`",
+                    "all",
+                    "how we sound (domain-tier skill)"
+                  ],
+                  [
+                    "Pursuit rules",
+                    "`./skills/pursuit-rules.md`",
+                    "all",
+                    "frequency caps · no false urgency · carve-out definition"
+                  ]
+                ]
+              },
+              "outputs": "`touch.md` — channel, recipient address/handle, subject (email only), body, rationale, and the touch class (`transactional-ack` | `communicative-committal`).",
+              "audit": [
+                "No opt-out/cap breach (a tripped cap parks, never drafts)",
+                "No fabricated capability, timeline, or pricing/commitment in the body",
+                "Exactly one CTA; voice checklist passes; no false urgency",
+                "Touch class stated (drives the stage-03 gate)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-send-gate",
+              "name": "send-gate",
+              "job": "get the touch approved (human or, only for the carve-out, auto), then send it through the ADR-0058 path and capture the send record.",
+              "process": [
+                {
+                  "tag": null,
+                  "text": "Park until human-approved — or auto-approve **only** if all carve-out gates hold (above)."
+                },
+                {
+                  "tag": null,
+                  "text": "`[send.email]` / `[send.dm]` Send via the ADR-0058 approval-gated path — consent re-asserted at execution, sender = shared sales mailbox (email) or page identity (DM). **No other send route exists for this workflow.**"
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Capture the sent version, channel, approver (human id or `auto`), and send-path result."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Touch",
+                    "stage 02 `touch.md`",
+                    "all",
+                    "the thing being approved"
+                  ],
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "opportunity id, as-of",
+                    "what the approver is deciding on"
+                  ],
+                  [
+                    "Consent",
+                    "consent ledger · `okf:consent_event`",
+                    "this contact's entries",
+                    "consent re-assertion at send"
+                  ]
+                ]
+              },
+              "outputs": "`send-record.md` — sent version, timestamp, approver, send-path result. Rejection ends the run with the rejection reason captured.",
+              "audit": [
+                "Approver identity recorded (never blank; `auto` only if all carve-out gates held)",
+                "No committal/pricing touch auto-approved (always-gate enforced)",
+                "Consent re-assertion result logged"
+              ],
+              "checkpoint": "The approval item shows: touch body, rationale, opportunity id + stage, touch class, and consent basis. Approver may edit the body before approving; edits are kept as the sent version and recorded. **`auto` mode may self-approve ONLY** the B7 transactional-acknowledgement carve-out (`./skills/pursuit-rules.md`) at **L3** — touch class = `transactional-ack`, stage-02 audit fully green, consent basis clean. **Every communicative/committal touch always parks for a human** in every mode, dial-proof (ADR-0128, BO-02 §5). **Any pricing/discount/term assertion or send-for-signature always parks** — Chase has no send path for commitments (chase.md §6)."
+            },
+            {
+              "slug": "04-log",
+              "name": "log",
+              "job": "log the touch, re-stage the opportunity, and re-queue the next action — idempotently — closing the run.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Log the sent touch to the `interaction` timeline (body, channel, approver, run id), **idempotency-keyed** (opportunity + touch) so a replay is a no-op + audit note (A9b). Executor owns the write; never duplicate an entry."
+                },
+                {
+                  "tag": "script",
+                  "text": "Re-stage the opportunity: advance one stage if the touch met its advance condition, else hold the current stage — a deterministic state stamp."
+                },
+                {
+                  "tag": "script",
+                  "text": "Re-queue the next action: schedule the next touch per the cadence in `./skills/pursuit-rules.md` (deterministic date math), or close the run as `held` with the logged next touch when no further action is due."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Send record",
+                    "stage 03 `send-record.md`",
+                    "all",
+                    "what/when we sent, approver"
+                  ],
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "opportunity id, prior stage",
+                    "the deal to re-stage"
+                  ],
+                  [
+                    "Opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "this deal",
+                    "current stage for the re-stage decision"
+                  ],
+                  [
+                    "Timeline",
+                    "`interaction` timeline · `okf:interaction`",
+                    "this opportunity",
+                    "where the touch is logged"
+                  ]
+                ]
+              },
+              "outputs": "`pursuit-log.md` — interaction entry id, re-stage result (advanced/held + stage), next-action queue entry or close reason. One terminal state.",
+              "audit": [
+                "Timeline entry id present; replay produced no duplicate (idempotent, A9b)",
+                "Opportunity re-stage recorded (advanced or held — exactly one)",
+                "Run closed with exactly one terminal state (advanced / held-with-next-touch)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "renewal-reprice",
           "title": "renewal-reprice (sales v1)",
           "job": "for an approaching renewal, Chase drafts the reprice and the renewal proposal — **Audrey (Finance) supplies the margin input**; Chase drafts the number, Audrey grounds it. **L1 propose-only**: the customer-facing send is dial-proof always-gated and never auto-executes.",
           "trigger": "a renewal approaching on an `opportunity` (`kind=renewal`) — surfaced by the renewals motion (ADR-0130) / Jarvis. One run per renewing opportunity.",
           "model": "claude-sonnet-4-5",
           "autonomyRung": "L1",
-          "autoMaySelfApprove": "nothing customer-facing. Chase drafts the renewal reprice + proposal; the customer-facing send (the priced proposal / send-for-signature) is an always-gated, DIAL-PROOF hard ceiling (pricing/discount/term commitment — ADR-0128 D2) and NEVER auto-executes at any rung. Internal context-gathering and drafting proceed; the send always parks for a human, in every mode.",
+          "autoMaySelfApprove": "nothing customer-facing. Chase drafts the renewal reprice + proposal (stages 01-03); the customer-facing send-for-signature (stage 04) is an always-gated, DIAL-PROOF hard ceiling (pricing/discount/term commitment + bound signature — ADR-0128 D2, A10 row 4) and NEVER auto-executes at any rung. The post-signature back-sync (stage 05 — update the agreement + stamp the renewal outcome) is an internal, reversible mirror write (L2, idempotency-keyed + read-back, A9) that runs only AFTER the human-authorized signature returns. Internal context-gathering, drafting, and the post-signature mirror proceed; the send always parks for a human, in every mode.",
           "tools": [
             "pg.read",
-            "send.email"
+            "send.email",
+            "opportunity.write"
           ],
           "okfRooms": [
             "account",
@@ -6965,7 +7413,7 @@
             {
               "slug": "04-review-send",
               "name": "review-send",
-              "job": "a human approves the reprice; the customer-facing proposal is sent through the ADR-0058 path. Always-gated — never auto.",
+              "job": "the SEND GATE (Stream 02-A8). A human authorizes the reprice; the customer-facing send-for-signature exits through the ADR-0058 path. Always-gated — never auto. On authorization, the signed-outcome back-sync continues in stage 05.",
               "process": [
                 {
                   "tag": "script",
@@ -6977,7 +7425,7 @@
                 },
                 {
                   "tag": null,
-                  "text": "`[send.email]` On approval ONLY, send the renewal proposal via the ADR-0058 approval-gated path. The send-for-signature step (if used) is a separate, equally always-gated action — never auto."
+                  "text": "`[send.email]` On authorization ONLY, dispatch the renewal proposal / send-for-signature via the ADR-0058 approval-gated path. This is the binding customer-facing commitment — never auto, at any rung."
                 }
               ],
               "inputs": {
@@ -7002,13 +7450,334 @@
                   ]
                 ]
               },
-              "outputs": "`sent.md` — the final proposal, the approver, and the send result (or `parked` / `rejected` with reason). Terminal stage.",
+              "outputs": "`sent.md` — the final proposal, the approver, and the send result (or `parked` / `rejected` with reason). On a `sent` result, **stage 05 (sign-and-backsync)** continues the motion; a `parked` / `rejected` result is terminal here.",
               "audit": [
                 "A human approved this exact reprice + proposal (no auto-send, ever)",
                 "The sent number matches the approved number (no post-approval drift)",
                 "Send result recorded (sent / parked / rejected + reason)"
               ],
               "checkpoint": "A human approves the priced proposal before it leaves. **`auto` may self-approve NOTHING here** — the reprice is a pricing/term commitment, the dial-proof hard ceiling (ADR-0128 D2); it parks at every rung. The send exits only through ADR-0058."
+            },
+            {
+              "slug": "05-sign-and-backsync",
+              "name": "sign-and-backsync",
+              "job": "the post-signature tail (Stream 02-A8). Runs ONLY after the human-authorized send-for-signature (stage 04) returns a signature. On signature → update the agreement, read the Autotask record back, and stamp the renewal outcome (`renewed | repriced`). If the renewal is declined or lapses → stamp `churned` and emit the relationship Handoff to Celeste. No customer-facing action originates here — this is an internal mirror.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Gate on stage 04: proceed ONLY if `sent.md` is `sent`. A `parked` / `rejected` result is terminal at stage 04 — never advance a non-signed renewal."
+                },
+                {
+                  "tag": "automation",
+                  "text": "**On signature** (DocuSign/`esign` callback, ADR-0071 — **dormant**, A5c): update the agreement; `autotask-writeback` mirrors it (Autotask = contract SoR, the agent mirrors — A9a), **idempotency-keyed** (renewal + period) so a replay is a no-op (A9b). **Read the Autotask record back** before stamping (A9c)."
+                },
+                {
+                  "tag": null,
+                  "text": "`[opportunity.write]` Stamp the terminal outcome on the `opportunity` — `renewed | repriced` — an internal, reversible write (L2). On partial failure of the mirror → **halt, no auto-rollback**; surface completed-vs-pending (A10)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "**If declined / lapsed** → stamp `churned`; emit the relationship **Handoff to Celeste** (the A11 seam → Stream 08, feeding churn scoring #1046). The handoff is a governed event, not a send — no customer-facing action."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Send result",
+                    "`sent.md` (stage 04 output)",
+                    "full",
+                    "only a `sent` result enters this stage"
+                  ],
+                  [
+                    "Renewal opportunity",
+                    "silver `opportunity` (`kind=renewal`) · `okf:opportunity`",
+                    "the renewing opportunity",
+                    "the record whose outcome is stamped"
+                  ],
+                  [
+                    "Account",
+                    "silver `account` · `okf:account`",
+                    "the renewing account",
+                    "the relationship owner for the churn Handoff"
+                  ]
+                ]
+              },
+              "outputs": "`backsync.md` — the signed outcome (`renewed` / `repriced` / `churned`), the Autotask read-back confirmation (or `pending` if the mirror is dormant), and — on churn — the Celeste Handoff reference. Terminal stage.",
+              "audit": [
+                "Entered ONLY on a stage-04 `sent` result (no non-signed renewal advanced)",
+                "The outcome stamp matches the read-back Autotask record (no mirror drift, A9c)",
+                "The write is idempotency-keyed — a replay is a no-op, not a double-stamp (A9b)",
+                "On a churn outcome, the Celeste Handoff was emitted (no dropped relationship seam)"
+              ],
+              "checkpoint": "None — this stage originates no customer-facing action. It is the internal post-signature mirror (update agreement + outcome stamp + churn Handoff), which runs at **L2** only after the human authorized the signature at stage 04. The dial-proof commitment ceiling was already honored at the gate; nothing here re-opens it. **Substrate (A5c):** the e-sign callback and Autotask write-back are dormant — this stage ships propose-only until they land."
+            }
+          ]
+        },
+        {
+          "slug": "rfp-response",
+          "title": "rfp-response (sales v1)",
+          "job": "for an inbound RFP/RFQ/bid invitation tied to an `opportunity`, Chase grounds and assembles a complete, sourced bid response — capability/approach + pricing (within the 02-C1 envelope) — and parks it at the **SUBMIT GATE**. The **security/compliance section is not Chase's to author**: **Grace (#1557)** supplies the control/attestation content (A11 seam). **L1 propose-only**: assembly is auto/reversible; *submitting* a bid is a binding client-facing commitment, dial-proof always-gated, and never auto-executes.",
+          "trigger": "an inbound RFP/RFQ/bid invitation tied to an open or net-new `opportunity`. One run per bid.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "\"Assembly/drafting (ground + assemble, stages 01-02) is internal + reversible (L1/L2) and may proceed; the bid SUBMISSION and any pricing/term commitment is a binding client-facing commitment = dial-proof always-gate and parks for a human at every rung (ADR-0128, BO-02 §5). A security/compliance claim with no Grace-supplied evidence (#1557) is refused, never fabricated (CS-07 §5). Substrate dormant (#389 recall,",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "send.email"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "account",
+            "contact"
+          ],
+          "skills": [
+            "domains/sales/skills/voice-and-tone",
+            "./skills/rfp-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "parse the RFP's requirements and ground each one in sourced capability evidence — citing source + as-of, parking (never fabricating) on an empty recall.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Parse the RFP into a requirement checklist — each item is a question the response must answer (capability, approach, pricing ask, security/compliance ask)."
+                },
+                {
+                  "tag": null,
+                  "text": "`[knowledge.search]` `[memory.recall]` For each requirement, recall prior winning responses + capability evidence. **Cite each source + its as-of** (A5)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Map each requirement → grounded evidence | **gap**. On an **empty recall** for a capability/certification requirement, **park that section to a human** with reason `awaiting-evidence` — **never fabricate a capability or certification claim** (A5b, refusal-class). Tag every security/compliance requirement as **`→ Grace` (#1557)** — not answered here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "RFP / bid invitation",
+                    "trigger payload",
+                    "the one RFP",
+                    "the requirements being answered"
+                  ],
+                  [
+                    "Opportunity",
+                    "the tied `opportunity` · `okf:opportunity`",
+                    "this deal",
+                    "the bid's deal context + attribution"
+                  ],
+                  [
+                    "Account",
+                    "silver `account` · `okf:account`",
+                    "the bidding account",
+                    "who we're bidding to + relationship context"
+                  ],
+                  [
+                    "Prior wins + capability evidence",
+                    "`[knowledge.search]` / `[memory.recall]`",
+                    "this domain",
+                    "reusable grounded answers + capability proof"
+                  ]
+                ]
+              },
+              "outputs": "`requirements.md` — the parsed requirement checklist, each marked grounded (with cited source + as-of), `gap` (parked `awaiting-evidence`), or `→ Grace` (security/compliance, routed to the stage-02 seam). No claim is asserted without a source.",
+              "audit": [
+                "Every requirement parsed and classified (grounded | gap | → Grace)",
+                "Each grounded answer cites a source + as-of (A5); none fabricated",
+                "Empty recall on a capability/cert requirement → parked `awaiting-evidence`, never invented",
+                "Every security/compliance requirement is tagged `→ Grace`, not self-answered"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-assemble",
+              "name": "assemble",
+              "job": "assemble the bid response — capability/approach + pricing (within the 02-C1 floor) + the Grace-supplied security/compliance section — into one complete, sourced draft.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Assemble the **capability/approach** sections from the stage-01 grounded answers — every claim carries its cited source + as-of. A `gap`/`awaiting-evidence` section stays parked; it is **never filled with an invented capability** (A5b)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Assemble **pricing** within the **02-C1 rate-card floor**. A draft that **breaches the floor** (discount depth / non-standard term) is **routed to 02-C2 deal desk before submit** — flagged, not freelanced, never submitted on an unapproved breach."
+                },
+                {
+                  "tag": "script",
+                  "text": "**SEAM → Grace (#1557):** take the security/compliance section as a handoff (control/attestation content, Stream 07) and assemble it into the response. **Chase authors no security claim** (A11). If the Grace content is **absent**, that section **parks** (refuse-precondition) — the bid does not proceed with a self-written security answer."
+                },
+                {
+                  "tag": "script",
+                  "text": "Compose the full response; attach the source map (every claim → its citation + as-of) and the pricing-vs-floor / deal-desk flag."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Requirements",
+                    "`requirements.md` (stage 01 output)",
+                    "full",
+                    "the grounded answers + gaps + `→ Grace` tags"
+                  ],
+                  [
+                    "Opportunity",
+                    "the tied `opportunity` · `okf:opportunity`",
+                    "this deal",
+                    "the deal terms the bid prices against"
+                  ],
+                  [
+                    "Contact",
+                    "silver `contact` · `okf:contact`",
+                    "the bid's buying contact(s)",
+                    "who the response is addressed to"
+                  ],
+                  [
+                    "Security/compliance content",
+                    "Grace handoff (#1557, Stream 07)",
+                    "the control/attestation section",
+                    "Chase never authors security claims"
+                  ],
+                  [
+                    "Voice",
+                    "`../../skills/voice-and-tone.md`",
+                    "all",
+                    "every sales draft sounds the same"
+                  ],
+                  [
+                    "RFP rules",
+                    "`./skills/rfp-rules.md`",
+                    "all",
+                    "cite-or-refuse, the 02-C1 envelope, the Grace seam"
+                  ]
+                ]
+              },
+              "outputs": "`response-draft.md` — the assembled bid (capability/approach + pricing + the Grace security section), the per-claim source map (source + as-of), the pricing-vs-02-C1 status (within floor | breach → 02-C2), and any parked section. Nothing is submitted here.",
+              "audit": [
+                "Every asserted claim cites a source + as-of; no parked/gap section was fabricated",
+                "The security/compliance section is Grace-supplied (#1557), not self-authored — or parked if absent",
+                "Pricing is within the 02-C1 floor, OR the breach is flagged for 02-C2 (not freelanced)",
+                "No PII / client-confidential data outside the addressed bid scope"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-submit-gate",
+              "name": "submit-gate",
+              "job": "the SUBMIT GATE (Stream 02-C5). A human authorizes the bid submission — a binding client-facing commitment, **always-gated, dial-proof**, never auto at any rung. On authorization, the submit + log continues in stage 04.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Confirm submit preconditions: every claim is sourced (no fabricated / unparked gap), the security section is Grace-supplied (not self-authored), and pricing is within the 02-C1 floor (a 02-C2 breach **without** a recorded exception cannot reach a human as \"ready\"). Any failure parks — never best-efforts to the gate."
+                },
+                {
+                  "tag": "script",
+                  "text": "Present the **4-part easy-button** (A4): the **complete response** · the **grounded why** (each claim cited + as-of) · **one-click Submit + one-click Cancel-before-submit** (the reversible inverse) · the **consequence preview** (the commitment scope + the $ value + a binding-bid irreversibility flag)."
+                },
+                {
+                  "tag": null,
+                  "text": "**Checkpoint** — a human submits, edits, or cancels. This is a binding client-facing commitment; it parks every time, at every rung. On authorization ONLY, the bid exits through the ADR-0058 send path (continued in stage 04)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Response draft",
+                    "`response-draft.md` (stage 02 output)",
+                    "full",
+                    "what may be submitted"
+                  ],
+                  [
+                    "Opportunity",
+                    "the tied `opportunity` · `okf:opportunity`",
+                    "this deal",
+                    "the commitment scope + $ value for the preview"
+                  ]
+                ]
+              },
+              "outputs": "`submit-decision.md` — the final response, the approver, and the decision (`submitted` / `cancelled` / `parked` with reason). On a `submitted` result, **stage 04 (log)** continues the motion; a `cancelled` / `parked` result is terminal here.",
+              "audit": [
+                "A human authorized this exact response (no auto-submit, ever)",
+                "Every claim was sourced and the security section Grace-supplied before the gate",
+                "Pricing within 02-C1, OR a recorded 02-C2 exception — no unapproved-breach submission",
+                "Decision recorded (submitted / cancelled / parked + reason)"
+              ],
+              "checkpoint": "A human approves the bid before it is submitted. **`auto` may self-approve NOTHING here** — a bid is a binding client-facing commitment (pricing/term), the dial-proof hard ceiling (A2 class-2/6, ADR-0128 D2); it parks at every rung. The submission exits only through ADR-0058."
+            },
+            {
+              "slug": "04-log",
+              "name": "log",
+              "job": "the post-submission tail (Stream 02-C5). Runs ONLY after the human-authorized submission (stage 03). On submit → log the outcome and attach the response to the `opportunity` (idempotency-keyed); route a win → 02-A6, a loss → 02-C7. Internal mirror — no customer-facing action originates here.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Gate on stage 03: proceed ONLY if `submit-decision.md` is `submitted`. A `cancelled` / `parked` result is terminal at stage 03 — never advance a non-submitted bid."
+                },
+                {
+                  "tag": "script",
+                  "text": "Log the submission outcome and **attach the response to the `opportunity`**, **idempotency-keyed** (opportunity + bid) so a replay is a no-op, never a double-attach (A9b). Restage the opportunity to reflect the open bid."
+                },
+                {
+                  "tag": "script",
+                  "text": "On a recorded **win** → emit the **02-A6 close path** seam (closed-won handoff). On a recorded **loss** → emit the **02-C7 win-loss** seam (learning feed). A still-pending bid stays open with a logged next-touch; no outcome is invented."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Submit decision",
+                    "`submit-decision.md` (stage 03 output)",
+                    "full",
+                    "only a `submitted` result enters this stage"
+                  ],
+                  [
+                    "Opportunity",
+                    "the tied `opportunity` · `okf:opportunity`",
+                    "this deal",
+                    "the record the response is attached to + restaged"
+                  ]
+                ]
+              },
+              "outputs": "`bid-log.md` — the submission outcome, the `opportunity` attachment reference (idempotency key), the restage, and — on a decided outcome — the 02-A6 (win) or 02-C7 (loss) seam reference. Terminal stage.",
+              "audit": [
+                "Entered ONLY on a stage-03 `submitted` result (no non-submitted bid advanced)",
+                "The attach is idempotency-keyed — a replay is a no-op, not a double-attach (A9b)",
+                "A decided outcome emitted its seam (win → 02-A6, loss → 02-C7); no dropped routing",
+                "No outcome fabricated — a pending bid stays pending, logged"
+              ],
+              "checkpoint": null
             }
           ]
         },
@@ -7253,6 +8022,204 @@
                 "Send result recorded (sent / parked / blocked + reason)"
               ],
               "checkpoint": "A human approves the reply before it leaves. **`auto` may self-approve NOTHING here** — every social reply (DM or public comment) is human-approved in v1 (ADR-0124 D4 posture). The send exits only through ADR-0058."
+            }
+          ]
+        },
+        {
+          "slug": "win-loss-analysis",
+          "title": "win-loss-analysis (sales v1)",
+          "job": "turn a closed cohort of `won`/`lost` opportunities into a win-loss brief — gather the outcomes + reasons + competitor/source attribution, synthesize why deals close or slip (by segment/competitor/source), and narrate a launchpad that feeds pricing (02-C1), forecast (02-C4), and demand (Stream 01/Belle). This is Chase's learning back-channel: a B3 synthesis-brief that **reads and flags, never actuates** (02-C7).",
+          "trigger": "schedule (post-period) or a closed cohort of `won`/`lost` opportunities reaching a sample. One run per cohort.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L0",
+          "autoMaySelfApprove": "nothing self-actuates — this workflow only reads, synthesizes, and flags; every surfaced finding is advisory and a human acts on it through the owning procedure (02-C1 rate-card review / a Belle Stream-01 procedure). No send, no write, no commitment. Cross-deal benchmarks are anonymized/aggregated only — pool, never bleed (A7).",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "account",
+            "campaign"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "gather the closed-won/lost outcome cohort — each opportunity's outcome, close reason, and competitor/source attribution — cited with its source and as-of, with a dormant source flagged stale rather than presented as live.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the cohort + window from the trigger; enumerate the in-scope `won`/`lost` `opportunity` ids and their owning `account` + attributed `campaign`."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull each opportunity's outcome, close reason, and competitor/source attribution; key each reading to its `opportunity` id. Group by account segment + source campaign."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Stamp each source with its **as-of** (A5); a dormant/empty source (no fresh closed cohort, stale feed) → **flag stale, never present as live** (A5c). No fabricated outcome or reason."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The schedule / cohort trigger",
+                    "trigger payload",
+                    "the closed period / cohort",
+                    "what cohort + window to analyze"
+                  ],
+                  [
+                    "Closed opportunities",
+                    "`` `okf:opportunity` ``",
+                    "`won`/`lost` in the cohort",
+                    "the outcome + close reason + competitor/source attribution"
+                  ],
+                  [
+                    "Owning accounts",
+                    "`` `okf:account` ``",
+                    "accounts on the cohort opportunities",
+                    "segment grouping for the win/loss cut"
+                  ],
+                  [
+                    "Source campaigns",
+                    "`` `okf:campaign` ``",
+                    "campaigns attributed to the cohort",
+                    "the source/demand attribution per deal"
+                  ]
+                ]
+              },
+              "outputs": "`gathered.md` — the closed-won/lost cohort keyed to each `opportunity` + as-of, with close reason + competitor/source attribution, the segment + source groupings, and any stale-source flags.",
+              "audit": [
+                "Each outcome + reason cites its `opportunity` + as-of (A5); none fabricated",
+                "Competitor/source attribution captured per deal; grouped by segment + source",
+                "Dormant/empty source flagged stale, not presented as live (A5c)",
+                "In-scope cohort ids resolved for the synthesis"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "synthesize the win/loss patterns by segment, competitor, and source from the gathered cohort, with any cross-deal correlation pooled across the deal base internally only — anonymized and aggregated.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Aggregate outcomes by segment (`account`), competitor, and source (`campaign`): win rate, loss rate, and reason mix per cut; carry each source's as-of forward."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Synthesize the win/loss patterns — why deals close or slip by segment/competitor/ source (recurring loss-on-price, loss-on-demand, competitor-displacement). Cite the contributing opportunities; a cut with no clean source stays uncomputed and is noted, not invented (A5)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Build any cross-deal correlation **pooled across the deal base internally only — anonymized + aggregated** (A7): no client identifier, no row-level personal data, no single client's specifics bleeding into another's view. **Pool, never bleed.**"
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gathered cohort",
+                    "stage 01 output",
+                    "the cohort",
+                    "the cited outcome + reason + attribution base"
+                  ],
+                  [
+                    "Closed opportunities",
+                    "`` `okf:opportunity` ``",
+                    "the cohort",
+                    "the outcome/reason detail behind each pattern"
+                  ],
+                  [
+                    "Owning accounts",
+                    "`` `okf:account` ``",
+                    "accounts in the cohort",
+                    "segment cut for the pattern breakdown"
+                  ],
+                  [
+                    "Source campaigns",
+                    "`` `okf:campaign` ``",
+                    "attributed campaigns",
+                    "source/demand cut for the pattern breakdown"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — the win/loss patterns by segment/competitor/source (win/loss rates + reason mix) with cited opportunities, and any anonymized/aggregated cross-deal correlation.",
+              "audit": [
+                "Patterns cut by segment + competitor + source; rates + reason mix computed",
+                "Each pattern cites its contributing opportunities (A5); none fabricated",
+                "Cross-deal correlation anonymized + aggregated only — no client identifier / no bleed (A7)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-narrate-deliver",
+              "name": "narrate-deliver",
+              "job": "narrate the win-loss brief and apply the B3 launchpad rule — pre-staging the owning worker procedures PARKED — then deliver the brief to its consumers and log. Terminal stage.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Narrate the brief (P2 attribution): why deals close or slip by segment/competitor/ source, each claim citing its pattern + as-of (A5). Carry the stage-01 stale-source flags through so a stale source reads as stale, not as a real finding."
+                },
+                {
+                  "tag": "script",
+                  "text": "Apply the **B3 launchpad rule** — a finding pre-stages the owning worker procedure **PARKED** for one-click launch, never actuated: a recurring loss-on-price pattern pre-stages **02-C1** (rate-card review) parked; a loss-on-demand pattern pre-stages a **Belle Stream-01** procedure parked. The launchpad is staged; this stage launches nothing."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Deliver** (A6 routing) → Sterling (02-C4 forecast) + Belle (demand) + the 09-17 roll-up; **log**. **No actuation here:** this stage opens no action, writes no silver, sends nothing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 output",
+                    "the cohort",
+                    "the win/loss patterns to narrate"
+                  ],
+                  [
+                    "Gathered cohort",
+                    "stage 01 output",
+                    "the cohort",
+                    "the stale-source flags to carry through"
+                  ],
+                  [
+                    "Source campaigns",
+                    "`` `okf:campaign` ``",
+                    "attributed campaigns",
+                    "naming the source/demand owner per loss-on-demand pattern"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — the narrated win-loss brief (patterns by segment/competitor/source, cited), the pre-staged PARKED launchpad entries (02-C1 / Belle Stream-01) for a human to launch, the carried stale-source flags, and the delivery routing — and nothing actuated.",
+              "audit": [
+                "Each narrated finding cites its pattern + as-of (A5)",
+                "Stale-source flags carried through and labeled stale, not finding",
+                "Every launchpad entry pre-staged PARKED + names its owning procedure (02-C1 / Belle Stream-01) — nothing launched",
+                "Delivered to Sterling + Belle + the 09-17 roll-up and logged; no send, no silver write, no action opened (read-and-flag only)"
+              ],
+              "checkpoint": null
             }
           ]
         }

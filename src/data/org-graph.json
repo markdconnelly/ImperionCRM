@@ -800,7 +800,9 @@
         "send.email",
         "send.dm",
         "booking.link",
-        "opportunity.write"
+        "opportunity.write",
+        "knowledge.search",
+        "memory.recall"
       ],
       "okfRooms": [
         "contact",
@@ -812,6 +814,14 @@
         "campaign"
       ],
       "workflows": [
+        {
+          "slug": "close-won-handoff",
+          "stages": [
+            "01-detect-stamp",
+            "02-emit-delivery",
+            "03-emit-relationship"
+          ]
+        },
         {
           "slug": "lead-response",
           "stages": [
@@ -831,12 +841,31 @@
           ]
         },
         {
+          "slug": "pursue-opportunity",
+          "stages": [
+            "01-ground",
+            "02-compose",
+            "03-send-gate",
+            "04-log"
+          ]
+        },
+        {
           "slug": "renewal-reprice",
           "stages": [
             "01-renewal-context",
             "02-margin-input",
             "03-draft-reprice",
-            "04-review-send"
+            "04-review-send",
+            "05-sign-and-backsync"
+          ]
+        },
+        {
+          "slug": "rfp-response",
+          "stages": [
+            "01-ground",
+            "02-assemble",
+            "03-submit-gate",
+            "04-log"
           ]
         },
         {
@@ -846,6 +875,14 @@
             "02-research",
             "03-draft-reply",
             "04-review-send"
+          ]
+        },
+        {
+          "slug": "win-loss-analysis",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-narrate-deliver"
           ]
         }
       ]

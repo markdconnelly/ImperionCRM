@@ -6,9 +6,9 @@ system_compose:                       # ordered; Constitution -> domain room -> 
   - ../chase.md
   - ./prose.md
 okf_rooms: [account, contact, opportunity, interaction]   # subset of domains/sales/room.yaml
-tools: [pg.read, send.email]                              # subset of domains/sales/room.yaml
+tools: [pg.read, send.email, opportunity.write]           # subset of domains/sales/room.yaml — opportunity.write is the stage-05 post-signature outcome stamp (renewed | repriced | churned), an internal reversible write (L2, A9c read-back-then-stamp)
 skills:
   - domains/sales/skills/voice-and-tone   # Tier 2 — domain-shared
   - ./skills/renewal-rules                 # Tier 3 — workflow-local (reprice guardrails)
 autonomy_rung: L1
-auto_may_self_approve: "nothing customer-facing. Chase drafts the renewal reprice + proposal; the customer-facing send (the priced proposal / send-for-signature) is an always-gated, DIAL-PROOF hard ceiling (pricing/discount/term commitment — ADR-0128 D2) and NEVER auto-executes at any rung. Internal context-gathering and drafting proceed; the send always parks for a human, in every mode."
+auto_may_self_approve: "nothing customer-facing. Chase drafts the renewal reprice + proposal (stages 01-03); the customer-facing send-for-signature (stage 04) is an always-gated, DIAL-PROOF hard ceiling (pricing/discount/term commitment + bound signature — ADR-0128 D2, A10 row 4) and NEVER auto-executes at any rung. The post-signature back-sync (stage 05 — update the agreement + stamp the renewal outcome) is an internal, reversible mirror write (L2, idempotency-keyed + read-back, A9) that runs only AFTER the human-authorized signature returns. Internal context-gathering, drafting, and the post-signature mirror proceed; the send always parks for a human, in every mode."
