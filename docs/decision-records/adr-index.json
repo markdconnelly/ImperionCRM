@@ -1824,5 +1824,21 @@
     "file": "ADR-0134-policy-canon-architecture.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0135",
+    "title": "Persona schema, the three-matrix agent model, and the public org chart",
+    "status": "proposed",
+    "date": "2026-06-29",
+    "tags": [
+      "governance",
+      "agents",
+      "persona",
+      "org"
+    ],
+    "summary": "One persona standard for the whole hybrid workforce. An agent is composed of three INTERTWINING matrices joined on agent_key — Personality (the persona .md, 7 fixed sections), Capabilities (agent.yaml/room.yaml + workflow dirs), and the Autonomy ladder (per-workflow setting under agent-level hard caps) — plus a metrics binding. The persona is PERSONALITY ONLY and never originates rules: authority flows org.yaml (ceiling) + policy §5 (rules) -> persona (binds/tightens, cites upstream) -> agent.yaml (derived). Personas are full impersonations (internal app), overriding ADR-0091's never-impersonation for the agent matrix (the board feature is separate). Humans use the same 7 personality sections + 4 human-only sections (decision authority bound to policy §5 = the approver-side of agent always_gate) + the same metrics binding, so human-vs-agent productivity is comparable. org.yaml becomes the single org-chart SoT (agent tree + a humans block + human_manager per agent + public render fields) feeding the app and a public promo chart; the org chart is classified public-approved PII. Every human-in-the-loop gate has one of two origins: policy-backed (cite the policy §; gaps are fixed by updating policy, only Mark+Derek edit it) or technical-limitation (documented in a README-linked reference doc, typically temporary).",
+    "file": "ADR-0135-persona-schema-and-three-matrix-org.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]

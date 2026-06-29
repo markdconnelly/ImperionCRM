@@ -7,9 +7,12 @@
       "kind": "orchestrator",
       "persona": "Nova",
       "reportsTo": null,
+      "humanManager": "derek",
       "ceiling": "L2-delegate-only",
       "serves": "company",
       "division": null,
+      "title": "Orchestrator",
+      "summary": "The single agent every employee talks to; routes work and synthesizes one answer.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -31,9 +34,12 @@
       "kind": "executive",
       "persona": "Rachel",
       "reportsTo": "orchestrator",
+      "humanManager": "derek",
       "ceiling": "L2-delegate-only",
       "serves": "Derek",
       "division": "Internal Ops / G&A",
+      "title": "Chief of Staff",
+      "summary": "Turns cross-company status into a short honest brief and protects the CEO's attention.",
       "built": true,
       "memberDomains": [
         "people",
@@ -66,9 +72,12 @@
       "kind": "executive",
       "persona": "Dexter",
       "reportsTo": "orchestrator",
+      "humanManager": "luke",
       "ceiling": "L2-delegate-only",
       "serves": "Derek/Mark/Luke/Brandon/Anna",
       "division": "Service Delivery & Engineering",
+      "title": "CTO",
+      "summary": "Owns the delivery machine and leads with operational risk.",
       "built": true,
       "memberDomains": [
         "service",
@@ -108,9 +117,12 @@
       "kind": "executive",
       "persona": "Roman",
       "reportsTo": "orchestrator",
+      "humanManager": "mark",
       "ceiling": "L2-delegate-only",
       "serves": "Mark",
       "division": "Security & Compliance",
+      "title": "Deputy CISO",
+      "summary": "Holds the security picture across detection, posture, and identity.",
       "built": true,
       "memberDomains": [
         "soc",
@@ -148,9 +160,12 @@
       "kind": "executive",
       "persona": "Sterling",
       "reportsTo": "orchestrator",
+      "humanManager": "nick",
       "ceiling": "L2-delegate-only",
       "serves": "Nick",
       "division": "Revenue / Client / Finance",
+      "title": "Deputy CFO",
+      "summary": "Holds the money picture and leads with what's leaking.",
       "built": true,
       "memberDomains": [
         "sales",
@@ -193,9 +208,12 @@
       "kind": "executive",
       "persona": "Jessica",
       "reportsTo": "orchestrator",
+      "humanManager": "mark",
       "ceiling": "L2-delegate-only",
       "serves": "Mark",
       "division": "Platform & Assurance",
+      "title": "Chief Risk Officer",
+      "summary": "Independent assurance over conformance, quality, and control drift.",
       "built": true,
       "memberDomains": [
         "platform",
@@ -227,13 +245,95 @@
       ]
     },
     {
+      "id": "people",
+      "kind": "domain",
+      "persona": "Holly",
+      "reportsTo": "chief-of-staff",
+      "humanManager": "derek",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "title": "People & HR",
+      "summary": "Supports the employee lifecycle with discretion.",
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [],
+      "workflows": [
+        {
+          "slug": "employee-offboarding",
+          "stages": [
+            "01-gather-context",
+            "02-build-checklist",
+            "03-propose-handoff"
+          ]
+        },
+        {
+          "slug": "employee-onboarding",
+          "stages": [
+            "01-intake-confirm",
+            "02-orchestrate-setup",
+            "03-track-handoff"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "legal",
+      "kind": "domain",
+      "persona": "Laurel",
+      "reportsTo": "chief-of-staff",
+      "humanManager": "mark",
+      "ceiling": "L2",
+      "serves": null,
+      "division": null,
+      "title": "Legal",
+      "summary": "Manages contracts and legal review.",
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "account",
+        "opportunity"
+      ],
+      "workflows": [
+        {
+          "slug": "contract-review",
+          "stages": [
+            "01-intake-ground",
+            "02-redline-flag",
+            "03-park-execution"
+          ]
+        },
+        {
+          "slug": "renewal-obligation-watch",
+          "stages": [
+            "01-scan-contracts",
+            "02-flag-deadlines",
+            "03-propose-actions"
+          ]
+        }
+      ]
+    },
+    {
       "id": "service",
       "kind": "domain",
       "persona": "Felix",
       "reportsTo": "cto",
+      "humanManager": "brandon",
       "ceiling": "L1",
       "serves": null,
       "division": null,
+      "title": "Service Desk",
+      "summary": "Front-line ticket triage and resolution.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -266,9 +366,12 @@
       "kind": "domain",
       "persona": "Ozzie",
       "reportsTo": "cto",
+      "humanManager": "brandon",
       "ceiling": "L4",
       "serves": null,
       "division": null,
+      "title": "NOC",
+      "summary": "Watches monitoring and turns alert patterns into action.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -307,9 +410,12 @@
       "kind": "domain",
       "persona": "Sage",
       "reportsTo": "cto",
+      "humanManager": "luke",
       "ceiling": "L3",
       "serves": null,
       "division": null,
+      "title": "Problem Management (L3)",
+      "summary": "Tier-3 root-cause analysis on recurring incidents.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -351,9 +457,12 @@
       "kind": "domain",
       "persona": "Marshall",
       "reportsTo": "cto",
+      "humanManager": "brandon",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "Change & Release",
+      "summary": "Governs changes so nothing ships without a real fallback.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -396,9 +505,12 @@
       "kind": "domain",
       "persona": "Scout",
       "reportsTo": "cto",
+      "humanManager": "brandon",
       "ceiling": "L3",
       "serves": null,
       "division": null,
+      "title": "Dispatch",
+      "summary": "Schedules and commits technicians to the work.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -435,9 +547,12 @@
       "kind": "domain",
       "persona": "Phoenix",
       "reportsTo": "cto",
+      "humanManager": "brandon",
       "ceiling": "L3",
       "serves": null,
       "division": null,
+      "title": "Business Continuity & DR",
+      "summary": "Owns backups and recovery readiness.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -475,9 +590,12 @@
       "kind": "domain",
       "persona": "Pierce",
       "reportsTo": "cto",
+      "humanManager": "anna",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "Projects",
+      "summary": "Runs project delivery and the seams where projects fail.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -499,9 +617,12 @@
       "kind": "domain",
       "persona": "Cyrus",
       "reportsTo": "deputy-ciso",
+      "humanManager": "mark",
       "ceiling": "L4",
       "serves": null,
       "division": null,
+      "title": "SOC",
+      "summary": "Detects and contains security threats.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -539,9 +660,12 @@
       "kind": "domain",
       "persona": "Grace",
       "reportsTo": "deputy-ciso",
+      "humanManager": "mark",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "GRC",
+      "summary": "Holds posture, evidence, and control gaps.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -579,9 +703,12 @@
       "kind": "domain",
       "persona": "Osiris",
       "reportsTo": "deputy-ciso",
+      "humanManager": "mark",
       "ceiling": "L3",
       "serves": null,
       "division": null,
+      "title": "Identity & Access",
+      "summary": "Manages joiner-mover-leaver and least-privilege access.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -618,9 +745,12 @@
       "kind": "domain",
       "persona": "Chase",
       "reportsTo": "deputy-cfo",
+      "humanManager": "derek",
       "ceiling": "L3",
       "serves": null,
       "division": null,
+      "title": "Sales",
+      "summary": "Qualifies leads and moves the pipeline.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -684,9 +814,12 @@
       "kind": "domain",
       "persona": "Belle",
       "reportsTo": "deputy-cfo",
+      "humanManager": "derek",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "Marketing",
+      "summary": "Runs demand generation and protects the brand.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -712,9 +845,12 @@
       "kind": "domain",
       "persona": "Celeste",
       "reportsTo": "deputy-cfo",
+      "humanManager": "caity",
       "ceiling": "L3",
       "serves": null,
       "division": null,
+      "title": "Client Success",
+      "summary": "Owns client health and renewals.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -854,9 +990,12 @@
       "kind": "domain",
       "persona": "Vance",
       "reportsTo": "deputy-cfo",
+      "humanManager": "nick",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "Procurement",
+      "summary": "Manages vendor spend and renewals.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -876,9 +1015,12 @@
       "kind": "domain",
       "persona": "Audrey",
       "reportsTo": "deputy-cfo",
+      "humanManager": "nick",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "Finance",
+      "summary": "Read-only finance reporting and the monthly close.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -945,9 +1087,12 @@
       "kind": "domain",
       "persona": "Vera",
       "reportsTo": "cro",
+      "humanManager": "mark",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "Platform Governance",
+      "summary": "Watches platform conformance; recommends, never fixes.",
       "built": true,
       "memberDomains": [],
       "tools": [
@@ -1032,9 +1177,12 @@
       "kind": "domain",
       "persona": "Tess",
       "reportsTo": "cro",
+      "humanManager": "mark",
       "ceiling": "L2",
       "serves": null,
       "division": null,
+      "title": "Service Quality",
+      "summary": "Judges the finished service experience.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -1068,11 +1216,14 @@
     {
       "id": "knowledge",
       "kind": "domain",
-      "persona": "Lexicon",
+      "persona": "Alivia",
       "reportsTo": "cro",
+      "humanManager": "mark",
       "ceiling": "L3",
       "serves": null,
       "division": null,
+      "title": "Knowledge",
+      "summary": "Keeps documentation current and verified.",
       "built": false,
       "memberDomains": [],
       "tools": [
@@ -1125,6 +1276,14 @@
     {
       "from": "orchestrator",
       "to": "cro"
+    },
+    {
+      "from": "chief-of-staff",
+      "to": "people"
+    },
+    {
+      "from": "chief-of-staff",
+      "to": "legal"
     },
     {
       "from": "cto",
@@ -1197,6 +1356,64 @@
     {
       "from": "cro",
       "to": "knowledge"
+    }
+  ],
+  "humans": [
+    {
+      "key": "derek",
+      "name": "Derek",
+      "role": "CEO",
+      "title": "Chief Executive Officer",
+      "summary": "Sets company direction and holds final approval across the business.",
+      "reportsTo": null
+    },
+    {
+      "key": "mark",
+      "name": "Mark",
+      "role": "CISO",
+      "title": "Chief Information Security Officer",
+      "summary": "Owns security, risk, and data governance; co-owns company policy.",
+      "reportsTo": "derek"
+    },
+    {
+      "key": "nick",
+      "name": "Nick",
+      "role": "CFO",
+      "title": "Chief Financial Officer",
+      "summary": "Owns finance, revenue, and commercial commitments.",
+      "reportsTo": "derek"
+    },
+    {
+      "key": "luke",
+      "name": "Luke",
+      "role": "Senior Systems Architect",
+      "title": "Senior Systems Architect",
+      "summary": "Technical lead for service delivery and engineering.",
+      "reportsTo": "derek"
+    },
+    {
+      "key": "brandon",
+      "name": "Brandon",
+      "role": "Cloud Engineer",
+      "title": "Cloud Engineer",
+      "summary": "Runs cloud infrastructure and front-line technical operations.",
+      "reportsTo": "luke"
+    },
+    {
+      "key": "anna",
+      "name": "Anna",
+      "role": "Senior Project Manager",
+      "title": "Senior Project Manager",
+      "summary": "Leads project delivery and timelines.",
+      "reportsTo": "derek"
+    },
+    {
+      "key": "caity",
+      "name": "Caity",
+      "role": "Account Manager",
+      "title": "Account Manager",
+      "summary": "Owns client relationships and client success.",
+      "reportsTo": "derek"
     }
   ]
 }

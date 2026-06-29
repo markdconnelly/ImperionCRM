@@ -57,11 +57,23 @@ function flowSeq(raw) {
 function flowMap(raw) {
   const inner = raw.trim().replace(/^\{/, "").replace(/\}$/, "").trim();
   const out = {};
-  // Split on commas that are NOT inside [...] (so `domains: [a, b]` stays one pair).
+  // Split on commas that are NOT inside [...] and NOT inside a quoted string (so
+  // `domains: [a, b]` stays one pair and `summary: "a, b"` stays one value).
   const parts = [];
   let depth = 0;
+  let quote = null;
   let buf = "";
   for (const ch of inner) {
+    if (quote) {
+      if (ch === quote) quote = null;
+      buf += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      buf += ch;
+      continue;
+    }
     if (ch === "[") depth++;
     if (ch === "]") depth--;
     if (ch === "," && depth === 0) {
@@ -82,11 +94,11 @@ function flowMap(raw) {
   return out;
 }
 
-/** Parse icm/org.yaml into { orchestrator, executives[], domains[] }. */
+/** Parse icm/org.yaml into { orchestrator, executives[], domains[], humans[] }. */
 function parseOrgYaml(text) {
   const lines = text.split(/\r?\n/);
-  const result = { orchestrator: {}, executives: [], domains: [] };
-  let section = null; // 'orchestrator' | 'executives' | 'domains'
+  const result = { orchestrator: {}, executives: [], domains: [], humans: [] };
+  let section = null; // 'orchestrator' | 'executives' | 'domains' | 'humans'
   let curExec = null;
 
   for (const raw of lines) {
@@ -125,6 +137,12 @@ function parseOrgYaml(text) {
     if (section === "domains") {
       const item = line.match(/^\s*-\s*(\{.*\})\s*$/);
       if (item) result.domains.push(flowMap(item[1]));
+      continue;
+    }
+
+    if (section === "humans") {
+      const item = line.match(/^\s*-\s*(\{.*\})\s*$/);
+      if (item) result.humans.push(flowMap(item[1]));
       continue;
     }
   }
@@ -181,9 +199,12 @@ function build() {
     kind: "orchestrator",
     persona: o.persona ?? null,
     reportsTo: null,
+    humanManager: o.human_manager ?? null,
     ceiling: o.ceiling ?? null,
     serves: o.serves ?? null,
     division: null,
+    title: o.title ?? null,
+    summary: o.summary ?? null,
     built: true,
     memberDomains: [],
     tools: oRoom.tools,
@@ -199,9 +220,12 @@ function build() {
       kind: "executive",
       persona: e.persona ?? null,
       reportsTo: e.reports_to ?? o.role,
+      humanManager: e.human_manager ?? null,
       ceiling: e.ceiling ?? null,
       serves: e.serves ?? null,
       division: e.division ?? null,
+      title: e.title ?? null,
+      summary: e.summary ?? null,
       built: true,
       memberDomains: Array.isArray(e.domains) ? e.domains : [],
       tools: room.tools,
@@ -220,9 +244,12 @@ function build() {
       kind: "domain",
       persona: d.persona ?? null,
       reportsTo: d.reports_to ?? room.reportsTo ?? null,
+      humanManager: d.human_manager ?? null,
       ceiling: d.ceiling ?? null,
       serves: null,
       division: null,
+      title: d.title ?? null,
+      summary: d.summary ?? null,
       built: d.built === true,
       memberDomains: [],
       tools: room.tools,
@@ -232,11 +259,25 @@ function build() {
     if (d.reports_to) edges.push({ from: d.reports_to, to: d.domain });
   }
 
+  // The human org layer (the 7 staff). Kept PARALLEL to nodes/edges (not in the
+  // agent tree) so the "one orchestrator root + |nodes|-1 edges" invariant holds;
+  // agents point in via node.humanManager. `reports_to: null` (top) parses to the
+  // literal string "null" via the flow-map reader — coerce it back to null here.
+  const humans = org.humans.map((h) => ({
+    key: h.key,
+    name: h.name ?? null,
+    role: h.role ?? null,
+    title: h.title ?? null,
+    summary: h.summary ?? null,
+    reportsTo: h.reports_to && h.reports_to !== "null" ? h.reports_to : null,
+  }));
+
   return {
     _generated: "scripts/gen-org-graph.mjs from icm/org.yaml + icm/** — DO NOT EDIT BY HAND",
     orchestrator: o.role,
     nodes,
     edges,
+    humans,
   };
 }
 

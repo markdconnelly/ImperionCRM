@@ -18,7 +18,8 @@ to reason and act on safely.
 [System of systems](docs/architecture/system-of-systems.md) ·
 [Architecture](docs/architecture/README.md) ·
 [Customer lifecycle](docs/architecture/customer-lifecycle.md) ·
-[Decision records](docs/decision-records/README.md)
+[Decision records](docs/decision-records/README.md) ·
+[Technical limitations](docs/reference/technical-limitations.md)
 
 </div>
 

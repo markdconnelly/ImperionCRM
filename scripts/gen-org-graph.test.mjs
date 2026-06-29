@@ -51,4 +51,22 @@ describe("org-graph generator", () => {
       if (n.kind === "domain") expect(execIds.has(n.reportsTo)).toBe(true);
     }
   });
+
+  it("the human org layer resolves: one human root, every reportsTo names a human", () => {
+    const humanKeys = new Set(graph.humans.map((h) => h.key));
+    expect(graph.humans.length).toBeGreaterThan(0);
+    const roots = graph.humans.filter((h) => h.reportsTo === null);
+    expect(roots).toHaveLength(1); // Derek (CEO)
+    for (const h of graph.humans) {
+      if (h.reportsTo !== null) expect(humanKeys.has(h.reportsTo)).toBe(true);
+    }
+  });
+
+  it("every agent node's humanManager resolves to a real human", () => {
+    const humanKeys = new Set(graph.humans.map((h) => h.key));
+    for (const n of graph.nodes) {
+      expect(n.humanManager).not.toBeNull();
+      expect(humanKeys.has(n.humanManager)).toBe(true);
+    }
+  });
 });
