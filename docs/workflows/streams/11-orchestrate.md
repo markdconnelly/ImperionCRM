@@ -78,6 +78,8 @@ synthesis-brief showcase** — every C-suite brief is a B3 launchpad.
 | S2 Revenue/Client/Finance division-orchestration | **B1 triage/route** (WITHIN-division) |
 | J1 risk-assurance-sweep → Mark | **B3 synthesis-brief** (launchpad) |
 | J2 Platform/Assurance division-orchestration | **B1 triage/route** (WITHIN-division) |
+| OP-11-16 strategic-planning + OKR cadence | **B3 synthesis-brief** (launchpad) |
+| OP-11-17 board/investor reporting pack | **B3 synthesis-brief** + **B4 audit-attest** (external-facing → `always_gate`) |
 
 **Driving policy (every procedure):** inherits the doctrine universal baseline (ADR-0136 A2/A4/A5)
 + `TBD (mark-blocker: company-policy-collection)` for the 1–3 specific drivers (D4, #1586).
@@ -495,6 +497,120 @@ live in those members' own streams (1–10) — NOT duplicated here.
 
 ---
 
+## ENTERPRISE STRATEGY — exec-tier synthesis briefs (Cluster 7, NO M&A)
+
+The two procedures below extend the C-suite synthesis-brief archetype to the **enterprise/exec
+planning surface** (#1630, organic path to $100M — corp-dev/M&A and multi-entity consolidation
+explicitly DROPPED). Both are **L2 delegate-only** like every procedure in this stream: they roll
+up cross-division state for the paired human and **launch back into** owning worker procedures
+(B3 launchpad), never reaching past the seam to actuate. The business/enterprise-risk register,
+business-insurance portfolio, and facilities/fleet procedures of Cluster 7 live in **Stream 10**
+(separate PR), not here.
+
+## OP-11-16 · Run strategic / annual planning + OKR cadence (synthesis brief → Derek)
+- **Owner / Stream:** Rachel (Chief of Staff) + Nova / 11. **Serves:** Derek (+ the C-suite as
+  contributors). **Division:** cross-division (Rachel facilitates the planning clock; Nova supplies
+  the across-division roll-up). **Archetype:** B3 synthesis-brief (launchpad).
+- **Trigger:** the planning calendar — annual plan kickoff + the recurring OKR review cadence
+  (quarterly/monthly check-in), cron via timer (deploy-dormant #119); or an admin opens an
+  off-cycle re-plan.
+- **Terminal outcome:** a planning/OKR brief delivered to Derek — proposed objectives + key
+  results, progress vs current-period targets, at-risk OKRs + the strategic decisions they force —
+  **each decision-needed item carrying a pre-staged, parked worker procedure** for one-click launch
+  into the owning division's gauntlet. Rachel/Nova never set the objectives; Derek (+ C-suite) does.
+- **Procedure Steps** (B3: gather → synthesize → narrate → deliver → log):
+  1. `[automation]` **Gather** — recall + read the planning inputs across every division: the
+     C-suite pulses (R1/D1/O1/S1/J1 outputs), the current OKR set + measured progress, financial
+     trajectory (Sterling/Audrey, read-only) and delivery/capacity (Dexter), **citing each source +
+     as-of (A5)**; on dormant recall (no hydrated gold / no prior OKR baseline), **flag it (A5c),
+     never present dormant data as live**. [hand-off from: C-suite briefs + division members'
+     streams — read-only, no re-run] **L2.**
+  2. `[automation]` **Synthesize** — aggregate progress vs key results; compute at-risk OKRs
+     (off-trajectory KRs, capacity/funding gaps, cross-objective collisions); draft proposed
+     next-period objectives from the rolled-up state. **Pool-correlate internally only; never
+     surface one client's specifics into another's context (A7).** **L2.**
+  3. `[hybrid]` **Narrate + deliver (A6) + launchpad** — render Derek's planning brief (read-only
+     artifact — no external send → no gate), attributed up-chain (P2); for each at-risk OKR /
+     decision-needed item **auto-spawn the owning worker procedure PARKED in draft** (a Dexter
+     delivery action D2, a Sterling finance action S2, a Rachel G&A action R2, …) so Derek
+     one-click-launches it into that division's own gauntlet. **Nova supplies the across-division
+     correlation (its N1/N2 substrate); Rachel owns the planning-clock narrative.** Neither actuates
+     — setting/committing an objective is Derek's call, and any resulting world-change runs under the
+     owning sub-agent's ceiling.
+- **Autonomy ceiling:** **L2 delegate-only** (compile + narrate + pre-stage = reversible internal,
+  A10 row 1; structurally L2 — no actuation grant, the subset invariant makes actuation
+  impossible to grant, not merely un-dialed). **`always_gate`:** holds NO actuation grant — every
+  launched planning action runs under the owning sub-agent's gauntlet + ceiling (the launchpad
+  pre-stages, the worker gates); **committing the objective set is Derek's decision, never
+  auto-set**.
+- **Human-in-loop:** Derek consumes + makes the planning calls (with the C-suite as contributors).
+  Recedes per A3: at low dial Rachel/Nova draft the brief for review; at high dial auto-deliver the
+  compiled brief, but every *objective-setting decision* it surfaces stays Derek's (the planning
+  call never recedes to the agent).
+- **Driving policy:** inherits the doctrine universal baseline (A2/A4/A5) + TBD (#1586) for the
+  Strategic-Planning / OKR-Cadence drivers (owed as #1586 IT-Glue business docs). **Realization:**
+  `icm/executive/chief-of-staff/strategic-planning/` (Rachel-owned room; Nova roll-up via N1/N2).
+- **Substrate deps:** retrieval tier #1537 (recall) · timer #119 · org.yaml division map #1536 ·
+  the C-suite pulse outputs (R1/D1/O1/S1/J1) · cross-agent handoff substrate #991 (launchpad
+  spawn); **OKR persistence has no silver entity yet — propose-to-FE, A5c propose-only until built**
+  (all dormant deps ship propose-only). **subject:** imperion.
+
+## OP-11-17 · Produce the board / investor reporting pack (synthesis brief + audit-attest)
+- **Owner / Stream:** Sterling (Deputy CFO) + Rachel (Chief of Staff) / 11. **Serves:** Nick (CFO) +
+  the board/investor audience via Nick. **Division:** cross-division (Sterling owns the financial
+  substance; Rachel owns the narrative/assembly clock). **Archetype:** B3 synthesis-brief (launchpad)
+  **+ B4 audit-attest** — the pack is an **external-facing attestation**, so its sign-off is
+  `always_gate` (A2 + B4 audience split).
+- **Trigger:** the board/reporting calendar (per-meeting / quarterly), cron via timer (deploy-dormant
+  #119); or Nick requests an off-cycle pack.
+- **Terminal outcome:** a complete board/investor pack assembled — financial results + KPIs +
+  strategic-narrative + risk summary, each figure **evidence-backed and cited** — **parked for a
+  human sign-off** (the external attestation is never auto-issued); on sign-off, the released pack is
+  recorded as the attested artifact. Sterling/Rachel assemble + attest-prep; Nick signs.
+- **Procedure Steps** (B4: scope → collect-evidence → evaluate → compose → route-gaps → sign-off,
+  fused with B3 gather→synthesize→narrate→deliver):
+  1. `[automation]` **Scope + collect evidence (A5, audit-by-reference)** — assemble the reporting
+     figures from the silver SoR: financials (Sterling/Audrey, **QBO read-only — QBO is the SoR, the
+     agent mirrors, never owns, A9a**), revenue/pipeline (Chase), delivery/SLA KPIs (Dexter), risk
+     posture (Jessica/Roman), **citing the source + as-of of every figure**; on dormant/un-hydrated
+     finance silver, **flag it (A5c), never fabricate a number**. **Salary/comp non-disclosure
+     honored — aggregate only, never individual Pay Rate (A7 pool-never-bleed across the comp
+     boundary).** [hand-off from: S1/D1/J1 + streams 2/8/9 — read-only] **L2.**
+  2. `[automation]` **Evaluate + synthesize** — reconcile the figures (period-over-period, vs plan
+     from OP-11-16), compute the KPI deltas + variance flags; **pool-correlate internally only,
+     never surface one client's specifics across the pack (A7)**. **L2.**
+  3. `[hybrid]` **Compose the pack + the attestation package = the 4-part easy-button (A4):** the
+     drafted board pack (financials + KPIs + strategic narrative, Rachel-narrated, attributed P2) +
+     the grounded why (each figure cited + as-of, the reconciliation trail) + the one-click
+     Sign-off-&-release (+ Edit) + the consequence preview (this pack goes to the board/investors —
+     external, committal). For each pack-surfaced strategic action **auto-spawn the owning worker
+     procedure PARKED in draft** (B3 launchpad) for one-click launch — the pack is also a launchpad,
+     not only a readout.
+  4. `[gui-step]` **Human sign-off = `always_gate`** — Nick (CFO) reviews the evidence-backed pack
+     and **signs/releases it** (B4 external-facing attestation: an investor/board pack is a committal
+     external assertion → human-signed, dial-proof). Sterling/Rachel **never auto-issue** the pack.
+  5. `[automation]` **Record + route-gaps** — on sign-off, record the released pack as the attested
+     artifact (idempotency-keyed, read-back to confirm it landed, A9c); route any evidence gap found
+     during assembly back to the owning division (→ S2 / D2 / J2).
+- **Autonomy ceiling:** **L2 delegate-only** (assemble + evidence-back + pre-stage = reversible
+  internal, A10 row 1; no actuation grant — structural L2). **`always_gate` (HARD, A2 + B4): the
+  pack's sign-off / external release** — an investor/board pack is an external-facing attestation
+  + a committal customer-/stakeholder-facing artifact (A2 class-2), so the release NEVER
+  auto-executes at any dial. Money figures are QBO-SoR read-only (A9a); comp is aggregate-only (A7).
+- **Human-in-loop:** Nick (CFO) signs/releases the pack; the C-suite contributes the substance.
+  Recedes per A3 on the *assembly* (at high dial Sterling/Rachel pre-stage the full evidence-backed
+  pack), but the **external sign-off click stays human forever** (B4 attestation floor) — and the
+  **comp non-disclosure floor holds even into Nick's pack** (aggregate only, A7).
+- **Driving policy:** inherits the doctrine universal baseline (A2/A4/A5) + TBD (#1586) for the
+  Board-Reporting / Investor-Disclosure drivers (owed as #1586 IT-Glue business docs). **Realization:**
+  `icm/executive/deputy-cfo/board-reporting-pack/` (Sterling-owned room; Rachel narrative assembly).
+- **Substrate deps:** retrieval tier #1537 · timer #119 · org.yaml #1536 · finance silver (Stream 9,
+  QBO read-only, #1580 AR/invoice) · payroll-RLS (comp gag) · the C-suite pulse outputs
+  (S1/D1/J1) · cross-agent handoff substrate #991; **board-pack/attestation artifact has no silver
+  entity yet — propose-to-FE, A5c propose-only until built**. **subject:** imperion.
+
+---
+
 ## Provable-coverage note
 
 Orchestration spine fully covered: intake routing (N1, **B1**), 3-level correlation/ledger (N2),
@@ -515,6 +631,14 @@ bypassed (the subset invariant makes actuation impossible to grant, not merely u
 C-suite briefs are the **B3 launchpad showcase**; N5 is the **A6 terminal single-human backstop**.
 Whole stream UNBUILT: `icm/executive/` + `icm/org.yaml` pending #1536 (exec-tier ADR foundation
 #1535 MERGED as ADR-0131); per A5c every procedure ships propose-only until its substrate hydrates.
+**Enterprise-strategy extension (#1630, Cluster 7, organic — NO M&A):** two exec-tier briefs added —
+strategic/annual planning + OKR cadence (OP-11-16, Rachel + Nova, B3) and the board/investor
+reporting pack (OP-11-17, Sterling + Rachel, B3 + **B4 external-facing attestation → sign-off
+`always_gate`**) — both **L2 delegate-only** consistent with the stream invariant (compile + launchpad,
+never actuate; the planning call stays Derek's, the pack sign-off stays Nick's). Cluster 7's
+enterprise/business-risk register, business-insurance portfolio, and facilities/fleet procedures live
+in **Stream 10** (separate PR), not here.
 
-**Count: 15 Operating Procedures** (Nova 5: N1–N5; C-suite 10 = 5 × {synthesis-brief +
-division-orchestration}: R1/R2, D1/D2, O1/O2, S1/S2, J1/J2).
+**Count: 17 Operating Procedures** (Nova 5: N1–N5; C-suite 10 = 5 × {synthesis-brief +
+division-orchestration}: R1/R2, D1/D2, O1/O2, S1/S2, J1/J2; enterprise-strategy 2: OP-11-16,
+OP-11-17).
