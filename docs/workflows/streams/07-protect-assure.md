@@ -20,6 +20,7 @@ Roman #1548.
 **Stream scope:** security alert triage · investigation · containment · threat-intel intake ·
 Security Posture Management (posture snapshot / Imperion Secure Score / pillar scoring · policy
 & DNS Golden State drift · Client Security Standard measurement) · GRC control-evidence & attestation ·
+**third-party / vendor security risk (TPRM)** · **Imperion's own SOC 2 / ISO / CMMC audit program** ·
 security ops-governance (incident escalation + PIR · security-config change-control) · BCDR
 (backup verification · recovery/restore · DR runbook + drill).
 
@@ -69,6 +70,8 @@ dormant source ship **propose-only** until built.
 | OP-07-12 compute posture snapshot | **B4 audit-attest** (measure-only, internal — D8 Cyrus) |
 | OP-07-13 Golden State + DNS drift | **B4 audit-attest** (measure; baseline change = `always_gate`) |
 | OP-07-14 per-client conformance vs Standard | **B4 audit-attest** (measure; remediation advisory-only forever) |
+| OP-07-15 third-party / vendor security risk (TPRM) | **B4 audit-attest** (measure/assess OUR vendors, internal) |
+| OP-07-16 Imperion's own SOC 2 / ISO / CMMC audit program | **B4 audit-attest** (external audit = `always_gate`, human-signed) |
 
 **Doctrine showcase for this stream:** **A11 obligation/action separation** (the D8 posture ruling —
 *Cyrus measures · Vera owns the Standard · Celeste presents · human + Datto remediate*, meeting at
@@ -525,14 +528,128 @@ client's identifiable exposure never surfaces in another's context.
 
 ---
 
+## F. Grace + Roman — vendor risk (TPRM) & Imperion's own audit program (GRC; Grace L2 measure, external attestation/audit `always_gate`)
+
+> **Distinction note.** These two are deliberately **NOT** the existing Grace procedures. OP-07-05
+> (control-evidence sweep) + OP-07-06 (compliance attestation) measure Imperion's controls against a
+> framework and file the resulting attestation; OP-07-15/16 below extend that surface in two
+> orthogonal directions: **OP-07-15 turns the audit lens *outward* onto OUR vendors** (third-party
+> security posture of the suppliers Imperion itself relies on) and **OP-07-16 runs the *end-to-end
+> external-audit program* that produces the SOC 2 / ISO 27001 / CMMC certifications** (engagement
+> lifecycle, evidence campaign, auditor liaison) — for which OP-07-06 is the per-control sign-off
+> primitive. OP-07-15 is **also distinct from Vance's commercial vendor risk** (Stream 09/procurement:
+> price/EOL/contract-commercial exposure, A11): Grace owns the *security/compliance* dimension of the
+> same vendor; they meet at an explicit seam, never co-own.
+
+## OP-07-15 · Assess third-party / vendor security risk (TPRM)
+- **Owner / Stream:** Grace / 07 (GRC). **Archetype:** B4 audit-attest (**internal** measure — assess
+  the security posture of OUR vendors; the B4 audience split: assessment/scoring auto-runs at L2, any
+  *external assurance request* to a vendor or *attestation that a vendor is approved* parks).
+- **Trigger:** A new vendor/subprocessor is onboarded (procurement seam ← Vance), a periodic
+  reassessment cadence fires (per risk tier), OR a vendor security event (their breach, a CVE in their
+  product, an expiring vendor SOC 2) lands.
+- **Terminal outcome:** A persisted vendor security-risk assessment — posture/tier per vendor
+  (critical/high/moderate/low), data-access + subprocessor exposure mapped, gaps + required
+  remediations/contractual controls routed; the vendor's own attestation (SOC 2 / ISO / DPA) recorded
+  by reference with an expiry to watch.
+- **Procedure Steps** (B4: scope → collect-evidence → evaluate → compose → route):
+  1. `[automation]` **Scope + collect evidence** — enumerate Imperion's vendors/subprocessors and what
+     data/access each holds, gather each vendor's security artifacts (their SOC 2 / ISO cert / pen-test
+     summary / questionnaire response / DPA), **citing each artifact + as-of** (A5; on a missing or
+     expired artifact say "no current attestation on file" rather than asserting compliant, A5b/c).
+     **SEAM ← Vance (procurement, Stream 09)** for the vendor/contract record. **L0/L2.**
+  2. `[automation]` **Evaluate** — score each vendor against the third-party-risk control set
+     (data sensitivity × access × the vendor's attested controls) → risk tier; pool-correlate a shared
+     vendor's posture/incident across the client base **internally only** (a vendor EOL/breach affecting
+     many — A7), never surfacing one client's exposure in another's view.
+  3. `[automation]` **Compose** — build the per-vendor gap report (missing controls, expiring
+     attestations, required contractual safeguards), each finding evidence-referenced + as-of (A5),
+     attributed P2.
+  4. `[gui-step]` **Route** — human reviews tiers/gaps; **approving a vendor as in-policy, or sending a
+     security-assurance request/questionnaire to a vendor, is `always_gate`** (an external commitment /
+     assertion — A2 class-2/6; parks as the 4-part easy-button, A4). **SEAM →** Roman (governance
+     escalation on a critical-vendor gap, OP-07-07/08) · Vance (commercial/contract action, Stream 09) ·
+     Laurel (subprocessor → DPA/privacy register, **Stream 10**) · Celeste (if a vendor risk affects a
+     specific client deliverable, advisory, Stream 08).
+- **Driving policy:** inherits A2/A4/A5/A7 + `TBD (mark-blocker: company-policy-collection)` (D4, #1586)
+  — third-party-risk / vendor-management policy + the TPRM control set → **POLICY GAP: TPRM control-set
+  source not yet provided** (will map to the IMxxx info-sec canon, like OP-07-05).
+- **Realization:** GRC vendor-risk playbook (sub-issue under #1557); `procedure-only` until built. No
+  vendor-risk silver entity yet → **schema gap flagged to FE** (vendor security-assessment record);
+  ships propose-only (A5c).
+- **Autonomy ceiling:** **L2** (enumerate + score + gap-detect = reversible internal measure, A10 row 1);
+  **`always_gate`: approving a vendor as in-policy + any outbound vendor-assurance request** (external
+  assertion/commitment — A2 class-2/6).
+- **Human-in-loop:** Mark/Roman. Recedes to auto-collect + auto-score + auto-gap-report; **always_gate
+  floor** = the vendor-approval decision + any external assurance request. Ships L0 (A3).
+- **Substrate deps:** vendor/contract record (Vance, Stream 09), #389 recall (dormant), #991 handoff bus,
+  **schema gap (vendor security-assessment record)**, audit_log. **subject:** Imperion-self (OUR vendors)
+  — dogfood `subject=imperion`; a client's own TPRM is the same procedure run with `subject=client`.
+  **Maps to:** #1557.
+
+## OP-07-16 · Run Imperion's own SOC 2 / ISO 27001 / CMMC audit program ⛔
+- **Owner / Stream:** Grace (GRC, evidence + program clock) **+ Roman (Deputy CISO, governance + auditor
+  liaison)** / 07. **Archetype:** B4 audit-attest (**external** — the audience split made absolute: the
+  evidence campaign auto-runs at L2, but **engaging an external auditor / submitting the audit package /
+  accepting a certification is `always_gate`, human-signed**, A2 class-2/6). A11: Grace runs the
+  evidence/program clock, Roman governs + liaises, **the human signs/binds the external engagement** —
+  none co-own the signature.
+- **Trigger:** An audit/certification cycle opens (annual SOC 2 Type II window, ISO surveillance/recert,
+  CMMC assessment) OR a customer/contract requires a named certification by a date.
+- **Terminal outcome:** A managed audit engagement — control set scoped to the framework, evidence
+  campaign run to completion, auditor liaised, and the certification/report achieved (or findings + a
+  remediation plan filed), with every external commitment human-signed.
+- **Procedure Steps** (B4: scope → collect-evidence → evaluate → compose → sign-off → route):
+  1. `[automation]` **Scope** — select the framework + control set (SOC 2 TSC / ISO 27001 Annex A / CMMC
+     practices) and the audit period, **citing the framework version + period** (A5). **L1.**
+  2. `[automation]` **Collect-evidence (the campaign)** — drive the recurring evidence pulls (reuses the
+     OP-07-05 control-evidence sweep as its engine — audit-by-reference, **no client PII reproduced**,
+     A7), tracking each control's evidence to ready/gap, each item cited + as-of (A5). **L2.**
+  3. `[hybrid]` **Evaluate + remediate-plan** — Roman governs readiness vs the framework; gaps become
+     tracked hardening items (never TODOs) routed via OP-07-08 (security-config change-control) /
+     Marshall's Change→Release (**SEAM → Stream 06**). Pool prior-cycle findings internally (A7).
+  4. `[gui-step]` ⛔ **Sign-off / engage** — **human signs**: engaging/authorizing the external auditor,
+     submitting the audit package, and accepting the resulting attestation/certification are each
+     `always_gate` (external assertion + binding engagement — A2 class-2/6; Grace assembles the complete
+     package as the 4-part easy-button, Roman attests readiness, **the human binds**, A4/A11).
+     **HAND-OFF ↔ Mark/Roman gate.**
+  5. `[automation]` **Log + route** — record the certification/report + its validity window as an audit
+     artifact (idempotency-keyed so a replay re-files no duplicate, A9b); set the recert/surveillance
+     date as a watched deadline. **SEAM →** Laurel (cert feeds customer contracts/assurance, Stream 10) ·
+     Celeste (certification available to present to clients, advisory, Stream 08) · the relevant C-suite
+     synthesis-brief (Stream 11).
+- **Driving policy:** inherits A2/A4/A5/A7 + TBD (#1586) — the compliance frameworks themselves
+  (SOC 2 / ISO 27001 / CMMC mappings) → **POLICY GAP: framework control-set source not yet provided**
+  (same gap as OP-07-05; this procedure is the program that consumes it).
+- **Realization:** GRC audit-program playbook (sub-issue under #1557, with a Deputy-CISO governance seam
+  to #1548); `procedure-only` until built. Builds on OP-07-05/06 (evidence engine + per-control sign-off
+  primitive).
+- **Autonomy ceiling:** **L2** (scope + evidence campaign + readiness eval auto = reversible internal,
+  A10 row 1); ⛔ **`always_gate`: external auditor engagement + audit-package submission + certification
+  acceptance** (external assertions/commitments, no clean undo on a filed audit package — A2 class-2/6,
+  gated forever).
+- **Human-in-loop:** Mark/Roman. Never recedes off the external-engagement/sign-off steps — dial-proof
+  (the B4 external-attestation floor).
+- **Substrate deps:** OP-07-05 evidence store + sweep engine, audit_log, #1548 (Roman governance seam),
+  #991 handoff bus, ADR/issue tracker (hardening items), #119. **subject:** Imperion-self (dogfood
+  `subject=imperion`) — a client's own certification program is the same procedure with `subject=client`.
+  **Maps to:** #1557 (+ #1548 governance seam).
+
+---
+
 ## Provable-coverage note
 
 Protect→Assure surface fully covered: SOC alert→signal→containment→TI (OP-07-01…04), GRC
 control-evidence + attestation (05/06), security ops-governance escalation/PIR + config change-control
 (07/08, the latter seaming to Stream 06), BCDR backup-verify → recovery/restore → DR runbook+drill
-(09/10/11), and Security Posture Management — snapshot, Golden State + DNS drift, Client Security
+(09/10/11), Security Posture Management — snapshot, Golden State + DNS drift, Client Security
 Standard measurement (12/13/14, the D8 measure-only Cyrus assignment with the Vera/Celeste/human+Datto
-seams). Roman's read-only cross-division posture-brief synthesis is **excluded — it lives in Stream 11**.
+seams), and the **vendor & own-audit GRC pair** — third-party/vendor security risk (TPRM, 15) +
+Imperion's own SOC 2 / ISO / CMMC audit program (16, Grace+Roman, external engagement `always_gate`),
+extending the 05/06 control-evidence surface outward (OUR vendors) and end-to-end (the certification
+program), seaming to Vance (commercial vendor risk, Stream 09), Laurel (DPA/privacy + contract
+assurance, Stream 10), and Marshall (hardening change-release, Stream 06). Roman's read-only
+cross-division posture-brief synthesis is **excluded — it lives in Stream 11**.
 This is the stream whose procedures will map most directly to the IMxxx info-sec policy canon once D4
 policy collection lands; until then every Driving policy = TBD (#1586).
 
@@ -545,5 +662,6 @@ threat correlation: pooled internally, surfaced only anonymized/aggregated. Per 
 that depends on a dormant substrate (#389 recall · #991 bus · #119 triggers · LP #157 DNS golden/drift ·
 Datto Client Mapping · M365 per-client app gates) ships **propose-only** until its source hydrates.
 
-**Count: 14 Operating Procedures** (Cyrus 7 = 4 SOC [01–04] + 3 posture-mgmt [12–14]; Grace 2 [05/06];
-Roman 2 ops-governance [07/08]; Phoenix 3 [09–11]) — Roman's synthesis brief excluded (Stream 11).
+**Count: 16 Operating Procedures** (Cyrus 7 = 4 SOC [01–04] + 3 posture-mgmt [12–14]; Grace 3 = 2
+control-evidence/attestation [05/06] + TPRM [15]; Roman 2 ops-governance [07/08]; Phoenix 3 [09–11];
+Grace+Roman 1 own-audit-program [16]) — Roman's synthesis brief excluded (Stream 11).
