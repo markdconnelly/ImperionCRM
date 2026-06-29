@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0136
 title: "Workflow Doctrine — cross-cutting rules + archetype step-templates for all Operating Procedures"
 status: accepted
 date: 2026-06-29
@@ -8,7 +8,7 @@ summary: "The normative doctrine that governs ALL Operating Procedures (ADR-0133
 tags: [agents, workflows, autonomy, doctrine, catalog]
 ---
 
-# ADR-NNNN: Workflow Doctrine — cross-cutting rules + archetype step-templates
+# ADR-0136: Workflow Doctrine — cross-cutting rules + archetype step-templates
 
 | Field | Value |
 |---|---|
@@ -16,9 +16,6 @@ tags: [agents, workflows, autonomy, doctrine, catalog]
 | **Status** | Accepted |
 | **Date** | 2026-06-29 |
 | **Cross-references** | ADR-0133 (Operating Procedure catalog) · ADR-0134 (policy canon) · ADR-0128 (autonomy ladder) · ADR-0109 (earned autonomy) · ADR-0118 (data_class always-gate) · ADR-0081 (ProposedAction) · ADR-0096 (sale→delivery) |
-
-> Claim the real ADR number at merge (system CLAUDE.md §10.3): rename the file, set
-> `adr:`/heading, then run `node scripts/adr-index.mjs` and commit `README.md` + `adr-index.json`.
 
 ## Problem
 
