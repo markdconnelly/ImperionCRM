@@ -288,14 +288,14 @@ app gates · Datto Client Mapping · LP DNS #157 golden/drift merge (REMAINING) 
   2. `[hybrid]` Draft/update DR runbook steps (RPO/RTO targets per service).
   3. `[gui-step]` Human approves the runbook revision + schedules a drill.
   4. `[hybrid]` Execute drill (sandbox restore + failover rehearsal, auto where reversible); file
-     gaps as issues. **HAND-OFF →** Roman (governance), Lexicon (IT Glue SoT sync — **SEAM → Stream 10**).
+     gaps as issues. **HAND-OFF →** Roman (governance), Alivia (IT Glue SoT sync — **SEAM → Stream 10**).
 - **Driving policy:** TBD (#1586) — DR / BCP policy.
 - **Realization:** BCDR playbook (#1555); `procedure-only`. Runbook is a `docs/runbooks/`/IT-Glue
-  artifact, Lexicon-synced.
+  artifact, Alivia-synced.
 - **Autonomy ceiling:** L3; production failover always_gate.
 - **Human-in-loop:** Dexter/Mark. Recedes to auto-drift-detect + auto-draft; always_gate floor =
   approving the runbook + any prod failover.
-- **Substrate deps:** infra topology, Datto, Lexicon doc-sync (Stream 10), #389 (dormant).
+- **Substrate deps:** infra topology, Datto, Alivia doc-sync (Stream 10), #389 (dormant).
   **subject:** both. **Maps to:** #1555.
 
 ---

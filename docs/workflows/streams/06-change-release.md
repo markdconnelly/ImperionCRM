@@ -27,7 +27,7 @@ production-affecting actions — Marshall dispatches and observes, **never touch
 **Seams (every cross-agent hand-off is an explicit Procedure Step):** changes-in from Sage
 (Problem Mgmt #1552), Pierce (project provisioning), Roman/Cyrus (security remediation #1556);
 executors-out (OP-06-07); evidence-out → Grace (GRC #1557); client-comms-out → Celeste (#1396);
-runbook-out → Lexicon (#1561); risk-grounding-in → Audrey (financial) / Celeste (relationship).
+runbook-out → Alivia (#1561); risk-grounding-in → Audrey (financial) / Celeste (relationship).
 
 **Substrate grounding (verified live, 2026-06-28):** `change_request` silver entity EXISTS (mig
 `0135`, 💤dormant; concept file + ADR-0079; archetype D, Autotask = eventual record SoR via gated
@@ -159,8 +159,8 @@ catalog (OP-06-10).
 - **Terminal outcome:** a documented, reviewable back-out plan attached to the change, required before
   approval for normal/emergency.
 - **Procedure Steps:**
-  1. `[automation]` Recall prior similar changes + affected-CI runbooks (IT Glue / Lexicon) to draft a
-     step-by-step back-out. **SEAM → Lexicon (#1561)** for the canonical CI runbook. **L2.**
+  1. `[automation]` Recall prior similar changes + affected-CI runbooks (IT Glue / Alivia) to draft a
+     step-by-step back-out. **SEAM → Alivia (#1561)** for the canonical CI runbook. **L2.**
   2. `[automation]` Draft the rollback + define **success/verification criteria** and the rollback
      trigger condition.
   3. `[hybrid]` Owning tech agent (Ozzie/Felix/Osiris/Phoenix) reviews technical feasibility of the
@@ -170,7 +170,7 @@ catalog (OP-06-10).
   column on `change_request` today → likely a child artifact/note table (propose to FE, #1579).
 - **Autonomy ceiling:** L2 (drafting only). No `always_gate` (a draft; INPUT to the gate).
 - **Human-in-loop:** owning tech agent + Dexter. L1 = human writes; L2 = Marshall drafts, tech validates.
-- **Substrate deps:** 🔨UNBUILT · 🔌#389 (recall) · Lexicon/IT-Glue · **schema gap (rollback artifact,
+- **Substrate deps:** 🔨UNBUILT · 🔌#389 (recall) · Alivia/IT-Glue · **schema gap (rollback artifact,
   #1579)**. **subject:** both.
 
 ## OP-06-06 · Draft & dispatch change communications
@@ -229,14 +229,14 @@ catalog (OP-06-10).
      failure reveals a recurring root cause, **SEAM → Sage (#1552, Problem Mgmt)** to raise a problem.
   3. `[automation]` Set terminal `status`; write the PIR note.
   4. `[automation]` **SEAM → Grace (#1557, GRC):** emit the change as control evidence (every change =
-     audit evidence). **SEAM → Lexicon (#1561):** update the affected-CI runbook with what changed.
+     audit evidence). **SEAM → Alivia (#1561):** update the affected-CI runbook with what changed.
 - **Driving policy:** TBD (#1586) — PIR / change-closure.
 - **Realization:** `icm/domains/change-release/change-pir-close/` 🔨UNBUILT.
 - **Autonomy ceiling:** L2 (verify + record + emit evidence = reversible internal). Triggering a rollback
   re-enters OP-06-07 (executor's `always_gate`). No new gate of Marshall's own.
 - **Human-in-loop:** Dexter pairing reviews failed/partial PIRs. L1 = human writes PIR; L2 = Marshall
   drafts verdict, human confirms failures. Rollback actuation = executor's human floor.
-- **Substrate deps:** 🔨UNBUILT · 🔌#991 (Grace/Sage/Lexicon seams) · verifier plane (#286) · 🔌#389.
+- **Substrate deps:** 🔨UNBUILT · 🔌#991 (Grace/Sage/Alivia seams) · verifier plane (#286) · 🔌#389.
   **subject:** both.
 
 ## OP-06-09 · Maintain the freeze / blackout calendar — net-new, 💤DORMANT

@@ -35,7 +35,7 @@ establishes the structure and the agent/stream-level coverage now.
 | Laurel (Legal) | G&A | Business Ops | BO-09 · CS-09 · CS-14 |
 | Tess (QA) | Platform & Assurance | IT/Cyber | CS-17 · IT-01 |
 | Vera (Governance) | Platform & Assurance | All | CS-17 · CS-18 · top umbrella |
-| Lexicon (Doc-Hygiene) | Platform & Assurance | IT | IT-11 · CS-16 |
+| Alivia (Doc-Hygiene) | Platform & Assurance | IT | IT-11 · CS-16 |
 | Chase (Sales) | Revenue | Business Ops | BO-02 · BO-01 |
 | Belle (Marketing) | Revenue | Business Ops | BO-01 · CS-14 |
 | Celeste (Client Success) | Revenue/Client | Business Ops | BO-04 · CS-18 |
@@ -55,7 +55,7 @@ establishes the structure and the agent/stream-level coverage now.
 | 07 Protect → Assure | Cyrus · Grace · Roman · Phoenix | Cybersecurity | CS-IR · CS-10 · CS-17 · IT-06 · CS-18 | ⏳ pending |
 | 08 Engage → Retain | Celeste | Business Ops | BO-04 · CS-18 | ⏳ pending |
 | 09 Record → Report | Audrey · Sterling | Business Ops | BO-05 · BO-06 · BO-07 · BO-08 · CS-16 | ⏳ pending |
-| 10 Run the Company | Rachel · Holly · Laurel · Tess · Vera · Jessica · Lexicon · OS-self | All | BO-10 · BO-09 · CS-17 · CS-05 · IT-11 · CS-07 | ⏳ pending |
+| 10 Run the Company | Rachel · Holly · Laurel · Tess · Vera · Jessica · Alivia · OS-self | All | BO-10 · BO-09 · CS-17 · CS-05 · IT-11 · CS-07 | ⏳ pending |
 | 11 Orchestrate | Nova + C-suite | All | top umbrella · CS-07 | ⏳ pending |
 
 ## Orphan check

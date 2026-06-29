@@ -12,7 +12,7 @@
 
 **The BIGGEST stream — running the agentic OS is running the company (D7.1).** It spans internal
 G&A (Rachel CoS · Holly HR · Laurel Legal), platform/assurance governance (Tess QA · Vera
-Governance · Jessica Risk · Lexicon Doc-Hygiene), **and the agentic OS operating ITSELF** — agent
+Governance · Jessica Risk · Alivia Doc-Hygiene), **and the agentic OS operating ITSELF** — agent
 lifecycle, eval + feedback, conformance, memory/retrieval curation, autonomy-dial governance,
 connector/credential ops, OKF maintenance, deploy-verify, Nova intake wiring. The OS-self
 procedures are FIRST-CLASS, not an appendix (D7.1).
@@ -592,14 +592,14 @@ Mark (risk reports to Mark). Owns Platform & Assurance GOVERNANCE here. **NOTE:*
 `risk-assurance-sweep` SYNTHESIS BRIEF is Stream 11 — not duplicated; below are the
 assurance-GOVERNANCE procedures she owns at this tier.
 
-### 10-J1 · Govern the assurance program (Vera/Tess/Lexicon orchestration)
+### 10-J1 · Govern the assurance program (Vera/Tess/Alivia orchestration)
 - **Owner / Stream:** Jessica / 10.
-- **Trigger:** cadence OR a division-level assurance escalation from Vera/Tess/Lexicon.
+- **Trigger:** cadence OR a division-level assurance escalation from Vera/Tess/Alivia.
 - **Terminal outcome:** assurance work (conformance, quality, doc-hygiene) coordinated; cross-cutting
   risks routed to Mark.
 - **Procedure Steps:**
   1. `[automation]` Receive escalations/flags from Vera (conformance/posture), Tess (quality),
-     Lexicon (knowledge freshness). **L2.**
+     Alivia (knowledge freshness). **L2.**
   2. `[automation]` Triage + dedupe; identify cross-cutting risk themes.
   3. `[hybrid]` Route to Mark / the owning agent; track. (Delegate-only — never bypasses a
      sub-agent gauntlet.)
@@ -633,7 +633,7 @@ assurance-GOVERNANCE procedures she owns at this tier.
 - **Terminal outcome:** platform/assurance risk register kept current; each risk has an owner +
   status; top risks roll into the Stream-11 brief.
 - **Procedure Steps:**
-  1. `[automation]` Capture risks from Vera/Tess/Lexicon/Cyrus/Grace feeds; label signal vs
+  1. `[automation]` Capture risks from Vera/Tess/Alivia/Cyrus/Grace feeds; label signal vs
      inference. **L2.**
   2. `[automation]` Score + assign an owner; track mitigation.
   3. `[hybrid]` Surface top risks to Mark; risk acceptance always-gate.
@@ -646,14 +646,14 @@ assurance-GOVERNANCE procedures she owns at this tier.
 
 ---
 
-## Lexicon (Doc-Hygiene / Knowledge) — Epic #1561
+## Alivia (Doc-Hygiene / Knowledge) — Epic #1561
 
 Ceiling **L3** (poll/draft/update + stale-flag auto; publish-to-SoT gated until trusted). Reports to
-Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Lexicon's long-term output**
-(D5: a runbook = generated projection of the ICM Workspace; Lexicon syncs workspace→runbook→IT Glue).
+Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Alivia's long-term output**
+(D5: a runbook = generated projection of the ICM Workspace; Alivia syncs workspace→runbook→IT Glue).
 
 ### 10-K1 · Doc-sync poll → IT Glue SoT
-- **Owner / Stream:** Lexicon / 10 (tracer `doc-sync`).
+- **Owner / Stream:** Alivia / 10 (tracer `doc-sync`).
 - **Trigger:** scheduled poll OR a change event across sources.
 - **Terminal outcome:** stale/contradictory/missing docs detected; updated/drafted into IT Glue (the
   SoT); a diff proposed for review.
@@ -666,13 +666,13 @@ Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Lexicon's
 - **Driving policy:** TBD (#1586) documentation standard (also CLAUDE.md §8 internal).
 - **Realization:** `icm/domains/knowledge/doc-sync/` (live SoR).
 - **Autonomy ceiling:** L3; SoT publish gated until trust earned (no secrets/PII in docs).
-- **Human-in-loop:** Lexicon-human/Derek. L1 = drafts diffs, human publishes; L3 = auto-publish
+- **Human-in-loop:** Alivia-human/Derek. L1 = drafts diffs, human publishes; L3 = auto-publish
   low-risk, human reviews SoT-critical. Floor: secrets/PII never in docs; high-stakes SoT writes gated.
 - **Substrate deps:** IT Glue connector, #389 (contradiction detection), #991. **subject:** both
   (client runbooks in IT Glue + internal docs/dogfood).
 
 ### 10-K2 · Author human-facing runbooks from agent procedures
-- **Owner / Stream:** Lexicon / 10 (deeper playbook; the catalog's long-term home, D5). ⛔ **UNFILED
+- **Owner / Stream:** Alivia / 10 (deeper playbook; the catalog's long-term home, D5). ⛔ **UNFILED
   leaf under #1561.**
 - **Trigger:** an ICM Workspace (Operating Procedure) is created/changed OR Sage closes a problem fix.
 - **Terminal outcome:** a human-readable runbook (the generated PROJECTION of the workspace) authored
@@ -685,12 +685,12 @@ Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Lexicon's
 - **Driving policy:** CLAUDE.md §8 doc standard + TBD (#1586).
 - **Realization:** `icm/domains/knowledge/runbook-authoring/`.
 - **Autonomy ceiling:** L3; publish gated until trusted.
-- **Human-in-loop:** Lexicon-human; floor: SoT publish gated early.
+- **Human-in-loop:** Alivia-human; floor: SoT publish gated early.
 - **Substrate deps:** ICM workspace files, IT Glue, Sage seam (Stream 05). **subject:** both ·
   **NOTE: this is the procedure that MATERIALIZES this whole catalog as runbooks long-term.**
 
 ### 10-K3 · Knowledge freshness / contradiction surfacing
-- **Owner / Stream:** Lexicon / 10 (deeper playbook under #1561).
+- **Owner / Stream:** Alivia / 10 (deeper playbook under #1561).
 - **Trigger:** cadence OR a source change that may invalidate existing docs.
 - **Terminal outcome:** stale/contradictory knowledge flagged with a freshness verdict; routed to
   the owning author.
@@ -710,7 +710,7 @@ Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Lexicon's
 ## OS-self-operation (the agentic OS operating itself)
 
 Per **D7.1** in scope — running the agentic OS IS running the company. Owner assigned per fit
-(Rachel/Vera/Jessica/Lexicon/Nova). These run the OS as software-operating-software. Mostly
+(Rachel/Vera/Jessica/Alivia/Nova). These run the OS as software-operating-software. Mostly
 `subject:imperion`.
 
 ### 10-O1 · Onboard a new agent into the org
@@ -853,7 +853,7 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
   10-O2 agent-persona-refresh.**
 
 ### 10-O8 · OKF semantic-layer maintenance
-- **Owner / Stream:** Lexicon (knowledge) + the schema author / 10 (OS-self).
+- **Owner / Stream:** Alivia (knowledge) + the schema author / 10 (OS-self).
 - **Trigger:** a silver entity's shape / source-of-record / join paths change (any repo) OR a new
   silver entity OR a precedence flip.
 - **Terminal outcome:** the matching OKF concept file + `coverage-matrix.md` row updated in the same
@@ -868,11 +868,11 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 - **Driving policy:** ADR-0086 (OKF) + ADR-0104 (grounding-cortex freshness) + system CLAUDE.md §11 +
   TBD (#1586).
 - **Realization:** `docs/database/semantic-layer/` bundle + CI gates (runs through PR/CI).
-- **Autonomy ceiling:** L3 (Lexicon poll/draft) / human authors at merge today; gate-blocking is CI.
+- **Autonomy ceiling:** L3 (Alivia poll/draft) / human authors at merge today; gate-blocking is CI.
 - **Human-in-loop:** the schema author + Mark on merge. Floor: PII/secrets/code-knowledge boundaries
   are hard refusals.
 - **Substrate deps:** OKF bundle (~95 files, ~complete), CI gates (live), LP #175/#176. **subject:**
-  imperion · **OVERLAP with 10-K3 (Lexicon freshness):** O8 = the machine OKF concept files; K3 =
+  imperion · **OVERLAP with 10-K3 (Alivia freshness):** O8 = the machine OKF concept files; K3 =
   human IT-Glue docs. Split.
 
 ### 10-O9 · Connector / connection setup
@@ -974,12 +974,12 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 
 Every owner epic is represented: Rachel #1546 · Holly #1558 · Laurel #1559 · Tess #1560 · Vera #1397
 (20 leaves #1458–1478 all mapped; #1460–1466 fold into 10-V1+V2 as one parameterized loop + rulebook
-author) · Jessica #1550 · Lexicon #1561. Cross-cutting #1543/#1544/#1537/#1538 mapped; Osiris #1562
+author) · Jessica #1550 · Alivia #1561. Cross-cutting #1543/#1544/#1537/#1538 mapped; Osiris #1562
 referenced as the Stream-04 JML seam (not owned here). **D8 resolved** the prior connection-health
 ownership gap → Vera (10-V14, platform function). UNFILED leaves flagged inline (Holly 10-H4/H5,
-Tess 10-T2/T3, Lexicon 10-K2) = sub-issues under their owner epics. Per **D7.1** the 13 OS-self
+Tess 10-T2/T3, Alivia 10-K2) = sub-issues under their owner epics. Per **D7.1** the 13 OS-self
 procedures are first-class — running the agentic OS is running the company.
 
 **Count: 40 Operating Procedures** — Rachel 4 (A1–A4) · Holly 5 (H1–H5) · Laurel 3 (L1–L3) · Tess 3
-(T1–T3) · Vera 14 (V1–V14, incl. V14 connection-health per D8) · Jessica 3 (J1–J3) · Lexicon 3
+(T1–T3) · Vera 14 (V1–V14, incl. V14 connection-health per D8) · Jessica 3 (J1–J3) · Alivia 3
 (K1–K3) · OS-self 13 (O1–O13).

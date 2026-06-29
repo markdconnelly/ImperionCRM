@@ -78,8 +78,8 @@ Humans use the same 7 personality sections (with §2 holding their REAL "Backgro
 + 4 human-only sections — **Decision & commitment authority** (binds policy §5 classes — the
 approver-side of agent `always_gate`; $ thresholds deferred for v1) · Ownership & delegation ·
 Agent-pairing contract · Knowledge sources — + the same metrics binding, so human-vs-agent
-productivity is apples-to-apples per business area. Employee personas live in `icm/` (the Imperion
-OS brain), NOT ImperionBrainMark (personal brains are a separate branch).
+productivity is apples-to-apples per business area. Employee personas live in `icm/employees/` (the
+Imperion OS brain), NOT ImperionBrainMark (personal brains are a separate branch).
 
 ### 5. The two-origin gate taxonomy + traceability
 Every human-in-the-loop gate has exactly one origin:
@@ -99,8 +99,8 @@ marketed) — distinct from the standing client-PII/secrets rule, which still bi
 
 ## Consequences
 - The 26 existing persona files are refactored to pure personality (ladder/scope/metrics move to
-  Matrices B/C + the metrics binding); 7 employee personas are authored under `icm/people/`; the
-  knowledge agent is renamed **Lexicon → Alivia**. (Companion PR, #1608.)
+  Matrices B/C + the metrics binding); 7 employee personas are authored under `icm/employees/`; the
+  knowledge agent is renamed **Alivia → Alivia**. (Companion PR, #1608.)
 - New follow-on builds: the effectiveness-metric catalog + the BI aggregation layer; the app-use
   feedback loop (implicit signals + explicit user reports → tune personas/dials); the public
   promo-chart renderer; the optional DB-structured technical-limitations register.

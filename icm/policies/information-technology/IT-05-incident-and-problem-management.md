@@ -109,13 +109,13 @@ The binding rules, written actor-neutral so a human and an agent read the same o
    executing agent); problem management *proposes* the fix, it does not actuate it.
 10. **Recurring problems are relationship and documentation signals.** A recurring problem on an
     account is handed to Client Success (Celeste) as a QBR signal, and the known error / runbook is
-    documented in IT Glue (via Lexicon).
+    documented in IT Glue (via Alivia).
 
 ### 4.3 Cross-cutting
 
 11. **Post-incident review is blameless and action-oriented.** A PIR after a major or
     threshold-crossing incident produces routed, owned action items (permanent fix → problem/Marshall;
-    monitoring gap → NOC/IT-04; documentation → Lexicon).
+    monitoring gap → NOC/IT-04; documentation → Alivia).
 12. **Client-facing incident/problem communication is owned by the relationship.** Any client-facing
     status, resolution notice, or shared PIR summary is a human-approved act (§5).
 
@@ -167,7 +167,7 @@ The binding rules, written actor-neutral so a human and an agent read the same o
 | Felix — Service desk (agent, L1) | Request-driven incident triage, read-only diagnosis, verify-and-close; escalate-only on identity/backup/DC |
 | Marshall — Change (agent, L2 gate) | Governs the permanent fix as a `change_request`; parks at the CAB gate, dispatches to the executor |
 | Celeste — Client Success (agent / human) | Owns client-facing incident/problem communication and recurring-problem QBR signals |
-| Lexicon — Documentation (agent) | Documents the known error / runbook in IT Glue (SoT) |
+| Alivia — Documentation (agent) | Documents the known error / runbook in IT Glue (SoT) |
 
 ## 7. Enforcement & Audit
 

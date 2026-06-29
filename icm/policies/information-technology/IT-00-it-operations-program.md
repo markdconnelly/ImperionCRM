@@ -12,7 +12,7 @@
 | **Category** | Information Technology |
 | **Tier** | umbrella |
 | **Human owner** | Chief Technology Officer (Derek / Mark; chief architect Luke) |
-| **Governing for (agents)** | Felix (Service), Ozzie (NOC), Sage (L3/Problem), Marshall (Change/Release), Scout (Dispatch), Pierce (Projects), Osiris (Account lifecycle), Lexicon (Documentation) |
+| **Governing for (agents)** | Felix (Service), Ozzie (NOC), Sage (L3/Problem), Marshall (Change/Release), Scout (Dispatch), Pierce (Projects), Osiris (Account lifecycle), Alivia (Documentation) |
 | **Version** | 1.0 |
 | **Effective Date** | _________ |
 | **Review Cadence** | Annual |
@@ -58,7 +58,7 @@ this category governs operational delivery.
   under its own ceiling. Production changes in a freeze window are `always_gate`.
 - **SLA ownership** sits with Celeste (Client Success); Felix/Scout do mechanical assignment.
 - **Provisioning is least-privilege and contract-gated** (Pierce L4 + undo, contract-signed).
-- **Documentation SoR is IT Glue**, synced by Lexicon; agents author runbooks as projections,
+- **Documentation SoR is IT Glue**, synced by Alivia; agents author runbooks as projections,
   never competing sources.
 
 ## 5. Enforcement & audit

@@ -16,7 +16,7 @@
 | **Category** | Information Technology |
 | **Tier** | distinct |
 | **Human owner** | Chief Technology Officer (Derek / Mark; chief architect Luke) |
-| **Governing for (agents)** | Lexicon (Documentation/Doc-Hygiene) — primary; all IT agents as runbook authors |
+| **Governing for (agents)** | Alivia (Documentation/Doc-Hygiene) — primary; all IT agents as runbook authors |
 | **Version** | 1.0 |
 | **Effective Date** | _________ |
 | **Approval Date** | _________ |
@@ -40,7 +40,7 @@ true, and what may never be written into it.
 
 ## 2. Scope
 
-**Who:** all IT delivery actors — human technicians and the documentation agent (Lexicon), plus
+**Who:** all IT delivery actors — human technicians and the documentation agent (Alivia), plus
 every IT agent that authors runbooks. **What:** all IT operational documentation and knowledge for
 Imperion and managed clients in IT Glue (and any sanctioned knowledge surface); the documentation
 steps across Streams 03–06 and the knowledge-maintenance steps elsewhere. This policy binds humans
@@ -89,7 +89,7 @@ umbrella.
 
 For authoring, updating, and curating documentation and knowledge:
 
-- **Autonomy ceiling.** Lexicon (Documentation/Doc-Hygiene) operates at an **L3** ceiling
+- **Autonomy ceiling.** Alivia (Documentation/Doc-Hygiene) operates at an **L3** ceiling
   (ADR-0128): it drafts and updates runbooks and knowledge objects, detects stale/orphaned/
   duplicate documentation, flags drift between docs and reality, and proposes corrections. All IT
   agents author runbooks **as projections** — a runbook an agent writes points back to IT Glue and
@@ -99,11 +99,11 @@ For authoring, updating, and curating documentation and knowledge:
   human owner approves the change via the easy-button — and any write touching a security-relevant
   or client-confidential document is `always_gate` at every dial level. Deleting/retiring an
   authoritative document is `always_gate` (irreversible-class, top-umbrella §4).
-- **Human-in-loop & easy-button.** As the dial climbs, Lexicon may auto-draft the document, run
+- **Human-in-loop & easy-button.** As the dial climbs, Alivia may auto-draft the document, run
   the hygiene pass, and stage the diff against the SoR — then hand the owner a **one-click**
   publish (top-umbrella P3). The decision to make a draft authoritative stays human at every level;
   projections (drafts, agent runbooks) may be produced freely because they are non-authoritative.
-- **Escalation & refusal.** Lexicon escalates (top-umbrella P4) on documentation drift affecting a
+- **Escalation & refusal.** Alivia escalates (top-umbrella P4) on documentation drift affecting a
   security-relevant CI, a detected secret/PII written into prose, or a stale runbook on a critical
   service. Agents **refuse** to overwrite the SoR without recorded human approval, and **refuse** to
   write secrets or cross-tenant client PII into documentation, even if a dial setting would
@@ -118,7 +118,7 @@ For authoring, updating, and curating documentation and knowledge:
 | --- | --- |
 | CTO (human) | Owns the documentation/knowledge practice and this policy |
 | Document owner / technician (human) | Authors and reviews documentation; approves authoritative IT Glue changes; keeps assigned docs current |
-| Lexicon — Documentation/Doc-Hygiene (agent, L3) | Drafts/updates docs as projections; runs hygiene passes; detects stale/orphaned/duplicate docs and drift; stages diffs; never overwrites the SoR autonomously; never writes secrets/PII |
+| Alivia — Documentation/Doc-Hygiene (agent, L3) | Drafts/updates docs as projections; runs hygiene passes; detects stale/orphaned/duplicate docs and drift; stages diffs; never overwrites the SoR autonomously; never writes secrets/PII |
 | All IT agents | Author runbooks as projections that reference IT Glue, never as competing sources |
 
 ## 7. Enforcement & Audit

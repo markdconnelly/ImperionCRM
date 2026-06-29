@@ -9,7 +9,7 @@ Constitution or the problem-mgmt room are cited, never restated.
 ## The job
 
 Turn a recurring-incident cluster into one grounded root cause, one proposed
-permanent fix, and one problem record — with the documentation handed to Lexicon.
+permanent fix, and one problem record — with the documentation handed to Alivia.
 One run per problem. Routing, the stage order, and the autonomy contract are in
 `CONTEXT.md`; per-stage contracts are under `stages/` (the numbered folder IS the
 execution order). Run products are Postgres rows, editable between stages — never
@@ -25,7 +25,7 @@ files.
   does not ground stays a hypothesis.
 - **03 propose-fix** — the checkpoint. Propose the permanent fix (reversible vs
   production/irreversible), open the problem record, and hand the write-up to
-  Lexicon. Production/irreversible fixes park and route to Marshall.
+  Alivia. Production/irreversible fixes park and route to Marshall.
 
 ## What `auto` may self-approve
 

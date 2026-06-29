@@ -28,7 +28,7 @@ endpoints are monitored like any managed estate (dogfood is a parameter, not a d
 
 **Driving policy (every procedure):** `TBD (mark-blocker: company-policy-collection)` (D4, #1586).
 Owed business documents: NOC/monitoring runbook policy · incident-management policy · severity/SLA
-matrix · escalation policy · problem-management policy (Lexicon → IT Glue).
+matrix · escalation policy · problem-management policy (Alivia → IT Glue).
 
 **Ladder-ceiling floor (survives any dial, ADR-0128 dial-proof):** for BOTH owners — destructive
 ops, identity/credential actions, client-facing comms, prod migrations, money are `always_gate` and
@@ -36,7 +36,7 @@ never auto-execute at any level. Human-in-loop recedes L1→L5; these stay parke
 
 **Substrate dormancy flags (apply across the stream):** 💤 **#119** trigger-sync (the whole
 event→dispatch→agent loop is deploy-dormant) · 💤 **#991** event bus / cross-agent Handoff (Celeste
-/ Marshall / Lexicon seams degrade to note-only) · 💤 **#389** Voyage embeddings (TABLED — every
+/ Marshall / Alivia seams degrade to note-only) · 💤 **#389** Voyage embeddings (TABLED — every
 "similar past incident/problem" recall step degraded to declaration-pull) · `agent_event` inbox
 (#998 / mig 0164) = **LIVE**, but 💤 **#1578** monitoring/NOC bronze feed missing (only live event
 sources today: `autotask.ticket.created` + the Defender SOC seam) · 💤 **#1577** `problem`/`known_error`
@@ -246,7 +246,7 @@ silver missing (dropped from #373/ADR-0079, Change-only).
      *dropped* from #373/ADR-0079 (Change-only). Today this parks as an internal note/work-note only.
   4. `[hybrid]` Hand-off seams: **→ Marshall (Stream 06):** raise a `change_request` for the permanent
      fix (Sage proposes, Marshall governs); **→ Celeste (Stream 08):** emit a service-pattern Handoff
-     (recurring problem on an account = relationship/QBR signal, **#991-dormant**); **→ Lexicon (Stream
+     (recurring problem on an account = relationship/QBR signal, **#991-dormant**); **→ Alivia (Stream
      10):** document the known-error / runbook (IT Glue SoT).
 - **Driving policy:** TBD (#1586) — problem-management.
 - **Realization:** `icm/domains/problem-mgmt/problem-investigation/` (tracer). **Realization blocked on
@@ -266,13 +266,13 @@ silver missing (dropped from #373/ADR-0079, Change-only).
 - **Trigger:** an OP-05-07 major incident closes, OR an incident over a severity/duration threshold closes.
 - **Terminal outcome:** a **PIR record** exists — timeline, root cause, what-went-well/-wrong, and
   **action items** (each routed: permanent fix → OP-05-08/Marshall; monitoring gap → Ozzie OP-05-02; doc
-  → Lexicon). Terminal = a reviewed PIR with owned, routed action items.
+  → Alivia). Terminal = a reviewed PIR with owned, routed action items.
 - **Procedure Steps:**
   1. `[automation]` Assemble the timeline + facts from `agent_run`/work-notes/incident ticket.
   2. `[automation]` Draft the PIR: contributing factors, root cause (from OP-05-08 if run), gaps.
   3. `[hybrid]` Human review/edit the PIR (blameless-review judgment) `[gui-step]`.
   4. `[automation]` Mint + route action items (problem → OP-05-08, monitoring → OP-05-02, change →
-     Marshall, doc → Lexicon). Any client-shared PIR summary is `always_gate`.
+     Marshall, doc → Alivia). Any client-shared PIR summary is `always_gate`.
 - **Driving policy:** TBD (#1586) — PIR / continual-improvement.
 - **Realization:** `icm/domains/problem-mgmt/post-incident-review/` (ICM Workspace).
 - **Autonomy ceiling:** L3. Assemble + draft auto; the review verdict is human; client-shared summary
@@ -293,7 +293,7 @@ work-escalation (06), major-incident bridge (07), investigate-problem (08), run-
 OP-05-01 (`alert-triage`) + OP-05-08 (`problem-investigation`). Both ladder ceilings exercised (L4
 defining = OP-05-03; L3 = all Sage). Seams are hand-off **steps**, never duplicated procedures: Felix
 stage-05 → OP-05-06 · OP-05-01 → Cyrus/Stream 07 · OP-05-08 → Marshall/Stream 06 · OP-05-05/07/08 →
-Celeste/Stream 08 · OP-05-08/09 → Lexicon/Stream 10. Headline gaps flagged in-line:
+Celeste/Stream 08 · OP-05-08/09 → Alivia/Stream 10. Headline gaps flagged in-line:
 💤 **#1577** `problem`/`known_error` silver missing (OP-05-08 cannot persist a problem record);
 💤 **#1578** monitoring/NOC bronze feed missing (OP-05-01/02/03 dormant); L4 undo endpoint (BE#345-class)
 load-bearing for OP-05-03; #389/#991/#119 dormancies degrade recall + Handoff + dispatch.
