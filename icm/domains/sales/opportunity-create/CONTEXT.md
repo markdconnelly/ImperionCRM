@@ -5,7 +5,7 @@
 an internal, reversible CRM write with no customer-facing side effect.
 
 **Trigger:** a lead Chase has qualified to SQL — handed over from `lead-response`
-(stage 01 fit-score) or summoned by Jarvis post-score (Belle → `lead_score`
+(stage 01 fit-score) or summoned by Nova post-score (Belle → `lead_score`
 threshold → Chase). One run per qualifying lead.
 
 **What this is NOT:** no customer-facing touch, no pricing, no quote, no

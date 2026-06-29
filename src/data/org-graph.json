@@ -27,7 +27,17 @@
         "contact",
         "entity_xref"
       ],
-      "workflows": []
+      "workflows": [
+        {
+          "slug": "intake-route",
+          "stages": [
+            "01-intake",
+            "02-classify-route",
+            "03-delegate",
+            "04-synthesize-return"
+          ]
+        }
+      ]
     },
     {
       "id": "chief-of-staff",

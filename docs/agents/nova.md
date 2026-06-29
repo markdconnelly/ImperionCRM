@@ -1,9 +1,16 @@
-# Jarvis — the landing page & orchestrator front door
+# Nova — the landing page & orchestrator front door
 
 [← The AI suite](README.md) · Surface for the single-orchestrator model (CLAUDE.md §2.2,
 backend ADR-0036/0080). Schema: FE #1064 (`agent_conversation`, `agent_run.conversation_id`).
+The orchestrator persona is **Nova** (ADR-0131; runtime persona `icm/executive/orchestrator/nova.md`).
 
-**Jarvis is the front door of Imperion OS** (#1118, epic #1038): the default page a user
+> **Name note (ADR-0016 / ADR-0131).** The orchestrator persona is **Nova**; the prior
+> working name was "Jarvis." Identity-bearing **code** identifiers are retained verbatim —
+> the route `/jarvis`, the component `jarvis-console.tsx`, and `src/lib/agent/jarvis.ts` are
+> still named `jarvis` (the same code-name-retention pattern as the `ImperionCRM` slug). The
+> FE surface rename (route/label `/jarvis` → Nova) is tracked separately ([#1672](https://github.com/markdconnelly/ImperionCRM/issues/1672)).
+
+**Nova is the front door of Imperion OS** (#1118, epic #1038): the default page a user
 lands on after authenticating, and the intended driver of work. On this route the
 orchestrator is the *whole* screen — there is **no right-hand sidecar** (every other page
 keeps it; AppShell suppresses it on `/jarvis`).
