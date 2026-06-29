@@ -11,9 +11,18 @@ workspaces are a later build phase.
 - **Per-stream detail:** [`streams/`](streams/) — one file per value stream, full D6/D7 entry schema.
 - **The org it projects onto:** the 26-agent roster (epic #1534, `imperion-os-org-recast`).
 
-> ~174 Operating Procedures across 11 value streams / 26 agents. Veto-pass complete
+> **220 Operating Procedures** across 11 value streams / 26 agents. Veto-pass complete
 > (D9): **all procedures are included.** Ad procedures 01-B / 01-C are reinstated per the
 > easy-button principle (D9-P3); 01-J (segment) is folded as a step.
+>
+> **$100M gap-fill landed (2026-06-29, epic #1534, clusters #1625–1630):** +38 scale-up
+> procedures across streams 02/04/07/08/09/10/11 (GTM-RevOps · finance-at-scale ·
+> people-at-scale · Imperion-as-vendor security/compliance · service-delivery scale-ups ·
+> enterprise risk & strategy — no M&A, growth is organic). This pass also **reconciled a
+> pre-existing index undercount in Stream 10** (the table read 40; its own per-section
+> enumeration was higher) — the counts below are now ground-truth (each stream file's
+> enumerated total). The one sanctioned new agent (Partnerships **Bridget**, #1624) is
+> spec'd but **behind its `partner` silver schema #1623** (procedures ship propose-only).
 
 ---
 
@@ -49,7 +58,7 @@ a real managed client; dogfood is a parameter, not a duplicate procedure, D7).
 
 ---
 
-## Catalog-wide design principles (D9 — apply to ALL ~174 procedures)
+## Catalog-wide design principles (D9 — apply to ALL 220 procedures)
 
 Every procedure's Human-in-loop field encodes these; they are not restated per entry.
 
@@ -107,16 +116,18 @@ routes *across* divisions.
 | # | Stream | Owners | Count | Detail |
 |---|---|---|---|---|
 | 01 | Demand → Lead | Belle | 13 | [streams/01-demand-lead.md](streams/01-demand-lead.md) |
-| 02 | Lead → Cash | Chase · Vance | 18 | [streams/02-lead-cash.md](streams/02-lead-cash.md) |
+| 02 | Lead → Cash | Chase · Vance · Sterling · Bridget | 27 | [streams/02-lead-cash.md](streams/02-lead-cash.md) |
 | 03 | Sold → Live | Pierce | 12 | [streams/03-sold-live.md](streams/03-sold-live.md) |
-| 04 | Request → Fulfil | Felix · Scout · Osiris | 12 | [streams/04-request-fulfil.md](streams/04-request-fulfil.md) |
+| 04 | Request → Fulfil | Felix · Scout · Osiris · Vance | 15 | [streams/04-request-fulfil.md](streams/04-request-fulfil.md) |
 | 05 | Event → Resolution | Ozzie · Sage | 9 | [streams/05-event-resolution.md](streams/05-event-resolution.md) |
 | 06 | Change → Release | Marshall | 11 | [streams/06-change-release.md](streams/06-change-release.md) |
-| 07 | Protect → Assure | Cyrus · Grace · Roman · Phoenix | 14 | [streams/07-protect-assure.md](streams/07-protect-assure.md) |
-| 08 | Engage → Retain | Celeste | 14 | [streams/08-engage-retain.md](streams/08-engage-retain.md) |
-| 09 | Record → Report | Audrey · Sterling | 17 | [streams/09-record-report.md](streams/09-record-report.md) |
-| 10 | Run the Company | Rachel · Holly · Laurel · Tess · Vera · Jessica · Alivia + OS-self | 40 | [streams/10-run-company.md](streams/10-run-company.md) |
-| 11 | Orchestrate | Nova + 5 C-suite | 15 | [streams/11-orchestrate.md](streams/11-orchestrate.md) |
+| 07 | Protect → Assure | Cyrus · Grace · Roman · Phoenix | 16 | [streams/07-protect-assure.md](streams/07-protect-assure.md) |
+| 08 | Engage → Retain | Celeste | 16 | [streams/08-engage-retain.md](streams/08-engage-retain.md) |
+| 09 | Record → Report | Audrey · Sterling | 25 | [streams/09-record-report.md](streams/09-record-report.md) |
+| 10 | Run the Company | Rachel · Holly · Laurel · Tess · Vera · Jessica · Alivia + OS-self | 59 | [streams/10-run-company.md](streams/10-run-company.md) |
+| 11 | Orchestrate | Nova + 5 C-suite | 17 | [streams/11-orchestrate.md](streams/11-orchestrate.md) |
+
+**Total: 220** (01:13 · 02:27 · 03:12 · 04:15 · 05:9 · 06:11 · 07:16 · 08:16 · 09:25 · 10:59 · 11:17).
 
 Status legend used in the stream files: ⚡ ready · 💤 dormant (flagged dep) · 🔨 built.
 Ceiling = the owner's autonomy-ladder ceiling (ADR-0128). Substrate dormancy flags recur
@@ -136,14 +147,18 @@ analytics & attribution (M). 01-J (segment) is folded as a step of H/I. **B/C re
 per D9-P3** (agent does the full setup; human clicks to actuate on Meta). Whole plane 💤 on
 Meta/Threads/LinkedIn creds + #119/#991/#389.
 
-### Stream 02 — Lead → Cash · Chase (8) / Vance (10)
+### Stream 02 — Lead → Cash · Chase (8) / Vance (10) / Sterling + Bridget (9, gap-fill)
 **Chase:** qualify MQL→SQL · open/document opportunity · pursue pipeline · social-inbound
 reply · KQM quote hand-off (KQM = read-only SoR) · close/won → Pierce · draft renewal +
 repricing · send renewal for e-sign ⛔. **Vance:** Deadline Sentinel · governed
 procurement sequence (approve-once money gate ⛔) · shelfware reclaim · under-licensing
 flag · right-sizing · Pax8 order watchdog · vendor cost variance → Audrey · vendor risk/EOL
 → Celeste · vendor consolidation · won-deal sourcing draft. Nearly all 💤 on Pax8/KQM
-bronze + DocuSign-consent + 0184-withheld.
+bronze + DocuSign-consent + 0184-withheld. **GTM/RevOps gap-fill (#1625, 02-C/D):** govern
+price-book/rate-card ⛔ (Sterling, schema #1652) · deal desk ⛔ (Sterling+Chase) · sales
+commissions ⛔ (Sterling/Audrey, schema #1650) · forecast/quota · RFP/bid · client security
+questionnaire ⛔ (Grace) · win-loss. **Channel (Bridget, Partnerships):** channel/alliance/
+co-sell + marketplace ⛔ · referral-partner payout ⛔ — 💤 on Bridget #1624 + `partner` #1623.
 
 ### Stream 03 — Sold → Live · Pierce (12)
 Provisioning-intake seam · kickoff & provision from won (L4 + undo, contract-signed-gated)
@@ -152,12 +167,15 @@ Provisioning-intake seam · kickoff & provision from won (L4 + undo, contract-si
 project change-request · stakeholder comms cadence · closeout & handoff → Celeste · Pierce
 activation (OS-self). Workspaces unbuilt until #1431; procedure-only in fact.
 
-### Stream 04 — Request → Fulfil · Felix (7+1 seam) / Scout (1) / Osiris (3)
+### Stream 04 — Request → Fulfil · Felix (7+1 seam) / Scout (2) / Osiris (3) / Vance-seam (2)
 **Felix:** intake & route · **triage 🔨 BUILT** (`icm/domains/service/triage/`) · escalate
 high-risk symptom (identity/backup/DC) · governed remediation · verify & close · log
 ticket-time (always-gate, financial) · post client reply (always-gate). SLA-aware
-assignment (Felix↔Scout seam). **Scout:** dispatch onsite. **Osiris (JML):** Joiner ·
-Mover · Leaver. Only triage + the dispatch substrate exist; rest planned/dormant on #119.
+assignment (Felix↔Scout seam). **Scout:** dispatch onsite · field-service capacity planning
+(gap-fill). **Osiris (JML):** Joiner · Mover · Leaver. **Service scale-ups (#1629):**
+hardware RMA/warranty + procurement logistics (Vance↔Scout) · carrier/circuit/telco
+lifecycle (Vance↔Ozzie, schema #1651). Only triage + the dispatch substrate exist; rest
+planned/dormant on #119.
 
 ### Stream 05 — Event → Resolution · Ozzie (5) / Sage (4)
 **Ozzie (L4):** alert-triage · sweep monitoring coverage · **auto-remediate-runbook (the
@@ -174,22 +192,27 @@ freeze-calendar · standard-change catalog · Autotask route. 3 schema gaps prop
 (**#1579**: freeze, rollback artifact, standard-change catalog). `change_request` substrate
 real (mig 0135 dormant).
 
-### Stream 07 — Protect → Assure · Cyrus (7) / Grace (2) / Roman (2) / Phoenix (3)
+### Stream 07 — Protect → Assure · Cyrus (7) / Grace (4) / Roman (2) / Phoenix (3)
 **Cyrus (L4):** alert-triage · investigation · containment ⛔ · threat-intel intake · **+
 Security Posture Mgmt** (posture snapshot/secure-score/pillars · golden-state + DNS drift ·
 client-standard measurement). **Grace (L2):** control-evidence sweep · compliance
-attestation. **Roman:** incident-escalation + PIR governance · security-config change-control
-(seams into Stream 06). **Phoenix (L3):** backup verification · recovery/restore ⛔ · DR
-runbook + drill. Posture-mgmt owner is a D8 ruling (→ Cyrus, measure-only; Vera owns the
-Standard, Celeste presents, human/Datto remediate).
+attestation · **TPRM — assess third-party/vendor security risk (gap-fill, distinct from
+Vance commercial)** · **run Imperion's OWN SOC2/ISO/CMMC audit program ⛔ (gap-fill,
+Grace+Roman)**. **Roman:** incident-escalation + PIR governance · security-config
+change-control (seams into Stream 06). **Phoenix (L3):** backup verification · recovery/
+restore ⛔ · DR runbook + drill. Posture-mgmt owner is a D8 ruling (→ Cyrus, measure-only;
+Vera owns the Standard, Celeste presents, human/Datto remediate). (Privacy program + cyber/
+E&O insurance from #1628 live in Stream 10 — Laurel.)
 
-### Stream 08 — Engage → Retain · Celeste (14, NO-COMMITS-EVER)
+### Stream 08 — Engage → Retain · Celeste (16, NO-COMMITS-EVER)
 Handoff-hub intake (the client-360, from every agent) · account success plan · QBR/TBR ·
 health/churn 💤 · renewal-readiness → Chase · expansion mint → assign Chase (the pinned
 seam) · vCIO roadmap 💤 · IT budget 💤 · tech lifecycle/refresh · vendor/solution eval ·
 vCISO posture report · client risk register · awareness/enablement · proactive updates +
-knowledge-sharing (L4 stream-max). Entire stream load-bearing on #991 handoff bus + #389.
-**MSSP advisory-only** + **no-commits-ever** are `always_gate` floors on all 14.
+knowledge-sharing (L4 stream-max). **Service scale-ups (#1629):** client offboarding —
+termination → data-return + deprovision (Celeste+Osiris+Pierce, schema #1622) · SLA-breach
+service credit ⛔ (Celeste+Audrey). Entire stream load-bearing on #991 handoff bus + #389.
+**MSSP advisory-only** + **no-commits-ever** are `always_gate` floors on all 16.
 
 ### Stream 09 — Record → Report · Audrey (read-only, L2) / Sterling
 **Time (3):** attestation context + deviations · payroll recon → Paid · Time Ticket write.
@@ -197,26 +220,39 @@ knowledge-sharing (L4 stream-max). Entire stream load-bearing on #991 handoff bu
 **Monthly Close (1).** **AR/AP/billing (4):** invoice pre-check · AR aging + cash-flow
 (read-only, NOT dunning) · collections/dunning (ownership-gap, **#1580 AR silver**) · AP
 intake. **Margin (3):** renewal → Chase · project-cost → Pierce · per-client margin-watch
-(v2). **BI hub (1).** **Sterling governance (2).** Audrey advises, never gates; QBO = SoR,
-no money movement; salary non-disclosure is refusal-class.
+(v2). **BI hub (1).** **Sterling governance (2).** **Finance-at-scale gap-fill (#1626,
+09-18…25):** revenue recognition ASC 606 ⛔ (schema #1619) · FP&A budget/forecast/variance ·
+sales-tax nexus & filings (schema #1620) · treasury cash/runway · recurring-invoice batch
+GENERATION ⛔ (un-defers 09-08) · billing dispute/credit-memo ⛔ · AP approve-to-pay ⛔ ·
+external-audit support. All money writes `always_gate` (B6). Audrey advises, never gates;
+QBO = SoR, no money movement; salary non-disclosure is refusal-class.
 
-### Stream 10 — Run the Company · Rachel / Holly / Laurel / Tess / Vera / Jessica / Alivia + OS-self (40)
-Rachel CoS (4) · Holly HR/internal-JML (5) · Laurel Legal (3) · Tess QA (3) · **Vera
-governance (14:** conformance detect → quarantine → route → verify loop + per-domain
-rulebooks; client-security-standard ownership + ratification ⛔; internal-affairs audit;
-**connection-health per the D8 ruling)** · Jessica risk (3) · Alivia doc-hygiene → IT Glue
-(3) · **OS-SELF (13:** agent onboarding/persona-refresh · dial governance · eval + feedback
-loop · retrieval/memory curation · Personal Curator · OKF maintenance · connector/credential
-ops · deploy-verify · Nova intake wiring). Running the agentic OS is running the company
-(D7.1).
+### Stream 10 — Run the Company · Rachel / Holly / Laurel / Tess / Vera / Jessica / Alivia + OS-self (59)
+Rachel CoS (5, incl. facilities/fleet/corporate-IT gap-fill) · Holly HR/internal-JML (11) ·
+Laurel Legal (6) · Tess QA (3) · **Vera governance (14:** conformance detect → quarantine →
+route → verify loop + per-domain rulebooks; client-security-standard ownership + ratification
+⛔; internal-affairs audit; **connection-health per the D8 ruling)** · Jessica risk (4) ·
+Alivia doc-hygiene → IT Glue (3) · **OS-SELF (13:** agent onboarding/persona-refresh · dial
+governance · eval + feedback loop · retrieval/memory curation · Personal Curator · OKF
+maintenance · connector/credential ops · deploy-verify · Nova intake wiring). Running the
+agentic OS is running the company (D7.1). **People-at-scale gap-fill (#1627, Holly 10-H6…
+H11 + un-deferred H5):** recruit→hire · workforce/capacity planning · L&D + cert lifecycle ·
+comp & benefits ⛔ · employee relations (sensitive PII) · W-2 payroll ⛔ (schema #1621) ·
+PTO/leave. **Vendor-security gap-fill (#1628, Laurel):** privacy program — GDPR/CCPA · DPA
+register · DSR clock · cyber/E&O insurance + breach-notification clock ⛔ (escalate-to-
+terminal). **Enterprise-risk gap-fill (#1630):** enterprise/business-risk register (Jessica,
+≠ platform-risk 10-J3) · business-insurance portfolio (Laurel). (Comp/payroll PII = strict
+RLS; salary non-disclosure refusal-class; every pay movement `always_gate`.)
 
-### Stream 11 — Orchestrate · Nova + 5 C-suite (15, all L2 delegate-only)
+### Stream 11 — Orchestrate · Nova + 5 C-suite (17, all L2 delegate-only)
 **Nova:** intake-route (orchestration entry) · correlate + 3-level ledger · context/memory ·
 killswitch · gatekeeper single-human queue. **C-suite** (each = synthesis-brief +
 division-orchestration): Rachel daily-brief → Derek · Dexter delivery-pulse · Roman
 security-posture-brief → Mark · Sterling financial-pulse → Nick · Jessica risk-assurance-sweep
-→ Mark. Whole stream UNBUILT: `icm/executive/` + `icm/org.yaml` pending #1536. L2 enforced
-structurally (delegate-only; no actuation grant).
+→ Mark. **Strategy gap-fill (#1630, exec-tier):** strategic/annual planning + OKR cadence
+(Rachel+Nova) · board/investor reporting pack (Sterling+Rachel). Whole stream UNBUILT:
+`icm/executive/` + `icm/org.yaml` pending #1536. L2 enforced structurally (delegate-only; no
+actuation grant — the planning call is Derek's, the pack sign-off is Nick's).
 
 ---
 
@@ -233,13 +269,23 @@ Proposed in this repo per §1 (front end owns schema). The catalog persists proc
 | **#1578** | monitoring/alert bronze feed + ingestion-owner decision (LP vs cloud Pipeline) | 05 (Ozzie) |
 | **#1579** | `change_freeze` calendar + rollback-plan artifact + standard-change-model catalog | 06 (Marshall) |
 | **#1580** | AR/invoice silver — own-vs-mirror DECIDE + build (relates #668/#1095/#1096) | 09 (Audrey) |
+| **#1619** | rev-rec / contract-schedule silver (ASC 606) | 09 (Audrey) |
+| **#1620** | sales-tax nexus model (jurisdiction / registration / filing) | 09 (Audrey/Sterling) |
+| **#1621** | employee / W-2 payroll silver (comp PII, payroll RLS) | 10 (Holly) |
+| **#1622** | client-offboarding / retention-state silver | 08 (Celeste) |
+| **#1623** | `partner` silver (program / tier / co-sell / MDF / referral) — **blocks Bridget #1624** | 02 (Bridget) |
+| **#1650** | sales-commission / comp-plan silver | 02 (Sterling) |
+| **#1651** | carrier / circuit / telco-contract silver | 04 (Vance) |
+| **#1652** | price-book / rate-card silver | 02 (Sterling) |
 
-### The D4 driving-policy mark-blocker
+### The D4 driving-policy resolution (was a mark-blocker — now RESOLVED)
 
-Every `Driving policy` field across all ~174 procedures = `TBD (mark-blocker:
-company-policy-collection)`. **Mark is authoring the company-policy markdown collection**
-(tracked: **#1586**) — the single highest-leverage unblock for the catalog. One policy
-already exists as the model: `docs/policies/expense-policy.md` (#493).
+The company-policy collection landed: the **Policy canon (ADR-0134, `icm/policies/`** —
+CS/IT/BO dual-audience set) is merged and **#1586 is CLOSED**. Each procedure's `Driving
+policy` field maps onto that canon (the per-procedure mapping pass). The doctrine baseline
+(ADR-0136 A2/A4/A5 universal floors) plus the mapped CS/IT/BO drivers replace the old
+`TBD (mark-blocker)` placeholder; remaining per-procedure driver wiring is mechanical, not
+blocked. Model policy: `docs/policies/expense-policy.md` (#493).
 
 ### Load-bearing substrate deps (recurring across streams)
 
