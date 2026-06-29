@@ -72,6 +72,8 @@ presents); remediation-OUT → human/Datto (08-K/L/M).
 | 08-L Client Risk Register | **B3 synthesis-brief** (register maintain) |
 | 08-M awareness / enablement | **B3 synthesis-brief** (advisory) |
 | 08-N proactive updates + knowledge | **B7 client-facing-send** (L3→L4) |
+| 08-O offboard a client (termination → data-return + deprovision) 💤 | **B8 provision-with-undo (reverse)** + **B5 JML** + **B9** (retention clock) + **B6/B7** peels |
+| 08-P issue an SLA-breach service credit 💰 | **B6 money-gate** (obligation/action separation A11) |
 
 **Driving policy (every procedure):** inherits the doctrine universal baseline (ADR-0136 A2/A4/A5)
 + `TBD (mark-blocker: company-policy-collection)` for the 1–3 specific drivers (D4, #1586). Policies
@@ -458,6 +460,115 @@ automatable step graduates it (D5).
 - **Substrate deps:** knowledge-asset store + #389 (semantic recall for relevance); #991 feed.
   **subject:** both. **Maps to:** #1456.
 
+## 08-O · Offboard a client (termination → data-return + deprovision) 💤 — net-new, schema #1622
+- **Owner / Stream:** Celeste / 08 — **Celeste owns the relationship/retention boundary + the
+  offboarding clock; the destructive acts are NOT hers.** **Archetype:** **B8 provision-with-undo run
+  in REVERSE** (the offboard is the tear-down past the hardened scaffold — the OP-03-01/02 mirror) +
+  **B5 JML** (Osiris deprovision) + **B9 deadline-sentinel** (retention/legal-hold clock) + **B6/B7**
+  peels (final invoice/credit, data-return confirmation). This is the canonical A11 cross-owner seam:
+  **Celeste** owns the termination/retention clock + client comms, **Osiris** owns the identity/access
+  deprovision act, **Pierce** owns the project/asset teardown — three distinct owners meeting at
+  explicit steps, never co-owning.
+- **Trigger:** a client termination/non-renewal signal — a `contract` non-renewal (08-E routed to lost),
+  an explicit termination notice, or an admin-declared offboarding. **Hand-off (inbound, SEAM A11):**
+  Chase (lost/churned) / Celeste health (08-D terminal) → offboarding.
+- **Terminal outcome:** the client is fully offboarded — **data returned** (confirmed), **identity/access
+  deprovisioned** (Osiris), **delivery assets/projects torn down** (Pierce), final invoice/credit
+  reconciled, retention/legal-hold honored — with every irreversible/destructive step **always-gated**
+  and the **retention clock** enforced before any delete.
+- **Procedure Steps** (B8-reverse: ground[refuse] → plan-teardown → RETENTION GATE → split-actuate → peels → log):
+  1. `[automation]` **Ground — REFUSE-precondition:** verify the termination signal is real + the
+     **retention/legal-hold window** + contractual data-return obligation, **citing the contract +
+     termination record + as-of** (A5); on empty/unverified termination → park (never deprovision on an
+     unconfirmed signal — the offboard mirror of the `contract_state='signed'` structural gate, B8). **L0.**
+  2. `[automation]` **Plan the teardown** — assemble the offboarding checklist from the `client_offboarding`
+     model (**schema gap #1622 — propose-only/dormant until built, A5c**): data-return scope, deprovision
+     set, project/asset teardown, license reclaim, final-invoice/credit lines. **L1/L2.**
+  3. `[automation]` **Retention clock (B9):** the retention/legal-hold dates are a sentinel — **no
+     deletion before the hold expires** (escalate-to-terminal, never auto-delete under the clock; a
+     premature delete is a refusal-class violation, A10 row 4 + B9). **L0/L2.**
+  4. `[gui-step]` **RETENTION/DEPROVISION GATE = 4-part easy-button (A4) — `always_gate`:** the
+     **data-return + the destructive deprovision** is presented for a human decision (A2 class-3/4 —
+     identity-destructive + production-destructive; no clean undo, A10 row 4). **SEAM → Osiris** (the
+     **Leaver-class deprovision act**, OP-04-12 B5: disable+revoke is the reversible containment half,
+     **delete/deprovision/license-removal stays the human-approved cleanup** — referenced, not
+     duplicated, D3). **SEAM → Pierce** for delivery-project/asset teardown (the B8 hardened-scaffold
+     teardown = a new gated change, Stream 03). Celeste never actuates the delete.
+  5. `[hybrid]` **Peel-off gates (B8 — irreversible/client-visible sub-steps do NOT ride one bundle):**
+     **data-return confirmation = B7 client-facing-send** (`always_gate` A2 class-2, no fabricated
+     scope/timeline; consent + opt-out honored); **final invoice / credit reconciliation = B6
+     money-gate** (`always_gate` A2 class-1 — routes to Audrey/Nick, see 08-P for the credit half);
+     license reclaim → Vance (shelfware, Stream 07).
+  6. `[automation]` **Log + verify (read-back, A9c)** — confirm each deprovision/teardown landed
+     (close-on-verification, never close-on-fire); persist the offboarding record (audited, attributed);
+     **SEAM → Audrey** (final AR/credit reconcile) + handoff log close. **B8-reverse close: hardens at
+     completion** — a re-onboard is a new gated provision (OP-03-01), not an undo.
+- **Driving policy:** TBD (#1586) — Client-Offboarding / Data-Return / Retention-Legal-Hold /
+  Deprovision-Checklist.
+- **Realization:** **procedure-only / 💤dormant** — depends on the `client_offboarding` silver model
+  (**schema gap #1622, propose-only per A5c**); the deprovision act is Osiris's JML (OP-04-12), the
+  teardown is Pierce's (Stream 03), both referenced not duplicated (D3). No workspace until #1622 lands.
+- **Autonomy ceiling:** **Celeste L2** (plan + maintain the offboarding record + retention-clock watch =
+  reversible internal, A10 row 1; B9 watch). **`always_gate`:** data-return send (A2 class-2) · the
+  destructive deprovision/delete/license-removal (A2 class-3/4 — Osiris's cleanup, A10 row 4) ·
+  project/asset teardown (Pierce gated change) · final invoice/credit (A2 class-1). The retention/
+  legal-hold delete-block is a **structural refuse-precondition**, dial-proof.
+- **Human-in-loop:** Jessica (CRO) / CS-lead on the relationship side; **Mark (CISO) + Osiris's human**
+  on the deprovision; Nick (finance) on the final invoice/credit; legal on hold release. Every
+  destructive/money/client-send step stays human (A3 floor — none recede).
+- **Substrate deps:** 💤 **schema gap `client_offboarding` (#1622, propose-only)** · Osiris JML
+  (OP-04-12, #1562) · Pierce teardown (Stream 03) · Audrey final-AR/credit seam · #991 handoff · #119.
+  **subject:** both. **(Imperion dogfood: offboarding a deprecated Imperion tenant/relationship runs the
+  same flow.)** **(OWNERSHIP: clean — Celeste owns the retention clock + comms, Osiris owns the
+  deprovision act, Pierce owns the teardown, A11.)** **Schema gap flagged to FE: #1622.**
+
+## 08-P · Issue an SLA-breach service credit 💰 — net-new
+- **Owner / Stream:** Celeste / 08 — **Celeste owns the SLA standard/clock + the breach
+  determination; the money act is NOT hers.** **Archetype:** **B6 money-gate** — the canonical A11
+  obligation/action separation in this stream's money form: Celeste owns the **SLA obligation** (is it
+  breached? does it earn a credit per the agreement?), **Audrey** owns the **credit-memo money act**
+  (the irreversible financial write). They meet at the gate, never co-own.
+- **Trigger:** an SLA-breach signal — a missed SLA target from Felix's service/dispatch data (OP-04-08
+  SLA-risk crossed into breach), an availability/incident breach (Ozzie/Phoenix Stream 05), or a
+  client-raised credit claim surfaced in the client-360 (08-A).
+- **Terminal outcome:** an SLA-breach **service credit determined per the SLA agreement** and a
+  **credit memo drafted + always-gated** to a human (Audrey/Nick) — Celeste determines the obligation,
+  she never posts the money.
+- **Procedure Steps** (B6: ground → compute → draft → MONEY GATE → actuate → log):
+  1. `[automation]` **Ground** — pull the SLA target + the actual measured breach (uptime/response/
+     resolution) + the client's SLA terms from the `contract`/SLA model, **each cited + as-of** (A5);
+     empty/unmeasured → park, never fabricate a breach (signal-vs-inference, guardrail 3). **L0.**
+  2. `[automation]` **Compute the obligation** — apply the SLA credit schedule (breach severity →
+     credit %/amount per the agreement) to derive the owed credit; pool-correlate breach patterns across
+     the base internally only (A7 — never name another client's breach). **L2.**
+  3. `[automation]` **Draft** the service-credit memo (breach evidence, credit basis, $ amount) — the
+     obligation artifact, attributed up-chain (P2).
+  4. `[gui-step]` **MONEY GATE — `always_gate` (A2 class-1, money out, dial-proof, A4 easy-button):**
+     **SEAM → Audrey/Nick** — the **credit-memo financial write is Audrey's money act** (A11: Celeste's
+     SLA clock determines the obligation; Audrey's ledger executes it). Present the exact $ credit + the
+     SoR (QBO credit memo, external — agent mirrors never owns, A9a) + the irreversibility flag (a posted
+     credit has no clean undo, A10 row 4). The human approves before any credit posts. **NO-COMMITS-EVER:**
+     Celeste never commits the money (celeste.md guardrail 1).
+  5. `[automation]` **Actuate idempotently (Audrey side)** — on approval, the credit memo is posted
+     **idempotency-keyed** (procedure + breach + period; replay = no-op + audit note, never a
+     double-credit, A9b) and **read back** from QBO to confirm it landed (A9c). **SEAM → 08-D / Belle**
+     for any client-facing credit notice (B7, gated). The client-facing communication of the credit is a
+     separate B7 send.
+- **Driving policy:** TBD (#1586) — SLA / Service-Level-Agreement / Service-Credit schedule. **Note:**
+  the SLA *standard* is the contractual obligation Celeste owns; the *credit schedule* is the policy that
+  computes it.
+- **Realization:** ICM Workspace once the SLA model + credit path land; **procedure-only** until then.
+  The money act is Audrey's (Stream 09, referenced not duplicated, D3).
+- **Autonomy ceiling:** **Celeste L2** (determine breach + compute + draft = reversible internal, A10 row
+  1). **`always_gate`: the credit memo / money out** (Audrey, A2 class-1 — A10 row 4: a posted credit/
+  refund has no clean undo). Dial-proof — never Celeste's to post, never auto at any level.
+- **Human-in-loop:** Nick (finance) + Audrey's human on the credit-memo post; Jessica (CRO) / CS-lead on
+  the breach determination + client relationship. The money post stays human forever (A3 floor + NO-COMMITS).
+- **Substrate deps:** SLA/`contract` model + service-credit schedule (backend/schema-owed) · Felix/Ozzie
+  breach signal (#991 feed) · Audrey credit-memo path (Stream 09, QBO) · #389 recall · #119. **subject:**
+  both. **Seam:** Celeste→Audrey (money) + Celeste→Belle/08-D (client notice). **(OWNERSHIP: clean —
+  Celeste owns the SLA obligation/clock, Audrey owns the money act, A11.)**
+
 ---
 
 ## Provable-coverage note
@@ -468,17 +579,23 @@ renewal-readiness → Chase (E) · expansion mint→assign → Chase, the pinned
 (G) · IT budget 💤 (H) · tech lifecycle/refresh (I) · vendor/solution eval → Vance (J) · vCISO
 posture report (K) · client risk register (L) · awareness/enablement (M) · proactive updates +
 knowledge-sharing, L4 stream-max (N). Maps 1:1 to filed playbooks #1443–1456 (08-A…N in order; #1442
-= persona-activation leaf, folded into Realization). The whole stream is load-bearing on **#991**
-(handoff bus) + **#389** (Voyage recall); per A5c deepened steps ship propose-only until their
+= persona-activation leaf, folded into Realization). **Cluster-5 scale-up additions (2026-06-29,
+#1629):** client offboarding (O — the B8-provision-with-undo run in *reverse*: termination → data-
+return + deprovision, three-owner seam Celeste/Osiris/Pierce, 💤dormant on **schema gap #1622**) and
+the SLA-breach service credit (P — a B6 money-gate, the stream's canonical money-form A11 seam: Celeste
+owns the SLA obligation, Audrey owns the credit-memo money act). The whole stream is load-bearing on
+**#991** (handoff bus) + **#389** (Voyage recall); per A5c deepened steps ship propose-only until their
 substrate hydrates. **Doctrine inheritance (ADR-0136):** every procedure names its archetype (B1–B9)
-and inherits A1–A11; the stream is the canonical showcase of **B3 synthesis-brief** (12 of 14
+and inherits A1–A11; the stream is the canonical showcase of **B3 synthesis-brief** (12 of 14 original
 procedures are launchpads — the QBR/ASP/health/vCIO/vCISO briefs each pre-stage their owning worker
 procedure parked for one-click human launch, **Celeste never actuates**) and of **A11
-obligation/action separation** (the relationship-clock is hers; the close/purchase/remediation is
-explicitly NOT). **NO-COMMITS-EVER** and **MSSP-advisory-only** are dial-proof `always_gate` floors
-(inherited A2) on all 14. Seams are explicit hand-off steps: IN from all 7 other agents (A); OUT →
-Chase (E renewal, F expansion); OUT → Vance (I refresh, J vendor); OUT → human/Datto (K/L/M vCISO
-remediation). The close stays Chase's (Stream 02) — no qualify/close procedure appears here
-(correctly).
+obligation/action separation** (the relationship-clock is hers; the close/purchase/remediation/
+deprovision/credit-money is explicitly NOT — O hands the deprovision to Osiris + teardown to Pierce, P
+hands the credit money to Audrey). **NO-COMMITS-EVER** and **MSSP-advisory-only** are dial-proof
+`always_gate` floors (inherited A2) on all 16. Seams are explicit hand-off steps: IN from all 7 other
+agents (A); OUT → Chase (E renewal, F expansion); OUT → Vance (I refresh, J vendor); OUT → human/Datto
+(K/L/M vCISO remediation); OUT → Osiris + Pierce (O offboarding); OUT → Audrey (P credit money). The
+close stays Chase's (Stream 02) — no qualify/close procedure appears here (correctly). **Schema gap
+flagged to FE: #1622** (`client_offboarding` silver model; 08-O ships propose-only/dormant until built).
 
-**Count: 14 Operating Procedures** (08-A … 08-N; #1442 folded as persona-activation per D9).
+**Count: 16 Operating Procedures** (08-A … 08-P; #1442 folded as persona-activation per D9).
