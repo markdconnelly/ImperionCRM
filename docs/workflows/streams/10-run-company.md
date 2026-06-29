@@ -43,12 +43,12 @@ its archetype inline).**
 
 | Owner group | Procedures | Archetype(s) |
 |---|---|---|
-| Rachel (CoS / G&A) | 10-A1 daily brief · 10-A2 request routing · 10-A3/A4 program stewardship | **B3 synthesis-brief** (A1), **B1 triage/route** (A2), **B4 audit-attest** governance-stewardship (A3/A4) |
+| Rachel (CoS / G&A) | 10-A1 daily brief · 10-A2 request routing · 10-A3/A4 program stewardship · 10-A5 facilities/fleet/corporate-IT (w/ Holly) | **B3 synthesis-brief** (A1), **B1 triage/route** (A2), **B4 audit-attest** governance-stewardship (A3/A4), **B2 gated-actuation** facilities/fleet/IT spend (A5) |
 | Holly (HR / internal JML + people-at-scale) | 10-H1 onboard · 10-H2 offboard · 10-H3 brain spin-up · 10-H4 review · 10-H5 PTO · 10-H6 recruit→hire · 10-H7 capacity (w/ Dexter) · 10-H8 L&D/cert lifecycle · 10-H9 comp & benefits · 10-H10 employee relations (w/ Laurel) · 10-H11 W-2 payroll (w/ Audrey + human) | **B5 JML disable≠delete** (H1/H2), **B8/B2 provision-with-undo** (H3), **B2/B4** comp+review gated (H1/H4), **B2 gated-actuation** PTO/comp+benefits/employee-relations (H5/H9/H10), **B1 triage/route + B2 offer gate** (H6), **B3 synthesis-brief** capacity (H7), **B9 deadline-sentinel** cert-expiry (H8), **B6 money-gate** W-2 payroll (H11, propose-only #1621) |
-| Laurel (Legal) | 10-L1 contract review · 10-L2 lifecycle/renewal · 10-L3 compliance | **B2 gated-actuation** (L1/L3, binding always_gate), **B9 deadline-sentinel** renewal radar (L2) |
+| Laurel (Legal) | 10-L1 contract review · 10-L2 lifecycle/renewal · 10-L3 compliance · 10-L4 privacy program (w/ Grace) · 10-L5 cyber/E&O + breach clock (w/ Roman) · 10-L6 business-insurance portfolio | **B2 gated-actuation** (L1/L3, binding always_gate), **B9 deadline-sentinel** renewal radar (L2/L6), **B4 audit-attest + B9 deadline-sentinel** privacy/DSR clock (L4), **B9 deadline-sentinel** cyber/E&O + breach-notification clock (L5, escalate-to-terminal, never auto-actuate) |
 | Tess (QA) | 10-T1 ticket-quality · 10-T2 CSAT · 10-T3 SLA-conformance | **B4 audit-attest** internal measure+route (all three; T2 survey-send = B7 edge) |
 | Vera (Governance) | 10-V1…V14 | **B4 audit-attest** (the stream's canonical B4 family); V3 standard ratification = `always_gate`; V1 detect→quarantine→route→verify is B4 + reversible-auto-quarantine |
-| Jessica (CRO / Risk) | 10-J1 assurance-govern · 10-J2 eval-acceptance · 10-J3 risk register | **B3 synthesis-brief** delegate-only (all three; the risk *call* always_gate to Mark) |
+| Jessica (CRO / Risk) | 10-J1 assurance-govern · 10-J2 eval-acceptance · 10-J3 platform-risk register · 10-J4 enterprise/business-risk register | **B3 synthesis-brief** delegate-only (all four; the risk *call* always_gate to Mark; J4 distinct from J3 = enterprise vs platform risk) |
 | Alivia (Doc-Hygiene) | 10-K1 doc-sync · 10-K2 runbook-author · 10-K3 freshness | **B4 audit-attest** detect→draft→route (all three; SoT publish gated until trusted; A8 one uniform dual-audience doc) |
 | OS-self (Rachel/Vera/Jessica/Alivia/Nova) | 10-O1…O13 | mostly **B4 audit-attest** (O1/O2/O4/O5/O8/O11/O13); **B2 gated-actuation** for connector/credential ops + deploy (O9/O10/O11) + dial-apply (O3); **B4** memory/curation (O6/O7); **B1 triage/route** Nova intake (O12) |
 
@@ -139,6 +139,34 @@ any world-changing act inherits the executing sub-agent's ceiling). Serves Derek
 - **Autonomy ceiling:** L2.
 - **Human-in-loop:** Derek/Mark; floor: standing.
 - **Substrate deps:** Imperion client-zero account + connections; cross-stream. **subject:** imperion.
+
+### 10-A5 · Manage facilities / fleet / corporate-IT (G&A operations) — net-new, low-priority (#1630)
+- **Owner / Stream:** Rachel (CoS, program) + Holly (people-tied facilities/fleet assignments) / 10.
+  **Archetype:** B2 gated-actuation — the inventory/scheduling/draft is auto, any spend-committing or
+  contract-binding facilities/fleet/IT act is `always_gate` (A2 class-1/6). Low-priority: the operational
+  G&A back-office (premises, company vehicles, internal corporate-IT assets) — distinct from client-CMDB.
+- **Trigger:** a facilities/fleet/corporate-IT need surfaces (lease renewal, vehicle assignment/service,
+  internal asset refresh, onboarding workspace/device from 10-H1) OR cadence inventory review.
+- **Terminal outcome:** facilities/fleet/corporate-IT inventory current; renewals/services tracked ahead
+  of deadline; any spend or binding commitment drafted as a parked easy-button for a human.
+- **Procedure Steps** (B2 spine):
+  1. `[automation]` **Ground** — inventory premises/leases, company vehicles, and internal corporate-IT
+     assets, **cited + as-of** (A5); empty → park. (Internal corporate-IT assets, NOT client CMDB —
+     SEAM with Ozzie/Felix only for Imperion-self assets under the dogfood loop, 10-A4.) **L2.**
+  2. `[automation]` **Detect + draft** — surface lease-renewal / vehicle-service / asset-refresh needs
+     ahead of deadline (B9-style watch on the renewal clock); draft the action + cost. SEAM → Laurel
+     (10-L6 business-insurance — fleet/property coverage) + Sterling/Nick (CFO spend) + Holly (10-H1
+     workspace/device on onboarding; fleet/vehicle assignment to a person).
+  3. `[hybrid]` **PARK** any spend-committing or contract-binding act (lease sign, vehicle purchase,
+     asset PO) as the 4-part easy-button (A4); route to a human. Non-committing logistics (scheduling a
+     service appt, recording an assignment) may auto at L2 (internally reversible, A10).
+- **Driving policy:** TBD (#1586) facilities + fleet + corporate-IT-asset policy.
+- **Realization:** procedure-only (graduates with a corporate-asset/facilities store — owed, proposed to FE).
+- **Autonomy ceiling:** **L2** (inventory/detect/draft + reversible logistics auto). **`always_gate`:**
+  any spend or binding commitment — lease/vehicle/asset purchase or contract (A2 class-1/6).
+- **Human-in-loop:** Derek/Rachel-human + Sterling/Nick (spend). Floor: spend + binding commitment human.
+- **Substrate deps:** corporate-asset/facilities store (owed), #991, Laurel 10-L6 + Holly 10-H1 + CFO
+  seams. **subject:** imperion (internal G&A back-office — NOT client CMDB, which is Stream-level CMDB).
 
 ---
 
@@ -554,6 +582,113 @@ routes genuine legal calls to a human). Reports to Rachel. **SEAM:** contracts a
 - **Substrate deps:** Grace seam. **subject:** both · **SEAM with Grace (GRC):**
   legal-obligation vs security-control-evidence; flag if both claim it.
 
+### 10-L4 · Run the privacy program (GDPR/CCPA · DPA register · DSR handling) — net-new (#1628)
+- **Owner / Stream:** Laurel (legal-obligation owner) + Grace (control-attestation) / 10. **Archetype:**
+  B4 audit-attest (the DPA-register + privacy-program attestation) **+ B9 deadline-sentinel** (the DSR
+  clock — statutory response deadlines never auto-actuate, escalate-to-terminal per A11/B9). Laurel owns
+  the legal/contractual privacy obligation, Grace owns the security-control evidence (A11 seam).
+- **Trigger:** a Data Subject Request (access/erasure/portability) arrives; OR a new vendor processing
+  personal data is onboarded (DPA needed); OR cadence privacy-program review; OR a regulatory change.
+- **Terminal outcome:** privacy obligations mapped + DPA register current; each DSR routed to a human
+  decision before its statutory deadline (never auto-fulfilled); privacy-control evidence emitted.
+- **Procedure Steps** (B4 attest spine, B9 sentinel on the DSR clock):
+  1. `[automation]` **Ground** — on a DSR, identify the data subject + the systems/silver entities holding
+     their personal data, **citing each source + as-of** (A5); on empty/ambiguous identity → park (never
+     guess a subject). **Strict-RLS:** the DSR working record + any subject identifiers are `data_class`
+     personal/`client_pii` — **report by reference, never reproduce the personal data into the register,
+     a brief, an issue, or a comment** (A5 + #967/#990 RLS). **L2.**
+  2. `[automation]` **Maintain the DPA register** — record processors/sub-processors handling personal
+     data, the lawful basis, and the executed DPA, cited + as-of; flag any processing lacking a DPA. SEAM
+     with Vance (vendor onboarding) + Grace (TPRM, Stream 07) — Laurel = the DPA legal terms, Grace = the
+     vendor's security-control evidence.
+  3. `[automation]` **Run the DSR clock as a deadline-sentinel** — on receipt, set the statutory deadline
+     (GDPR 1 month / CCPA 45 days); draft the fulfillment package (the data to disclose/erase, by
+     reference); **escalate up `reports_to` with rising urgency (T-clock), NEVER auto-fulfilling or
+     auto-erasing** (B9 escalate-to-terminal — a DSR fulfillment is an irreversible disclosure/deletion,
+     A10 no-clean-undo ⇒ `always_gate`). A missed/at-risk deadline is a **logged escalation failure**
+     surfaced to Mark + Jessica (10-J4 register).
+  4. `[hybrid]` **Route the DSR decision + the privacy-program recommendation to a human** as the 4-part
+     easy-button (drafted package + grounded why + one-click + consequence preview, A4). SEAM → Grace
+     for control evidence; **hand genuine legal calls to a human/counsel** (A11 — Laurel is not licensed
+     counsel).
+- **Driving policy:** TBD (#1586) privacy/data-protection policy (GDPR/CCPA), DPA-standard, DSR-runbook.
+- **Realization:** `icm/domains/legal/privacy-program/` (graduates with the DSR clock + register store).
+- **Autonomy ceiling:** **L2** (map/draft/register auto). **`always_gate`:** any DSR fulfillment
+  (disclosure/erasure — A2 class-2/4, irreversible) and any binding privacy commitment (A2 class-6).
+- **Human-in-loop:** Mark (CISO/privacy) + Derek (+ counsel for real legal calls). L1 = Laurel drafts,
+  human reviews all; L2 = auto-map+register+draft, human decides every fulfillment. Floor: DSR
+  fulfillment + erasure always human.
+- **Substrate deps:** DSR-clock + DPA-register store (owed — proposed to FE), #389 (clause/data recall),
+  #991 (deadline trigger), Grace TPRM seam (Stream 07), data_class RLS (#967/#990). **subject:** both
+  (client DSRs serve clients as data-controller-support; Imperion's own DSRs = imperion) · **SEAM: Laurel
+  = privacy legal obligation + DSR clock; Grace = security-control evidence (Stream 07).**
+
+### 10-L5 · Manage cyber / E&O insurance lifecycle + breach-notification clock — net-new (#1628)
+- **Owner / Stream:** Laurel (policy-lifecycle + breach legal clock) + Roman (security-incident facts) / 10.
+  **Archetype:** B9 deadline-sentinel — both the **renewal/attestation clock** (cyber/E&O policy terms) and
+  the **breach-notification clock**; the breach clock is the hard case: **escalate-to-terminal, NEVER
+  auto-actuate a notification** (A11/B9 — a breach notice is an irreversible legal/regulatory commitment).
+- **Trigger:** a cyber/E&O policy approaches renewal or an insurer attestation is due; OR Roman declares a
+  security incident that may trigger a breach-notification obligation; OR a coverage/claim event.
+- **Terminal outcome:** cyber/E&O coverage tracked with no lapse; on a qualifying incident the
+  breach-notification deadlines are computed and escalated to a human decision **before** the statutory/
+  contractual clock expires — never auto-sent.
+- **Procedure Steps** (B9 sentinel; two clocks):
+  1. `[automation]` **Record the policy** + key dates (term, renewal, notice window, attestation
+     conditions, coverage limits/exclusions), **cited + as-of** (A5). **L2.**
+  2. `[automation]` **Watch the renewal/attestation clock** — on approach (T-30/T-7/T-1) draft the renewal
+     review + flag changed terms/conditions, **escalating up `reports_to`, never auto-binding** (B9). SEAM
+     with Vance (procurement of the policy as a vendor agreement) + Sterling/Nick (CFO — premium/spend).
+  3. `[automation]` **Breach-notification clock (the hard sentinel):** on a Roman-declared qualifying
+     incident, ingest the **incident facts by reference** (SEAM → Roman, Stream 07 — Roman owns the
+     security facts, Laurel owns the legal-obligation framing; A11), compute every applicable notification
+     deadline (regulator, affected parties, insurer, contractual), and **escalate-to-terminal: surface the
+     pre-staged notification easy-button to Mark, NEVER auto-actuating the notice** (B9 — irreversible
+     legal/regulatory commitment, A10 no-clean-undo ⇒ `always_gate`). **Strict-RLS:** breach facts +
+     affected-party identifiers are `data_class` personal/sensitive — **report by reference, never
+     reproduce into a brief/issue/comment** (A5 + #967/#990).
+  4. `[hybrid]` **Route to a human** — renewal decisions and every breach notification go to Mark (+ counsel
+     for the legal call) as the 4-part easy-button (A4). A missed/at-risk notification deadline is a
+     **logged escalation failure** surfaced to Mark + Jessica (10-J4).
+- **Driving policy:** TBD (#1586) cyber/E&O-insurance + breach-notification (incident-response) policy.
+- **Realization:** procedure-only (graduates with the policy store + breach-clock watcher).
+- **Autonomy ceiling:** **L2** (record/watch/draft auto). **`always_gate`:** binding a policy
+  renewal (A2 class-6) and **any breach notification** (A2 class-2/6, irreversible — dial-proof at any level).
+- **Human-in-loop:** Mark (CISO) + Derek + counsel; Roman supplies incident facts. Floor: breach
+  notification + policy binding always human.
+- **Substrate deps:** policy store (owed), #991 (deadline trigger), Roman incident seam (Stream 07),
+  Vance procurement seam, data_class RLS (#967/#990). **subject:** both (a client-affecting breach also
+  drives client notification via Celeste; Imperion's own policy = imperion) · **SEAM: Roman = incident
+  facts; Laurel = legal notification clock; Celeste = any client-facing notice.**
+
+### 10-L6 · Manage the business-insurance portfolio — net-new (#1630)
+- **Owner / Stream:** Laurel / 10. **Archetype:** B9 deadline-sentinel — watch the renewal/attestation
+  clocks across the non-cyber business-insurance portfolio (general liability, property, workers'-comp,
+  D&O, auto/fleet); **never auto-bind a renewal** (A11/B9; escalate + pre-stage the easy-button,
+  T-30/T-7/T-1). The legal twin of Vance's procurement Deadline Sentinel for insurance lines.
+- **Trigger:** a business-insurance policy approaches renewal/expiry OR an attestation/audit (e.g.
+  workers'-comp payroll audit) is due OR a new coverage need surfaces (new fleet vehicle, new premises).
+- **Terminal outcome:** every business-insurance line tracked with no coverage lapse; renewals reviewed
+  ahead of expiry; the portfolio + key dates kept current for the risk register (10-J4) and CFO spend.
+- **Procedure Steps** (B9 sentinel):
+  1. `[automation]` Record each policy + key dates (term, renewal, notice window, coverage limits,
+     audit/attestation conditions), **cited + as-of** (A5). **L2.**
+  2. `[automation]` Watch the renewal/expiry/attestation window; on approach draft a renewal review +
+     flag changed terms/premiums, **escalating up `reports_to` with rising urgency, never auto-binding**
+     (B9). SEAM with Vance (procurement) + Sterling/Nick (CFO — premium spend) + Holly (workers'-comp ties
+     to payroll/headcount, 10-H11) + Rachel (facilities/fleet coverage need, 10-A5).
+  3. `[hybrid]` Route the renewal recommendation to a human; binding/renewal always-gate. Feed the
+     coverage posture into Jessica's enterprise-risk register (10-J4 — insurance is a key risk mitigation).
+- **Driving policy:** TBD (#1586) business-insurance policy.
+- **Realization:** procedure-only (graduates with the policy store; shares the 10-L5 watcher).
+- **Autonomy ceiling:** **L2** (record/watch/draft auto). **`always_gate`:** binding a renewal/policy
+  change (A2 class-6).
+- **Human-in-loop:** Mark/Derek + Sterling/Nick (CFO). Floor: binding renewal human.
+- **Substrate deps:** policy store (owed, shared with 10-L5), #991 (deadline trigger), Vance procurement
+  seam, 10-J4 register feed. **subject:** imperion · **OVERLAP:** cyber/E&O is 10-L5 (its own breach
+  clock); 10-L6 is the rest of the portfolio. **SEAM: Vance procures; Laurel watches the legal/renewal
+  clock; Jessica's 10-J4 consumes the coverage posture.**
+
 ---
 
 ## Tess (Service-Quality / QA) — Epic #1560
@@ -941,6 +1076,44 @@ assurance-GOVERNANCE procedures she owns at this tier.
 - **Substrate deps:** register store (owed), #991. **subject:** imperion · **NOTE: DISTINCT from
   Celeste's client-facing Client Risk Register (Stream 08) — Jessica's is internal platform/OS risk.**
 
+### 10-J4 · Maintain the enterprise / business-risk register (concentration · key-person · market) — net-new (#1630)
+- **Owner / Stream:** Jessica / 10. **Archetype:** B3 synthesis-brief (capture + score + surface;
+  label signal vs inference per A5; risk acceptance always Mark's, A11). **DISTINCT from 10-J3:** 10-J3
+  is the *platform/assurance* register (drift, audit findings, eval regressions — the OS-as-software
+  risks); **10-J4 is the *enterprise/business* register** — revenue concentration, key-person, market/
+  competitive, supply/vendor-concentration, financial, and legal/regulatory exposure (the company-as-a-
+  business risks). Two registers, one owner, no overlap.
+- **Trigger:** a business risk surfaces (a client crosses a concentration threshold, a key person leaves,
+  a market/competitor shift, a vendor-concentration flag) OR cadence (the enterprise-risk review feeding
+  the Stream-11 board pack); fed by Audrey (financial/AR concentration), Holly (key-person/attrition,
+  10-H7 capacity), Vance (vendor concentration), Jessica (10-J3 platform), Laurel (insurance/legal, 10-L5/L6).
+- **Terminal outcome:** an enterprise-risk register kept current — each risk has an owner, a likelihood ×
+  impact score, a mitigation (incl. its insurance coverage), and a status; the top risks roll into the
+  Stream-11 board/strategy brief; concentration/key-person risks have an explicit mitigation owner.
+- **Procedure Steps** (B3 synthesis spine):
+  1. `[automation]` **Gather** the business-risk feeds — revenue/AR concentration (Audrey, Stream 09),
+     key-person/attrition (Holly 10-H7), vendor concentration (Vance), market/competitive signals,
+     platform risk (10-J3), legal/insurance posture (Laurel 10-L5/L6) — **citing each source + as-of**,
+     **labeling signal vs inference** (A5). **Report concentration by aggregate/redacted metric, never
+     reproduce client-level revenue or personal data** (A5 + #967/#990 RLS — the register is PII-free). **L2.**
+  2. `[automation]` **Score + assign** — likelihood × impact band; attach a mitigation owner + the
+     current mitigation (incl. insurance coverage from 10-L5/L6); track status. Pool-correlate recurring
+     themes internally only (A7).
+  3. `[hybrid]` **Surface** the top enterprise risks to Mark; **risk acceptance always-gate** (A11 —
+     Jessica frames, Mark accepts/rejects). **SEAM → Stream 11** (the board/strategy pack consumes the
+     register top-N — Jessica frames the brief there, not duplicated here).
+- **Driving policy:** TBD (#1586) enterprise-risk-management policy + risk-appetite statement.
+- **Realization:** procedure-only (graduates; enterprise-risk register store owed — shares the 10-J3
+  register substrate if FE builds one register with a `risk_class` discriminator).
+- **Autonomy ceiling:** **L2** (capture + score + draft auto). **`always_gate`:** risk acceptance /
+  appetite decisions (A2 class-6 governance commitment — dial-proof, Mark's).
+- **Human-in-loop:** Mark (risk reports to Mark). L1 = Jessica drafts the register, Mark reviews; L2 =
+  auto-capture+score, Mark accepts. Floor: risk acceptance human.
+- **Substrate deps:** enterprise-risk register store (owed — proposed to FE; may share 10-J3's store via
+  a `risk_class` column), #991 (feed triggers), Audrey/Holly/Vance/Laurel seams. **subject:** imperion ·
+  **NOTE: DISTINCT from 10-J3 (platform/assurance risk) and from Celeste's client-facing Client Risk
+  Register (Stream 08) — 10-J4 is internal enterprise/business risk.**
+
 ---
 
 ## Alivia (Doc-Hygiene / Knowledge) — Epic #1561
@@ -1321,8 +1494,25 @@ flagged to FE (#1621):** the people-payroll silver shape gates W-2 payroll (10-H
 (10-H9), and the PTO/leave-accrual store (10-H5); per **A5c** those procedures ship **propose-only /
 dormant** until #1621 lands. **Comp/payroll PII** is strict-RLS `data_class` financial + personal —
 salary non-disclosure is **refusal-class** (consistent with Stream 09 Audrey) and every pay movement
-is `always_gate` (A2 class-1).
+is `always_gate` (A2 class-1). **Imperion-as-vendor security/compliance (#1628) extends Laurel:** the
+privacy program (10-L4, GDPR/CCPA + DPA register + the DSR clock, w/ Grace) and the cyber/E&O insurance
+lifecycle + breach-notification clock (10-L5, w/ Roman). **Both the DSR clock and the breach-notification
+clock are hard B9 deadline-sentinels — escalate-to-terminal, NEVER auto-actuate** (a DSR fulfillment/
+erasure and a breach notice are irreversible disclosures, A10 no-clean-undo ⇒ `always_gate` dial-proof);
+their subject identifiers + breach facts are **strict-RLS `data_class` personal/sensitive — reported by
+reference, never reproduced** (A5 + #967/#990; the privacy/breach surfaces fold into Laurel+Grace, not a
+new DPO agent). **Enterprise risk & strategy (#1630, organic — NO M&A) extends Jessica + Laurel + Rachel:**
+the enterprise/business-risk register (10-J4 — concentration/key-person/market, **explicitly DISTINCT
+from the platform-risk register 10-J3**), the business-insurance portfolio (10-L6, Laurel, the non-cyber
+lines), and low-pri facilities/fleet/corporate-IT G&A ops (10-A5, Rachel/Holly, B2 gated on spend). The
+strategic-planning + board-pack rows of #1630 live in **Stream 11** (not duplicated here). **Schema gaps
+flagged to FE:** the **DSR-clock + DPA register** (10-L4), the **insurance-policy store** (10-L5/L6), the
+**enterprise-risk register** (10-J4 — may share 10-J3's store via a `risk_class` discriminator), and a
+**corporate-asset/facilities store** (10-A5) are all owed; per **A5c** those steps ship **propose-only**
+until built.
 
-**Count: 47 Operating Procedures** — Rachel 4 (A1–A4) · Holly 11 (H1–H11, incl. people-at-scale H6–H11
-+ un-deferred H5 per #1627) · Laurel 3 (L1–L3) · Tess 3 (T1–T3) · Vera 14 (V1–V14, incl. V14
-connection-health per D8) · Jessica 3 (J1–J3) · Alivia 3 (K1–K3) · OS-self 13 (O1–O13).
+**Count: 59 Operating Procedures** — Rachel 5 (A1–A5, incl. facilities/fleet/corporate-IT A5 per #1630) ·
+Holly 11 (H1–H11, incl. people-at-scale H6–H11 + un-deferred H5 per #1627) · Laurel 6 (L1–L6, incl. privacy
+L4 + cyber/E&O+breach-clock L5 per #1628 + business-insurance L6 per #1630) · Tess 3 (T1–T3) · Vera 14
+(V1–V14, incl. V14 connection-health per D8) · Jessica 4 (J1–J4, incl. enterprise-risk J4 per #1630) ·
+Alivia 3 (K1–K3) · OS-self 13 (O1–O13).
