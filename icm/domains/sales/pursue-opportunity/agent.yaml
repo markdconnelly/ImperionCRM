@@ -1,0 +1,14 @@
+name: pursue-opportunity
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [opportunity, interaction, contact, account, consent_event]   # subset of domains/sales/room.yaml
+tools: [pg.read, consent.check, send.email, send.dm, booking.link]       # subset of domains/sales/room.yaml
+skills:
+  - domains/sales/skills/voice-and-tone     # Tier 2 — domain-shared
+  - ./skills/pursuit-rules                   # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "Nothing committal auto-executes. Only the B7 transactional-acknowledgement carve-out (templated, non-committal, deterministic trigger — e.g. a 'received' ack) may auto-send at L3 once admin-flipped to auto. Every communicative/committal touch and any pricing/discount/term assertion or send-for-signature is dial-proof always-gate and parks (ADR-0128, BO-02 §5)."

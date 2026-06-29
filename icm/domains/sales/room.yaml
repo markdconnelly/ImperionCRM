@@ -21,6 +21,12 @@ tools:
   - opportunity.write    # internal CRM opportunity create/update (reversible, no
                          #   customer-facing effect) — the L2 auto-internal write
                          #   for the opportunity-create workflow (#1416, ADR-0128).
+  - knowledge.search     # OKF-grounded semantic recall over gold (#1537 retrieval
+                         #   tier; read-only) — prior winning bids + win-loss
+                         #   patterns for rfp-response (02-C5) / win-loss-analysis
+                         #   (02-C7). Read-only; no write, no send path.
+  - memory.recall        # deliberate long-term memory recall (Memory MCP, ADR-0116;
+                         #   read-only) — the same two synthesis/assembly workflows.
 
 # The sales data scope — the rooms a sales worker may read.
 okf_rooms:

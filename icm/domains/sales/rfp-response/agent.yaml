@@ -1,0 +1,14 @@
+name: rfp-response
+model: claude-sonnet-4-5
+system_compose:
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [opportunity, account, contact]
+tools: [pg.read, knowledge.search, memory.recall, send.email]
+skills:
+  - domains/sales/skills/voice-and-tone
+  - ./skills/rfp-rules
+autonomy_rung: L1
+auto_may_self_approve: "Assembly/drafting (ground + assemble, stages 01-02) is internal + reversible (L1/L2) and may proceed; the bid SUBMISSION and any pricing/term commitment is a binding client-facing commitment = dial-proof always-gate and parks for a human at every rung (ADR-0128, BO-02 §5). A security/compliance claim with no Grace-supplied evidence (#1557) is refused, never fabricated (CS-07 §5). Substrate dormant (#389 recall, #991 Grace seam) -> propose-only."

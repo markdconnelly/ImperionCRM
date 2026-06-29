@@ -27,9 +27,18 @@ between stages — never files.
   floor**: justify the number from value delivered, never manufacture urgency, and flag
   any large swing for a human rather than burying it. Pricing intent is grounded in the
   margin input, never freelanced.
-- **04 review-send** — the checkpoint. A human approves or edits; the customer-facing
-  send exits only through the ADR-0058 path. The priced proposal / send-for-signature is
-  a commitment — **always-gated, dial-proof** — so it parks every time.
+- **04 review-send** — the SEND GATE (02-A8). A human authorizes or edits; the
+  customer-facing send-for-signature exits only through the ADR-0058 path. The priced
+  proposal / send-for-signature is a commitment with no clean undo — **always-gated,
+  dial-proof** — so it parks every time, at every rung.
+- **05 sign-and-backsync** — the post-signature tail (02-A8). It runs ONLY after the
+  human-authorized signature returns: update the agreement, **read the Autotask record
+  back before stamping** (A9c), and `opportunity.write` the terminal outcome —
+  `renewed | repriced`. If the renewal is declined or lapses → `churned`, and emit the
+  relationship **Handoff to Celeste** (the A11 seam → Stream 08, feeding churn scoring).
+  This mirror is internal, reversible, and **idempotency-keyed** (renewal + period) so a
+  replay is a no-op (A9b). The e-sign dispatch and Autotask write-back are dormant
+  substrate (A5c) — propose-only until they land.
 
 ## What `auto` may self-approve
 
