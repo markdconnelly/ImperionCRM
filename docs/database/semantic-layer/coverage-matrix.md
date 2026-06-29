@@ -69,6 +69,8 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [esign_envelope](tables/esign_envelope.md) | Sales | B (DocuSign SoR) | pii | ✅ | e-signature (sale→delivery, DocuSign-gated) |
 | [assessment](tables/assessment.md) | Sales | B | pii | ✅ | assessment delivery |
 | [assessment_artifact](tables/assessment_artifact.md) | Sales | B | pii | ✅ | assessment evidence |
+| [partner](tables/partner.md) | Sales | B | op | ✅ | partner-deal-routing (Bridget, L1 read+propose); Stream-02 channel procedures (02-D, manage channel/tier/conflict). SELL-side twin of buy-side procurement (#1623/#1624) |
+| [partner_deal](tables/partner_deal.md) | Sales | B | op | ✅ | partner-deal-routing (Bridget) — co-sell/referral registration + attribution (the Bridget→Chase seam); channel-conflict adjudication (02-D) |
 
 ## Delivery / PM
 
