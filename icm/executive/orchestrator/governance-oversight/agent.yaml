@@ -1,0 +1,12 @@
+name: governance-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> orchestrator room -> Nova persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../nova.md
+  - ./prose.md
+okf_rooms: [account, contact, entity_xref]   # subset of executive/orchestrator/room.yaml; the identity spine only — this tracer grounds on no client silver, it reads the agent-ops ledger via pg.read (not OKF rooms)
+tools: [pg.read, knowledge.search, memory.recall]   # subset of the delegate-only exec budget; this tracer reads the dial/ledger + synthesizes + parks — no delegate/handoff/actuation
+skills: []
+autonomy_rung: L1                     # propose — the oversight brief parks for Mark; the exec ceiling is L2 delegate-only (CONSTITUTION §9). Nova observes the dial, she never sets it.
+auto_may_self_approve: "publish the scheduled governance oversight brief ONLY when every flag is grounded in the agent-ops ledger and cited; it NEVER flips an autonomy dial, engages or releases a kill-switch, or changes any policy — those are human acts (ADR-0128). Any anomaly, gap, or recall miss parks for Mark, and anything beyond publishing the read-only brief parks by default."

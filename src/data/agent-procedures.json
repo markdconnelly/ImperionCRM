@@ -7,6 +7,796 @@
       "kind": "orchestrator",
       "procedures": [
         {
+          "slug": "context-memory-mgmt",
+          "title": "context-memory-mgmt (Orchestrator / Nova, the cross-turn grounding contract)",
+          "job": "for an active conversation/thread, assemble the grounded working context Nova reasons over — recall the thread's prior turns and any deliberate memory, drill from gold summaries to their verbatim bronze source by reference (ADR-0113), cite everything, and mark recall misses as \"no data\" (never fill the gap). Then curate: **propose** what from this thread is worth persisting to long-term memory for future turns. Nova recalls but does not write memory — the capture is a proposal that parks.",
+          "trigger": "invoked when a conversation needs grounding (turn start / context refresh) or at conversation close for the curation pass. Per thread, not on a fixed schedule.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "assemble and publish the grounded working context for the current turn when every item carries a source reference and every gap is marked 'no data / no recall'. It NEVER writes long-term memory (no store tool) — persistence is always a parked proposal for the human/Memory-MCP path. A recall miss, an uncited item, or any actuation parks; no fabrication on empty.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "entity_xref"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-recall",
+              "name": "recall",
+              "job": "pull the thread's prior turns, any deliberate memory, and the relevant gold summaries into one cited recall record, each item carrying a source reference (and the drill reference to its verbatim bronze source).",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Identify the thread in scope (thread id + current turn). Read-only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall the thread's prior turns and any deliberate captures via the retrieval tier; attach each item with its source reference. A miss is recorded as \"no recall,\" never filled with a guess."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Pull the relevant gold summaries; for **each** summary keep its drill reference to the verbatim bronze source (`agent_message` for transcripts, `memory_drawer` for deliberate captures) so faithful recall can resolve it later (ADR-0113). Do not copy verbatim bronze text into the record — keep the reference."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve named/implied entities via `entity_xref` → attach `account`/ `contact` id + name only. Read-only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The active thread",
+                    "the conversation/thread in scope",
+                    "thread id + current turn",
+                    "what to ground"
+                  ],
+                  [
+                    "Thread transcript",
+                    "bronze `agent_message` (drill target, ADR-0113)",
+                    "this thread's prior turns",
+                    "the verbatim turns a gold summary drills to"
+                  ],
+                  [
+                    "Deliberate captures",
+                    "bronze `memory_drawer` (drill target, ADR-0113)",
+                    "captures relevant to the thread",
+                    "human notes + deliberate memories the agent may recall"
+                  ],
+                  [
+                    "Gold summaries",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "conversation/knowledge summaries for the thread",
+                    "the reasoning substrate; each keeps its bronze drill ref"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "entities named in the thread",
+                    "resolve the real subjects across systems"
+                  ],
+                  [
+                    "Accounts",
+                    "silver `account` · `okf:account`",
+                    "accounts named/implied",
+                    "who the thread concerns"
+                  ],
+                  [
+                    "Contacts",
+                    "silver `contact` · `okf:contact`",
+                    "people named/implied",
+                    "who the thread concerns"
+                  ]
+                ]
+              },
+              "outputs": "`recall.md` — the thread's recalled prior turns, deliberate captures, and gold summaries (each with its source reference + bronze drill ref), the resolved entity ids in scope, and an explicit \"no recall\" for any miss.",
+              "audit": [
+                "Every recalled item carries a source reference; a miss is recorded as \"no recall,\" not a guess",
+                "Every gold summary keeps a drill reference to its verbatim bronze source (ADR-0113); no verbatim text copied in",
+                "Every entity reference states its id; none invented",
+                "Read-only — nothing actuated, no memory written (recall only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-ground",
+              "name": "ground",
+              "job": "assemble the recalled items into one grounded working context for the current turn — the cited picture Nova reasons over — flagging every gap explicitly as \"no data / no recall.\"",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Assemble the working context: place the thread's prior turns, the deliberate memory, and the gold summaries in order into one coherent picture for the current turn. The gold summary is the reasoning substrate; its bronze drill reference travels with it for faithful recall (ADR-0113)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Carry every item's source reference into the assembled context so the current turn can drill to source. No item appears uncited."
+                },
+                {
+                  "tag": "script",
+                  "text": "Flag every gap explicitly as \"no data / no recall\" — a section with no recall is named as empty, never filled. No fabrication on empty (CONSTITUTION §8)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Recall record",
+                    "stage 01 `recall.md`",
+                    "all",
+                    "the cited prior turns, deliberate captures, gold summaries + their bronze drill refs"
+                  ]
+                ]
+              },
+              "outputs": "`context.md` — the grounded working context for the current turn: the cited prior turns, deliberate memory, and gold summaries (each with its source + bronze drill ref), with every gap marked \"no data / no recall.\"",
+              "audit": [
+                "Every item in the assembled context carries a source reference; none uncited",
+                "Every gap is marked \"no data / no recall\"; nothing fabricated on empty (CONSTITUTION §8)",
+                "Gold summaries retain their bronze drill reference (ADR-0113); no verbatim text inlined as the substrate",
+                "Read-only — nothing actuated, no memory written"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-curate",
+              "name": "curate",
+              "job": "propose the durable facts/decisions from this thread worth persisting for future turns — each as a parked deliberate-capture proposal with its source — then park. Nova does not write memory.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Identify the durable facts and decisions from this thread that are worth carrying into future turns — the lasting outcomes, not the turn-by-turn noise. Skip anything already in long-term memory (a recalled deliberate capture)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft each as a proposed deliberate capture: the fact/decision in Nova's voice, with the source reference it grounds on carried through. Anything that cannot be grounded is not proposed — no fabricated captures."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the proposals. Nova does **not** write long-term memory — there is no store tool (ADR-0116); the captures route to the human / Memory-MCP path. No send, no delegate, no write, no actuation."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Working context",
+                    "stage 02 `context.md`",
+                    "all",
+                    "the grounded, cited picture to curate from"
+                  ]
+                ]
+              },
+              "outputs": "`curation.md` — the list of proposed deliberate captures (durable facts/decisions), each with its source reference, parked for the human / Memory-MCP path. The run ends here at the checkpoint; nothing is written or actuated.",
+              "audit": [
+                "Each proposed capture carries a source reference; none fabricated or uncited",
+                "No long-term memory written — the proposals park for the human / Memory-MCP path (no store tool, ADR-0116)",
+                "No send, delegate, write, or money move occurred — the run parked",
+                "Any ungroundable item dropped, not invented (CONSTITUTION §8)"
+              ],
+              "checkpoint": "The persistence proposals park for the **human / Memory-MCP path** — Nova never writes long-term memory (no store tool, ADR-0116). `auto` may self-approve ONLY the upstream assemble-and-publish of the grounded context (stage 02) when every item is cited and every gap marked \"no data\"; the curation captures **always** park as proposals. An uncited or ungroundable item, a recall miss, or any attempt to write or actuate parks — a miss is \"I don't know,\" not a guess (CONSTITUTION §8)."
+            }
+          ]
+        },
+        {
+          "slug": "cross-division-conflict-route",
+          "title": "cross-division-conflict-route (Orchestrator / Nova, the owner-conflict arbiter)",
+          "job": "take a request that `intake-route` flagged as a cross-division conflict — ambiguous ownership, or genuinely spanning ≥2 divisions — arbitrate the **single** owning division/agent using documented ownership rules plus the most-restrictive authority bar, and route it: `delegate` to the one owner when the rules yield a clear winner, or **park** the decision to the owning human's queue when the call is genuinely theirs. Nova arbitrates and routes; she **never actuates** — every real effect happens inside the owning sub-agent under its own gauntlet. This is the conflict-handling sibling of `intake-route` and implements the #968 owner-conflict decision.",
+          "trigger": "a conflict raised by `intake-route` stage 02 (a flagged ambiguous/spanning request), or any escalation where ≥2 divisions could own a unit of work. Runs per conflict, not on a schedule.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "route to a single owner ONLY when the ownership rules yield an unambiguous winner within the asking human's authority and inside one client/owner RLS scope (pool-never-bleed). A genuinely contested ownership, an over-authority request, or any always-gated effect parks for the owning human. Nova never actuates and never bypasses the owner's gauntlet.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "entity_xref"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-intake-conflict",
+              "name": "intake-conflict",
+              "job": "turn the conflict flagged by `intake-route` into one grounded conflict record — the request, the candidate owners, the resolved entities, the recalled precedent, the asking human's authority, and one line on *why* it is a conflict.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Carry across the conflict from `intake-route`: the verbatim ask, the asking human, and the candidate owners/divisions it flagged. Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve named/implied entities via `entity_xref` → attach `account`/ `contact` id + name only. Read-only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall the thread and any prior ownership precedent (has a like request been arbitrated before?) via the retrieval tier; attach each item with its source reference. A miss is recorded as \"no recall,\" never filled with a guess."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the asking human and their authority scope (used by stage 02 for the most-restrictive bar)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "State in one line *why* this is a conflict — which divisions each look to own it, and on what basis — so stage 02 arbitrates against an explicit framing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The conflict",
+                    "the `intake-route` stage 02 conflict flag",
+                    "the verbatim ask + who is asking + the candidate owners/divisions it named",
+                    "what to arbitrate, and the two-plus divisions in play"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "entities named in the ask",
+                    "resolve the real subjects across systems"
+                  ],
+                  [
+                    "Accounts",
+                    "silver `account` · `okf:account`",
+                    "accounts named/implied",
+                    "who the request is about"
+                  ],
+                  [
+                    "Contacts",
+                    "silver `contact` · `okf:contact`",
+                    "people named/implied",
+                    "who the request is about"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this thread's history + any prior ownership precedent",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`conflict.md` — the verbatim ask, the candidate owners/divisions, the resolved entity ids in scope, the cited recall/precedent (or an explicit \"no recall\"), the asking human + their authority, and the one-line statement of why it is a conflict.",
+              "audit": [
+                "The candidate owners/divisions from intake-route are carried across (≥2)",
+                "Every entity reference states its id; none invented",
+                "Every recall/precedent item carries a source reference; a miss is recorded as \"no recall,\" not a guess",
+                "The asking human and their authority scope are recorded",
+                "The one-line reason it is a conflict is stated explicitly",
+                "Read-only — nothing actuated, nothing written outside the run record"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-arbitrate",
+              "name": "arbitrate",
+              "job": "apply the ownership rules to the grounded conflict to select exactly one owning division/agent — or mark it park-for-human when the ownership call is genuinely the human's — then apply the most-restrictive authority bar.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Apply the ownership rules in order to pick the **one** owner: (a) **SoR-write-wins** — the division whose system-of-record the request primarily writes owns it; (b) failing a single SoR, **primary-effect-wins** — the division that bears the request's primary effect owns it; (c) **security/risk defers** — a request carrying a security or risk concern goes to Roman (Security) or Jessica (Risk/Assurance) regardless of the surface division. Name the owning division, or the specific worker when it is unambiguous."
+                },
+                {
+                  "tag": "script",
+                  "text": "Apply the **most-restrictive authority bar**: if the request exceeds the asking human's authority, mark it park-for-the-owning-human, not auto-route."
+                },
+                {
+                  "tag": "script",
+                  "text": "Enforce **pool-never-bleed**: the arbitration and the eventual route stay inside one client/owner's RLS scope; cross-correlation is internal only — no other client's or owner's data may surface (two-axis RLS)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "If the rules do **not** yield a clear winner — ownership is genuinely contested, or the decision exceeds your authority — mark it **park-for-human** (the #968 path: the contested ownership call is the human's, not a guess). Name exactly one owner OR park; never best-guess an owner."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Conflict record",
+                    "stage 01 `conflict.md`",
+                    "all",
+                    "the grounded ask, candidate owners, entities, authority, why-conflict line"
+                  ],
+                  [
+                    "Org tree",
+                    "`../../../org.yaml` (read as routing reference)",
+                    "divisions + their domains + systems-of-record",
+                    "who owns what; which division's SoR a request writes"
+                  ]
+                ]
+              },
+              "outputs": "`arbitration.md` — the chosen single owner (division or worker) **or** a park-for-human flag, the rule that decided it (SoR-write / primary-effect / security-risk-defer), the authority decision (route vs park), the pool/RLS scope the delegation must stay within, and the rationale to surface in stage 03.",
+              "audit": [
+                "Exactly one owner is chosen, OR an explicit park is marked — never a guessed owner",
+                "The deciding rule is named (SoR-write / primary-effect / security-risk-defer)",
+                "Most-restrictive authority bar applied; over-authority requests marked park",
+                "Pool-never-bleed held — route stays inside one client/owner RLS scope; scope stated",
+                "Rationale cites the ownership rules + org tree, not invented capability"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-route",
+              "name": "route",
+              "job": "act on the arbitration — `delegate` the unit to the one owner stage 02 chose (carrying every constraint), or park the decision to the owning human's single queue — and surface the arbitration rationale. Nova routes; she does not actuate. The route/park is the checkpoint.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "If stage 02 marked park-for-human (contested ownership / over-authority / always-gated), do **not** delegate — route the **decision** to the owning human's single queue (whoever owns the contested call, not automatically Derek), with the arbitration rationale attached."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Otherwise compose the delegation: the intent plus every constraint (consent, budget, deadline, the asking human's authority), the pool/RLS scope, and the arbitration rationale (which rule named this owner), so the owner inherits the full picture and sees why the conflict resolved to it."
+                },
+                {
+                  "tag": "script",
+                  "text": "`delegate` the unit to **exactly one** owner (never fan one unit to several). Use `handoff` instead when an in-flight thread transfers wholesale."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the delegation/handoff or the park, and surface the rationale. Nova actuates nothing — the owner acts under its own gauntlet; a parked decision waits on the human."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Arbitration",
+                    "stage 02 `arbitration.md`",
+                    "the single owner OR the park flag + deciding rule + pool/RLS scope + authority decision",
+                    "who to hand to (or park to) and within what bounds"
+                  ],
+                  [
+                    "Conflict record",
+                    "stage 01 `conflict.md`",
+                    "intent + constraints + asking human",
+                    "what to carry so the owner re-derives nothing"
+                  ]
+                ]
+              },
+              "outputs": "`route.md` — the owner delegated to (with the carried constraints + rationale) **or** the decision parked to the owning human's queue (with the rationale), and the owner's returned result reference where one comes back. The run ends here at the checkpoint; Nova actuates nothing.",
+              "audit": [
+                "Exactly one owner delegated to, OR an explicit park to the owning human — never a guessed owner, never multiple owners for one unit",
+                "Every constraint from intake was carried (consent/budget/deadline/authority) and the arbitration rationale surfaced",
+                "A parked decision went to the OWNING human's queue (not defaulted to Derek)",
+                "Most-restrictive authority bar respected; pool-never-bleed held (two-axis RLS) — no other client's/owner's data surfaced",
+                "Nova actuated nothing — only `delegate`/`handoff` or a park (no send, write, or money move); the owner's gauntlet was not bypassed or lowered (ADR-0128)"
+              ],
+              "checkpoint": "**Yes.** A human approves the route/park. In `auto`, this workflow may self-approve ONLY a `delegate` to a single owner when stage 02 found an **unambiguous winner**, the request is within the asking human's authority, and it stays inside one client/owner's RLS scope (pool-never-bleed). A genuinely contested ownership, an over-authority request, or any always-gated effect parks for the owning human. Auto never lowers the owner's gauntlet (ADR-0128) and never actuates; anything unstated parks by default."
+            }
+          ]
+        },
+        {
+          "slug": "daily-exec-brief",
+          "title": "daily-exec-brief (Orchestrator / Nova, the apex synthesis)",
+          "job": "every working day, after the five C-suite division briefs run, roll all five up into ONE company-wide picture for Derek (CEO) — the apex synthesis above the division briefs. Leads with the decisions-needed and the cross-division flags, routing each decision to its owning human (not defaulted to Derek). Drafted here, **never actuated.**",
+          "trigger": "scheduled (start of the working day, after the five division briefs run: Rachel `daily-brief`, Dexter `delivery-pulse`, Roman `security-posture-brief`, Sterling `financial-pulse`, Jessica `risk-assurance-sweep`). One run per day.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "publish the scheduled daily exec brief ONLY when every section is grounded and cited; any flag, gap, or recall miss parks for Derek. Nova never actuates and never bypasses a sub-agent's gauntlet.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "entity_xref"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "pull the five latest C-suite division briefs plus the accounts/contacts they reference, recall prior exec-brief context, and assemble one grounded gather record — no ranking.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fetch the five latest division pulse/brief outputs for today's cycle — one per division. Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "If any of the five is missing or stale (not from today's cycle), record it as a gap; do not substitute or back-fill. A short division is named, never guessed."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve the accounts/contacts each brief references via `entity_xref` → attach `account`/`contact` id + name only. Read-only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall the prior day's exec brief and related context via the retrieval tier; attach each item with its source reference. A miss is recorded as \"no recall,\" never filled with a guess."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Division briefs",
+                    "the five latest pulse/brief run outputs (Rachel `daily-brief`, Dexter `delivery-pulse`, Roman `security-posture-brief`, Sterling `financial-pulse`, Jessica `risk-assurance-sweep`)",
+                    "today's cycle, one per division",
+                    "the five division pictures this rolls up"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "entities named in the five briefs",
+                    "attribute each flag to the right subject across systems"
+                  ],
+                  [
+                    "Accounts",
+                    "silver `account` · `okf:account`",
+                    "accounts named/implied in the briefs",
+                    "who the flags are about"
+                  ],
+                  [
+                    "Contacts",
+                    "silver `contact` · `okf:contact`",
+                    "people named/implied in the briefs",
+                    "who the flags are about"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "the prior day's exec brief + related context",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — the five division briefs (or named gaps), the resolved account/contact ids in scope, and the cited recall items (or an explicit \"no recall\"). No ranking.",
+              "audit": [
+                "All five division briefs collected, or each missing/stale one recorded as a gap (none substituted or guessed)",
+                "Every entity reference states its id; none invented",
+                "Every recall item carries a source reference; a miss is recorded as \"no recall,\" not a guess",
+                "Read-only — nothing actuated, nothing written outside the run record",
+                "No ranking or synthesis performed at this stage — that is stage 02"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "cluster the five division briefs into one company-wide picture, rank by company-level materiality, and isolate the cross-division flags and the decisions-needed (each routed to its owning human).",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Cluster across the five divisions into one picture — group related signals by theme regardless of which division surfaced them; collapse the same issue reported by two divisions into one cross-division item."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by **company-level** materiality — Derek's altitude, not each division's local ranking. What matters to one division may be noise to the company, and vice versa."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the cross-division flags: a signal that spans two or more divisions and therefore lands nowhere below Nova (e.g. a finance flag tied to a delivery risk). These are the items that exist only at this tier."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Build the decisions-needed list. For each decision, name the **owning human** (whoever owns that division/decision), never defaulting to Derek because he reads the brief. A decision with no clear owner is itself a flag to surface, not a guess to assign."
+                },
+                {
+                  "tag": "script",
+                  "text": "Enforce pool-never-bleed across the combined picture: cross-correlate internally, but no client's or owner's data may surface to another (two-axis RLS). This is the stage where five divisions' data meet, so the check runs here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the five briefs + resolved entities + cited recall"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — the clustered, company-materiality-ranked picture, the cross-division flags, and the decisions-needed list with each decision's owning human named.",
+              "audit": [
+                "Signals clustered across divisions; duplicates from two divisions collapsed into one cross-division item",
+                "Ranked by company-level materiality, not a passthrough of each division's local ranking",
+                "Cross-division flags isolated (each spans ≥2 divisions); within-division items left to their division brief",
+                "Each decision-needed names its owning human; none defaulted to Derek; an ownerless decision is surfaced as a flag, not assigned by guess",
+                "Pool-never-bleed held across the combined five-division picture — no other client's or owner's data surfaced (two-axis RLS)",
+                "Read-only — nothing actuated, nothing written outside the run record"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Derek's one-page exec brief plus the decisions-needed list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the one-page exec brief in Nova's voice, leading with the decisions-needed and the cross-division flags — the apex picture, not a stack of the five division briefs reprinted. Carry each item's citation through so Derek can drill to the source brief."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the decisions-needed list as the brief's action surface — each item the exposure, the decision it implies, and the **owning human** it is routed to (not defaulted to Derek)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Carry any gap from stage 01 (a missing or stale division brief) into the brief as a stated gap, never silently dropped. Any section that could not be grounded is stated as \"no data,\" never filled in."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Derek. No send, no delegate, no write — every real effect already happened (or parked) one tier down under each division agent's gauntlet."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the clustered, company-ranked picture + cross-division flags + decisions-needed"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Derek's one-page exec brief + the decisions-needed list (each routed to its owning human). The run ends here at the checkpoint; nothing is actuated.",
+              "audit": [
+                "Brief leads with decisions-needed and cross-division flags, not a reprint of the five division briefs",
+                "Citations carried through to each source division brief; any ungrounded section stated as \"no data,\" not invented",
+                "Decisions-needed list present; each item states the exposure, the implied decision, and the owning human (none defaulted to Derek)",
+                "Any stage-01 gap (missing/stale division brief) carried into the brief, not silently dropped",
+                "Pool-never-bleed held — no other client's or owner's data surfaced (two-axis RLS)",
+                "No send, delegate, or write occurred — the run parked"
+              ],
+              "checkpoint": "The brief parks for **Derek**. `auto` may self-approve ONLY publishing the scheduled daily exec brief when every section is grounded and cited; any flag, gap, or recall miss parks for Derek (CONSTITUTION §8). No actuation exists at this tier — Nova synthesizes, sub-agents act one tier down under their own gauntlets, and a roll-up never re-opens or bypasses a sub-agent's gauntlet."
+            }
+          ]
+        },
+        {
+          "slug": "governance-oversight",
+          "title": "governance-oversight (Orchestrator / Nova, the autonomy-posture watch)",
+          "job": "on a schedule, scan the autonomy posture of the whole agent org and surface what needs a human's attention — agents whose `auto` dial sits high relative to their risk, items aging in the pending-approval (gate) queues, kill-switch state, and anomalies in the agent-run ledger — into one governance oversight brief for Mark (CISO / governance owner). Nova **reads and surfaces only**: she proposes nothing be auto-changed and flips no dial.",
+          "trigger": "scheduled (start of day / weekly governance cadence). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "publish the scheduled governance oversight brief ONLY when every flag is grounded in the agent-ops ledger and cited; it NEVER flips an autonomy dial, engages or releases a kill-switch, or changes any policy — those are human acts (ADR-0128). Any anomaly, gap, or recall miss parks for Mark, and anything beyond publishing the read-only brief parks by default.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "entity_xref"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-scan",
+              "name": "scan",
+              "job": "assemble the cycle's autonomy-posture reads — dial state, the gate backlog with ages, kill-switch state, and recent run health — plus the prior cycle's recall into one un-ranked scan record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read each workflow's current autonomy rung + draft/auto mode from the dial state. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the pending-approval (gate) backlog and compute each item's age (cadence/date math). Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the kill-switch state across agent / division / platform scope — record engaged, partial, or clear. Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read recent `agent_run` health — error counts and stuck/long-running runs for the cycle. Read-only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall the prior cycle's oversight brief and related context via the retrieval tier; attach each item with its source reference. A miss is recorded as \"no recall,\" never filled with a guess."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Dial / autopilot state",
+                    "agent-ops ledger (`autopilot_policies` dial state) via `pg.read`",
+                    "every workflow's current rung + draft/auto mode",
+                    "where each agent's `auto` dial sits"
+                  ],
+                  [
+                    "Pending-approval (gate) backlog",
+                    "agent-ops gate queue via `pg.read`",
+                    "open gated items + each item's age",
+                    "the human-approval queue and its aging"
+                  ],
+                  [
+                    "Kill-switch state",
+                    "agent-ops ledger (kill-switch table) via `pg.read`",
+                    "agent / division / platform scope",
+                    "whether autonomy is revoked anywhere (engaged/partial/clear)"
+                  ],
+                  [
+                    "Agent-run health",
+                    "agent-ops ledger (`agent_run`) via `pg.read`",
+                    "recent cycle — error/stuck counts",
+                    "run-ledger anomalies (error spikes, stuck runs)"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "the prior cycle's oversight brief + related context",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`scan.md` — a flat, un-ranked record of the dial state per workflow, the gate backlog with ages, the kill-switch state per scope, the run-ledger health counts, and cited recall items (or an explicit \"no recall\"). No ranking, no assessment.",
+              "audit": [
+                "Dial state, gate backlog (with ages), kill-switch state, and run-ledger health all read; any unreadable source recorded as a gap, never guessed",
+                "Every recall item carries a source reference; a miss is recorded as \"no recall,\" not a guess",
+                "Read-only — no dial flipped, no kill-switch toggled, nothing actuated, nothing written outside the run record",
+                "Internal posture only — no client account/contact/ticket or other client data pulled (agent-ops ledger, not OKF silver)",
+                "No ranking or assessment performed at this stage — that is stage 02"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-assess",
+              "name": "assess",
+              "job": "turn the scan record into an exposure-ranked set of governance flags, each grounded in the ledger.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Flag the high-dial risks — an `auto` dial sitting high relative to the agent's risk (a high-impact or always-gate-heavy agent running hot). Name the agent/workflow and its rung."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Flag the aging gates — pending-approval items past the staleness threshold; name the queue and the oldest item's age."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Flag the kill-switch state — any scope engaged or partial; name the scope and what it currently revokes."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Flag the run-ledger anomalies — error spikes and stuck runs; name the agent/workflow and the count."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank all flags by exposure — the posture that most needs a human's hand leads. Every flag must trace to a ledger read from stage 01; drop anything not grounded there."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Scan record",
+                    "stage 01 `scan.md`",
+                    "all",
+                    "the raw posture material"
+                  ]
+                ]
+              },
+              "outputs": "`assessment.md` — an exposure-ranked flag list (highest exposure leading), each item naming the agent/workflow or scope, the concrete posture, and the exposure.",
+              "audit": [
+                "Flags are exposure-ranked, highest exposure leading",
+                "Every flag is grounded in a stage-01 ledger read and cited; nothing inferred beyond the ledger",
+                "Each flag names the agent/workflow or scope and states the concrete exposure",
+                "Read-only — no dial flipped, no kill-switch toggled, nothing actuated",
+                "Internal posture only — no client data introduced"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-surface",
+              "name": "surface",
+              "job": "produce Mark's governance oversight brief from the ranked flags, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with the highest-exposure governance flags (a hot dial, an aging gate queue, an engaged kill-switch, a run anomaly), then the rest of the posture."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render each flag as the brief's action surface — the posture, the exposure, and the **human decision it implies** (e.g. \"consider dialing X back,\" \"drain the aging gate queue,\" \"review the engaged kill-switch\"). The brief recommends a human act; it performs none."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Mark. No send, no delegate, no write, and no dial touched. Nova flips no dial, engages/releases no kill-switch, changes no policy — surfacing is the checkpoint."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Assessment",
+                    "stage 02 `assessment.md`",
+                    "all",
+                    "the exposure-ranked flags"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Mark's governance oversight brief + the ranked flag list, each item stating the posture, the exposure, and the implied human decision. The run ends here at the checkpoint; nothing is actuated.",
+              "audit": [
+                "Brief leads with the highest-exposure flags, not a tally of healthy agents",
+                "Every flag grounded in the ledger and cited; each states the exposure and the implied human decision",
+                "Read-only — no dial flipped, no kill-switch toggled, no policy changed, nothing actuated",
+                "Internal posture only — no client data surfaced",
+                "No send, delegate, or write occurred — the run parked"
+              ],
+              "checkpoint": "The brief parks for **Mark** (CISO / governance owner). `auto` may self-approve ONLY publishing the scheduled oversight brief when every flag is grounded in the agent-ops ledger and cited; any anomaly, gap, or recall miss parks for Mark (CONSTITUTION §8). Flipping an autonomy dial, engaging or releasing a kill-switch, and changing a policy are human acts (ADR-0128) — Nova observes the dial, she never sets it; she surfaces, Mark decides."
+            }
+          ]
+        },
+        {
           "slug": "intake-route",
           "title": "intake-route (Orchestrator / Nova, the single front door)",
           "job": "take any human request or inbound event, ground it, classify the intent, and `delegate` it to exactly the one agent who owns it — then synthesize the result into one clear answer and return it to the asking human. Nova routes and synthesizes; she **never actuates** — every real effect happens inside the sub-agent under its own gauntlet.",

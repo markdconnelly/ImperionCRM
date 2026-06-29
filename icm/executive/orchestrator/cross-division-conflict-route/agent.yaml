@@ -1,0 +1,12 @@
+name: cross-division-conflict-route
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> orchestrator room -> Nova persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../nova.md
+  - ./prose.md
+okf_rooms: [account, contact, entity_xref]   # subset of executive/orchestrator/room.yaml; the identity spine Nova reads to arbitrate ownership across systems
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # the full delegate-only exec budget; this workflow arbitrates then delegates/parks, so it uses delegate/handoff
+skills: []
+autonomy_rung: L2                     # delegate — Nova arbitrates a conflict and hands the single owner the work; the exec ceiling is L2 delegate-only (CONSTITUTION §9). She never actuates.
+auto_may_self_approve: "route to a single owner ONLY when the ownership rules yield an unambiguous winner within the asking human's authority and inside one client/owner RLS scope (pool-never-bleed). A genuinely contested ownership, an over-authority request, or any always-gated effect parks for the owning human. Nova never actuates and never bypasses the owner's gauntlet."
