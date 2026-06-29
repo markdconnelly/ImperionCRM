@@ -1840,5 +1840,22 @@
     "file": "ADR-0135-persona-schema-and-three-matrix-org.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0136",
+    "title": "Workflow Doctrine — cross-cutting rules + archetype step-templates for all Operating Procedures",
+    "status": "accepted",
+    "date": "2026-06-29",
+    "tags": [
+      "agents",
+      "workflows",
+      "autonomy",
+      "doctrine",
+      "catalog"
+    ],
+    "summary": "The normative doctrine that governs ALL Operating Procedures (ADR-0133) across all 26 agents — inherited, not re-decided per procedure. Eleven cross-cutting rules (universal always_gate set, L0 ship-dial, easy-button bar, evidence floor, computed notification, pool-never-bleed, one uniform dual-audience document, idempotent actuation, reversibility→derived-ceiling, obligation/action separation, value-stream spine) plus nine archetype step-templates every procedure instantiates. Extends ADR-0128/0109/0118; builds on ADR-0133/0134.",
+    "file": "ADR-0136-workflow-doctrine.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
