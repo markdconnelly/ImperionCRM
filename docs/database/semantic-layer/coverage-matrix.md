@@ -71,6 +71,8 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [assessment_artifact](tables/assessment_artifact.md) | Sales | B | pii | ✅ | assessment evidence |
 | [partner](tables/partner.md) | Sales | B | op | ✅ | partner-deal-routing (Bridget, L1 read+propose); Stream-02 channel procedures (02-D, manage channel/tier/conflict). SELL-side twin of buy-side procurement (#1623/#1624) |
 | [partner_deal](tables/partner_deal.md) | Sales | B | op | ✅ | partner-deal-routing (Bridget) — co-sell/referral registration + attribution (the Bridget→Chase seam); channel-conflict adjudication (02-D) |
+| [partner_mdf](tables/partner_mdf.md) | Sales | B | fin | ✅ | Bridget MDF procedure (02-D) — request→approve→spend→ROI; money always-gate (#1657) |
+| [referral_payout](tables/referral_payout.md) | Sales | B | fin | ✅ | Bridget referral-partner program (02-D2) — payout pending→approved→paid; money always-gate (#1657) |
 
 ## Delivery / PM
 
