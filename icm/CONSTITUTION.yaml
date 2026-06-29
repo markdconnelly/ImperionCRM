@@ -101,3 +101,9 @@ okf_rooms:
                        #   procurement). Bridget reads (read)
   - partner_deal       # Partnerships workspace (#1623/#1624) — co-sell/referral
                        #   registration + attribution (the Bridget→Chase seam) (read)
+  - partner_mdf        # Partnerships workspace (#1657) — market-development-fund
+                       #   request→spend→ROI; money always-gate at the sub-agent.
+                       #   Deputy-CFO reads for partner-economics oversight (read)
+  - referral_payout    # Partnerships workspace (#1657) — referral-partner payout
+                       #   pending→approved→paid; money always-gate at the sub-agent.
+                       #   Deputy-CFO reads for partner-economics oversight (read)

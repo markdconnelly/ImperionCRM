@@ -572,6 +572,247 @@
       "kind": "executive",
       "procedures": [
         {
+          "slug": "ar-cash-oversight",
+          "title": "ar-cash-oversight (Deputy CFO / Revenue & Finance, executive)",
+          "job": "on a schedule, synthesize AR aging + cash position into a collections / cash brief for Nick, leading with the aged and at-risk receivables and the cash exposure — and where overdue AR is grounded, delegate the dunning to Audrey. Sterling never sends a reminder and never moves money.",
+          "trigger": "scheduled (start of the working day / week). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled AR/cash oversight when every figure is grounded and cited, and delegate flagged overdue dunning to Audrey; Sterling never sends a reminder and never moves money — any gap parks for Nick (finance read-only, QBO is SoR)",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "invoice",
+            "generated_invoice",
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's AR / cash reads, the Finance run-ledger and handoff signals, and the accounts in scope into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the AR reads — open + aging invoices and generated invoices in flight — into a flat list keyed by account. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the Finance run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach any prior Audrey dunning/collections activity by account, id only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve referenced accounts from silver; attach id + name only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's accounts via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Invoices (AR)",
+                    "silver `invoice` · `okf:invoice`",
+                    "open + aging (QBO read-only mirror)",
+                    "AR / aging picture"
+                  ],
+                  [
+                    "Generated invoices",
+                    "silver `generated_invoice` · `okf:generated_invoice`",
+                    "in flight (drafts + sent)",
+                    "app-native billing in flight"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the receivables",
+                    "who the AR is for"
+                  ],
+                  [
+                    "Finance run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Audrey runs",
+                    "what Finance has already acted on"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open Finance signals",
+                    "prior dunning / collections in motion"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's accounts",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of AR / cash signals keyed by account, with the account ids in scope, the prior Finance activity per account, and cited recall items.",
+              "audit": [
+                "Every AR signal names its account id and its invoice/generated-invoice id",
+                "Prior Finance activity is attached by account id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into an aging-bucketed, exposure-ranked roll-up with the flags isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Bucket AR by aging — current / 30 / 60 / 90+ — per account; collapse duplicates across invoices and generated invoices."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Compute the cash exposure: total open AR and the at-risk slice (60+ and 90+), each tied to its accounts."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by overdue and at-risk amount, highest exposure leading; isolate the flags — aged receivables and concentration risk (a single account carrying a disproportionate share) — each with the exposure stated."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Cross-correlate the flags against prior Finance activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — an aging-bucketed, exposure-ranked roll-up (highest exposure leading) and a separate flag list, each item naming the account and the overdue / at-risk amount, and noting any prior Finance activity already in motion.",
+              "audit": [
+                "AR is bucketed by aging (current / 30 / 60 / 90+) per account",
+                "Cash exposure stated, with the at-risk (60+ / 90+) slice broken out",
+                "Roll-up is exposure-ranked, highest overdue/at-risk leading",
+                "Every flag names an account and states the overdue/at-risk amount",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Nick's AR/cash brief plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with the aged and at-risk receivables and the cash exposure, then the rest of the AR roll-up by account."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the account, the overdue/at-risk amount, and the decision it implies for Nick (including which overdue items are candidates to delegate to Audrey for dunning)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Nick. No send, no write. Finance stays read-only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the aging-bucketed, exposure-ranked roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Nick's AR/cash brief + the flag list. The run holds here at the checkpoint; nothing is actuated and no dunning is delegated yet.",
+              "audit": [
+                "Brief leads with aged / at-risk receivables and cash exposure, not a gross booked-revenue number",
+                "Flag list present; each item states the account, the overdue/at-risk amount, and the implied decision",
+                "Overdue dunning candidates are marked but not yet delegated (that is stage 04)",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The brief parks for **Nick**. `auto` may self-approve ONLY publishing the scheduled AR/cash brief when every figure is grounded and cited; any flag with no grounding, any gap, or any recall miss parks for Nick (CONSTITUTION §8). No actuation exists at this tier — Sterling advises, sub-agents act; finance never leaves read-only. The delegate to Audrey is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "optionally emit a proposed `delegate()` to Audrey for grounded overdue dunning and/or a `handoff()` to Nova when cross-division, then park — Sterling never sends and never moves money.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flagged overdue item that is grounded and cited, draft a **proposed** `delegate()` to **Audrey** (Finance): the account id, the overdue invoice ids, and the aged/at-risk amount — the dunning ask, nothing customer-facing composed here."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the exposure is cross-division (e.g. a renewal or delivery dependency outside Finance), draft a `handoff()` to **Nova** instead, naming the division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No send, no write, no money moved — the customer-facing reminder and any cash movement re-gate inside Audrey's own gauntlet (always-gated)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flagged overdue / at-risk items",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Audrey and/or `handoff()` calls to Nova, each citing the account/invoice ids and the exposure. The run ends here at the checkpoint; the receivable action happens inside the sub-agent, not here.",
+              "audit": [
+                "Every delegate names the account id, the overdue invoice ids, and the at-risk amount, all grounded and cited",
+                "No customer-facing reminder text is composed here — only the dunning ask is routed",
+                "Cross-division items are handed off to Nova, not delegated to Finance",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The follow-ups park for **Nick**, and any delegate is a **proposal** to Audrey. `auto` may self-approve ONLY emitting the `delegate()` to Audrey for flagged overdue dunning that is grounded and cited, and the `handoff()` to Nova when cross-division; the customer-facing send and any money movement re-gate inside Audrey's gauntlet (always-gated, CONSTITUTION §9). Sterling never sends a reminder and never moves money — finance read-only, QBO is SoR (ADR-0123); any ungrounded or non-finance item parks for Nick."
+            }
+          ]
+        },
+        {
           "slug": "financial-pulse",
           "title": "financial-pulse (Deputy CFO / Revenue & Finance, executive tracer)",
           "job": "on a schedule, roll up AR/AP, margin, revenue, and pipeline into a financial pulse for Nick, leading with the flags (unprofitable work, at-risk revenue) — drafted here, never actuated.",
@@ -778,6 +1019,791 @@
                 "No send, delegate, or write occurred — the run parked"
               ],
               "checkpoint": "The pulse parks for **Nick**. `auto` may self-approve ONLY publishing the scheduled pulse when every section is grounded and cited; any flag, gap, or recall miss parks for Nick (CONSTITUTION §8). No actuation exists at this tier — Sterling advises, sub-agents act; finance never leaves read-only."
+            }
+          ]
+        },
+        {
+          "slug": "margin-renewal-oversight",
+          "title": "margin-renewal-oversight (Deputy CFO / Revenue & Finance, executive synthesis)",
+          "job": "on a schedule, synthesize **margin** (billable time + expenses vs invoiced revenue) and the **renewal book** (open renewal opportunities + license true-ups, with Celeste's client-health and Chase's pricing signals) into an oversight brief for Nick — leading with **unprofitable work** and **at-risk renewals**, each with its exposure stated. Grounded flags are delegated to the owning sub-agent; finance is read-only and Sterling never actuates.",
+          "trigger": "scheduled (start of the working week / billing cycle). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled margin/renewal oversight when every figure is grounded and cited, and delegate a flagged at-risk renewal to Celeste or a reprice to Chase; any gap parks for Nick — finance read-only, Sterling never actuates",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "time_record",
+            "timesheet",
+            "expense_item",
+            "expense_report",
+            "invoice",
+            "opportunity",
+            "license_assignment",
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's run-ledger and handoff signals, the margin and renewal reads, and the accounts in scope into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the sub-agent run ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read` for Finance / Client Success / Sales activity; attach each as a tagged signal with its source reference. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the margin and renewal reads (time, timesheets, expense items + reports, invoices, opportunities, license assignments) into a flat list keyed by theme (margin / renewal). Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve referenced accounts from silver; attach id + name only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's themes via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sub-agent run ledger",
+                    "`agent_run` · run-ledger (via `pg.read`)",
+                    "Finance / Client Success / Sales runs this cycle",
+                    "what the sub-agents have already done"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` · handoff bus (via `pg.read`)",
+                    "Finance / Client Success / Sales signals this cycle",
+                    "live division activity not yet in silver"
+                  ],
+                  [
+                    "Time records",
+                    "silver `time_record` · `okf:time_record`",
+                    "current period",
+                    "billable / cost basis for margin"
+                  ],
+                  [
+                    "Timesheets",
+                    "silver `timesheet` · `okf:timesheet`",
+                    "current period",
+                    "labor capacity / cost"
+                  ],
+                  [
+                    "Expense items",
+                    "silver `expense_item` · `okf:expense_item`",
+                    "current period",
+                    "cost-to-serve inputs"
+                  ],
+                  [
+                    "Expense reports",
+                    "silver `expense_report` · `okf:expense_report`",
+                    "current period",
+                    "OOP cost rollup"
+                  ],
+                  [
+                    "Invoices",
+                    "silver `invoice` · `okf:invoice`",
+                    "current period (QBO read-only mirror)",
+                    "invoiced revenue for margin"
+                  ],
+                  [
+                    "Opportunities",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "open renewals",
+                    "the renewal book"
+                  ],
+                  [
+                    "License assignments",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "active",
+                    "recurring revenue / true-up"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the activity",
+                    "who the margin/renewal is for"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's themes",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of run-ledger / handoff signals and margin / renewal reads tagged by theme, with the account ids in scope and cited recall items.",
+              "audit": [
+                "Every signal carries a theme tag (margin / renewal) or a ledger / handoff source",
+                "`agent_run` and `relationship.*` are cited as run-ledger / handoff bus, never with an `okf:` marker",
+                "Every account reference states its id",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a leakage-ranked margin roll-up and an exposure-ranked renewal book, with the flags isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Compute margin by account / engagement: invoiced revenue against time + expense cost; collapse duplicates across engagements. Where a figure is an estimate, flag it as such with its basis."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank the margin roll-up by leakage — unprofitable work leading."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Assess the renewal book: open renewal opportunities + license true-ups, read against Celeste's client-health and Chase's pricing signals from the gather record; rank by at-risk exposure."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the flags — **unprofitable work** and **at-risk renewals** — each naming the account / engagement and stating the exposure, and noting the owning sub-agent (Celeste for a renewal save, Chase for a reprice). **Pool-never-bleed:** this cross-correlation is internal only, never client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a leakage-ranked margin roll-up and an exposure-ranked renewal book (highest exposure leading), plus a separate flag list, each item naming the account / engagement, its exposure, and the owning sub-agent.",
+              "audit": [
+                "Margin roll-up is leakage-ranked, highest exposure leading",
+                "Renewal book is exposure-ranked; each at-risk renewal states its exposure",
+                "Every flag names an account / engagement, states the exposure, and names the owning sub-agent",
+                "Every estimate is marked as an estimate with its basis; no invented margin",
+                "Cross-correlation is internal only — pool-never-bleed, nothing client-facing",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Nick's margin & renewal oversight plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the oversight: a short read leading with the flags — unprofitable work and at-risk renewals — each with its exposure, then the rest of the margin roll-up and renewal book."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the exposure, the owning sub-agent (Celeste / Chase), and the decision it implies for Nick."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the oversight for Nick. No send, no write. Finance stays read-only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the leakage-ranked margin roll-up + exposure-ranked renewal book"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Nick's margin & renewal oversight + the flag list. The run parks here at the checkpoint; nothing is actuated.",
+              "audit": [
+                "Brief leads with flags (unprofitable work, at-risk renewals), not a vanity bookings number",
+                "Flag list present; each item states the exposure, the owning sub-agent, and the implied decision",
+                "Every figure is grounded and cited to its source",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The oversight parks for **Nick**. `auto` may self-approve ONLY publishing the scheduled oversight when every figure is grounded and cited; any ungrounded figure, gap, or recall miss parks for Nick (CONSTITUTION §8). Stage 04 (delegate-followups) is OPTIONAL and runs only on a grounded, cited flag — Sterling advises and delegates, sub-agents act; finance never leaves read-only."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — for a grounded, cited flag, emit a proposed `delegate()` to Celeste (renewal save) or Chase (reprice), and/or `handoff()` to Nova when cross-division. The world-changing effect re-gates inside the sub-agent's gauntlet; Sterling never actuates.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag confirmed grounded and cited, draft the follow-up: an at-risk renewal → **Celeste** (renewal save); an under-priced / unprofitable engagement → **Chase** (reprice). Carry the account / engagement, the exposure, and the basis."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where a follow-up crosses divisions (beyond Client Success or Sales), draft a `handoff()` to **Nova** instead."
+                },
+                {
+                  "tag": "script",
+                  "text": "Emit the proposed `delegate()` / `handoff()`. The delegate routes the work and re-gates the world-changing effect (any commitment, price change, or money movement) inside the sub-agent's own gauntlet (ADR-0128). Sterling writes nothing, commits nothing, and moves no money — finance stays read-only (ADR-0123)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any flag that is not fully grounded, or whose owner is unclear, parks for Nick instead of being delegated."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flag list",
+                    "the grounded flags + owning sub-agent"
+                  ],
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "per-flag exposure + basis",
+                    "the exposure each delegate carries"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` / `handoff()` set, each naming the target sub-agent (Celeste / Chase / Nova), the account / engagement, the exposure, and the basis; plus any flag parked for Nick.",
+              "audit": [
+                "Every delegate / handoff cites the grounded flag and states the exposure it carries",
+                "Targets are correct — Celeste (renewal save) / Chase (reprice) / Nova (cross-division)",
+                "No flag delegated without grounding + citation; ungrounded or owner-unclear flags parked for Nick",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "Delegated follow-ups route to **Celeste / Chase**, cross-division ones hand off to **Nova**; parked flags wait for **Nick**. `auto` may self-approve ONLY a `delegate()` for a grounded, cited flag — the world-changing decision re-gates inside the receiving sub-agent's gauntlet (CONSTITUTION §9, ADR-0128). Sterling never actuates; finance never leaves read-only (ADR-0123)."
+            }
+          ]
+        },
+        {
+          "slug": "partner-economics",
+          "title": "partner-economics (Deputy CFO / Revenue & Finance, executive synthesis)",
+          "job": "on a schedule, synthesize partner economics — co-sell/referral deal contribution + attribution, MDF spend vs ROI, and referral-payout economics — into an oversight brief for Nick, leading with the flags (poor-ROI MDF, at-risk / over-committed referral economics) — drafted here, never actuated.",
+          "trigger": "scheduled (start of the working week / partner-review cycle). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled partner-economics oversight when every figure is grounded and cited, and delegate a flagged MDF/referral follow-up to Bridget; the money effect (MDF spend, referral payout) stays always-gated inside Bridget — Sterling never actuates; any gap parks for Nick",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "partner",
+            "partner_deal",
+            "partner_mdf",
+            "referral_payout",
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's Partnerships activity, partner/deal/MDF/payout reads, and the accounts in scope into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the Partnerships run ledger (`agent_run`) and the `relationship.*` handoff bus via pg.read; flatten to a list of Bridget's activity and raised asks this cycle. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the partner/deal/MDF/payout reads into a flat list keyed by theme (contribution, MDF, payout). Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve referenced accounts from silver; attach id + name only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's partner themes via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Partnerships run ledger",
+                    "`agent_run` (run ledger, via pg.read)",
+                    "Bridget's runs this cycle",
+                    "what Partnerships did + outcomes"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` handoff bus (via pg.read)",
+                    "Partnerships-tagged signals this cycle",
+                    "live partner activity / asks raised"
+                  ],
+                  [
+                    "Partners",
+                    "silver `partner` · `okf:partner`",
+                    "active channel/alliance partners",
+                    "who the economics are for"
+                  ],
+                  [
+                    "Partner deals",
+                    "silver `partner_deal` · `okf:partner_deal`",
+                    "open + recently-closed co-sell/referral",
+                    "contribution + attribution basis"
+                  ],
+                  [
+                    "MDF",
+                    "silver `partner_mdf` · `okf:partner_mdf`",
+                    "requested → spent this period",
+                    "spend vs ROI inputs (money, always-gated at Bridget)"
+                  ],
+                  [
+                    "Referral payouts",
+                    "silver `referral_payout` · `okf:referral_payout`",
+                    "pending → paid this period",
+                    "payout economics (money, always-gated at Bridget)"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the deals",
+                    "who the deals landed on"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's partner themes",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of partner-economics signals tagged by theme (contribution / MDF / payout), with the ledger + handoff activity, the account ids in scope, and cited recall items.",
+              "audit": [
+                "Every signal carries a theme tag (contribution / MDF / payout)",
+                "Run-ledger / handoff-bus items are labeled as such (not as OKF rooms)",
+                "Every account reference states its id",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a leakage-ranked partner-economics roll-up with the flags isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Compute partner contribution: roll up co-sell/referral deal value and attribution by partner; collapse duplicates across accounts."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Compute MDF ROI: spend against sourced/influenced revenue per request; surface poor-ROI MDF."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Compute referral-payout economics: pending vs approved vs paid against the deals they reward; surface over-committed or at-risk payouts."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by leakage: poor-ROI MDF and over-committed/at-risk referral economics leading; isolate the flags, each with the exposure stated. **Pool, never bleed:** cross-correlate signals internally only — the roll-up is oversight for Nick, never client- or partner-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — leakage-ranked partner-economics roll-up (highest leakage leading) and a separate flag list, each item naming the partner/deal/area and the exposure.",
+              "audit": [
+                "Roll-up is leakage-ranked, highest exposure leading",
+                "MDF ROI and payout economics each computed, not just listed",
+                "Every flag names a partner/deal/area and states the exposure",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Cross-correlation stayed internal — nothing client- or partner-facing",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Nick's partner-economics oversight plus the flags, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the oversight: a short read leading with what's leaking (poor-ROI MDF, over-committed/at-risk referral economics), then the rest of the contribution/MDF/payout roll-up."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the oversight's action surface — each item the exposure and the decision it implies for Nick (and whether it points at a Bridget follow-up)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the oversight for Nick. No send, no write. Finance stays read-only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the leakage-ranked roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Nick's partner-economics oversight + the flag list. The run parks here at the checkpoint; nothing is actuated. A grounded flag may carry forward to stage 04 for a proposed delegate.",
+              "audit": [
+                "Oversight leads with flags (leakage), not a vanity partner-sourced number",
+                "Flag list present; each item states the exposure and the implied decision",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The oversight parks for **Nick**. `auto` may self-approve ONLY publishing the scheduled oversight when every figure is grounded and cited; any flag, gap, or recall miss parks for Nick (CONSTITUTION §8). No actuation exists at this tier — Sterling advises, sub-agents act; finance never leaves read-only. A grounded, cited flag may proceed to stage 04 as a proposed delegate."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — for a grounded, cited flag, emit a proposed delegate to Bridget and/or a handoff to Nova, then park. Never actuate.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag, confirm it is grounded and cited; an ungrounded flag parks for Nick (no delegate). A recall miss is \"I don't know,\" not a guess (CONSTITUTION §8)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "For a grounded MDF/referral flag, draft a **proposed** `delegate()` to **Bridget** (Partnerships) — the owning sub-agent; state the flag, the exposure, and the ask. The MDF spend and the referral payout are money actions that **re-gate (always-gated) inside Bridget's gauntlet** — Sterling proposes the follow-up, never the money move."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "When the matter spans divisions, draft a `handoff()` to **Nova** instead of (or alongside) the delegate."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the proposed delegate/handoff for the checkpoint. No send, no write, no money moved. Finance stays read-only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Oversight + flags",
+                    "stage 03 `brief.md`",
+                    "flagged items only",
+                    "what a follow-up would address"
+                  ],
+                  [
+                    "Partnerships run ledger",
+                    "`agent_run` (run ledger, via pg.read)",
+                    "Bridget's current load",
+                    "confirm the owner + avoid duplicate routing"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` to Bridget and/or `handoff()` to Nova for each grounded flag, each naming the flag, the exposure, and the owner. The run ends here at the checkpoint; nothing is actuated.",
+              "audit": [
+                "Every delegate/handoff traces to a grounded, cited flag; ungrounded flags parked",
+                "Delegate targets Bridget (MDF/referral); cross-division matters handed off to Nova",
+                "The money effect (MDF spend, payout) is left always-gated inside Bridget — not actuated here",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The proposed delegate/handoff parks for **Nick**. `auto` may self-approve ONLY delegating a grounded, cited MDF/referral follow-up to Bridget (and/or handing off to Nova when cross-division); the money effect stays always-gated inside Bridget's gauntlet. Sterling never actuates; finance never leaves read-only. Any ungrounded flag or gap parks for Nick (CONSTITUTION §8/§9)."
+            }
+          ]
+        },
+        {
+          "slug": "revenue-pipeline-rollup",
+          "title": "revenue-pipeline-rollup (Deputy CFO / Revenue & Finance, executive)",
+          "job": "on a schedule, synthesize the revenue + forward-pipeline picture — Chase's bookings/open opportunities and Belle's demand signals — into a forecast / pipeline-health brief for Nick, leading with slippage and at-risk commits (not a vanity bookings number); where a flag is grounded, delegate the follow-up to Chase or hand off to Nova — never actuated here.",
+          "trigger": "scheduled (start of the working day / week). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled pipeline rollup when every figure is grounded and cited, and delegate a flagged stalled opportunity to Chase; any gap or recall miss parks for Nick — Sterling never actuates, finance stays read-only",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "license_assignment",
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's division revenue/pipeline outputs and the accounts in scope into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the run ledger and the handoff-bus signals into a flat list keyed by theme (bookings, open pipeline, demand). Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the pipeline rooms (opportunities, license assignments) into the same flat list, tagged by theme. Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve referenced accounts from silver; attach id + name only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's themes via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sub-agent run ledger",
+                    "`agent_run` (via pg.read)",
+                    "Chase/Belle runs this cycle",
+                    "what Sales/Marketing actually did"
+                  ],
+                  [
+                    "Handoff bus",
+                    "`relationship.*` handoff signals (via pg.read)",
+                    "Sales/Marketing activity this cycle",
+                    "demand + bookings signals between agents"
+                  ],
+                  [
+                    "Opportunities",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "open pipeline + renewals",
+                    "forward-pipeline / forecast picture"
+                  ],
+                  [
+                    "License assignments",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "active",
+                    "recurring revenue / true-up"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the activity",
+                    "who the pipeline is for"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's themes",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of revenue/pipeline signals tagged by theme (bookings / open pipeline / demand), with the account ids in scope and cited recall items.",
+              "audit": [
+                "Every signal carries a theme tag (bookings / open pipeline / demand)",
+                "Every account reference states its id",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a slippage-ranked forecast roll-up with the flags isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Roll up the signals into the forecast / pipeline picture (bookings, open pipeline, demand); collapse duplicates across accounts."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by slippage and at-risk commits — stalled opportunities, slipping close dates, soft renewals — highest exposure leading."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the flags — stalled/slipping opportunities and at-risk commits — each with the account and the exposure stated."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — slippage-ranked forecast roll-up (highest at-risk commit leading) and a separate flag list, each item naming the account/opportunity and the exposure.",
+              "audit": [
+                "Roll-up is slippage-ranked, highest at-risk commit leading",
+                "Every flag names an account/opportunity and states the exposure",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Pool-never-bleed — cross-correlated internally only; nothing client-facing",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Nick's pipeline rollup plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the rollup: a short read leading with slippage and at-risk commits (stalled opportunities, slipping close dates, soft renewals), then the rest of the forecast picture — never a vanity bookings number."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the rollup's action surface — each item the account/opportunity, the exposure, and the follow-up it implies for Nick."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the rollup for Nick. No send, no write. Finance stays read-only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the slippage-ranked forecast roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Nick's pipeline rollup + the flag list. The run parks here at the checkpoint; nothing is actuated. Flags feed the optional stage 04.",
+              "audit": [
+                "Rollup leads with slippage / at-risk commits, not a vanity bookings number",
+                "Flag list present; each item states the account/opportunity, exposure, and implied follow-up",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The rollup parks for **Nick**. `auto` may self-approve ONLY publishing the scheduled rollup when every figure is grounded and cited; any gap or recall miss parks for Nick (CONSTITUTION §8). No actuation exists at this tier — Sterling advises and routes, sub-agents act; finance never leaves read-only."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — propose a `delegate()` to Chase on a grounded flag and/or a `handoff()` to Nova when it spans divisions, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag, decide the route: a single stalled/slipping opportunity → Chase (Sales); a flag spanning divisions → Nova. A flag that is not grounded and cited routes to neither — it parks for Nick."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the proposed `delegate()` to Chase: name the account/opportunity, the exposure, the cited basis, and the ask — never the outreach itself. Draft any `handoff()` to Nova the same way."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the proposed delegate/handoff. No send, no write, no outreach, no commitment. The world-changing effect re-gates inside Chase's own gauntlet."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Rollup + flags",
+                    "stage 03 `brief.md`",
+                    "the flag list only",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` / `handoff()` items by reference, each naming the target sub-agent, the account/opportunity, the exposure, and the cited basis. The run parks here; nothing is actuated.",
+              "audit": [
+                "Every proposed delegate/handoff names a target and cites the grounding basis",
+                "An ungrounded or uncited flag parks for Nick — never delegated",
+                "No outreach, commitment, or content was drafted toward any client",
+                "Read-only — no financial record written, no money moved",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The proposed follow-ups park for **Nick**. `auto` may self-approve ONLY delegating a flagged stalled opportunity to Chase when that flag is grounded and cited; any ungrounded flag, gap, or recall miss parks for Nick (CONSTITUTION §8). Sterling never sends, writes, or actuates — the delegate routes the work and the world-changing effect re-gates inside Chase's gauntlet (CONSTITUTION §9); finance never leaves read-only."
             }
           ]
         }

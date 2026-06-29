@@ -1,0 +1,12 @@
+name: ar-cash-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Sterling persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../sterling.md
+  - ./prose.md
+okf_rooms: [invoice, generated_invoice, account]   # subset of executive/deputy-cfo/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Audrey / handoff to Nova; never actuates (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled AR/cash oversight when every figure is grounded and cited, and delegate flagged overdue dunning to Audrey; Sterling never sends a reminder and never moves money — any gap parks for Nick (finance read-only, QBO is SoR)"

@@ -191,15 +191,55 @@
         "timesheet",
         "expense_item",
         "expense_report",
-        "license_assignment"
+        "license_assignment",
+        "partner",
+        "partner_deal",
+        "partner_mdf",
+        "referral_payout"
       ],
       "workflows": [
+        {
+          "slug": "ar-cash-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
         {
           "slug": "financial-pulse",
           "stages": [
             "01-gather",
             "02-synthesize",
             "03-pulse"
+          ]
+        },
+        {
+          "slug": "margin-renewal-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
+          "slug": "partner-economics",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
+          "slug": "revenue-pipeline-rollup",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
           ]
         }
       ]
