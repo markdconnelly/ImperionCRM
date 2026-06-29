@@ -44,7 +44,7 @@ its archetype inline).**
 | Owner group | Procedures | Archetype(s) |
 |---|---|---|
 | Rachel (CoS / G&A) | 10-A1 daily brief · 10-A2 request routing · 10-A3/A4 program stewardship | **B3 synthesis-brief** (A1), **B1 triage/route** (A2), **B4 audit-attest** governance-stewardship (A3/A4) |
-| Holly (HR / internal JML) | 10-H1 onboard · 10-H2 offboard · 10-H3 brain spin-up · 10-H4 review · 10-H5 PTO | **B5 JML disable≠delete** (H1/H2), **B8/B2 provision-with-undo** (H3), **B2/B4** comp+review gated (H1/H4), **B2** PTO (H5) |
+| Holly (HR / internal JML + people-at-scale) | 10-H1 onboard · 10-H2 offboard · 10-H3 brain spin-up · 10-H4 review · 10-H5 PTO · 10-H6 recruit→hire · 10-H7 capacity (w/ Dexter) · 10-H8 L&D/cert lifecycle · 10-H9 comp & benefits · 10-H10 employee relations (w/ Laurel) · 10-H11 W-2 payroll (w/ Audrey + human) | **B5 JML disable≠delete** (H1/H2), **B8/B2 provision-with-undo** (H3), **B2/B4** comp+review gated (H1/H4), **B2 gated-actuation** PTO/comp+benefits/employee-relations (H5/H9/H10), **B1 triage/route + B2 offer gate** (H6), **B3 synthesis-brief** capacity (H7), **B9 deadline-sentinel** cert-expiry (H8), **B6 money-gate** W-2 payroll (H11, propose-only #1621) |
 | Laurel (Legal) | 10-L1 contract review · 10-L2 lifecycle/renewal · 10-L3 compliance | **B2 gated-actuation** (L1/L3, binding always_gate), **B9 deadline-sentinel** renewal radar (L2) |
 | Tess (QA) | 10-T1 ticket-quality · 10-T2 CSAT · 10-T3 SLA-conformance | **B4 audit-attest** internal measure+route (all three; T2 survey-send = B7 edge) |
 | Vera (Governance) | 10-V1…V14 | **B4 audit-attest** (the stream's canonical B4 family); V3 standard ratification = `always_gate`; V1 detect→quarantine→route→verify is B4 + reversible-auto-quarantine |
@@ -236,20 +236,252 @@ actuation (the joiner-mover-leaver technical grants).
 - **Human-in-loop:** Manager/Derek; floor: comp + ratings always human.
 - **Substrate deps:** Tess (quality signals), Audrey read-only, #389. **subject:** imperion.
 
-### 10-H5 · PTO / leave administration
-- **Owner / Stream:** Holly / 10. **Archetype:** B2 gated-actuation (draft → manager-approve gate).
-  ⛔ **UNFILED leaf + DORMANT** (pto/holiday categories out of v1 per the CONTEXT Time Entry note).
-- **Trigger:** employee leave request.
-- **Terminal outcome:** leave recorded + approved/denied; tracked.
-- **Procedure Steps:**
-  1. `[gui-step]` Employee submits request.
-  2. `[automation]` Holly checks balance/policy, drafts a recommendation. **L2.**
-  3. `[gui-step]` Manager approves.
-- **Driving policy:** TBD (#1586).
-- **Realization:** procedure-only.
-- **Autonomy ceiling:** L2.
-- **Human-in-loop:** Manager. Floor: approval human.
-- **Substrate deps:** DORMANT until the W2/PTO v1 deferral lifts. **subject:** imperion.
+### 10-H5 · PTO / leave administration — un-deferred (#1627)
+- **Owner / Stream:** Holly / 10. **Archetype:** B2 gated-actuation (draft → manager-approve gate);
+  accrual/balance writes are internal-reversible (auto L2, A10 row 1) while the leave-approval
+  *commitment* is the manager's gate. **A11 seam:** Holly owns the leave clock/policy; the calendar/
+  identity coverage actuation (OOO, delegation) rides Osiris/IT once approved.
+- **Trigger:** employee leave request OR an accrual-cadence tick (balance accrues per policy).
+- **Terminal outcome:** leave request recorded + approved/denied, balance updated, coverage flagged;
+  tracked to closure (no surprise negative balance, no unapproved leave).
+- **Procedure Steps** (B2: ground → plan → GATE → actuate → reconcile → log):
+  1. `[gui-step]` Employee submits a leave request (type · dates · duration).
+  2. `[automation]` **Ground (A5):** check the request against current balance/accrual + leave policy
+     (eligibility, blackout windows, overlap with team coverage), **citing the policy + balance as-of**;
+     empty/unparseable policy → park (never fabricate an entitlement). **L2.**
+  3. `[automation]` **Plan** — draft a recommendation (approve/deny/partial) + the coverage impact;
+     assemble the 4-part easy-button (drafted decision + grounded why + one-click approve/deny + the
+     balance-after preview, A4). **L2.**
+  4. `[gui-step]` **GATE — manager approves/denies** (the leave commitment is the human's; `always_gate`
+     on the approval decision). On approve, decrement the balance via the idempotent accrual write (A9b).
+  5. `[hybrid]` **SEAM → Osiris/IT** to set OOO/delegation coverage; **flag finance (Audrey read-only)**
+     if the leave class affects pay (PTO vs unpaid). Reconcile the balance read-back (A9c); log attributed.
+- **Driving policy:** TBD (#1586) PTO/leave policy (accrual rates, carryover, blackout windows).
+- **Realization:** `icm/domains/people/pto-leave/` (graduates once the leave/accrual store + accrual
+  worker land; today procedure-only until the v1 PTO deferral lifts).
+- **Autonomy ceiling:** L2 (ground + draft + balance write = internally reversible, A10 row 1).
+  **`always_gate`: the leave-approval commitment** (manager) — a granted leave is a coverage/pay
+  commitment.
+- **Human-in-loop:** Manager/Derek. L1 = Holly drafts, manager approves each; L2 = auto-ground+draft,
+  manager approves the decision only. Floor: leave approval always human.
+- **Substrate deps:** leave/accrual store (proposed to FE alongside the W-2 payroll schema, **#1621**
+  — until built ships propose-only per A5c), Osiris seam (Stream 04), Audrey read-only, #991.
+  **subject:** imperion.
+
+### 10-H6 · Recruit → hire (req → source → interview → offer) — net-new (#1627)
+- **Owner / Stream:** Holly / 10 (tracer `recruit-to-hire`). **Archetype:** B1 triage/route (pipeline
+  movement auto at L2 — stage changes are internally reversible) **+ B2 gated-actuation** for the offer
+  (an offer is a comp + binding commitment, A2 class-1/6). **Feeds 10-H1 onboarding** (offer accepted =
+  the 10-H1 trigger; A11 seam — recruiting is the funnel, onboarding is the joiner).
+- **Trigger:** an approved hiring requisition (headcount approved by Derek/manager) OR an inbound
+  candidate against an open req.
+- **Terminal outcome:** a candidate progresses requisition → sourced → interviewed → offer; on
+  offer-accept, **hands off to 10-H1** (joiner). No offer extended without a human gate.
+- **Procedure Steps** (B1 spine for the pipeline + a B2 gate at the offer):
+  1. `[automation]` **Ground** — open the requisition (role · level · comp band · hiring manager),
+     **cited to the approved headcount event + as-of** (A5); empty/unapproved req → park (never source
+     against an unapproved headcount). **L2.**
+  2. `[automation]` **Classify + move** candidates through stages (applied → screen → interview →
+     reference). Stage movement auto-executes at L2 (B1 — internally reversible); pool-correlate prior
+     candidates internally only (A7 — never bleed one candidate's specifics into another's packet).
+  3. `[hybrid]` **Resolve-owner** — route to the hiring manager + interview panel; assemble the
+     interview-feedback packet (labeled signal vs inference, A5).
+  4. `[gui-step]` **OFFER GATE** ⛔ — Holly drafts the offer (comp band-checked, the 4-part easy-button:
+     drafted offer + grounded why + one-click extend/decline + the comp-commitment preview, A4). **Human
+     (manager/Derek) extends the offer** — `always_gate` (comp + binding commitment, A2 class-1/6; comp
+     fields payroll-role-gated, salary non-disclosure absolute per A7).
+  5. `[automation]` On accept → **SEAM → 10-H1 (Onboard)** with the offer event; on decline → log,
+     terminal. Idempotent on the candidate+req key (A9b — no double-offer).
+- **Driving policy:** TBD (#1586) hiring/recruiting policy (comp bands, EEO/interview standards) +
+  ADR-0016 (Entra identity, downstream).
+- **Realization:** `icm/domains/people/recruit-to-hire/` (graduates with a candidate/req store; today
+  procedure-only — the offer gate is the load-bearing step).
+- **Autonomy ceiling:** L2 (req-open + pipeline movement = internally reversible, A10 row 1).
+  **`always_gate`: extending an offer** (comp + binding commitment).
+- **Human-in-loop:** hiring manager/Derek. L1 = Holly drafts each stage move, human confirms; L2 =
+  auto-move pipeline, human gates the offer only. Floor: offer extension + comp always human.
+- **Substrate deps:** candidate/req store (owed; proposed to FE), #991 (req-approved event), 10-H1 seam.
+  **subject:** imperion.
+
+### 10-H7 · Plan the workforce / capacity vs delivery demand — net-new (#1627)
+- **Owner / Stream:** Holly (people) + Dexter (delivery demand) / 10. **Archetype:** B3 synthesis-brief
+  (delegate-only, L2, **no actuation** — a hire/backfill decision spawns 10-H6 parked; a comp move
+  spawns 10-H9/H4 parked). **A11 seam:** Holly owns the people-supply picture; Dexter owns the delivery-
+  demand signal; they meet at this brief, neither actuates.
+- **Trigger:** schedule (capacity-planning cadence — monthly/quarterly) OR a demand spike / attrition
+  event.
+- **Terminal outcome:** a capacity-vs-demand brief (current headcount + utilization vs forecast
+  delivery demand) with gap recommendations (hire / cross-train / contractor); decisions parked
+  easy-button-ready, never auto-actuated.
+- **Procedure Steps** (B3: gather → synthesize → narrate → deliver → log):
+  1. `[automation]` **Gather** — current roster + skills/cert coverage (10-H8) + utilization (Audrey
+     read-only / Tess delivery signals) **and** forecast delivery demand (Dexter: pipeline-weighted
+     project/ticket load), **each source cited + as-of** (A5); anonymize any cross-client signal (A7);
+     flag dormant feeds honestly (A5c). **L0.**
+  2. `[automation]` **Synthesize** the capacity gap (skills/seat shortfall vs demand band); never
+     fabricate a forecast on empty (A5b). **L2.**
+  3. `[automation]` **Narrate** the gap + options (hire / cross-train via L&D / contractor) with P2
+     thought-attribution.
+  4. `[hybrid]` **Deliver** to Derek/Dexter (A6). **B3 launchpad rule:** a "hire" decision auto-spawns
+     **10-H6 (recruit) parked**; a "cross-train" decision spawns **10-H8 (L&D) parked**; a retention
+     comp move spawns **10-H9/H4 parked** — Holly never actuates the hire/comp herself.
+- **Driving policy:** TBD (#1586) workforce-planning policy.
+- **Realization:** `icm/domains/people/capacity-planning/` (graduates; today a delegate-only brief).
+- **Autonomy ceiling:** L2 (gather + synthesize + deliver; no actuation). `always_gate`: none of its
+  own — every downstream commitment (hire/comp) stays gated at its owning procedure (10-H6/H9).
+- **Human-in-loop:** Derek/Dexter. L1 = Holly drafts the brief, humans co-shape; L2 = auto-compose+
+  deliver. Floor: hire/comp decisions gate at their owner.
+- **Substrate deps:** roster + utilization (Audrey/Tess read-only), Dexter delivery-demand feed (#991),
+  #389 (recall), #1537. **subject:** imperion · **SEAM: Holly = people-supply; Dexter = delivery-demand;
+  the brief is the meeting point, neither actuates (A11).**
+
+### 10-H8 · Run the L&D + certification lifecycle (cert-expiry, partner-tier gating) — net-new (#1627)
+- **Owner / Stream:** Holly / 10 (L&D/Enablement folds into Holly per #1627). **Archetype:** B9
+  deadline-sentinel (watch cert-expiry + partner-tier-requirement clocks; **never auto-actuate** a
+  renewal/enrollment — escalate + pre-stage the easy-button at T-30/T-7/T-1, A11/B9). **A11 seam:**
+  Holly watches the people-cert clock; the partner-tier *business* consequence (Pax8/vendor tier
+  jeopardy) is Vance's procurement concern — they meet at the seam.
+- **Trigger:** a certification approaches expiry (lead-time tick) OR a new partner-tier requirement
+  lands (a vendor raises the cert bar) OR onboarding assigns a required cert (from 10-H1).
+- **Terminal outcome:** required certs tracked per employee; expiring/at-risk certs escalated with a
+  pre-staged renewal/enrollment easy-button; partner-tier coverage gaps flagged before they jeopardize
+  a tier — no surprise lapse.
+- **Procedure Steps** (B9: watch → detect → quantify → draft-rec → route+notify):
+  1. `[automation]` **Watch** the cert register vs partner-tier requirements (which certs the org must
+     hold to keep a vendor tier), **citing each cert's expiry + as-of** (A5). **L0.**
+  2. `[automation]` **Detect** expiring/lapsed certs + tier-coverage shortfalls; **quantify** the risk
+     (tier jeopardy, partner-discount/MDF impact).
+  3. `[automation]` **Draft-rec** a renewal/enrollment plan (who recerts, by when); **escalate up
+     `reports_to` with rising urgency at policy lead times (T-30/T-7/T-1), never auto-enrolling** (B9 —
+     a deadline does not license autonomous spend/commitment). **L2.**
+  4. `[hybrid]` **Route + notify** (A6) — PARK the renewal/enrollment as the easy-button; **SEAM →
+     Vance** where the cert gates a *vendor partner tier* (the procurement/tier consequence is Vance's,
+     Stream 09); enrollment spend rides the money gate (10-H9 / Vance). A passed cert deadline is a
+     **logged escalation failure** surfaced in the capacity/G&A brief (10-H7 / Rachel 10-A1).
+- **Driving policy:** TBD (#1586) L&D / certification policy + partner-tier requirements (vendor canon).
+- **Realization:** `icm/domains/people/learning-cert-lifecycle/` (graduates with a cert register;
+  today procedure-only watcher).
+- **Autonomy ceiling:** L2 (watch + detect + draft + escalate). **`always_gate`: enrolling / committing
+  cert spend** (money, A2 class-1) — the sentinel never auto-actuates (B9).
+- **Human-in-loop:** Holly-human/manager + Vance on tier. Floor: enrollment commitment + spend human.
+- **Substrate deps:** cert register (owed), partner-tier requirements (vendor canon), Vance seam
+  (Stream 09), #991 (date-trigger), #389. **subject:** imperion · **SEAM: Holly watches the people-cert
+  clock; the partner-tier business consequence is Vance's (Stream 09 Deadline Sentinel). Split.**
+
+### 10-H9 · Administer comp & benefits / open enrollment — net-new (#1627)
+- **Owner / Stream:** Holly / 10. **Archetype:** B2 gated-actuation — **every pay movement is
+  `always_gate`** (A2 class-1 money out); benefits-elections orchestration is L2 (reversible election
+  window) while the *carrier/payroll commitment* gates. **A11 seam:** Holly owns the comp/benefits
+  clock + the elections packet; the money movement is Audrey/payroll's gated act (10-H11), the carrier
+  enrollment is the human/broker act.
+- **Trigger:** the open-enrollment window opens (annual cadence) OR a qualifying life event OR a
+  comp-change proposal lands (from 10-H4 review / 10-H7 retention).
+- **Terminal outcome:** benefits elections collected + validated; comp changes recorded **gated**;
+  payroll/carrier handed the change — no pay movement without a human money gate, no salary disclosure
+  across the pool.
+- **Procedure Steps** (B2: ground → plan → GATE → actuate → reconcile → log):
+  1. `[automation]` **Ground** — load eligibility + current elections + comp record (effective-dated),
+     **cited + as-of** (A5). (**`always_gate`/strict RLS:** comp fields are `data_class` financial +
+     `client_pii`-grade personal — payroll-role-gated, **salary non-disclosure absolute, refusal-class**
+     per A7, consistent with Stream 09 Audrey.) **L2 (read/orchestrate only).**
+  2. `[automation]` **Plan** — drive the enrollment window; validate elections vs plan rules; assemble
+     the comp-change / elections easy-button (drafted change + grounded why + one-click approve + the
+     **exact $ + irreversibility** preview, A4).
+  3. `[gui-step]` **MONEY GATE** ⛔ — **any pay movement is `always_gate`** (payroll-role + Mark/Derek;
+     A2 class-1). A benefits *election* (employee-chosen, reversible within the window) is L2; the
+     **carrier/payroll commitment** at window close gates.
+  4. `[hybrid]` **Actuate the non-money half** (record elections) idempotently (A9b); **SEAM → 10-H11
+     (payroll)** for any deduction/pay change and **→ human/broker** for carrier enrollment (external
+     SoR — the agent mirrors, never owns, A9a). Reconcile read-back (A9c); log attributed, comp values
+     **never echoed to non-payroll context** (A7).
+- **Driving policy:** TBD (#1586) comp & benefits policy (bands, plan rules, eligibility).
+- **Realization:** `icm/domains/people/comp-benefits/` (graduates; the comp/benefits store is part of
+  the **#1621** people-payroll schema — until built ships propose-only per A5c).
+- **Autonomy ceiling:** L2 (orchestrate elections = reversible). **`always_gate`: any pay movement /
+  comp change** (money, A2 class-1) — dial-proof forever.
+- **Human-in-loop:** payroll-role + Mark/Derek; broker for carrier. Floor: pay movement + comp change
+  always human; salary disclosure refusal-class.
+- **Substrate deps:** comp/benefits store (**#1621**, until built propose-only), 10-H11 payroll seam,
+  Audrey read-only, carrier (external SoR). **subject:** imperion.
+
+### 10-H10 · Manage employee relations / case (sensitive) — net-new (#1627)
+- **Owner / Stream:** Holly (people) + Laurel (legal) / 10. **Archetype:** B2 gated-actuation —
+  every case action with employment/legal consequence is `always_gate` (A2 class-6 binding + A10 no
+  clean undo on a disciplinary/termination act). **Sensitive PII: strict RLS, audit-by-reference, no
+  pool bleed (A7).** **A11 seam:** Holly owns the HR case clock + record; Laurel owns the legal-exposure
+  call; any termination/identity action rides Osiris (Stream 04) + 10-H2 offboarding.
+- **Trigger:** an employee-relations matter is raised (complaint, grievance, performance/conduct
+  concern, investigation request).
+- **Terminal outcome:** the case is logged, handled per policy, and closed — with every consequential
+  action human-gated and every record access RLS-scoped; **no case detail or identity bleeds across the
+  pool** (A7).
+- **Procedure Steps** (B2, handled as a strict-PII case file):
+  1. `[automation]` **Ground** — open/append the case record (parties · category · timeline),
+     **cited + as-of**, on the **most-restrictive RLS scope** (HR-case `data_class`; access ledgered,
+     **audit-by-reference — never reproduces the sensitive value**, the Vera-PII-audit peer A7/10-V12). **L2.**
+  2. `[hybrid]` **Plan** — Holly drafts the next step per policy (documented conversation, PIP,
+     investigation); **SEAM → Laurel** for any matter with legal exposure (termination-for-cause,
+     harassment, protected-class, regulatory) — Laurel frames the legal-risk call (A11; not licensed
+     counsel — routes genuine legal calls to a human, Stream 10 Laurel ceiling).
+  3. `[gui-step]` **GATE** ⛔ — any consequential action (formal discipline, PIP issuance, termination)
+     is `always_gate` (HR human + manager/Derek + Mark where legal/identity; A2 class-6, A10
+     irreversible). Assemble the 4-part easy-button (drafted action + grounded why + one-click + the
+     irreversibility/legal-exposure preview, A4).
+  4. `[hybrid]` On a termination outcome → **SEAM → 10-H2 (offboard) / Osiris** (identity
+     disable≠delete, B5); log the case closure attributed; retain per policy. Halt-no-rollback on a
+     failed step (A10) — a human decides remediation, never an improvised compensating act.
+- **Driving policy:** TBD (#1586) employee-relations / investigation policy + ADR-0118 (data_class) +
+  `unified-security-standard.md` (PII handling).
+- **Realization:** `icm/domains/people/employee-relations/` (graduates; today procedure-only — the
+  case store is a strict-RLS surface, owed).
+- **Autonomy ceiling:** L2 (record + draft only). **`always_gate`: every consequential employment/legal
+  action** (discipline/termination, A2 class-6, A10) — dial-proof forever.
+- **Human-in-loop:** HR human + manager/Derek + Mark (legal/identity); Laurel on legal exposure. Floor:
+  every consequential action human; case PII audit-by-reference, never reproduced, never pooled.
+- **Substrate deps:** HR-case store (strict-RLS, owed), Laurel seam, 10-H2/Osiris seam (Stream 04),
+  data_class RLS (#967/#990). **subject:** imperion · **SEAM: Holly = HR case clock/record; Laurel =
+  legal-exposure call; termination identity = Osiris/10-H2. Split (A11).**
+
+### 10-H11 · Run W-2 payroll — un-deferred, propose-only / 💤DORMANT (schema #1621) (#1627)
+- **Owner / Stream:** Audrey (money) + Holly (people inputs) + human (the run) / 10. **Archetype:**
+  B6 money-gate — payroll money out is **`always_gate` class-1 forever** (A2/A6/A10 no clean undo on a
+  settled pay run). **A11 seam:** Holly owns the people inputs (hours, classification, comp, leave/PTO
+  from 10-H5, deductions from 10-H9); Audrey owns the money computation + the gated run; QBO/payroll
+  provider is the external SoR (the agent mirrors, never owns, A9a). ⛔ **Un-defers the v1 W-2 deferral;
+  ships propose-only until the people-payroll silver schema (#1621) lands (A5c).**
+- **Trigger:** the payroll cycle clock (per-period) OR an off-cycle correction.
+- **Terminal outcome:** a payroll run computed, **human-approved at the money gate**, submitted to the
+  payroll provider/QBO (external SoR), and reconciled by read-back — no pay movement without a human
+  gate, no double-run.
+- **Procedure Steps** (B6: ground → compute → draft → MONEY GATE → actuate → log+mirror):
+  1. `[automation]` **Ground** — assemble per-employee inputs: hours/time (silver `time_record`,
+     Stream 09), classification + comp (10-H1/H9), PTO/leave (10-H5), deductions/benefits (10-H9) —
+     **each cited + as-of** (A5); **strict comp RLS, salary non-disclosure absolute** (A7, refusal-class,
+     consistent with Stream 09 Audrey). **L2 (compute only).**
+  2. `[automation]` **Compute** gross→net per period (taxes/withholdings via the provider's engine —
+     the agent does not compute statutory tax itself, A9a external SoR).
+  3. `[automation]` **Draft** the run as one easy-button: **total $ + headcount + the period-over-period
+     diff/exception view** (A4 + B6 batch rule).
+  4. `[gui-step]` **MONEY GATE** ⛔ — **`always_gate` class-1, dial-proof forever** (payroll-role +
+     Mark/Derek). **B6 batch rule:** one approval runs items **within tolerance** vs the prior period;
+     **any item tripping a variance guard** (new payee, >X% change, first-period amount) **splits out
+     and gates individually**. Variance threshold = per-procedure policy (#1586).
+  5. `[automation]` **Actuate** the submission to the payroll provider / QBO, **idempotency-keyed on
+     (employee + pay-period)** so a retry is a no-op + audit note (A9b — never a double-pay); **read back**
+     the provider record to confirm it landed before declaring done (A9c). **Log + mirror** to the
+     app-native record; comp values **never echoed to non-payroll context** (A7).
+- **Driving policy:** TBD (#1586) payroll policy (cycle, variance tolerance, tax jurisdictions) +
+  ADR-0093 (time→close) + CLAUDE.md §5 (money/secret handling).
+- **Realization:** `icm/domains/people/w2-payroll/` (**DORMANT — propose-only until the people-payroll
+  silver schema #1621 lands; per A5c the run-side steps ship propose-only**). Finance = QBO read-side
+  SoR (v1 finance is read-only; the actuating pay submission is the gated exception, human-run).
+- **Autonomy ceiling:** L2 (compute + draft). **`always_gate`: the payroll money movement** (A2 class-1)
+  — never auto at any dial.
+- **Human-in-loop:** payroll-role + Mark/Derek run it; QBO/provider is external SoR. Floor: every pay
+  run + every off-cycle correction human; salary disclosure refusal-class.
+- **Substrate deps:** ⛔ **people-payroll silver schema #1621 (OPEN — gates the data shape; until built
+  this is propose-only)** · `time_record` (Stream 09, migs 0085–0087) · QBO/payroll provider (external
+  SoR, gated) · 10-H5/H9 input seams · #119. **subject:** imperion.
 
 ---
 
@@ -1071,8 +1303,11 @@ Every owner epic is represented: Rachel #1546 · Holly #1558 · Laurel #1559 · 
 (20 leaves #1458–1478 all mapped; #1460–1466 fold into 10-V1+V2 as one parameterized loop + rulebook
 author) · Jessica #1550 · Alivia #1561. Cross-cutting #1543/#1544/#1537/#1538 mapped; Osiris #1562
 referenced as the Stream-04 JML seam (not owned here). **D8 resolved** the prior connection-health
-ownership gap → Vera (10-V14, platform function). UNFILED leaves flagged inline (Holly 10-H4/H5,
-Tess 10-T2/T3, Alivia 10-K2) = sub-issues under their owner epics. Per **D7.1** the 13 OS-self
+ownership gap → Vera (10-V14, platform function). **People-at-scale (#1627) extends Holly:** recruit→hire
+(10-H6, feeds 10-H1) · capacity planning (10-H7, w/ Dexter) · L&D + cert lifecycle (10-H8) · comp &
+benefits / open enrollment (10-H9) · employee relations / case (10-H10, w/ Laurel, sensitive PII) ·
+W-2 payroll (10-H11, w/ Audrey + human); **10-H5 PTO/leave un-deferred** to a full gated entry. UNFILED
+leaves flagged inline (Tess 10-T2/T3, Alivia 10-K2) = sub-issues under their owner epics. Per **D7.1** the 13 OS-self
 procedures are first-class — running the agentic OS is running the company. **Doctrine inheritance
 (ADR-0136):** every procedure names its archetype (B1–B9) and inherits A1–A11 — most of this stream
 is **B4 audit-attest** (the assurance/governance core: Vera's 14 + Tess + Alivia + most OS-self), with
@@ -1081,8 +1316,13 @@ delegate-only C-suite tracers (Rachel A1, all of Jessica), **B2 gated-actuation*
 connector/credential/deploy + dial-apply, **B9 deadline-sentinel** for Laurel's renewal radar, and
 **B1 triage/route** for Rachel A2 + Nova intake. The stream's hard floors — Vera's Client Security
 Standard ratification (10-V3), every credential/secret act (O9/O10), comp/identity gates (Holly),
-and the personal→company wall (O7) — are `always_gate` per A2/A7/A10, dial-proof forever.
+and the personal→company wall (O7) — are `always_gate` per A2/A7/A10, dial-proof forever. **Schema gap
+flagged to FE (#1621):** the people-payroll silver shape gates W-2 payroll (10-H11), comp & benefits
+(10-H9), and the PTO/leave-accrual store (10-H5); per **A5c** those procedures ship **propose-only /
+dormant** until #1621 lands. **Comp/payroll PII** is strict-RLS `data_class` financial + personal —
+salary non-disclosure is **refusal-class** (consistent with Stream 09 Audrey) and every pay movement
+is `always_gate` (A2 class-1).
 
-**Count: 40 Operating Procedures** — Rachel 4 (A1–A4) · Holly 5 (H1–H5) · Laurel 3 (L1–L3) · Tess 3
-(T1–T3) · Vera 14 (V1–V14, incl. V14 connection-health per D8) · Jessica 3 (J1–J3) · Alivia 3
-(K1–K3) · OS-self 13 (O1–O13).
+**Count: 47 Operating Procedures** — Rachel 4 (A1–A4) · Holly 11 (H1–H11, incl. people-at-scale H6–H11
++ un-deferred H5 per #1627) · Laurel 3 (L1–L3) · Tess 3 (T1–T3) · Vera 14 (V1–V14, incl. V14
+connection-health per D8) · Jessica 3 (J1–J3) · Alivia 3 (K1–K3) · OS-self 13 (O1–O13).
