@@ -40,7 +40,9 @@ v1 TESTING routes every human role to **Mark (proxy)**.
 **Substrate/dormancy legend:** [DORM-CRED]=live credential (QBO/Autotask) · [DORM-AR]=**AR/invoice silver
 entity (#1580** — own-vs-mirror open, relates #668 decision CLOSED but entity NOT built) · [DORM-ALLOC]=cost/revenue-allocation
 views (#1044/#1308, v2-ish) · [DORM-EVENT]=event/handoff bus #991 · [DORM-EMBED]=Voyage seed #389 (Audrey
-reads OKF-grounded silver by declaration → mostly NOT blocked) · [DORM-TRIG]=trigger-sync #119.
+reads OKF-grounded silver by declaration → mostly NOT blocked) · [DORM-TRIG]=trigger-sync #119 ·
+[DORM-SCHEMA #N]=**a silver model that is a SEPARATE open schema issue** (rev-rec **#1619** / sales-tax-nexus
+**#1620**) — the procedure ships propose-only per A5c until the entity lands; NO schema authored here (#1).
 
 **Archetype map (B-templates this stream instantiates).**
 
@@ -63,6 +65,14 @@ reads OKF-grounded silver by declaration → mostly NOT blocked) · [DORM-TRIG]=
 | 09-15 BI hub finance reporting | **B3 synthesis-brief** (read/render, no actuation) |
 | 09-16 Finance Defined-Way governance | **B3 synthesis-brief** (Sterling exec, L2 delegate-only) |
 | 09-17 revenue-governance oversight | **B3 synthesis-brief** (Sterling exec, L2 delegate-only) |
+| 09-18 revenue recognition (ASC 606) | **B4 audit-attest** (internal) + **B6 money-gate** (recognition is a binding-book act) — schema #1619 |
+| 09-19 budget + forecast + variance (FP&A) | **B3 synthesis-brief** (Sterling exec, L2 delegate-only) |
+| 09-20 sales-tax nexus & filings | **B9 deadline-sentinel** + **B4 audit-attest** (external filing = gated) — schema #1620 |
+| 09-21 cash position & runway (treasury) | **B3 synthesis-brief** (read-only, no movement) |
+| 09-22 recurring-invoice batch generation | **B6 money-gate batch** (approve-once-within-tolerance) — ties #1580 |
+| 09-23 billing dispute / credit memo / adjustment | **B6 money-gate** (Audrey detects; the credit/adjustment is human always_gate) |
+| 09-24 AP approve-to-pay | **B6 money-gate** (Audrey reconciles; the pay run is human always_gate) |
+| 09-25 external financial audit support | **B4 audit-attest** (Sterling exec; external attestation = always_gate) |
 
 ---
 
@@ -487,6 +497,283 @@ reads OKF-grounded silver by declaration → mostly NOT blocked) · [DORM-TRIG]=
 
 ---
 
+# H. FINANCE-AT-SCALE (gap-fill cluster 2, #1626)
+
+> Cluster 2 lifts Stream 09 from "record/report Imperion's own books" to the **finance-at-scale**
+> surface a $100M-scale MSP runs (organic, no M&A): GAAP revenue recognition, FP&A, tax compliance,
+> treasury, recurring billing at volume, dispute/credit handling, AP approve-to-pay, and external
+> audit support. Doctrine is unchanged — **Audrey stays read-only / L2 / advises-never-gates; QBO=SoR,
+> no money movement ever (A9a); salary/rate non-disclosure stays refusal-class** — and **Sterling stays
+> exec L2 delegate-only**. Every money/recognition/filing act is a human **`always_gate`** (A2). Two of
+> these depend on silver models that are SEPARATE open schema issues (**rev-rec #1619**, **tax-nexus
+> #1620**); per **A5c** those procedures ship **propose-only/dormant**, flagging the schema issue. The
+> recurring-invoice GENERATION leg (09-22) un-defers the generation that 09-08 only pre-checks (cross-ref,
+> no duplicate); the per-client/project margin-watch (09-14, v2) is referenced by FP&A (09-19) and stays v2.
+
+## 09-18 · Run revenue recognition (ASC 606) — propose-only, 💤DORMANT (schema #1619)
+- **Owner / Stream:** Audrey / 09 (recognition assist) + **human (CFO) recognizes** — Audrey computes the
+  schedule, the **recognition is the human's binding-book act**. **Archetype:** B4 audit-attest (internal —
+  measure performance-obligation completion, cite the contract) **+ B6 money-gate** (recognizing revenue
+  alters the books = a binding act, `always_gate`; QBO=SoR A9a, Audrey never posts the entry).
+- **Trigger:** Period close (monthly, ties 09-07) or a contract/milestone event that satisfies a
+  performance obligation (delivery, term elapse, usage); or a new contract needing a rev-rec schedule.
+- **Terminal outcome:** Per-contract rev-rec schedule (allocate transaction price → performance
+  obligations → recognize as satisfied: ratable over term, point-in-time on delivery, or usage-based);
+  a per-period **recognizable-revenue packet** + deferred-revenue rollforward, **proposed** for the
+  CFO's recognition decision. Audrey computes + ties out; she **never posts to QBO**.
+- **Procedure Steps** (B4 scope→evidence→evaluate→compose then B6 GATE→actuate(recon)→log):
+  1. `[automation]` **Scope + collect evidence** — read the contract/`generated_invoice` + delivery/
+     milestone signals (project completion from Pierce/Stream 03, term dates, usage meters), **citing each
+     contract clause + source row + as-of** (A5). Empty/unparseable obligation → **park, never fabricate a
+     schedule** (A5b). **L0.**
+  2. `[automation]` **Evaluate** — classify each performance obligation's recognition pattern; compute the
+     period's recognizable amount + the deferred-revenue movement; write the **tie-out arithmetic** (inputs,
+     allocated price, % satisfied, recognized, deferred, delta, as-of date). **L1.**
+  3. `[automation]` **Compose + read back (A9c)** — reconcile the computed schedule against the QBO
+     deferred-revenue / income balances (read-only, A9a); flag matched / mismatch; auto-raise a flag to
+     CFO (urgency per A6). Report the *result*; never disclose comp/rate inputs. **L2.**
+  4. `[gui-step]` **MONEY GATE (recognition is a binding-book act) — always_gate** (A2 class-1/6): CFO
+     reviews the 4-part easy-button (drafted schedule + cited why + one-click recognize + the exact
+     recognized/deferred amounts + irreversibility), then authorizes the recognition entry **in QBO outside
+     the app** (the app verifies, **never posts**, A9a).
+- **Driving policy:** inherits A2/A4/A5/A9 baseline + `TBD (mark-blocker: company-policy-collection)` (#1586)
+  — revenue-recognition policy (ASC 606 obligation/allocation rules). QBO=SoR (ADR-0123/0085).
+- **Realization:** `icm/domains/finance/revenue-recognition/` (procedure-only until built).
+- **Autonomy ceiling:** **L2** (compute + tie-out + auto-raise mismatch = reversible internal, A10 row 1).
+  The recognition decision = human **always_gate** (a posted book entry is settled = no clean undo, A10).
+- **Human-in-loop:** CFO (Nick, Mark proxy v1) recognizes monthly; Audrey recedes as the schedule
+  auto-reconciles, but the recognition authorization is the permanent floor.
+- **Substrate deps:** **[DORM-SCHEMA #1619] rev-rec silver model is a SEPARATE open issue — ships
+  propose-only per A5c until it lands**; [DORM-AR] #1580 (contract/invoice source); [DORM-CRED] QBO.
+- **subject:** both. **Maps to:** #1626 cluster-2; schema **#1619**.
+
+## 09-19 · Build the company budget + forecast + variance (FP&A)
+- **Owner / Stream:** Sterling / 09 (exec FP&A synthesis). **Archetype:** B3 synthesis-brief — exec-tier,
+  **L2 delegate-only, no actuation, no money**; cross-client/cross-division patterns stay
+  internal/anonymized (A7); a corrective motion is **delegated** to the owning sub-agent, never actuated.
+- **Trigger:** Annual/quarterly planning cycle; monthly actuals close (ties 09-07); a material variance
+  Audrey or a division agent surfaces; a re-forecast request from Nick.
+- **Terminal outcome:** A company budget + rolling forecast + **budget-vs-actual variance** synthesis for
+  Nick/Mark — by division/stream, with drivers labeled (signal vs inference) and material variances
+  flagged with the owning agent pre-staged; the brief is a launchpad, not a readout.
+- **Procedure Steps** (B3: gather(cite) → synthesize(anonymize, flag dormancy) → narrate → deliver → delegate):
+  1. `[automation]` **Gather** — roll up actuals (revenue from 09-18 schedule, AR/AP, payroll/expense
+     recon, margin flags from 09-14) + prior budget + pipeline (renewals/Chase, new-logo) + cash position
+     (09-21), **citing each source + as-of** (A5; flag dormant sources honestly, A5c). **L2.**
+  2. `[automation]` **Synthesize** — build/refresh the budget + rolling forecast; compute variance vs
+     budget and vs prior forecast; label drivers (P2 thought-attribution); cross-client/division correlation
+     stays internal/anonymized (A7). **L2.**
+  3. `[automation]` **Deliver (B3 launchpad)** — variance brief to Nick's queue; a **material variance
+     auto-spawns the owning worker procedure in a parked/draft state** (e.g. an unprofitable-client variance
+     → 09-14 margin-watch / Sterling's 09-17; an overrun → 09-13 to Pierce) — one-click launch, never actuated. **L2.**
+  4. `[automation]` **Delegate** corrective motions to the owning sub-agent (Audrey / division agents) — their
+     gauntlet applies (pre-stages the gated worker procedure, never bypasses, A11).
+- **Driving policy:** inherits A3/A5/A7 baseline + TBD (#1586) — FP&A / budget-governance policy.
+- **Realization:** `icm/executive/deputy-cfo/fpna/` (exec tier ADR #1535; scaffold #1536).
+- **Autonomy ceiling:** **L2 delegate-only** (synthesize/advise/orchestrate; never bypass a sub-agent
+  gauntlet; world-changing acts inherit the executing sub-agent's ceiling, A11). No money, no send.
+- **Human-in-loop:** Nick consumes/decides the budget; Sterling recedes to scheduled roll-up; binding
+  budget commitments = human floor (a budget is a planning artifact, not money out — the spend it authorizes is gated where it occurs).
+- **Substrate deps:** [DORM-ALLOC] #1044/#1308 cost/revenue-allocation (true-margin inputs); [DORM-AR] #1580;
+  [DORM-EVENT] delegate bus #991; [DORM-SCHEMA #1619] rev-rec actuals (degrades to cash-basis until #1619).
+- **subject:** both. **Maps to:** #1626 cluster-2; #1549.
+
+## 09-20 · Prep sales-tax nexus & filings — propose-only, 💤DORMANT (schema #1620)
+- **Owner / Stream:** Audrey / 09 (computes nexus + liability) + Sterling (governs cadence) + **human files**
+  — Audrey/Sterling prepare, the **filing is the human's external attestation**. **Archetype:** B9
+  deadline-sentinel (filing deadlines are clocks the sentinel watches, never auto-files, A11) **+ B4
+  audit-attest** (the filing is an **external** attestation to a tax authority → `always_gate`, human-signed).
+- **Trigger:** A filing-deadline lead time fires (T-30/T-7/T-1, per jurisdiction cadence); a nexus-threshold
+  re-evaluation (new state revenue crosses an economic-nexus threshold); a new jurisdiction onboarded.
+- **Terminal outcome:** Per-jurisdiction **nexus determination** + computed tax liability + a pre-staged,
+  evidence-backed filing package **routed to the human for sign-and-file** (the authority is the external
+  SoR; the agent prepares, **never files**); deadlines escalated, never auto-actuated; a passed deadline is a logged miss.
+- **Procedure Steps** (B9 watch→detect→quantify→draft-rec→route+notify, with B4 external-attest gate):
+  1. `[automation]` **Watch + detect (B9)** — track per-jurisdiction filing cadences + economic-nexus
+     thresholds vs taxable revenue, **citing each jurisdiction rule + revenue source + as-of** (A5); detect
+     a crossed threshold or an approaching deadline. **L0.**
+  2. `[automation]` **Quantify** — compute the tax liability for the period per jurisdiction; write the
+     tie-out (taxable base, rate, liability, as-of); flag nexus newly-triggered. On empty/unparseable
+     jurisdiction data → park, never fabricate a liability (A5b). **L1.**
+  3. `[automation]` **Draft-rec + route (B9, easy-button pre-staged)** — assemble the filing package + the
+     consequence of inaction (penalty/interest); route to the human + notify with rising urgency up
+     `reports_to` (A6); a passed deadline is a **logged escalation failure** surfaced in Sterling's brief. **L2.**
+  4. `[gui-step]` **EXTERNAL-ATTEST GATE — always_gate** (B4 external attestation; A2 class-6 binding/legal):
+     the human reviews the pre-staged package and **files with the tax authority outside the app** (the
+     authority = external SoR; the agent never files). **Sterling governs** the cadence/discipline (A11 — governs, does not file).
+- **Driving policy:** inherits A2/A4/A5 baseline + TBD (#1586) — sales-tax / nexus policy (per-jurisdiction thresholds + cadences).
+- **Realization:** `icm/domains/finance/sales-tax-nexus/` (Audrey compute) + `icm/executive/deputy-cfo/`
+  governance (Sterling cadence); procedure-only until built.
+- **Autonomy ceiling:** **L2** (watch + compute + route = reversible internal, A10 row 1; B9 never auto-actuates
+  a filing even under deadline pressure). The filing = human **always_gate** (an external attestation to a tax authority).
+- **Human-in-loop:** human files every return (the permanent floor); Sterling/Nick own cadence discipline; Audrey recedes to the always-on sentinel.
+- **Substrate deps:** **[DORM-SCHEMA #1620] tax-nexus silver model is a SEPARATE open issue — ships
+  propose-only per A5c until it lands**; [DORM-CRED] QBO/revenue source.
+- **subject:** both. **Maps to:** #1626 cluster-2; schema **#1620**.
+
+## 09-21 · Manage cash position & runway (treasury)
+- **Owner / Stream:** Audrey / 09 (read-only cash synthesis) + Sterling (governs treasury posture).
+  **Archetype:** B3 synthesis-brief — read-only over silver, **no actuation, no money movement** (A9a —
+  Audrey reads balances, never moves cash; treasury actions are human, outside the app).
+- **Trigger:** Scheduled (daily/weekly cash sweep) or on-demand for CFO/board; a runway-threshold breach.
+- **Terminal outcome:** A read-only **cash-position + runway** summary — current cash, near-term AR
+  inflows (from 09-09 aging), near-term AP outflows (from 09-11/09-24), net burn, and **months of runway**
+  — for CFO/board; runway-at-risk flagged. Audrey summarizes; she **never moves money**.
+- **Procedure Steps** (B3: gather(cite) → synthesize(flag dormancy) → narrate → deliver):
+  1. `[automation]` **Gather** — read cash balances (QBO read-only, A9a) + projected AR inflows (09-09) +
+     projected AP outflows (09-11/09-24) + recurring payroll/expense obligations, **citing each + as-of** (A5;
+     flag dormant sources honestly, A5c). **L0.**
+  2. `[automation]` **Synthesize + narrate** — net cash-flow projection + burn + runway months (signal vs
+     inference labeled, as-of dated, P2). **L1.**
+  3. `[automation]` **Deliver (B3 launchpad)** — runway summary to CFO/board + Sterling's financial-pulse
+     (Stream 11, do NOT duplicate the brief here); a **runway-at-risk** signal pre-stages the owning motion
+     (collections push 09-10 / AP-timing review 09-24) in a parked/draft state — never actuates. **L2** auto-raise.
+- **Driving policy:** inherits A5/A7 baseline + TBD (#1586) — treasury / minimum-runway policy.
+- **Realization:** `icm/domains/finance/treasury-cash/` (Audrey) + Sterling treasury-posture governance; procedure-only/unbuilt.
+- **Autonomy ceiling:** **L0–L2** (read + auto-raise runway flag = reversible internal, A10 row 1). **HARD:
+  no money movement** — cash transfers/investments are structurally out of Audrey's catalog (refusal-class; money out = A2 class-1, human + outside the app).
+- **Human-in-loop:** CFO/board consume; any treasury action (transfer, draw, invest) is human, outside the app, always. Floor = Audrey never moves cash.
+- **Substrate deps:** [DORM-CRED] QBO cash balances; [DORM-AR] #1580 (AR inflow projection); rolls up 09-09/09-11/09-24.
+- **subject:** both. **Maps to:** #1626 cluster-2; #1098 (cash-flow view)-adjacent.
+
+## 09-22 · Generate the recurring-invoice batch — propose-then-gate, 💤DORMANT (ties #1580)
+- **Owner / Stream:** Audrey-domain (the generation is finance-domain; **the QBO push is the human's
+  `always_gate`** — customer-facing + money, A2 class-1/2; QBO=SoR A9a, the agent never pushes).
+  **Archetype:** **B6 money-gate, BATCH** — approve-once for the steady-state, per-item gate for exceptions
+  (the B6 batch rule). **Un-defers the GENERATION that 09-08 only pre-checks** (09-08 stays the per-draft
+  anomaly pre-check; this procedure produces the batch that 09-08 checks — cross-ref, no duplicate).
+- **Trigger:** The recurring-billing cycle fires (per contract billing schedule, e.g. monthly/anniversary);
+  or an on-demand batch run for a billing period.
+- **Terminal outcome:** A generated **batch of `generated_invoice` drafts** for the period (one per active
+  recurring contract line), tied to contract rate + attested usage, **proposed as ONE batch easy-button**
+  (total-$ + invoice count + diff-vs-prior-period view); on approval the within-tolerance items push to QBO,
+  exceptions split out and gate individually. Audrey generates + ties out; the **push is human**, QBO=SoR.
+- **Procedure Steps** (B6: ground → compute → draft(batch) → MONEY GATE(batch) → actuate(idempotent) → log):
+  1. `[automation]` **Ground** — read active recurring contracts/billing schedules + contract rate +
+     attested `time_record`/usage for the period, **citing each + as-of** (A5; empty/unparseable contract →
+     park that line, never fabricate, A5b). **L1.**
+  2. `[automation]` **Compute + draft the batch** — generate one `generated_invoice` draft per line; run the
+     09-08 tie-out per draft (expected vs actual lines/rates/hours; write the arithmetic); partition into
+     **within-tolerance** (matches prior period within the variance guard) vs **exceptions** (new
+     recipient, >X% change, first-time amount). **L2.**
+  3. `[gui-step]` **MONEY GATE (batch, B6 rule) — always_gate** (A2 class-1/2): present **one batch
+     easy-button** (total-$, count, diff/exception view, A4) — **one approval runs the within-tolerance items**;
+     **each exception splits out and gates individually**. **Mark-gated** push (customer-facing + money).
+  4. `[automation]` **Actuate (human-pushed) + reconcile** — the approved drafts push to QBO (human acts;
+     QBO=SoR A9a), **idempotency-keyed per invoice (contract+period)** so a replay is a no-op + audit note,
+     never a double-invoice (A9b); **read back** the QBO invoice to confirm it landed before marking the line
+     done (A9c). On partial failure: **halt, no auto-rollback**, completed-vs-pending surfaced (A10/B6 resume = re-run from top, idempotent). **L2** (Audrey's generation/recon; the push stays human).
+- **Driving policy:** inherits A2/A9 baseline + TBD (#1586) — recurring-billing policy + the **per-procedure
+  variance threshold** for the within-tolerance batch (B6). QBO=SoR (ADR-0085).
+- **Realization:** `icm/domains/finance/recurring-invoice-batch/` (un-defers generation; procedure-only).
+- **Autonomy ceiling:** **L2** (generate + tie-out + reconcile = reversible internal, A10 row 1). The QBO push
+  = customer-facing + money **always_gate**, Mark-gated (no clean undo once a client is billed, A10) — NOT Audrey's to execute.
+- **Human-in-loop:** Finance + Mark gate the batch push (one approval within tolerance; per-item for
+  exceptions); Audrey recedes to generation + pre-check; the push authorization is the permanent floor.
+- **Substrate deps:** **[DORM-AR] #1580 AR/invoice silver — own-vs-mirror open; the `generated_invoice`
+  generation (#1095/#1045) must exist; ships propose-only per A5c until the AR entity lands**; [DORM-CRED] QBO.
+- **subject:** both. **Maps to:** #1626 cluster-2; #1095/#1045 (generation), ties **#1580**; pre-check = 09-08.
+
+## 09-23 · Handle billing dispute / credit memo / adjustment — propose-only, 💤DORMANT (ties #1580)
+- **Owner / Stream:** Audrey / 09 (detects + drafts) + **human approves the credit/adjustment** — Audrey
+  reconciles the disputed line; the **credit memo / adjustment is the human's `always_gate`**. **Archetype:**
+  B6 money-gate (a credit memo / discount / adjustment is **money out**, A2 class-1 — `always_gate`; QBO=SoR
+  A9a, the agent never issues the credit).
+- **Trigger:** A client disputes an invoice (raised via Celeste/client-360 or support); a reconciliation
+  mismatch (09-08/09-22 tie-out) reveals an over-bill; an approved adjustment request.
+- **Terminal outcome:** Per-dispute **reconciled finding** (what was billed vs what was owed, the delta,
+  the supporting evidence) + a **drafted credit memo / adjustment proposed** for human approval; on approval
+  the credit is issued in QBO **by the human** (verified, never issued by the agent). Disputes Audrey can't
+  substantiate → park to human (A5b), never auto-credit.
+- **Procedure Steps** (B6: ground → compute → draft → MONEY GATE → actuate(recon, idempotent) → log):
+  1. `[automation]` **Ground** — read the disputed invoice + contract rate + attested usage + the dispute
+     rationale, **citing each + as-of** (A5; empty/unsubstantiated dispute → park to human, never fabricate a
+     credit basis, A5b). **L1.**
+  2. `[automation]` **Compute + draft** — tie out billed-vs-owed; write the arithmetic (inputs, expected,
+     actual, delta, as-of); **draft** the credit memo / adjustment amount + reason. **L2.**
+  3. `[gui-step]` **MONEY GATE — always_gate** (A2 class-1; a credit memo is money out): finance reviews the
+     4-part easy-button (drafted credit + cited why + one-click approve + exact-$ + irreversibility), then
+     **issues the credit/adjustment in QBO outside the app** (QBO=SoR A9a; customer-facing communication of
+     the resolution rides Celeste's gated send, A11 — Audrey never 1:1 client-comms).
+  4. `[automation]` **Reconcile (A9c)** — read back the QBO credit memo to confirm it landed; stamp the
+     dispute resolved (verification stamp, idempotency-keyed on the QBO credit ref — replay = no-op + audit note, A9b). **L2.**
+- **Driving policy:** inherits A2/A9 baseline + TBD (#1586) — dispute/credit-authority policy (who may approve what $ band).
+- **Realization:** `icm/domains/finance/billing-dispute-credit/` (procedure-only).
+- **Autonomy ceiling:** **L2** (detect + draft + reconcile = reversible internal, A10 row 1). The credit/
+  adjustment issuance = human **always_gate** (money out, settled = no clean undo, A10) — NOT Audrey's to execute.
+- **Human-in-loop:** Finance approves + issues every credit/adjustment (the permanent floor); the
+  client-facing resolution comms ride Celeste (A11). Audrey recedes to detect + draft.
+- **Substrate deps:** [DORM-AR] **#1580** AR/invoice silver (own-vs-mirror open; ships propose-only per A5c until it lands); [DORM-CRED] QBO; [DORM-EVENT] #991 (Celeste comms seam).
+- **subject:** both. **Maps to:** #1626 cluster-2; ties **#1580**; resolution comms → Celeste.
+
+## 09-24 · Run AP approve-to-pay (vendor bills → pay run)
+- **Owner / Stream:** Audrey / 09 (reconciles + drafts the pay run) + **human approves + pays** — extends
+  09-11 (AP intake/visibility) into the **approve-to-pay** flow. **Archetype:** B6 money-gate — Audrey
+  three-way-matches and drafts; the **pay run is the human's `always_gate`** (money out, A2 class-1; QBO=SoR
+  A9a, Audrey never pays). **⚠ OWNERSHIP NUANCE (A11 seam):** Audrey = books/payment reconciliation, **Vance =
+  vendor lifecycle/procurement** (PO ownership); D8 assigns AP approve-to-pay to **Audrey**. **Flag for Mark.**
+- **Trigger:** Vendor bills accrue (from 09-11 intake) and a pay-run window opens (per AP cadence); or an
+  on-demand pay run; or a discount-term deadline (early-pay) approaches.
+- **Terminal outcome:** A **drafted AP pay run** — bills three-way-matched (bill ↔ PO/contract ↔ receipt
+  where available), grouped, total-$ + count + exception view — **proposed as a batch easy-button** for human
+  approval; on approval the human pays in QBO (the app verifies, **never pays**, A9a). Unmatched/anomalous bills split out and gate individually.
+- **Procedure Steps** (B6 BATCH: ground → compute(match) → draft(batch) → MONEY GATE(batch) → actuate(human) → reconcile → log):
+  1. `[automation]` **Ground** — read accrued vendor bills (09-11) + matching PO/contract (Vance domain,
+     cited as the seam) + receipt/approval, **citing each + as-of** (A5; unmatched bill → park as an exception, never auto-include, A5b). **L0.**
+  2. `[automation]` **Compute + draft the pay run** — three-way match; partition **within-tolerance** (matches
+     PO/contract within guard, known recipient) vs **exceptions** (new payee, >X% variance, no PO, first-time
+     amount); write the tie-out per bill. **L2.**
+  3. `[gui-step]` **MONEY GATE (batch, B6 rule) — always_gate** (A2 class-1, money out): present **one batch
+     easy-button** (total-$, count, exception view, A4) — **one approval clears the within-tolerance bills**;
+     **each exception splits out and gates individually**. Finance **pays in QBO outside the app** (QBO=SoR A9a).
+  4. `[automation]` **Reconcile (A9c)** — read back the QBO bill-payments to confirm they landed; stamp each
+     bill paid (verification stamp, idempotency-keyed on the QBO payment ref — replay = no-op + audit, A9b).
+     On partial failure: halt, no auto-rollback, completed-vs-pending surfaced (A10). **L2.**
+- **Driving policy:** inherits A2/A9 baseline + TBD (#1586) — AP / approve-to-pay policy + the per-procedure
+  **variance threshold** for the within-tolerance batch (B6) + payment-authority $ bands.
+- **Realization:** `icm/domains/finance/ap-approve-to-pay/` (extends 09-11; procedure-only).
+- **Autonomy ceiling:** **L2** (match + draft + reconcile = reversible internal, A10 row 1). The pay run =
+  human **always_gate** (money out, settled = no clean undo, A10) — NOT Audrey's to execute.
+- **Human-in-loop:** Finance approves the pay run (batch within tolerance; per-item for exceptions) + pays
+  outside the app (the permanent floor); the PO/vendor-lifecycle seam is Vance's (A11). Audrey recedes to match + draft.
+- **Substrate deps:** [DORM-AR] **#1580** / [DORM-CRED] QBO; PO/contract source from Vance domain ([DORM-EVENT] #991 seam); extends 09-11.
+- **subject:** both. **Maps to:** #1626 cluster-2; #1097 (AP intake) extended; Vance seam.
+
+## 09-25 · Support the external financial audit — propose-only governance, 💤DORMANT
+- **Owner / Stream:** Sterling / 09 (exec — owns the audit-evidence standard) + **human signs** — Sterling
+  assembles + governs; the **representation to the external auditor is the human's signed attestation**.
+  **Archetype:** B4 audit-attest — the audit support is an **external-facing attestation** (to an external
+  auditor) → `always_gate`, human-signed, with the full evidence-backed package pre-staged (the B4 external split).
+- **Trigger:** An external financial audit / review is initiated (annual, lender-driven, or due-diligence);
+  an auditor PBC (prepared-by-client) request list arrives; a standing audit-readiness review.
+- **Terminal outcome:** A pre-staged, evidence-backed **PBC package** (requested schedules, recon evidence,
+  rev-rec schedules from 09-18, AR/AP rollforwards, payroll/expense recon, the change/control evidence trail
+  from Grace) mapped to each auditor request, **routed to the human for sign-and-release**; management
+  representations are human-signed. Sterling assembles + governs; he **never releases to the auditor unsigned**.
+- **Procedure Steps** (B4: scope(cite standard/request) → collect-evidence → evaluate → compose → route-gaps → sign-off(external, gated)):
+  1. `[automation]` **Scope** — map each auditor PBC request to its evidence source, **citing the request +
+     each source + as-of** (A5). **L2** (delegate-only; read + recall).
+  2. `[automation]` **Collect-evidence** — pull the schedules/recons/rollforwards (delegate to Audrey's
+     read-only procedures: 09-02/05/07/09/11/18/24) + control evidence (**SEAM → Grace, GRC** — every change/
+     control = audit evidence, mirrors Stream 06 OP-06-08); evidence stays internal-only, anonymized across
+     clients where it leaves the books (A7). **L2.**
+  3. `[automation]` **Evaluate + compose** — assemble the PBC package per request; flag gaps/missing evidence
+     to Nick (route-gaps); never fabricate a schedule or representation on empty evidence (A5b). **L2.**
+  4. `[gui-step]` **EXTERNAL-ATTEST GATE — always_gate** (B4 external attestation; A2 class-6 binding):
+     the human (CFO/Nick + Mark) reviews the package and **signs + releases to the external auditor outside the
+     app**; management representations are human-signed (Sterling governs + assembles, **never releases unsigned**, A11).
+- **Driving policy:** inherits A2/A5/A7 baseline + TBD (#1586) — audit-support / evidence-release policy.
+- **Realization:** `icm/executive/deputy-cfo/external-audit-support/` (exec tier ADR #1535; scaffold #1536); procedure-only.
+- **Autonomy ceiling:** **L2 delegate-only** (assemble + route = reversible internal; never bypass a
+  sub-agent gauntlet, A11). The release/representation to the auditor = human **always_gate** (an external attestation).
+- **Human-in-loop:** CFO/Nick + Mark sign + release every package to the auditor (the permanent floor);
+  Sterling recedes to assembly + gap-routing; binding representations are human floor.
+- **Substrate deps:** [DORM-EVENT] delegate/handoff bus #991 (Audrey/Grace seams); [DORM-SCHEMA #1619]
+  rev-rec schedules (09-18) degrade until #1619; [DORM-CRED] QBO; exec-tier scaffold #1536. Ships propose-only per A5c.
+- **subject:** both. **Maps to:** #1626 cluster-2; Grace GRC seam (#1557); #1549.
+
+---
+
 ## Provable-coverage note
 
 Record→Report surface fully covered across Audrey (read-only, L2 ceiling, advises-never-gates; QBO=SoR no
@@ -503,7 +790,21 @@ SoR, **Audrey mirrors and never owns; no money movement ever**, every recon stam
 read-back-confirmed, and every actual money/send act (payroll/reimbursement/QBO-invoice-push/dunning-send)
 is a human `always_gate` (A2 class-1/2). Audrey **advises, never gates** (A11 — she lights the number on
 another agent's gated action); salary/rate non-disclosure stays refusal-class. Per A5c, AR/invoice
-procedures (08/09/10) ship propose-only until the **#1580** entity lands.
+procedures (08/09/10/22/23) ship propose-only until the **#1580** entity lands.
 
-**Count: 17 Operating Procedures** (09-01 … 09-17): Time 3 · Expense 3 · Monthly Close 1 · AR/AP/billing 4 ·
-margin hand-offs 3 · BI 1 · Sterling governance 2.
+**Finance-at-scale (cluster 2, #1626, 09-18…09-25)** extends — does not fork (A1) — the stream onto the
+$100M-scale finance surface: revenue recognition (18) · FP&A budget/forecast/variance (19) · sales-tax
+nexus & filings (20) · treasury cash/runway (21) · recurring-invoice batch generation (22, un-defers the
+generation 09-08 only pre-checks; the QBO push stays the Mark-gated money gate) · billing dispute/credit
+memo (23) · AP approve-to-pay (24, extends 09-11) · external-audit support (25). The same invariants hold:
+**Audrey read-only / L2 / advises-never-gates; Sterling exec L2 delegate-only; QBO=SoR, no money movement
+ever (A9a); salary/rate non-disclosure refusal-class.** The batch money procedures (22/24) instantiate the
+**B6 batch rule** — approve-once within tolerance, per-item gate for exceptions. **Schema gaps flagged
+(separate open issues, ships propose-only per A5c):** rev-rec silver **#1619** (09-18, rolls into 19/25),
+sales-tax-nexus silver **#1620** (09-20); the AR/invoice own-vs-mirror **#1580** still gates 08/09/10/22/23.
+**Ownership flags for Mark (A11 seams):** AP approve-to-pay (24) — Audrey books vs Vance vendor-lifecycle;
+dispute resolution comms (23) ride Celeste, never Audrey.
+
+**Count: 25 Operating Procedures** (09-01 … 09-25): Time 3 · Expense 3 · Monthly Close 1 · AR/AP/billing 4 ·
+margin hand-offs 3 · BI 1 · Sterling governance 2 · finance-at-scale 8 (rev-rec 1 · FP&A 1 · tax 1 ·
+treasury 1 · recurring-invoice batch 1 · dispute/credit 1 · AP approve-to-pay 1 · external-audit 1).
