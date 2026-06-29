@@ -1,6 +1,6 @@
--- 0231: Agent eval golden-set — Client Success / vCIO / vCISO agent (Celeste).
--- Eval-plane seed (#1538, epic #1534 / #1396, ADR-0106). Migration number 0231 claimed at MERGE per
--- system CLAUDE.md §10.3 — authored against a placeholder; renumber if another migration merges first.
+-- 0232: Agent eval golden-set — Client Success / vCIO / vCISO agent (Celeste).
+-- Eval-plane seed (#1538, epic #1534 / #1396, ADR-0106). Migration number 0232 claimed at MERGE per
+-- system CLAUDE.md §10.3 (renumbered 0231→0232 — a parallel Chase sales-goldens seed took 0231 first).
 --
 -- WHY THIS EXISTS. Celeste (Client Success) is a built agent — the most-built domain agent (14
 -- workspaces = Stream-08 08-A…08-N) and the relationship hub every other agent hands off to — that
