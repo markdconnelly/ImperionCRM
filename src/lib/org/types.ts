@@ -14,9 +14,15 @@ export interface OrgNode {
   kind: OrgNodeKind;
   persona: string | null;
   reportsTo: string | null;
+  /** The human (humans[].key) this agent ultimately answers to; may differ from
+   *  its agent-manager's human (a deliberate hybrid). */
+  humanManager: string | null;
   ceiling: string | null;
   serves: string | null;
   division: string | null;
+  /** Public-render fields (the org chart is classified public-approved). */
+  title: string | null;
+  summary: string | null;
   built: boolean;
   /** Executives only: the domain slugs in their division. */
   memberDomains: string[];
@@ -30,10 +36,23 @@ export interface OrgEdge {
   to: string;
 }
 
+/** A real staff member — the human org layer the agent tree reports up into. */
+export interface OrgHuman {
+  key: string;
+  name: string | null;
+  role: string | null;
+  title: string | null;
+  summary: string | null;
+  /** Another human's key, or null for the top of the human org (Derek). */
+  reportsTo: string | null;
+}
+
 export interface OrgGraph {
   orchestrator: string;
   nodes: OrgNode[];
   edges: OrgEdge[];
+  /** The 7 real staff; agents point in via OrgNode.humanManager. */
+  humans: OrgHuman[];
 }
 
 /** Per-agent live state, keyed by `agent_key` (best-effort matched to a node id/persona). */

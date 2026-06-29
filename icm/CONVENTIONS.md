@@ -91,6 +91,64 @@ auto_may_self_approve: "clean-audit reimbursements with existing category mappin
 mcp_servers: [...]              # optional; creds via vaults, never inline
 ```
 
+## Persona files (the personality matrix — ADR-0135)
+
+An agent is composed of three intertwining matrices joined on `agent_key`, plus a
+metrics binding. The **persona `.md`** (the domain-dir file that is not `room.md`;
+e.g. `chase.md`, `felix.md`) is **Matrix A — personality only**. It is INDEPENDENT
+of the autonomy ladder:
+
+- **Matrix A — Personality (`persona.md`):** the 7 fixed sections below.
+- **Matrix B — Capabilities:** `agent.yaml` + workflow dirs + `room.yaml`
+  (workflows · tasks · skills · scope: data_classes · okf_rooms · tools).
+- **Matrix C — Autonomy ladder:** the hard-cap `ceiling` lives in `org.yaml`
+  (agent-level, workflow-independent); the per-workflow setting is `agent.yaml`
+  `autonomy_rung` (≤ ceiling). Never put a ladder table in the persona.
+
+A persona NEVER originates rules: `org.yaml` owns the ceiling, the policy canon §5
+(ADR-0134) owns the `always_gate` rules; the persona CITES and may only tighten.
+Every §6 guardrail line cites a policy § or the ceiling (uncited = a gap to fix in
+policy, only Mark+Derek edit it).
+
+**Frontmatter (every persona, agent and employee):**
+
+```yaml
+---
+type: persona
+surface: agent          # agent | employee
+agent_key: chase        # the join key across org.yaml / agent.yaml / metrics / persona
+status: active          # draft | active
+version: 1
+valid_from: 2026-06-29
+content_hash: ""        # set by sync
+---
+```
+
+**The 7 sections (exact headings — agents and employees share them):**
+1. **Identity & mandate** — name, role, division, 1-sentence mandate, who it serves,
+   agent-manager + human-manager, the ceiling stated in words.
+2. **Origin & character** — agent: a fictional backstory (age · US hometown ·
+   background that earns the role · personality). Employee surface: the person's REAL
+   "Background & character".
+3. **How you work** — operating doctrine + decision posture.
+4. **Voice & tone** — one register (internal-only) or a two-mode contract
+   (internal terse / external polished) for client-facing agents.
+5. **Grounding & uncertainty** — cite-or-say-don't-know, no fabrication (CS-07 §5 +
+   CONSTITUTION §8 retrieval).
+6. **Behavioural guardrails** — bullets, each citing a policy § or the ceiling; names
+   what ALWAYS parks (no ladder table).
+7. **Boundaries & seams** — down (siblings/handoffs), agent manager, human manager,
+   the seams where its scope ends.
+
+**Employees** (live in `icm/people/<name>.md`, surface `employee`) add four human-only
+sections — **Decision & commitment authority** (binds policy §5 — the approver-side of
+agent `always_gate`) · Ownership & delegation · Agent-pairing contract · Knowledge
+sources — plus the same metrics binding. (Personal brains — ImperionBrainMark — are a
+separate branch, not these.)
+
+The composition order is unchanged (ADR-0088 §2): Constitution → `room.md` → **persona**
+→ workflow `prose.md`; the gate enforces the persona is composed.
+
 ## Three runtime skill tiers (+ dev skills — don't mix)
 
 | Tier | Home | Promote when |
