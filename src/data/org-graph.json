@@ -172,7 +172,8 @@
         "marketing",
         "client-success",
         "procurement",
-        "finance"
+        "finance",
+        "partnerships"
       ],
       "tools": [
         "pg.read",
@@ -1083,6 +1084,43 @@
       ]
     },
     {
+      "id": "partnerships",
+      "kind": "domain",
+      "persona": "Bridget",
+      "reportsTo": "deputy-cfo",
+      "humanManager": "nick",
+      "ceiling": "L3",
+      "serves": null,
+      "division": null,
+      "title": "Partnerships",
+      "summary": "Builds channel/alliance/co-sell partnerships and registers partner-sourced deals.",
+      "built": true,
+      "memberDomains": [],
+      "tools": [
+        "pg.read",
+        "knowledge.search",
+        "memory.recall"
+      ],
+      "okfRooms": [
+        "partner",
+        "partner_deal",
+        "account",
+        "opportunity"
+      ],
+      "workflows": [
+        {
+          "slug": "partner-deal-routing",
+          "stages": [
+            "01-ground",
+            "02-resolve-partner",
+            "03-classify-route",
+            "04-handoff-chase",
+            "05-summary"
+          ]
+        }
+      ]
+    },
+    {
       "id": "platform",
       "kind": "domain",
       "persona": "Vera",
@@ -1344,6 +1382,10 @@
     {
       "from": "deputy-cfo",
       "to": "finance"
+    },
+    {
+      "from": "deputy-cfo",
+      "to": "partnerships"
     },
     {
       "from": "cro",

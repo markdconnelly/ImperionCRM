@@ -1,6 +1,6 @@
 # 👥 The agent roster — the staffed org chart
 
-The canonical **org chart**: **1 orchestrator (Nova) + 5 C-suite + 20 domain agents**,
+The canonical **org chart**: **1 orchestrator (Nova) + 5 C-suite + 21 domain agents**,
 plus the **7 human staff** they report up to. Each agent has a persona, a voice, an
 origin story, and policy-bound guardrails. The single SoT for the chart is
 [`icm/org.yaml`](../../icm/org.yaml) (it feeds the `/org` view and the public promo
@@ -36,7 +36,7 @@ persona-file standard (7 sections + frontmatter) is `icm/CONVENTIONS.md` §Perso
 
 ---
 
-## 2. The roster (26 agents)
+## 2. The roster (27 agents)
 
 `Agent mgr` = the C-suite agent it reports to. `Human` = the human it ultimately answers
 to (may differ from its agent-manager's human — a deliberate hybrid). `Ceiling` = its
@@ -77,6 +77,7 @@ persona hard-cap on the canonical L0–L5 ladder (ADR-0128); C-suite are L2-dele
 | **Celeste** | Client Success | Sterling | L3 | Caity | [celeste.md](../../icm/domains/client-success/celeste.md) |
 | **Vance** | Procurement | Sterling | L2 | Nick | [vance.md](../../icm/domains/procurement/vance.md) |
 | **Audrey** | Finance | Sterling | L2 | Nick | [audrey.md](../../icm/domains/finance/audrey.md) |
+| **Bridget** | Partnerships | Sterling | L3 | Nick | [bridget.md](../../icm/domains/partnerships/bridget.md) |
 | **Vera** | Platform Governance | Jessica | L2 | Mark | [vera.md](../../icm/domains/platform/vera.md) |
 | **Tess** | Service Quality | Jessica | L2 | Mark | [tess.md](../../icm/domains/service-quality/tess.md) |
 | **Alivia** | Knowledge | Jessica | L3 | Mark | [alivia.md](../../icm/domains/knowledge/alivia.md) |
@@ -93,7 +94,7 @@ decision-authority/ownership/agent-pairing/knowledge + a metrics binding).
 |---|---|---|---|
 | **Derek** | CEO | — | Nova, Rachel, Holly, Chase, Belle |
 | **Mark** | CISO | Derek | Roman, Jessica, Cyrus, Grace, Osiris, Laurel, Vera, Tess, Alivia |
-| **Nick** | CFO | Derek | Sterling, Vance, Audrey |
+| **Nick** | CFO | Derek | Sterling, Vance, Audrey, Bridget |
 | **Luke** | Senior Systems Architect | Derek | Dexter, Sage |
 | **Brandon** | Cloud Engineer | Luke | Felix, Ozzie, Marshall, Scout, Phoenix |
 | **Anna** | Senior Project Manager | Derek | Pierce |

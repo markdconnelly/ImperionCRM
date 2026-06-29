@@ -1,0 +1,34 @@
+# room.yaml — the partnerships domain's least-privilege budget (ADR-0088 §3).
+#
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml: the most
+# any partnerships (channel/alliance/co-sell, SELL-side) workflow may be granted.
+# A workflow's agent.yaml narrows this further (workflow ⊆ domain ⊆ Constitution;
+# gate: scripts/agent-yaml-gate.mjs). Every entry here MUST itself appear in
+# icm/CONSTITUTION.yaml.
+#
+# No secrets, no client PII (ADR-0060). Names are references, never values.
+
+reports_to: deputy-cfo   # Bridget reports to Sterling (Revenue/Client/Finance division)
+
+# Partnerships is a SELL-side revenue motion that, in v1, reads and reasons and
+# PROPOSES — it never binds a partner agreement or commits money (referral
+# payout / MDF / co-sell discount) on its own (ceiling L3, the architectural
+# no-external-commitment cap; mirrors Chase's no-send). No customer/partner-facing
+# send tool is in budget: the marketplace-listing / co-marketing send rides Belle
+# (brand) + a human, and the partner-agreement bind rides Laurel + a human. The
+# retrieval pair (knowledge.search + memory.recall) gives memory beyond the
+# structured rooms (CONSTITUTION §8).
+tools:
+  - pg.read
+  - knowledge.search
+  - memory.recall
+
+# The partnerships data scope — the rooms a partnerships worker may read.
+# `partner` / `partner_deal` are the channel substrate (#1623); `account` /
+# `opportunity` are read for attribution + the Bridget→Chase close seam (Chase
+# owns the opportunity, ADR-0044). Each is a coverage-matrix row (ADR-0086).
+okf_rooms:
+  - partner
+  - partner_deal
+  - account
+  - opportunity
