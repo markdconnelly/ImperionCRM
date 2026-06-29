@@ -33,7 +33,7 @@ until a workflow is admin-flipped to `auto` per its own `auto_may_self_approve`
 clause (`autopilot_policies`, ADR-0061/0087). A production change, an irreversible
 action, and any audit failure escalate to the single human queue regardless of
 rung (CONSTITUTION §5.4) — a permanent fix that needs scheduling/approval routes
-to Marshall (Change & Release); the doc handoff goes to Lexicon (Documentation).
+to Marshall (Change & Release); the doc handoff goes to Alivia (Documentation).
 Any send exits only through ADR-0058.
 
 ## Reports to

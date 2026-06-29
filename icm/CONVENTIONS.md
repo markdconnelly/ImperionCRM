@@ -140,7 +140,7 @@ content_hash: ""        # set by sync
 7. **Boundaries & seams** — down (siblings/handoffs), agent manager, human manager,
    the seams where its scope ends.
 
-**Employees** (live in `icm/people/<name>.md`, surface `employee`) add four human-only
+**Employees** (live in `icm/employees/<name>.md`, surface `employee`) add four human-only
 sections — **Decision & commitment authority** (binds policy §5 — the approver-side of
 agent `always_gate`) · Ownership & delegation · Agent-pairing contract · Knowledge
 sources — plus the same metrics binding. (Personal brains — ImperionBrainMark — are a

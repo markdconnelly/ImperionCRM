@@ -56,7 +56,7 @@
 | Audrey | finance | Sterling | — | L2 (read-only) |
 | Vera | platform | Jessica | — | L2 (watcher) |
 | Tess | service-quality | Jessica | — | L2 (watcher) |
-| Lexicon | knowledge | Jessica | — | L3 |
+| Alivia | knowledge | Jessica | — | L3 |
 
 Domain ceilings are the agent's **persona ceiling**; a per-workflow `agent.yaml`
 `autonomy_rung` is `L0`–`L3` and narrows from it. The `built` flag in

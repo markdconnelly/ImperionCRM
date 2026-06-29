@@ -115,7 +115,7 @@ routes *across* divisions.
 | 07 | Protect → Assure | Cyrus · Grace · Roman · Phoenix | 14 | [streams/07-protect-assure.md](streams/07-protect-assure.md) |
 | 08 | Engage → Retain | Celeste | 14 | [streams/08-engage-retain.md](streams/08-engage-retain.md) |
 | 09 | Record → Report | Audrey · Sterling | 17 | [streams/09-record-report.md](streams/09-record-report.md) |
-| 10 | Run the Company | Rachel · Holly · Laurel · Tess · Vera · Jessica · Lexicon + OS-self | 40 | [streams/10-run-company.md](streams/10-run-company.md) |
+| 10 | Run the Company | Rachel · Holly · Laurel · Tess · Vera · Jessica · Alivia + OS-self | 40 | [streams/10-run-company.md](streams/10-run-company.md) |
 | 11 | Orchestrate | Nova + 5 C-suite | 15 | [streams/11-orchestrate.md](streams/11-orchestrate.md) |
 
 Status legend used in the stream files: ⚡ ready · 💤 dormant (flagged dep) · 🔨 built.
@@ -200,11 +200,11 @@ intake. **Margin (3):** renewal → Chase · project-cost → Pierce · per-clie
 (v2). **BI hub (1).** **Sterling governance (2).** Audrey advises, never gates; QBO = SoR,
 no money movement; salary non-disclosure is refusal-class.
 
-### Stream 10 — Run the Company · Rachel / Holly / Laurel / Tess / Vera / Jessica / Lexicon + OS-self (40)
+### Stream 10 — Run the Company · Rachel / Holly / Laurel / Tess / Vera / Jessica / Alivia + OS-self (40)
 Rachel CoS (4) · Holly HR/internal-JML (5) · Laurel Legal (3) · Tess QA (3) · **Vera
 governance (14:** conformance detect → quarantine → route → verify loop + per-domain
 rulebooks; client-security-standard ownership + ratification ⛔; internal-affairs audit;
-**connection-health per the D8 ruling)** · Jessica risk (3) · Lexicon doc-hygiene → IT Glue
+**connection-health per the D8 ruling)** · Jessica risk (3) · Alivia doc-hygiene → IT Glue
 (3) · **OS-SELF (13:** agent onboarding/persona-refresh · dial governance · eval + feedback
 loop · retrieval/memory curation · Personal Curator · OKF maintenance · connector/credential
 ops · deploy-verify · Nova intake wiring). Running the agentic OS is running the company

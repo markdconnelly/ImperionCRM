@@ -27,7 +27,7 @@ surface it to a human. **Publishing the backlog and notifying anyone are gated.*
 `backlog.md` — one row per documentation gap: CI id, account (by reference), gap kind
 (`stale` / `missing`), proposed action (`refresh` / `author`), and proposed status
 `awaiting-human`. All references by id; no invented path, no secret, no PII. The run
-ends gated — Lexicon has proposed the backlog; disposition is the human's.
+ends gated — Alivia has proposed the backlog; disposition is the human's.
 
 ## Audit
 

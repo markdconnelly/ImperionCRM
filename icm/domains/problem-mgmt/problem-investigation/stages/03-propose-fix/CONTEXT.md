@@ -17,7 +17,7 @@ checkpoint.
    radius and (where applicable) its undo. Distinguish the permanent fix from any
    interim workaround.
 2. `[sonnet]` Open the problem record: cause, affected CIs/account, proposed fix,
-   linked incidents. Draft the documentation handoff to Lexicon.
+   linked incidents. Draft the documentation handoff to Alivia.
 3. `[script]` Route by fix surface: `reversible-no-prod` → the L3-ceiling auto path
    (still PARKED at the v1 L1 tracer); `production-or-irreversible` → **park** and
    route to Marshall (Change & Release) — dial-proof.
@@ -25,7 +25,7 @@ checkpoint.
 ## Outputs
 
 `problem-record.md` — the proposed permanent fix, the opened problem record, the
-Lexicon doc handoff, and the routing disposition (parked-L3-candidate /
+Alivia doc handoff, and the routing disposition (parked-L3-candidate /
 parked-to-Marshall). The run ENDS here; nothing is sent or executed.
 
 ## Audit

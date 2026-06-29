@@ -370,13 +370,13 @@ NOT duplicated here.
 
 ## J1 · Compose Jessica's risk-assurance-sweep (synthesis brief → Mark)
 - **Owner / Stream:** Jessica (Chief Risk Officer) / 11. **Serves:** Mark. **Division:**
-  Platform & Assurance (Vera, Tess, Lexicon).
+  Platform & Assurance (Vera, Tess, Alivia).
 - **Trigger:** schedule (recurring).
 - **Terminal outcome:** Mark's risk brief — conformance / quality / telemetry / control-drift
   rolled up + quarantine flags.
 - **Procedure Steps:**
   1. `[automation]` Recall + read across assurance state: conformance/deviation findings (Vera),
-     ticket/service quality (Tess), doc-hygiene/knowledge drift (Lexicon), agent telemetry/eval
+     ticket/service quality (Tess), doc-hygiene/knowledge drift (Alivia), agent telemetry/eval
      scores. Audit-by-reference. [hand-off from: Stream 7/10 — read-only] **L2.**
   2. `[automation]` Roll up the risk picture; surface quarantine flags + control-drift. **L2.**
   3. `[hybrid]` Render Mark's risk brief; deliver (read-only).
@@ -396,10 +396,10 @@ NOT duplicated here.
 - **Owner / Stream:** Jessica / 11.
 - **Trigger:** Nova delegates an assurance/quality/governance request, OR a member escalates
   (conformance deviation, quality miss, doc-drift, telemetry anomaly).
-- **Terminal outcome:** routed to Vera / Tess / Lexicon OR escalated to Mark.
+- **Terminal outcome:** routed to Vera / Tess / Alivia OR escalated to Mark.
 - **Procedure Steps:**
   1. `[automation]` Receive the delegation/handoff. [hand-off from: Nova N1 OR member] **L2.**
-  2. `[automation]` Delegate to Vera (conformance) / Tess (QA) / Lexicon (doc-hygiene → IT Glue
+  2. `[automation]` Delegate to Vera (conformance) / Tess (QA) / Alivia (doc-hygiene → IT Glue
      SoT). **L2.**
   3. `[hybrid]` Escalate quarantine / standard-change / governance-config items to Mark (→ N5).
 - **Driving policy:** TBD (#1586).

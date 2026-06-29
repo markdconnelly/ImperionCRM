@@ -4,7 +4,7 @@ title: "Operating Procedure catalog — a provable-coverage map of every MSP pro
 status: proposed
 date: 2026-06-28
 repo: frontend
-summary: "Introduce the Operating Procedure catalog: the enumerated, provable map of WHAT the 26-agent org (ADR-0131) actually does, distinct from structure (ERD/migrations), code (Graphify) and meaning (OKF). Two new canonical terms — Operating Procedure (one end-to-end MSP procedure, exactly one owning agent, runbook-sized) and Procedure Step (tagged [automation]/[gui-step]/[hybrid]). Procedures are enumerated value-stream-first (11 streams = the closed set of what an MSP does) then projected onto their one owner, so coverage is provable and seams/ownership-holes are explicit. A procedure with >=1 automatable step is realized IN its ICM Workspace = live SoR (no competing file home, D5); fully-human procedures live as docs/runbooks/ until they graduate; the human runbook is a generated projection (Lexicon -> IT Glue). Each procedure references its driving company policy (the icm/policies/ IMxxx canon, #1586/#1587), carries an autonomy ceiling with dial-proof always_gate steps, and an easy-button at every human gate. The catalog index + 11 stream files land under docs/workflows/; per-procedure icm/ workspaces are a later build (epic #1534)."
+summary: "Introduce the Operating Procedure catalog: the enumerated, provable map of WHAT the 26-agent org (ADR-0131) actually does, distinct from structure (ERD/migrations), code (Graphify) and meaning (OKF). Two new canonical terms — Operating Procedure (one end-to-end MSP procedure, exactly one owning agent, runbook-sized) and Procedure Step (tagged [automation]/[gui-step]/[hybrid]). Procedures are enumerated value-stream-first (11 streams = the closed set of what an MSP does) then projected onto their one owner, so coverage is provable and seams/ownership-holes are explicit. A procedure with >=1 automatable step is realized IN its ICM Workspace = live SoR (no competing file home, D5); fully-human procedures live as docs/runbooks/ until they graduate; the human runbook is a generated projection (Alivia -> IT Glue). Each procedure references its driving company policy (the icm/policies/ IMxxx canon, #1586/#1587), carries an autonomy ceiling with dial-proof always_gate steps, and an easy-button at every human gate. The catalog index + 11 stream files land under docs/workflows/; per-procedure icm/ workspaces are a later build (epic #1534)."
 tags: [agents, governance, workflows]
 ---
 
@@ -22,7 +22,7 @@ tags: [agents, governance, workflows]
 | **Repo** | frontend (owns `icm/`, the schema, the OKF bundle, and the docs tree) |
 | **Status** | Proposed |
 | **Date** | 2026-06-28 |
-| **Cross-references** | [ADR-0131](ADR-0131-executive-suite-tier.md) (the 26-agent org this catalogs), [ADR-0128](ADR-0128-canonical-agent-autonomy-ladder.md) (the L0–L5 ladder each procedure's ceiling maps onto), [ADR-0061](ADR-0061-icm-business-process-automation.md) (the ICM factory — a workspace is the live SoR), [ADR-0088](ADR-0088-icm-self-hosted-managed-agents-runtime.md) (the Managed-Agents runtime + least-privilege budgets), [ADR-0058](ADR-0058-composer-sends-via-approval-gated-backend-path.md) (the gauntlet every actuation crosses), [ADR-0086](ADR-0086-okf-semantic-layer-over-silver.md) (the OKF meaning layer Lexicon syncs alongside), [ADR-0042](ADR-0042-division-of-labor-reads-direct-processes-backend.md) (GUI-only authoring; the backend executes) |
+| **Cross-references** | [ADR-0131](ADR-0131-executive-suite-tier.md) (the 26-agent org this catalogs), [ADR-0128](ADR-0128-canonical-agent-autonomy-ladder.md) (the L0–L5 ladder each procedure's ceiling maps onto), [ADR-0061](ADR-0061-icm-business-process-automation.md) (the ICM factory — a workspace is the live SoR), [ADR-0088](ADR-0088-icm-self-hosted-managed-agents-runtime.md) (the Managed-Agents runtime + least-privilege budgets), [ADR-0058](ADR-0058-composer-sends-via-approval-gated-backend-path.md) (the gauntlet every actuation crosses), [ADR-0086](ADR-0086-okf-semantic-layer-over-silver.md) (the OKF meaning layer Alivia syncs alongside), [ADR-0042](ADR-0042-division-of-labor-reads-direct-processes-backend.md) (GUI-only authoring; the backend executes) |
 | **Companion** | `icm/policies/` company information-security policy canon (#1586 / PR #1587) — the D4 driving-policy source |
 
 ## Problem
@@ -68,7 +68,7 @@ Contract / Checkpoint) or with the unified `task` object.
   canon is **info-sec-scoped**, so security/IT procedures map cleanly to an `IMxxx` doc
   while marketing/sales/finance procedures map only to the cross-cutting ones (access,
   data classification) plus business policies not yet authored.
-- **Lexicon (Doc-Hygiene) syncs `icm/` → human runbooks → IT Glue** (the org recast,
+- **Alivia (Doc-Hygiene) syncs `icm/` → human runbooks → IT Glue** (the org recast,
   [[imperion-os-org-recast]]). The human-facing runbook must therefore be a *generated
   projection*, not an independent source that can drift.
 - **The autonomy contract is the canonical ladder** (ADR-0128) + the dial + hard ceilings
@@ -102,7 +102,7 @@ table.
 ### Tradeoffs
 The chosen approach (value-stream-first docs that point at the `icm/` SoR) costs a manual
 "keep the catalog in step with the workspaces" discipline — mitigated by a future
-conformance check (Future considerations) and by Lexicon's sync mandate. In exchange we
+conformance check (Future considerations) and by Alivia's sync mandate. In exchange we
 get provable coverage, a single SoR per procedure, no schema to migrate, and a catalog
 that doubles as the human training runbook.
 
@@ -129,7 +129,7 @@ Adopt the **Operating Procedure catalog**, defined by nine decisions (D1–D9):
 - **D5 — Realization = the ICM Workspace is the SoR; no competing structure.** A procedure
   with ≥1 `[automation]`/`[hybrid]` step is realized IN its ICM Workspace (live SoR); a
   fully-human procedure lives as `docs/runbooks/<stream>/<proc>.md` until it graduates; the
-  human runbook is a **generated projection** (Lexicon → IT Glue), never an independent SoR.
+  human runbook is a **generated projection** (Alivia → IT Glue), never an independent SoR.
 - **D6 — Entry schema + home.** Each entry carries: Name · Owner/Stream · Trigger ·
   Terminal outcome · Procedure Steps (ordered, tagged, hand-offs explicit) · Driving
   policy · Realization (workspace path | procedure-only) · Autonomy ceiling (owner ladder
@@ -175,7 +175,7 @@ workspace build (epic #1534) carries its own cost, separately scoped.
 
 ### Operational impact
 The catalog becomes the **single coverage map** for the org build and the **human training
-runbook** source (Lexicon → IT Glue). It surfaced four schema gaps now filed as #1577
+runbook** source (Alivia → IT Glue). It surfaced four schema gaps now filed as #1577
 (problem/known_error silver), #1578 (monitoring/alert bronze feed), #1579
 (change_freeze/rollback/standard-change catalog), and #1580 (AR/invoice silver own-vs-
 mirror). It introduces one standing discipline: the catalog must stay in step with the

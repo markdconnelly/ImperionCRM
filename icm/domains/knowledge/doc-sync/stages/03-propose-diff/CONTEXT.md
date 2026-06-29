@@ -23,7 +23,7 @@
 
 `diff.md` — one routed diff per unit: old → new, the one-line change summary, the CI
 id, and the proposed-publish status `awaiting-approval`. All references by id; no
-secret, no PII. The run ends gated — Lexicon has proposed; the publish is the
+secret, no PII. The run ends gated — Alivia has proposed; the publish is the
 approver's act.
 
 ## Audit
@@ -34,7 +34,7 @@ approver's act.
 
 ## Checkpoint
 
-A human reviews and **publishes** the diff to IT Glue. Until Lexicon has **earned the
+A human reviews and **publishes** the diff to IT Glue. Until Alivia has **earned the
 publish action**, `auto` may **never** self-approve the publish — the publish-to-SoR
 parks in every mode (ADR-0128 hard ceiling: changing the documentation of record is
 gated until trusted). `auto` may produce and surface the diff; only an approved publish

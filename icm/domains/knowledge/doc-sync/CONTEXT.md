@@ -2,13 +2,13 @@
 
 **Job:** keep IT Glue (the documentation SoR) accurate — detect stale,
 contradictory, or missing docs against the real CI, draft/update them, and propose
-a diff. Lexicon drafts and proposes; the publish is gated until trusted.
+a diff. Alivia drafts and proposes; the publish is gated until trusted.
 
 **Trigger:** the scheduled documentation poll (the cadence sweep), or a change
 event on a CI (`device` / `cloud_asset` / `account`) or an L3 fix landing (e.g.
 Sage resolves a ticket → author the runbook). One run per doc-unit in scope.
 
-**Posture:** read + draft. Lexicon reads the CI surface (`account` / `device` /
+**Posture:** read + draft. Alivia reads the CI surface (`account` / `device` /
 `cloud_asset`) and the existing docs (`knowledge.search` over gold), drafts the fix,
 and proposes a diff. **Publish-to-IT-Glue is gated** — the customer-facing
 documentation of record changes only through the gated publish path; until earned,

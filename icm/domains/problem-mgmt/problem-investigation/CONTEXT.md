@@ -2,7 +2,7 @@
 
 **Job:** every recurring-incident cluster (or Felix escalation) gets a grounded
 root-cause investigation, a proposed permanent fix, and a problem record — with
-the documentation handed to Lexicon.
+the documentation handed to Alivia.
 
 **Trigger:** a recurring-incident cluster is detected (repeated tickets on the
 same CI/account) or Felix escalates an incident as a candidate problem. One run

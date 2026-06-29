@@ -3,13 +3,13 @@
 **Job:** find the documentation gaps in the estate — cross-reference the asset
 estate (`account` / `device` / `cloud_asset`) against the existing docs
 (`knowledge.search` over gold) and propose a **documentation backlog** of assets and
-procedures that lack current docs (no runbook, stale entry). Lexicon audits and
+procedures that lack current docs (no runbook, stale entry). Alivia audits and
 proposes the backlog; she never publishes and never notifies.
 
 **Trigger:** the periodic documentation-coverage audit (the scheduled estate sweep).
 A whole-estate or per-account audit run — one backlog per audit scope.
 
-**Posture:** read-only audit. Lexicon reads the asset estate (`account` / `device` /
+**Posture:** read-only audit. Alivia reads the asset estate (`account` / `device` /
 `cloud_asset`) and the existing docs (`knowledge.search` over gold), and produces a
 **proposed backlog** of documentation gaps for a human. **No write, no publish, no
 notify** — this workflow holds no write tool; publishing the backlog to the SoR

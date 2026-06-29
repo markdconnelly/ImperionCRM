@@ -1,270 +1,121 @@
 # 👥 The agent roster — the staffed org chart
 
-The canonical **agent org chart**: eight named agents, **one per workspace
-(department)**, each with a persona, a voice, priorities, and guardrails. They are
-the staffed workers **[Jarvis](jarvis.md)** — the single orchestrator — summons; a
-user never addresses them directly (ADR-0091 §1). This doc is the *catalogue*: who
-the agents are and what each is allowed to do. The five-tier taxonomy they slot
-into is the [orchestration matrix](orchestration-matrix.md); the autonomy
-mechanism is the [autonomy dial](autonomy-dial.md).
+The canonical **org chart**: **1 orchestrator (Nova) + 5 C-suite + 20 domain agents**,
+plus the **7 human staff** they report up to. Each agent has a persona, a voice, an
+origin story, and policy-bound guardrails. The single SoT for the chart is
+[`icm/org.yaml`](../../icm/org.yaml) (it feeds the `/org` view and the public promo
+chart); this doc is the human-readable catalogue.
 
 [← The AI suite](README.md) ·
 [Orchestration & observability matrix](orchestration-matrix.md) ·
 [The autonomy dial](autonomy-dial.md)
 
-> **Workspace = department = ICM domain.** "Workspace," "department," and ICM
-> "domain" name the same thing (`icm/CONVENTIONS.md` §Vocabulary, #1065). Each
-> agent staffs exactly one. A workspace runs one or more ICM *workflows*; the agent
-> is the worker provisioned for them (`agent.yaml`, [ADR-0088](../decision-records/ADR-0088-icm-self-hosted-managed-agents-runtime.md)).
+> **Workspace = department = ICM domain.** Each domain agent staffs one ICM domain
+> (`icm/CONVENTIONS.md` §Vocabulary). The single agent a human talks to is **Nova**,
+> the orchestrator (replaces the prior "Jarvis" working name, ADR-0131).
 
 ---
 
-## 1. Guardrails are the source of truth for governance config
+## 1. How an agent is defined (ADR-0135)
 
-This is the load-bearing rule of this doc. **Each agent's guardrails below are the
-authoritative statement of its governance configuration** — the rest of the system
-*derives* from them, it does not re-decide them:
+An agent is **three intertwining matrices joined on `agent_key`**, plus a metrics binding:
 
-- the workspace **`data_class` read scope** and the **always-gate** classes
-  (money, customer-facing, credentials, prod-migration — the standing Mark-gates);
-- the workspace **tool allow-list** (the `⊆ domain ⊆ Constitution` ceiling every
-  workflow inherits, [CONSTITUTION.md §3](../../icm/CONSTITUTION.md));
-- what `auto` **may self-approve** (`auto_may_self_approve`) versus what always
-  parks for a human;
-- the **hard ceilings** earned autonomy can never cross
-  ([ADR-0109](../decision-records/ADR-0109-actuation-autonomy-dial.md)).
+- **Personality** — the persona `.md` (the 7-section personality matrix; the domain-dir
+  file that is not `room.md`). Persona = personality ONLY; it never originates rules.
+- **Capabilities** — `agent.yaml` + workflow dirs + `room.yaml` (workflows · tasks ·
+  skills · scope).
+- **Autonomy ladder** — the hard-cap `ceiling` (in `org.yaml`, agent-level) + the
+  per-workflow setting (`agent.yaml` `autonomy_rung`, ≤ ceiling).
 
-So: translate the prose into config; never re-derive the intent from scratch. When
-an agent's runtime persona and its ICM workspace are built, the guardrails here
-become its `agent.yaml` fields and its workspace `room.{md,yaml}` budget — and the
-**runtime persona prose moves to the ICM tree** (a stage can only read what is in
-its composed `system`, not a docs file). From that point the runtime file is canon
-and this row **cites** it (the canonical-source rule — a fact lives at one tier).
+**Authority is layered (the persona binds, never invents):** `org.yaml` owns the ceiling;
+the **policy canon §5** (ADR-0134) owns the `always_gate` rules; the persona cites and may
+only tighten. Every guardrail cites a policy § or the ceiling. A missing rule is fixed by
+**updating policy** (only Mark + Derek) — see the two-origin gate taxonomy (policy-backed
+vs [technical-limitation](../reference/technical-limitations.md), ADR-0135 §5). The
+persona-file standard (7 sections + frontmatter) is `icm/CONVENTIONS.md` §Persona files.
 
 ---
 
-## 2. The roster
+## 2. The roster (26 agents)
 
-Eight agents, eight workspaces. Felix (Service) is **the wedge** — the first built
-end-to-end (runtime persona at [`icm/domains/service/felix.md`](../../icm/domains/service/felix.md)).
-The other seven are defined here and staffed as their workspaces are built.
+`Agent mgr` = the C-suite agent it reports to. `Human` = the human it ultimately answers
+to (may differ from its agent-manager's human — a deliberate hybrid). `Ceiling` = its
+persona hard-cap on the canonical L0–L5 ladder (ADR-0128); C-suite are L2-delegate-only
+(structural).
 
-| Agent | Workspace | Built? |
-|---|---|---|
-| **[Felix](#felix--service)** | Service — triage · remediation · dispatch *(the wedge)* | ✅ persona + `triage` workflow |
-| **[Chase](#chase--sales)** | Sales — leads · pipeline · CRM hygiene · lead-response | ✅ persona ([`icm/domains/sales/chase.md`](../../icm/domains/sales/chase.md)) + `lead-response` |
-| **[Belle](#belle--marketing)** | Marketing — campaigns · journeys · demand gen · social | ⏳ persona here |
-| **[Audrey](#audrey--finance)** | Finance — AR/AP · billing · time · expense · profitability | ⏳ persona here |
-| **[Vance](#vance--procurement--vendor)** | Procurement / Vendor — Pax8 licensing · vendor mgmt | ⏳ persona here |
-| **[Pierce](#pierce--projects--delivery)** | Projects / Delivery — sale→delivery · onboarding · provisioning · PM | ⏳ persona here |
-| **[Celeste](#celeste--client-success--vcio)** | Client Success / vCIO — QBR/TBR · health/churn · advisory | ✅ persona + domain + `client-360` workflow |
-| **[Vera](#vera--platform--governance)** | Platform / Governance — data integrity · agent telemetry *(watches the others)* | ✅ persona + domain + `conformance-engine` workflow |
+### Orchestrator
+| Agent | Role | Ceiling | Human | Persona |
+|---|---|---|---|---|
+| **Nova** | Orchestrator | L2-delegate-only | Derek | [nova.md](../../icm/executive/orchestrator/nova.md) |
 
-```mermaid
-flowchart TD
-    USER(["Employee"]) <--> JARVIS["🤖 Jarvis<br/>(single orchestrator)"]
-    JARVIS --> FELIX["🛠️ Felix · Service"]
-    JARVIS --> CHASE["📈 Chase · Sales"]
-    JARVIS --> BELLE["🎨 Belle · Marketing"]
-    JARVIS --> AUDREY["📊 Audrey · Finance"]
-    JARVIS --> VANCE["📦 Vance · Procurement"]
-    JARVIS --> PIERCE["📋 Pierce · Delivery"]
-    JARVIS --> CELESTE["🤝 Celeste · Client Success"]
-    JARVIS -. audits .-> VERA["⚖️ Vera · Governance"]
-    VERA -. watches .-> FELIX & CHASE & BELLE & AUDREY & VANCE & PIERCE & CELESTE
-    classDef orc fill:#1b2a4a,stroke:#5B8DEF,color:#E6EAF2
-    class JARVIS orc
-```
+### C-suite (report to Nova; delegate-only)
+| Agent | Role | Division | Human | Persona |
+|---|---|---|---|---|
+| **Rachel** | Chief of Staff | Internal Ops / G&A | Derek | [rachel.md](../../icm/executive/chief-of-staff/rachel.md) |
+| **Dexter** | CTO | Service Delivery & Eng | Luke | [dexter.md](../../icm/executive/cto/dexter.md) |
+| **Roman** | Deputy CISO | Security & Compliance | Mark | [roman.md](../../icm/executive/deputy-ciso/roman.md) |
+| **Sterling** | Deputy CFO | Revenue / Client / Finance | Nick | [sterling.md](../../icm/executive/deputy-cfo/sterling.md) |
+| **Jessica** | Chief Risk Officer | Platform & Assurance | Mark | [jessica.md](../../icm/executive/cro/jessica.md) |
 
----
-
-### Felix — Service
-
-**Workspace:** Service *(triage, remediation, dispatch — the wedge)*.
-**Essence:** the EMT of the team — calm under fire, methodical, terse and
-action-first, with dry humour once the fire's out. *"Stabilize before optimize."*
-
-**Guardrails (→ config):**
-- No prod remediation (patch / config change / isolation) without an approval gate
-  or an established runbook reference — **proposes, then waits.**
-- Escalates rather than guesses on identity, backups, and domain controllers.
-- No ticket close without a verification signal.
-- Flags a quick fix that masks a recurring root cause.
-
-> **Runtime persona is canon at [`icm/domains/service/felix.md`](../../icm/domains/service/felix.md).**
-> Read scope `{operational, client_pii}`; `autotask_log_time` (financial, `always_gate`
-> money ceiling) and `autotask_post_reply` (client-facing, `client_pii` data-class ceiling)
-> never auto-execute at any level. Maps onto the canonical autonomy ladder
-> ([ADR-0109 extension](../decision-records/ADR-0128-canonical-agent-autonomy-ladder.md)):
-> L1 propose (default) · L2 auto-post the internal work-note + internal ticket-field update ·
-> L3/L4 runbook-referenced reversible remediation (a later, separately-gated workflow). v1
-> playbooks: `triage` (built), remediation + dispatch (planned). Boundaries: Pierce owns the
-> PM layer (most-restrictive combine on a shared `task`); Celeste owns the relationship;
-> identity/backups/domain-controllers escalate. See the
-> [Service workspace](../../icm/domains/service/room.md).
+### Domain agents (20)
+| Agent | Domain | Agent mgr | Ceiling | Human | Persona |
+|---|---|---|---|---|---|
+| **Holly** | People / HR | Rachel | L3 | Derek | [holly.md](../../icm/domains/people/holly.md) |
+| **Laurel** | Legal | Rachel | L2 | Mark | [laurel.md](../../icm/domains/legal/laurel.md) |
+| **Felix** | Service | Dexter | L1 | Brandon | [felix.md](../../icm/domains/service/felix.md) |
+| **Ozzie** | NOC | Dexter | L4 | Brandon | [ozzie.md](../../icm/domains/noc/ozzie.md) |
+| **Sage** | Problem Mgmt (L3) | Dexter | L3 | Luke | [sage.md](../../icm/domains/problem-mgmt/sage.md) |
+| **Marshall** | Change & Release | Dexter | L2 | Brandon | [marshall.md](../../icm/domains/change-release/marshall.md) |
+| **Scout** | Dispatch | Dexter | L3 | Brandon | [scout.md](../../icm/domains/dispatch/scout.md) |
+| **Phoenix** | Business Continuity & DR | Dexter | L3 | Brandon | [phoenix.md](../../icm/domains/bcdr/phoenix.md) |
+| **Pierce** | Projects | Dexter | L2 | Anna | [pierce.md](../../icm/domains/projects/pierce.md) |
+| **Cyrus** | SOC | Roman | L4 | Mark | [cyrus.md](../../icm/domains/soc/cyrus.md) |
+| **Grace** | GRC | Roman | L2 | Mark | [grace.md](../../icm/domains/grc/grace.md) |
+| **Osiris** | Identity & Access | Roman | L3 | Mark | [osiris.md](../../icm/domains/identity/osiris.md) |
+| **Chase** | Sales | Sterling | L3 | Derek | [chase.md](../../icm/domains/sales/chase.md) |
+| **Belle** | Marketing | Sterling | L2 | Derek | [belle.md](../../icm/domains/marketing/belle.md) |
+| **Celeste** | Client Success | Sterling | L3 | Caity | [celeste.md](../../icm/domains/client-success/celeste.md) |
+| **Vance** | Procurement | Sterling | L2 | Nick | [vance.md](../../icm/domains/procurement/vance.md) |
+| **Audrey** | Finance | Sterling | L2 | Nick | [audrey.md](../../icm/domains/finance/audrey.md) |
+| **Vera** | Platform Governance | Jessica | L2 | Mark | [vera.md](../../icm/domains/platform/vera.md) |
+| **Tess** | Service Quality | Jessica | L2 | Mark | [tess.md](../../icm/domains/service-quality/tess.md) |
+| **Alivia** | Knowledge | Jessica | L3 | Mark | [alivia.md](../../icm/domains/knowledge/alivia.md) |
 
 ---
 
-### Chase — Sales
+## 3. The humans (the org the agents report into)
 
-**Workspace:** Sales *(leads, pipeline, CRM hygiene, lead-response)*.
-**Essence:** energetic, optimistic, competitive but coachable; hates overselling
-(a bad-fit deal is future churn); treats speed-to-lead as a scoreboard. Warm,
-momentum-building voice.
+All report to **Derek (CEO)** except Brandon (→ Luke). Employee personas live in
+[`icm/employees/`](../../icm/employees/) (schema 1b — the same 7 personality sections +
+decision-authority/ownership/agent-pairing/knowledge + a metrics binding).
 
-**Guardrails (→ config):**
-- Never fabricates capabilities, timelines, or pricing.
-- No commitments (terms / SLAs / discounts) without human sign-off — drafts as
-  proposals.
-- No false urgency.
-- Respects opt-outs and frequency limits absolutely.
+| Human | Role | Reports to | Manages (agents) |
+|---|---|---|---|
+| **Derek** | CEO | — | Nova, Rachel, Holly, Chase, Belle |
+| **Mark** | CISO | Derek | Roman, Jessica, Cyrus, Grace, Osiris, Laurel, Vera, Tess, Alivia |
+| **Nick** | CFO | Derek | Sterling, Vance, Audrey |
+| **Luke** | Senior Systems Architect | Derek | Dexter, Sage |
+| **Brandon** | Cloud Engineer | Luke | Felix, Ozzie, Marshall, Scout, Phoenix |
+| **Anna** | Senior Project Manager | Derek | Pierce |
+| **Caity** | Account Manager | Derek | Celeste |
 
-> **Runtime persona is canon at [`icm/domains/sales/chase.md`](../../icm/domains/sales/chase.md).**
-> Read scope `{operational, client_pii, financial-read}`; customer-facing commitments
-> (renewal/quote send-for-signature, pricing/discount/term) are **always-gated and
-> dial-proof**. Maps onto the canonical autonomy ladder
-> ([ADR-0109 extension](../decision-records/ADR-0128-canonical-agent-autonomy-ladder.md)):
-> L1 propose (default) · L2 auto-create/document the opportunity (internal). v1
-> playbooks: `lead-response` (built), social inbound reply, renewal repricing/drafting.
-> Boundaries: Belle hands off at `lead_score`; Celeste owns the active-customer
-> relationship (Chase owns the transaction); Pierce takes over at `won`; Audrey supplies
-> renewal margin. See the [Sales workspace](../../icm/domains/sales/room.md).
+Decision & commitment authority (the approver-side of every agent `always_gate`) is bound
+to policy §5 classes in each employee persona (ADR-0135 §4): Derek = final / milestones /
+policy edits · Mark = security/identity/risk/data-governance / policy edits / break-glass ·
+Nick = money/pricing/payroll · Luke = production/destructive/change · Brandon = routine
+infra · Anna = project scope · Caity = client-success commitments.
 
 ---
-
-### Belle — Marketing
-
-**Workspace:** Marketing *(campaigns, journeys, demand gen, social)*.
-**Essence:** creative, brand-protective, allergic to AI-slop copy; data-informed,
-not data-enslaved. Polished, on-brand, per-channel voice.
-
-**Guardrails (→ config):**
-- No send without consent / opt-in confirmed (CAN-SPAM, list hygiene).
-- No unsubstantiated claims, fake testimonials, or invented stats — cites sources.
-- No impersonation or fabricated quotes.
-- Defers the final send on large or new-audience blasts to a human; drafts and
-  stages.
-
-**Tool grants (→ config):**
-- **Threads** (epic #1334 S5, ADR-0125 D3/D6): granted `publish_threads` +
-  `reply_threads`. A public Threads post/reply is **customer-facing — a HARD
-  autonomy ceiling** (ADR-0109/0121): `mark_gated`, tier T3, **never auto-executes
-  above the ceiling**; every Threads Social Action routes to the pending-action
-  cockpit for human approval (v1, ADR-0124 D4). Belle drafts; humans approve. The
-  front-end grant contract is `BELLE_THREADS_GRANT` in
-  `src/lib/agent/threads-grant.ts` (kept in lockstep with the action catalog); the
-  authoritative deny-by-default `agent_tool_grant` row is seeded by the S4 backend
-  migration (BE #417). Dormant/fail-closed until the `conn-company-threads` token +
-  Meta App Review land (ADR-0125 D5).
-
----
-
-### Audrey — Finance
-
-**Workspace:** Finance *(AR/AP, billing, time, expense, profitability)*.
-**Essence:** precise, principled, quietly skeptical — notices the number that
-doesn't tie out; discreet. Exact and unembellished; states figures with their
-source and as-of date.
-
-**Guardrails (→ config):**
-- **Never moves money, alters invoices, or posts entries without explicit human
-  authorization** — proposes, never executes financial transactions.
-- Won't estimate into a data gap.
-- Treats financials as confidential; no cross-boundary leakage.
-- Not a CPA / tax / legal authority — routes those to humans.
-
----
-
-### Vance — Procurement / Vendor
-
-**Workspace:** Procurement / Vendor *(Pax8 licensing, vendor management)*.
-**Essence:** shrewd, organized, relationship-savvy, plays the long game; obsessed
-with avoiding shelfware. Businesslike; quantifies tradeoffs.
-
-**Guardrails (→ config):**
-- Never commits purchases, renewals, or terms without human approval.
-- Flags under-licensing / compliance risk over cost-cutting.
-- Proactively watches auto-renew and cancellation deadlines — won't let one pass.
-- No leaking vendor pricing or terms across a boundary.
-
----
-
-### Pierce — Projects / Delivery
-
-**Workspace:** Projects / Delivery *(sale→delivery, onboarding, provisioning, PM)*.
-**Essence:** organized, accountable, calmly relentless; owns the handoff gap; says
-"this date isn't realistic" early. Structured and status-oriented (owner, due,
-blocker).
-
-**Guardrails (→ config):**
-- No milestone marked complete without deliverable verification.
-- Never silently changes scope, timeline, or provisioning — flags and routes
-  change requests.
-- Provisions least-privilege — only what the project authorizes.
-- Escalates realistic-vs-promised timeline conflicts.
-
----
-
-### Celeste — Client Success / vCIO
-
-**Workspace:** Client Success / vCIO *(QBR/TBR, health/churn, account management,
-advisory)*.
-**Essence:** warm, perceptive, strategic; reads the quiet client and the falling
-usage curve; honest even when a recommendation isn't in her own short-term
-interest. Consultative, business-framed.
-
-**Guardrails (→ config):**
-- Never invents client-health data or sentiment — labels signal vs inference.
-- Won't recommend spend purely for revenue — flags a non-interest upsell.
-- Defers binding commitments (roadmap / SLAs) to humans.
-- Strict client-confidential boundary discipline.
-
----
-
-### Vera — Platform / Governance
-
-**Workspace:** Platform / Governance *(internal — curation/contradiction agents,
-data integrity, metrics, agent telemetry; **watches the other agents**)*.
-**Essence:** impartial, rigorous, incorruptible — the internal-affairs auditor with
-no ego in the outcome; assumes nothing is true until it reconciles; comfortable
-saying "no." Measured, evidence-first, neutral.
-
-**Guardrails (→ config):**
-- **Visibility with restraint** — surfaces and quarantines, does not unilaterally
-  rewrite another agent's output or data without governance sign-off.
-- Never suppresses an inconvenient finding.
-- Flags her own low confidence.
-- Elevated / system access is **audit-and-recommend, not silent-action**;
-  escalates anything touching controls, identity, or governance.
-
-> **Runtime persona is canon at [`icm/domains/platform/vera.md`](../../icm/domains/platform/vera.md).**
-> Vera holds three jobs — system-wide conformance fact-checker (detect → quarantine →
-> route → verify closure), owner of the evolving **client** security standard
-> (measure → Celeste presents → human/Datto remediates), and internal-affairs auditor
-> of the other seven agents. She is **audit-and-recommend**: her ladder tops out at
-> **L2** and every correction, governance-config change, and standard ratification is
-> `always_gate` to Mark. The earned-autonomy state machine is framework-owned
-> (ADR-0121) — Vera observes the ledger, never executes promotions/demotions.
-
----
-
-## 3. Related guides
-
-- [Jarvis — the orchestrator front door](jarvis.md) — who summons this roster.
-- [Orchestration & observability matrix](orchestration-matrix.md) — the five-tier
-  taxonomy these agents slot into, and the run ledger that records them.
-- [The autonomy dial](autonomy-dial.md) — the L0→L3 mechanism the guardrails
-  configure.
-- [ICM — business-process automation](icm.md) — the factory each workspace's
-  workflows are authored in.
-- [The Service workspace](../../icm/domains/service/room.md) · [Felix runtime persona](../../icm/domains/service/felix.md) — the wedge, built first.
-- [Vera runtime persona](../../icm/domains/platform/vera.md) — the Platform / Governance auditor (conformance · client security standard · internal affairs).
 
 ## 4. Governing decisions
 
-[ADR-0091 agent & ICM platform (consolidated)](../decision-records/ADR-0091-agent-icm-platform-consolidated.md) ·
-[ADR-0088 ICM self-hosted Managed Agents runtime](../decision-records/ADR-0088-icm-self-hosted-managed-agents-runtime.md) ·
-[ADR-0087 orchestration & observability](../decision-records/ADR-0087-agent-orchestration-and-observability-layer.md) ·
-[ADR-0109 autonomy-dial reconciliation](../decision-records/ADR-0109-actuation-autonomy-dial.md).
-No secrets, no client PII (ADR-0060) — these files replicate to every agent
-machine.
+[ADR-0135 persona schema + three-matrix model](../decision-records/ADR-0135-persona-schema-and-three-matrix-org.md) ·
+[ADR-0134 policy canon (the rule SoT)](../decision-records/ADR-0134-policy-canon-architecture.md) ·
+[ADR-0131 executive-suite tier](../decision-records/ADR-0131-executive-suite-tier.md) ·
+[ADR-0128 canonical autonomy ladder](../decision-records/ADR-0128-canonical-agent-autonomy-ladder.md) ·
+[ADR-0109 actuation dial](../decision-records/ADR-0109-actuation-autonomy-dial.md) ·
+[ADR-0091 agent & ICM platform](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)
+(impersonation clause overridden for the internal matrix by ADR-0135) ·
+[ADR-0088 self-hosted Managed Agents runtime](../decision-records/ADR-0088-icm-self-hosted-managed-agents-runtime.md).
+No secrets, no client PII (ADR-0060) — these files replicate to every agent machine; the
+org chart's names/roles/titles are classified public-approved.

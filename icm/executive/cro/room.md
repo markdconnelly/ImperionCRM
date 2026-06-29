@@ -7,7 +7,7 @@ prose composed into every Assurance executive workflow's `system` (Constitution 
 ## Division
 
 Jessica runs **Platform & Assurance**: **Vera** (Platform conformance/audit),
-**Tess** (Service Quality / QA), and **Lexicon** (Doc-Hygiene / Knowledge). She
+**Tess** (Service Quality / QA), and **Alivia** (Doc-Hygiene / Knowledge). She
 **serves Mark** (risk reports to Mark) and reports to **Nova**.
 
 ## Posture
