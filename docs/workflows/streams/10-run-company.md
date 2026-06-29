@@ -4,11 +4,13 @@
 > architecture [ADR-0133](../../decision-records/ADR-0133-operating-procedure-catalog.md). Terms
 > **Operating Procedure** / **Procedure Step** are defined in [`CONTEXT.md`](../../../CONTEXT.md).
 >
-> **D9 global principles apply to every procedure below** (encoded in each Human-in-loop field,
-> not restated per entry): **P1** Nova-native human co-working (every flow co-works with a human
-> through Nova) · **P2** each sub-agent's reasoning is ascribed back to the paired human, up the
-> chain · **P3** an "easy button" at every human gate (prep to the goal, hand the human a one-click
-> resolution) · **P4** urgent → dedicated chat, else → tag the team member in the shared Teams chat.
+> **Workflow Doctrine (ADR-0136) is inherited by every procedure below — not restated per entry.**
+> The eleven cross-cutting rules (A1–A11) and the nine archetype step-templates (B1–B9) are the
+> floor. Each procedure names its **archetype** and declares only its *deltas*. The doctrine carries:
+> the universal `always_gate` set (A2) · L0 ship-dial (A3) · the 4-part easy-button bar at every gate
+> (A4) · the evidence floor — cite + as-of, empty→park/delegate (A5) · computed-urgency notification
+> + `reports_to` fallback (A6) · pool-never-bleed (A7) · idempotent actuation + read-back (A9) ·
+> reversibility→derived-ceiling + halt-no-rollback (A10) · obligation/action separation (A11).
 
 **The BIGGEST stream — running the agentic OS is running the company (D7.1).** It spans internal
 G&A (Rachel CoS · Holly HR · Laurel Legal), platform/assurance governance (Tess QA · Vera
@@ -36,6 +38,20 @@ bus (reactive triggers + handoff intake) · **#119** trigger-sync (new backend e
 **Live schema-gap deps cited below:** **#1577** problem/known_error · **#1578** monitoring bronze ·
 **#1579** change_freeze/rollback/standard-change · **#1580** AR/invoice silver.
 
+**Archetype map (B-templates this stream instantiates, grouped by owner; each procedure also names
+its archetype inline).**
+
+| Owner group | Procedures | Archetype(s) |
+|---|---|---|
+| Rachel (CoS / G&A) | 10-A1 daily brief · 10-A2 request routing · 10-A3/A4 program stewardship | **B3 synthesis-brief** (A1), **B1 triage/route** (A2), **B4 audit-attest** governance-stewardship (A3/A4) |
+| Holly (HR / internal JML) | 10-H1 onboard · 10-H2 offboard · 10-H3 brain spin-up · 10-H4 review · 10-H5 PTO | **B5 JML disable≠delete** (H1/H2), **B8/B2 provision-with-undo** (H3), **B2/B4** comp+review gated (H1/H4), **B2** PTO (H5) |
+| Laurel (Legal) | 10-L1 contract review · 10-L2 lifecycle/renewal · 10-L3 compliance | **B2 gated-actuation** (L1/L3, binding always_gate), **B9 deadline-sentinel** renewal radar (L2) |
+| Tess (QA) | 10-T1 ticket-quality · 10-T2 CSAT · 10-T3 SLA-conformance | **B4 audit-attest** internal measure+route (all three; T2 survey-send = B7 edge) |
+| Vera (Governance) | 10-V1…V14 | **B4 audit-attest** (the stream's canonical B4 family); V3 standard ratification = `always_gate`; V1 detect→quarantine→route→verify is B4 + reversible-auto-quarantine |
+| Jessica (CRO / Risk) | 10-J1 assurance-govern · 10-J2 eval-acceptance · 10-J3 risk register | **B3 synthesis-brief** delegate-only (all three; the risk *call* always_gate to Mark) |
+| Alivia (Doc-Hygiene) | 10-K1 doc-sync · 10-K2 runbook-author · 10-K3 freshness | **B4 audit-attest** detect→draft→route (all three; SoT publish gated until trusted; A8 one uniform dual-audience doc) |
+| OS-self (Rachel/Vera/Jessica/Alivia/Nova) | 10-O1…O13 | mostly **B4 audit-attest** (O1/O2/O4/O5/O8/O11/O13); **B2 gated-actuation** for connector/credential ops + deploy (O9/O10/O11) + dial-apply (O3); **B4** memory/curation (O6/O7); **B1 triage/route** Nova intake (O12) |
+
 ---
 
 ## Rachel (Chief of Staff / G&A) — Epic #1546
@@ -44,17 +60,20 @@ Ceiling **L2 delegate-only** (synthesize/advise/orchestrate; NEVER bypasses a su
 any world-changing act inherits the executing sub-agent's ceiling). Serves Derek.
 
 ### 10-A1 · Compose daily G&A chief-of-staff brief
-- **Owner / Stream:** Rachel / 10.
+- **Owner / Stream:** Rachel / 10. **Archetype:** B3 synthesis-brief (delegate-only, L2, no actuation).
 - **Trigger:** schedule (daily, AM) — the C-suite synthesis-brief archetype (tracer `daily-brief`).
 - **Terminal outcome:** Derek receives a cross-division status / priorities / blockers brief with a
   decisions-needed list; persisted for audit.
 - **Procedure Steps:**
   1. `[automation]` Delegate-read each division's roll-up (Dexter delivery-pulse, Sterling
-     financial-pulse, Roman/Jessica posture+risk, G&A items) via `pg.read` + `memory.recall`. **L0.**
+     financial-pulse, Roman/Jessica posture+risk, G&A items) via `pg.read` + `memory.recall`, **each
+     source cited + as-of** (A5); anonymize any cross-client signal (A7); flag dormancy honestly (A5c). **L0.**
   2. `[automation]` Synthesize blockers + priorities + decisions-needed into one brief; cite
-     sources, never fabricate on empty. **L2.**
+     sources, never fabricate on empty (A5b). **L2.**
   3. `[automation]` Write the brief to Derek's surface (Teams card / cockpit) + agent diary.
-  4. `[gui-step]` Derek reviews, marks decisions, optionally re-tasks (any company-committing
+  4. `[gui-step]` Derek reviews, marks decisions, optionally re-tasks. **B3 rule:** the brief is a
+     **launchpad** — an actionable item **auto-spawns the owning worker procedure parked/draft**
+     (easy-button-ready, A4) for one-click launch; Rachel never actuates (any company-committing
      decision routes to the relevant sub-agent's gated path).
 - **Driving policy:** TBD (#1586) — risk/G&A reporting policy.
 - **Realization:** `icm/executive/chief-of-staff/daily-brief/` (live SoR; D5 brief archetype).
@@ -64,7 +83,8 @@ any world-changing act inherits the executing sub-agent's ceiling). Serves Derek
 - **Substrate deps:** #389 (recall), #991 (cross-division intake), #1537. **subject:** imperion.
 
 ### 10-A2 · Orchestrate G&A request intake / routing
-- **Owner / Stream:** Rachel / 10.
+- **Owner / Stream:** Rachel / 10. **Archetype:** B1 triage/route (routing auto at L2 — internally
+  reversible; cross-cutting escalation parks, A11 seam).
 - **Trigger:** a G&A-class request lands (HR / legal / internal-ops ask via Nova handoff or Teams).
 - **Terminal outcome:** request routed to the owning G&A agent (Holly / Laurel) or escalated to
   Derek; tracked to closure.
@@ -81,7 +101,8 @@ any world-changing act inherits the executing sub-agent's ceiling). Serves Derek
 - **Substrate deps:** #991, delegate/handoff cap (#1536). **subject:** imperion.
 
 ### 10-A3 · Steward the per-employee-brain program (rollout governance)
-- **Owner / Stream:** Rachel (co-owner with Holly) / 10 — Epic #1543.
+- **Owner / Stream:** Rachel (co-owner with Holly) / 10 — Epic #1543. **Archetype:** B4 audit-attest
+  (inventory coverage + route gaps; the spin-up mechanism is 10-H3, A11 seam).
 - **Trigger:** new hire approved OR program cadence (quarterly brain-coverage review).
 - **Terminal outcome:** every employee has a provisioned, owner-private personal brain; coverage
   gaps tracked.
@@ -101,7 +122,8 @@ any world-changing act inherits the executing sub-agent's ceiling). Serves Derek
   **subject:** imperion.
 
 ### 10-A4 · Steward the dogfood program
-- **Owner / Stream:** Rachel / 10 — Epic #1544.
+- **Owner / Stream:** Rachel / 10 — Epic #1544. **Archetype:** B4 audit-attest (verify-the-loop +
+  route findings to Vera/eval; no actuation).
 - **Trigger:** cadence review OR a new agent/capability ships that should run on Imperion-itself.
 - **Terminal outcome:** Imperion's own ops (internal tickets, IT, finance) run on the system,
   supported by the same agents like any client; Imperion-as-client mapping kept current.
@@ -128,14 +150,17 @@ client-tenant IAM (Stream 04). **SEAM:** Holly owns the PEOPLE event; Osiris own
 actuation (the joiner-mover-leaver technical grants).
 
 ### 10-H1 · Onboard a new employee (hire → onboarded)
-- **Owner / Stream:** Holly / 10 (tracer `employee-onboarding`).
+- **Owner / Stream:** Holly / 10 (tracer `employee-onboarding`). **Archetype:** B5 JML (joiner branch)
+  + B2/B4 for comp (always_gate). **SEAM (A11):** Holly owns the PEOPLE event; Osiris owns the IDENTITY
+  actuation. **B5 rule:** Joiner grants **gate** (over-grant prevention > speed).
 - **Trigger:** offer accepted (HR event).
 - **Terminal outcome:** new employee fully onboarded — identity provisioned, brain spun up, IT setup
   tracked complete, classification + pay-rate recorded.
 - **Procedure Steps:**
   1. `[automation]` Create the internal `app_user`/Employee record; set Employee Classification (v1:
-     1099) + effective-dated Pay Rate. (**`always_gate`:** comp fields — payroll-role-gated; salary
-     non-disclosure absolute.) **L2.**
+     1099) + effective-dated Pay Rate, **cited to the HR offer event + as-of** (A5). (**`always_gate`:**
+     comp fields — payroll-role-gated (A2 class-1 money); salary non-disclosure absolute (pool-never-bleed,
+     A7).) **L2.**
   2. `[hybrid]` HAND OFF identity provisioning to **Osiris** (joiner branch, Stream 04
      `joiner-mover-leaver`) — propose least-priv grants (gated). SEAM.
   3. `[automation]` HAND OFF per-employee-brain spin-up (10-H3) — the 10x mechanism (#1543).
@@ -150,13 +175,17 @@ actuation (the joiner-mover-leaver technical grants).
 - **Substrate deps:** Osiris (Stream 04 seam), personal store (#1152), #991. **subject:** imperion.
 
 ### 10-H2 · Offboard an employee (leaver → deprovisioned)
-- **Owner / Stream:** Holly / 10.
+- **Owner / Stream:** Holly / 10. **Archetype:** B5 JML (leaver branch). **B5 disable≠delete split:**
+  Leaver **auto-disable + session/token revoke at L4** (disabling is reversible → fast containment
+  without a gate, A10) while **delete/deprovision/license-removal (irreversible) stays `always_gate`**
+  as the human-approved cleanup.
 - **Trigger:** termination/resignation (HR event).
 - **Terminal outcome:** employee offboarded — access revoked, brain archived/sealed, final-pay
   obligations flagged, equipment return tracked.
 - **Procedure Steps:**
-  1. `[automation]` Emit the leaver people-event → HAND OFF to **Osiris** leaver branch
-     (auto-deprovision under JML runbook, L3; break-glass always-gate). SEAM. **L2.**
+  1. `[automation]` Emit the leaver people-event → HAND OFF to **Osiris** leaver branch (A11 seam):
+     **auto-disable + token revoke L4** (reversible), **delete/deprovision/license-removal
+     `always_gate`** (irreversible cleanup, A2 class-3 / A10). **L2.**
   2. `[hybrid]` Seal/archive the personal brain (owner-private; retention per policy) — coordinate
      with personal-store god-view/curator.
   3. `[automation]` Flag final pay / expense / equipment-return obligations to finance (Audrey
@@ -169,7 +198,9 @@ actuation (the joiner-mover-leaver technical grants).
 - **Substrate deps:** Osiris seam, personal-store retention, #991. **subject:** imperion.
 
 ### 10-H3 · Spin up a per-employee brain
-- **Owner / Stream:** Holly / 10 (sub-mechanism of #1543, invoked by 10-H1).
+- **Owner / Stream:** Holly / 10 (sub-mechanism of #1543, invoked by 10-H1). **Archetype:** B8/B2
+  provision-with-undo — the infra provisioning sub-steps (blob container + RBAC + pg-role) are
+  `always_gate` Mark (no clean undo on identity/role creation, A10).
 - **Trigger:** onboarding reaches the brain step (from 10-H1) OR a backfill for a brain-less employee.
 - **Terminal outcome:** employee has a provisioned Personal Knowledge Store (Synthesis Store +
   Curated Vault) + persona + access to departmental operator agents, owner-private.
@@ -189,7 +220,8 @@ actuation (the joiner-mover-leaver technical grants).
   **subject:** imperion.
 
 ### 10-H4 · Run an employee performance review cycle
-- **Owner / Stream:** Holly / 10. ⛔ **UNFILED leaf — recommend sub-issue under #1558.**
+- **Owner / Stream:** Holly / 10. **Archetype:** B4 audit-attest (assemble packet + route) — any comp
+  change peels off to a B2/money gate (A2 class-1). ⛔ **UNFILED leaf — recommend sub-issue under #1558.**
 - **Trigger:** review cadence (quarterly/annual) OR manager-initiated.
 - **Terminal outcome:** review packet assembled + cycle tracked to completion; outcomes (rating,
   comp-change proposal) recorded gated.
@@ -205,8 +237,8 @@ actuation (the joiner-mover-leaver technical grants).
 - **Substrate deps:** Tess (quality signals), Audrey read-only, #389. **subject:** imperion.
 
 ### 10-H5 · PTO / leave administration
-- **Owner / Stream:** Holly / 10. ⛔ **UNFILED leaf + DORMANT** (pto/holiday categories out of v1
-  per the CONTEXT Time Entry note).
+- **Owner / Stream:** Holly / 10. **Archetype:** B2 gated-actuation (draft → manager-approve gate).
+  ⛔ **UNFILED leaf + DORMANT** (pto/holiday categories out of v1 per the CONTEXT Time Entry note).
 - **Trigger:** employee leave request.
 - **Terminal outcome:** leave recorded + approved/denied; tracked.
 - **Procedure Steps:**
@@ -228,16 +260,19 @@ routes genuine legal calls to a human). Reports to Rachel. **SEAM:** contracts a
 (sales MSA/SOW) and Vance (vendor agreements); execution/esign is always-gate.
 
 ### 10-L1 · Review an inbound contract (MSA / SOW / NDA)
-- **Owner / Stream:** Laurel / 10 (tracer `contract-review`).
+- **Owner / Stream:** Laurel / 10 (tracer `contract-review`). **Archetype:** B2 gated-actuation —
+  signing/binding is `always_gate` class-6 (A2), no clean undo on a bound agreement (A10).
 - **Trigger:** a contract document arrives (Chase won-deal MSA/SOW, Vance vendor agreement, inbound NDA).
 - **Terminal outcome:** contract redlined + risk clauses flagged + summarized; execution parked for a human.
 - **Procedure Steps:**
   1. `[automation]` Ingest the document; classify type (MSA/SOW/NDA/vendor/renewal). **L2.**
   2. `[automation]` Redline against the standard playbook; flag risk clauses (liability, indemnity,
      auto-renew, termination, data-handling).
-  3. `[automation]` Summarize risks + recommendation; cite the clause (audit-by-reference, no fabrication).
-  4. `[hybrid]` HAND OFF to the human (or counsel) for genuine legal calls; PARK execution.
-     (**`always_gate`:** signing / binding the company.)
+  3. `[automation]` Summarize risks + recommendation; **cite the clause + as-of** (A5, audit-by-reference,
+     no fabrication).
+  4. `[hybrid]` HAND OFF to the human (or counsel) for genuine legal calls (A11 seam); PARK execution
+     as the 4-part easy-button (drafted redline + grounded why + one-click + consequence preview, A4).
+     (**`always_gate`:** signing / binding the company, A2 class-6.)
 - **Driving policy:** TBD (#1586) contract-standards policy.
 - **Realization:** `icm/domains/legal/contract-review/` (live SoR).
 - **Autonomy ceiling:** L2; `always_gate`: execution / binding / esign.
@@ -248,15 +283,18 @@ routes genuine legal calls to a human). Reports to Rachel. **SEAM:** contracts a
   (client MSAs serve clients; internal/vendor contracts = imperion).
 
 ### 10-L2 · Track contract lifecycle + renewals (legal side)
-- **Owner / Stream:** Laurel / 10 (deeper playbook under #1559).
+- **Owner / Stream:** Laurel / 10 (deeper playbook under #1559). **Archetype:** B9 deadline-sentinel
+  (watch term/renewal/notice clocks; **never auto-actuate** a renew/cancel — A11/B9; escalate +
+  pre-stage the easy-button, T-30/T-7/T-1).
 - **Trigger:** contract executed (lifecycle start) OR renewal/expiry window approaching.
 - **Terminal outcome:** contract obligations + key dates tracked; renewal-legal review triggered
   ahead of expiry; no surprise auto-renew (legal twin of Vance's Deadline Sentinel).
 - **Procedure Steps:**
-  1. `[automation]` Record the executed contract + key dates (term, renewal, notice window). **L2.**
+  1. `[automation]` Record the executed contract + key dates (term, renewal, notice window), **cited
+     + as-of** (A5). **L2.**
   2. `[automation]` Watch the renewal/expiry window; on approach, draft a renewal-legal review +
-     flag changed terms. SEAM with Vance (vendor procurement) + Chase (client renewal as a sales
-     motion / `contract_renewal`).
+     flag changed terms, **escalating up `reports_to` with rising urgency, never auto-actuating** (B9).
+     SEAM with Vance (vendor procurement) + Chase (client renewal as a sales motion / `contract_renewal`).
   3. `[hybrid]` Route the renewal recommendation to a human; execution always-gate.
 - **Driving policy:** TBD (#1586).
 - **Realization:** procedure-only (graduates with the watcher).
@@ -267,7 +305,9 @@ routes genuine legal calls to a human). Reports to Rachel. **SEAM:** contracts a
   is Vance's Deadline Sentinel. Laurel owns the LEGAL-terms review only — split at the seam.
 
 ### 10-L3 · Compliance / policy review (legal)
-- **Owner / Stream:** Laurel / 10 (deeper playbook under #1559).
+- **Owner / Stream:** Laurel / 10 (deeper playbook under #1559). **Archetype:** B2 gated-actuation —
+  binding compliance commitments are `always_gate` (A2 class-6); Laurel measures legal obligations,
+  Grace owns security-control evidence (A11 seam).
 - **Trigger:** a new regulatory/contractual compliance obligation surfaces OR cadence review.
 - **Terminal outcome:** obligation assessed + recommendation drafted; routed to a human; tracked.
 - **Procedure Steps:**
@@ -290,13 +330,15 @@ Ceiling **L2** (audit/score/flag/recommend auto; NO actuation — watcher, like 
 Jessica. Sits OUTSIDE Service so it audits delivery, not itself.
 
 ### 10-T1 · Audit ticket quality on close
-- **Owner / Stream:** Tess / 10 (tracer `ticket-quality-audit`).
+- **Owner / Stream:** Tess / 10 (tracer `ticket-quality-audit`). **Archetype:** B4 audit-attest
+  (internal — measure + route, auto at L2; **no actuation** — every output is a flag, A11: Tess audits,
+  the delivery owner re-works).
 - **Trigger:** ticket closed OR sampled on a cadence.
 - **Terminal outcome:** ticket scored on quality / CSAT-risk / SLA-adherence; systemic issues
   flagged + recommended to Dexter/Jessica; no actuation.
 - **Procedure Steps:**
   1. `[automation]` Load the closed/sampled ticket (read-only); score documentation quality,
-     resolution quality, time-to-resolve vs SLA. **L2.**
+     resolution quality, time-to-resolve vs SLA, **citing the SLA standard version + as-of** (A5/B4 scope). **L2.**
   2. `[automation]` Detect CSAT-risk signals (reopen risk, tone, premature close — Felix's
      "quick-fix masking root cause" flag).
   3. `[automation]` Aggregate into systemic patterns (per technician / per category).
@@ -310,7 +352,9 @@ Jessica. Sits OUTSIDE Service so it audits delivery, not itself.
   (client-ticket quality + dogfood internal tickets).
 
 ### 10-T2 · CSAT survey + sentiment program
-- **Owner / Stream:** Tess / 10 (deeper playbook under #1560). ⛔ **UNFILED leaf.**
+- **Owner / Stream:** Tess / 10 (deeper playbook under #1560). **Archetype:** B4 audit-attest
+  (capture + trend + route) with the outbound survey send a **B7 client-facing-send** edge (`always_gate`).
+  ⛔ **UNFILED leaf.**
 - **Trigger:** ticket/project close (survey-eligible) OR cadence.
 - **Terminal outcome:** CSAT captured + scored + trended; low-CSAT accounts flagged to Celeste
   (relationship) + Jessica.
@@ -326,7 +370,9 @@ Jessica. Sits OUTSIDE Service so it audits delivery, not itself.
 - **Substrate deps:** Celeste handoff (#991), consent-gating for sends. **subject:** both.
 
 ### 10-T3 · SLA-conformance monitoring
-- **Owner / Stream:** Tess / 10 (deeper playbook under #1560). ⛔ **UNFILED leaf.**
+- **Owner / Stream:** Tess / 10 (deeper playbook under #1560). **Archetype:** B4 audit-attest
+  (conformance measure + route; recommend-only). **A11 seam:** real-time SLA escalation = the Service
+  stream (Felix/Scout/Ozzie); Tess audits conformance after the fact. ⛔ **UNFILED leaf.**
 - **Trigger:** continuous / cadence over open + closed tickets.
 - **Terminal outcome:** SLA breaches + at-risk tickets surfaced; systemic SLA gaps recommended to
   Dexter/Jessica.
@@ -354,7 +400,9 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 **Per the D8 ruling, connection-health monitoring is Vera's (platform function, OS-self-op) — 10-O11.**
 
 ### 10-V1 · Conformance-detect → quarantine → route → verify (the Defined Way loop) — #1459/#1467
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (the stream's canonical B4) —
+  measure auto at L2 + **reversible auto-quarantine** (A10 internally-reversible); the correction is
+  the OWNER's (`always_gate`, A11 seam).
 - **Trigger:** an agent run completes (event) OR cadence sweep.
 - **Terminal outcome:** any divergence from the domain's Defined Way is detected, reversibly
   quarantined, routed to the owning agent/human, and verified closed.
@@ -378,7 +426,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
   authors the rulebooks).
 
 ### 10-V2 · Author per-domain conformance rulebook — #1460–1466
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (encode + ratify) — ruleset
+  activation is a governance-config change, `always_gate` Mark (A2/A11).
 - **Trigger:** a domain's Defined Way is established/changed (new ADR, new SOP).
 - **Terminal outcome:** that domain's Defined Way is encoded as a machine-checkable ruleset 10-V1 can run.
 - **Procedure Steps:**
@@ -392,7 +441,9 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 - **Substrate deps:** Conformance Engine. **subject:** imperion.
 
 ### 10-V3 · Define + version the Client Security Standard — #1468
-- **Owner / Stream:** Vera / 10 (the standard-owner mission).
+- **Owner / Stream:** Vera / 10 (the standard-owner mission). **Archetype:** B4 audit-attest
+  (external-facing standard ratification). ⛔ **Mark ratification is `always_gate`, dial-proof FOREVER**
+  (A2/A3 — earned autonomy can never cross it); Vera drafts the standard, Mark signs (A11 obligation/action split).
 - **Trigger:** threat-landscape change / cadence / a gap discovered → a new standard version needed.
 - **Terminal outcome:** a new versioned Client Security Standard drafted, ratified by Mark, all
   clients re-scored against it.
@@ -408,7 +459,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 - **Substrate deps:** standard-version store (#1579), posture data, #389. **subject:** both.
 
 ### 10-V4 · Evaluate client posture vs current standard — #1469
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (measure + route, advisory).
+  **A11 seam:** Vera measures / Celeste presents / human-Datto remediates.
 - **Trigger:** posture snapshot taken / standard re-version / cadence.
 - **Terminal outcome:** each client's posture measured against the current standard; an advisory
   get-back-in-shape evaluation produced.
@@ -425,7 +477,7 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
   measures / Celeste presents / human-Datto remediates.
 
 ### 10-V5 · Detect security drift — #1470
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (detect + flag; remediation human, A11).
 - **Trigger:** new posture data / cadence.
 - **Terminal outcome:** drift from the standard (or from each client's prior conformant state)
   detected + flagged.
@@ -441,7 +493,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
   Vera = standard-conformance drift (slow/posture), Cyrus = active-threat drift (fast/alert). Split.
 
 ### 10-V6 · Draft remediation / get-back-in-shape plan — #1471
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (draft + route, advisory); actuation
+  is human/Datto (`always_gate`, A11).
 - **Trigger:** a drift/gap is detected (from 10-V4/V5).
 - **Terminal outcome:** a remediation recommendation (advisory) produced + routed.
 - **Procedure Steps:**
@@ -454,7 +507,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 - **Substrate deps:** posture gold, Celeste. **subject:** both.
 
 ### 10-V7 · Re-evaluate on standard evolution — #1472
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (all-client fan-out re-score,
+  contained by rate/fan-out caps #991-1A; remediation human, A11).
 - **Trigger:** a new standard version is ratified (from 10-V3).
 - **Terminal outcome:** all clients re-scored against the new standard; deltas surfaced.
 - **Procedure Steps:**
@@ -468,7 +522,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 - **Substrate deps:** fan-out containment (#991-1A), posture gold. **subject:** both.
 
 ### 10-V8 · Nightly autonomy + agent-run audit — #1473
-- **Owner / Stream:** Vera / 10 (the auditor mission).
+- **Owner / Stream:** Vera / 10 (the auditor mission). **Archetype:** B4 audit-attest
+  (audit-by-reference, report-only — Vera OBSERVES the earned-autonomy ledger, never executes it, A11/ADR-0121).
 - **Trigger:** schedule (nightly).
 - **Terminal outcome:** anomalous autonomy decisions + agent_run outcomes surfaced; findings
   reported by reference.
@@ -485,7 +540,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 - **Substrate deps:** `agent_run` (0056), autonomy policy tables, #991. **subject:** imperion.
 
 ### 10-V9 · Eval-regression detection — #1474
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (detect + flag); tuning is Mark-gated
+  and ACTED on by 10-O5 (A11 seam — Vera detects, O5 acts).
 - **Trigger:** eval run completes (or nightly).
 - **Terminal outcome:** eval-score regressions vs baseline surfaced; tuning candidates flagged.
 - **Procedure Steps:**
@@ -500,7 +556,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
   with 10-O5:** Vera DETECTS the regression, the feedback-loop ACTS on it. Split.
 
 ### 10-V10 · Governance-setting recommendation — #1475
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (detect + draft + route, recommend-only);
+  the governance-config change is `always_gate` Mark and APPLIED by 10-O3 (A11 — Vera recommends, O3 applies).
 - **Trigger:** audit finds a mis-set governance config (grant too broad, dial too high for track record).
 - **Terminal outcome:** a governance-config change recommendation drafted + routed to Mark.
 - **Procedure Steps:**
@@ -514,7 +571,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
   RECOMMENDS, the dial-governance procedure APPLIES the change. Split.
 
 ### 10-V11 · Grounding-conflict audit + domain-owner escalation — #1476
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (detect + escalate-only; resolution
+  is the owner's, A11 seam — Curator works WITHIN one owner (10-O7), Vera ACROSS company tier).
 - **Trigger:** cadence OR a grounding conflict is logged (personal vs silver vs OKF canon disagree).
 - **Terminal outcome:** open grounding conflicts surfaced + escalated to the domain business-owner
   to resolve.
@@ -532,7 +590,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
   Vera = ACROSS canon/silver/personal at company tier. Split.
 
 ### 10-V12 · PII / data_class compliance audit — #1477
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (report-by-reference — NEVER reproduces
+  the value; the pool-never-bleed / data_class enforcement audit, A7/ADR-0118).
 - **Trigger:** cadence (nightly) OR a flagged run.
 - **Terminal outcome:** PII leaks + data_class boundary violations surfaced by reference; findings routed.
 - **Procedure Steps:**
@@ -548,7 +607,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 - **Substrate deps:** data_class RLS (#967/#990), `agent_run`. **subject:** imperion.
 
 ### 10-V13 · Data-integrity / contradiction audit (company tier) — #1478
-- **Owner / Stream:** Vera / 10.
+- **Owner / Stream:** Vera / 10. **Archetype:** B4 audit-attest (detect + route; corrections go to the
+  owning data plane, never silent, A11).
 - **Trigger:** cadence OR ingestion/merge run completes.
 - **Terminal outcome:** company-tier data contradictions / integrity gaps surfaced + routed to the
   owning data plane.
@@ -564,7 +624,8 @@ executes it. THREE missions: conformance fact-checker · client-security-standar
 
 ### 10-V14 · Connection-health + KV-hygiene sweep (platform function, D8) — OS-self
 - **Owner / Stream:** Vera / 10 (per the **D8 ruling**: connection-health monitoring → Vera,
-  platform function / OS-self-op).
+  platform function / OS-self-op). **Archetype:** B4 audit-attest (sweep + flag); destructive secret
+  deletes are `always_gate` Mark (A2/A10 — no clean undo on a deleted secret).
 - **Trigger:** cadence OR an inferred-health amber/red on a connection.
 - **Terminal outcome:** stale/error connections surfaced; KV hygiene (orphaned/expired secrets,
   non-canonical names) flagged for cleanup.
@@ -593,7 +654,8 @@ Mark (risk reports to Mark). Owns Platform & Assurance GOVERNANCE here. **NOTE:*
 assurance-GOVERNANCE procedures she owns at this tier.
 
 ### 10-J1 · Govern the assurance program (Vera/Tess/Alivia orchestration)
-- **Owner / Stream:** Jessica / 10.
+- **Owner / Stream:** Jessica / 10. **Archetype:** B3 synthesis-brief (delegate-only, never bypasses a
+  sub-agent gauntlet; risk acceptance always Mark's, A11).
 - **Trigger:** cadence OR a division-level assurance escalation from Vera/Tess/Alivia.
 - **Terminal outcome:** assurance work (conformance, quality, doc-hygiene) coordinated; cross-cutting
   risks routed to Mark.
@@ -612,7 +674,9 @@ assurance-GOVERNANCE procedures she owns at this tier.
   SWEEP/brief itself = Stream 11; this is the governance-routing procedure.
 
 ### 10-J2 · Govern eval-quality acceptance (quality-gate stewardship)
-- **Owner / Stream:** Jessica / 10.
+- **Owner / Stream:** Jessica / 10. **Archetype:** B3 synthesis-brief — frames a risk decision; the
+  release/risk acceptance + go-live gating is `always_gate` Mark (A2/A11 — Vera detects, Jessica
+  makes the call, O5 tunes: three split roles).
 - **Trigger:** eval-gate result / agent-quality-eval cadence / a regression flagged by Vera (10-V9).
 - **Terminal outcome:** quality-gate status owned at the risk tier; a failing gate becomes a
   risk-accepted-or-blocked decision routed to Mark.
@@ -628,7 +692,8 @@ assurance-GOVERNANCE procedures she owns at this tier.
   10-V9 (detect) + 10-O5 (act):** Jessica makes the RISK CALL; Vera detects; O5 tunes. Three roles.
 
 ### 10-J3 · Own the risk register (platform/assurance risks)
-- **Owner / Stream:** Jessica / 10.
+- **Owner / Stream:** Jessica / 10. **Archetype:** B3 synthesis-brief (capture + score + surface;
+  label signal vs inference per A5; risk acceptance always Mark's, A11).
 - **Trigger:** a new platform/assurance risk surfaces (audit finding, drift, incident) OR cadence.
 - **Terminal outcome:** platform/assurance risk register kept current; each risk has an owner +
   status; top risks roll into the Stream-11 brief.
@@ -653,7 +718,8 @@ Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Alivia's 
 (D5: a runbook = generated projection of the ICM Workspace; Alivia syncs workspace→runbook→IT Glue).
 
 ### 10-K1 · Doc-sync poll → IT Glue SoT
-- **Owner / Stream:** Alivia / 10 (tracer `doc-sync`).
+- **Owner / Stream:** Alivia / 10 (tracer `doc-sync`). **Archetype:** B4 audit-attest (detect-stale +
+  draft + route); SoT publish gated until trusted (A10 — externally-visible write); no secrets/PII in docs (A7).
 - **Trigger:** scheduled poll OR a change event across sources.
 - **Terminal outcome:** stale/contradictory/missing docs detected; updated/drafted into IT Glue (the
   SoT); a diff proposed for review.
@@ -672,8 +738,10 @@ Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Alivia's 
   (client runbooks in IT Glue + internal docs/dogfood).
 
 ### 10-K2 · Author human-facing runbooks from agent procedures
-- **Owner / Stream:** Alivia / 10 (deeper playbook; the catalog's long-term home, D5). ⛔ **UNFILED
-  leaf under #1561.**
+- **Owner / Stream:** Alivia / 10 (deeper playbook; the catalog's long-term home, D5). **Archetype:**
+  B4 audit-attest (generate-projection + sync). **A8 supersedes the old runbook+prose split:** there is
+  **one uniform dual-audience document** single-sourced from the ICM Workspace, readable by both human
+  (training) and agent (execution); this procedure materializes that projection. ⛔ **UNFILED leaf under #1561.**
 - **Trigger:** an ICM Workspace (Operating Procedure) is created/changed OR Sage closes a problem fix.
 - **Terminal outcome:** a human-readable runbook (the generated PROJECTION of the workspace) authored
   + synced to IT Glue.
@@ -690,7 +758,8 @@ Jessica. IT Glue = the SoT. **This catalog's human-facing runbooks are Alivia's 
   **NOTE: this is the procedure that MATERIALIZES this whole catalog as runbooks long-term.**
 
 ### 10-K3 · Knowledge freshness / contradiction surfacing
-- **Owner / Stream:** Alivia / 10 (deeper playbook under #1561).
+- **Owner / Stream:** Alivia / 10 (deeper playbook under #1561). **Archetype:** B4 audit-attest
+  (freshness verdict + flag; route to the owning author, A11 — K3 = human IT-Glue docs vs O8 = machine OKF).
 - **Trigger:** cadence OR a source change that may invalidate existing docs.
 - **Terminal outcome:** stale/contradictory knowledge flagged with a freshness verdict; routed to
   the owning author.
@@ -714,7 +783,9 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 `subject:imperion`.
 
 ### 10-O1 · Onboard a new agent into the org
-- **Owner / Stream:** Rachel (program) + Mark (gate) / 10 (OS-self).
+- **Owner / Stream:** Rachel (program) + Mark (gate) / 10 (OS-self). **Archetype:** B4 audit-attest
+  (author + conformance-check + gate); Constitution widening + tool grants + activation are
+  `always_gate` Mark (A2/A3 ship-dial conservative; A11 — Rachel authors, Mark ratifies).
 - **Trigger:** a new agent is approved for the roster (org-recast adds one).
 - **Terminal outcome:** a new agent exists with full ICM anatomy, wired into `org.yaml`,
   conformance-green, dial conservative, goldens shipped.
@@ -731,7 +802,8 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 - **Substrate deps:** scaffold (#1536), goldens (#1538), retrieval tier (#1537). **subject:** imperion.
 
 ### 10-O2 · Refresh an agent persona / lifecycle
-- **Owner / Stream:** Rachel + Vera (conformance) / 10 (OS-self).
+- **Owner / Stream:** Rachel + Vera (conformance) / 10 (OS-self). **Archetype:** B4 audit-attest
+  (diff + draft + re-conform); guardrail/ceiling changes are `always_gate` via PR review (A2/A11).
 - **Trigger:** an ADR supersedes what a persona/guardrail teaches OR cadence persona review.
 - **Terminal outcome:** the agent's persona + guardrails updated, conformance-green, in the same PR
   as the ADR (docs-gate).
@@ -748,7 +820,10 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
   `persona-refresh` skill but for AGENT personas — distinct from 10-O7 personal-knowledge curation.**
 
 ### 10-O3 · Govern the autonomy dial (draft → auto promotion)
-- **Owner / Stream:** Vera (recommends) + Mark (applies) / 10 (OS-self).
+- **Owner / Stream:** Vera (recommends) + Mark (applies) / 10 (OS-self). **Archetype:** B2
+  gated-actuation (the dial apply is the actuation, Mark's `always_gate`); the **dial-proof ceiling**
+  (money/customer-facing/credentials/prod-migration/X.0.0) can NEVER auto-cross (A2/A3/A10 — Vera
+  recommends (10-V10), Mark applies, A11).
 - **Trigger:** Vera recommends a dial change (10-V10) OR the earned-autonomy ledger crosses a
   threshold OR a miss triggers demote.
 - **Terminal outcome:** a workflow/agent's autonomy dial is set (draft→auto or up/down a level),
@@ -770,6 +845,8 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 
 ### 10-O4 · Author + run eval goldens
 - **Owner / Stream:** Vera (regression) + the agent owner (authoring) / 10 (OS-self) — #1538 / #983.
+  **Archetype:** B4 audit-attest (author + run + compare); golden activation / baseline change gated
+  (the evidence-floor A5 enforcement substrate).
 - **Trigger:** a new agent ships (goldens are a standard artifact) OR eval cadence OR a CI
   eval-gate run.
 - **Terminal outcome:** each agent has PII-free goldens; eval runs persist results; regressions feed
@@ -789,6 +866,8 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 
 ### 10-O5 · Eval → improvement feedback loop
 - **Owner / Stream:** Vera (opens candidates) + Mark (approves) / 10 (OS-self) — extends #983.
+  **Archetype:** B4 audit-attest (collect + open tuning candidates); any grant/guardrail/prompt change
+  to a live agent is `always_gate` Mark (A2/A11 — V9 detects, J2 makes the risk call, O5 acts).
 - **Trigger:** failed evals + low-scored `agent_run` rows (from 10-O4/V9).
 - **Terminal outcome:** tuning candidates (prompt/grant/skill changes) opened, PII-safe, Mark-gated;
   goldens harvested from redacted real traces.
@@ -806,7 +885,9 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
   10-V9 detects, 10-J2 makes the risk call, this ACTS (opens candidates). Three split roles.**
 
 ### 10-O6 · Retrieval-tier / memory curation (gold ranker + tier hydration)
-- **Owner / Stream:** Vera (integrity) + LocalPipeline (mechanism) / 10 (OS-self).
+- **Owner / Stream:** Vera (integrity) + LocalPipeline (mechanism) / 10 (OS-self). **Archetype:** B4
+  audit-attest (compose + vectorize + verify); AI-key custody is `always_gate` (A2 class). ⛔ DORMANT on
+  Voyage seed #389 — per A5c this ships propose-only / recall reports staleness honestly until hydrated.
 - **Trigger:** gold composes new `knowledge_object`s OR vectorization cadence OR a ranker-quality concern.
 - **Terminal outcome:** the gold knowledge tier is hydrated (embeddings present) and the hybrid
   ranker returns useful results; recall is live.
@@ -829,6 +910,8 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 
 ### 10-O7 · Personal-knowledge curation (Personal Curator + contradiction surfacing)
 - **Owner / Stream:** Personal Curator runtime (owner-scoped) — program owner Rachel / 10 (OS-self) — BE #302.
+  **Archetype:** B4 audit-attest (project + distill + hunt-contradictions); never auto-resolves a
+  contradiction and **never crosses the personal→company wall** (`always_gate`, A7 pool-never-bleed / ADR-0105 §3c).
 - **Trigger:** synthesis-store change OR human vault edit OR cadence (per owner).
 - **Terminal outcome:** a personal store's two substrates (Synthesis Store ↔ Curated Vault) kept in
   sync; Knowledge Contradictions surfaced for the owner to approve.
@@ -853,7 +936,9 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
   10-O2 agent-persona-refresh.**
 
 ### 10-O8 · OKF semantic-layer maintenance
-- **Owner / Stream:** Alivia (knowledge) + the schema author / 10 (OS-self).
+- **Owner / Stream:** Alivia (knowledge) + the schema author / 10 (OS-self). **Archetype:** B4
+  audit-attest (detect-change + update concept+matrix); PII/secrets/code-knowledge boundaries are
+  hard refusals (A7/ADR-0086); gate-blocking is CI.
 - **Trigger:** a silver entity's shape / source-of-record / join paths change (any repo) OR a new
   silver entity OR a precedence flip.
 - **Terminal outcome:** the matching OKF concept file + `coverage-matrix.md` row updated in the same
@@ -876,7 +961,9 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
   human IT-Glue docs. Split.
 
 ### 10-O9 · Connector / connection setup
-- **Owner / Stream:** Vance/IT (operator) + Mark (custody) / 10 (OS-self) — #1256.
+- **Owner / Stream:** Vance/IT (operator) + Mark (custody) / 10 (OS-self) — #1256. **Archetype:** B2
+  gated-actuation — credential custody is `always_gate` human-on-the-GUI (A2; secrets never read/print/commit);
+  the custody write is idempotent + read-back-verified (A9).
 - **Trigger:** a new data source must be connected OR a Planned connector is built out.
 - **Terminal outcome:** a live `connection` (company or client scope) with a Key-Vault-custodied
   credential under the canonical name, health green, ingesting.
@@ -895,7 +982,9 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
   **subject:** imperion (Imperion's own connectors; client M365/UniFi creds = `both`).
 
 ### 10-O10 · Credential rotation
-- **Owner / Stream:** Mark (custody) + IT / 10 (OS-self).
+- **Owner / Stream:** Mark (custody) + IT / 10 (OS-self). **Archetype:** B2 gated-actuation —
+  re-custody is `always_gate` human (A2 secret material); old-secret delete is Mark-gated (A10 no clean undo);
+  health verified via read-back (A9).
 - **Trigger:** rotation cadence OR a credential expiry/compromise OR a vendor key change.
 - **Terminal outcome:** a credential rotated under the same canonical KV name, connection health
   restored, no downtime, no secret ever in repo/issue/log.
@@ -912,6 +1001,8 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 
 ### 10-O11 · Backend deploy + trigger-sync verification
 - **Owner / Stream:** Marshall (Change/Release, Stream 06) + Dexter / 10 (OS-self) — SEAM with Stream 06.
+  **Archetype:** B2 gated-actuation (verify half) — prod deploys are Marshall's gated change (A2 class-4);
+  this is the OS-self read-back verification that "deployed" is real, not assumed (A9c, A11 seam with Stream 06).
 - **Trigger:** a backend deploy lands (new/changed Azure Function).
 - **Terminal outcome:** new endpoints are trigger-synced and reachable; "deployed" is verified, not
   assumed.
@@ -929,7 +1020,9 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
   rollback/standard-change #1579); this is the OS-self verification half.**
 
 ### 10-O12 · Nova intake-route (orchestrator front-door)
-- **Owner / Stream:** Nova (orchestrator) / 10 (OS-self) — tracer `intake-route`.
+- **Owner / Stream:** Nova (orchestrator) / 10 (OS-self) — tracer `intake-route`. **Archetype:** B1
+  triage/route (ground → classify → resolve-owner → disposition) — routing auto at L2; world-changing
+  acts inherit the sub-agent ceiling; above-ceiling parks to the cockpit (A3/A11).
 - **Trigger:** a user request hits the single orchestrator (the one agent experience).
 - **Terminal outcome:** the request is routed to the right C-suite/sub-agent, context+memory managed,
   permissions enforced, one response returned.
@@ -951,6 +1044,8 @@ Per **D7.1** in scope — running the agentic OS IS running the company. Owner a
 
 ### 10-O13 · Monitoring-bronze ingestion + health-signal wiring (OS-self observability)
 - **Owner / Stream:** Vera (governance) + Ozzie/NOC (live telemetry, Stream 06) / 10 (OS-self).
+  **Archetype:** B4 audit-attest (ingest + normalize + route; no actuation — corrective actuation routes
+  to the owning plane, A11 seam: live-host telemetry = Ozzie / governance consumption = Vera).
 - **Trigger:** monitoring cadence OR a health-signal source comes online (new connector / endpoint /
   agent run stream).
 - **Terminal outcome:** OS-self health signals (connection freshness, agent_run health, endpoint
@@ -978,7 +1073,15 @@ author) · Jessica #1550 · Alivia #1561. Cross-cutting #1543/#1544/#1537/#1538 
 referenced as the Stream-04 JML seam (not owned here). **D8 resolved** the prior connection-health
 ownership gap → Vera (10-V14, platform function). UNFILED leaves flagged inline (Holly 10-H4/H5,
 Tess 10-T2/T3, Alivia 10-K2) = sub-issues under their owner epics. Per **D7.1** the 13 OS-self
-procedures are first-class — running the agentic OS is running the company.
+procedures are first-class — running the agentic OS is running the company. **Doctrine inheritance
+(ADR-0136):** every procedure names its archetype (B1–B9) and inherits A1–A11 — most of this stream
+is **B4 audit-attest** (the assurance/governance core: Vera's 14 + Tess + Alivia + most OS-self), with
+**B5 JML disable≠delete** carrying Holly's joiner/leaver split, **B3 synthesis-brief** for the
+delegate-only C-suite tracers (Rachel A1, all of Jessica), **B2 gated-actuation** for legal binding +
+connector/credential/deploy + dial-apply, **B9 deadline-sentinel** for Laurel's renewal radar, and
+**B1 triage/route** for Rachel A2 + Nova intake. The stream's hard floors — Vera's Client Security
+Standard ratification (10-V3), every credential/secret act (O9/O10), comp/identity gates (Holly),
+and the personal→company wall (O7) — are `always_gate` per A2/A7/A10, dial-proof forever.
 
 **Count: 40 Operating Procedures** — Rachel 4 (A1–A4) · Holly 5 (H1–H5) · Laurel 3 (L1–L3) · Tess 3
 (T1–T3) · Vera 14 (V1–V14, incl. V14 connection-health per D8) · Jessica 3 (J1–J3) · Alivia 3
