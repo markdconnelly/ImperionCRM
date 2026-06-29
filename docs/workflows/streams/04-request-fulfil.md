@@ -62,6 +62,9 @@ touches an `always_gate` step. v1 posture: all autonomous actions WITHHELD → r
 | OP-04-10 Joiner | **B5 JML** (grants gate) |
 | OP-04-11 Mover | **B5 JML** (additions gate, removals auto) |
 | OP-04-12 Leaver | **B5 JML** (disable@L4 ≠ delete always-gate) |
+| OP-04-13 hardware/RMA/warranty + procurement logistics | **B2 gated-actuation** (Vance money-seam + Scout staging) |
+| OP-04-14 carrier/circuit/telco lifecycle | **B9 deadline-sentinel** + **B2 gated-actuation** (Vance seam + Ozzie act) |
+| OP-04-15 field-service capacity planning | **B3 synthesis-brief** (Scout, launchpad) |
 
 **Dormancy flags:** **#119** trigger-sync (BE/PL deploy-dormant until function triggers synced) ·
 **#389** Voyage embeddings TABLED (worker semantic recall dormant; v1 retrieval = pull-by-declaration
@@ -448,6 +451,142 @@ invoked by many procedures below.
 - **Substrate deps:** M365/Entra deprovision · #991 HR-event bus · Pax8 license reclaim (#1042) · #119.
   **subject:** both. **(Imperion dogfood: offboarding an Imperion contributor runs the same flow.)**
 
+## OP-04-13 · Manage hardware RMA / warranty + procurement logistics (drop-ship · staging · asset-tag)
+- **Owner / Stream:** **Vance↔Scout seam** / 04. The *procurement / vendor-order / warranty-claim*
+  half is **Vance** (asset & vendor owner, Stream 07 — the money/vendor clock, A11); the *physical
+  receive → stage → asset-tag → onsite-install* fulfilment half is **Scout** (dispatch/field, this
+  stream). **Provisional terminal owner = Scout** (the fulfilment unit lands here as a Request);
+  **Felix** raises the failed-hardware ticket. **Archetype:** B2 gated-actuation (the procurement
+  commit + the staging actuation). The vendor-order *commitment* (Vance, money) is distinct from the
+  *logistics act* (Scout) — they meet at OP-04-13 step 3, never co-own (A11).
+- **Trigger:** a hardware failure/RMA ticket (Felix triage OP-04-02 flags faulty/EOL device), a
+  delivery-project procurement need (Pierce, Stream 03), or a refresh/expansion line (Celeste 08-I →
+  Vance). **Hand-off (inbound, SEAM A11):** Felix / Pierce / Vance → Scout.
+- **Terminal outcome:** the RMA/warranty claim or procurement order is placed (Vance-gated), the
+  inbound hardware **received → staged → asset-tagged → linked to its `cmdb_ci`**, and (if onsite)
+  dispatched for install — **the purchase/RMA commitment always parked for a human** in v1.
+- **Procedure Steps** (B2: ground → plan → GATE → actuate → reconcile → log):
+  1. `[automation]` **Ground** — resolve the affected asset/`cmdb_ci`, warranty/entitlement status, and
+     vendor (Pax8 / distributor / OEM), **citing the asset record + warranty source + as-of** (A5);
+     empty/expired-warranty → flag (never fabricate a coverage claim). **L0.**
+  2. `[automation]` **Plan** — draft the RMA/warranty claim **or** the procurement order (drop-ship vs
+     stock), the staging/asset-tag checklist, and the onsite-install need; pool-correlate prior
+     same-model failures across the base internally only (A7 — RMA pattern signal). **L1/L2.**
+  3. `[gui-step]` **GATE = the 4-part easy-button (A4) — `always_gate` (A2 class-1, money out):** the
+     **vendor order / paid RMA commitment is Vance's money act** — present exact $ + vendor SoR
+     (external, agent mirrors never owns, A9a) + irreversibility flag; the human approves before any
+     spend. **SEAM → Vance** (Stream 07 procurement — the money clock is his, A11). A no-cost
+     in-warranty RMA still parks the *vendor-facing claim send* (B7 class-2, vendor commitment).
+  4. `[automation]` **Actuate the logistics half (Scout) idempotently** — on approval, the inbound
+     hardware is received, staged, **asset-tagged and linked to `cmdb_ci`** (internal-reversible write,
+     B2 auto@L2), each step **idempotency-keyed** (replay = no-op + audit note, A9b). A failed step
+     **HALTS** the rest (no auto-rollback, A10); surface completed-vs-pending.
+  5. `[automation]` **Reconcile (read-back, A9c)** — confirm the asset-tag/`cmdb_ci` link landed + the
+     vendor order/RMA reference is recorded before close. **Hand-off:** onsite install → **Scout
+     dispatch (OP-04-09)**; device live → Felix's working ticket; license/shelfware reconcile → **Vance
+     (Stream 07)**.
+- **Driving policy:** inherits doctrine baseline (A2/A4/A5); specific drivers TBD (#1586) — Procurement /
+  Hardware-RMA / Asset-Tagging.
+- **Realization:** procedure-only — the logistics half rides Scout dispatch; the money half is Vance's
+  Stream 07 procurement procedure (referenced, not duplicated, D3). No separate workspace until built.
+- **Autonomy ceiling:** **Scout L2 (staging/asset-tag = internally reversible, A10 row 1).** **`always_gate`:**
+  the **vendor order / paid RMA spend** (Vance, A2 class-1 — money out has no clean undo, A10 row 4) +
+  any vendor-facing claim send (A2 class-2). Vance/HITL never recedes on the spend.
+- **Human-in-loop:** Vance's human on the purchase/RMA money commitment (dial-proof floor); dispatcher
+  (Derek) / Scout on the onsite. Staging/asset-tag climbs to auto; the spend stays human forever.
+- **Substrate deps:** `cmdb_ci`/asset model (exists) · Pax8/distributor procurement (#1042 loop) · Vance
+  Stream 07 procurement seam · #991 handoff · #119. **subject:** both. **(Imperion dogfood: Imperion's
+  own hardware refresh/RMA runs the same flow.)** **(OWNERSHIP: clean — Vance owns the money/vendor
+  clock, Scout owns the logistics act, A11; flag for Mark: confirm the procurement-vs-fulfilment line.)**
+
+## OP-04-14 · Manage carrier / circuit / telco lifecycle (order · install · renew · cancel · port)
+- **Owner / Stream:** **Vance↔Ozzie seam** / 04. The *carrier contract / order / renewal-cancel
+  deadline* clock is **Vance** (vendor & deadline-sentinel owner, Stream 07 — A11); the *technical
+  circuit turn-up / cutover / port act* is **Ozzie** (NOC/network, Stream 05). **Provisional terminal
+  owner = Scout/Ozzie fulfilment** (the install/turn-up unit lands here). **Archetype:** B9
+  deadline-sentinel (the contract-term/cancel-by clock) + B2 gated-actuation (the carrier order + the
+  cutover act). The carrier *deadline* (Vance sentinel) vs the *cutover act* (Ozzie) meet at an
+  explicit seam (A11), never co-own.
+- **Trigger:** a new-circuit need (delivery/expansion), a carrier renewal/cancel-by date approaching
+  (Vance's B9 sentinel fires T-30/T-7/T-1), a carrier price-hike/EOL signal, or a number-port request.
+  **Hand-off (inbound, SEAM A11):** Vance deadline → Ozzie/Scout; Celeste 08-J vendor-eval → Vance.
+- **Terminal outcome:** the carrier action completed — new circuit ordered + **turned up + cutover
+  verified**, OR a renewal/cancel decision routed (never auto-committed), OR a number port executed —
+  with the carrier-order spend + any cancel/port **always parked for a human**.
+- **Procedure Steps** (B9 watch + B2 actuate: watch → detect → GATE(decision) → actuate(cutover) → reconcile):
+  1. `[automation]` **Watch (B9, Vance)** — read the carrier contract term + cancel-by/renewal dates +
+     circuit inventory, **citing each date + as-of** (A5); alert at policy lead times (T-30/T-7/T-1).
+     **B9 rule: escalate-to-terminal, never auto-actuate** a renew/cancel under deadline pressure (a
+     missed cancel-by is a *logged escalation failure*, surfaced in Vance's brief — A6/B9). **L0/L2.**
+  2. `[automation]` **Detect + quantify** the action (order / renew / cancel / port) + $ / disruption
+     risk; pool-correlate carrier reliability/price across the base internally only (A7). **L2.**
+  3. `[gui-step]` **GATE = 4-part easy-button (A4):** the **carrier order / renewal / cancellation /
+     port commitment is `always_gate`** — order/renew = money + binding (A2 class-1/6); cancel/port =
+     service-disrupting + irreversible-once-ported (A2 class-2/4). **SEAM → Vance** (the contract money
+     clock, A11) for the commit decision. Present exact $ + carrier SoR + the disruption/irreversibility
+     flag. Routes to a human — never Vance's call to bind.
+  4. `[automation]` **Actuate the technical half (Ozzie) idempotently** — on approval, the circuit
+     turn-up / cutover / port executes through the NOC gauntlet (Stream 05), **idempotency-keyed** (A9b);
+     a cutover is **service-affecting → halt-on-fail, no auto-rollback** (A10), completed-vs-pending
+     surfaced. **SEAM → Ozzie (Stream 05)** — the cutover act is his, under his ceiling + `always_gate`.
+  5. `[automation]` **Reconcile (read-back, A9c)** — confirm circuit live / port completed + the carrier
+     order reference recorded before close. **Hand-off:** live circuit → `cmdb_ci` link (OP-04-13 path)
+     + Felix working ticket; cost reconcile → Vance (Stream 07).
+- **Driving policy:** inherits doctrine baseline (A2/A4/A5); specific drivers TBD (#1586) — Carrier /
+  Telco-Lifecycle / Circuit-Cutover / Number-Port.
+- **Realization:** procedure-only — the deadline half is Vance's Stream 07 sentinel; the cutover half is
+  Ozzie's Stream 05 act (both referenced, not duplicated, D3). No separate workspace until built.
+- **Autonomy ceiling:** **L2 watch/detect (Vance) + Ozzie's cutover ceiling.** **`always_gate`:** the
+  carrier order/renew/cancel/port commitment (A2 class-1/2/4/6 — money + binding + service-disrupting;
+  no clean undo on a bound contract or completed port, A10 row 4); a **service-affecting cutover** is
+  `always_gate` on Ozzie (A2 class-4). Dial-proof — a deadline never licenses an autonomous commit (B9).
+- **Human-in-loop:** Vance's human on the carrier commit + Mark/Dexter on a service-affecting cutover.
+  Watch/detect recedes to auto; the commit + cutover stay human (dial-proof floor).
+- **Substrate deps:** carrier-contract / circuit-inventory model (schema gap — **propose to FE**, see
+  coverage note) · Vance B9 sentinel (Stream 07) · Ozzie cutover (Stream 05) · #991 handoff · #119.
+  **subject:** both. **(OWNERSHIP: clean — Vance owns the deadline/money clock, Ozzie owns the cutover
+  act, A11; flag for Mark: carrier-contract silver model + the Stream 04↔05↔07 boundary.)**
+
+## OP-04-15 · Plan field-service capacity at volume (Scout — un-thin)
+- **Owner / Stream:** **Scout** / 04 (Dispatch — un-thinned to a planning role at volume). **Archetype:**
+  B3 synthesis-brief (the capacity brief is a launchpad — a forecast gap pre-stages the owning
+  hiring/scheduling/reassignment procedure parked; Scout synthesizes + recommends, never commits
+  headcount/spend). The capacity *forecast/standard* (Scout) is distinct from the *staffing/commit act*
+  (HR/Holly · dispatcher) — they meet at the launchpad seam (A11).
+- **Trigger:** a planning cadence (weekly/monthly field-capacity review) OR a load signal — onsite
+  backlog rising, SLA-at-risk dispatch queue (from OP-04-08/09), a seasonal/project surge (Pierce
+  delivery pipeline), or a region/skill coverage gap.
+- **Terminal outcome:** a field-service capacity brief — forecast demand vs available tech
+  hours/skills/regions, surplus/shortfall flagged, each gap a one-click launchpad to its owning
+  procedure (reassignment, overtime/contractor, hiring) — **advisory; Scout commits nothing.**
+- **Procedure Steps** (B3: gather → synthesize → narrate → deliver → log):
+  1. `[automation]` **Gather (cross-source, cite)** — read the technician + skill model (#1071), current
+     load/capacity (#1072), the onsite/dispatch backlog (OP-04-09), and the inbound demand signal
+     (Pierce delivery pipeline Stream 03, SLA-risk queue OP-04-08), **each source cited + as-of** (A5);
+     empty/stale → say so, never present dormant capacity as live (A5c). **L0.**
+  2. `[hybrid]` **Synthesize + narrate** — forecast demand vs capacity by skill/region/window; flag
+     surplus/shortfall + SLA-coverage risk (signal vs inference labeled); pool-correlate seasonal/load
+     patterns across the base internally only (A7); reasoning attributed up-chain (P2). **L2.**
+  3. `[gui-step]` **Deliver (launchpad)** — the dispatcher/Dexter reviews; each shortfall **auto-spawns
+     its owning worker procedure parked/draft** for one-click launch — internal reassignment (OP-04-08),
+     overtime/contractor or **hiring → Holly (HR, Stream 10)**, or a refresh-of-equipment need → Vance.
+     **`always_gate` (A2): any staffing/spend commitment** (hire, contractor, overtime budget) routes
+     as a *recommendation* to a human — Scout never commits headcount or spend (B3 launchpad).
+  4. `[automation]` **Log** — persist the capacity brief version (audited; attributed).
+- **Driving policy:** inherits doctrine baseline (A2/A4/A5); specific drivers TBD (#1586) — Field-Capacity /
+  Dispatch-SLA / Staffing-Threshold.
+- **Realization:** ICM — planned `icm/domains/dispatch/capacity-planning/` (rides the dispatch domain,
+  #1554). Procedure-only until the technician/capacity model (#1071/#1072) lands; dormant until then (A5c).
+- **Autonomy ceiling:** **L2** (forecast + flag + pre-stage launchpad = reversible internal, A10 row 1;
+  B3 no actuation). **`always_gate`:** any staffing/spend commitment the brief implies (hire = HR commit,
+  contractor/overtime = money A2 class-1) — routed, never committed by Scout.
+- **Human-in-loop:** dispatcher (Derek) / Dexter; Holly (HR) on any staffing commit. Forecast climbs to
+  auto-draft; every commitment stays human (A3 floor).
+- **Substrate deps:** #1071 technician+skill model (OPEN) · #1072 capacity/calendar (OPEN) · Pierce
+  delivery-pipeline signal (Stream 03) · #991 handoff (Holly HR seam) · #389 (pattern recall, TABLED) ·
+  #119. **subject:** both. **(OWNERSHIP: clean — Scout owns the capacity forecast/standard; the
+  staffing/spend act is HR/dispatcher/Vance, A11.)**
+
 ---
 
 ## Provable-coverage note
@@ -463,12 +602,19 @@ reversible vs always-gate delete/deprovision cleanup) and of the **B1 high-risk-
 Felix's identity/backup/DC escalate-only park (03). Everything except OP-04-02 is procedure-only /
 planned ICM, mostly **dormant** pending #119, #1077/#1078 (remediation/verify), #1071/#1072 (dispatch
 model), #1562 (JML), #389 (worker recall TABLED); per A5c those steps ship **propose-only** until their
-substrate hydrates. Open lines flagged for Mark: OP-04-08 assign-vs-dispatch ownership; an ITIL
-Incident-vs-Request-Fulfilment split (path=`other` is doing a lot of work); the Stream 04↔05 boundary
-on shared remediation/verify sub-procedures (request-driven here vs event/alert-driven Stream 05);
-OP-04-07 vs Pierce dedup; and the auto-leaver precondition. The wedge's hard floors are dial-proof:
-identity/backup/DC escalate-only (03), financial log-time (06), client-facing reply (07), and every JML
-grant (10/11).
+substrate hydrates. **Cluster-5 scale-up additions (2026-06-29, #1629):** the service-delivery
+fulfilment trio — hardware RMA/warranty + procurement logistics (13, Vance↔Scout seam), carrier/circuit/
+telco lifecycle (14, Vance↔Ozzie seam), and field-service capacity planning at volume (15, Scout
+un-thinned to a B3 capacity brief) — each a cross-stream seam landing its *fulfilment unit* here while
+the money/deadline/cutover halves stay with their owning agents (Vance Stream 07, Ozzie Stream 05),
+A11. Open lines flagged for Mark: OP-04-08 assign-vs-dispatch ownership; OP-04-13 procurement-vs-
+fulfilment line + OP-04-14 carrier-contract silver model (schema gap, propose to FE) + the Stream
+04↔05↔07 boundary; an ITIL Incident-vs-Request-Fulfilment split (path=`other` is doing a lot of work);
+the Stream 04↔05 boundary on shared remediation/verify sub-procedures (request-driven here vs event/
+alert-driven Stream 05); OP-04-07 vs Pierce dedup; and the auto-leaver precondition. The wedge's hard
+floors are dial-proof: identity/backup/DC escalate-only (03), financial log-time (06), client-facing
+reply (07), every JML grant (10/11), and every procurement/carrier money commit (13/14).
 
-**Count: 12 Operating Procedures** (Felix 7: OP-04-01..07; Felix/Scout seam 1: OP-04-08; Scout 1:
-OP-04-09; Osiris 3: OP-04-10..12).
+**Count: 15 Operating Procedures** (Felix 7: OP-04-01..07; Felix/Scout seam 1: OP-04-08; Scout 1:
+OP-04-09; Osiris 3: OP-04-10..12; Vance↔Scout seam 1: OP-04-13; Vance↔Ozzie seam 1: OP-04-14; Scout 1:
+OP-04-15).
