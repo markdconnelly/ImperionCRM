@@ -538,7 +538,7 @@ One business workflow defined as files under `icm/domains/<domain>/<workflow>/` 
 _Avoid_: workflow (unqualified — that's the in-app Workflows module), pipeline (that's data ingestion)
 
 **Operating Procedure**:
-One end-to-end MSP procedure with a named trigger, **exactly one owning agent**, and a terminal business outcome — runbook-sized (the one runbook you would hand a new hire). The top unit of the Operating Procedure catalog (`docs/workflows/operating-procedure-catalog.md`), enumerated value-stream-first then projected onto its owner. A procedure with ≥1 automatable step is **realized IN its ICM Workspace = its live system of record** (D5); it must NOT create a competing file home — the catalog index points at that canonical home, and a generated `docs/runbooks/` projection is a view of it, never an independent SoR. A fully-human procedure (every step a [gui-step]) lives as a `docs/runbooks/<stream>/<proc>.md` document UNTIL it graduates (gains an automatable step), at which point its ICM Workspace becomes the SoR. Each Operating Procedure ↔ at most one ICM Workspace. (Catalog architecture: ADR-0133.)
+One end-to-end MSP procedure with a named trigger, **exactly one owning agent**, and a terminal business outcome — runbook-sized (the one runbook you would hand a new hire). The top unit of the Operating Procedure catalog (`docs/workflows/operating-procedure-catalog.md`), enumerated value-stream-first then projected onto its owner. A realized procedure has **one uniform dual-audience document** — readable and usable by **both a human (training) and an agent (execution)**, mirroring the policy-canon dual-audience model (ADR-0134); the **prose is single-sourced** there (NOT a separate human-runbook + agent-prose — this revises ADR-0133 D5, Workflow Doctrine A8). The procedure's ICM Workspace **machine config** (`agent.yaml`/`room.yaml`/stage I/O) remains the **execution/config system of record** the document's steps bind to; the document↔workspace mechanics are a build-wave design (#1616). A fully-human procedure (every step a [gui-step]) lives natively as a `docs/runbooks/<stream>/<proc>.md` document UNTIL it graduates (gains an automatable step). `subject = client | imperion` is a parameter, never a duplicate — one document trains both. Each Operating Procedure ↔ at most one ICM Workspace. (Catalog: ADR-0133; doctrine: Workflow Doctrine ADR.)
 _Avoid_: workflow (ICM-reserved — that's the staged in-app orchestration unit), playbook (the reusable template a Sequence/Workflow instantiates from)
 
 **Procedure Step**:
@@ -584,6 +584,38 @@ _Avoid_: trust level, actuation tier (that's the ADR-0055 T0–T3 scale the dial
 **auto_at_level**:
 The per-action tag naming the **minimum dial level at which an action auto-executes**; below it the action parks to the cockpit. Paired with `always_gate` (dial-proof — an `always_gate` action never auto-executes regardless of `auto_at_level` or the dial). Selection is deterministic: an action auto-runs IFF `dial ≥ auto_at_level AND NOT always_gate AND the gauntlet passes` (ADR-0128 D4).
 _Avoid_: tier, ceiling (the ceiling is the dial-proof bound, not this threshold)
+
+**Workflow Doctrine**:
+The normative cross-cutting rules + nine archetype step-templates that **every** Operating Procedure inherits, so they are decided once, not per-procedure (Workflow Doctrine ADR; extends ADR-0128/0109/0118, builds on ADR-0133/0134). A procedure's catalog entry declares only its procedure-specific deltas. The seven terms below are its load-bearing rules.
+_Avoid_: restating the doctrine per procedure (the stream files inherit it)
+
+**always_gate (universal set)**:
+The six action classes that are dial-proof at **every** level for **every** agent, inherited by every procedure (Workflow Doctrine A2): **money out** · **external client-facing send/commitment** · **identity/JML destructive** (account *disable* excepted — it is reversible) · **production-destructive** · **security containment** impacting client ops · **binding commitment/legal**. Plus the ADR-0118 always-gate `data_class`es. A procedure declares only *additional* gates. "No clean undo ⇒ always_gate" (Reversibility doctrine) is *why* these are gated.
+_Avoid_: per-procedure re-derivation of the gate classes, conflating with `auto_at_level` (this is the dial-proof bound)
+
+**Evidence floor (cite-or-abstain)**:
+The universal grounding rule (Workflow Doctrine A5, enforced by the eval goldens #1538): (a) every factual assertion in a draft/recommendation/work-note carries a **source reference + as-of date** — no claim without provenance, no exemption; (b) on **empty retrieval** the agent **parks or delegates, never fabricates** (refusal-class); (c) **staleness honesty** — a dormant source (e.g. #389 recall down) is named, never presented as live.
+_Avoid_: ungrounded assertion, "best guess", silent staleness
+
+**Notification routing**:
+The doctrine for who is told and how (Workflow Doctrine A6, generalizes D9-P4). **Urgency is computed, not hand-set**: urgent IFF an `always_gate` action is blocking a clock, OR a sev-high security/availability incident, OR a money/legal deadline in its grace window — else a Teams tag. When the paired human is absent, escalation **walks up the `icm/org.yaml` `reports_to` chain** to **Nova's single-human gatekeeper queue** (the terminal backstop); never dropped, never auto-actuated.
+_Avoid_: flat "route to Mark", per-procedure urgency opinions
+
+**Pool (correlate, never bleed)**:
+The cross-client boundary (Workflow Doctrine A7). An agent **may** cross-correlate signals across the whole client pool **internally** to improve a recommendation; it **may never** let one client's identifiable data/identity/specifics surface in another client's context — external cross-client insight is delivered **only anonymized/aggregated**, enforced structurally by `data_class`/RLS (ADR-0118), not agent discretion. Refusal-class. Same rule on the **partner** axis (Bridget).
+_Avoid_: cross-client bleed, client-identifiable benchmarking
+
+**Idempotent actuation**:
+The universal write contract (Workflow Doctrine A9): (a) the **external SoR is authoritative; the agent mirrors, never owns** (Autotask/QBO/Pax8/M365/DocuSign) and moves SoR-owned state only via that API; (b) every actuating write carries a **deterministic idempotency key** (procedure+entity+intent+period) so a replay is a **no-op + audit note**, never a double-send/charge/order; (c) **reconcile, don't assume** — read back from the SoR to confirm the state landed before declaring the step done (close-on-verification).
+_Avoid_: fire-and-forget actuation, double-actuation, close-on-click
+
+**Reversibility doctrine**:
+The single knob that sets a step's undo obligation **and** its max auto-ceiling (Workflow Doctrine A10): internally-reversible→L2 · externally-reversible-clean-undo→L4 (declare undo + window) · costly/visible-but-reversible→L3 (declare undo + notify, never silent) · **no clean undo→always_gate** (never auto). A procedure's ceiling is **derived from its most-irreversible step**, not hand-set. **Failure contract:** a failed step **halts** the Sequence, **no auto-rollback**; partial state is surfaced to the gate; a human decides remediation; the agent never improvises compensation.
+_Avoid_: hand-set ceilings, auto-rollback, improvised compensating actions
+
+**Obligation/action separation**:
+The seam rule (Workflow Doctrine A11): the agent that owns a **clock/commitment/standard** is distinct from the agent (or step) that performs the **mechanical act** it governs (SLA=Celeste vs assignment=Felix/Scout; Client Security Standard=Vera vs measure=Cyrus vs remediate=human/Datto; transaction=Chase vs relationship=Celeste; deadline=Vance-sentinel vs actuation=human). They meet at an **explicit Procedure Step (the seam)**, never co-own; the obligation-owner sets urgency.
+_Avoid_: co-ownership of a unit, blurring clock-owner and actor
 
 **Runtime Skill**:
 Knowledge the orchestration layer loads on demand — shared library `icm/skills/` or workflow-local. Distinct from Developer Skills (`plugins/imperion-skills/`, Claude Code's, ADR-0060).
