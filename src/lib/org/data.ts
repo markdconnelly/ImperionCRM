@@ -2,7 +2,14 @@ import "server-only";
 
 import { getPool } from "@/lib/db/client";
 import graphJson from "@/data/org-graph.json";
-import type { OrgGraph, OrgLiveState, OrgNodeLive } from "./types";
+import proceduresJson from "@/data/agent-procedures.json";
+import type {
+  AgentProcedures,
+  AgentProceduresFile,
+  OrgGraph,
+  OrgLiveState,
+  OrgNodeLive,
+} from "./types";
 
 /**
  * The static org skeleton, generated from icm/org.yaml + icm/** by
@@ -11,6 +18,16 @@ import type { OrgGraph, OrgLiveState, OrgNodeLive } from "./types";
  */
 export function loadOrgGraph(): OrgGraph {
   return graphJson as OrgGraph;
+}
+
+/**
+ * The full per-agent procedure + step detail (the /org/[agentId] surface, #1612),
+ * generated alongside the skeleton from icm/**. ~600KB of prose — `server-only`
+ * keeps it out of the client bundle; never import this from a Client Component.
+ */
+export function loadAgentProcedures(agentId: string): AgentProcedures | null {
+  const file = proceduresJson as AgentProceduresFile;
+  return file.agents[agentId] ?? null;
 }
 
 const EMPTY_LIVE: OrgLiveState = {

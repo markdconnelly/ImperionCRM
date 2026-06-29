@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import {
   Background,
@@ -318,6 +319,19 @@ function OrgSidePanel({ node, live }: { node: OrgNode | null; live: OrgNodeLive 
               ))}
             </ul>
           )}
+
+          <Link
+            href={`/org/${node.id}`}
+            style={{
+              display: "inline-block",
+              marginTop: 14,
+              fontSize: 12,
+              color: ACCENT,
+              textDecoration: "none",
+            }}
+          >
+            View full procedures &amp; steps →
+          </Link>
         </>
       )}
     </aside>

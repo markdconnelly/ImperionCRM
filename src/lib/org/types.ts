@@ -55,6 +55,66 @@ export interface OrgGraph {
   humans: OrgHuman[];
 }
 
+// ── Procedure + step detail (src/data/agent-procedures.json, #1612) ──────────
+// The full per-agent playbook surface the /org/[agentId] page renders. Generated
+// from each workflow's agent.yaml + CONTEXT.md + stages/**/CONTEXT.md by
+// scripts/gen-org-graph.mjs. Kept separate from OrgGraph + loaded server-side only
+// (it is ~600KB of prose) so it never enters the /org client bundle.
+
+/** One numbered Process step, with its `[script]/[haiku]/[sonnet]` execution tag. */
+export interface ProcedureStep {
+  /** The execution tier — `script` (deterministic), `haiku`, `sonnet`, etc.; null if untagged. */
+  tag: string | null;
+  text: string;
+}
+
+/** A render-ready markdown pipe-table (the stage Inputs contract). */
+export interface ProcedureTable {
+  headers: string[];
+  rows: string[][];
+}
+
+/** One stage = one step-group in a procedure (the stages/NN/CONTEXT.md contract). */
+export interface ProcedureStage {
+  slug: string;
+  name: string;
+  job: string | null;
+  process: ProcedureStep[];
+  inputs: ProcedureTable;
+  outputs: string | null;
+  audit: string[];
+  /** The human-approval contract at a checkpoint stage, or null when there is none. */
+  checkpoint: string | null;
+}
+
+/** One procedure = one workflow: its settings (manifest) + ordered stages. */
+export interface Procedure {
+  slug: string;
+  title: string;
+  job: string | null;
+  trigger: string | null;
+  model: string | null;
+  /** ICM autonomy ceiling for `auto` mode (L0–L3). */
+  autonomyRung: string | null;
+  /** Prose statement of what `auto` may self-approve at this rung (everything else parks). */
+  autoMaySelfApprove: string | null;
+  tools: string[];
+  okfRooms: string[];
+  skills: string[];
+  stages: ProcedureStage[];
+}
+
+export interface AgentProcedures {
+  id: string;
+  persona: string | null;
+  kind: OrgNodeKind;
+  procedures: Procedure[];
+}
+
+export interface AgentProceduresFile {
+  agents: Record<string, AgentProcedures>;
+}
+
 /** Per-agent live state, keyed by `agent_key` (best-effort matched to a node id/persona). */
 export interface OrgNodeLive {
   /** Highest ICM autonomy rung on record (L0–L3) across the agent's workflows. */

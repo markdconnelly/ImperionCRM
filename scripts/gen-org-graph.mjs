@@ -30,6 +30,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const ORG_YAML = join(ROOT, "icm", "org.yaml");
 const OUT = join(ROOT, "src", "data", "org-graph.json");
+const OUT_PROC = join(ROOT, "src", "data", "agent-procedures.json");
 
 // ── org.yaml mini-parser ─────────────────────────────────────────────────────
 // Handles exactly org.yaml's shapes: a top-level `orchestrator:` block map, an
@@ -184,6 +185,186 @@ function readWorkflows(dir) {
   return workflows.sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
+// ── procedure + step detail walk (the /org/[agentId] surface, #1612) ─────────
+// Parse each workflow's agent.yaml (manifest) + CONTEXT.md (routing) + every
+// stages/NN/CONTEXT.md (the step contract) into a render-ready shape. Kept in a
+// SEPARATE artifact (src/data/agent-procedures.json) loaded server-side only, so
+// the rich prose never bloats the /org client bundle. The markdown shape is the
+// controlled house format (icm/CONVENTIONS.md); this is a purpose-built reader for
+// exactly it (the zero-dep ethos of agent-yaml-gate.mjs / this file's org parser).
+
+/** Split a CONTEXT.md into a preamble + `## Section` blocks keyed by a slug. */
+function splitSections(md) {
+  const out = { _preamble: [] };
+  let cur = "_preamble";
+  for (const line of md.split(/\r?\n/)) {
+    const h = line.match(/^##\s+(.*)$/);
+    if (h) {
+      cur = h[1].trim().toLowerCase().replace(/[^a-z]/g, "");
+      out[cur] = [];
+      continue;
+    }
+    out[cur].push(line);
+  }
+  return out;
+}
+
+/** Pull `**Field:** value` (value may wrap to the blank line) from preamble lines. */
+function boldField(lines, field) {
+  const text = lines.join("\n");
+  const re = new RegExp(`\\*\\*${field}:\\*\\*\\s*([\\s\\S]*?)(?:\\n\\s*\\n|$)`);
+  const m = text.match(re);
+  return m ? m[1].replace(/\s+/g, " ").trim() : null;
+}
+
+/** Numbered `## Process` list → [{ tag, text }]; tag = the leading `[script]` marker. */
+function parseProcess(lines) {
+  const steps = [];
+  let cur = null;
+  const push = () => {
+    if (cur == null) return;
+    const t = cur.trim();
+    const m = t.match(/^`\[([a-z-]+)\]`\s*([\s\S]*)$/);
+    steps.push(
+      m
+        ? { tag: m[1], text: m[2].replace(/\s+/g, " ").trim() }
+        : { tag: null, text: t.replace(/\s+/g, " ").trim() },
+    );
+    cur = null;
+  };
+  for (const raw of lines) {
+    const m = raw.match(/^\s*\d+\.\s+(.*)$/);
+    if (m) {
+      push();
+      cur = m[1];
+    } else if (cur != null && raw.trim() !== "") {
+      cur += " " + raw.trim();
+    }
+  }
+  push();
+  return steps;
+}
+
+/** A markdown pipe-table → { headers[], rows[][] } (separator + blank rows dropped). */
+function parseTable(lines) {
+  const cellRows = lines
+    .filter((l) => l.trim().startsWith("|"))
+    .map((l) => l.split("|").slice(1, -1).map((c) => c.trim()))
+    .filter((cells) => !cells.every((c) => c === "" || /^:?-+:?$/.test(c)));
+  if (cellRows.length === 0) return { headers: [], rows: [] };
+  return { headers: cellRows[0], rows: cellRows.slice(1) };
+}
+
+/** `- [ ] check` / `- [x] check` lines → ["check", …]. */
+function parseChecklist(lines) {
+  return lines
+    .map((l) => l.match(/^\s*-\s*\[[ xX]?\]\s*(.*)$/))
+    .filter(Boolean)
+    .map((m) => m[1].trim());
+}
+
+/** Join a section's non-blank lines into one trimmed paragraph (Outputs / Checkpoint). */
+function joinProse(lines) {
+  return (lines ?? []).join("\n").replace(/\s+/g, " ").trim();
+}
+
+/** One stages/NN-name/CONTEXT.md → the step contract. */
+function readStage(stagesDir, slug) {
+  const path = join(stagesDir, slug, "CONTEXT.md");
+  const empty = {
+    slug,
+    name: slug.replace(/^\d+-/, ""),
+    job: null,
+    process: [],
+    inputs: { headers: [], rows: [] },
+    outputs: null,
+    audit: [],
+    checkpoint: null,
+  };
+  if (!existsSync(path)) return empty;
+  const sec = splitSections(readFileSync(path, "utf8"));
+  const titleLine = sec._preamble.find((l) => /^#\s+/.test(l)) ?? "";
+  const name =
+    titleLine
+      .replace(/^#\s+/, "")
+      .replace(/^Stage\s+\d+\s*[—-]\s*/i, "")
+      .replace(/·.*$/, "")
+      .trim() || slug.replace(/^\d+-/, "");
+  return {
+    slug,
+    name,
+    job: boldField(sec._preamble, "Job"),
+    process: parseProcess(sec.process ?? []),
+    inputs: parseTable(sec.inputs ?? []),
+    outputs: joinProse(sec.outputs) || null,
+    audit: parseChecklist(sec.audit ?? []),
+    checkpoint: sec.checkpoint ? joinProse(sec.checkpoint) || null : null,
+  };
+}
+
+/** Each workflow dir → manifest settings + routing + the ordered step contracts. */
+function readProcedures(dir) {
+  const base = join(ROOT, dir);
+  if (!existsSync(base)) return [];
+  const procs = [];
+  for (const entry of readdirSync(base, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const wfDir = join(base, entry.name);
+    const manifestPath = join(wfDir, "agent.yaml");
+    if (!existsSync(manifestPath)) continue;
+    const m = parseAgentYaml(readFileSync(manifestPath, "utf8"));
+    const ctxPath = join(wfDir, "CONTEXT.md");
+    const ctx = existsSync(ctxPath)
+      ? splitSections(readFileSync(ctxPath, "utf8"))
+      : { _preamble: [] };
+    const titleLine = ctx._preamble.find((l) => /^#\s+/.test(l)) ?? "";
+    const stagesDir = join(wfDir, "stages");
+    const stageSlugs = existsSync(stagesDir)
+      ? readdirSync(stagesDir, { withFileTypes: true })
+          .filter((d) => d.isDirectory())
+          .map((d) => d.name)
+          .sort()
+      : [];
+    procs.push({
+      slug: entry.name,
+      title: titleLine.replace(/^#\s+/, "").replace(/^Workflow:\s*/i, "").trim() || entry.name,
+      job: boldField(ctx._preamble, "Job"),
+      trigger: boldField(ctx._preamble, "Trigger"),
+      model: typeof m.model === "string" ? m.model : null,
+      autonomyRung: typeof m.autonomy_rung === "string" ? m.autonomy_rung : null,
+      autoMaySelfApprove:
+        typeof m.auto_may_self_approve === "string" ? m.auto_may_self_approve : null,
+      tools: Array.isArray(m.tools) ? m.tools : [],
+      okfRooms: Array.isArray(m.okf_rooms) ? m.okf_rooms : [],
+      skills: Array.isArray(m.skills) ? m.skills : [],
+      stages: stageSlugs.map((s) => readStage(stagesDir, s)),
+    });
+  }
+  return procs.sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+/** agentId → { persona, kind, procedures[] } for every node in the graph. */
+function buildProcedures(graph) {
+  const dirFor = (node) => {
+    if (node.kind === "domain") return `icm/domains/${node.id}`;
+    if (node.kind === "orchestrator") return "icm/executive/orchestrator";
+    return `icm/executive/${node.id}`;
+  };
+  const agents = {};
+  for (const node of graph.nodes) {
+    agents[node.id] = {
+      id: node.id,
+      persona: node.persona,
+      kind: node.kind,
+      procedures: readProcedures(dirFor(node)),
+    };
+  }
+  return {
+    _generated: "scripts/gen-org-graph.mjs from icm/** — DO NOT EDIT BY HAND",
+    agents,
+  };
+}
+
 // ── build the graph ──────────────────────────────────────────────────────────
 
 function build() {
@@ -283,21 +464,40 @@ function build() {
 
 function main() {
   const graph = build();
-  const json = JSON.stringify(graph, null, 2) + "\n";
-  const check = process.argv.includes("--check");
-  if (check) {
-    const current = existsSync(OUT) ? readFileSync(OUT, "utf8") : "";
-    if (current !== json) {
-      console.error(
-        "org-graph.json is stale — run `npm run gen:org-graph` and commit src/data/org-graph.json.",
-      );
-      process.exit(1);
+  const procedures = buildProcedures(graph);
+  const artifacts = [
+    { path: OUT, label: "org-graph.json", json: JSON.stringify(graph, null, 2) + "\n" },
+    {
+      path: OUT_PROC,
+      label: "agent-procedures.json",
+      json: JSON.stringify(procedures, null, 2) + "\n",
+    },
+  ];
+
+  if (process.argv.includes("--check")) {
+    for (const a of artifacts) {
+      const current = existsSync(a.path) ? readFileSync(a.path, "utf8") : "";
+      if (current !== a.json) {
+        console.error(
+          `${a.label} is stale — run \`npm run gen:org-graph\` and commit src/data/${a.label}.`,
+        );
+        process.exit(1);
+      }
     }
-    console.log(`org-graph.json up to date (${graph.nodes.length} nodes).`);
+    const stageCount = Object.values(procedures.agents).reduce(
+      (n, a) => n + a.procedures.reduce((m, p) => m + p.stages.length, 0),
+      0,
+    );
+    console.log(
+      `org-graph.json up to date (${graph.nodes.length} nodes); agent-procedures.json up to date (${stageCount} stages).`,
+    );
     return;
   }
-  writeFileSync(OUT, json);
-  console.log(`Wrote ${OUT} (${graph.nodes.length} nodes, ${graph.edges.length} edges).`);
+
+  for (const a of artifacts) writeFileSync(a.path, a.json);
+  console.log(
+    `Wrote ${OUT} (${graph.nodes.length} nodes, ${graph.edges.length} edges) + ${OUT_PROC}.`,
+  );
 }
 
 main();
