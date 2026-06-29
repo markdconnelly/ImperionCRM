@@ -51,7 +51,7 @@
 | Osiris | identity | Roman | — | L3 |
 | Chase | sales | Sterling | — | L3 |
 | Belle | marketing | Sterling | — | L3 |
-| Celeste | client-success | Sterling | — | L3 |
+| Celeste | client-success | Sterling | — | L4 |
 | Vance | procurement | Sterling | — | L2 |
 | Audrey | finance | Sterling | — | L2 (read-only) |
 | Vera | platform | Jessica | — | L2 (watcher) |

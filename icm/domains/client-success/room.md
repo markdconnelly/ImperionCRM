@@ -54,9 +54,11 @@ business-framed. Workflows cite Celeste; they do not restate the persona.
 Default rung **L1** as a **Teams-loop gradient** (a human co-shapes the draft and
 approves before anything leaves; celeste.md). At L2, internal relationship work
 auto-executes — health/churn compute + flag, QBR context assembly, the expansion
-`opportunity.write` seam (→ assign to Chase). Routine external touches (advisories,
-knowledge-share with approval, churn-save outreach) earn L3+; the full L0–L5 map is
-Celeste's ([`celeste.md`](celeste.md) §"Your autonomy ladder", ADR-0128). **The
-NO-COMMITS and MSSP-advisory ceilings are dial-proof — no rung crosses them.** Money,
+`opportunity.write` seam (→ assign to Chase). Routine low-risk external touches
+(advisories, knowledge-share with approval, churn-save outreach) earn **L3**; a routine,
+templated, non-committal **knowledge / enablement how-to** share (1Password, M365)
+reaches the **L4** ceiling (execute-then-notify — the stream max, 08-N). The full L0–L5
+map is Celeste's ([`celeste.md`](celeste.md) §1, ADR-0128). **The NO-COMMITS and
+MSSP-advisory ceilings are dial-proof — no rung crosses them.** Money,
 binding commitments, prod changes, and `X.0.0` route to the single human queue
 regardless of rung (CONSTITUTION §5.4). Sends exit only through ADR-0058.
