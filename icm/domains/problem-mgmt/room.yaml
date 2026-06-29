@@ -19,9 +19,13 @@ tools:
   - memory.recall
   - ticket.note
 
-# The problem-management data scope.
+# The problem-management data scope. `problem` + `known_error` are the app-native
+# ITIL working objects Sage owns the meaning of (0223 schema, #1577 / ADR-0079
+# amended); they post-date this room and resolve in the coverage-matrix.
 okf_rooms:
   - ticket
   - device
   - cloud_asset
   - account
+  - problem
+  - known_error

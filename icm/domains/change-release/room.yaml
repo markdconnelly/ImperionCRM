@@ -19,9 +19,17 @@ tools:
   - memory.recall
   - ticket.note
 
-# The change/release data scope.
+# The change/release data scope. The 0224 governance objects (change_request,
+# change_freeze, rollback_plan, standard_change_catalog — ADR-0079, Service-Desk
+# domain in the coverage matrix) are the substrate the readiness gate reads; they
+# are added here so a change-release workflow may declare them (each resolves to a
+# coverage-matrix row, ADR-0086). No tools change — the domain stays a gate.
 okf_rooms:
   - ticket
   - device
   - cloud_asset
   - account
+  - change_request
+  - change_freeze
+  - rollback_plan
+  - standard_change_catalog

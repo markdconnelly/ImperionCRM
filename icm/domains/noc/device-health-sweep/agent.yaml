@@ -1,0 +1,12 @@
+name: device-health-sweep
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Ozzie persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../ozzie.md
+  - ./prose.md
+okf_rooms: [device, cloud_asset, ticket, account]   # subset of domains/noc/room.yaml
+tools: [pg.read, knowledge.search, memory.recall, ticket.note]   # subset of domains/noc/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal sweep finding/work-note for a benign or already-tracked at-risk item with an audit-clean rationale; every proposed ticket and every external-facing effect parks for a human, in every mode"

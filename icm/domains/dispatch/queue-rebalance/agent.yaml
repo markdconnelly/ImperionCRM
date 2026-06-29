@@ -1,0 +1,12 @@
+name: queue-rebalance
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Scout persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../scout.md
+  - ./prose.md
+okf_rooms: [ticket, account, device]   # subset of domains/dispatch/room.yaml
+tools: [pg.read, knowledge.search, memory.recall, ticket.note]   # subset of domains/dispatch/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal rebalance-analysis work-note (the imbalance/SLA-risk finding and the proposed reassignment set, operational only); every reassignment proposal — and any notify — parks for a human"

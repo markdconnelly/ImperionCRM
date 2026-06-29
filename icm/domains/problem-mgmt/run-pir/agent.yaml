@@ -1,0 +1,12 @@
+name: run-pir
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Sage persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../sage.md
+  - ./prose.md
+okf_rooms: [problem, known_error, ticket, account]   # subset of domains/problem-mgmt/room.yaml
+tools: [pg.read, knowledge.search, memory.recall, ticket.note]   # subset of domains/problem-mgmt/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal PIR record + its work-note against a resolved problem whose root cause is confirmed by the evidence; every known_error refinement (permanent_fix) and every follow-up ticket parks for a human and routes to Marshall (Change & Release) — propose-only, no problem:write on the autonomous path"

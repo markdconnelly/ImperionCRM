@@ -1,0 +1,12 @@
+name: release-readiness-check
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Marshall persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../marshall.md
+  - ./prose.md
+okf_rooms: [change_request, change_freeze, rollback_plan, standard_change_catalog]   # subset of domains/change-release/room.yaml (the 0224 governance objects)
+tools: [pg.read, knowledge.search, memory.recall, ticket.note]                       # subset of domains/change-release/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the internal readiness verdict work-note (ready / blocked-by-freeze / missing-rollback / needs-approval + the proposed next step) for a change whose gates were read cleanly; the change approval, the scheduling, and the change execution always park for a human — and a freeze-window overlap is a hard always_gate block at every rung. There is no rung at which a readiness check approves, schedules, or executes."

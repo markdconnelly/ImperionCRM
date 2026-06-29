@@ -20,10 +20,11 @@ silver write, never the approval. The medallion substrate is owned by no domain.
 
 ## OKF rooms (the domain data scope)
 
-The change-release domain may read: `ticket`, `device`, `cloud_asset`, `account`
-(each a coverage-matrix row, ADR-0086). A workflow narrows to the subset it needs —
-never wider than this set (the `workflow ⊆ domain ⊆ Constitution` invariant,
-CONSTITUTION §3).
+The change-release domain may read: `ticket`, `device`, `cloud_asset`, `account`,
+and the ITIL governance objects `change_request`, `change_freeze`, `rollback_plan`,
+`standard_change_catalog` (the 0224 schema, ADR-0079 — each a coverage-matrix row,
+ADR-0086). A workflow narrows to the subset it needs — never wider than this set
+(the `workflow ⊆ domain ⊆ Constitution` invariant, CONSTITUTION §3).
 
 ## Default autonomy & escalation
 
