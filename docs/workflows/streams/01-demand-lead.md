@@ -4,11 +4,13 @@
 > architecture [ADR-0133](../../decision-records/ADR-0133-operating-procedure-catalog.md). Terms
 > **Operating Procedure** / **Procedure Step** are defined in [`CONTEXT.md`](../../../CONTEXT.md).
 >
-> **D9 global principles apply to every procedure below** (encoded in each Human-in-loop field,
-> not restated per entry): **P1** Nova-native human co-working (every flow co-works with a human
-> through Nova) · **P2** each sub-agent's reasoning is ascribed back to the paired human, up the
-> chain · **P3** an "easy button" at every human gate (prep to the goal, hand the human a one-click
-> resolution) · **P4** urgent → dedicated chat, else → tag the team member in the shared Teams chat.
+> **Workflow Doctrine (ADR-0136) is inherited by every procedure below — not restated per entry.**
+> The eleven cross-cutting rules (A1–A11) and the nine archetype step-templates (B1–B9) are the
+> floor. Each procedure names its **archetype** and declares only its *deltas*. The doctrine carries:
+> the universal `always_gate` set (A2) · L0 ship-dial (A3) · the 4-part easy-button bar at every gate
+> (A4) · the evidence floor — cite + as-of, empty→park/delegate (A5) · computed-urgency notification
+> + `reports_to` fallback (A6) · pool-never-bleed (A7) · idempotent actuation + read-back (A9) ·
+> reversibility→derived-ceiling + halt-no-rollback (A10) · obligation/action separation (A11).
 
 **Owner agent:** Belle (Marketing). **Owning ICM domain:** `icm/domains/marketing/`.
 **Stream scope:** demand gen · campaigns · journeys · Events (Event / Event Registration /
@@ -30,8 +32,26 @@ ProposedAction through the one gauntlet + pending-action cockpit (ADR-0124 D4 / 
 starts conservative (L1)** and rises per earned autonomy. Read scope `{operational,
 client_pii}` only.
 
-**Driving policy (every procedure):** `TBD (mark-blocker: company-policy-collection)` (D4,
-#1586). Brand/marketing-relevant policies Belle's procedures will cite: brand-voice &
+**Archetype map (B-templates this stream instantiates).**
+
+| Procedure | Archetype |
+|---|---|
+| 01-A compose & publish social post | **B7 client-facing-send** (blast carve-out → always_gate) |
+| 01-B boost post → Ad | **B6 money-gate** (spend always_gate) |
+| 01-C manage live Ad budget | **B6 money-gate** (spend always_gate) |
+| 01-D triage social inbox & reply | **B1 triage/route** + **B7** (the reply) |
+| 01-E monitor mentions & sentiment | **B3 synthesis-brief** (listening, no actuation) |
+| 01-F capture & normalize inbound lead | **B1 triage/route** (intake) |
+| 01-G score lead & evaluate MQL ⛔ | **B1 triage/route** (the Belle→Chase seam emitter) |
+| 01-H run nurture journey | **B7 client-facing-send** (sends inherit 01-I) |
+| 01-I schedule & fire Campaign Send | **B7 client-facing-send** (blast → always_gate) |
+| 01-K run an Event lifecycle | **B9 deadline-sentinel** (Event-start clocks) + **B7** sends |
+| 01-L plan & launch a campaign | **B9 deadline-sentinel** (launch) + container of A/H/I/B/K |
+| 01-M marketing analytics & attribution | **B3 synthesis-brief** (read-model, no actuation) |
+
+**Driving policy (every procedure):** inherits the doctrine universal baseline (ADR-0136 A2/A4/A5)
++ `TBD (mark-blocker: company-policy-collection)` (D4, #1586) for the specific drivers.
+Brand/marketing-relevant policies Belle's procedures will cite: brand-voice &
 messaging · CAN-SPAM/consent & list-hygiene · social-conduct & community-management ·
 ad-spend authorization · lead-vs-customer contact · event/webinar · claims-substantiation.
 
@@ -42,19 +62,28 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 ---
 
 ## 01-A · Compose & publish a Social Post (organic, compose-once → fan-out)
-- **Owner / Stream:** Belle / 01.
+- **Owner / Stream:** Belle / 01. **Archetype:** B7 client-facing-send (public post — not the
+  transactional-ack carve-out; routine post → L3, blast → always_gate).
 - **Trigger:** content-calendar slot due, campaign milestone, or operator "post this".
 - **Terminal outcome:** a `social_post` (+ per-channel rows) reaches **Published** (or
   **Scheduled**), with per-channel publish status + back-synced Social Metrics.
-- **Procedure Steps:**
-  1. `[automation]` Belle grounds: brand voice (OKF rooms), channel norms, linked campaign,
-     recent Social Metrics, the calendar slot. **L0.**
-  2. `[automation]` Draft the single composition + per-channel adaptations via the **Builder**.
-     `auto_at_level=L2` to stage internally; publish = `publish_post_routine` `L3`.
-  3. `[hybrid]` Route the publish as a Social Action → gauntlet → cockpit. A large/new-audience
-     posture escalates to `publish_blast_new_or_large_audience` (**always_gate**).
+- **Procedure Steps** (B7: ground → compose → SEND GATE → send → log):
+  1. `[automation]` **Ground** brand voice (OKF rooms), channel norms, linked campaign,
+     recent Social Metrics, the calendar slot — **cite each source + as-of**; empty/no brand
+     room → park, never fabricate brand claims (A5). **L0.**
+  2. `[automation]` **Compose** the single composition + per-channel adaptations via the **Builder**
+     — no fabricated capability/claim (A5/B7). `auto_at_level=L2` to stage internally; publish =
+     `publish_post_routine` `L3`.
+  3. `[hybrid]` **SEND GATE:** route the publish as a Social Action → gauntlet → cockpit. A
+     large/new-audience posture escalates to `publish_blast_new_or_large_audience` (**always_gate**
+     — A2 class-2). The gate presents the 4-part easy-button (A4): drafted post + grounded why +
+     one-click Publish (+ one-click unpublish, the reversible inverse) + reach/audience preview.
   4. `[gui-step]` Human approves/edits in the cockpit (recedes L1→L3 for routine; blast stays gated).
-  5. `[automation]` Dispatch per-channel; record status; back-sync Social Metrics (→ 01-M).
+  5. `[automation]` **Dispatch** per-channel, **idempotency-keyed so a retry is a no-op** (A9b);
+     **read back** publish status before close (A9c); back-sync Social Metrics (→ 01-M).
+- **Autonomy ceiling rationale:** routine post is **externally reversible with clean undo (unpublish)
+  → max L4**, dialed to L3 (B7 client-visible); blast = always_gate. Pool-correlate prior post
+  performance internally only (A7).
 - **Driving policy:** TBD (#1586) — brand-voice, claims-substantiation.
 - **Realization:** `icm/domains/marketing/social-content/` (ICM Workspace).
 - **Autonomy ceiling:** L3 (routine post). `always_gate`: blast/new-or-large-audience.
@@ -62,22 +91,28 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
   L1→L3 for routine; blast always gated.
 - **Substrate deps:** creds, #119, #389. **subject:** both. **Maps to:** #1418.
 
-## 01-B · Boost a Social Post into a paid Ad (organic→paid bridge) — REINSTATED (D9-P3)
-- **Owner / Stream:** Belle / 01.
+## 01-B · Boost a Social Post into a paid Ad (organic→paid bridge) — REINSTATED (A4)
+- **Owner / Stream:** Belle / 01. **Archetype:** B6 money-gate (spend out = always_gate class-1,
+  forever — A2; Meta is the external SoR the write idempotently mirrors, A9).
 - **Trigger:** a Published Social Post performs well (Social Metric threshold) or an operator
   elects to amplify it.
 - **Terminal outcome:** an `ad` (under a Campaign, reusing the post as creative) is
   **Deployed** with a live budget — or parked at the money gate with the **full setup done**
-  and a one-click easy button for the human (P3: the agent drives to the goal; the human
+  and a one-click easy button for the human (A4: the agent drives to the goal; the human
   actuates on the platform).
-- **Procedure Steps:**
-  1. `[automation]` Belle reads the post's Social Metrics + target audience (ad-consent gated,
-     ADR-0026) and drafts the Boost (creative reuse, audience, budget). **L0/L1.**
+- **Procedure Steps** (B6: ground → compute → draft → MONEY GATE → actuate → log):
+  1. `[automation]` **Ground + compute:** read the post's Social Metrics + target audience
+     (ad-consent gated, ADR-0026), **cite each + as-of** (A5), and draft the Boost (creative
+     reuse, audience, budget). **L0/L1.**
   2. `[hybrid]` Emit `ad_deploy` as a money-class Social Action → gauntlet → cockpit.
-  3. `[gui-step]` **Human approves the spend (always_gate, dial-proof) — one-click easy button.**
-     Meta ad-account peer-approval is the platform twin of this gate.
-  4. `[automation]` On approval, deploy via Meta Marketing API; record ids; spend/results →
-     Social Metrics / `campaign_metric` → 01-M + attribution.
+  3. `[gui-step]` **MONEY GATE — human approves the spend (always_gate, dial-proof).** The
+     4-part easy-button (A4) presents the drafted ad + grounded why + one-click Deploy + the
+     **consequence preview (exact $ budget + irreversibility flag — spend is settled money, A10
+     "no clean undo")**. Meta ad-account peer-approval is the platform twin of this gate.
+  4. `[automation]` On approval, deploy via Meta Marketing API, **idempotency-keyed (procedure +
+     ad + period) so a replay is a no-op, never a double-spend** (A9b); **read back** the live ad
+     id/budget to confirm it landed (A9c); spend/results → Social Metrics / `campaign_metric` →
+     01-M + attribution.
 - **Driving policy:** TBD (#1586) — ad-spend authorization.
 - **Realization:** `icm/domains/marketing/paid-ads/` (or shared social-content workspace).
 - **Autonomy ceiling:** **always_gate** (money) at every level — never auto-executes.
@@ -86,17 +121,24 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Substrate deps:** creds (Meta Ads scope + ad account id), #119, peer-approver set.
 - **subject:** both. **Maps to:** #1338 (slice E/F dispatcher), `ad_deploy`/`ad_pause`/`ad_rebudget`.
 
-## 01-C · Manage a live Ad budget / lifecycle (pause / re-budget) — REINSTATED (D9-P3)
-- **Owner / Stream:** Belle / 01.
+## 01-C · Manage a live Ad budget / lifecycle (pause / re-budget) — REINSTATED (A4)
+- **Owner / Stream:** Belle / 01. **Archetype:** B6 money-gate (budget change = spend commit,
+  always_gate class-1; Meta = external SoR, A9). *Pause* alone is reversible, but a re-budget is a
+  money commitment → the procedure gates conservatively.
 - **Trigger:** an Ad under-/over-performs vs target CPL, a budget pacing alert, or campaign end.
 - **Terminal outcome:** the Ad is **Paused** or its budget **changed**, with the money decision
-  logged through the cockpit (agent does the full setup; human clicks the easy button, P3).
-- **Procedure Steps:**
-  1. `[automation]` Belle reads live ad results (CPL, spend pace) vs the campaign target. **L0.**
+  logged through the cockpit (agent does the full setup; human clicks the easy button, A4).
+- **Procedure Steps** (B6: ground → compute → draft → MONEY GATE → actuate → reconcile):
+  1. `[automation]` **Ground:** read live ad results (CPL, spend pace) vs the campaign target,
+     **cited + as-of** (A5). **L0.**
   2. `[automation]` Draft a recommendation: pause, raise/lower budget, or hold.
   3. `[hybrid]` Emit the money-class Social Action → gauntlet → cockpit.
-  4. `[gui-step]` **Human approves (always_gate) — one-click easy button.**
-  5. `[automation]` Actuate via Meta Marketing API; reconcile spend to `campaign_metric` → 01-M.
+  4. `[gui-step]` **MONEY GATE — human approves (always_gate)** with the 4-part easy-button (A4:
+     drafted change + grounded why + one-click commit + the new-$ / delta consequence preview).
+  5. `[automation]` Actuate via Meta Marketing API, **idempotency-keyed** (A9b); **read back** the
+     new budget/state before close (A9c); reconcile spend to `campaign_metric` → 01-M.
+- **Autonomy ceiling rationale:** **budget commit = no clean undo → always_gate forever** (A10);
+  recommendation drafting auto-climbs to L2 (internal reversible).
 - **Driving policy:** TBD (#1586) — ad-spend authorization.
 - **Realization:** `icm/domains/marketing/paid-ads/` (ICM Workspace).
 - **Autonomy ceiling:** **always_gate** (money) — permanent hold. Recommendation drafting
@@ -105,23 +147,29 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **subject:** both. **Maps to:** #1338 paid slice.
 
 ## 01-D · Triage the social inbox & reply (DM + Engagement, intent-routed)
-- **Owner / Stream:** Belle / 01 (owns the TRIGGER = inbound social item).
+- **Owner / Stream:** Belle / 01 (owns the TRIGGER = inbound social item). **Archetype:** B1
+  triage/route (ground → classify → route) **+ B7 client-facing-send** for the reply.
 - **Trigger:** an inbound **Social DM** (private → Interaction timeline) or **Social
   Engagement** (public comment/mention → Social Engagement store) lands.
 - **Terminal outcome:** the item is intent-classified + routed; brand items get an on-brand
   reply (or queued); lead items emit a `lead_hook` (→ 01-F → 02); support items → Felix.
-- **Procedure Steps:**
-  1. `[automation]` Classify intent (lead | support | brand) via deterministic keyword classifier
-     + cheap-model fallback; write `social_engagement.intent` + `assigned_agent_key`. **L0/L2.**
-  2. `[automation]` **Route by intent (not channel):** lead → Stream 02 (Chase); support → Felix
-     / Stream 04; brand → keep (Belle's).
+- **Procedure Steps** (B1 ground→classify→route, then B7 for the reply):
+  1. `[automation]` **Ground + classify** intent (lead | support | brand) via deterministic
+     keyword classifier + cheap-model fallback, **citing the inbound item + as-of** (A5);
+     write `social_engagement.intent` + `assigned_agent_key`. **L0/L2.**
+  2. `[automation]` **Route by intent (not channel) — auto at L2 (routing is internally reversible,
+     B1):** lead → Stream 02 (Chase); support → Felix / Stream 04; brand → keep (Belle's). **SEAM:
+     the hand-off is an explicit step; the receiving agent owns its act, Belle owns the routing
+     clock (A11).** Cross-client signal correlation in classification is internal-only (A7).
   3. `[hybrid]` **Customer guard:** if the DM author is an existing customer, **REFUSE** the 1:1
-     reply and route to Celeste/Felix. Hard stop.
+     reply and route to Celeste/Felix. Hard stop (refusal floor, stronger than any A2 gate).
   4. `[automation]` For brand items: draft the on-brand reply (`reply_dm_lead` /
-     `reply_comment_public`, both `auto_at_level=L3`).
-  5. `[gui-step]` Human approves the reply (v1); recedes L1→L3 (auto-reply to LEADS at L3,
-     customers never).
-  6. `[automation]` Send via per-network adapter; attach to Contact on match; log timeline.
+     `reply_comment_public`, both `auto_at_level=L3`) — no fabricated capability/claim (A5/B7).
+  5. `[gui-step]` **SEND GATE** — human approves the reply (v1) with the 4-part easy-button (A4);
+     recedes L1→L3 (auto-reply to LEADS at L3, customers never). Free-text reply stays gated; only
+     a templated non-committal ack could ever reach L3 (B7 carve-out).
+  6. `[automation]` Send via per-network adapter, **idempotency-keyed** (A9b); attach to Contact on
+     match; **read back** send status; log timeline.
 - **Driving policy:** TBD (#1586) — social-conduct, lead-vs-customer contact.
 - **Realization:** `icm/domains/marketing/social-inbox/` (ICM Workspace).
 - **Autonomy ceiling:** L3 (reply to leads / public comment). `dm_existing_customer` is a
@@ -131,16 +179,21 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Substrate deps:** creds, #119, #991 (poll-first v1), #389. **subject:** both. **Maps to:** #1419, #1338 slice G.
 
 ## 01-E · Monitor brand mentions & sentiment (listening sweep)
-- **Owner / Stream:** Belle / 01.
+- **Owner / Stream:** Belle / 01. **Archetype:** B3 synthesis-brief (gather → synthesize → route)
+  — listening only, **no actuation**; an actionable item auto-spawns the owning worker procedure
+  parked/draft (a launchpad, not a readout).
 - **Trigger:** scheduled listening sweep (poll cadence); or a spike alert (deferred — #991).
 - **Terminal outcome:** mentions surfaced, sentiment-tagged, contact-linked on match; an
   actionable item (PR risk, advocacy, lead) routed; the rest logged for analytics.
-- **Procedure Steps:**
-  1. `[automation]` Sweep the Social Engagement store for new items; tag sentiment + topic. **L0.**
+- **Procedure Steps** (B3: gather → synthesize → route):
+  1. `[automation]` **Gather:** sweep the Social Engagement store for new items, **citing each
+     item + as-of**; on dormant source (poll down / #389 recall down) **say so, don't present
+     dormant as live** (A5c). Tag sentiment + topic. **L0.**
   2. `[automation]` Contact-link on author match (`tag_contact` L2); leave anonymous chatter off
-     Contact-360.
-  3. `[hybrid]` Route exceptions: reputational risk → escalate (operator/Celeste); advocacy →
-     flag for amplification (→ 01-A); lead-worthy → `lead_hook` (→ 01-F); else log.
+     Contact-360. Cross-client mention correlation stays internal/aggregated (A7).
+  3. `[hybrid]` **Route exceptions (launchpad, B3):** reputational risk → escalate
+     (operator/Celeste; urgency computed per A6); advocacy → auto-spawn an amplification post
+     parked-draft (→ 01-A); lead-worthy → `lead_hook` (→ 01-F); else log. Belle never actuates here.
   4. `[automation]` Roll sentiment + volume into Social Metrics → 01-M / BI hub.
 - **Driving policy:** TBD (#1586) — social-conduct, escalation.
 - **Realization:** `icm/domains/marketing/social-inbox/` (shares 01-D workspace) — listening stage.
@@ -149,36 +202,46 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Substrate deps:** creds, #119, #991, #389. **subject:** both. **Maps to:** #1338 slice H.
 
 ## 01-F · Capture & normalize an inbound lead (the capture inbox)
-- **Owner / Stream:** Belle / 01 (owns the capture inbox trigger).
+- **Owner / Stream:** Belle / 01 (owns the capture inbox trigger). **Archetype:** B1 triage/route
+  (ground → classify → resolve-owner → disposition → log) — intake only, internal-reversible writes.
 - **Trigger:** a `lead_hook` arrives — web form, **Meta Lead Ad**, social DM turned
   lead-worthy, **Event Registration**, gated content, or list import.
 - **Terminal outcome:** a normalized lead/contact with source + consent captured, deduped,
   ready for scoring (→ 01-G) and nurture (→ 01-H) — or, if already threshold-crossing, routed
   to Chase (→ 02).
-- **Procedure Steps:**
-  1. `[automation]` Ingest the `lead_hook`; capture source, UTM/campaign touch, consent state. **L0/L2.**
-  2. `[automation]` Resolve **Client Mapping / contact dedupe** (shared sub-step); if author =
-     existing **customer**, do NOT treat as new lead (01-D customer rule). `tag_contact` L2.
+- **Procedure Steps** (B1: ground → resolve-owner → disposition → log):
+  1. `[automation]` **Ground:** ingest the `lead_hook`; capture source, UTM/campaign touch,
+     consent state — **cite the source hook + as-of**; unparseable/empty → park (A5). **L0/L2.**
+  2. `[automation]` **Resolve owner:** **Client Mapping / contact dedupe** (shared sub-step); if
+     author = existing **customer**, do NOT treat as new lead (01-D customer rule). `tag_contact` L2.
   3. `[automation]` Stamp the attribution touch for multi-touch ROI (#1316) → 01-M.
-  4. `[automation]` Enqueue for scoring (01-G). If the source already implies MQL-grade fit/intent,
-     emit the threshold-crossing score → routes to Chase / Stream 02 (the seam).
+  4. `[automation]` **Disposition + log:** enqueue for scoring (01-G). If the source already implies
+     MQL-grade fit/intent, emit the threshold-crossing score → routes to Chase / Stream 02 — **the
+     seam is an explicit step; Chase owns qualify, Belle owns capture (A11).**
+- **Autonomy ceiling rationale:** internal create/tag/dedupe = **reversible internal → L2** (A10
+  row 1); no external send.
 - **Driving policy:** TBD (#1586) — consent/list-hygiene, lead-vs-customer.
 - **Realization:** `icm/domains/marketing/lead-capture/` (ICM Workspace).
 - **Autonomy ceiling:** L2 (internal reversible: create/tag/dedupe). No external send.
 - **Human-in-loop:** low — internal records auto at L2; human spot-checks dedupe.
 - **Substrate deps:** creds (Meta Lead Ads scope), #119 (LP collectors), #389. **subject:** both.
 
-## 01-G · Score a lead & evaluate the MQL threshold (the seam emitter)
-- **Owner / Stream:** Belle / 01.
+## 01-G · Score a lead & evaluate the MQL threshold (the seam emitter) ⛔
+- **Owner / Stream:** Belle / 01. **Archetype:** B1 triage/route — **this is the canonical
+  Belle→Chase seam emitter** (A11): Belle owns the marketing-qualification clock; Chase owns
+  qualify/close. They meet at the threshold-crossing step, never co-own.
 - **Trigger:** a lead is captured (01-F) OR a behavioral signal accrues OR a scheduled re-score.
 - **Terminal outcome:** `lead_score` recomputed; **if it crosses the marketing-qualified
   threshold the lead becomes an MQL and routes to Chase (Stream 02)** — the crossing IS the
   seam; otherwise it stays in Belle's nurture.
-- **Procedure Steps:**
-  1. `[automation]` Recompute `lead_score` from fit + engagement (rule-based v1). **L0/L2.**
+- **Procedure Steps** (B1: ground → classify (score) → resolve-owner (route) → log):
+  1. `[automation]` **Ground + recompute** `lead_score` from fit + engagement (rule-based v1),
+     **citing the contributing signals + as-of** (A5); #389-predictive features dormant → score on
+     rules only and say so (A5c). **L0/L2.**
   2. `[automation]` Persist the score (internal reversible write, L2).
   3. `[hybrid]` Evaluate vs the MQL threshold. **Crossed → routes to Chase / lead-response
-     (ADR-0024) — terminal hand-off STEP into Stream 02.** Not crossed → 01-H.
+     (ADR-0024) — terminal hand-off STEP into Stream 02 (the A11 seam; deterministic route, not an
+     actuation).** Not crossed → 01-H.
   4. `[automation]` Emit the attribution + scoring event for analytics (→ 01-M, #1316).
 - **Driving policy:** TBD (#1586) — lead-scoring/MQL-definition.
 - **Realization:** `icm/domains/marketing/lead-scoring/` (ICM Workspace).
@@ -187,18 +250,22 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Substrate deps:** #389 (predictive features dormant), #991. **subject:** both. **Seam:** Belle→Chase.
 
 ## 01-H · Run a nurture journey (multi-step cadence, up to MQL)
-- **Owner / Stream:** Belle / 01.
+- **Owner / Stream:** Belle / 01. **Archetype:** B7 client-facing-send (every send delegates to
+  01-I's send gate; internal step-records are reversible at L2).
 - **Trigger:** a contact is enrolled — by segment membership, a captured lead below MQL,
   event follow-up, or manual enrollment.
 - **Terminal outcome:** the contact progresses through send/wait/branch/score steps, terminating
   at **MQL (→ 01-G → Chase)**, journey exit, or unsubscribe.
-- **Procedure Steps:**
+- **Procedure Steps** (internal-reversible steps at L2; each send is B7 via 01-I):
   1. `[automation]` Enroll on the `workflow`/`workflow_enrollment` substrate (ADR-0073). **L0/L2.**
-  2. `[automation]` Execute the next step on cadence: A/B send / wait / branch / score-bump (L2).
-  3. `[hybrid]` Each send is consent-gated → Campaign Send path (01-I). Large/new-audience → `always_gate`.
+  2. `[automation]` Execute the next step on cadence: A/B send / wait / branch / score-bump (L2 —
+     reversible internal step-records, A10 row 1).
+  3. `[hybrid]` **Each send → 01-I send gate** (consent-gated; opt-out + frequency hard stops, B7).
+     Large/new-audience → `always_gate` (A2 class-2).
   4. `[automation]` **Manage the audience segment (folded 01-J step):** build/refresh the
      `segment` + `segment_member` (dynamic re-eval on cadence; respect suppression/non-interest
-     flags) as the enrollment source. Feed engagement back to scoring (01-G); on MQL exit → Chase.
+     flags) as the enrollment source. Feed engagement back to scoring (01-G); **on MQL exit → Chase
+     (the A11 seam).**
 - **Driving policy:** TBD (#1586) — consent/list-hygiene, journey/cadence.
 - **Realization:** `icm/domains/marketing/journeys/` (ICM Workspace; runner BE #145).
 - **Autonomy ceiling:** L2 internal step records; sends inherit 01-I (blast = always_gate).
@@ -206,33 +273,42 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Substrate deps:** journey runner BE #145, #991, #389. **subject:** both. **Maps to:** #1420.
 
 ## 01-I · Schedule & fire a Campaign Send (consent-gated blast)
-- **Owner / Stream:** Belle / 01 (owns the send trigger).
+- **Owner / Stream:** Belle / 01 (owns the send trigger). **Archetype:** B7 client-facing-send
+  (ground → compose → SEND GATE → send → log); blast = always_gate class-2.
 - **Trigger:** a Campaign Send is scheduled — fixed time, relative to an Event start, or as a
   journey step (01-H).
 - **Terminal outcome:** the email/SMS blast is **delivered** to its consented audience
   (per-recipient consent-gated at send time), metrics back-synced — or parked if large/new-audience.
-- **Procedure Steps:**
-  1. `[automation]` Build the send (Builder) + resolve the audience/segment. **L1/L2.**
+- **Procedure Steps** (B7: ground → compose → SEND GATE → send → log):
+  1. `[automation]` **Build + ground** the send (Builder) + resolve the audience/segment, **cited +
+     as-of**; no fabricated claim/timeline/price (A5/B7). **L1/L2.**
   2. `[automation]` **Consent gate per recipient at send time** (CAN-SPAM, opt-out, frequency caps)
-     — drop non-consented; a hard filter, not advisory.
-  3. `[hybrid]` Route as a ProposedAction. Routine/known-audience climbs toward L3;
-     `publish_blast_new_or_large_audience` = always_gate.
-  4. `[gui-step]` Human approves the blast (always_gate case) / approves routine (v1).
-  5. `[automation]` Fire via backend (ADR-0058 backend-only); back-sync metrics → 01-M + BI hub.
+     — drop non-consented; a hard filter, not advisory (the B7 opt-out/frequency hard stop).
+  3. `[hybrid]` **SEND GATE:** route as a ProposedAction. Routine/known-audience climbs toward L3;
+     `publish_blast_new_or_large_audience` = **always_gate** (A2 class-2).
+  4. `[gui-step]` Human approves the blast (always_gate case) / approves routine (v1) via the 4-part
+     easy-button (A4: drafted send + grounded why + one-click Fire + audience/recipient-count preview).
+  5. `[automation]` Fire via backend (ADR-0058 backend-only), **idempotency-keyed so a replay is a
+     no-op, never a double-send** (A9b); **read back** delivery before close (A9c); back-sync metrics
+     → 01-M + BI hub.
 - **Driving policy:** TBD (#1586) — consent/CAN-SPAM/list-hygiene.
 - **Realization:** `icm/domains/marketing/campaign-send/` (ICM Workspace).
 - **Autonomy ceiling:** L3 (routine known-audience). `always_gate`: large/new-audience blast.
 - **Substrate deps:** backend send path (ADR-0058), #119, consent data. **subject:** both. **Maps to:** ADR-0053.
 
 ## 01-K · Run an Event lifecycle (webinar / live event fill → attendance → nurture)
-- **Owner / Stream:** Belle / 01.
+- **Owner / Stream:** Belle / 01. **Archetype:** B9 deadline-sentinel for the Event-start clock
+  (reminders fire at lead times; never auto-actuates the send past its gate, A11) **+ B7** for the
+  sends themselves (via 01-I).
 - **Trigger:** an Event is created (a scheduled webinar/live event Imperion hosts).
 - **Terminal outcome:** the Event is **filled** (registrations), **attendance recorded**, and
   post-event nurture enrolled.
-- **Procedure Steps:**
+- **Procedure Steps** (B9 watch the Event-start clock → drive fill/reminders; sends are B7 via 01-I):
   1. `[automation]` Drive fill: campaigns + Campaign Sends (→ 01-I) + organic posts (→ 01-A). **L1/L2.**
   2. `[automation]` Capture each **Event Registration** through the capture inbox (→ 01-F).
-  3. `[automation]` Fire reminder Campaign Sends relative to Event start (consent-gated, 01-I).
+  3. `[automation]` **Watch the Event-start clock (B9):** fire reminder Campaign Sends relative to
+     Event start, **cited to the event date + as-of** (A5); each send still rides 01-I's gate — the
+     sentinel pre-stages the easy-button, it never auto-fires a client send (A11).
   4. `[gui-step]` After the event, record attendance (attended / no-show). `[hybrid]` if auto-pulled.
   5. `[automation]` Enroll attendees/no-shows into nurture (→ 01-H); attendance drives scoring (→ 01-G).
 - **Driving policy:** TBD (#1586) — event/webinar, consent.
@@ -241,17 +317,20 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Substrate deps:** #119, event-platform connector (may be a **Planned Connector**). **subject:** both.
 
 ## 01-L · Plan & launch a marketing campaign (the orchestrating container)
-- **Owner / Stream:** Belle / 01.
+- **Owner / Stream:** Belle / 01. **Archetype:** B9 deadline-sentinel for the launch clock + an
+  orchestrating container referencing 01-A/H/I/B/K as sub-procedures (never duplicating their gates).
 - **Trigger:** a campaign brief / quarterly plan / product or event push.
 - **Terminal outcome:** a `campaign` exists with goal, audience, channel mix, budget envelope,
   and its child sends/posts/ads/journey/event scheduled — **launched** and attributable.
-- **Procedure Steps:**
+- **Procedure Steps** (B9: watch launch dates → plan → route to gates; children carry their own gates):
   1. `[automation]` Belle drafts: objective, target segment, channel mix, proposed budget,
-     message. **L0/L1.**
-  2. `[gui-step]` Human approves the plan + budget envelope (the actual ad spend stays `always_gate`
-     per 01-B/01-C).
+     message — **cited + as-of** (A5). **L0/L1.**
+  2. `[gui-step]` Human approves the plan + budget envelope via the 4-part easy-button (A4); **the
+     actual ad spend stays `always_gate`** per 01-B/01-C — approving an envelope is not approving a
+     spend (A2 class-1 is not waived by the plan).
   3. `[automation]` Instantiate children: posts (01-A), sends (01-I), a journey (01-H), ads (01-B),
-     an event (01-K) — each carrying the campaign attribution tag.
+     an event (01-K) — each carrying the campaign attribution tag **and its own gate (A11: the
+     container holds the launch clock; each child owns its act).**
   4. `[automation]` Wire campaign-level attribution + metric rollup (→ 01-M / #1316).
 - **Driving policy:** TBD (#1586) — brand, ad-spend authorization.
 - **Realization:** `icm/domains/marketing/campaign-plan/` (ICM Workspace) — orchestrator
@@ -260,18 +339,23 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Substrate deps:** #389, #119. **subject:** both. **Maps to:** #1338, ADR-0053.
 
 ## 01-M · Surface marketing analytics & attribution (the reporting back-channel)
-- **Owner / Stream:** Belle / 01.
+- **Owner / Stream:** Belle / 01. **Archetype:** B3 synthesis-brief (gather → synthesize → deliver)
+  — read-model, **no actuation**; flagged under-performers auto-spawn the owning worker (01-C/01-L)
+  parked-draft (launchpad, not readout).
 - **Trigger:** scheduled reporting cadence, a campaign close, or an operator opening the
   analytics / BI hub marketing section.
 - **Terminal outcome:** Social Metrics + send/journey/event/ad results normalized, unioned
   (organic ∪ paid), surfaced as marketing ROI (sourced/influenced pipeline vs spend, CPL, CAC,
   ROAS) — numbers match everywhere.
-- **Procedure Steps:**
-  1. `[automation]` Ingest/normalize Social Metrics (#135 normalization) + `campaign_metric`. **L0.**
-  2. `[automation]` Union organic ∪ paid; compute multi-touch attribution over touch →
-     opportunity → won (#1316).
+- **Procedure Steps** (B3: gather → synthesize → deliver):
+  1. `[automation]` **Gather:** ingest/normalize Social Metrics (#135 normalization) +
+     `campaign_metric`, **citing the metric source + as-of**; dormant collector → flag stale, never
+     present as live (A5c). **L0.**
+  2. `[automation]` **Synthesize:** union organic ∪ paid; compute multi-touch attribution over touch
+     → opportunity → won (#1316). Any cross-client benchmark is anonymized/aggregated only (A7).
   3. `[gui-step]` Surface in `/social/analytics` + `/reporting#marketing` (BI hub, ADR-0062).
-  4. `[hybrid]` Flag under-performing channels/campaigns → feeds 01-C (re-budget) / 01-L (re-plan).
+  4. `[hybrid]` Flag under-performing channels/campaigns → **auto-spawn parked-draft** feeds to 01-C
+     (re-budget) / 01-L (re-plan) — Belle delivers the launchpad, never actuates (B3).
 - **Driving policy:** TBD (#1586) — reporting/metrics-governance.
 - **Realization:** mostly read-model; realized in its workspace only for the normalize/flag steps.
 - **Autonomy ceiling:** L0/L1 (read + flag). No actuation.
@@ -285,6 +369,11 @@ Demand→Lead surface fully covered: content (A), paid (B/C), inbound social (D/
 capture/score/nurture (F/G/H), outbound comms (I), events (K), campaign orchestration (L),
 analytics/attribution (M). The audience-segment unit (former 01-J) folds as a step of H/I
 (D3 sizing). The stream terminates at the `lead_score` MQL crossing (01-G) → Stream 02; no
-qualify/close procedure appears here (correctly — that's Chase/Stream 02).
+qualify/close procedure appears here (correctly — that's Chase/Stream 02). **Doctrine inheritance
+(ADR-0136):** every procedure names its archetype (B1–B9) and inherits A1–A11 — money out (01-B/C)
+is always_gate class-1 forever (A10 no-clean-undo); client-facing sends (01-A/D/H/I) are always_gate
+class-2 with the templated-ack carve-out the only path to L3 (B7); Belle's **1:1-DM-existing-customer
+refusal** stands as a floor stronger than any gate. The whole plane stays **propose-only / dormant**
+on Meta/Threads/LinkedIn creds + #119/#991/#389 until its substrate hydrates (A5c).
 
 **Count: 13 Operating Procedures** (01-A … 01-M; 01-J folded as a step per D9).
