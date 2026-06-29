@@ -20,9 +20,10 @@ silver write. The medallion substrate is owned by no domain.
 ## OKF rooms (the domain data scope)
 
 The problem-management domain may read: `ticket`, `device`, `cloud_asset`,
-`account` (each a coverage-matrix row, ADR-0086). A workflow narrows to the subset
-it needs — never wider than this set (the `workflow ⊆ domain ⊆ Constitution`
-invariant, CONSTITUTION §3).
+`account`, plus the app-native ITIL working objects `problem` and `known_error`
+(the 0223 schema, #1577 / ADR-0079 amended — each a coverage-matrix row,
+ADR-0086). A workflow narrows to the subset it needs — never wider than this set
+(the `workflow ⊆ domain ⊆ Constitution` invariant, CONSTITUTION §3).
 
 ## Default autonomy & escalation
 

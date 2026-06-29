@@ -57,6 +57,18 @@ okf_rooms:
   - ticket           # Service workspace (#1067) — Autotask-SoR ticket (read)
   - device           # Service workspace — endpoint/network CI status (read)
   - cloud_asset      # Service workspace — cloud resource CI status (read)
+  - problem          # Service workspace (#1577, ADR-0079 amended) — app-native
+                     #   ITIL problem / root-cause investigation record (read)
+  - known_error      # Service workspace (#1577, ADR-0079 amended) — known-error
+                     #   + workaround register a problem emits (read)
+  - change_request   # Service workspace (#656, ADR-0079) — app-native ITIL change
+                     #   working object (typed standard|normal|emergency) (read)
+  - change_freeze    # Service/Change-Release (#1579, ADR-0079) — freeze-calendar
+                     #   window; an overlap is a hard always_gate block (read)
+  - rollback_plan    # Service/Change-Release (#1579, ADR-0079) — change rollback
+                     #   artifact with its own draft→approved sign-off (read)
+  - standard_change_catalog # Service/Change-Release (#1579, ADR-0079) —
+                     #   pre-authorized standard-change template library (read)
   - strategic_business_review  # Client-Success workspace (#1442) — QBR/SBR
                                #   substrate Celeste reads for QBR-prep + health
   - time_record       # Finance workspace (#1423) — monthly-close time fact (read)

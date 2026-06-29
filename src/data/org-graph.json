@@ -291,6 +291,14 @@
             "02-classify",
             "03-route"
           ]
+        },
+        {
+          "slug": "device-health-sweep",
+          "stages": [
+            "01-collect-health",
+            "02-assess-risk",
+            "03-propose"
+          ]
         }
       ]
     },
@@ -314,7 +322,9 @@
         "ticket",
         "device",
         "cloud_asset",
-        "account"
+        "account",
+        "problem",
+        "known_error"
       ],
       "workflows": [
         {
@@ -323,6 +333,15 @@
             "01-cluster-review",
             "02-root-cause",
             "03-propose-fix"
+          ]
+        },
+        {
+          "slug": "run-pir",
+          "stages": [
+            "01-assemble-record",
+            "02-root-cause-review",
+            "03-corrective-actions",
+            "04-propose"
           ]
         }
       ]
@@ -347,7 +366,11 @@
         "ticket",
         "device",
         "cloud_asset",
-        "account"
+        "account",
+        "change_request",
+        "change_freeze",
+        "rollback_plan",
+        "standard_change_catalog"
       ],
       "workflows": [
         {
@@ -356,6 +379,14 @@
             "01-assess",
             "02-plan",
             "03-park-for-approval"
+          ]
+        },
+        {
+          "slug": "release-readiness-check",
+          "stages": [
+            "01-gather-change",
+            "02-evaluate-gates",
+            "03-verdict-propose"
           ]
         }
       ]
@@ -388,6 +419,14 @@
             "01-match",
             "02-propose-schedule"
           ]
+        },
+        {
+          "slug": "queue-rebalance",
+          "stages": [
+            "01-read-queue",
+            "02-detect-imbalance",
+            "03-propose-rebalance"
+          ]
         }
       ]
     },
@@ -419,6 +458,14 @@
             "01-verify",
             "02-test-restore",
             "03-report"
+          ]
+        },
+        {
+          "slug": "restore-test-plan",
+          "stages": [
+            "01-assess-posture",
+            "02-design-test",
+            "03-propose-plan"
           ]
         }
       ]

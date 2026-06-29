@@ -1,0 +1,12 @@
+name: restore-test-plan
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Phoenix persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../phoenix.md
+  - ./prose.md
+okf_rooms: [device, cloud_asset, account]   # subset of domains/bcdr/room.yaml
+tools: [pg.read, knowledge.search, memory.recall, ticket.note]   # subset of domains/bcdr/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "writing the INTERNAL restore-test-plan record and its tracking ticket.note for a protected asset; the restore test EXECUTION and any backup/restore trigger always park for a human, at every rung, dial-proof — nothing on the autonomous path actuates a restore"
