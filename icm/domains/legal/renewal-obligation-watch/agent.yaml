@@ -1,0 +1,12 @@
+name: renewal-obligation-watch
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Laurel persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../laurel.md
+  - ./prose.md
+okf_rooms: [account, opportunity]     # subset of domains/legal/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # subset of domains/legal/room.yaml
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "produce + document the internal watch-list/findings record (upcoming renewals, notice-period deadlines, standing obligations) — internal and reversible; every proposed notice/send/signature and any genuine legal call parks for a human"
