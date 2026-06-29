@@ -1,0 +1,12 @@
+name: lead-scoring
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [lead_score, contact, account, interaction, campaign]   # subset of domains/marketing/room.yaml — ground fit + engagement, score the lead
+tools: [pg.read, knowledge.search, memory.recall]                  # subset of domains/marketing/room.yaml — ground + score only; persist is the internal reversible write, the route to Chase is a deterministic governed event, neither a room.yaml send tool
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "the internal lead_score recompute + persist is a reversible internal write (L2) and may self-approve; the MQL-threshold routing to Chase is a DETERMINISTIC governed event (not an actuation, not a self-approval); changing the scoring model or threshold is a human / governed-config act."

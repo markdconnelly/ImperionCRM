@@ -1,0 +1,13 @@
+name: event-promotion
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [campaign, campaign_send, contact, consent_event, social_post]   # subset of domains/marketing/room.yaml — the event record is orchestration metadata / a Planned-Connector dep, NOT an OKF room; registrations ground via lead-capture
+tools: [pg.read, consent.check, send.email, knowledge.search, memory.recall] # subset of domains/marketing/room.yaml — drive + watch the clock; every actual send/post is a sub-procedure's gauntlet-gated act, not a room.yaml tool here
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+autonomy_rung: L1
+auto_may_self_approve: "internal planning + scheduling of fill activities — auto at L2 (reversible internal step-records). This workflow holds NO send/post checkpoint of its own: every actual SEND inherits the campaign-send gate (routine known-audience may reach L3; a large/new-audience blast is always_gate) and every POST inherits the social-content gate. Reminder sends fire on the event clock but each send still passes its gate. Money (boost/ad) never enters this workflow."

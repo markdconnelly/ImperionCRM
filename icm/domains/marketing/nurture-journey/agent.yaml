@@ -1,0 +1,13 @@
+name: nurture-journey
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [workflow, contact, consent_event, lead_score, campaign, campaign_send]   # subset of domains/marketing/room.yaml — `workflow` is the OKF journey-definition entity (ADR-0073)
+tools: [pg.read, consent.check, send.email, knowledge.search, memory.recall]         # subset of domains/marketing/room.yaml — read + per-recipient consent + the approval-gated send path (ADR-0058)
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+autonomy_rung: L1
+auto_may_self_approve: "internal enrollment and reversible step records (wait / branch / score-bump) are reversible internal writes (L2) and may self-approve. Each SEND is consent-gated and inherits the campaign-send ceiling: a routine known-audience send may recede to L3 when dialed; a new or materially larger audience blast is always_gate (escalate in every mode). Opt-out and frequency caps are hard stops at send time. Money never enters this workflow."

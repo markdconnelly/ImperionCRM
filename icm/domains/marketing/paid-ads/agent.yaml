@@ -1,0 +1,14 @@
+name: paid-ads
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [ad, social_post, social_metric, campaign, campaign_metric]   # subset of domains/marketing/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]                        # subset of domains/marketing/room.yaml — ground + draft only; the spend is a gauntlet-gated money-class Social Action, not a room.yaml tool
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+  - ./skills/ad-spend-rules                   # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "ONLY the internal, reversible work may ever self-approve, and only to L2 when an admin flips the workflow toward auto: the recommendation/draft itself (a boost candidate or a budget-change recommendation) and the post-approval operational steps (idempotent actuate + read-back, reconcile). The SPEND itself — any boost, ad deploy, pause, or budget change — is money/financial and dial-proof always_gate: it is NEVER self-approved at any dial, in any mode, and never recedes; a human commits every spend on the platform (BO-01 §5, ADR-0109 no clean undo)."

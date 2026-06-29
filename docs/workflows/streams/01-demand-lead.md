@@ -267,7 +267,7 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
      flags) as the enrollment source. Feed engagement back to scoring (01-G); **on MQL exit → Chase
      (the A11 seam).**
 - **Driving policy:** TBD (#1586) — consent/list-hygiene, journey/cadence.
-- **Realization:** `icm/domains/marketing/journeys/` (ICM Workspace; runner BE #145).
+- **Realization:** `icm/domains/marketing/nurture-journey/` (ICM Workspace; runner BE #145).
 - **Autonomy ceiling:** L2 internal step records; sends inherit 01-I (blast = always_gate).
 - **Human-in-loop:** approve sends (v1); recedes as routine low-risk sends earn L3; blasts gated.
 - **Substrate deps:** journey runner BE #145, #991, #389. **subject:** both. **Maps to:** #1420.
@@ -312,7 +312,7 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
   4. `[gui-step]` After the event, record attendance (attended / no-show). `[hybrid]` if auto-pulled.
   5. `[automation]` Enroll attendees/no-shows into nurture (→ 01-H); attendance drives scoring (→ 01-G).
 - **Driving policy:** TBD (#1586) — event/webinar, consent.
-- **Realization:** `icm/domains/marketing/events/` (ICM Workspace).
+- **Realization:** `icm/domains/marketing/event-promotion/` (ICM Workspace).
 - **Autonomy ceiling:** L2 internal; sends inherit 01-I; blast = always_gate.
 - **Substrate deps:** #119, event-platform connector (may be a **Planned Connector**). **subject:** both.
 
@@ -357,7 +357,7 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
   4. `[hybrid]` Flag under-performing channels/campaigns → **auto-spawn parked-draft** feeds to 01-C
      (re-budget) / 01-L (re-plan) — Belle delivers the launchpad, never actuates (B3).
 - **Driving policy:** TBD (#1586) — reporting/metrics-governance.
-- **Realization:** mostly read-model; realized in its workspace only for the normalize/flag steps.
+- **Realization:** `icm/domains/marketing/marketing-metrics/` (thin ICM Workspace) — mostly read-model; realized for the normalize/flag steps.
 - **Autonomy ceiling:** L0/L1 (read + flag). No actuation.
 - **Substrate deps:** #119 (metric collectors), #135 (resolved). **subject:** both. **Maps to:** #1338 slice D, #1316.
 

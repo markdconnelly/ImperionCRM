@@ -1,0 +1,13 @@
+name: campaign-plan
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [campaign, ad, social_post, campaign_send, social_metric]   # subset of domains/marketing/room.yaml — plan + reference the children; the children's actuation rooms belong to their own manifests
+tools: [pg.read, knowledge.search, memory.recall]                      # subset of domains/marketing/room.yaml — ground + plan/draft only; the spend and sends are gauntlet-gated via the sub-procedures, not room.yaml tools here
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+autonomy_rung: L1
+auto_may_self_approve: "the INTERNAL plan/draft — objective, target segment, channel mix, proposed budget ENVELOPE, message — is reversible-internal and may self-approve at L2 (ADR-0128 row 1). Approving the plan + budget envelope is a human gate (stage 03); approving an envelope is NOT approving a spend — the actual ad spend stays always_gate per paid-ads (01-B/01-C, dial-proof class-1). Every child send/post/ad/journey inherits its own sub-procedure's gate; this container never widens or waives a child's gate."

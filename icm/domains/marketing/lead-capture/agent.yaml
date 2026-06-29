@@ -1,0 +1,12 @@
+name: lead-capture
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [lead_hook, contact, account, contact_social_identity, consent_event, lead_score, campaign]   # subset of domains/marketing/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]                                                         # subset of domains/marketing/room.yaml — intake reads only; no send path exists in this workflow
+skills: []                            # mechanical intake; no workflow-local runtime skill
+autonomy_rung: L1
+auto_may_self_approve: "internal capture, dedupe, attribution, and disposition are reversible internal writes (L2) and may self-approve; there is NO external send in this workflow. An unparseable/empty lead_hook, an unresolved owner, or an existing-customer match parks for a human in every mode — an existing customer is NOT treated as a new lead (the 01-D customer rule)."

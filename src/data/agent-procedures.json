@@ -6238,6 +6238,2099 @@
       "kind": "domain",
       "procedures": [
         {
+          "slug": "campaign-plan",
+          "title": "campaign-plan (marketing v1)",
+          "job": "plan one marketing campaign — objective, target segment, channel mix, proposed budget envelope, message — get the plan + envelope human-approved, then **launch its children through their own sub-procedures**, each carrying its own gate. This is the orchestrating container of the demand engine: it plans and launches, it never duplicates a child's actuation. (Stream 01-L; ADR-0136 B9 deadline-sentinel + container of 01-A/01-H/01-I/01-B.)",
+          "trigger": "a campaign needs planning — a launch date approaches (the B9 launch clock), or an operator requests a campaign (a brief / quarterly plan / product or event push). One run per `campaign`.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "the INTERNAL plan/draft — objective, target segment, channel mix, proposed budget ENVELOPE, message — is reversible-internal and may self-approve at L2 (ADR-0128 row 1). Approving the plan + budget envelope is a human gate (stage 03); approving an envelope is NOT approving a spend — the actual ad spend stays always_gate per paid-ads (01-B/01-C, dial-proof class-1). Every child send/post/ad/journey inherits its own sub-procedure's gate; this container never widens or waives a child's gate.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "campaign",
+            "ad",
+            "social_post",
+            "campaign_send",
+            "social_metric"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "assemble the grounded basis for one campaign plan — the goal, prior performance, and the budget context — each cited with its as-of.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the brief: the campaign goal, the launch date (the B9 clock), any existing `campaign` to extend. Dedupe against an existing plan for the goal."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read recent `social_metric` for the brand/channels; note what to lean into. A dormant/stale collector → flag stale, never present as live (A5c)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read the budget context from prior `ad` rows (spend + delivery) — as the **envelope basis only**; this stage reads, it never commits or implies a spend."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write the grounded basis: the goal, the audience read, the performance read, the budget read — **cite each source + as-of**. If the brand room is empty/missing, **park** — never invent a voice or a claim."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The brief / request",
+                    "trigger payload",
+                    "the one campaign",
+                    "the goal, the push, the launch date"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "how the message must sound (domain-tier skill)"
+                  ],
+                  [
+                    "Campaign record",
+                    "`` `okf:campaign` ``",
+                    "the campaign, if any",
+                    "objective, theme, any prior plan to extend"
+                  ],
+                  [
+                    "Prior performance",
+                    "`` `okf:social_metric` ``",
+                    "this brand/channels, recent window",
+                    "what's landed lately — the basis for channel mix"
+                  ],
+                  [
+                    "Budget context",
+                    "`` `okf:ad` ``",
+                    "prior/related ad spend",
+                    "what paid has cost + delivered (envelope basis only)"
+                  ]
+                ]
+              },
+              "outputs": "`basis.md` — the campaign goal, the launch date, the linked campaign id (if any), the performance read, the budget read, and the cited sources (each with as-of).",
+              "audit": [
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Brand voice loaded and reflected in the read",
+                "Prior performance read (or explicitly \"none — cold start\")",
+                "Budget context read as envelope basis only — no spend implied",
+                "Empty/missing brand room → parked, not improvised"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-draft-plan",
+              "name": "draft-plan",
+              "job": "draft the campaign plan — objective, target segment, channel mix, budget envelope, and message — with no fabricated claim, price, or timeline.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the **objective** and the **target segment** from the basis — one campaign, one objective, a named segment."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the **channel mix** (which children — posts / sends / journey / paid — and their weighting), informed by the prior `social_metric` read."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the **proposed budget envelope** — a planning figure for the gate, **not a spend**; no fabricated price. The envelope frames what paid *could* cost; the actual spend is committed only later, in `paid-ads`, behind its own money gate."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the **message** on-brand. No fabricated stat, testimonial, quote, capability, price, or timeline — a claim that cannot be sourced is **cut**, not shipped (A5/`brand-voice.md`)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stage the plan on the `campaign` record (internal, reversible — L2)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Basis",
+                    "stage 01 output",
+                    "all",
+                    "goal, performance read, budget read"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "tone for the message (domain-tier skill)"
+                  ],
+                  [
+                    "Campaign record",
+                    "`` `okf:campaign` ``",
+                    "the campaign being planned",
+                    "where the plan is staged"
+                  ],
+                  [
+                    "Prior performance",
+                    "`` `okf:social_metric` ``",
+                    "the basis channels",
+                    "informs the channel-mix weighting"
+                  ]
+                ]
+              },
+              "outputs": "`plan.md` — the objective, the target segment, the channel mix (the children to launch), the proposed budget envelope (labelled \"envelope — not a spend authorization\"), the message, and the substantiation reference for each claim.",
+              "audit": [
+                "One objective; a named target segment; a channel mix mapping to child procedures",
+                "Budget envelope is labelled a planning figure, not a spend authorization",
+                "Every claim has a substantiation reference + as-of, or was cut (no fabrication)",
+                "No fabricated price or timeline in the plan or message",
+                "No client identity / confidential data in the message copy"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-plan-gate",
+              "name": "plan-gate",
+              "job": "route the plan + budget envelope to the cockpit for human approval, making plain that approving the envelope is not approving a spend.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the gate package: the plan, the channel mix (which children will launch), the proposed budget **envelope**, and the per-claim substantiation."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Present the **4-part easy-button** (A4): the drafted plan + the grounded why (cited basis + substantiation refs) + one-click **Approve plan + envelope** + one-click **revise/reject** (the reversible inverse — the plan is internal, nothing has actuated). Mark the envelope explicitly as **\"a planning figure, not a spend authorization.\"**"
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Plan",
+                    "stage 02 output",
+                    "all",
+                    "objective, segment, channel mix, envelope, message"
+                  ],
+                  [
+                    "Campaign record",
+                    "`` `okf:campaign` ``",
+                    "this campaign",
+                    "the plan to approve"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-plan.md` — the plan package, the labelled budget envelope, the substantiation summary, and the approval routing decision.",
+              "audit": [
+                "The budget envelope is labelled \"not a spend authorization\" in the gate package",
+                "Substantiation summary attached for every claim (no unsourced claim proceeds)",
+                "The easy-button carries the reversible inverse (revise/reject)",
+                "No child has actuated — this gate approves the PLAN only, not any send/post/ad"
+              ],
+              "checkpoint": "**Human approves / edits the plan + budget envelope in the cockpit.** In `draft` mode every plan parks. In `auto` mode, the **internal plan/draft** may have self-approved at L2 (it is reversible-internal, ADR-0128 row 1), but **approving the plan + budget envelope is a human gate** here. **The actual ad spend stays `always_gate` — approving an envelope is NOT approving a spend.** The envelope is a planning figure; not one dollar of spend is authorized by this gate. The real spend is committed only later, inside `paid-ads` (01-B/01-C), behind its own dial-proof money gate (A2 class-1, money has no clean undo). This gate never waives it. Any unsubstantiated claim or any audit failure parks for a human in every mode."
+            },
+            {
+              "slug": "04-launch",
+              "name": "launch",
+              "job": "schedule the approved campaign's children via their own sub-procedures, each carrying its own gate, and wire the campaign attribution.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "From the approved channel mix, enumerate the children to launch: organic posts, sends, the nurture journey, paid."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Schedule each child via its sub-procedure, carrying its own gate** — never duplicate its actuation: - organic posts → `social-content` (01-A) — each rides its own **publish-gate**; - sends → `campaign-send` (01-I) — each rides its own **send-gate** (consent-gated); - the nurture journey → `nurture-journey` (01-H) — each step's send rides 01-I's gate; - paid → `paid-ads` (01-B) — each ad rides its own **money-gate** (`always_gate`)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Tag each scheduled child with the **campaign attribution** so metrics roll up to the campaign (→ marketing-metrics / 01-M). The container holds the launch clock; each child owns its act (A11)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stamp the launch outcome on the `campaign` (children scheduled, approver, as-of) and close the run."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Approved plan",
+                    "stage 03 output",
+                    "all",
+                    "the human-approved plan + channel mix"
+                  ],
+                  [
+                    "Campaign record",
+                    "`` `okf:campaign` ``",
+                    "this campaign",
+                    "the campaign to launch + attribution tag"
+                  ],
+                  [
+                    "Child posts",
+                    "`` `okf:social_post` ``",
+                    "this campaign's organic posts",
+                    "the social-content children to schedule"
+                  ],
+                  [
+                    "Child sends",
+                    "`` `okf:campaign_send` ``",
+                    "this campaign's sends",
+                    "the campaign-send children to schedule"
+                  ]
+                ]
+              },
+              "outputs": "`launch.md` — the children scheduled (per child: the sub-procedure it routed to and the gate it carries), the campaign attribution wiring, the launch outcome stamp, and the close state.",
+              "audit": [
+                "Every child routed to its sub-procedure (no publish/send/spend duplicated here)",
+                "Each child carries its OWN gate — no child's gate waived by this container",
+                "Paid children route to `paid-ads` with `always_gate` intact (no spend committed here)",
+                "Campaign attribution tagged on every child; launch outcome stamped (approver, as-of)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "campaign-send",
+          "title": "campaign-send (marketing v1)",
+          "job": "build and ground one Campaign Send, gate consent **per recipient at send time**, then deliver it to a consented audience — drafted by Belle, approved by a human (v1), routed through the one outbound send path. This is Belle's outbound-comms act: it exercises L1 build → the per-recipient consent hard filter → the L3 routine-send gate → the always-gate blast escalation. (Stream 01-I; ADR-0058 send path, ADR-0053 send mechanics.)",
+          "trigger": "a campaign/newsletter Campaign Send is scheduled (fixed time or relative to an Event start), or a nurture journey (01-H) delegates a send. One run per Campaign Send.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "a ROUTINE send — consent-clean, to a KNOWN/established audience within frequency caps, with a clean audit (ADR-0128 L3 routine, execute-then-notify); a send to a NEW or materially larger audience is a dial-proof always_gate blast (staged, a human commits); any unsubstantiated claim, an opt-out/consent violation, or any audit failure parks for a human in every mode. Money (paid boost/ad) never enters this workflow.",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.email",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "campaign",
+            "campaign_send",
+            "contact",
+            "consent_event",
+            "campaign_metric"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice"
+          ],
+          "stages": [
+            {
+              "slug": "01-build-ground",
+              "name": "build-ground",
+              "job": "build one Campaign Send and resolve its audience/segment into a grounded brief — copy, the linked campaign, the audience basis — each cited with its as-of, no fabricated claim.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the send: scheduled time, linked `campaign` id, and the audience/segment → the `contact` recipient set. Dedupe the recipient list."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Build the send copy from the campaign + brand voice — on-brand, one offer, one CTA. Apply substantiation: every claim names a source + as-of, or is **cut/softened**. No fabricated stat, timeline, or price. A claim that cannot be sourced → **park**."
+                },
+                {
+                  "tag": "script",
+                  "text": "Classify the audience basis: **known/established** (an existing segment sent to before, within frequency norms) vs **new/materially-larger** (a fresh or materially expanded list) — this descriptor feeds the stage-03 gate. Empty/missing brand room → **park**, never invent copy."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The schedule / journey step",
+                    "trigger payload",
+                    "the one send",
+                    "what's being sent and when"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "how we sound (domain-tier skill)"
+                  ],
+                  [
+                    "The send record",
+                    "`` `okf:campaign_send` ``",
+                    "the scheduled send",
+                    "where the send + audience basis is staged"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the send's campaign",
+                    "objective, theme, the offer to serve"
+                  ],
+                  [
+                    "Audience members",
+                    "`` `okf:contact` ``",
+                    "the resolved segment",
+                    "the recipient basis to size + ground"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — scheduled time, linked campaign id, the built copy, the substantiation reference per claim, the resolved recipient basis (counts only), and the audience descriptor (known/established | new/large — feeds the stage-03 gate), with cited sources (each with as-of).",
+              "audit": [
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Every claim has a substantiation reference + as-of, or was cut (no fabrication)",
+                "One CTA per send; on-brand; linked campaign resolved (or \"none — standalone\")",
+                "Audience descriptor stated (known/established | new/large) for the gate",
+                "Empty/missing brand room → parked, not improvised",
+                "No client identity / confidential data in the copy"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-consent-gate",
+              "name": "consent-gate",
+              "job": "hard-filter the recipient list per recipient — CAN-SPAM, opt-out, and frequency caps — dropping every non-consented recipient before the send is proposed.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For **each recipient**, check `consent_event`: a valid opt-in / CAN-SPAM basis and **no** standing opt-out. A non-consented or opted-out recipient is **dropped** from the send list — a hard filter, not advisory."
+                },
+                {
+                  "tag": "script",
+                  "text": "Apply the **frequency cap** per recipient against recent `campaign_send` history; a recipient over cap is **dropped** (or deferred), not sent again."
+                },
+                {
+                  "tag": "script",
+                  "text": "Produce the filtered send list (consented ∩ within-cap). If a consent check cannot be evaluated for a recipient, **exclude** that recipient — never send on an unknown consent state. A systemic consent-source failure → **park**."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 01 output",
+                    "all",
+                    "the built send + the resolved recipient basis"
+                  ],
+                  [
+                    "Recipients",
+                    "`` `okf:contact` ``",
+                    "the resolved recipient set",
+                    "the people to check consent for"
+                  ],
+                  [
+                    "Consent state",
+                    "`` `okf:consent_event` ``",
+                    "each recipient",
+                    "opt-in/opt-out + CAN-SPAM basis, authoritative"
+                  ],
+                  [
+                    "Send history",
+                    "`` `okf:campaign_send` ``",
+                    "recent sends to these recipients",
+                    "frequency-cap evaluation"
+                  ]
+                ]
+              },
+              "outputs": "`consented-list.md` — the filtered recipient basis (counts: eligible vs dropped, with drop reason category: opted-out | no-consent | over-cap | unverifiable), and the consent/cap as-of. No row-level PII — counts and categories only.",
+              "audit": [
+                "Consent checked per recipient against `consent_event` (no list-level shortcut)",
+                "Opted-out / non-consented recipients dropped (hard filter, not advisory)",
+                "Frequency cap applied per recipient; over-cap recipients dropped/deferred",
+                "Unverifiable consent → excluded, never sent on an unknown state",
+                "Drop reasons recorded as categories + counts; no row-level PII in the output"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-send-gate",
+              "name": "send-gate",
+              "job": "route the send as a ProposedAction through the gauntlet to the cockpit, escalating a new/materially-larger audience to an always-gate blast.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Classify the send posture from the stage-01 descriptor + the consented counts: **routine** (known/established audience, within frequency cap) vs **blast** (new or materially larger audience)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Emit the send as a ProposedAction → the gauntlet. A **routine** send carries the L3 routine-send rung (ADR-0128); a **blast** escalates to `publish_blast_new_or_large_audience` = `always_gate` (ADR-0136 A2 class-2) — staged, never auto."
+                },
+                {
+                  "tag": "script",
+                  "text": "Present the **4-part easy-button** (A4): the drafted send + the grounded why (substantiation refs) + one-click **Fire** + the audience/recipient-count preview (eligible vs dropped)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 01 output",
+                    "all",
+                    "the built copy + the substantiation refs + audience descriptor"
+                  ],
+                  [
+                    "Consented list",
+                    "stage 02 output",
+                    "all",
+                    "the filtered, consent-clean recipient basis"
+                  ],
+                  [
+                    "The send record",
+                    "`` `okf:campaign_send` ``",
+                    "this send",
+                    "the send to propose"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-send.md` — the send action, the audience posture (routine | blast), the substantiation summary, the recipient-count preview, and the gauntlet routing decision.",
+              "audit": [
+                "Audience posture classified (routine | blast); a blast is marked `always_gate`",
+                "Substantiation summary attached for every claim (no unsourced claim proceeds)",
+                "The recipient basis is the stage-02 consent-clean list (no non-consented recipient)",
+                "Money (paid boost/ad) is NOT in this action — that is procedure 01-B/01-C"
+              ],
+              "checkpoint": "**Human approves / edits the send in the cockpit.** In `draft` mode every send parks. In `auto` mode, stage 03 may self-approve **only a routine** send — consent-clean, to a known/established audience, within frequency caps, with a clean audit (the L3 routine carve-out, execute-then-notify). A **blast** (new/materially-larger audience), any **unsubstantiated** claim, an **opt-out/consent violation**, or **any audit failure** parks for a human in every mode."
+            },
+            {
+              "slug": "04-send-log",
+              "name": "send-log",
+              "job": "fire the approved send idempotently, read back delivery, and reconcile attribution into Campaign Metrics.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fire via the backend send path (`send.email`, ADR-0058 backend-only) to the consented list, **idempotency-keyed (campaign_send + period) so a replay is a no-op** — never a double-send (A9b)."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Read back** delivery (accepted / bounced / deferred per the provider) before advancing (A9c); record it on the `campaign_send` row. A failed/partial fire is recorded as such, never presented as delivered."
+                },
+                {
+                  "tag": "script",
+                  "text": "Advance the `campaign_send` to **Delivered** (or **Partially-delivered**), and register the send for metric collection so the next run grounds on real numbers."
+                },
+                {
+                  "tag": "script",
+                  "text": "Reconcile delivery/open/click attribution into `campaign_metric` (collector hydrates async; this stage registers the link → 01-M). Cross-audience performance correlation stays internal/aggregated (A7 — pool, never bleed). Close the run."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Approved send",
+                    "stage 03 output",
+                    "all",
+                    "the human-approved send action"
+                  ],
+                  [
+                    "Consented list",
+                    "stage 02 output",
+                    "all",
+                    "the consent-clean recipient basis to fire to"
+                  ],
+                  [
+                    "The send record",
+                    "`` `okf:campaign_send` ``",
+                    "this send",
+                    "the status to advance"
+                  ],
+                  [
+                    "Metric store",
+                    "`` `okf:campaign_metric` ``",
+                    "this send",
+                    "where delivery + performance lands"
+                  ]
+                ]
+              },
+              "outputs": "`send-log.md` — the delivery result (delivered | partial | failed, with accepted/bounced counts), the resulting `campaign_send` status, the registered metric links, and the close state.",
+              "audit": [
+                "The fire is idempotency-keyed (a replay is a no-op, never a double-send)",
+                "Delivery read back before close (no assume-success)",
+                "`campaign_send` status reflects the true delivery outcome; failures not hidden",
+                "Metric links registered; attribution reconciled to `campaign_metric`",
+                "No cross-audience/client data bled into the record (internal/aggregated only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "event-promotion",
+          "title": "event-promotion (marketing v1)",
+          "job": "run a scheduled event/webinar to a full house and a warm follow-up — drive registrations, then **watch the event-start clock** and fire reminders on the right lead times, then enroll attendees and no-shows into post-event nurture. This is a **B9 deadline-sentinel**: it watches a deadline and drives fill through the OTHER procedures; it owns no send path of its own. (Stream 01-K; ADR-0136 B9.)",
+          "trigger": "an event/webinar is scheduled (an event record exists with a start time). One run per event lifecycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "internal planning + scheduling of fill activities — auto at L2 (reversible internal step-records). This workflow holds NO send/post checkpoint of its own: every actual SEND inherits the campaign-send gate (routine known-audience may reach L3; a large/new-audience blast is always_gate) and every POST inherits the social-content gate. Reminder sends fire on the event clock but each send still passes its gate. Money (boost/ad) never enters this workflow.",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.email",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "campaign",
+            "campaign_send",
+            "contact",
+            "consent_event",
+            "social_post"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice"
+          ],
+          "stages": [
+            {
+              "slug": "01-drive-fill",
+              "name": "drive-fill",
+              "job": "plan and schedule the fill activities for one event — the campaigns, Campaign Sends, and organic posts — delegating every actuation to its sub-procedure.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the event: start time, fill target, linked `campaign` id. Read existing `campaign_send` / `social_post` for the campaign to avoid double-scheduling."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Plan the fill: which Campaign Sends (→ campaign-send) and which organic posts (→ social-content), at which lead times before the event — **cite the campaign + as-of**. Empty/missing campaign room → **park**, never invent an event angle."
+                },
+                {
+                  "tag": "script",
+                  "text": "Schedule the fill activities as sub-procedure invocations (campaign-send / social-content), each tagged with the event + campaign attribution. **You schedule; each send/post actuates through its own procedure's gate** — this stage never sends."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The event",
+                    "trigger payload",
+                    "the one event",
+                    "start time, theme, fill target (orchestration metadata — Planned-Connector dep, not a room)"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the event's campaign",
+                    "objective, theme, the angle to serve"
+                  ],
+                  [
+                    "Scheduled sends",
+                    "`` `okf:campaign_send` ``",
+                    "this campaign",
+                    "existing/planned sends to dedupe against"
+                  ],
+                  [
+                    "Planned posts",
+                    "`` `okf:social_post` ``",
+                    "this campaign",
+                    "existing/planned posts to dedupe against"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "how we sound (domain-tier skill)"
+                  ]
+                ]
+              },
+              "outputs": "`fill-plan.md` — the linked campaign id, the scheduled fill activities (sends → campaign-send, posts → social-content) with their lead times, and the cited sources (each with as-of).",
+              "audit": [
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Linked campaign resolved (or explicitly \"none — standalone event\")",
+                "No fill activity duplicates an existing send/post for the campaign",
+                "Every fill activity routed to its sub-procedure (campaign-send / social-content) — none actuated here",
+                "Empty/missing campaign room → parked, not improvised"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-capture-registrations",
+              "name": "capture-registrations",
+              "job": "route each incoming event registration through the capture inbox so it lands as a normalized, consent-captured contact via lead-capture.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each new registration, assemble the capture payload (source = this event, campaign touch, consent state) and hand it to **lead-capture** (01-F) through the capture inbox. Registrations are read back via lead-capture, never a direct event read."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Confirm each registration resolved to a `contact` (dedupe / owner-resolution is lead-capture's job; this stage only verifies the round-trip), **citing the source registration + as-of**."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the captured registrant set on the run for the clock and follow-up stages. Existing-customer registrants follow lead-capture's customer rule (not treated as new leads)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Registrations",
+                    "trigger payload",
+                    "this event's new registrations",
+                    "who registered (orchestration metadata — Planned-Connector dep, not a room)"
+                  ],
+                  [
+                    "Contact kernel",
+                    "`` `okf:contact` ``",
+                    "matched contacts",
+                    "dedupe / resolve owner against existing contacts"
+                  ],
+                  [
+                    "Consent state",
+                    "`` `okf:consent_event` ``",
+                    "each registrant",
+                    "consent captured at registration, for downstream sends"
+                  ]
+                ]
+              },
+              "outputs": "`registrations.md` — the captured registrant set (each linked to its `contact`, with consent state + as-of), and any unresolved registrations flagged for spot-check.",
+              "audit": [
+                "Each registration routed through lead-capture (none captured directly here)",
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Consent state captured per registrant for downstream sends",
+                "No cross-client/audience data bled into the record (internal/aggregated only, A7)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-watch-clock",
+              "name": "watch-clock",
+              "job": "watch the event-start clock and fire reminder Campaign Sends at the right lead times — each through campaign-send's gate, never auto-fired here (B9).",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Compute the due reminder lead times relative to the event-start time (cadence/date math); for each due reminder, dedupe against an existing `campaign_send`. **Cite the event date + as-of.**"
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft each reminder's angle from the linked `campaign` + brand voice — no fabricated claim/timeline (A5/B7)."
+                },
+                {
+                  "tag": "script",
+                  "text": "On each due lead time, hand the reminder to **campaign-send** (01-I) as a pre-staged easy-button. **The send rides campaign-send's gate** — a routine known-audience reminder may reach L3, a large/new-audience reminder is `always_gate`. The sentinel pre-stages; it never auto-fires a client send (A11)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The event clock",
+                    "trigger payload",
+                    "this event's start time + reminder lead times",
+                    "when reminders are due (orchestration metadata — Planned-Connector dep, not a room)"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the event's campaign",
+                    "the reminder's theme/attribution"
+                  ],
+                  [
+                    "Reminder sends",
+                    "`` `okf:campaign_send` ``",
+                    "this campaign",
+                    "the reminder sends to schedule/dedupe"
+                  ],
+                  [
+                    "Registrant consent",
+                    "`` `okf:consent_event` ``",
+                    "registered audience",
+                    "consent for the reminder recipients"
+                  ]
+                ]
+              },
+              "outputs": "`reminders.md` — the computed reminder schedule (each lead time relative to event start), the drafted reminder angles, and the campaign-send hand-offs (each with its gate noted), cited to the event date + as-of.",
+              "audit": [
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Reminder lead times computed relative to the event-start time",
+                "No reminder duplicates an existing send for the campaign",
+                "Every reminder routed to campaign-send's gate — none auto-fired in this stage (A11)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "04-post-event",
+              "name": "post-event",
+              "job": "enroll attendees and no-shows into post-event nurture and feed attendance back to scoring — every follow-up send owned by nurture-journey.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Split the registrant set into attended / no-show from the attendance record (cited + as-of); resolve each to its `contact`."
+                },
+                {
+                  "tag": "script",
+                  "text": "Enroll attendees and no-shows into the matching post-event track via **nurture-journey** (01-H) — attendees into a warm follow-up, no-shows into a re-engage track. **The journey's sends carry their own (campaign-send) gate**; this stage only enrolls."
+                },
+                {
+                  "tag": "script",
+                  "text": "Feed attendance back to scoring (→ 01-G) so the event signal moves the `lead_score`. Cross-event correlation stays internal/aggregated (A7)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stamp the run outcome (registered / attended / no-show counts, enrolled tracks, as-of) and close the run."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Attendance",
+                    "trigger payload",
+                    "this event's attended / no-show split",
+                    "who to enroll into which track (orchestration metadata — Planned-Connector dep, not a room)"
+                  ],
+                  [
+                    "Captured registrants",
+                    "stage 02 output",
+                    "this event",
+                    "the registrant→contact links to enroll"
+                  ],
+                  [
+                    "Contact kernel",
+                    "`` `okf:contact` ``",
+                    "the registrants",
+                    "resolve enrollees to contacts"
+                  ],
+                  [
+                    "Follow-up consent",
+                    "`` `okf:consent_event` ``",
+                    "each enrollee",
+                    "consent for the post-event journey's sends"
+                  ]
+                ]
+              },
+              "outputs": "`post-event.md` — the attended/no-show split, the nurture-journey enrollments per track, the scoring hand-off, and the run-outcome stamp + close state.",
+              "audit": [
+                "Attendance split cited + as-of (A5); none fabricated",
+                "Every enrollee routed through nurture-journey (no send actuated here)",
+                "Attendance fed to scoring; run outcome stamped (counts, tracks, as-of)",
+                "No cross-client/audience data bled into the record (internal/aggregated only, A7)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "lead-capture",
+          "title": "lead-capture (marketing v1)",
+          "job": "take one inbound `lead_hook`, normalize its source/UTM/consent, resolve its owner against the contact kernel, stamp the multi-touch attribution touch, and disposition it — enqueue for scoring or, if the source already implies MQL-grade fit, emit the threshold-crossing score that routes to Chase. Intake only: every write is an internal, reversible record (L2). There is **no external send** in this workflow. (Stream 01-F; ADR-0136 B1 triage/route.)",
+          "trigger": "a `lead_hook` lands — a Meta lead form, a website form, a DM-classified-as-lead (from 01-D), an Apollo / prospecting entry, an Event Registration, gated content, or a list import. One run per `lead_hook`.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "internal capture, dedupe, attribution, and disposition are reversible internal writes (L2) and may self-approve; there is NO external send in this workflow. An unparseable/empty lead_hook, an unresolved owner, or an existing-customer match parks for a human in every mode — an existing customer is NOT treated as a new lead (the 01-D customer rule).",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "lead_hook",
+            "contact",
+            "account",
+            "contact_social_identity",
+            "consent_event",
+            "lead_score",
+            "campaign"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-ingest",
+              "name": "ingest",
+              "job": "normalize one inbound `lead_hook` — its source, UTM/campaign touch, and consent state — each cited with its as-of.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Parse the `lead_hook`: source type (Meta lead form | website form | DM-classified-lead | Apollo entry | Event Registration | gated content | list import), payload fields, the inbound timestamp."
+                },
+                {
+                  "tag": "script",
+                  "text": "Extract the UTM / campaign touch and resolve it to a `campaign` id where present; capture the consent state carried by the hook (`consent_event` shape)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Sanity-read the captured fields — **cite the source hook + as-of**. An **unparseable or empty** hook → **park** (never invent a source, a campaign, or a consent basis — A5)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The lead hook",
+                    "trigger payload",
+                    "the one hook",
+                    "the raw inbound to normalize"
+                  ],
+                  [
+                    "Raw capture",
+                    "`` `okf:lead_hook` ``",
+                    "the inbound hook",
+                    "source · UTM · campaign touch · consent shape (meaning / authority)"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the hook's campaign touch, if any",
+                    "resolve the UTM/campaign to a real campaign"
+                  ],
+                  [
+                    "Consent state",
+                    "`` `okf:consent_event` ``",
+                    "this party",
+                    "the consent basis the hook carries (no fabrication)"
+                  ]
+                ]
+              },
+              "outputs": "`capture.md` — the normalized hook: source type, the UTM/campaign touch (resolved `campaign` id or \"none\"), the consent state, the inbound timestamp, and the cited source + as-of.",
+              "audit": [
+                "Source, UTM/campaign touch, and consent state each captured + cited with as-of (A5)",
+                "Campaign touch resolved to a `campaign` id, or explicitly \"none\"",
+                "Consent state taken from the hook, never fabricated",
+                "Unparseable / empty hook → parked, not improvised"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-resolve-owner",
+              "name": "resolve-owner",
+              "job": "resolve the captured hook to its owner via Client Mapping / contact dedupe — and stop if the owner is an existing customer.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For a social/DM-sourced hook, resolve the handle → contact via `contact_social_identity`; otherwise key on the hook's email/identifier."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "**Client Mapping / contact dedupe:** match the hook against existing `contact` records; pick the existing contact or mark \"new contact\"."
+                },
+                {
+                  "tag": "script",
+                  "text": "Check the matched contact's `account`: if the party is an **existing customer**, this is **not a new lead** — **park** and route out (the 01-D customer rule; Celeste/Felix own the existing relationship). An **unresolved owner** → park."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Capture",
+                    "stage 01 output",
+                    "all",
+                    "the normalized hook to resolve"
+                  ],
+                  [
+                    "Contact kernel",
+                    "`` `okf:contact` ``",
+                    "candidate matches",
+                    "dedupe the hook to an existing or new contact"
+                  ],
+                  [
+                    "Account kernel",
+                    "`` `okf:account` ``",
+                    "the matched contact's account",
+                    "is this party an existing customer?"
+                  ],
+                  [
+                    "Social handle map",
+                    "`` `okf:contact_social_identity` ``",
+                    "DM/social-sourced hooks",
+                    "resolve a social handle → contact"
+                  ]
+                ]
+              },
+              "outputs": "`owner.md` — the resolved owner (existing `contact` id or \"new contact\" + the fields to create), the dedupe decision, the existing-customer determination, and the cited match basis + as-of.",
+              "audit": [
+                "Owner resolved to an existing `contact` or a clean \"new contact\" (dedupe ran)",
+                "Existing-customer check ran against `account`; a customer match → parked (not a new lead)",
+                "Unresolved owner → parked",
+                "Match basis cited + as-of (A5)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-attribute",
+              "name": "attribute",
+              "job": "stamp the multi-touch attribution touch for this lead — the first link in touch → opportunity → won.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the attribution touch: the resolved `contact`, the `campaign` id (or \"none — standalone\"), the source, and the UTM, keyed to the inbound timestamp."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stamp the touch for multi-touch ROI (#1316 → 01-M) — an internal, reversible write (L2). A retry on the same hook is a no-op (idempotent on the hook id, A9b)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Capture",
+                    "stage 01 output",
+                    "all",
+                    "source · UTM · campaign touch to attribute"
+                  ],
+                  [
+                    "Owner",
+                    "stage 02 output",
+                    "all",
+                    "the resolved contact the touch attaches to"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the resolved campaign touch",
+                    "attribute the touch to the right campaign"
+                  ]
+                ]
+              },
+              "outputs": "`attribution.md` — the stamped touch (contact · campaign · source · UTM · as-of) and its attribution reference for the analytics rollup (01-M).",
+              "audit": [
+                "Touch attributed to the resolved contact + the campaign (or \"none — standalone\")",
+                "Touch cited to the source hook + as-of (A5)",
+                "Stamp is idempotent on the hook id (a replay is a no-op, A9b)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "04-disposition",
+              "name": "disposition",
+              "job": "disposition the captured, attributed lead — enqueue it for scoring, or, if the source already implies MQL-grade fit, emit the threshold-crossing score that routes to Chase (the A11 seam).",
+              "process": [
+                {
+                  "tag": "haiku",
+                  "text": "Read the source/intent: does the hook (e.g. a high-intent Meta lead form, a qualified Apollo entry) already imply **MQL-grade** fit, or does it need scoring first?"
+                },
+                {
+                  "tag": "script",
+                  "text": "**Default path** — enqueue the lead for scoring (→ lead-scoring / 01-G): an internal, reversible write (L2). Scoring owns the threshold evaluation."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Seam path** — if the source already implies MQL-grade fit, **emit the threshold-crossing `lead_score`** that routes the lead to Chase (→ lead-response / Stream 02). **This is an explicit step, not a co-owned handoff: Chase owns qualify, Belle owns capture (A11)** — the crossing is a deterministic route, not an external actuation. Idempotent on the hook/contact so a replay does not double-route (A9b)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Capture",
+                    "stage 01 output",
+                    "all",
+                    "source/intent that may already imply MQL-grade fit"
+                  ],
+                  [
+                    "Owner",
+                    "stage 02 output",
+                    "all",
+                    "the resolved contact to disposition"
+                  ],
+                  [
+                    "Attribution",
+                    "stage 03 output",
+                    "all",
+                    "the stamped touch the disposition carries"
+                  ],
+                  [
+                    "Score fact",
+                    "`` `okf:lead_score` ``",
+                    "this contact",
+                    "where the score is read/written; the MQL threshold"
+                  ]
+                ]
+              },
+              "outputs": "`disposition.md` — the disposition decision (enqueued-for-scoring | MQL-grade → Chase), the score reference, and the cited basis + as-of.",
+              "audit": [
+                "Disposition is one of: enqueued-for-scoring | MQL-grade → Chase (the A11 seam)",
+                "MQL-grade routing taken only when the source/intent justifies it, cited + as-of (A5)",
+                "All writes internal + reversible (L2); no external send occurs in this workflow",
+                "Disposition idempotent on the hook/contact (a replay does not double-route, A9b)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "lead-scoring",
+          "title": "lead-scoring (marketing v1)",
+          "job": "recompute one lead's `lead_score` from fit + engagement, persist it (an internal, reversible write), and evaluate it against the marketing-qualified (MQL) threshold — when the score crosses, route the lead to Chase / Stream 02 (lead-response) as the **canonical Belle→Chase seam**. This is the seam emitter: Belle owns the marketing-qualification clock, Chase owns qualify/close; they meet at the threshold-crossing step and never co-own. (Stream 01-G; the A11 seam.)",
+          "trigger": "a lead's signals change — a lead is captured (01-F enqueues scoring), a behavioral/engagement signal accrues, or a scheduled re-score fires. One run per lead.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "the internal lead_score recompute + persist is a reversible internal write (L2) and may self-approve; the MQL-threshold routing to Chase is a DETERMINISTIC governed event (not an actuation, not a self-approval); changing the scoring model or threshold is a human / governed-config act.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "lead_score",
+            "contact",
+            "account",
+            "interaction",
+            "campaign"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-ground-signals",
+              "name": "ground-signals",
+              "job": "assemble the lead's scoring signals — fit (the contact/account profile) and engagement (interactions, campaign touch) — each cited with its as-of.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the lead from the trigger payload; pull the prior `lead_score` as the baseline. Dedupe — one open score per lead."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read the fit signals (`contact` / `account` profile) and recent `interaction` + `campaign` touch for the lead; note what should move the score. A dormant/stale signal source → flag stale, never present as live."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write the signal brief: the fit inputs, the engagement inputs, the campaign attribution — **cite each source + as-of**. **#389 predictive features are dormant → say so and ground on rules-only signals; never invent a signal.** Empty/ missing signals for the lead → **park**."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The lead / re-score request",
+                    "trigger payload",
+                    "the one lead",
+                    "which lead, and why it's being scored"
+                  ],
+                  [
+                    "Prior score",
+                    "`` `okf:lead_score` ``",
+                    "this lead",
+                    "the score being recomputed (baseline + history)"
+                  ],
+                  [
+                    "Fit — contact profile",
+                    "`` `okf:contact` ``",
+                    "this lead's contact",
+                    "who they are (role, source, consent)"
+                  ],
+                  [
+                    "Fit — account profile",
+                    "`` `okf:account` ``",
+                    "the contact's account, if mapped",
+                    "firmographic fit (size, segment)"
+                  ],
+                  [
+                    "Engagement signals",
+                    "`` `okf:interaction` ``",
+                    "this lead, recent window",
+                    "behavioral signal — opens, clicks, replies, visits"
+                  ],
+                  [
+                    "Campaign touch",
+                    "`` `okf:campaign` ``",
+                    "the lead's campaign touches",
+                    "which campaign(s) engaged them; attribution context"
+                  ]
+                ]
+              },
+              "outputs": "`signals.md` — the lead id, the prior score baseline, the fit inputs, the engagement inputs, the campaign touch, and the cited sources (each with as-of); a note that scoring is rules-only (predictive dormant).",
+              "audit": [
+                "Each grounded signal cites a source + as-of (A5); none fabricated",
+                "Fit (contact/account) and engagement (interaction/campaign) both grounded",
+                "Prior `lead_score` baseline resolved",
+                "Predictive dormancy (#389) stated → rules-only basis declared (A5c)",
+                "Empty/missing signals → parked, not improvised"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-score",
+              "name": "score",
+              "job": "compute the lead's new `lead_score` from the grounded signals and persist it (internal, reversible — L2).",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Apply the **rule-based v1 scoring model** (governed config) over the fit + engagement signals from the brief — a deterministic computation with one correct output per input. Predictive features (#389) are dormant → rules only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Persist the recomputed `lead_score` (value + the contributing-signal basis + as-of) to the lead's score record. This is an **internal, reversible write (L2)** — no external party hears from it."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Signal brief",
+                    "stage 01 output",
+                    "all",
+                    "the cited fit + engagement inputs to score"
+                  ],
+                  [
+                    "Score record",
+                    "`` `okf:lead_score` ``",
+                    "this lead",
+                    "where the recomputed score is persisted"
+                  ]
+                ]
+              },
+              "outputs": "`score.md` — the recomputed `lead_score`, the contributing-signal basis (which fit/engagement inputs moved it), the rules-only note, and the persisted as-of.",
+              "audit": [
+                "Score computed only from stage-01 grounded signals (no new ungrounded input)",
+                "Rule-based v1 model applied; predictive (#389) not assumed",
+                "`lead_score` persisted with its contributing-signal basis + as-of",
+                "Write is internal/reversible (L2) — nothing sent externally"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-evaluate-route",
+              "name": "evaluate-route",
+              "job": "evaluate the new `lead_score` against the MQL threshold and route — crossed → to Chase as the explicit A11 seam; below → stays in nurture.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Compare the recomputed `lead_score` to the **marketing-qualified (MQL) threshold** (governed config — not the agent's to set). A single deterministic comparison."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Crossed → route the lead to Chase / Stream 02 (lead-response).** This is the **terminal hand-off STEP — the canonical Belle→Chase seam (A11)**: a **deterministic governed event**, not an actuation and not a self-approval. Belle owns the marketing-qualification clock; Chase owns qualify/close. Do not duplicate Chase's work — reference Stream 02 as the terminal step."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Below threshold → no route; the lead stays in Belle's nurture.** Stamp the evaluation outcome on the score record and close the run."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Score",
+                    "stage 02 output",
+                    "all",
+                    "the recomputed score to evaluate"
+                  ],
+                  [
+                    "Score record",
+                    "`` `okf:lead_score` ``",
+                    "this lead",
+                    "the MQL threshold (governed config) + the score's standing"
+                  ]
+                ]
+              },
+              "outputs": "`route.md` — the threshold comparison, the routing decision (MQL → Chase/Stream 02, or below → nurture), and the closed-run outcome stamp.",
+              "audit": [
+                "Score compared to the governed MQL threshold (threshold not altered here)",
+                "Crossed → routed to Chase/Stream 02 as the explicit seam step (deterministic, not a send)",
+                "Below → retained in nurture; no route emitted",
+                "Outcome stamped on the score record; run closed",
+                "No Chase qualify/close work duplicated here"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "marketing-metrics",
+          "title": "marketing-metrics (marketing v1)",
+          "job": "surface marketing analytics + multi-touch attribution as a read-model — gather and normalize Social Metrics + `campaign_metric`, union organic ∪ paid, compute touch → opportunity → won attribution, and flag anomalies/stale sources for a human. This is Belle's reporting back-channel: a B3 synthesis-brief that **reads and flags, never actuates** (Stream 01-M; under-performers are surfaced, the owning worker is a human's call).",
+          "trigger": "a metrics-refresh / reporting tick — a scheduled reporting cadence, a campaign close, or an operator opening the analytics / BI hub marketing section. One run per refresh.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L0",
+          "autoMaySelfApprove": "nothing self-actuates — this workflow only reads, normalizes, and flags; every surfaced finding is advisory and a human acts on it. No send, no write beyond the metric read-model.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "social_metric",
+            "campaign_metric",
+            "campaign"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "ingest and normalize the marketing metric substrate — Social Metrics + `campaign_metric` — each cited with its source and as-of, with a dormant collector flagged stale rather than presented as live.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the reporting window + scope from the trigger; enumerate the in-scope `campaign` ids for the rollup."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull `social_metric` + `campaign_metric` for the window. Normalize metric names (#135) so the same number reads the same everywhere; key each reading to its source."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Stamp each metric source with its **as-of**; a dormant/down collector (stale as-of, no fresh rows) → **flag stale, never present as live** (A5c). No fabricated reading."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The refresh / request",
+                    "trigger payload",
+                    "the reporting window",
+                    "what window + scope to report"
+                  ],
+                  [
+                    "Social Metrics",
+                    "`` `okf:social_metric` ``",
+                    "the window, all marketing channels",
+                    "organic performance (per post/channel)"
+                  ],
+                  [
+                    "Campaign performance",
+                    "`` `okf:campaign_metric` ``",
+                    "the window, active campaigns",
+                    "paid + send/journey/event results"
+                  ],
+                  [
+                    "Linked campaigns",
+                    "`` `okf:campaign` ``",
+                    "the campaigns in scope",
+                    "the rollup spine + attribution touch grouping"
+                  ]
+                ]
+              },
+              "outputs": "`gathered.md` — the normalized `social_metric` + `campaign_metric` readings keyed to their source + as-of, the in-scope campaign ids, and any stale-collector flags.",
+              "audit": [
+                "Each metric reading cites a source + as-of (A5); none fabricated",
+                "Metric names normalized (#135) — consistent across sources",
+                "Dormant/stale collector flagged stale, not presented as live (A5c)",
+                "In-scope campaign ids resolved for the rollup"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "union organic ∪ paid into one marketing picture and compute multi-touch attribution over touch → opportunity → won, with any cross-client benchmark anonymized and aggregated only.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Union organic (`social_metric`) ∪ paid (`campaign_metric`) into one marketing result set, keyed by campaign + channel; carry each source's as-of forward."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Compute multi-touch attribution over touch → opportunity → won (#1316): sourced/influenced pipeline vs spend, CPL, CAC, ROAS. Cite the contributing touches; a metric with no clean source stays uncomputed and is noted, not invented (A5)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Build any cross-client benchmark **anonymized + aggregated only — pool, never bleed** (A7): no client identifier, no row-level personal data, no single-client figure leaves the aggregate."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gathered readings",
+                    "stage 01 output",
+                    "the window",
+                    "the normalized, cited metric base"
+                  ],
+                  [
+                    "Social Metrics",
+                    "`` `okf:social_metric` ``",
+                    "the window",
+                    "organic side of the union"
+                  ],
+                  [
+                    "Campaign performance",
+                    "`` `okf:campaign_metric` ``",
+                    "the window",
+                    "paid side of the union + spend"
+                  ],
+                  [
+                    "Campaign spine",
+                    "`` `okf:campaign` ``",
+                    "in-scope campaigns",
+                    "attribution grouping (touch → campaign)"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — the unioned organic ∪ paid result set, the multi-touch attribution figures (CPL / CAC / ROAS / sourced + influenced pipeline) with cited touches, and any anonymized aggregate benchmark.",
+              "audit": [
+                "Organic ∪ paid unioned without double-counting; as-of carried forward",
+                "Attribution figures cite their contributing touches (A5); none fabricated",
+                "Any benchmark anonymized + aggregated only — no client identifier / no bleed (A7)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-flag",
+              "name": "flag",
+              "job": "surface anomalies and stale sources for a human as advisory flags — read-and-flag only, no actuation.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Detect anomalies in the synthesized result set: under-performing channels / campaigns (CPL / CAC / ROAS off target), spend-pace outliers, attribution gaps. Cite the figure + as-of behind each flag (A5)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Carry the stage-01 stale-collector flags through into the same surface so a stale source reads as stale, not as a real anomaly."
+                },
+                {
+                  "tag": "script",
+                  "text": "Emit the flag set as **advisory only** — name the owning procedure a human may route each to (under-performer → 01-C re-budget / 01-L re-plan; stale source → collector owner). **No actuation here:** this stage opens no action, writes no silver, sends nothing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 output",
+                    "the window",
+                    "the unioned + attributed result set"
+                  ],
+                  [
+                    "Gathered readings",
+                    "stage 01 output",
+                    "the window",
+                    "the stale-collector flags to carry through"
+                  ],
+                  [
+                    "Campaign spine",
+                    "`` `okf:campaign` ``",
+                    "in-scope campaigns",
+                    "naming the owning campaign per flag"
+                  ]
+                ]
+              },
+              "outputs": "`flags.md` — the advisory anomaly + stale-source flags, each with its citing figure + as-of and the suggested owning procedure for a human to route — and nothing actuated.",
+              "audit": [
+                "Each anomaly flag cites its figure + as-of (A5)",
+                "Stale-collector flags carried through and labeled stale, not anomaly",
+                "Every flag is advisory + names a human-routed owning procedure — nothing actuated",
+                "No send, no silver write, no action opened (read-and-flag only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "nurture-journey",
+          "title": "nurture-journey (marketing v1)",
+          "job": "run one enrolled contact through a multi-step nurture cadence — send / wait / branch / score-bump — until it qualifies (MQL → Chase), exits, or unsubscribes. Each send delegates to the consent gate; the journey owns the internal step records. (Stream 01-H; B7 client-facing-send — sends inherit the campaign-send gate; ADR-0073 journey-definition substrate.)",
+          "trigger": "a contact is **enrolled** — by segment membership, a captured sub-MQL lead (01-F), event follow-up (01-K), or manual enrollment. One run per enrolled contact's journey instance.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "internal enrollment and reversible step records (wait / branch / score-bump) are reversible internal writes (L2) and may self-approve. Each SEND is consent-gated and inherits the campaign-send ceiling: a routine known-audience send may recede to L3 when dialed; a new or materially larger audience blast is always_gate (escalate in every mode). Opt-out and frequency caps are hard stops at send time. Money never enters this workflow.",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.email",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "workflow",
+            "contact",
+            "consent_event",
+            "lead_score",
+            "campaign",
+            "campaign_send"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice"
+          ],
+          "stages": [
+            {
+              "slug": "01-enroll",
+              "name": "enroll",
+              "job": "enroll the triggering contact on the `workflow` journey substrate, capturing its enrollment basis (segment / source) and its entry step.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the enrollment basis from the trigger: segment membership, sub-MQL captured lead (01-F), event follow-up (01-K), or manual. Dedupe against an existing active enrollment of this contact on this `workflow` — a re-enroll is a no-op, not a duplicate."
+                },
+                {
+                  "tag": "script",
+                  "text": "Confirm the contact is below the MQL threshold (`lead_score`); an already-qualified contact does not nurture — route straight to progress (stage 04)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the enrollment on the `workflow` substrate: the entry step, the segment/source basis, and the as-of (internal, reversible — L2)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Enrollment trigger",
+                    "trigger payload",
+                    "the one contact",
+                    "who is enrolling and why (segment / lead / event / manual)"
+                  ],
+                  [
+                    "Contact",
+                    "`` `okf:contact` ``",
+                    "the enrolling contact",
+                    "the kernel record the journey runs against"
+                  ],
+                  [
+                    "Journey definition",
+                    "`` `okf:workflow` ``",
+                    "the target journey",
+                    "step graph + entry point (ADR-0073)"
+                  ],
+                  [
+                    "Current score",
+                    "`` `okf:lead_score` ``",
+                    "this contact",
+                    "start state; below-MQL is the nurture precondition"
+                  ]
+                ]
+              },
+              "outputs": "`enrollment.md` — the contact id, the journey id, the enrollment basis (segment / lead / event / manual), the entry step, and the start score, each with as-of.",
+              "audit": [
+                "Enrollment basis resolved and recorded (segment | lead | event | manual)",
+                "Not a duplicate of an existing active enrollment for this contact/journey",
+                "Contact confirmed below MQL (or routed straight to progress)",
+                "Entry step + start score stamped with as-of"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-next-step",
+              "name": "next-step",
+              "job": "execute the next due cadence step for the enrolled contact — an A/B send, a wait, a branch, or a score-bump — as a reversible internal step record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the **next due step** from the journey definition against the enrollment position + cadence clock (wait timers / branch conditions are date and field math, not interpretation)."
+                },
+                {
+                  "tag": "script",
+                  "text": "For a **wait / branch / score-bump**: apply it as a reversible internal step record (L2) — set the next-due time, take the branch, or bump the score. No external party is touched."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "For a **send** step: draft the on-brand message (and its A/B variant if the step defines one) — no fabricated claim, stat, or timeline. **Do not send here** — hand the drafted send to stage 03 (the consent gate)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Enrollment",
+                    "stage 01 output",
+                    "the contact's journey instance",
+                    "current position in the cadence"
+                  ],
+                  [
+                    "Journey definition",
+                    "`` `okf:workflow` ``",
+                    "the target journey",
+                    "the step graph + cadence timing (ADR-0073)"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "how a send sounds (domain-tier skill)"
+                  ],
+                  [
+                    "Current score",
+                    "`` `okf:lead_score` ``",
+                    "this contact",
+                    "a branch/score-bump reads the score"
+                  ]
+                ]
+              },
+              "outputs": "`next-step.md` — the resolved step type, the applied internal change (wait / branch / score delta) **or** the drafted send + variant awaiting the gate, and the updated enrollment position.",
+              "audit": [
+                "Next step resolved deterministically from the definition + cadence clock",
+                "Internal step (wait / branch / score-bump) applied as a reversible L2 record",
+                "A send step is **drafted only** — not dispatched here (the gate owns the send)",
+                "Drafted send is on-brand; every claim sourced or cut (no fabrication)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-send-gate",
+              "name": "send-gate",
+              "job": "route a drafted journey send through the consent gate — opt-out and frequency hard stops at send time — escalating a new/large-audience posture to an always-gate blast.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "**Consent gate, per recipient, at send time** (`consent.check`): CAN-SPAM basis, opt-out state, and frequency caps. A non-consented or opted-out recipient is **dropped** — a hard filter, not advisory. An over-cap send is held."
+                },
+                {
+                  "tag": "script",
+                  "text": "Classify audience posture from the send descriptor: **routine** (known audience, within frequency cap) vs **blast** (new or materially larger audience)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Emit the send as a Campaign Send ProposedAction → the gauntlet. A **routine** send carries the L3 known-audience rung (ADR-0128); a **blast** escalates to `always_gate` (CONSTITUTION §5.4) — staged, never auto. Present the **4-part easy-button** (A4): the drafted send + the grounded why + one-click **Fire** + the audience/recipient-count preview."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Drafted send",
+                    "stage 02 output",
+                    "the send awaiting the gate",
+                    "what's being sent + its A/B variant"
+                  ],
+                  [
+                    "Send record",
+                    "`` `okf:campaign_send` ``",
+                    "this send",
+                    "the per-send fact to gate and fire (ADR-0058)"
+                  ],
+                  [
+                    "Recipient consent",
+                    "`` `okf:consent_event` ``",
+                    "the recipient",
+                    "CAN-SPAM / opt-out basis at send time"
+                  ],
+                  [
+                    "Campaign",
+                    "`` `okf:campaign` ``",
+                    "the journey's campaign",
+                    "attribution + frequency-cap context"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-send.md` — the consented recipient set (with drops noted), the audience posture (routine | blast), the per-send action, and the gauntlet routing decision.",
+              "audit": [
+                "Per-recipient consent checked at send time; opt-out / over-cap recipients dropped",
+                "Audience posture classified (routine | blast); a blast is marked `always_gate`",
+                "The easy-button carries the recipient-count / audience preview",
+                "Send exits only through the ADR-0058 path — no second send path opened"
+              ],
+              "checkpoint": "**Human approves / edits the send in the cockpit.** In `draft` mode every send parks. In `auto` mode, stage 03 may self-approve **only a routine** known-audience send — within frequency caps, consent-clean, with a clean audit (the L3 carve-out). A **blast** (new or materially larger audience), any **consent/opt-out failure**, or **any audit failure** parks for a human in every mode."
+            },
+            {
+              "slug": "04-progress",
+              "name": "progress",
+              "job": "advance the enrollment or terminate it — at MQL (→ lead-scoring → Chase), journey exit, or unsubscribe.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Feed the step's engagement back to scoring and read the updated `lead_score`. Evaluate against the MQL threshold."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Terminate or advance:** - **MQL crossed** → route to **lead-scoring (01-G) → Chase / Stream 02** — the crossing IS the seam (a deterministic route, not an actuation); close this journey enrollment. - **Unsubscribe** (`consent_event`) → stop the journey immediately; no further send. - **Journey end** reached → exit and close. - **Otherwise** → set the next-due position and hand back to stage 02."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stamp the enrollment outcome (advanced / MQL / exited / unsubscribed) with the as-of; cross-contact engagement correlation stays internal/aggregated (A7 — pool, never bleed)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Step result",
+                    "stages 02–03 output",
+                    "the executed step",
+                    "what just happened (send fired / internal step applied)"
+                  ],
+                  [
+                    "Updated score",
+                    "`` `okf:lead_score` ``",
+                    "this contact",
+                    "the MQL crossing test"
+                  ],
+                  [
+                    "Recipient consent",
+                    "`` `okf:consent_event` ``",
+                    "this contact",
+                    "an unsubscribe terminates the journey"
+                  ],
+                  [
+                    "Journey definition",
+                    "`` `okf:workflow` ``",
+                    "the target journey",
+                    "end condition / next-due position (ADR-0073)"
+                  ]
+                ]
+              },
+              "outputs": "`progress.md` — the updated score, the disposition (advance | MQL→Chase | exit | unsubscribe), the seam emission (if MQL), and the next-due position (if advancing).",
+              "audit": [
+                "MQL threshold evaluated against the updated score",
+                "MQL crossing routes to lead-scoring → Chase (the seam — no separate hand-off act)",
+                "An unsubscribe terminates the journey with no further send",
+                "Outcome stamped with as-of; no cross-contact data bled (internal/aggregated only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "paid-ads",
+          "title": "paid-ads (marketing v1)",
+          "job": "ground one paid action against its target, draft it (a **boost** of a performing post into an Ad, or a **budget change** on a live Ad — pause / raise / lower / hold), gate the **spend** to a human, then actuate idempotently and reconcile the spend. Drafted by Belle, the spend committed by a human, **always** — this is the money procedure of the marketing plane. (Stream 01-B + 01-C; archetype B6 money-gate; ADR-0109 money has no clean undo.)",
+          "trigger": "a Published Social Post crosses a Social Metric threshold (or an operator elects to amplify it) — the **boost** path (01-B); or a live Ad under-/over-performs vs target CPL, a pacing alert fires, or a campaign ends — the **budget-change** path (01-C). One run per paid action.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "ONLY the internal, reversible work may ever self-approve, and only to L2 when an admin flips the workflow toward auto: the recommendation/draft itself (a boost candidate or a budget-change recommendation) and the post-approval operational steps (idempotent actuate + read-back, reconcile). The SPEND itself — any boost, ad deploy, pause, or budget change — is money/financial and dial-proof always_gate: it is NEVER self-approved at any dial, in any mode, and never recedes; a human commits every spend on the platform (BO-01 §5, ADR-0109 no clean undo).",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "ad",
+            "social_post",
+            "social_metric",
+            "campaign",
+            "campaign_metric"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice",
+            "./skills/ad-spend-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "assemble the grounded paid brief — the post's/ad's Social Metrics and the linked campaign's target vs spend pace — each cited with its as-of.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the trigger: the path (boost 01-B vs budget-change 01-C), the target post or `ad` id, the linked `campaign` id."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read recent `social_metric` for the post/ad: results, CPL, spend pace. A dormant/stale collector → **flag stale, never present as live** (A5c)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write the paid brief: current performance vs the campaign target/envelope, the spend pace, and the case for an action — **cite each source + as-of**. If the metric room is empty/missing, **park** — never guess a number or a budget."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The trigger",
+                    "trigger payload",
+                    "the one post / ad",
+                    "what we're boosting or re-budgeting, and which path (01-B boost / 01-C change)"
+                  ],
+                  [
+                    "Source post (boost path)",
+                    "`` `okf:social_post` ``",
+                    "the post to amplify",
+                    "the published post reused as creative"
+                  ],
+                  [
+                    "Live ad (change path)",
+                    "`` `okf:ad` ``",
+                    "the live ad",
+                    "current budget, state, spend pace"
+                  ],
+                  [
+                    "Recent performance",
+                    "`` `okf:social_metric` ``",
+                    "this post/ad's channels, recent window",
+                    "CPL, results, what's landing — the case for the action"
+                  ],
+                  [
+                    "Linked campaign target",
+                    "`` `okf:campaign` ``",
+                    "the parent campaign",
+                    "the target CPL / budget envelope to measure against"
+                  ]
+                ]
+              },
+              "outputs": "`paid-brief.md` — the path (boost | change), the target post/ad id, the linked campaign id + target, the current performance (CPL, results, spend pace), and the cited sources (each with as-of).",
+              "audit": [
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Path resolved (boost 01-B | budget-change 01-C)",
+                "Linked campaign + target/envelope resolved (or explicitly \"none\")",
+                "Dormant/stale collector flagged stale, not presented as live",
+                "Empty/missing metric room → parked, not guessed"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-draft",
+              "name": "draft",
+              "job": "draft one paid action — a boost (audience, budget, creative reuse) or a budget change (pause / raise / lower / hold) — fully specified with its exact dollar figure.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "**Boost path (01-B):** draft the boost — creative reuse (the published post), audience, and the **exact budget**; or **change path (01-C):** draft the recommendation — pause, raise, lower, or hold, with the **exact new budget / delta**. Per `ad-spend-rules.md`; no fabricated capability/claim in reused creative (A5/B7)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "State the **rationale** tied to the brief's performance-vs-target, and the **consequence preview**: the exact dollar figure and the irreversibility flag (settled money, A10 no-clean-undo)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stage the draft as an `ad` record (boost: a new `ad` reusing the post; change: the proposed delta on the live `ad`) — **internal, reversible — L2**; nothing is committed and no spend occurs here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Paid brief",
+                    "stage 01 output",
+                    "all",
+                    "performance vs target, path, the case"
+                  ],
+                  [
+                    "Ad-spend rules",
+                    "`./skills/ad-spend-rules.md`",
+                    "all",
+                    "budget/pacing rules, the consequence-preview floor"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "a boosted post is still the brand's voice (domain-tier skill)"
+                  ],
+                  [
+                    "Source post (boost path)",
+                    "`` `okf:social_post` ``",
+                    "the post to reuse",
+                    "the creative being amplified"
+                  ],
+                  [
+                    "Live ad (change path)",
+                    "`` `okf:ad` ``",
+                    "the live ad",
+                    "the ad whose budget/state changes"
+                  ]
+                ]
+              },
+              "outputs": "`paid-action.md` — the path, the fully specified action (boost: creative + audience + budget; change: pause/raise/lower/hold + new-$ / delta), the rationale tied to performance-vs-target, and the consequence preview (exact $ + irreversibility flag).",
+              "audit": [
+                "Action fully specified (boost: creative + audience + budget; change: action + new-$/delta)",
+                "Exact dollar figure stated; consequence preview carries the irreversibility flag",
+                "Rationale ties to the brief's performance-vs-target (cited)",
+                "Reused creative carries no fabricated claim (substantiation on file)",
+                "Draft staged internally only — nothing committed, no spend"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-money-gate",
+              "name": "money-gate",
+              "job": "emit the paid action as a money-class Social Action through the gauntlet to the cockpit, where a human commits the spend — `always_gate`, dial-proof, at every level.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Classify the action as **money-class** (`ad_deploy` for a boost, or `ad_pause` / `ad_rebudget` for a change) — every one carries `always_gate` (A2 class-1; ADR-0109 no clean undo). A *pause* is reversible in isolation but is a money-lifecycle commit, so it gates with the rest."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Emit the action as a money-class Social Action (`social_dispatch`) → the gauntlet → the cockpit. **Never auto** at any dial, in any mode — the spend always parks for a human."
+                },
+                {
+                  "tag": "script",
+                  "text": "Present the **4-part easy-button** (A4): the drafted action + the grounded why (the performance-vs-target rationale) + one-click **Commit** + the **consequence preview** (the exact $ budget / delta and the irreversibility flag — settled money). Meta ad-account peer-approval is the platform twin of this gate."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Paid action",
+                    "stage 02 output",
+                    "all",
+                    "the drafted action + the consequence preview"
+                  ],
+                  [
+                    "Ad-spend rules",
+                    "`./skills/ad-spend-rules.md`",
+                    "all",
+                    "the money-class gate + the easy-button floor"
+                  ],
+                  [
+                    "Ad record",
+                    "`` `okf:ad` ``",
+                    "this ad",
+                    "the draft/delta to commit"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-spend.md` — the money-class action (`ad_deploy` | `ad_pause` | `ad_rebudget`), the exact $ budget / delta, the grounded rationale, the consequence preview, and the gauntlet routing decision.",
+              "audit": [
+                "Action classed money (`ad_deploy`/`ad_pause`/`ad_rebudget`) and marked `always_gate`",
+                "Exact $ budget / delta + irreversibility flag attached to the easy-button",
+                "Grounded why (performance-vs-target) attached, cited",
+                "No auto-approval path present — the spend parks for a human in every mode"
+              ],
+              "checkpoint": "**A human commits the spend in the cockpit** via the 4-part easy-button. This is `always_gate`, **dial-proof**: in `draft` mode and in `auto` mode alike, every spend — any boost, ad deploy, pause, or budget change — parks for a human and **never** self-approves at any dial (BO-01 §5; ADR-0109 no clean undo). The gate never recedes — money is a permanent human hold (Sterling / Nick, or Mark proxy v1). `auto` may self-approve **nothing** in this stage; only the internal draft (stage 02) and the post-approval operational steps (stages 04–05) may climb to L2."
+            },
+            {
+              "slug": "04-actuate",
+              "name": "actuate",
+              "job": "on the human's approval, deploy the boost / apply the budget change via the Meta Marketing API, idempotently, and read back the live state before close.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Actuate via the Meta Marketing API (`social_dispatch`, ADR-0124): **idempotency-keyed (procedure + ad + period) so a replay is a no-op, never a double-spend** (A9b). A dormant/missing Meta token or ad-account scope → the action is **skipped and flagged**, never silently dropped."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Read back** the live ad id + budget + state from Meta before advancing (A9c); record it on the `ad` row. Confirm the committed amount matches the read-back."
+                },
+                {
+                  "tag": "script",
+                  "text": "Advance the `ad` to its true state — **Deployed** (boost), **Paused**, or the new **budget** (change) — with the actuation result and the external Meta ad id."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Approved spend",
+                    "stage 03 output",
+                    "all",
+                    "the human-committed action + exact $"
+                  ],
+                  [
+                    "Ad-spend rules",
+                    "`./skills/ad-spend-rules.md`",
+                    "all",
+                    "the idempotency-key + read-back rules"
+                  ],
+                  [
+                    "Ad record",
+                    "`` `okf:ad` ``",
+                    "this ad",
+                    "the state to advance/change"
+                  ]
+                ]
+              },
+              "outputs": "`actuate-result.md` — the outcome (deployed | paused | re-budgeted | skipped-dormant | failed), the external Meta ad id, the read-back live budget/state, and the resulting `ad` status.",
+              "audit": [
+                "Actuation idempotency-keyed (a replay is a no-op — no double-spend)",
+                "Live budget/state read back from Meta before close (no assume-success)",
+                "Committed amount matches the read-back",
+                "Dormant/failed actuation flagged, not presented as deployed",
+                "`ad` status reflects the true live state"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "05-reconcile",
+              "name": "reconcile",
+              "job": "reconcile the actuated spend and results to `campaign_metric` and close the run.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Register the live Meta ad id for spend + result collection so the next run's stage 01 grounds on real numbers (the collector hydrates async; this stage only registers the link, ADR-0124)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Reconcile the committed spend + paid results to `campaign_metric` (organic ∪ paid attribution → 01-M). Stamp the run outcome on the `ad` (committed $, approver, as-of). Cross-client/account spend correlation stays internal/aggregated (A7 — pool, never bleed)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Close the run."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Actuate result",
+                    "stage 04 output",
+                    "all",
+                    "what deployed/changed, with the Meta ad id"
+                  ],
+                  [
+                    "Metric store",
+                    "`` `okf:campaign_metric` ``",
+                    "this ad's campaign",
+                    "where spend + paid results land"
+                  ],
+                  [
+                    "Performance store",
+                    "`` `okf:social_metric` ``",
+                    "this ad's channels",
+                    "the boosted post's ongoing metrics"
+                  ],
+                  [
+                    "Ad record",
+                    "`` `okf:ad` ``",
+                    "this ad",
+                    "the run to close"
+                  ]
+                ]
+              },
+              "outputs": "`reconcile.md` — the registered metric link, the spend reconciled to `campaign_metric`, the run outcome stamp (committed $, approver, as-of), and the close state.",
+              "audit": [
+                "Spend reconciled to `campaign_metric` (matches the committed amount)",
+                "Metric link registered for the live Meta ad id",
+                "Run outcome stamped (committed $, approver, as-of)",
+                "No cross-client/account spend data bled into the record (internal/aggregated only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "social-content",
           "title": "social-content (marketing v1)",
           "job": "compose one on-brand Social Post once, adapt it per network, and get it published — drafted by Belle, approved by a human (v1), to our own established audience. This is Belle's signature outbound act and her ladder tracer: it exercises L0 grounding → L2 internal compose → the L3 routine-post gate → the always-gate blast escalation. (Stream 01-A; ADR-0124 compose-once → fan-out.)",
@@ -6574,6 +8667,332 @@
               "audit": [
                 "Metric links registered for every published channel",
                 "Run outcome stamped (channels, approver, as-of)",
+                "No cross-client/audience data bled into the record (internal/aggregated only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "social-inbox",
+          "title": "social-inbox (marketing v1)",
+          "job": "sweep the inbound social plane, classify each item by **intent** (lead | support | brand | spam), route it to the agent that owns the act, and — for **brand** items only — draft an on-brand reply and get it sent. This realizes **two** Stream-01 procedures: **01-D** (triage the social inbox & reply) as the main flow, and **01-E** (monitor mentions & sentiment) as the gather/listening sweep that feeds it. (Stream 01-D/01-E; B1 triage/route + B7 reply + B3 listening.)",
+          "trigger": "a scheduled listening sweep finds new `social_engagement` items (DMs, comments, mentions), or an operator says \"work the inbox.\" One run per sweep batch; each item carries its own intent + routing decision.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "intent classification + intent-based routing (internally reversible, auto at L2) and listening tag/log — sentiment, topic, contact-link (auto at L2); when dialed to auto, a TEMPLATED, non-committal brand reply to a LEAD may reach L3 (execute-then-notify, ADR-0128 B7 carve-out). A FREE-TEXT reply, any reply to an EXISTING CUSTOMER, and any audit failure park for a human in every mode. A 1:1 DM to an existing customer is REFUSED (not queued) and routed to Celeste (BO-04) — a refusal floor below every dial.",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.dm",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "social_engagement",
+            "contact",
+            "contact_social_identity",
+            "interaction",
+            "consent_event",
+            "social_metric"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice"
+          ],
+          "stages": [
+            {
+              "slug": "01-gather-classify",
+              "name": "gather-classify",
+              "job": "sweep the social-engagement store for new inbound items, classify each by intent (lead | support | brand | spam), and tag sentiment + topic — each item cited with its as-of (the 01-D classify pass + the 01-E listening sweep).",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the sweep window; pull new `social_engagement` items since the last sweep. Dedupe against items already classified."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "For each item, classify intent — **lead | support | brand | spam** — via deterministic keyword classifier + cheap-model fallback; tag **sentiment + topic** (the 01-E listening pass). A dormant source (poll down / recall down) → **flag stale, never present dormant as live** (A5c)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve author handle → `contact` via `contact_social_identity`; stamp the match (or \"anonymous\") so stage 02 can apply the existing-customer guard. Anonymous chatter stays off Contact-360."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sweep window",
+                    "trigger payload",
+                    "this batch",
+                    "which items are new since last sweep"
+                  ],
+                  [
+                    "Inbound items",
+                    "`` `okf:social_engagement` ``",
+                    "new DMs / comments / mentions",
+                    "the items to triage + listen on"
+                  ],
+                  [
+                    "Conversation context",
+                    "`` `okf:interaction` ``",
+                    "the item's prior thread, if any",
+                    "a DM is a thread, not a one-off"
+                  ],
+                  [
+                    "Author handle map",
+                    "`` `okf:contact_social_identity` ``",
+                    "the item's author handle",
+                    "resolve author → contact (existing-customer check feeds stage 02)"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "the topic/sentiment lens (domain-tier skill)"
+                  ]
+                ]
+              },
+              "outputs": "`triage-batch.md` — one row per item: the item ref + as-of, classified intent, sentiment + topic tags, the author→contact match (or anonymous), and any stale-source flag.",
+              "audit": [
+                "Each item cites its source ref + as-of (A5); none fabricated",
+                "Every item carries an intent in {lead, support, brand, spam}",
+                "Sentiment + topic tagged for every item (listening pass)",
+                "Author→contact match resolved (or explicitly \"anonymous\")",
+                "Dormant/stale source flagged, not presented as live"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-route",
+              "name": "route",
+              "job": "route each classified item to the agent that owns its act — and **refuse** a 1:1 reply to an existing customer, routing it to Celeste (a hard stop).",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "**Customer guard (refusal floor).** If the item is a 1:1 DM whose author is an **existing customer**, **REFUSE** the reply and route to Celeste (BO-04) — a hard stop, stronger than any gate, never a queued send. Do not draft."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Route by intent (auto at L2 — internally reversible):** lead → Stream 02 (Chase / lead-response, emit a `lead_hook`); support → Felix / Stream 04; brand → keep (continues to stage 03); spam → drop. **The hand-off is an explicit step; the receiving agent owns its act, this workflow owns only the routing clock (A11).**"
+                },
+                {
+                  "tag": "script",
+                  "text": "Stamp the routing decision + receiving agent on each item for the tracer; cross-client signal correlation in routing stays internal-only (A7)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Triage batch",
+                    "stage 01 output",
+                    "all",
+                    "the per-item intent + author match to route on"
+                  ],
+                  [
+                    "Author / account",
+                    "`` `okf:contact` ``",
+                    "matched authors",
+                    "is the author an existing customer?"
+                  ]
+                ]
+              },
+              "outputs": "`routing.md` — per item: the routing decision (Chase | Felix | brand-keep | drop | **refused→Celeste**), the receiving agent, and the brand-items subset that proceeds to stage 03.",
+              "audit": [
+                "Every item routed to exactly one owner (or dropped as spam)",
+                "Existing-customer 1:1 DM → REFUSED + routed to Celeste, never queued or drafted",
+                "Lead items emit a `lead_hook` into Stream 02 (the seam is an explicit step)",
+                "Only `brand`-intent items proceed to draft (stage 03)",
+                "No cross-client signal bled into the routing record (internal only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-draft-reply",
+              "name": "draft-reply",
+              "job": "for brand items only, author the on-brand reply — substantiated, in voice, with no fabricated claim or capability.",
+              "process": [
+                {
+                  "tag": "haiku",
+                  "text": "Read the item + its thread context; identify what's actually being asked or said."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the per-channel reply **in brand voice** — polished, unmistakably human, channel-appropriate. **Every claim carries a real source or it gets cut** — no fabricated stat, testimonial, quote, or capability (brand-voice.md). No impersonation."
+                },
+                {
+                  "tag": "script",
+                  "text": "Mark the reply's class — **templated non-committal ack** vs **free-text** — so stage 04 can apply the right ceiling."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brand items",
+                    "stage 02 output",
+                    "the brand-keep subset",
+                    "what's ours to answer"
+                  ],
+                  [
+                    "Engagement item",
+                    "`` `okf:social_engagement` ``",
+                    "each brand item",
+                    "the comment/DM being answered"
+                  ],
+                  [
+                    "Thread context",
+                    "`` `okf:interaction` ``",
+                    "the item's prior thread",
+                    "reply in-context, not cold"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "how we sound (domain-tier skill)"
+                  ]
+                ]
+              },
+              "outputs": "`draft-reply.md` — per brand item: the drafted reply text, its channel, its class (templated-ack | free-text), and the substantiation ref for any claim it makes.",
+              "audit": [
+                "Reply drafted only for `brand`-intent items (nothing routed away)",
+                "Every claim carries a substantiation ref; unsourced claims cut, not invented",
+                "No fabricated quote, testimonial, capability, or impersonation",
+                "Reply is in brand voice + channel-appropriate",
+                "Reply class marked (templated-ack | free-text) for the send gate"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "04-send-gate",
+              "name": "send-gate",
+              "job": "route the brand reply as a Social Action through the gauntlet to the cockpit, with the consent/window check applied before it can send.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "**Consent + window check** (`consent.check`): confirm a valid basis to reply in-channel and that any reply-window constraint is met — a hard filter, not advisory (BO-01 §5). Non-eligible → drop, never send."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Emit the reply as a Social Action (`send.dm` via the gauntlet, ADR-0058). A **templated non-committal** reply to a **lead** carries the L3 carve-out; a **free-text** reply stays gated; a reply to an **existing customer** never reaches this stage (refused at stage 02)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Present the **4-part easy-button** (A4): the drafted reply + the grounded why (substantiation refs) + one-click **Send** + one-click **retract** (the reversible inverse), with the recipient/consent basis shown."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Draft reply",
+                    "stage 03 output",
+                    "each brand reply",
+                    "what's being sent + its class + substantiation"
+                  ],
+                  [
+                    "Recipient consent",
+                    "`` `okf:consent_event` ``",
+                    "the reply's recipient",
+                    "per-recipient consent basis at send time"
+                  ],
+                  [
+                    "Routing decision",
+                    "stage 02 output",
+                    "each item",
+                    "confirm it's brand-keep, not a refused/routed item"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-reply.md` — the per-item reply actions, the reply class (templated-ack | free-text), the consent basis, and the gauntlet routing decision.",
+              "audit": [
+                "Consent + window checked per recipient; non-eligible dropped, not sent",
+                "Substantiation ref attached for every claim (no unsourced reply proceeds)",
+                "The easy-button carries the reversible inverse (retract)",
+                "Money (boost/ad) is NOT in this action — that is procedure 01-B/01-C"
+              ],
+              "checkpoint": "**Human approves / edits the reply in the cockpit.** In `draft` mode every reply parks. In `auto` mode, stage 04 may self-approve **only a templated, non-committal reply to a LEAD** — execute-then-notify at L3 (the B7 carve-out). A **free-text** reply stays gated; a reply to an **existing customer** never sends (refused upstream); **any audit failure** parks for a human in every mode."
+            },
+            {
+              "slug": "05-dispatch-log",
+              "name": "dispatch-log",
+              "job": "dispatch the approved reply per network idempotently, attach it to its Contact, read back the status, and log the timeline.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Send the reply via the per-network adapter, **idempotency-keyed (item + channel) so a retry is a no-op, never a double-send** (A9b)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach the reply to its `contact` on author match (via `contact_social_identity`); leave anonymous chatter off Contact-360."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Read back** the send status (A9c); stamp the `social_engagement` item as replied (approver, as-of) and write the reply to the `interaction` timeline. Roll the listening sentiment/volume into `social_metric` (→ 01-M)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Approved reply",
+                    "stage 04 output",
+                    "the approved replies",
+                    "what to send, with the consent basis"
+                  ],
+                  [
+                    "Author handle map",
+                    "`` `okf:contact_social_identity` ``",
+                    "the reply's author handle",
+                    "attach the reply to a Contact on match"
+                  ],
+                  [
+                    "Interaction timeline",
+                    "`` `okf:interaction` ``",
+                    "the reply's thread",
+                    "where the sent reply lands"
+                  ],
+                  [
+                    "Engagement item",
+                    "`` `okf:social_engagement` ``",
+                    "the answered item",
+                    "stamp the item as replied + read-back"
+                  ]
+                ]
+              },
+              "outputs": "`dispatch.md` — per reply: the per-channel send status (read-back confirmed), the Contact attachment (or anonymous), the timeline-log ref, and the close state.",
+              "audit": [
+                "Send idempotency-keyed; a replay is a no-op (no double-send)",
+                "Send status read back before close (A9c)",
+                "Reply attached to Contact on match (anonymous left off Contact-360)",
+                "Timeline logged + item stamped replied (approver, as-of)",
                 "No cross-client/audience data bled into the record (internal/aggregated only)"
               ],
               "checkpoint": null

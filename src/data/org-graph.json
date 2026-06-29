@@ -851,6 +851,77 @@
       ],
       "workflows": [
         {
+          "slug": "campaign-plan",
+          "stages": [
+            "01-ground",
+            "02-draft-plan",
+            "03-plan-gate",
+            "04-launch"
+          ]
+        },
+        {
+          "slug": "campaign-send",
+          "stages": [
+            "01-build-ground",
+            "02-consent-gate",
+            "03-send-gate",
+            "04-send-log"
+          ]
+        },
+        {
+          "slug": "event-promotion",
+          "stages": [
+            "01-drive-fill",
+            "02-capture-registrations",
+            "03-watch-clock",
+            "04-post-event"
+          ]
+        },
+        {
+          "slug": "lead-capture",
+          "stages": [
+            "01-ingest",
+            "02-resolve-owner",
+            "03-attribute",
+            "04-disposition"
+          ]
+        },
+        {
+          "slug": "lead-scoring",
+          "stages": [
+            "01-ground-signals",
+            "02-score",
+            "03-evaluate-route"
+          ]
+        },
+        {
+          "slug": "marketing-metrics",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-flag"
+          ]
+        },
+        {
+          "slug": "nurture-journey",
+          "stages": [
+            "01-enroll",
+            "02-next-step",
+            "03-send-gate",
+            "04-progress"
+          ]
+        },
+        {
+          "slug": "paid-ads",
+          "stages": [
+            "01-ground",
+            "02-draft",
+            "03-money-gate",
+            "04-actuate",
+            "05-reconcile"
+          ]
+        },
+        {
           "slug": "social-content",
           "stages": [
             "01-ground",
@@ -858,6 +929,16 @@
             "03-publish-gate",
             "04-dispatch",
             "05-reconcile"
+          ]
+        },
+        {
+          "slug": "social-inbox",
+          "stages": [
+            "01-gather-classify",
+            "02-route",
+            "03-draft-reply",
+            "04-send-gate",
+            "05-dispatch-log"
           ]
         }
       ]

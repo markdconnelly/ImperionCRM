@@ -1,0 +1,13 @@
+name: campaign-send
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [campaign, campaign_send, contact, consent_event, campaign_metric]   # subset of domains/marketing/room.yaml
+tools: [pg.read, consent.check, send.email, knowledge.search, memory.recall]    # subset of domains/marketing/room.yaml — ground + consent-check + the gauntlet-gated backend send (ADR-0058)
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+autonomy_rung: L1
+auto_may_self_approve: "a ROUTINE send — consent-clean, to a KNOWN/established audience within frequency caps, with a clean audit (ADR-0128 L3 routine, execute-then-notify); a send to a NEW or materially larger audience is a dial-proof always_gate blast (staged, a human commits); any unsubstantiated claim, an opt-out/consent violation, or any audit failure parks for a human in every mode. Money (paid boost/ad) never enters this workflow."

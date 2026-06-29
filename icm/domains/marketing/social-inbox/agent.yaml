@@ -1,0 +1,13 @@
+name: social-inbox
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [social_engagement, contact, contact_social_identity, interaction, consent_event, social_metric]   # subset of domains/marketing/room.yaml
+tools: [pg.read, consent.check, send.dm, knowledge.search, memory.recall]                                     # subset of domains/marketing/room.yaml — read + classify + consent-check + the one approval-gated DM send (ADR-0058)
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+autonomy_rung: L1
+auto_may_self_approve: "intent classification + intent-based routing (internally reversible, auto at L2) and listening tag/log — sentiment, topic, contact-link (auto at L2); when dialed to auto, a TEMPLATED, non-committal brand reply to a LEAD may reach L3 (execute-then-notify, ADR-0128 B7 carve-out). A FREE-TEXT reply, any reply to an EXISTING CUSTOMER, and any audit failure park for a human in every mode. A 1:1 DM to an existing customer is REFUSED (not queued) and routed to Celeste (BO-04) — a refusal floor below every dial."
