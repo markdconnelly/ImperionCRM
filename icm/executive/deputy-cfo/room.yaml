@@ -23,3 +23,7 @@ okf_rooms:
   - expense_item
   - expense_report
   - license_assignment
+  - partner             # partner-economics oversight — Bridget's channel/alliance partners (read)
+  - partner_deal        # partner-economics oversight — co-sell/referral deals + attribution (read)
+  - partner_mdf         # partner-economics oversight — MDF spend/ROI (read; money gates at Bridget)
+  - referral_payout     # partner-economics oversight — referral payout economics (read; money gates at Bridget)
