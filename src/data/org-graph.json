@@ -251,6 +251,15 @@
           ]
         },
         {
+          "slug": "division-intake",
+          "stages": [
+            "01-receive",
+            "02-classify-route",
+            "03-delegate",
+            "04-synthesize-return"
+          ]
+        },
+        {
           "slug": "division-performance-review",
           "stages": [
             "01-gather",
