@@ -692,7 +692,7 @@ automatable step graduates it (D5).
   (the map is part of the client-360) · Celeste→08-C (route the QBR to the right stakeholder) ·
   Celeste→08-D (champion-departure churn signal) · Celeste→advocacy (#1692, a champion is a reference
   candidate). **(OWNERSHIP: clean — Celeste proposes the map; the backend executor owns the write.)**
-  **Maps to:** #1695. New silver entity `stakeholder` (mig 0241; OKF concept + coverage row in-PR).
+  **Maps to:** #1695. New silver entity `stakeholder` (mig 0244; OKF concept + coverage row in-PR).
 
 ---
 
@@ -734,6 +734,6 @@ v2; B3+B7; 💤dormant on **#991**) · **08-S stakeholder / champion relationshi
 per-account relationship map — champion/economic_buyer/technical/influencer/user/detractor + influence/
 sentiment/active-vs-departed; champion→departed is the leading churn signal into 08-D; feeds 08-A/08-C +
 advocacy targeting #1692; signal-labeled, never assert a role without evidence; **new silver
-`stakeholder`** mig 0241; B3 propose-only, the write is backend-owed; #1695).
+`stakeholder`** mig 0244; B3 propose-only, the write is backend-owed; #1695).
 
 **Count: 19 Operating Procedures** (08-A … 08-S; #1442 folded as persona-activation per D9).
