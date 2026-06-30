@@ -1,7 +1,7 @@
--- 0232: Agent eval golden — Deputy CFO management seam (Sterling, division-performance-review).
--- Eval-plane seed (#1538/#1681, epic #1534, ADR-0106, ADR-0137). Migration number 0232 claimed at
--- MERGE per system CLAUDE.md §10.3 — authored against a placeholder; renumber if another migration
--- merges first.
+-- 0233: Agent eval golden — Deputy CFO management seam (Sterling, division-performance-review).
+-- Eval-plane seed (#1538/#1681, epic #1534, ADR-0106, ADR-0137). RENUMBERED 0232 -> 0233 per system
+-- CLAUDE.md §10.3: a parallel Client-Success session shipped 0232_client_success_eval_goldens_seed
+-- (prod-applied) and merged first, so this file (merged second) takes the next free number 0233.
 --
 -- WHY THIS EXISTS. ADR-0137 (executive management surface) gives a C-suite agent a
 -- division-performance-review workflow and a delegate-vs-handoff routing rule: a BUSINESS gap is
