@@ -1,0 +1,15 @@
+name: content-studio
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [content_asset, campaign, campaign_metric, brand_asset, social_metric]   # subset of domains/marketing/room.yaml
+tools: [pg.read, content.write, knowledge.search, memory.recall]                    # subset of domains/marketing/room.yaml — ground + compose + the INTERNAL content_asset write; publish is a human Loveable handoff, NOT a send tool
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+  - ./skills/content-types                   # Tier 3 — workflow-local (the type×audience matrix)
+  - ./skills/substantiation-rules            # Tier 3 — workflow-local (cite-or-cut)
+autonomy_rung: L1
+auto_may_self_approve: "only the INTERNAL, reversible compose/stage of a content_asset draft (content.write) may self-execute at L2 once an admin flips this workflow to auto (ADR-0128 A10 row 1 — internal reversible). The REVIEW-GATE (brand-compliance vs brand_asset + substantiation) is human-approved in v1 and never self-approves a published claim — a failed brand/substantiation check or an empty brand registry parks in every mode; the PUBLISH-HANDOFF to Loveable is a human export, never autonomous. No money and no customer send enters this workflow. Anything not named here parks."

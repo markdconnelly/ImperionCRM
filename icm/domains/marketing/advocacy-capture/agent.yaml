@@ -1,0 +1,14 @@
+name: advocacy-capture
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Belle persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../belle.md
+  - ./prose.md
+okf_rooms: [reference, account, contact, consent_event, content_asset]   # subset of domains/marketing/room.yaml
+tools: [pg.read, reference.write, knowledge.search, memory.recall]        # subset of domains/marketing/room.yaml — verify consent + capture the INTERNAL reference; NO client-contact/send tool (refusal floor)
+skills:
+  - domains/marketing/skills/brand-voice     # Tier 2 — domain-shared
+  - ./skills/consent-and-rights              # Tier 3 — workflow-local (consent precondition + name/logo-use rights)
+autonomy_rung: L1
+auto_may_self_approve: "ONLY the INTERNAL, reversible capture/format of a consented reference (`reference.write`) may self-execute at L2 once an admin flips this workflow to auto (ADR-0128 A10 row 1) — AND ONLY after stage 01-intake-consent has verified a recorded `consent_event` with a scope of use. The RIGHTS-GATE (name/logo use, stage 03) is `always_gate`, human, marketing-owned and NEVER self-approves at any rung — it is a rights commitment. Belle NEVER contacts the client: the consented solicitation is Celeste's (BO-04 refusal floor, stronger than any gate). No recorded consent on file → park. A use beyond the consented scope → park. Anything not named here parks for a human."

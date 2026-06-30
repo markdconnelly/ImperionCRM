@@ -11897,6 +11897,298 @@
       "kind": "domain",
       "procedures": [
         {
+          "slug": "advocacy-capture",
+          "title": "advocacy-capture (marketing v1)",
+          "job": "capture a CONSENTED customer **reference** (testimonial / review / reference_case) as internal proof, and optionally spawn a case-study `content_asset` backed by it. Belle formats and records the proof; she never solicits it and never contacts the client. This is the internal, consent-gated half of advocacy — the solicitation belongs to Celeste. (Stream 01-O; epic #1696 D4; #1702.)",
+          "trigger": "Celeste hands over a **consented candidate** — an existing customer who has already agreed to be referenced, with a recorded `consent_event` and a scope of use. There is no other entry point: **Belle does not start advocacy by reaching out** (BO-04 refusal floor). One run per reference.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "ONLY the INTERNAL, reversible capture/format of a consented reference (`reference.write`) may self-execute at L2 once an admin flips this workflow to auto (ADR-0128 A10 row 1) — AND ONLY after stage 01-intake-consent has verified a recorded `consent_event` with a scope of use. The RIGHTS-GATE (name/logo use, stage 03) is `always_gate`, human, marketing-owned and NEVER self-approves at any rung — it is a rights commitment. Belle NEVER contacts the client: the consented solicitation is Celeste's (BO-04 refusal floor, stronger than any gate). No recorded consent on file → park. A use beyond the consented scope → park. Anything not named here parks for a human.",
+          "tools": [
+            "pg.read",
+            "reference.write",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "reference",
+            "account",
+            "contact",
+            "consent_event",
+            "content_asset"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice",
+            "./skills/consent-and-rights"
+          ],
+          "stages": [
+            {
+              "slug": "01-intake-consent",
+              "name": "intake-consent",
+              "job": "ingest the consented candidate handed from Celeste and verify a recorded consent_event with a scope of use exists — the hard precondition for advocacy.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Ingest the candidate Celeste handed over (account id, contact id, the referenced material). **Belle does NOT contact the client** — this stage only reads an already-consented hand-over (BO-04 refusal floor). There is no solicitation step here and no client-contact tool."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Verify a **recorded `consent_event`** exists for this candidate and read its **scope of use** (what may be attributed / quoted / shown)."
+                },
+                {
+                  "tag": "script",
+                  "text": "**No recorded consent_event → PARK** (the hard precondition, D4). Do not infer, assume, or manufacture consent; do not reach out to obtain it."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Consented candidate",
+                    "Celeste hand-over",
+                    "this candidate",
+                    "the existing customer Celeste flagged as having agreed to be referenced"
+                  ],
+                  [
+                    "Recorded consent",
+                    "`` `okf:consent_event` ``",
+                    "this candidate",
+                    "the recorded consent + its scope of use (the hard precondition)"
+                  ],
+                  [
+                    "Account",
+                    "`` `okf:account` ``",
+                    "this candidate's account",
+                    "the customer the reference attributes to"
+                  ],
+                  [
+                    "Contact",
+                    "`` `okf:contact` ``",
+                    "this candidate's contact",
+                    "the consenting person of record"
+                  ]
+                ]
+              },
+              "outputs": "`intake-consent.md` — the candidate (account id, contact id) + the recorded consent_event reference and its scope of use; the precondition result (consent present / parked). Reference data by id, no PII.",
+              "audit": [
+                "A recorded `consent_event` with a scope of use is present for this candidate",
+                "The candidate arrived via the Celeste hand-over; no client-contact step was",
+                "The account + contact are resolved by id (no PII captured)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-capture",
+              "name": "capture",
+              "job": "format the reference, consent-clean — using only the approved attribution and in-scope verbatim.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Format the `reference` (kind: `testimonial` | `review` | `reference_case`) using **only the approved attribution** and **verbatim that falls within the consent scope** (stage 01). No paraphrase that exceeds scope, no fabricated quote, no attribution the consent does not cover."
+                },
+                {
+                  "tag": "script",
+                  "text": "`reference.write` stages the record **internally** (L2, reversible). Set `status → captured` **only with consent on file** (stage 01 verified it); no recorded consent → the run was already parked at stage 01."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Verified consent",
+                    "stage 01 output",
+                    "this candidate",
+                    "the recorded consent_event + scope of use (the precondition is met)"
+                  ],
+                  [
+                    "Reference record",
+                    "`` `okf:reference` ``",
+                    "this reference",
+                    "the typed proof record to format and stage"
+                  ],
+                  [
+                    "Brand voice",
+                    "`./skills/consent-and-rights.md` · `domains/marketing/skills/brand-voice.md`",
+                    "all",
+                    "the rights rules + how marketing copy reads"
+                  ]
+                ]
+              },
+              "outputs": "`captured-reference.md` — the staged reference (id, kind, account/contact by id, the in-scope attribution + verbatim, the backing consent_event reference); status `captured` only with consent on file. Reference data by id, no PII.",
+              "audit": [
+                "The reference is backed by the stage-01 consent_event; `status = captured`",
+                "Attribution + verbatim are within the consent scope (nothing beyond scope)",
+                "The write is the INTERNAL `reference.write` (L2, reversible); no external"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-rights-gate",
+              "name": "rights-gate",
+              "job": "gate any use of the customer's name or logo as a rights commitment, bounded to the consented scope.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Classify the requested use from the captured reference: **name use** / **logo use** / **quote**."
+                },
+                {
+                  "tag": "script",
+                  "text": "Mark any **name or logo use** `always_gate`, human, **MARKETING-owned** (not Legal in v1). Confirm the requested use falls **within the consent scope** (stage 01); a use **beyond scope → PARK**."
+                },
+                {
+                  "tag": "script",
+                  "text": "Present the easy-button: the classified use + the consent-scope evidence (the backing `consent_event` reference) + a one-click **human approve**."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Captured reference",
+                    "stage 02 output",
+                    "this reference",
+                    "the proof + its in-scope attribution"
+                  ],
+                  [
+                    "Verified consent",
+                    "stage 01 output",
+                    "this candidate",
+                    "the consent_event + scope of use the rights request must fall within"
+                  ],
+                  [
+                    "Rights rules",
+                    "`./skills/consent-and-rights.md`",
+                    "all",
+                    "name/logo-use is always_gate, human, marketing-owned; scope-bound"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-rights-use.md` — the classified use (name | logo | quote), the `always_gate` marking, the consent-scope coverage check, and the gate routing decision. Reference data by id, no PII.",
+              "audit": [
+                "Any name or logo use is marked `always_gate`, human, marketing-owned",
+                "The consent scope (stage 01) covers the requested use (a use beyond scope is",
+                "No client-contact / send action is taken here (BO-04 refusal floor)"
+              ],
+              "checkpoint": "**A human approves the rights use in the cockpit.** This is a **rights commitment**: it **never** self-approves at any rung, in any mode — `always_gate`, human, marketing-owned (not Legal in v1). A **quote** use is bounded by the captured reference's in-scope verbatim; a **use beyond the consented scope** parks for a human in every mode."
+            },
+            {
+              "slug": "04-spawn-asset",
+              "name": "spawn-asset",
+              "job": null,
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "If a case-study is **elected**, create a `content_asset(type=case_study)` and set its **backing link** to this reference; hand it to the **content-studio** workflow (01-N) for authoring."
+                },
+                {
+                  "tag": "script",
+                  "text": "If **not elected**, skip — produce no asset."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Captured reference",
+                    "stage 02 output",
+                    "this reference",
+                    "the proof the case-study is backed by"
+                  ],
+                  [
+                    "Approved rights use",
+                    "stage 03 output",
+                    "this reference",
+                    "the human-approved name/logo/quote use the asset may rely on"
+                  ],
+                  [
+                    "Asset record",
+                    "`` `okf:content_asset` ``",
+                    "the spawned asset",
+                    "the typed case-study record to create + back-link"
+                  ]
+                ]
+              },
+              "outputs": "`spawned-asset.md` — the spawned `content_asset` reference (id, `type=case_study`, the backing reference id, the content-studio hand-over), or **none** if not elected. Reference data by id, no PII.",
+              "audit": [
+                "If elected: a `content_asset(type=case_study)` exists with its backing link",
+                "If not elected: no asset was created",
+                "The asset relies only on the stage-03 human-approved rights use"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "05-reconcile",
+              "name": "reconcile",
+              "job": "link the reference to its account/opportunity and record provenance so advocacy is attributable.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Link the `reference` → its `account` (and its opportunity, if one applies) for analytics attribution."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record **provenance**: who captured the reference, the backing `consent_event`, and the spawned `content_asset` (if any) — the tracer."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Captured reference",
+                    "stage 02 output",
+                    "this reference",
+                    "the proof to link + attribute"
+                  ],
+                  [
+                    "Spawned asset",
+                    "stage 04 output",
+                    "the asset (if any)",
+                    "the backed case-study to carry in provenance"
+                  ],
+                  [
+                    "Account",
+                    "`` `okf:account` ``",
+                    "this reference's account",
+                    "the account (and its opportunity) the reference links to"
+                  ]
+                ]
+              },
+              "outputs": "`reconciliation.md` — the recorded links (reference → account / opportunity) + provenance (captured-by, backing consent_event, spawned asset id if any). Reference data by id, no PII.",
+              "audit": [
+                "The reference is linked to its account (and opportunity where one applies)",
+                "Provenance is recorded: who captured, the backing consent_event, the spawned",
+                "All links are by id (no PII recorded)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "campaign-plan",
           "title": "campaign-plan (marketing v1)",
           "job": "plan one marketing campaign — objective, target segment, channel mix, proposed budget envelope, message — get the plan + envelope human-approved, then **launch its children through their own sub-procedures**, each carrying its own gate. This is the orchestrating container of the demand engine: it plans and launches, it never duplicates a child's actuation. (Stream 01-L; ADR-0136 B9 deadline-sentinel + container of 01-A/01-H/01-I/01-B.)",
@@ -12449,6 +12741,325 @@
                 "`campaign_send` status reflects the true delivery outcome; failures not hidden",
                 "Metric links registered; attribution reconciled to `campaign_metric`",
                 "No cross-audience/client data bled into the record (internal/aggregated only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "content-studio",
+          "title": "content-studio (marketing v1)",
+          "job": "Belle authors one typed **Content Asset** — content, sales-enablement, or PR — brand-checks it against the read-only brand registry, and hands it to Loveable to publish. The whole thing is an **internal authoring + handoff** act: it touches no contact, asserts no claim it can't source, and never sends. (Stream 01-N; epic #1696 D2/D3; archetype B-author → internal review-gate → human handoff.)",
+          "trigger": "a content brief lands — a campaign milestone needs an asset, an operator says \"write the whitepaper / battlecard / press release,\" or 01-M flags a content gap. One run per Content Asset.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "only the INTERNAL, reversible compose/stage of a content_asset draft (content.write) may self-execute at L2 once an admin flips this workflow to auto (ADR-0128 A10 row 1 — internal reversible). The REVIEW-GATE (brand-compliance vs brand_asset + substantiation) is human-approved in v1 and never self-approves a published claim — a failed brand/substantiation check or an empty brand registry parks in every mode; the PUBLISH-HANDOFF to Loveable is a human export, never autonomous. No money and no customer send enters this workflow. Anything not named here parks.",
+          "tools": [
+            "pg.read",
+            "content.write",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "content_asset",
+            "campaign",
+            "campaign_metric",
+            "brand_asset",
+            "social_metric"
+          ],
+          "skills": [
+            "domains/marketing/skills/brand-voice",
+            "./skills/content-types",
+            "./skills/substantiation-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "assemble the grounded brief for one Content Asset — the brand rules, the brief, the linked campaign, and recent performance — each cited with its as-of.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the brief: the `type` (blog/case_study/whitepaper/battlecard/ one_pager/press_release/announcement), the `audience` (prospect/seller/press), and the linked `campaign` id (if any)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Load the read-only `brand_asset` rules to author against. If the brand registry is **empty/missing → park** (A5) — never invent a voice or a brand claim."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read recent `campaign_metric` / `social_metric` for the audience; note what to lean into. A dormant/stale collector → flag stale, never present as live (A5c)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: the objective, the angle, the audience, the key message, and the shape/length norm for the type — **cite each source + as-of**."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The content brief",
+                    "trigger payload",
+                    "the one asset",
+                    "what we're writing, for whom, and why"
+                  ],
+                  [
+                    "Brand voice",
+                    "`../../skills/brand-voice.md`",
+                    "all",
+                    "how we sound (domain-tier skill)"
+                  ],
+                  [
+                    "Content types",
+                    "`./skills/content-types.md`",
+                    "the asset's type",
+                    "the type×audience matrix + shape/length norms"
+                  ],
+                  [
+                    "Brand rules",
+                    "`` `okf:brand_asset` ``",
+                    "the brand registry",
+                    "read-only compliance rules to author against (D5)"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the brief's campaign",
+                    "objective, theme, the angle to serve"
+                  ],
+                  [
+                    "Recent performance",
+                    "`` `okf:campaign_metric` ``/`` `okf:social_metric` ``",
+                    "this audience, recent window",
+                    "what content has landed lately"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — the resolved type + audience, linked campaign id, the brand rules to honor, the objective + angle + key message + shape norm, and the cited sources (each with as-of).",
+              "audit": [
+                "Each grounded fact cites a source + as-of (A5); none fabricated",
+                "Brand rules (`brand_asset`) loaded and reflected in the brief",
+                "Type × audience resolved against the matrix (`content-types.md`)",
+                "Linked campaign resolved (or explicitly \"none — standalone\")",
+                "Empty/missing brand registry → parked, not improvised (A5)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-compose",
+              "name": "compose",
+              "job": "author the content_asset for its type and audience, every claim substantiated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Compose the single `content_asset` per its `type` (blog/case_study/whitepaper/battlecard/one_pager/press_release/announcement) × `audience` (prospect/seller/press) — on-brand, in voice, to the shape/length norm."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Substantiate per `substantiation-rules.md`: for each claim name its source (id/location) + as-of; **no source → cut the claim or soften to honest language.** No fabricated stat, testimonial, quote, capability, or result; a case-study claim must trace to a consented `reference`."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stage the draft via `content.write` — the INTERNAL silver write, reversible (L2, ADR-0128 A10 row 1). No publish, no send here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 01 output",
+                    "the one asset",
+                    "the objective, angle, audience, type, shape norm"
+                  ],
+                  [
+                    "Content types",
+                    "`./skills/content-types.md`",
+                    "the asset's type",
+                    "the shape/length norm to compose to"
+                  ],
+                  [
+                    "Substantiation rules",
+                    "`./skills/substantiation-rules.md`",
+                    "all",
+                    "cite-or-cut for every claim"
+                  ]
+                ]
+              },
+              "outputs": "`draft.md` — the drafted `content_asset` (type, audience, body to the shape norm) plus the **substantiation refs** (each claim → its source id/location + as-of).",
+              "audit": [
+                "Composed to the right type × audience (matches the brief + `content-types.md`)",
+                "Every claim carries a substantiation ref (id/location + as-of); none fabricated",
+                "No fabricated stat, testimonial, quote, capability, or result (A5/cite-or-cut)",
+                "Draft staged via `content.write` (internal, reversible); nothing published or sent"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-review-gate",
+              "name": "review-gate",
+              "job": "gate the draft on brand-compliance against the read-only brand registry and on every claim being substantiated, then stamp the compliance note on the asset.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Check the draft against the read-only `brand_asset` registry for on-brand compliance (voice, naming, claims policy, prohibited language). **Empty brand registry → park** (A5) — an unverifiable draft does not proceed."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Verify **every** claim is substantiated (the stage-02 refs trace to a real source + as-of); any unsourced claim fails the gate."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stamp the **brand-compliance note** on the `content_asset` via `content.write` (the checks run, the approver, the as-of) — internal, reversible."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Draft",
+                    "stage 02 output",
+                    "the one asset",
+                    "the content + its substantiation refs"
+                  ],
+                  [
+                    "Asset record",
+                    "`` `okf:content_asset` ``",
+                    "this asset",
+                    "the draft to gate and stamp"
+                  ],
+                  [
+                    "Brand rules",
+                    "`` `okf:brand_asset` ``",
+                    "the brand registry",
+                    "read-only on-brand compliance check (D5)"
+                  ]
+                ]
+              },
+              "outputs": "`review.md` — the brand-compliance result (pass/fail per check), the per-claim substantiation summary, and the stamped compliance note. On a fail it names exactly what parks the run.",
+              "audit": [
+                "No unsubstantiated claim proceeds (every claim → a real source + as-of)",
+                "Brand registry is non-empty and the on-brand check ran against it",
+                "The brand-compliance note is recorded on the asset",
+                "No money, no customer send is in this action (this is an internal approval)"
+              ],
+              "checkpoint": "**A human approves `draft → approved`** in the cockpit. A **failed brand or substantiation check** — or an **empty brand registry** — **parks in every mode** (A5). v1 **never self-approves** a published claim: this is an **internal** approval (not an ADR-0058 send), so even at `auto` the gate stays human-approved. Anything unstated parks."
+            },
+            {
+              "slug": "04-publish-handoff",
+              "name": "publish-handoff",
+              "job": "hand the approved asset to Loveable and record where it landed.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Mark the asset `approved → ready` via `content.write` (internal, reversible)."
+                },
+                {
+                  "tag": "gui-step",
+                  "text": "**Hand to Loveable** — a **human-mediated copy/export** of the approved asset into Loveable. There is **NO Loveable API in v1** (D3); the human publishes the landing page on Loveable and returns the live URL."
+                },
+                {
+                  "tag": "script",
+                  "text": "Store the returned `publish_ref` URL on the `content_asset` via `content.write`. > **This is a HANDOFF, not a send.** No contact is touched, no consent gate applies, and > this is **not** an ADR-0058 customer send. The whitepaper **form** stays Imperion's (it > feeds lead-capture / 01-F); the landing **page** is Loveable's. We own the asset and its > attribution; Loveable hosts the page."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Review result",
+                    "stage 03 output",
+                    "the one asset",
+                    "the approved, brand-compliant asset"
+                  ],
+                  [
+                    "Asset record",
+                    "`` `okf:content_asset` ``",
+                    "this asset",
+                    "the asset to mark ready and stamp `publish_ref`"
+                  ]
+                ]
+              },
+              "outputs": "`handoff.md` — the asset's `ready` state, the stored `publish_ref` URL, and a note that the publish was a human Loveable export (no API, no send).",
+              "audit": [
+                "Asset marked `ready`; `publish_ref` stored on the `content_asset`",
+                "The handoff was a human Loveable export (no Loveable API in v1)",
+                "Nothing was sent to a customer (no contact, no consent gate, not ADR-0058)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "05-reconcile",
+              "name": "reconcile",
+              "job": "wire the published asset's attribution to its campaign and close the run.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Link the `content_asset` → its `campaign` via `content.write` so the **asset → campaign → lead → won** loop holds (#1316) and the asset's contribution is attributable."
+                },
+                {
+                  "tag": "script",
+                  "text": "Feed the attribution link to 01-M (marketing analytics / attribution); the metric rollup hydrates async — this stage only records the link."
+                },
+                {
+                  "tag": "script",
+                  "text": "Close the run."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Handoff result",
+                    "stage 04 output",
+                    "the one asset",
+                    "the published asset + its `publish_ref`"
+                  ],
+                  [
+                    "Asset record",
+                    "`` `okf:content_asset` ``",
+                    "this asset",
+                    "the run to attribute and close"
+                  ],
+                  [
+                    "Linked campaign",
+                    "`` `okf:campaign` ``",
+                    "the asset's campaign",
+                    "the attribution target"
+                  ]
+                ]
+              },
+              "outputs": "`reconcile.md` — the recorded asset→campaign attribution link and the run close state.",
+              "audit": [
+                "Asset linked to its campaign (or explicitly \"none — standalone\")",
+                "The attribution link is recorded and fed to 01-M",
+                "No cross-client/audience data bled into the record (internal/aggregated only, A7)"
               ],
               "checkpoint": null
             }
