@@ -73,6 +73,11 @@ reads OKF-grounded silver by declaration → mostly NOT blocked) · [DORM-TRIG]=
 | 09-23 billing dispute / credit memo / adjustment | **B6 money-gate** (Audrey detects; the credit/adjustment is human always_gate) |
 | 09-24 AP approve-to-pay | **B6 money-gate** (Audrey reconciles; the pay run is human always_gate) |
 | 09-25 external financial audit support | **B4 audit-attest** (Sterling exec; external attestation = always_gate) |
+| 09-26 budget-variance read-model | **B3 synthesis-brief** (read-only flag; feeds Sterling FP&A 09-19) |
+| 09-27 cash-flow-forecast / runway projection | **B3 synthesis-brief** (forecast = labeled projection, never gap-fill; feeds 09-21) |
+| 09-28 financial-anomaly + controls sweep | **B3/B4** (proactive read-only watchdog; flag-only, no actuation) |
+| 09-29 recurring-revenue analytics (MRR/ARR/NRR) | **B3 synthesis-brief** (consumes governed `metric_definition`; feeds Chase, no re-derive) |
+| 09-30 cost-to-serve profitability read-model | **B3 synthesis-brief** (consumes governed `cost_to_serve`/`margin_to_serve`) |
 
 ---
 
@@ -774,6 +779,179 @@ reads OKF-grounded silver by declaration → mostly NOT blocked) · [DORM-TRIG]=
 
 ---
 
+# I. FP&A READ-MODELS (Audrey, epic #1394 — read-only, advises-never-gates)
+
+> Five Audrey FP&A **read-models** (#1720). Each is a B3 synthesis-brief that **grounds →
+> computes a tie-out → flags/synthesizes → escalates** — **no send, no money action, no
+> actuation** (A9a — QBO owns money, Audrey mirrors; the doctrine invariants hold unchanged:
+> **Audrey read-only / L2 by structure / advises-never-gates; salary/rate non-disclosure
+> refusal-class**). They differ from the Sterling exec governance/synthesis layer by tier:
+> **Audrey produces the worker read-model; Sterling rolls it up.** None duplicates Sterling's
+> management/board synthesis — that is `financial-pulse` (deputy-cfo, Stream 11); these **feed
+> it** (A11 feed-seam). Cross-refs honored (no duplicate, A1): 09-26 feeds 09-19 (Sterling FP&A
+> exec) · 09-27 feeds 09-21 (treasury runway) · 09-29 **consumes** the governed `metric_definition`
+> layer (#1050) and does NOT re-derive or duplicate #1046 churn-scoring or Chase's renewal motion
+> (it feeds Chase) · 09-30 **consumes** the governed `cost_to_serve`/`margin_to_serve` metrics
+> (#1050, fed by allocation views 0197/0198/0200) and does NOT duplicate profitability #1044 or
+> the per-client margin-watch (09-14, v2 — it generalizes it onto the governed-metric path).
+
+## 09-26 · Budget-variance read-model (plan-vs-actual, per account/period)
+- **Owner / Stream:** Audrey / 09 (read-only variance read-model) — **feeds Sterling's FP&A
+  09-19**, never duplicates the exec rollup (A11 feed-seam). **Archetype:** B3 synthesis-brief —
+  read-only over silver, **no actuation, no money** (A9a).
+- **Trigger:** Monthly actuals close (ties 09-07); an on-demand variance read for CFO/Sterling; a
+  re-forecast or budget revision lands.
+- **Terminal outcome:** A per-account/per-period **budget-vs-actual variance** read-model (planned,
+  actual, delta, % variance) with **material variances flagged** (over a per-account threshold);
+  delivered to CFO + pre-staged onto Sterling's 09-19 FP&A brief. Audrey computes + flags; she **never
+  edits the plan and never moves money**.
+- **Procedure Steps** (B3: gather(cite) → compute(tie-out) → synthesize/flag → deliver):
+  1. `[automation]` **Gather** — read the human-authored `budget` plan (silver, **mig 0240 — agent
+     read-only by construction**) + actuals (recognized revenue/AR/AP, payroll/expense recon, margin),
+     **citing each + as-of** (A5; empty/unparsed budget line → park that line, never fabricate a plan, A5b). **L0.**
+  2. `[automation]` **Compute the tie-out** — per account/period: planned vs actual, delta, % variance;
+     write the arithmetic (inputs, planned, actual, delta, as-of date). **L1.**
+  3. `[automation]` **Synthesize + flag** — partition material vs immaterial variance (per-account
+     threshold); label driver as signal vs inference (P2); auto-raise material variances (urgency per A6). **L2.**
+  4. `[automation]` **Deliver (B3 launchpad)** — variance read-model to CFO + **Hand-off OUT: pre-stages
+     Sterling's 09-19 FP&A brief** in a parked/draft state (feeds the rollup, never actuates; A11 — Audrey
+     advises, Sterling synthesizes). **L2** auto-raise.
+- **Driving policy:** inherits A5/A7 baseline + TBD (#1586) — budget / variance-threshold policy. `budget` is human-authored (ADR-0123; agent never writes the plan).
+- **Realization:** `icm/domains/finance/budget-variance/` (#1721; procedure-only until built).
+- **Autonomy ceiling:** **L0–L2** (read + compute + auto-raise flag = reversible internal, A10 row 1).
+  **No money, no send, no plan edit** — structurally out of Audrey's read-only catalog.
+- **Human-in-loop:** CFO/Sterling consume; Audrey never gates and never edits the budget. Floor = read-only advise.
+- **Substrate deps:** `budget` silver (mig 0240, **shipped**); [DORM-ALLOC] #1044/#1308 for true-margin actuals
+  (degrades to cash-basis until allocation views land, A5c); [DORM-AR] #1580 (AR/AP actuals).
+- **subject:** both. **Maps to:** epic **#1394**; #1721 (workspace); feeds 09-19.
+
+## 09-27 · Cash-flow forecast & runway projection (transparent, labeled inference)
+- **Owner / Stream:** Audrey / 09 (read-only projection) — **feeds 09-21 treasury runway**, never
+  duplicates it (09-21 is the treasury cash-position synthesis; this supplies the forward projection it
+  consumes — cross-ref, no duplicate). **Archetype:** B3 synthesis-brief — read-only, **no actuation, no
+  money movement** (A9a).
+- **Trigger:** Scheduled (weekly/monthly cash-flow projection) or on-demand for CFO/board; a
+  runway-threshold re-evaluation; a re-forecast request.
+- **Terminal outcome:** A read-only **projected cash-flow + runway** — projected AR inflow (from the
+  `invoice` AR silver mirror, #1580) + payroll/recurring outflow → net projection + **months of runway** —
+  **labeled as inference/scenario** with **method + assumptions + as-of shown**. Audrey projects; she **never
+  moves cash**.
+- **FORECAST DISCIPLINE (D3 — never a gap-fill):** a forecast is a **transparent projection** — method,
+  assumptions, and as-of are **always shown**, and the output is **labeled inference/scenario**, never
+  presented as a settled fact. **A missing input is escalated as a gap (A5b park), NEVER silently
+  guessed/gap-filled.** Scenarios are explicit; no fabricated number ever stands in for a missing one.
+- **Procedure Steps** (B3: gather(cite) → project(show method+assumptions) → synthesize/flag → deliver):
+  1. `[automation]` **Gather** — read projected AR inflow (`invoice` AR silver mirror, #1580, read-only) +
+     payroll/recurring/expense outflow + current cash (QBO read-only, A9a), **citing each + as-of** (A5; a
+     **missing input is escalated as a gap, never gap-filled** — A5b park). **L0.**
+  2. `[automation]` **Project (labeled inference)** — compute net cash-flow projection + runway months;
+     **show method + assumptions + as-of**; label the output **inference/scenario** (D3); write the tie-out
+     (inputs, assumptions, projected inflow/outflow, net, runway, as-of). **L1.**
+  3. `[automation]` **Synthesize + flag** — runway-at-risk flag if projected runway breaches the floor;
+     signal vs inference labeled (P2). **L2.**
+  4. `[automation]` **Deliver (B3 launchpad)** — projection to CFO/board + **Hand-off OUT: feeds 09-21
+     treasury runway** (do NOT duplicate the treasury synthesis); a runway-at-risk signal pre-stages the
+     owning motion (collections 09-10 / AP-timing 09-24) parked — never actuates. **L2** auto-raise.
+- **Driving policy:** inherits A5/A7 baseline + TBD (#1586) — minimum-runway / forecast-assumption policy.
+- **Realization:** `icm/domains/finance/cash-flow-forecast/` (#1722; procedure-only until built).
+- **Autonomy ceiling:** **L0–L2** (read + project + auto-raise flag = reversible internal, A10 row 1).
+  **HARD: no money movement** — cash transfers/investments are structurally out of Audrey's catalog
+  (refusal-class; money out = A2 class-1, human + outside the app).
+- **Human-in-loop:** CFO/board consume; any treasury action is human, outside the app, always. Floor = Audrey never moves cash and never gap-fills a missing input.
+- **Substrate deps:** **[DORM-AR] #1580 AR/invoice silver — the AR inflow projection depends on it; ships
+  propose-only per A5c until the entity lands**; [DORM-CRED] QBO cash balances; rolls into 09-21.
+- **subject:** both. **Maps to:** epic **#1394**; #1722 (workspace); feeds 09-21.
+
+## 09-28 · Financial-anomaly + controls sweep (proactive read-only watchdog)
+- **Owner / Stream:** Audrey / 09 (read-only watchdog over existing finance silver). **Archetype:** B3
+  synthesis-brief (the read/flag shape) **+ B4 audit-attest** (the controls measurement) — **flag-only, no
+  actuation, no money** (A9a); cross-client patterns stay internal/anonymized (A7 pool-never-bleed).
+- **Trigger:** Scheduled proactive sweep (daily/weekly) over finance silver; a recon-mismatch upstream
+  (09-02/05/08/22/24) raises an anomaly; an on-demand controls review.
+- **Terminal outcome:** A **financial-anomaly + controls finding set** — margin compression, cost spikes,
+  duplicate/aberrant entries, reconciliation drift — each with the supporting evidence + tie-out, **flagged**
+  to CFO/Sterling/Vera (controls owner) for human review. Audrey detects + flags; she **never corrects an
+  entry or moves money**.
+- **Procedure Steps** (B3/B4: scope(cite) → measure/detect → evaluate(tie-out) → flag/route):
+  1. `[automation]` **Scope + detect** — sweep finance silver (recognized revenue/margin, cost/expense, AP/AR,
+     recon stamps) for anomaly patterns (margin compression, cost spike vs baseline, duplicate/aberrant entry,
+     recon drift), **citing each source + as-of** (A5; A7 — cross-client correlation stays internal/anonymized). **L0/L1.**
+  2. `[automation]` **Evaluate** — per anomaly write the tie-out (expected vs observed, delta, baseline, as-of);
+     classify severity; suspected-duplicate = row-pair check. **L1.**
+  3. `[automation]` **Flag/route** — auto-raise findings (urgency per A6) to CFO + Sterling (governance) +
+     **Vera (controls/conformance seam, Stream 10)**; controls-evidence findings feed Grace's GRC sweep (A11
+     seam, mirrors 09-25). B3/B4 — flags + measures, **never actuates a correction**. **L2** auto-raise.
+- **Driving policy:** inherits A4/A5/A7 baseline + TBD (#1586) — financial-controls / anomaly-threshold policy.
+- **Realization:** `icm/domains/finance/anomaly-sweep/` (#1723; procedure-only until built).
+- **Autonomy ceiling:** **L0–L2** (sweep + flag = reversible internal, A10 row 1; never gates, never corrects).
+  **No money, no entry edit** — a correction routes to the human-gated owning procedure (09-23 dispute/credit etc.).
+- **Human-in-loop:** CFO/Sterling/Vera consume + decide corrections; Audrey recedes to the always-on sweep. Floor = detect + flag only.
+- **Substrate deps:** [DORM-AR] #1580 / [DORM-ALLOC] #1044 (margin baselines) / [DORM-CRED] QBO; [DORM-EVENT] #991 (Vera/Grace seam).
+- **subject:** both. **Maps to:** epic **#1394**; #1723 (workspace); controls seam → Vera/Grace.
+
+## 09-29 · Recurring-revenue analytics — MRR/ARR/NRR + revenue-churn trend
+- **Owner / Stream:** Audrey / 09 (read-only analytics read-model). **Archetype:** B3 synthesis-brief —
+  read-only, **no actuation, no money** (A9a); cross-client revenue patterns stay internal/anonymized (A7).
+  **CONSUMES the governed `metric_definition` layer (#1050) — does NOT re-derive a metric, does NOT duplicate
+  #1046 churn-scoring or Chase's renewal motion** (it **feeds** Chase). (A1 — extend, never fork; one
+  governed definition of MRR.)
+- **Trigger:** Scheduled (monthly/quarterly recurring-revenue read) or on-demand for CFO/Sterling/Chase; a
+  renewal-pipeline shift; a material churn signal.
+- **Terminal outcome:** A read-only **recurring-revenue read-model** — MRR / ARR / NRR + revenue-churn trend
+  (expansion/contraction/churned) — computed **from the governed `metric_definition` formulas** (#1050, not
+  re-derived), delivered to CFO/Sterling and **fed to Chase's renewal motion** (it informs, never runs the
+  renewal). Audrey analyzes; she **never sends and never re-derives the metric**.
+- **Procedure Steps** (B3: gather(cite governed metric) → synthesize/trend → deliver):
+  1. `[automation]` **Gather** — read MRR/ARR/NRR + revenue-churn via the **governed `metric_definition`
+     formulas** (#1050 — one definition, never re-derived here) over the `invoice`/contract recurring-revenue
+     base, **citing each metric definition + source + as-of** (A5; A7 internal-only correlation). **L0.**
+  2. `[automation]` **Synthesize + trend** — period-over-period MRR/ARR movement, NRR, churn decomposition
+     (expansion/contraction/churn); signal vs inference labeled (P2). **L1.**
+  3. `[automation]` **Deliver (B3 launchpad)** — read-model to CFO/Sterling + **Hand-off OUT: feeds Chase's
+     renewal motion (#1304/#1415) and Sterling's revenue-governance 09-17** — does NOT duplicate #1046
+     churn-scoring (consumes it) and does NOT run the renewal (Chase's gated act, A11). **L2** auto-raise.
+- **Driving policy:** inherits A5/A7 baseline + TBD (#1586) — recurring-revenue / churn-definition policy (the metric is governed via #1050).
+- **Realization:** `icm/domains/finance/recurring-revenue-analytics/` (#1723; procedure-only until built).
+- **Autonomy ceiling:** **L0–L2** (read governed metrics + trend + flag = reversible internal, A10 row 1).
+  **No send, no re-derive** — the metric is the governed `metric_definition` (#1050); the renewal act is Chase's gated motion (A11).
+- **Human-in-loop:** CFO/Sterling/Chase consume; Audrey never gates a renewal and never sends. Floor = read-only analytics, consuming governed metrics.
+- **Substrate deps:** `metric_definition` governed layer (#1050); [DORM-AR] #1580 (recurring-revenue base); [DORM-EVENT] #991 (Chase seam); [DORM-ALLOC] for NRR true-margin where used.
+- **subject:** both. **Maps to:** epic **#1394**; #1723 (workspace); consumes #1050, feeds Chase #1304/#1415; ≠ #1046 churn-scoring.
+
+## 09-30 · Cost-to-serve profitability read-model (client / service-line)
+- **Owner / Stream:** Audrey / 09 (read-only profitability read-model). **Archetype:** B3 synthesis-brief —
+  read-only, **no actuation, no money** (A9a); cross-client margin patterns stay internal/anonymized (A7).
+  **CONSUMES the governed `cost_to_serve` / `margin_to_serve` metrics in `metric_definition`** (#1050; the
+  allocation views **0197/0198/0200** are upstream, exposed via the governed metrics — Audrey reads the
+  governed metric, never the raw view, and **does NOT duplicate profitability #1044**; it generalizes the
+  per-client/project margin-watch 09-14, v2, onto the governed-metric path). (A1 — extend, never fork.)
+- **Trigger:** Scheduled (monthly/quarterly profitability read) per client / service-line; on-demand for
+  CFO/Sterling; a margin-compression flag from 09-28.
+- **Terminal outcome:** A read-only **cost-to-serve / margin read-model** per client + per service-line —
+  recognized-revenue-to-serve − cost-to-serve = margin-to-serve, **from the governed metrics** (#1050) — with
+  unprofitable clients/service-lines **flagged** to CFO/Sterling. Audrey reads + flags; she **never moves
+  money and never re-derives the allocation**.
+- **Procedure Steps** (B3: gather(cite governed metric) → synthesize/flag → deliver):
+  1. `[automation]` **Gather** — read `cost_to_serve` / `recognized_revenue_to_serve` / `margin_to_serve` via
+     the **governed `metric_definition` formulas** (#1050; allocation views 0197/0198/0200 upstream — read the
+     governed metric, not the raw view) per client/service-line, **citing each + as-of** (A5; empty allocation
+     → say so honestly, A5c; A7 internal-only). **L0/L1.**
+  2. `[automation]` **Synthesize + flag** — margin per client/service-line + trend; flag unprofitable /
+     declining-margin entities; signal vs inference labeled (P2). **L2.**
+  3. `[automation]` **Deliver (B3 launchpad)** — profitability read-model to CFO/Sterling + **Hand-off OUT:
+     feeds Sterling's FP&A 09-19 / revenue-governance 09-17 and the margin-watch 09-14** (generalizes it onto
+     the governed-metric path; does NOT duplicate profitability #1044). **L2** auto-raise.
+- **Driving policy:** inherits A5/A7 baseline + TBD (#1586) — profitability / margin-floor policy (the metric is governed via #1050).
+- **Realization:** `icm/domains/finance/cost-to-serve/` (#1724; procedure-only until built).
+- **Autonomy ceiling:** **L0–L2** (read governed metrics + flag = reversible internal, A10 row 1; never gates).
+  **No money, no re-derive** — Audrey reads the governed `cost_to_serve`/`margin_to_serve`, never the raw allocation.
+- **Human-in-loop:** CFO/Sterling consume; Audrey never gates. Floor = read-only profitability, consuming governed metrics.
+- **Substrate deps:** governed `cost_to_serve`/`margin_to_serve` in `metric_definition` (#1050); [DORM-ALLOC]
+  allocation views 0197/0198/0200 / #1044 (true-margin inputs — degrades per A5c until they hydrate); [DORM-AR] #1580.
+- **subject:** both. **Maps to:** epic **#1394**; #1724 (workspace); consumes governed metrics #1050, ≠ #1044 profitability; generalizes 09-14.
+
+---
+
 ## Provable-coverage note
 
 Record→Report surface fully covered across Audrey (read-only, L2 ceiling, advises-never-gates; QBO=SoR no
@@ -805,6 +983,21 @@ sales-tax-nexus silver **#1620** (09-20); the AR/invoice own-vs-mirror **#1580**
 **Ownership flags for Mark (A11 seams):** AP approve-to-pay (24) — Audrey books vs Vance vendor-lifecycle;
 dispute resolution comms (23) ride Celeste, never Audrey.
 
-**Count: 25 Operating Procedures** (09-01 … 09-25): Time 3 · Expense 3 · Monthly Close 1 · AR/AP/billing 4 ·
+**FP&A read-models (epic #1394, 09-26…09-30)** extend — do not fork (A1) — the stream onto Audrey's
+read-only FP&A surface: budget-variance (26, feeds Sterling FP&A 19) · cash-flow-forecast/runway (27,
+forecast = labeled projection with method+assumptions+as-of, NEVER a gap-fill — a missing input is escalated
+as a gap; feeds treasury 21) · financial-anomaly + controls sweep (28, proactive read-only watchdog → Vera/Grace
+controls seam) · recurring-revenue analytics MRR/ARR/NRR (29, **consumes** governed `metric_definition` #1050,
+does NOT re-derive or duplicate #1046 churn-scoring, feeds Chase) · cost-to-serve profitability (30, **consumes**
+governed `cost_to_serve`/`margin_to_serve` #1050 fed by allocation views 0197/0198/0200, does NOT duplicate
+profitability #1044, generalizes margin-watch 09-14). All five are **B3 synthesis-briefs** that ground → tie-out
+→ flag → escalate — **no send, no money action, no actuation** (A9a). The same invariants hold: **Audrey
+read-only / L2 / advises-never-gates; QBO=SoR, no money movement ever; salary/rate non-disclosure refusal-class.**
+**Feed-seam (A11):** management/board synthesis is Sterling's `financial-pulse` (deputy-cfo, Stream 11) — these
+**feed** it, never duplicate the rollup. Workspaces #1721–1724 (procedure-only until built).
+
+**Count: 30 Operating Procedures** (09-01 … 09-30): Time 3 · Expense 3 · Monthly Close 1 · AR/AP/billing 4 ·
 margin hand-offs 3 · BI 1 · Sterling governance 2 · finance-at-scale 8 (rev-rec 1 · FP&A 1 · tax 1 ·
-treasury 1 · recurring-invoice batch 1 · dispute/credit 1 · AP approve-to-pay 1 · external-audit 1).
+treasury 1 · recurring-invoice batch 1 · dispute/credit 1 · AP approve-to-pay 1 · external-audit 1) ·
+FP&A read-models 5 (budget-variance 1 · cash-flow-forecast 1 · anomaly+controls sweep 1 ·
+recurring-revenue analytics 1 · cost-to-serve 1).
