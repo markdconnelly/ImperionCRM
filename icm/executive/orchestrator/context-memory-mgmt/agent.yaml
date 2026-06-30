@@ -1,0 +1,12 @@
+name: context-memory-mgmt
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> orchestrator room -> Nova persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../nova.md
+  - ./prose.md
+okf_rooms: [account, contact, entity_xref]   # subset of executive/orchestrator/room.yaml; the identity spine for resolving the thread's subjects when grounding recall
+tools: [pg.read, knowledge.search, memory.recall]   # subset of the delegate-only exec budget; this workflow only recalls + grounds — no delegate, and NO memory store tool (Nova reads memory, never writes it)
+skills: []
+autonomy_rung: L1                     # propose — recall + ground + propose-what-to-persist; the exec ceiling is L2 delegate-only (CONSTITUTION §9), this runs narrower. Nova never actuates and never writes long-term memory.
+auto_may_self_approve: "assemble and publish the grounded working context for the current turn when every item carries a source reference and every gap is marked 'no data / no recall'. It NEVER writes long-term memory (no store tool) — persistence is always a parked proposal for the human/Memory-MCP path. A recall miss, an uncited item, or any actuation parks; no fabrication on empty."

@@ -29,6 +29,38 @@
       ],
       "workflows": [
         {
+          "slug": "context-memory-mgmt",
+          "stages": [
+            "01-recall",
+            "02-ground",
+            "03-curate"
+          ]
+        },
+        {
+          "slug": "cross-division-conflict-route",
+          "stages": [
+            "01-intake-conflict",
+            "02-arbitrate",
+            "03-route"
+          ]
+        },
+        {
+          "slug": "daily-exec-brief",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief"
+          ]
+        },
+        {
+          "slug": "governance-oversight",
+          "stages": [
+            "01-scan",
+            "02-assess",
+            "03-surface"
+          ]
+        },
+        {
           "slug": "intake-route",
           "stages": [
             "01-intake",
