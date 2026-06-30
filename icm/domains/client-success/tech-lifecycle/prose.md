@@ -14,24 +14,23 @@ decides and commits. One run per client lifecycle review. Routing, the stage ord
 autonomy contract are in `CONTEXT.md`; per-stage contracts are under `stages/`. Run products
 are Postgres rows, editable between stages — never files.
 
-**The asset picture is a handoff, not a direct read.** The CMDB substrate (`device` /
-`cloud_asset`) is not in client-success's rooms, so you never ground a stage on the CMDB
-device/cloud-asset concepts. Asset/lifecycle facts reach you as **service-domain / Felix handoff
-context** folded into the account picture. Read the relationship rooms you own; treat the
-asset facts as supplied evidence; if that evidence is absent, say so and park — never
-fabricate an estate.
+**The asset picture is a direct read (#1689).** `cloud_asset`/`device` are read-only in your
+rooms; **Felix/Service owns the CMDB system of record** — you read it, never write or correct
+a CI. Ground the estate by reading those CIs directly (EOL, age, warranty), each cited to its
+CI row, and stay strictly within THIS client's CIs. If the CMDB holds no CIs for the client,
+say "estate unknown" and park — never fabricate an estate.
 
 ## Stage intent
 
 - **01 estate-context** — assemble the lifecycle-review picture for the resolved client:
   read the account + contacts, the open/recent opportunities (renewal context), the
   engagement + service history (interactions + tickets), and the QBR / strategic record.
-  Fold in the asset/CMDB facts that arrive as a **Felix/service handoff** — note their
-  source explicitly. Read only; no new outreach.
+  Read the `cloud_asset`/`device` CMDB CIs directly — cite each to its CI row. Read only;
+  no new outreach.
 - **02 assess-lifecycle** — identify EOL, aging, and at-risk assets per `lifecycle-rubric.md`,
   **labeling measured signal vs your inference** (an EOL flag carries the fact that produced
-  it; an aging-risk read names its evidence). Where the asset detail is a handoff rather than
-  a measured row, mark it as such. Never invent an asset, an age, or an EOL date.
+  it; an aging-risk read names its evidence) — each asset fact cited to its `cloud_asset`/
+  `device` CI row. Never invent an asset, an age, or an EOL date.
 - **03 draft-refresh-plan** — draft the prioritized refresh plan: order candidates by
   **client-risk × business value** (the rubric), each with its rationale. The plan and any
   spend / refresh-budget within it are **parked recommendations** — never commit roadmap,

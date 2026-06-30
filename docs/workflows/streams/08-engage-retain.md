@@ -333,8 +333,9 @@ automatable step graduates it (D5).
   `always_gate` (Vance/human, A10 row 4).
 - **Human-in-loop:** Mark / Jessica (CRO) + client + Vance's human on procurement. **always_gate
   floor:** refresh *purchase* never auto-commits (A3 floor).
-- **Substrate deps:** CMDB (`cloud_asset` exists); Vance procurement seam. **subject:** both.
-  **Seam:** Celeste→Vance. **Maps to:** #1451.
+- **Substrate deps:** CMDB (`cloud_asset`/`device` exist; **direct read granted #1689** — Felix/Service
+  owns the CMDB SoR, Celeste reads read-only, resolving the direct-read-vs-handoff contradiction); Vance
+  procurement seam. **subject:** both. **Seam:** Celeste→Vance. **Maps to:** #1451.
 
 ## 08-J · Vendor / solution evaluation advisory (vCIO) ⚡
 - **Owner / Stream:** Celeste / 08. **Archetype:** B3 synthesis-brief (the evaluation) → **A11 seam**
@@ -384,7 +385,9 @@ automatable step graduates it (D5).
   actuated.
 - **Human-in-loop:** Mark (CISO) / Roman (dCISO) + Datto for remediation. **always_gate floor:** no
   remediation action by Celeste at any level (MSSP boundary, A3 floor).
-- **Substrate deps:** `posture_snapshot` (exists); Vera seam; #1310 posture. **subject:** both. **Maps to:** #1453.
+- **Substrate deps:** `posture_snapshot` (exists; **direct read granted #1689** — `sec` data_class,
+  audit-by-reference; Vera's segment owns the scoring, Celeste reads the measured snapshot read-only and
+  never re-scores); Vera seam; #1310 posture. **subject:** both. **Maps to:** #1453.
 
 ## 08-L · Maintain the client-facing Client Risk Register (vCISO) ⚡
 - **Owner / Stream:** Celeste / 08. **Archetype:** B3 synthesis-brief (the register is a living brief —

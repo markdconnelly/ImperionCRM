@@ -7,34 +7,33 @@
 
 ## Where the asset facts come from (read this first)
 
-The CMDB substrate (`device` / `cloud_asset`) is **not** in client-success's rooms. So the
-estate is not a direct read — asset/lifecycle facts arrive as **service-domain / Felix
-handoff context** folded into the account picture. Treat them as **supplied evidence**, with
-their source named. If the handoff carries no asset picture, the estate is unknown: say so
-and park the review. Never reconstruct an estate from the relationship rooms alone, and
-never ground a stage on the CMDB device/cloud-asset concepts — that scope is not granted.
+The CMDB substrate (`cloud_asset` / `device`) is a **direct read** in client-success's rooms
+(#1689) — **but Felix/Service owns it as system of record**. Read those CIs read-only to
+ground the estate; never write or correct a CI, and stay strictly within THIS client's CIs.
+Cite each asset fact to its CI row. If the CMDB holds no CIs for the client, the estate is
+unknown: say so and park the review. Never reconstruct an estate from the relationship rooms
+alone, and never fabricate a CI.
 
 ## The discipline: signal vs inference
 
-- **Measured signal** = a fact in the supplied evidence or a source row: a stated EOL/EOS
-  date, a hardware age, an OS version past support, repeat incidents on a named asset
-  (ticket), warranty lapsed (handoff). Name its source.
+- **Measured signal** = a fact in a source row: a stated EOL/EOS date, a hardware age, an OS
+  version past support (`cloud_asset`/`device`), repeat incidents on a named asset (`ticket`),
+  warranty lapsed (`device`). Cite its CI / source row.
 - **Inference** = Celeste's reading of those facts ("this fleet is aging into risk", "this
   refresh is overdue").
 - **Always label which is which.** An EOL flag carries the fact that produced it. A
-  lifecycle verdict without its evidence is not advice (celeste.md guardrail 3). Where the
-  asset detail is a handoff rather than a measured row, mark it `handoff` so its provenance
-  is visible.
+  lifecycle verdict without its evidence is not advice (celeste.md guardrail 3). Cite each
+  asset fact to its `cloud_asset`/`device` CI row so its provenance is visible.
 
 ## Lifecycle reading (measured signals — weigh, don't sum blindly)
 
 | Signal | Source | Reading |
 |---|---|---|
-| Vendor EOL / end-of-support date passed or near | handoff (CMDB) | unsupported = security + reliability risk; refresh candidate |
-| Hardware age beyond useful life | handoff (CMDB) | aging — failure + performance risk rising |
-| OS / firmware past support | handoff (CMDB) | patch gap = posture risk (advisory; remediation is human/Datto) |
-| Repeat incidents on a named asset | `ticket` + handoff | the estate is already costing service friction |
-| Warranty / support contract lapsed | handoff (CMDB) | unsupported failure exposure |
+| Vendor EOL / end-of-support date passed or near | `cloud_asset`/`device` | unsupported = security + reliability risk; refresh candidate |
+| Hardware age beyond useful life | `device` | aging — failure + performance risk rising |
+| OS / firmware past support | `cloud_asset`/`device` | patch gap = posture risk (advisory; remediation is human/Datto) |
+| Repeat incidents on a named asset | `ticket` + `device` | the estate is already costing service friction |
+| Warranty / support contract lapsed | `device` | unsupported failure exposure |
 | Strategic record names a planned refresh / standard | `strategic_business_review` | align the plan to the client's own roadmap |
 | Renewal approaching with aging estate | `opportunity` (`kind=renewal`) | renewal moment to plan the refresh → may loop Chase |
 

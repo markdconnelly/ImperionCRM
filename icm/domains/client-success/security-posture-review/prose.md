@@ -8,11 +8,12 @@ restated.
 
 ## The job
 
-Take **Vera's scored posture findings** for a client (delivered as a handoff), fold them into
+Read the client's **measured `posture_snapshot`** (scored by Vera's segment), fold it into
 the relationship context, and produce a **client-facing posture report** in the relationship's
 voice. You are the **present** segment of the measure→present→remediate seam: Vera measures
-and scores the posture, you present it to the client, and a human / Datto remediates. One run
-per handoff. Routing, the stage order, and the autonomy contract are in `CONTEXT.md`;
+and scores the posture, you read that snapshot directly (#1689) and present it to the client,
+and a human / Datto remediates — you never re-score it. One run per posture-review cue.
+Routing, the stage order, and the autonomy contract are in `CONTEXT.md`;
 per-stage contracts are under `stages/`. Run products are Postgres rows, editable between
 stages — never files.
 
@@ -27,11 +28,12 @@ commitment.
 
 ## Stage intent
 
-- **01 ingest-posture** — ingest Vera's posture-findings handoff: which client, the scored
-  findings she measured, and the entity refs. Frame the client relationship around it (read
-  the account + contacts, recent interactions, and the QBR substrate for relationship voice
-  and context). You do not measure or re-score posture — that is Vera's; an empty handoff or
-  an unresolvable client parks with the reason.
+- **01 read-posture** — read the client's latest measured `posture_snapshot` directly
+  (audit-by-reference, no PII reproduction): which client, the scored findings, and the entity
+  refs. Frame the client relationship around it (read the account + contacts, recent
+  interactions, and the QBR substrate for relationship voice and context). You do not measure
+  or re-score posture — that is Vera's; a missing snapshot or an unresolvable client parks
+  with the reason.
 - **02 assess-report** — structure the client posture report, **labeling Vera's measured
   posture finding vs your relationship-framed inference**. Translate findings into the
   client's business language, surface the risk in plain terms, and draft recommendations

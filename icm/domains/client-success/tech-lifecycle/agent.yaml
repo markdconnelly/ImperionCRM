@@ -5,9 +5,9 @@ system_compose:                       # ordered; Constitution -> domain room -> 
   - ../room.md
   - ../celeste.md
   - ./prose.md
-okf_rooms: [account, contact, opportunity, interaction, ticket, strategic_business_review]   # subset of domains/client-success/room.yaml; asset/CMDB (device/cloud_asset) arrive as a Felix/service handoff, NOT a direct okf read
+okf_rooms: [account, contact, opportunity, interaction, ticket, strategic_business_review, cloud_asset, device]   # subset of domains/client-success/room.yaml; cloud_asset/device = direct CMDB read (EOL/age/warranty) — #1689 resolved direct-read over handoff-fed; Felix/Service owns the CMDB SoR, Celeste reads read-only
 tools: [pg.read]                                                                              # read + assess + draft only; the refresh plan and any spend park
 skills:
   - ./skills/lifecycle-rubric          # Tier 3 — workflow-local (lifecycle/EOL + prioritization rubric)
 autonomy_rung: L2
-auto_may_self_approve: "assemble the lifecycle assessment and DRAFT the prioritized refresh plan from MEASURED signals (internal, reversible) at L2 — always labeling measured signal vs Celeste's inference, and noting where the asset picture arrives as a Felix/service handoff rather than a direct read. The refresh plan itself parks: every refresh recommendation, any spend/refresh-budget, any roadmap/SLA implication, and every client-facing touch parks for a human in every mode — the NO-COMMITS-EVER and MSSP/vCISO advisory-only ceilings are dial-proof (celeste.md guardrails 1–2)."
+auto_may_self_approve: "assemble the lifecycle assessment and DRAFT the prioritized refresh plan from MEASURED signals (internal, reversible) at L2 — always labeling measured signal vs Celeste's inference, reading the CMDB asset picture directly from `cloud_asset`/`device` (read-only; Felix/Service owns the CMDB SoR; #1689). The refresh plan itself parks: every refresh recommendation, any spend/refresh-budget, any roadmap/SLA implication, and every client-facing touch parks for a human in every mode — the NO-COMMITS-EVER and MSSP/vCISO advisory-only ceilings are dial-proof (celeste.md guardrails 1–2)."
