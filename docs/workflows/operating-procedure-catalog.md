@@ -11,7 +11,7 @@ workspaces are a later build phase.
 - **Per-stream detail:** [`streams/`](streams/) — one file per value stream, full D6/D7 entry schema.
 - **The org it projects onto:** the 26-agent roster (epic #1534, `imperion-os-org-recast`).
 
-> **222 Operating Procedures** across 11 value streams / 26 agents. Veto-pass complete
+> **227 Operating Procedures** across 11 value streams / 26 agents. Veto-pass complete
 > (D9): **all procedures are included.** Ad procedures 01-B / 01-C are reinstated per the
 > easy-button principle (D9-P3); 01-J (segment) is folded as a step.
 >
@@ -58,7 +58,7 @@ a real managed client; dogfood is a parameter, not a duplicate procedure, D7).
 
 ---
 
-## Catalog-wide design principles (D9 — apply to ALL 220 procedures)
+## Catalog-wide design principles (D9 — apply to ALL 225 procedures)
 
 Every procedure's Human-in-loop field encodes these; they are not restated per entry.
 
@@ -123,11 +123,11 @@ routes *across* divisions.
 | 06 | Change → Release | Marshall | 11 | [streams/06-change-release.md](streams/06-change-release.md) |
 | 07 | Protect → Assure | Cyrus · Grace · Roman · Phoenix | 16 | [streams/07-protect-assure.md](streams/07-protect-assure.md) |
 | 08 | Engage → Retain | Celeste | 16 | [streams/08-engage-retain.md](streams/08-engage-retain.md) |
-| 09 | Record → Report | Audrey · Sterling | 25 | [streams/09-record-report.md](streams/09-record-report.md) |
+| 09 | Record → Report | Audrey · Sterling | 30 | [streams/09-record-report.md](streams/09-record-report.md) |
 | 10 | Run the Company | Rachel · Holly · Laurel · Tess · Vera · Jessica · Alivia + OS-self | 59 | [streams/10-run-company.md](streams/10-run-company.md) |
 | 11 | Orchestrate | Nova + 5 C-suite | 17 | [streams/11-orchestrate.md](streams/11-orchestrate.md) |
 
-**Total: 220** (01:13 · 02:27 · 03:12 · 04:15 · 05:9 · 06:11 · 07:16 · 08:16 · 09:25 · 10:59 · 11:17).
+**Total: 225** (01:13 · 02:27 · 03:12 · 04:15 · 05:9 · 06:11 · 07:16 · 08:16 · 09:30 · 10:59 · 11:17).
 
 Status legend used in the stream files: ⚡ ready · 💤 dormant (flagged dep) · 🔨 built.
 Ceiling = the owner's autonomy-ladder ceiling (ADR-0128). Substrate dormancy flags recur
@@ -227,8 +227,13 @@ intake. **Margin (3):** renewal → Chase · project-cost → Pierce · per-clie
 09-18…25):** revenue recognition ASC 606 ⛔ (schema #1619) · FP&A budget/forecast/variance ·
 sales-tax nexus & filings (schema #1620) · treasury cash/runway · recurring-invoice batch
 GENERATION ⛔ (un-defers 09-08) · billing dispute/credit-memo ⛔ · AP approve-to-pay ⛔ ·
-external-audit support. All money writes `always_gate` (B6). Audrey advises, never gates;
-QBO = SoR, no money movement; salary non-disclosure is refusal-class.
+external-audit support. **FP&A read-models (#1394, 09-26…30):** budget-variance (feeds Sterling
+FP&A) · cash-flow-forecast/runway (labeled projection, never gap-fill) · financial-anomaly + controls
+sweep · recurring-revenue analytics MRR/ARR/NRR (consumes governed `metric_definition` #1050, feeds
+Chase) · cost-to-serve profitability (consumes governed `cost_to_serve`/`margin_to_serve`). All five
+B3 read-only — ground→tie-out→flag→escalate, NO send/money/actuation; feed Sterling's `financial-pulse`,
+never duplicate it. All money writes `always_gate` (B6). Audrey advises, never gates; QBO = SoR, no
+money movement; salary non-disclosure is refusal-class.
 
 ### Stream 10 — Run the Company · Rachel / Holly / Laurel / Tess / Vera / Jessica / Alivia + OS-self (59)
 Rachel CoS (5, incl. facilities/fleet/corporate-IT gap-fill) · Holly HR/internal-JML (11) ·
