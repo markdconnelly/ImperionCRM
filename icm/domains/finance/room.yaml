@@ -30,3 +30,10 @@ okf_rooms:
   - invoice
   - generated_invoice
   - license_assignment
+  # FP&A expansion (epic #1394). The PLAN side + the governed metric layer Audrey CONSUMES
+  # (D1 — she reads the governed contracts, never re-derives them). The cost/revenue allocation
+  # views (migs 0197/0198/0200) are NOT rooms — they have no OKF concept; their composed result
+  # is exposed through the governed `cost_to_serve`/`margin_to_serve`/MRR contracts in
+  # metric_definition, which IS the consumption surface.
+  - budget             # human-authored operating plan; agent READ-ONLY (#1718, D5/ADR-0123)
+  - metric_definition  # governed metric contracts (MRR/ARR/margin/cost_to_serve) — #1050, consumed not re-derived

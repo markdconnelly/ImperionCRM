@@ -1388,7 +1388,9 @@
         "expense_report",
         "invoice",
         "generated_invoice",
-        "license_assignment"
+        "license_assignment",
+        "budget",
+        "metric_definition"
       ],
       "workflows": [
         {

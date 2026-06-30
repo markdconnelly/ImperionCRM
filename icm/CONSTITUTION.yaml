@@ -109,6 +109,10 @@ okf_rooms:
   - invoice           # Finance workspace — QBO read-only invoice mirror (read)
   - generated_invoice # Finance workspace — app-native invoice draft pre-QBO (read)
   - license_assignment # Finance workspace — agreement/true-up license facts (read)
+  - budget            # Finance FP&A (#1718, epic #1394) — human-authored operating plan;
+                      #   agent READ-ONLY, SELECT-only incl. backend (D5/ADR-0123) (read)
+  - metric_definition # Finance FP&A — governed metric contracts (MRR/ARR/margin/cost_to_serve);
+                      #   the metric layer Audrey CONSUMES, never re-derives (#1050) (read)
   - posture_snapshot   # Platform/Governance (#1458) — client security posture (read)
   - tenant_posture     # Platform/Governance — per-tenant posture drift (read)
   - posture_policy     # Platform/Governance — posture policy + golden baselines (read)

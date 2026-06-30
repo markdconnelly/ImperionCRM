@@ -188,6 +188,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [collections_activity](tables/collections_activity.md) | Finance | D (app-native overlay; NOT synced to QBO) | fin | ✅ | collections / AR-dunning (#677/#678) |
 | revenue_allocation | Finance | F | fin | ⏳ | revenue join (#1092, profitability epic #1044) — derived view: recognized revenue (from `invoice_mirror`, per client × month; service line NULL) + contracted revenue (from `contract.estimated_revenue` per client × `contract.category` × month); the revenue mirror of `cost_allocation` (#1091), composed into per-client/per-service margin by #1093 via the governed `recognized_revenue`/`recognized_revenue_to_serve` − `cost_to_serve` metrics |
 | [recurring_invoice_schedule](tables/recurring_invoice_schedule.md) | Finance | H (app-native recurring-billing template) | fin | ✅ | recurring invoicing (#1095, epic #1045) |
+| [budget](tables/budget.md) | Finance | B (human-authored, agent READ-ONLY) | fin | ✅ | budget-variance (#1721) + cash-flow-forecast (#1722) — the plan side of plan-vs-actual; SELECT-only grants incl. backend (D5/ADR-0123); no agent write path ever (#1718, epic #1394) |
 | [generated_invoice](tables/generated_invoice.md) | Finance | D (app-native draft; QBO push Mark-gated, NOT yet synced) | fin | ✅ | recurring invoicing (#1095, epic #1045) |
 
 ## Procurement / licensing
