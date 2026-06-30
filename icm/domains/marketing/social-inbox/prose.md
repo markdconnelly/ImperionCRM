@@ -35,3 +35,10 @@ The spine:
 
 Money never enters this workflow — a boost or ad is procedure 01-B/01-C and is
 always a human's call. Sends exit only through ADR-0058.
+
+The send gate (stage 04) is a **three-way** outcome — **approve** (dispatch),
+**approve-with-feedback** (record the signal, re-draft v2, re-park), **deny** (record
+the reason, drop, route the still-owed thread to the operator queue) — never a silent
+drop and never an auto-send of a revision. The canonical, human+machine SOP for this
+procedure (the a/b/c contract, the seams, the dormancy posture) is `sop.md` (ADR-0136
+A8). v1 runs human-approves-all; the a/b/c feedback is what earns the dial.
