@@ -1,0 +1,12 @@
+name: daily-exec-brief
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> orchestrator room -> Nova persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../nova.md
+  - ./prose.md
+okf_rooms: [account, contact, entity_xref]   # subset of executive/orchestrator/room.yaml; the identity spine Nova reads to attribute the rolled-up flags to the right subjects
+tools: [pg.read, knowledge.search, memory.recall]   # subset of the delegate-only exec budget; this tracer reads + synthesizes + parks — no delegate/handoff/actuation
+skills: []
+autonomy_rung: L1                     # propose — the brief parks for Derek; the exec ceiling is L2 delegate-only (CONSTITUTION §9). Nova never actuates.
+auto_may_self_approve: "publish the scheduled daily exec brief ONLY when every section is grounded and cited; any flag, gap, or recall miss parks for Derek. Nova never actuates and never bypasses a sub-agent's gauntlet."
