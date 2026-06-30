@@ -9,7 +9,10 @@ import { canSeeSettings } from "@/lib/auth/roles";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import { PLATFORM_PROVIDERS } from "@/lib/integrations/platform-providers";
 import { listConnectorManifests } from "@/lib/integrations/connector-manifest";
-import { inferConnectionHealth } from "@/lib/integrations/connection-health";
+import {
+  inferConnectionHealth,
+  inferTokenExpiryHealth,
+} from "@/lib/integrations/connection-health";
 import { describeCapabilities } from "@/lib/integrations/ingest-summary";
 import {
   buildConnectionCards,
@@ -210,6 +213,18 @@ export default async function ConnectionsPage({
                     null,
                   nowMs,
                 })}
+                // Threads holds a self-expiring 60-day token (FE #1502): surface its expiry +
+                // health. Degrades to "Expiry unknown" until the backend reports issued/expires
+                // (dependency issue). FE only reads — the secret-bearing refresh job is backend/LP.
+                tokenHealth={
+                  model.key === "threads" && model.connection != null
+                    ? inferTokenExpiryHealth({
+                        issuedAt: model.connection.tokenIssuedAt,
+                        expiresAt: model.connection.tokenExpiresAt,
+                        nowMs,
+                      })
+                    : undefined
+                }
                 capabilities={
                   model.entry ? describeCapabilities(model.entry.manifest.capabilities) : null
                 }

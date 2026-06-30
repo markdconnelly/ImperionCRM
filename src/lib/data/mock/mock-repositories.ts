@@ -1747,6 +1747,8 @@ export const mockRepositories: Repositories = {
           authMethod: null,
           certThumbprint: null,
           clientId: null,
+          tokenIssuedAt: null,
+          tokenExpiresAt: null,
         });
       }
     },
@@ -1776,6 +1778,8 @@ export const mockRepositories: Repositories = {
           authMethod: "api_key",
           certThumbprint: null,
           clientId: null,
+          tokenIssuedAt: null,
+          tokenExpiresAt: null,
         });
       }
     },
@@ -1815,6 +1819,8 @@ export const mockRepositories: Repositories = {
           authMethod: input.authMethod,
           certThumbprint: input.certThumbprint,
           clientId: input.clientId,
+          tokenIssuedAt: null,
+          tokenExpiresAt: null,
         });
       }
     },

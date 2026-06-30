@@ -28,6 +28,8 @@ function conn(over: Partial<ConnectionRow> & { provider: string }): ConnectionRo
     authMethod: null,
     certThumbprint: null,
     clientId: null,
+    tokenIssuedAt: null,
+    tokenExpiresAt: null,
     ...over,
   };
 }

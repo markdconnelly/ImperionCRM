@@ -65,6 +65,16 @@ exchange. The `client_secret` exchange runs server-side and the long-lived token
 Vault — the browser/DB never hold it (CLAUDE.md §1/§5, ADR-0125 D1). A **manual token paste remains as
 a break-glass fallback only**. Full flow + outcome vocabulary: [Integrations README §6.3](README.md).
 
+### Token expiry + 60-day refresh health (#1502)
+
+The long-lived Threads token **expires 60 days after issue** — if it lapses, this whole surface goes
+dark. The connector card surfaces the lifecycle so an operator acts before that: **Token issued /
+Token expires** (timestamps only — never the token, §5) and a **health badge** — *Token valid*
+(green) · *Expiring soon* (amber, ≤7 days, with a pre-lapse warning banner) · *Expired* (red) ·
+*Expiry unknown* (dim — the honest default until the backend reports expiry). The actual
+secret-bearing refresh (`th_refresh_token`, token ≥24h old) is a **backend / LocalPipeline** job;
+the front end only **reads and surfaces** the health. Detail: [Integrations README §6.3](README.md).
+
 ## Dormant / fail-closed
 
 Until the `conn-company-threads` Key Vault secret lands **and** Meta App Review clears the
@@ -96,3 +106,10 @@ touch the GUI/DB — the token lives in Key Vault, referenced by name only (ADR-
 - `src/app/api/connections/threads/callback/route.ts` — server-side `code`+`state` exchange.
 - `src/lib/integrations/threads-connect.ts` — connect-outcome vocabulary + notices.
 - `src/lib/services/index.ts` — `startThreadsConnect` / `completeThreadsConnect` service methods.
+
+### Token health (#1502)
+
+- `src/lib/integrations/connection-health.ts` — `inferTokenExpiryHealth` + `TOKEN_EXPIRY_WARN_DAYS`.
+- `src/components/settings/connection-card.tsx` — issued/expires rows + health badge + warning banner.
+- `src/app/(app)/settings/connections/page.tsx` — wires `tokenHealth` for the `threads` card.
+- `src/types/index.ts` — `ConnectionRow.tokenIssuedAt` / `tokenExpiresAt` (null until the backend reports them).

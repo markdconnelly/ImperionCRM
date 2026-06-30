@@ -16019,6 +16019,10 @@ interface ConnectionDbRow {
   auth_method?: string | null;
   cert_thumbprint?: string | null;
   client_id?: string | null;
+  // Self-expiring token lifecycle (FE #1502). No DB column yet — the backend exposes these once
+  // it stores them (the dependency issue), so they are absent → undefined → null today.
+  token_issued_at?: Date | null;
+  token_expires_at?: Date | null;
 }
 
 /**
@@ -16335,6 +16339,8 @@ function mapConnection(r: ConnectionDbRow): ConnectionRow {
     authMethod: r.auth_method ?? null,
     certThumbprint: r.cert_thumbprint ?? null,
     clientId: r.client_id ?? null,
+    tokenIssuedAt: fmtDateTime(r.token_issued_at ?? null),
+    tokenExpiresAt: fmtDateTime(r.token_expires_at ?? null),
   };
 }
 
