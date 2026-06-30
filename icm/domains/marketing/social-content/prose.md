@@ -28,3 +28,7 @@ The spine:
 
 Money never enters this workflow — a boost or ad is a different procedure (01-B/01-C)
 and is always a human's call. Sends exit only through ADR-0058.
+
+The canonical, human+machine SOP for this procedure (the publish-gate contract, the
+seams, the dormancy posture) is `sop.md` (ADR-0136 A8). v1 runs human-approves-all; the
+publish-gate decision is what earns the dial.
