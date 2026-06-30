@@ -1203,7 +1203,8 @@
         "send.email",
         "send.dm",
         "opportunity.write",
-        "reference.write"
+        "reference.write",
+        "knowledge.search"
       ],
       "okfRooms": [
         "account",

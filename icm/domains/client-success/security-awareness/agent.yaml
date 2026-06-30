@@ -6,7 +6,7 @@ system_compose:                       # ordered; Constitution -> domain room -> 
   - ../celeste.md
   - ./prose.md
 okf_rooms: [account, contact, interaction, strategic_business_review]   # subset of domains/client-success/room.yaml
-tools: [pg.read]                                                        # read + assess only; recommendations park
+tools: [pg.read, knowledge.search]                                      # read + assess only (recommendations park) + knowledge.search (#1690: find candidate enablement/training content for the recommendation; CONSUME-only, 💤dormant on the content store + #389)
 skills:
   - ./skills/awareness-rubric           # Tier 3 — workflow-local (gap -> enablement rubric)
 autonomy_rung: L2

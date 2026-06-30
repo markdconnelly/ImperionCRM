@@ -433,7 +433,9 @@ automatable step graduates it (D5).
 - **Autonomy ceiling:** **L3** (advisory share = externally reversible, A10 row 3). Commitment =
   `always_gate` + MSSP advisory-only.
 - **Human-in-loop:** Mark + client. **always_gate floor:** no program commitment (A3 floor).
-- **Substrate deps:** posture #1310; enablement content. **subject:** both. **Maps to:** #1455.
+- **Substrate deps:** posture #1310; enablement content (**#1690 resolved: owned by Alivia/Knowledge
+  + IT Glue back-sync LP #408; Celeste CONSUMES via `knowledge.search`, never authors** — grant landed,
+  💤dormant on the content store + #389). **subject:** both. **Maps to:** #1455.
 
 ## 08-N · Proactive client updates + knowledge-asset sharing (L3→L4) ⚡
 - **Owner / Stream:** Celeste / 08. **Archetype:** B7 client-facing-send (the stream's actuating
@@ -461,7 +463,9 @@ automatable step graduates it (D5).
 - **Human-in-loop:** Jessica (CRO) / CS-lead. L3 = approval on important/save outreach; L4 = routine
   how-to auto. **always_gate floor:** commitment-bearing shares always park (A3 floor).
 - **Substrate deps:** knowledge-asset store + #389 (semantic recall for relevance); #991 feed.
-  **subject:** both. **Maps to:** #1456.
+  **#1690 resolved:** the library is owned by Alivia/Knowledge + IT Glue back-sync (LP #408);
+  Celeste CONSUMES via `knowledge.search` (grant landed on 08-N/08-M), never authors —
+  💤dormant until the content store + #389 hydrate. **subject:** both. **Maps to:** #1456.
 
 ## 08-O · Offboard a client (termination → data-return + deprovision) 💤 — net-new, schema #1622
 - **Owner / Stream:** Celeste / 08 — **Celeste owns the relationship/retention boundary + the

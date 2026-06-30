@@ -30,9 +30,13 @@ never files.
   only; no new measurement, no outreach.
 - **03 recommend-enablement** — draft the recommended awareness/enablement plan as a
   **parked** proposal: the training topics, a phishing-sim cadence, and the policy reminders,
-  each mapped to the client's gap. Nothing is committed; **every client-facing delivery is a
-  human decision** (the rollout, the sim, the notice). The Teams loop is where a human
-  co-shapes and approves before anything reaches the client.
+  each mapped to the client's gap. Where a recommendation points to a concrete how-to, **find
+  the candidate asset via `knowledge.search`** from the Alivia/IT-Glue enablement library
+  (#1690) and cite it — CONSUME-only (you never author the content), and 💤dormant on the
+  content store + #389 (no hit → recommend the topic without a linked asset; never fabricate
+  one). Nothing is committed; **every client-facing delivery is a human decision** (the
+  rollout, the sim, the notice). The Teams loop is where a human co-shapes and approves
+  before anything reaches the client.
 
 ## What `auto` may self-approve
 

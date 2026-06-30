@@ -30,6 +30,12 @@ tools:
                          #   (Stream 01-O). Internal-reversible L2; the SEND stays
                          #   human-gated (ADR-0058). Celeste owns the client touch;
                          #   Belle never contacts the client (epic #1696 D4, BO-04).
+  - knowledge.search     # the enablement-content CONSUME seam (#1690, 08-M/08-N): read-only
+                         #   OKF-grounded recall over gold for the how-to / runbook a share
+                         #   needs. Celeste CONSUMES; she does not author. The library is
+                         #   owned by Alivia/Knowledge + IT Glue back-sync (LP #408); 💤dormant
+                         #   until the content store + Voyage recall (#389) hydrate — A5c:
+                         #   propose-only, never present dormant content as live.
 
 # The client-success data scope — the rooms a CS worker may read. Celeste's read is
 # the broadest of any agent: the whole relationship picture (account/contact),
