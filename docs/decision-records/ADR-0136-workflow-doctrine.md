@@ -251,6 +251,15 @@ autonomous commitment); make the inaction consequence explicit and keep the easy
 at every level; a passed deadline is a **logged escalation failure** surfaced in the owning
 C-suite synthesis-brief.
 
+> **B10 — Advisory / Consultation** (added by **ADR-0138**, extending this taxonomy to ten). A
+> read-only **desk** (`archetype: advisory`) that **fields a domain question delegated by the
+> orchestrator and returns a persona-shaped, fully-cited answer** — L0, no actuation, no side
+> effect, no send. Steps: Interpret → Ground (cite, A5) → Answer (cite-or-abstain; pool-never-bleed
+> A7; never-exceed-caller). **Rule:** the desk carries the agent's *reasoning* (judgment), supplied
+> on request to the delegating agent (never the user); the read-only contract is enforced
+> structurally (CONSTITUTION §10 + the conformance gate), not by discipline. Nova answers plain
+> facts/lookups herself and delegates only judgment questions. Full template + decision: ADR-0138.
+
 ## Consequences
 
 The stream files (ADR-0133) are edited in the deepen wave to inherit (and stop restating) §A;

@@ -322,6 +322,7 @@ export function evaluateManifest({
       errors.push(...checkRoomResolution(manifest.okf_rooms, matrix).map((e) => `${label}: ${e}`));
     }
   }
+  errors.push(...checkAdvisoryArchetype(manifest, label));
   return { ok: errors.length === 0, errors };
 }
 
@@ -431,6 +432,47 @@ export function checkExecutiveDelegateOnly(execTools, label, allowed = ALLOWED_E
       errs.push(
         `${label}: executive tier is delegate-only — tool '${t}' is an actuation/` +
           `direct tool not permitted at the executive tier (allowed: ${JSON.stringify(allowed)})`,
+      );
+    }
+  }
+  return errs;
+}
+
+// ── The advisory tier: read-only consultation desks (B10, CONSTITUTION.md §10) ──
+// A workflow tagged `archetype: advisory` FIELDS a delegated domain question and
+// returns a cited answer to the delegating agent — no actuation, no side effect,
+// no send. The "no side effect" property is made structural, not a promise (the
+// §9 delegate-only precedent applied at the workflow tier): an advisory workflow
+// MUST be L0 and may carry only read-only retrieval tools.
+export const ADVISORY_ARCHETYPE = "advisory";
+export const ADVISORY_ALLOWED_TOOLS = ["pg.read", "knowledge.search", "memory.recall"];
+
+/**
+ * An advisory-archetype workflow is read-only by construction (CONSTITUTION §10):
+ * autonomy_rung MUST be L0 and tools MUST be a subset of the read-only retrieval
+ * set — no actuation tool (send.*, *.write, booking.link, delegate/handoff). L0 +
+ * no-actuation makes "nothing to approve / no side effect" a gate, not a promise.
+ * Only runs when the manifest declares `archetype: advisory`; absent = ordinary.
+ * @param {object} manifest  the parsed agent.yaml
+ * @param {string} label     path for messages
+ * @param {string[]} [allowed] the read-only retrieval allow-list
+ * @returns {string[]} violations ([] == conforms or not an advisory workflow)
+ */
+export function checkAdvisoryArchetype(manifest, label, allowed = ADVISORY_ALLOWED_TOOLS) {
+  if (manifest?.archetype !== ADVISORY_ARCHETYPE) return [];
+  const errs = [];
+  if (manifest.autonomy_rung !== "L0") {
+    errs.push(
+      `${label}: advisory archetype is read-only — autonomy_rung must be 'L0' ` +
+        `(got '${manifest.autonomy_rung}'); an advisory desk has nothing to actuate (CONSTITUTION §10).`,
+    );
+  }
+  const allow = new Set(allowed);
+  for (const t of manifest.tools || []) {
+    if (!allow.has(t)) {
+      errs.push(
+        `${label}: advisory archetype is read-only — tool '${t}' is an actuation/direct tool ` +
+          `not permitted in a consultation desk (allowed: ${JSON.stringify(allowed)}) (CONSTITUTION §10).`,
       );
     }
   }

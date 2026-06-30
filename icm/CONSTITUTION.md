@@ -120,3 +120,41 @@ and conformance derive from. Two invariants the gate enforces
    sub-agent under its own gauntlet; the executive orchestrates, synthesizes, and
    advises a human. The `workflow ⊆ executive ⊆ Constitution` subset (§3) extends
    unchanged to the new tier.
+
+## 10. The advisory tier (the consultable desk — archetype B10)
+
+Every workflow above is procedure-shaped: a trigger fires a staged flow that
+ends in a side effect (a send, a stamp, a parked proposal, a brief). A second,
+**read-only** workflow shape lets a domain agent be **consulted**: a workflow
+tagged `archetype: advisory` (ADR-0136 §B, archetype **B10**) **fields a domain
+question delegated by the orchestrator (Nova) and returns a persona-shaped,
+fully-cited answer** — no actuation, no side effect, no send. It is how an agent
+becomes something Nova can *ask*, carrying the agent's **reasoning** (its
+qualification judgment, its risk read), not merely its guardrails quoted as text.
+
+**Division of labour.** Nova answers a plain **retrieval/lookup or cross-domain**
+question herself (she holds the grounding cortex). She **delegates to the desk**
+only a question that needs **domain-expert judgment**. The desk answers **Nova,
+never the user** — returning a result to the delegating agent is internal
+orchestration (the §9 `delegate`/`handoff` return path), **not a send** (no
+ADR-0058, no external party), so the desk needs no send tool and stays L0.
+
+**The contract is structural, not a promise** (the §9 precedent applied at the
+workflow tier). For an advisory workflow the conformance gate
+(`scripts/agent-yaml-gate.mjs`) enforces:
+
+1. **`autonomy_rung` is `L0`.** A desk has nothing to actuate; L0 is its ceiling,
+   not merely its ship-dial.
+2. **`tools ⊆ {pg.read, knowledge.search, memory.recall}`** — read-only retrieval
+   only. No `send.*`, no `*.write`, no `booking.link`, no `delegate`/`handoff`.
+
+The advisory contract also **binds** these inherited clauses explicitly: the
+**evidence floor** (§8; ADR-0136 A5) — every claim cites its source + as-of, and
+a fact it cannot cite it does not assert (it says "I don't know" and routes the
+gap, never fabricates); **never-exceed-caller** (§5.2) — a question delegated on a
+user's behalf is scoped to that user's read permission; and **pool, never bleed**
+(ADR-0136 A7) — it may reason across the whole client base internally, but no
+client's specifics surface in another's answer. Desks are for the **domain
+agents**; the executive tier (§9) is already advisory-by-construction, and Nova is
+the asker — neither carries a desk. One desk per domain agent is the rollout; the
+pilot is `domains/sales/sales-desk/`.

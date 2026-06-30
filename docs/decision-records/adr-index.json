@@ -1874,5 +1874,22 @@
     "file": "ADR-0137-executive-management-surface.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0138",
+    "title": "Advisory desk archetype (B10) — consultable read-only Q&A workspaces",
+    "status": "accepted",
+    "date": "2026-06-29",
+    "tags": [
+      "agents",
+      "workflows",
+      "advisory",
+      "retrieval",
+      "doctrine"
+    ],
+    "summary": "Adds a tenth ICM workflow archetype, B10 Advisory/Consultation: a read-only `archetype: advisory` workspace that FIELDS a domain question delegated by the orchestrator (Nova) and RETURNS a persona-shaped, fully-cited answer — L0, no actuation, no side effect, no send. Makes a domain agent consultable (its reasoning, not just its guardrails-as-text), with the read-only contract enforced structurally by the conformance gate + a new Constitution §10. Pilots on Chase as `domains/sales/sales-desk/`; generalizes one desk per domain agent. Extends ADR-0136; builds on ADR-0088 §9, ADR-0104, ADR-0128, ADR-0116.",
+    "file": "ADR-0138-advisory-desk-archetype.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
