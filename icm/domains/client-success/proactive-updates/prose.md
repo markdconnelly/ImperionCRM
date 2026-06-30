@@ -16,12 +16,23 @@ share. Routing, the stage order, and the autonomy contract are in `CONTEXT.md`;
 per-stage contracts are under `stages/`. Run products are Postgres rows, editable
 between stages — never files.
 
+**The knowledge asset is CONSUMED, not authored (#1690).** The enablement-content
+library — the how-tos and runbooks (1Password, M365, etc.) — is **owned by
+Alivia/Knowledge + the IT Glue back-sync (LP #408)**, not by Celeste. You retrieve a
+matching asset via `knowledge.search` (OKF-grounded recall over gold) and cite it; you
+never write a runbook or invent a how-to. The library is **💤dormant until the content
+store + Voyage recall (#389) hydrate** — when `knowledge.search` returns nothing, say
+"no enablement asset available yet" and park the asset-share (A5c: never present dormant
+content as live). Advisory/notice shares that carry no asset are unaffected.
+
 ## Stage intent
 
 - **01 identify-update** — identify the thing worth sharing: an advisory/notice a
   client should hear, a knowledge asset (a how-to: 1Password, M365, etc.) that fits a
-  contact's current need, or a churn-save outreach the client-360 flagged. Resolve the
-  client and the recipient contact. Where health/churn drives a save outreach, label
+  contact's current need, or a churn-save outreach the client-360 flagged. For an asset
+  share, **retrieve it via `knowledge.search`** from the Alivia/IT-Glue library and cite
+  it — no hit means no asset to share yet (A5c park; never fabricate a how-to). Resolve
+  the client and the recipient contact. Where health/churn drives a save outreach, label
   measured signal vs your inference (celeste.md guardrail 3) — never invent a reason to
   reach out. Nothing to share, or no resolvable recipient, ends the run with the reason.
 - **02 draft-share** — draft the share in the relationship voice (warm, business-framed,

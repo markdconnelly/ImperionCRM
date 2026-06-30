@@ -6,7 +6,7 @@ system_compose:                       # ordered; Constitution -> domain room -> 
   - ../celeste.md
   - ./prose.md
 okf_rooms: [account, contact, interaction, consent_event]   # subset of domains/client-success/room.yaml — the share subject + the consent ledger that gates it
-tools: [pg.read, consent.check, send.email, send.dm]        # subset of domains/client-success/room.yaml — read + consent-assert + the two approval-gated send paths (ADR-0058)
+tools: [pg.read, consent.check, knowledge.search, send.email, send.dm]   # subset of domains/client-success/room.yaml — read + consent-assert + knowledge.search (#1690: retrieve the how-to/runbook to share; CONSUME-only, 💤dormant on the content store + #389) + the two approval-gated send paths (ADR-0058)
 skills:
   - ./skills/sharing-rubric             # Tier 3 — workflow-local (what to share + L3-with-approval vs L4-fully-auto + consent/sensitivity check)
 autonomy_rung: L3

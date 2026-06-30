@@ -16497,6 +16497,7 @@
           "tools": [
             "pg.read",
             "consent.check",
+            "knowledge.search",
             "send.email",
             "send.dm"
           ],
@@ -16517,7 +16518,7 @@
               "process": [
                 {
                   "tag": "sonnet",
-                  "text": "Classify the opportunity per `sharing-rubric.md`: an advisory/notice, a knowledge-asset how-to (1Password, M365, etc.), or a churn-save outreach. If it is really a marketing send (Belle) or a service-incident notice (Felix), end with a routing note — stay in Celeste's relationship scope."
+                  "text": "Classify the opportunity per `sharing-rubric.md`: an advisory/notice, a knowledge-asset how-to (1Password, M365, etc.), or a churn-save outreach. For a how-to, **retrieve the asset via `knowledge.search`** and cite it; no hit → record \"no enablement asset available yet\" and park the asset-share (A5c — never fabricate a how-to). If it is really a marketing send (Belle) or a service-incident notice (Felix), end with a routing note — stay in Celeste's relationship scope."
                 },
                 {
                   "tag": "script",
@@ -16549,6 +16550,12 @@
                     "is this worth sharing + which kind (advisory / how-to / churn-save)"
                   ],
                   [
+                    "Enablement asset",
+                    "`knowledge.search` (Alivia/IT-Glue library; #1690)",
+                    "the matching how-to / runbook",
+                    "retrieve + cite the asset for a how-to share — CONSUME-only; 💤dormant on the content store + #389 (no hit → no asset yet, A5c park)"
+                  ],
+                  [
                     "Client",
                     "silver `account` · `okf:account`",
                     "the referenced account",
@@ -16571,6 +16578,7 @@
               "outputs": "`subject.md` — the share kind (advisory / how-to / churn-save), the resolved client id, the recipient contact id, and (for a churn-save) the signal-vs-inference note.",
               "audit": [
                 "Share kind classified (advisory / how-to / churn-save) — in scope, not Belle's or Felix's",
+                "A how-to share cites a `knowledge.search` asset, or records \"no asset yet\" and parks (never fabricated)",
                 "Resolved client `account` id and recipient `contact` id stated (not blank)",
                 "A churn-save share labels measured signal vs inference"
               ],
@@ -17389,7 +17397,8 @@
           "autonomyRung": "L2",
           "autoMaySelfApprove": "assess the client's security-awareness/enablement NEEDS from the handed-off gap finding + MEASURED signals (internal, reversible) at L2 — always labeling measured signal vs Celeste's inference. Every awareness/enablement recommendation and every client-facing delivery (training rollout, phishing-sim, policy notice) parks for a human in every mode — the NO-COMMITS-EVER ceiling and the MSSP/vCISO advisory-only boundary are dial-proof (celeste.md guardrails 1-2).",
           "tools": [
-            "pg.read"
+            "pg.read",
+            "knowledge.search"
           ],
           "okfRooms": [
             "account",

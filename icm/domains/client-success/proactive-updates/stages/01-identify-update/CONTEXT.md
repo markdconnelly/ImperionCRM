@@ -8,6 +8,7 @@
 |---|---|---|---|
 | Sharing opportunity | the triggering signal (advisory/notice, knowledge-asset fit, or a client-360 churn-save flag) | full | what may be shared |
 | Sharing rubric | `./skills/sharing-rubric.md` | all | is this worth sharing + which kind (advisory / how-to / churn-save) |
+| Enablement asset | `knowledge.search` (Alivia/IT-Glue library; #1690) | the matching how-to / runbook | retrieve + cite the asset for a how-to share — CONSUME-only; 💤dormant on the content store + #389 (no hit → no asset yet, A5c park) |
 | Client | silver `account` · `okf:account` | the referenced account | resolve + confirm the client |
 | Recipient | silver `contact` · `okf:contact` | the contact to share with | resolve the recipient |
 | Engagement signal | silver `interaction` · `okf:interaction` | recent engagement, where a churn-save is driven | label measured signal vs inference |
@@ -15,7 +16,9 @@
 ## Process
 
 1. `[sonnet]` Classify the opportunity per `sharing-rubric.md`: an advisory/notice, a
-   knowledge-asset how-to (1Password, M365, etc.), or a churn-save outreach. If it is
+   knowledge-asset how-to (1Password, M365, etc.), or a churn-save outreach. For a how-to,
+   **retrieve the asset via `knowledge.search`** and cite it; no hit → record "no enablement
+   asset available yet" and park the asset-share (A5c — never fabricate a how-to). If it is
    really a marketing send (Belle) or a service-incident notice (Felix), end with a
    routing note — stay in Celeste's relationship scope.
 2. `[script]` Resolve the client `account` and the recipient `contact`. A missing
@@ -32,5 +35,6 @@ the recipient contact id, and (for a churn-save) the signal-vs-inference note.
 ## Audit
 
 - [ ] Share kind classified (advisory / how-to / churn-save) — in scope, not Belle's or Felix's
+- [ ] A how-to share cites a `knowledge.search` asset, or records "no asset yet" and parks (never fabricated)
 - [ ] Resolved client `account` id and recipient `contact` id stated (not blank)
 - [ ] A churn-save share labels measured signal vs inference
