@@ -35,6 +35,17 @@ nothing. The NO-COMMITS-EVER ceiling is dial-proof (celeste.md guardrail 1); no 
 crosses it. Security advisory only (guardrail 2). Strict client-confidential boundary:
 one client's plan never enters another's context.
 
+## Persistence (#1688 — workspace-as-SoR, A8)
+
+The vCIO technology roadmap is a **living, versioned document**: the **ICM Workspace IS its
+source of record** (ADR-0136 A8 — the uniform dual-audience document, not a tabular silver
+entity; a roadmap is binding-class prose, not rows). It must persist, version, and be
+referenced across QBRs — no longer an ephemeral run-row. The **persist · version ·
+attest-preserve write path is backend-owed** (the doc executor — approval-gated, never a
+direct silver write; the cross-repo twin). **Persistence ≠ commitment:** every roadmap
+initiative / refresh spend / SLA target still parks for a human (NO-COMMITS-EVER,
+dial-proof). Graduates 08-G from procedure-only → realized, dormant on the backend doc executor.
+
 ## Runtime skills
 
 Workflow-local (Tier 3, `./skills/`): `roadmap-rubric.md` (the roadmap structure +

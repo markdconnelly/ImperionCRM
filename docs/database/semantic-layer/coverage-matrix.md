@@ -112,6 +112,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [sbr_dimension_score](tables/sbr_dimension_score.md) | Customer Success | B | pii | ✅ | SBR-prep (per-dimension trend vs benchmark) |
 | [sbr_ticket](tables/sbr_ticket.md) | Customer Success | B | pii | ✅ | SBR-prep (period ticket history bridge) |
 | [stakeholder](tables/stakeholder.md) | Customer Success | B | pii | ✅ | stakeholder-mapping (08-S) — per-account relationship map (champion/economic_buyer/technical/influencer/user/detractor + influence/sentiment/active-vs-departed); champion→departed is the leading churn signal into 08-D; signal-labeled by source (never assert a detractor without evidence); feeds 08-A/08-C + advocacy targeting (#1692). #1695, epic #1396 |
+| [it_budget](tables/it_budget.md) | Customer Success | B | pii | ✅ | it-budget-planning (08-H) — Celeste's per-client vCIO IT budget/forecast (account × period × category × scenario, planned + forecast); the persisted store (was ephemeral); propose-only, NO-COMMITS (spend never committed), write backend-owed; cost via Audrey handoff. NOT the Finance company `budget` (#1718). #1688, epic #1396 |
 | question_template, question, engagement_answer | Sales | B | pii | ⏳ | discovery / assessment capture |
 | [contract](tables/contract.md) | kernel | B | op | ✅ | sale→delivery (DocuSign-gated) |
 

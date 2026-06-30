@@ -151,14 +151,16 @@ automatable step graduates it (D5).
      roadmap) in the plan routes as a *recommendation* to a human — never auto-commits at any dial.
   4. `[automation]` **Log** — persist the ASP version (audited; attested original preserved).
 - **Driving policy:** TBD (#1586).
-- **Realization:** ICM Workspace once the ASP write path lands; **procedure-only** until then.
+- **Realization:** **ICM Workspace-as-SoR (A8, #1688)** — realized: the uniform dual-audience document
+  IS the ASP's source of record (versioned, referenced across QBRs). The persist · version ·
+  attest-preserve write is backend-owed (the doc executor); dormant on it, but the SoR decision is settled.
 - **Autonomy ceiling:** **L2** (maintain internal record + pre-stage the launchpad = reversible
   internal, A10 row 1). Any embedded commitment = `always_gate` (A10 row 4: roadmap/SLA/spend has no
   clean undo → gated forever).
 - **Human-in-loop:** Jessica (CRO) / CS-lead. L1 co-shape+approve → L2 draft-solo + approve-only.
   **always_gate floor:** any binding commitment in the plan never auto-commits (A3 floor).
-- **Substrate deps:** ASP store (backend-owed); #991 live signal feed; #389 recall. **subject:** both.
-  **Maps to:** #1444.
+- **Substrate deps:** ASP store = **workspace-as-SoR doc, the backend doc-persist executor is the write
+  twin (#1688)**; #991 live signal feed; #389 recall. **subject:** both. **Maps to:** #1444.
 
 ## 08-C · Prepare & facilitate a QBR/TBR ⚡
 - **Owner / Stream:** Celeste / 08. **Archetype:** B3 synthesis-brief (the QBR/TBR is the archetypal
@@ -288,7 +290,9 @@ automatable step graduates it (D5).
   3. `[gui-step]` **`always_gate` (A2 class-6)** — the roadmap routes as a *recommendation* to a human
      (B3 launchpad: each roadmap line pre-stages its owning procedure parked); never a commitment.
 - **Driving policy:** TBD (#1586).
-- **Realization:** procedure-only / dormant until #1043 vCIO assembly lands.
+- **Realization:** **ICM Workspace-as-SoR (A8, #1688)** — realized: the roadmap is a binding-class
+  uniform document, the workspace IS its SoR (persist/version backend-owed). Still substrate-dormant on
+  #1043 vCIO assembly for its inputs, but the persistence decision is settled (no longer ephemeral).
 - **Autonomy ceiling:** **L1 propose** (NO-COMMITS ceiling is the operative bound — roadmap is a
   binding-class artifact, A10 row 4: never auto, gated forever).
 - **Human-in-loop:** Mark / Jessica (CRO) + client. **always_gate floor:** roadmap commitment is
@@ -309,11 +313,15 @@ automatable step graduates it (D5).
   3. `[gui-step]` **`always_gate` (A2 class-1, money out)** — spend routes as a *recommendation*; no
      spend commitment (B3 launchpad: a line item pre-stages Vance/Audrey's gated procedure parked).
 - **Driving policy:** TBD (#1586).
-- **Realization:** procedure-only / dormant until #1043 + #1044.
+- **Realization:** **ICM Workspace + `it_budget` silver store (#1688)** — realized: the proposed budget
+  PERSISTS to the `it_budget` tabular silver entity (account × period × category × scenario; mig 0243 +
+  OKF concept + coverage row in-PR). The it_budget WRITE is backend-owed (the it-budget executor); still
+  substrate-dormant on #1043 + #1044 for its inputs, but the persistence store now exists.
 - **Autonomy ceiling:** **L1 propose** (spend = NO-COMMITS ceiling; money out never auto, A10 row 4).
 - **Human-in-loop:** Nick (finance) + Mark / Jessica (CRO) + client. **always_gate floor:** spend
   commitment is human, always (A3 floor).
-- **Substrate deps:** 💤 **#1043 vCIO assembly + #1044 profitability/spend** (named blockers). Per A5c
+- **Substrate deps:** 💤 **#1043 vCIO assembly + #1044 profitability/spend** (named input blockers; the
+  PERSISTENCE store `it_budget` now exists, #1688) · the backend it-budget write executor (twin). Per A5c
   ships propose-only until they land. **subject:** both. **Maps to:** #1450.
 
 ## 08-I · Technology lifecycle / refresh planning (vCIO) ⚡
@@ -409,12 +417,15 @@ automatable step graduates it (D5).
      **`always_gate` (A2 class-5):** no binding remediation commitment (no-commits-ever, MSSP
      advisory-only).
 - **Driving policy:** TBD (#1586).
-- **Realization:** ICM Workspace / Risk Register store (backend-owed); procedure-only until store lands.
+- **Realization:** **ICM Workspace-as-SoR (A8, #1688)** — realized: the Client Risk Register is a
+  uniform document, the workspace IS its SoR (versioned, feeds 08-C/08-K + the ASP). The persist/version
+  write is backend-owed (the doc executor); dormant on it, but the SoR decision is settled.
 - **Autonomy ceiling:** **L2** (maintain register = reversible internal, A10 row 1). Remediation/
   commitment = `always_gate` + MSSP advisory-only.
 - **Human-in-loop:** Mark (CISO) + client. **always_gate floor:** every register item stays a
   recommendation (A3 floor).
-- **Substrate deps:** Risk Register store; #1310 posture; #991 risk-signal feed. **subject:** both. **Maps to:** #1454.
+- **Substrate deps:** Risk Register store = **workspace-as-SoR doc, the backend doc-persist executor is
+  the write twin (#1688)**; #1310 posture; #991 risk-signal feed. **subject:** both. **Maps to:** #1454.
 
 ## 08-M · Security awareness / enablement recommendations (vCISO) ⚡
 - **Owner / Stream:** Celeste / 08. **Archetype:** B3 synthesis-brief (the advisory) — the *framing*

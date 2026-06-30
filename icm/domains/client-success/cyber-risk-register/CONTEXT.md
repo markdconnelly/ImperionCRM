@@ -37,6 +37,17 @@ commitment**: the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof
 (celeste.md guardrails 1–2). Strict client-confidential boundary: one client's posture
 never enters another's context (celeste.md guardrail 5).
 
+## Persistence (#1688 — workspace-as-SoR, A8)
+
+The Client Risk Register is a **living, versioned document**: the **ICM Workspace IS its
+source of record** (ADR-0136 A8 — the uniform dual-audience document). It must persist,
+version, and be referenced across QBRs (it feeds 08-C/08-K and the ASP 08-B) — no longer an
+ephemeral run-row. The **persist · version · attest-preserve write path is backend-owed**
+(the doc executor — approval-gated, never a direct silver write; the cross-repo twin).
+**Persistence ≠ commitment:** no register entry is ever a remediation commitment (remediation
+is human/Datto; NO-COMMITS-EVER + MSSP-advisory-only, dial-proof). Graduates 08-L from
+procedure-only → realized, dormant on the backend doc executor.
+
 ## Runtime skills
 
 Workflow-local (Tier 3, `./skills/`): `risk-register-rubric.md` (the client risk-register

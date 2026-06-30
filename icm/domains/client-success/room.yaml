@@ -14,9 +14,13 @@ reports_to: deputy-cfo   # Celeste reports to Sterling (Revenue/Client/Finance d
 # consent, and mint the expansion opportunity to hand to Chase (opportunity.write,
 # the L2 seam). The dial-proof NO-COMMITS ceiling means no tool here ever commits a
 # roadmap/SLA/price/spend/remediation — those route to a human, always (celeste.md
-# guardrail 1). No silver write tool for the Account Success Plan / risk register in
-# v1 — those run products are Postgres run rows (Layer 4), granted a tool if/when a
-# workflow needs to persist beyond the run.
+# guardrail 1). Persistence of her living artifacts (#1688, hybrid): the Account
+# Success Plan (08-B), vCIO roadmap (08-G), and Client Risk Register (08-L) persist as
+# ICM-Workspace-as-SoR documents (A8 uniform dual-audience doc — the doc IS the SoR,
+# versioned/attested by the backend doc executor, NOT a room here); the IT budget (08-H)
+# persists as the tabular `it_budget` silver entity (read above; the write is the backend
+# it-budget executor). Persistence ≠ commitment — every binding line inside these
+# artifacts still routes to a human (NO-COMMITS-EVER, dial-proof).
 tools:
   - pg.read
   - consent.check        # assert a current consent basis (gates any client send)
@@ -51,6 +55,10 @@ okf_rooms:
   - strategic_business_review
   - lead_score
   - consent_event
+  - it_budget            # vCIO IT budget-planning (08-H, #1688): the persisted per-client
+                         #   IT budget/forecast Celeste reads + proposes (was an ephemeral
+                         #   run-row). Propose-only — NO-COMMITS, spend never committed; the
+                         #   silver write is backend-owed. NOT the Finance `budget` (#1718).
   - contract             # renewal-readiness (08-E, #1687): the agreement/expiry/terms
                          #   read so renewal assessment grounds on real dates + terms.
                          #   Read-only kernel/op silver; no binding line — the renewal

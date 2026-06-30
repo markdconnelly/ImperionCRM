@@ -34,6 +34,18 @@ At **L2**, the internal plan **assembly** and health/trajectory compute auto-exe
 parks for a human in every mode — the NO-COMMITS-EVER ceiling is dial-proof (celeste.md).
 Strict client-confidential boundary: one client's plan never enters another's context.
 
+## Persistence (#1688 — workspace-as-SoR, A8)
+
+The Account Success Plan is a **living, versioned document**: the **ICM Workspace IS its
+source of record** (ADR-0136 A8 — the one uniform dual-audience document, not a tabular
+silver entity). The plan must persist, version, and be referenced across QBRs (08-C reads
+it; 08-L feeds it) — it is no longer an ephemeral run-row. The **persist · version ·
+attest-preserve write path is backend-owed** (the doc executor — approval-gated, never a
+direct silver write; the cross-repo twin). **Persistence ≠ commitment:** every binding line
+inside the plan (roadmap/SLA/pricing/spend/remediation) still routes to a human
+(NO-COMMITS-EVER, dial-proof). Graduates 08-B from procedure-only → realized (the workspace
+is the SoR), dormant on the backend doc executor.
+
 ## Runtime skills
 
 Workflow-local (Tier 3, `./skills/`): `success-plan-rubric.md` (the plan structure +
