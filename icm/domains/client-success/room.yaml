@@ -24,6 +24,12 @@ tools:
   - send.dm              # approval-gated in-channel touch (ADR-0058 path)
   - opportunity.write    # the L2 seam: auto-create the expansion opportunity →
                          #   assign to Chase (Chase owns the close, celeste.md §Seams)
+  - reference.write      # the advocacy seam (#1703/#1692): after a human-gated
+                         #   solicitation + recorded consent, write the consented
+                         #   `reference` candidate handed to Belle's advocacy-capture
+                         #   (Stream 01-O). Internal-reversible L2; the SEND stays
+                         #   human-gated (ADR-0058). Celeste owns the client touch;
+                         #   Belle never contacts the client (epic #1696 D4, BO-04).
 
 # The client-success data scope — the rooms a CS worker may read. Celeste's read is
 # the broadest of any agent: the whole relationship picture (account/contact),
@@ -39,3 +45,5 @@ okf_rooms:
   - strategic_business_review
   - lead_score
   - consent_event
+  - reference            # the advocacy seam (#1703/#1692): the reference candidate
+                         #   Celeste cultivates → consents → hands to Belle (Stream 01-O)

@@ -1,0 +1,13 @@
+name: reference-cultivation
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, consent_event, reference, strategic_business_review, lead_score, interaction]   # subset of domains/client-success/room.yaml (reference granted by the room.yaml widen)
+tools: [pg.read, consent.check, send.email, send.dm, reference.write]   # read + assert consent + the ADR-0058 solicitation send + write the consented reference candidate handed to Belle
+skills:
+  - ./skills/advocacy-cultivation       # Tier 3 — workflow-local (reference-ready detection + the consent/rights ask framing + the Celeste→Belle handoff)
+autonomy_rung: L1
+auto_may_self_approve: "ONLY the INTERNAL, reversible creation of the consented `reference` candidate (`reference.write`, status up to `consented`) may self-execute at L2 once admin-flipped to auto — AND ONLY after a human approved the solicitation send AND a `consent_event` with scope was recorded. The SOLICITATION SEND (stage 03) is a customer-relationship-sensitive, non-routine first touch → human-approved at EVERY rung, never auto, exits only via ADR-0058. NO-COMMITS-EVER + MSSP-advisory-only are dial-proof (celeste.md). The Celeste→Belle handoff is a record handoff, never a client-contact path for Belle. Anything not named here parks."

@@ -16895,6 +16895,290 @@
           ]
         },
         {
+          "slug": "reference-cultivation",
+          "title": "reference-cultivation (client-success v1)",
+          "job": "Celeste's **advocacy-cultivation** playbook — the **upstream half of advocacy capture**. Detect a reference-ready account, **draft** a testimonial / reference-case / logo-use solicitation in the relationship voice, send it **consent-gated and human-approved** (ADR-0058), and on the client's agreement **record the consent** and **hand a `reference` at status `consented` to Belle's `advocacy-capture` (Stream 01-O)**. Soliciting a testimonial = contacting an existing customer, which is **Belle's refusal floor** — so the client touch is Celeste's (she holds the relationship + the consent-gated send path). Belle takes the consented `reference` from there and **never contacts the client**.",
+          "trigger": "a reference-ready account surfaces (high health + tenure + a clean relationship), **or** Belle's 01-E listening flags an advocacy candidate that routes here to solicit. One run per solicitation.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "ONLY the INTERNAL, reversible creation of the consented `reference` candidate (`reference.write`, status up to `consented`) may self-execute at L2 once admin-flipped to auto — AND ONLY after a human approved the solicitation send AND a `consent_event` with scope was recorded. The SOLICITATION SEND (stage 03) is a customer-relationship-sensitive, non-routine first touch → human-approved at EVERY rung, never auto, exits only via ADR-0058. NO-COMMITS-EVER + MSSP-advisory-only are dial-proof (celeste.md). The Celeste→Belle handoff is a record handoff, never a client-contact path for Belle. Anything not named here parks.",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.email",
+            "send.dm",
+            "reference.write"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "consent_event",
+            "reference",
+            "strategic_business_review",
+            "lead_score",
+            "interaction"
+          ],
+          "skills": [
+            "./skills/advocacy-cultivation"
+          ],
+          "stages": [
+            {
+              "slug": "01-identify-advocate",
+              "name": "identify-advocate",
+              "job": "detect a reference-ready account and choose the ask kind (testimonial / reference-case / logo-use).",
+              "process": [
+                {
+                  "tag": "haiku",
+                  "text": "Read the health/tenure/sentiment signals for the account (`strategic_business_review`, `lead_score`, recent `interaction`)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Score **reference-readiness** per `advocacy-cultivation.md`: high health + tenure + a clean relationship + no non-interest flag. Cite each signal **with its as-of** date, and separate **measured signal** from your **inference** (celeste.md guardrail 3). A **thin or negative** signal **parks** — never manufacture an advocate."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Pick the ask kind — **testimonial / reference-case / logo-use** — that fits the account's strength and relationship."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve the client `account` and the recipient `contact`. A missing resolvable client or recipient ends the run with the reason — never fabricate a subject."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Trigger",
+                    "a reference-ready signal (or a Belle 01-E advocacy-candidate routed here to solicit)",
+                    "full",
+                    "the candidate account to evaluate"
+                  ],
+                  [
+                    "Cultivation skill",
+                    "`./skills/advocacy-cultivation.md`",
+                    "all",
+                    "how to detect reference-ready + pick the ask kind"
+                  ],
+                  [
+                    "Client",
+                    "silver `account` · `okf:account`",
+                    "the referenced account",
+                    "resolve + confirm the client"
+                  ],
+                  [
+                    "Recipient",
+                    "silver `contact` · `okf:contact`",
+                    "the contact to ask",
+                    "resolve the recipient"
+                  ],
+                  [
+                    "Health / tenure",
+                    "silver `strategic_business_review` · `okf:strategic_business_review`; `lead_score` · `okf:lead_score`",
+                    "this account",
+                    "reference-readiness signals (health + tenure)"
+                  ],
+                  [
+                    "Sentiment",
+                    "silver `interaction` · `okf:interaction`",
+                    "recent engagement",
+                    "recent relationship sentiment; label signal vs inference"
+                  ]
+                ]
+              },
+              "outputs": "`advocate.md` — the resolved client id + recipient contact id, the reference-readiness score with each cited signal + as-of, the chosen ask kind, and the signal-vs-inference note (or a park with the reason).",
+              "audit": [
+                "Reference-readiness scored from cited signals, each with its as-of date",
+                "Measured signal separated from inference; a thin/negative signal parked (not advanced)",
+                "Resolved client `account` id and recipient `contact` id stated (not blank)",
+                "Ask kind chosen (testimonial / reference-case / logo-use)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-draft-solicitation",
+              "name": "draft-solicitation",
+              "job": "draft the solicitation in the relationship voice and assert the consent basis for the requested scope of use.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the solicitation in Celeste's relationship voice (warm, business-framed, advisory): **what we'd ask** (per the stage-01 ask kind) and **the scope of use** we're requesting (e.g. named testimonial, reference-case study, logo-use). Channel-correct (`send.email` for a request, `send.dm` for a short in-channel touch). **No commitment, no pressure** — a solicitation is a request, never a roadmap/SLA/pricing/spend/remediation promise (celeste.md guardrail 1, dial-proof)."
+                },
+                {
+                  "tag": "script",
+                  "text": "`consent.check` the consent basis for this recipient + channel. Basis = none, or a prior stop/opt-out, parks with the reason — no draft proceeds to send without a basis."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Advocate",
+                    "`advocate.md` (stage 01 output)",
+                    "full",
+                    "client, recipient, ask kind"
+                  ],
+                  [
+                    "Cultivation skill",
+                    "`./skills/advocacy-cultivation.md`",
+                    "all",
+                    "the consent/scope-of-use ask framing, no-pressure/advisory tone"
+                  ],
+                  [
+                    "Recipient",
+                    "silver `contact` · `okf:contact`",
+                    "the recipient",
+                    "name/role for the relationship voice"
+                  ],
+                  [
+                    "Consent basis",
+                    "consent ledger · `okf:consent_event`",
+                    "this recipient + channel",
+                    "the basis that gates the send"
+                  ]
+                ]
+              },
+              "outputs": "`solicitation.md` — the drafted solicitation text, the channel, the **requested consent scope** (testimonial / reference-case / logo-use), and the consent-basis result.",
+              "audit": [
+                "Draft is in Celeste's relationship voice, advisory and channel-correct",
+                "No commitment (roadmap/SLA/pricing/spend/remediation) and no pressure in the text",
+                "Requested consent **scope of use** stated explicitly",
+                "Consent basis asserted (a no-basis / opted-out recipient parks, not drafts onward)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-review-send",
+              "name": "review-send",
+              "job": "the consent-gated solicitation send — a human approves, then send through the ADR-0058 path and log it.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Re-check the consent ledger / opt-out at send time (a stop/opt-out that arrived after stage 02 blocks the send). Opt-out outranks everything."
+                },
+                {
+                  "tag": null,
+                  "text": "**Checkpoint** — present the solicitation + rationale + requested scope + consent basis to a human. They approve, edit, or reject. **This is a non-routine, relationship-sensitive FIRST touch → human-approved at EVERY rung, never auto.**"
+                },
+                {
+                  "tag": null,
+                  "text": "`[send.email]` / `[send.dm]` On approval, send via the ADR-0058 approval-gated path (consent re-asserted at execution). **No other send route exists for this workflow.**"
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Log to the `interaction` timeline: sent body, channel, approver (human id — never `auto`), run id."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Solicitation",
+                    "`solicitation.md` (stage 02 output)",
+                    "full",
+                    "what may be sent + the requested scope of use"
+                  ],
+                  [
+                    "Consent basis",
+                    "consent ledger · `okf:consent_event`",
+                    "this recipient + channel",
+                    "re-assert the basis at send time"
+                  ]
+                ]
+              },
+              "outputs": "`sent.md` — the final solicitation text, the channel, the approver, and the send result (or `parked` / `blocked` with reason).",
+              "audit": [
+                "Consent basis re-checked at send time (not only at draft time)",
+                "Approver identity recorded — a human id, **never `auto`** (this send never auto-approves)",
+                "Send went via the ADR-0058 path only (no other route exists)",
+                "Send result recorded (sent / parked / blocked + reason); timeline entry id present"
+              ],
+              "checkpoint": "A human approves the solicitation before it leaves. **The solicitation send is a customer-relationship-sensitive, non-routine FIRST touch → human-approved at EVERY rung, never auto** — there is no auto-approve carve-out for this stage. The send exits only through ADR-0058 with a current consent basis; NO-COMMITS-EVER and MSSP-advisory-only are dial-proof. Opt-out outranks everything."
+            },
+            {
+              "slug": "04-record-consent-handoff",
+              "name": "record-consent-handoff",
+              "job": "on the client's agreement, record the consent with scope and hand a consented `reference` to Belle.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "On the client's **agreement**, record/confirm the `consent_event` with the **agreed scope of use** (testimonial / reference-case / logo-use). No `consent_event` with scope = no reference."
+                },
+                {
+                  "tag": "script",
+                  "text": "Create a `reference` at status **`consented`** (`reference.write`) linked to the `account`, `contact`, and `consent_event`, carrying the scope — **this is the handoff to Belle's `advocacy-capture` (Stream 01-O)**. Belle captures from there and **never contacts the client**; the handoff is a **record**, not a client-contact path."
+                },
+                {
+                  "tag": "script",
+                  "text": "On a **decline**, record the decline (consent ledger), create **no** reference, and end — terminal."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sent",
+                    "`sent.md` (stage 03 output)",
+                    "full",
+                    "the solicitation that was sent + the requested scope"
+                  ],
+                  [
+                    "Cultivation skill",
+                    "`./skills/advocacy-cultivation.md`",
+                    "all",
+                    "the Celeste→Belle handoff contract (record, not contact)"
+                  ],
+                  [
+                    "Client agreement",
+                    "the client's reply (agreement or decline)",
+                    "full",
+                    "does a reference get created, and at what scope"
+                  ],
+                  [
+                    "Consent ledger",
+                    "consent ledger · `okf:consent_event`",
+                    "this recipient + scope",
+                    "record/confirm the agreed scope of use"
+                  ],
+                  [
+                    "Recipient",
+                    "silver `contact` · `okf:contact`; silver `account` · `okf:account`",
+                    "this client",
+                    "link targets for the reference"
+                  ]
+                ]
+              },
+              "outputs": "`reference.md` — the consented `reference` id at status `consented` (with account / contact / consent_event refs and the scope), **or** a recorded decline. Terminal stage.",
+              "audit": [
+                "A `reference` reaches `consented` **only** with a recorded `consent_event` + agreed scope",
+                "The `reference` is linked to the `account`, `contact`, and `consent_event` with the scope",
+                "The handoff to Belle is a **record** (`reference` at `consented`), not a client-contact path",
+                "A decline records the decline, creates no reference, and terminates"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "renewal-readiness",
           "title": "renewal-readiness (client-success v1)",
           "job": "assess a client's **renewal readiness** ahead of a renewal in range — assemble the readiness picture (health, service track record, posture, the margin signal arriving from Audrey) and park the recommended renewal posture (renew-as-is / uplift / at-risk → save-play) for a human and for Chase. Celeste owns the *relationship* readiness; **Chase owns the renewal transaction** (the renewal-reprice workflow). This is the Celeste side of that seam.",
