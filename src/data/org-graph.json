@@ -1202,7 +1202,8 @@
         "consent.check",
         "send.email",
         "send.dm",
-        "opportunity.write"
+        "opportunity.write",
+        "reference.write"
       ],
       "okfRooms": [
         "account",
@@ -1212,7 +1213,8 @@
         "ticket",
         "strategic_business_review",
         "lead_score",
-        "consent_event"
+        "consent_event",
+        "reference"
       ],
       "workflows": [
         {
@@ -1277,6 +1279,15 @@
             "01-period-recap",
             "02-health-and-forward",
             "03-assemble-pack"
+          ]
+        },
+        {
+          "slug": "reference-cultivation",
+          "stages": [
+            "01-identify-advocate",
+            "02-draft-solicitation",
+            "03-review-send",
+            "04-record-consent-handoff"
           ]
         },
         {
