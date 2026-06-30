@@ -5,7 +5,264 @@
       "id": "orchestrator",
       "persona": "Nova",
       "kind": "orchestrator",
-      "procedures": []
+      "procedures": [
+        {
+          "slug": "intake-route",
+          "title": "intake-route (Orchestrator / Nova, the single front door)",
+          "job": "take any human request or inbound event, ground it, classify the intent, and `delegate` it to exactly the one agent who owns it — then synthesize the result into one clear answer and return it to the asking human. Nova routes and synthesizes; she **never actuates** — every real effect happens inside the sub-agent under its own gauntlet.",
+          "trigger": "any human ask to the orchestrator (the one user-facing agent, core principle §2.2) or an inbound event addressed to Nova. Runs per request, not on a schedule.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "route + delegate to exactly one unambiguous owner when the request is within the asking human's authority and stays inside one division (pool-never-bleed). Ambiguous ownership, a cross-division conflict, an always-gated effect, or a request exceeding the human's authority parks for the owning human. Nova never actuates and never bypasses the owner's gauntlet.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "entity_xref"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-intake",
+              "name": "intake",
+              "job": "turn the raw request/event into one grounded intake record — what is asked, the entities it concerns, the recalled thread, and the asking human's authority.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Parse the ask into intent + subject + any constraints (consent, budget, deadline, urgency). Separate the request from the noise."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve named/implied entities via `entity_xref` → attach `account`/ `contact` id + name only. Read-only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall the thread and related prior context via the retrieval tier; attach each item with its source reference. A miss is recorded as \"no recall,\" never filled with a guess."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the asking human and their authority scope (used by stage 02 for the most-restrictive bar)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The request",
+                    "the inbound ask/event",
+                    "the verbatim ask + who is asking",
+                    "what to route"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "entities named in the ask",
+                    "resolve the real subjects across systems"
+                  ],
+                  [
+                    "Accounts",
+                    "silver `account` · `okf:account`",
+                    "accounts named/implied",
+                    "who the request is about"
+                  ],
+                  [
+                    "Contacts",
+                    "silver `contact` · `okf:contact`",
+                    "people named/implied",
+                    "who the request is about"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this thread's history + related context",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`intake.md` — the parsed intent + constraints, the resolved entity ids in scope, the cited recall items (or an explicit \"no recall\"), and the asking human + their authority.",
+              "audit": [
+                "Intent and any constraints (consent/budget/deadline) are stated explicitly",
+                "Every entity reference states its id; none invented",
+                "Every recall item carries a source reference; a miss is recorded as \"no recall,\" not a guess",
+                "The asking human and their authority scope are recorded",
+                "Read-only — nothing actuated, nothing written outside the run record"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-classify-route",
+              "name": "classify-route",
+              "job": "classify the grounded intent and select exactly one owner — the division or worker whose domain owns the request — or flag a conflict when ownership is ambiguous or spans divisions.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Classify the intent to its owning division: Rachel (G&A) · Dexter (Delivery & Eng) · Roman (Security) · Sterling (Revenue/Client/Finance) · Jessica (Risk/Assurance). Where the owning worker is unambiguous, name it; otherwise route to the division's C-suite agent and let them fan out."
+                },
+                {
+                  "tag": "script",
+                  "text": "Apply the **most-restrictive authority bar**: if the request exceeds the asking human's authority, mark it park-for-the-owning-human, not auto-route."
+                },
+                {
+                  "tag": "script",
+                  "text": "Enforce **pool-never-bleed**: the route stays inside one division and one client/owner's RLS scope; cross-correlation is internal only — no other client's or owner's data may surface in the answer (two-axis RLS)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "If ownership is ambiguous or the request genuinely spans divisions, mark it a **conflict** (do not guess an owner) — it routes to conflict handling / the owning human's queue rather than a single delegate."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Intake record",
+                    "stage 01 `intake.md`",
+                    "all",
+                    "the grounded intent, entities, constraints, authority"
+                  ],
+                  [
+                    "Org tree",
+                    "`../../../org.yaml` (read as routing reference)",
+                    "divisions + their domains",
+                    "who owns what"
+                  ]
+                ]
+              },
+              "outputs": "`route.md` — the chosen owner (single division or worker) **or** a conflict flag, with the one-line rationale, the authority decision (route vs park), and the pool/RLS scope the delegation must stay within.",
+              "audit": [
+                "Exactly one owner is named, OR a conflict is flagged — never a guessed owner",
+                "The route stays inside one division (pool-never-bleed); RLS scope is stated",
+                "Most-restrictive authority bar applied; over-authority requests marked park",
+                "Rationale cites the intent + org ownership, not invented capability"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-delegate",
+              "name": "delegate",
+              "job": "hand the unit of work to exactly the one owner chosen in stage 02, carrying every constraint — or transfer the in-flight thread via `handoff`. Nova delegates; she does not actuate.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "If stage 02 flagged a conflict or a park (over-authority / always- gated), do **not** delegate — carry it to stage 04 for the owning human's queue."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Otherwise compose the delegation: the intent plus every constraint (consent, budget, deadline, the asking human's authority) and the pool/RLS scope, so the owner inherits the full picture."
+                },
+                {
+                  "tag": "script",
+                  "text": "`delegate` the unit to **exactly one** owner (never fan one unit to several). Use `handoff` instead when an in-flight thread transfers wholesale."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the delegation/handoff and await the owner's result. Nova actuates nothing here — the owner acts under its own gauntlet."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Route decision",
+                    "stage 02 `route.md`",
+                    "the single owner + pool/RLS scope + authority decision",
+                    "who to hand to and within what bounds"
+                  ],
+                  [
+                    "Intake record",
+                    "stage 01 `intake.md`",
+                    "intent + constraints",
+                    "what to carry so the owner re-derives nothing"
+                  ]
+                ]
+              },
+              "outputs": "`delegation.md` — the owner delegated to (or the parked conflict carried forward), the constraints handed across, and the owner's returned result reference.",
+              "audit": [
+                "Exactly one owner delegated to (or an explicit park/conflict carried forward) — never multiple owners for one unit",
+                "Every constraint from intake was carried (consent/budget/deadline/authority)",
+                "Nova actuated nothing — only `delegate`/`handoff` (no send, write, or money move)",
+                "The owner's own gauntlet was not bypassed or lowered (ADR-0128)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "04-synthesize-return",
+              "name": "synthesize-return",
+              "job": "compose the owner's result into one clear answer in Nova's voice, carry the citations, and surface any always-gated item or escalation to the owning human's queue. The answer to the human is the checkpoint.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Compose one coherent answer in Nova's voice — lead with the answer, altitude-matched to the asking human; no preamble."
+                },
+                {
+                  "tag": "script",
+                  "text": "Carry the owner's citations into the answer so the human can drill to the source. Any section the owner could not ground is stated as \"no data,\" never filled in."
+                },
+                {
+                  "tag": "script",
+                  "text": "Route every always-gated item (money, production, permissions, `X.0.0`, any binding commitment) and any escalation to the **owning human's** single queue — to whoever owns the decision, not automatically to Derek."
+                },
+                {
+                  "tag": "script",
+                  "text": "Return the answer to the asking human and park. No actuation — every real effect already happened (or parked) inside the owner under its gauntlet."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Delegation result",
+                    "stage 03 `delegation.md`",
+                    "the owner's returned result, or the parked conflict",
+                    "what to synthesize"
+                  ],
+                  [
+                    "Intake record",
+                    "stage 01 `intake.md`",
+                    "the original ask + asking human",
+                    "answer the question that was actually asked"
+                  ]
+                ]
+              },
+              "outputs": "`answer.md` — the synthesized answer (cited) for the asking human, plus the queued always-gated items/escalations routed to their owning humans. The run ends here at the checkpoint; Nova actuates nothing.",
+              "audit": [
+                "The answer addresses the original ask; leads with the answer, altitude-matched",
+                "Citations carried through; any ungrounded section stated as \"no data,\" not invented",
+                "Always-gated items / escalations routed to the OWNING human's queue (not defaulted to Derek)",
+                "Pool-never-bleed held — no other client's or owner's data surfaced (two-axis RLS)",
+                "No actuation occurred — the run parked at the answer"
+              ],
+              "checkpoint": null
+            }
+          ]
+        }
+      ]
     },
     "chief-of-staff": {
       "id": "chief-of-staff",
@@ -7014,7 +7271,7 @@
           "slug": "opportunity-create",
           "title": "opportunity-create (sales v1)",
           "job": "when a routed lead qualifies MQL→SQL, create and document the `opportunity` record — Chase's **L2 auto-internal** capability (ADR-0128 D1): an internal, reversible CRM write with no customer-facing side effect.",
-          "trigger": "a lead Chase has qualified to SQL — handed over from `lead-response` (stage 01 fit-score) or summoned by Jarvis post-score (Belle → `lead_score` threshold → Chase). One run per qualifying lead.",
+          "trigger": "a lead Chase has qualified to SQL — handed over from `lead-response` (stage 01 fit-score) or summoned by Nova post-score (Belle → `lead_score` threshold → Chase). One run per qualifying lead.",
           "model": "claude-sonnet-4-5",
           "autonomyRung": "L2",
           "autoMaySelfApprove": "create + document the opportunity record (opportunity.write) when the stage-01 qualification audit is green and the lead clears the MQL->SQL bar — an internal, reversible CRM write with no customer-facing side effect. Pricing, quotes, send-for-signature, any customer-facing touch, and any audit failure park for a human in every mode.",
@@ -7061,7 +7318,7 @@
                 "rows": [
                   [
                     "Routed lead",
-                    "the triggering row (lead-response triage / Jarvis post-score handoff)",
+                    "the triggering row (lead-response triage / Nova post-score handoff)",
                     "full payload",
                     "the subject"
                   ],

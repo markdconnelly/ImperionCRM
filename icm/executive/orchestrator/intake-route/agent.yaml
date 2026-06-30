@@ -1,0 +1,12 @@
+name: intake-route
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> orchestrator room -> Nova persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../nova.md
+  - ./prose.md
+okf_rooms: [account, contact, entity_xref]   # subset of executive/orchestrator/room.yaml; the identity spine Nova reads to route correctly
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # the full delegate-only exec budget; this workflow routes, so it uses delegate/handoff
+skills: []
+autonomy_rung: L2                     # delegate — Nova hands work to one owner; the exec ceiling is L2 delegate-only (CONSTITUTION §9). She never actuates.
+auto_may_self_approve: "route + delegate to exactly one unambiguous owner when the request is within the asking human's authority and stays inside one division (pool-never-bleed). Ambiguous ownership, a cross-division conflict, an always-gated effect, or a request exceeding the human's authority parks for the owning human. Nova never actuates and never bypasses the owner's gauntlet."

@@ -6,7 +6,7 @@
 
 | Source | Location | Scope | Why |
 |---|---|---|---|
-| Routed lead | the triggering row (lead-response triage / Jarvis post-score handoff) | full payload | the subject |
+| Routed lead | the triggering row (lead-response triage / Nova post-score handoff) | full payload | the subject |
 | Lead score | silver `lead_score` · `okf:lead_score` | this lead's score + factors | the routing threshold Belle scored to |
 | Contact / account | silver `contact` / `account` · `okf:contact` `okf:account` | the linked records | who, fit, account context |
 | Prior interactions | silver `interaction` · `okf:interaction` | this contact/account history | grounding the fit call |
