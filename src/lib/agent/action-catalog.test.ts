@@ -51,6 +51,35 @@ describe("catalog registration — send_email + send_sms migrated in", () => {
   });
 });
 
+describe("Marketing content/advocacy writes — content_write + reference_write (#1701/#1702, epic #1696)", () => {
+  it("registers both as L2 auto-internal, never always-gate, no consent channel", () => {
+    const content = getActionDef("content_write");
+    const reference = getActionDef("reference_write");
+    expect(content).toBeDefined();
+    expect(reference).toBeDefined();
+    for (const def of [content!, reference!]) {
+      // INTERNAL approval-gated silver write (opportunity.write precedent) → L2 auto-internal,
+      // never an external commitment → not dial-proof always-gate.
+      expect(def.tier).toBe("T2");
+      expect(def.autoAtLevel).toBe(2);
+      expect(def.alwaysGate).toBe(false);
+      expect(def.consentClass).toBe("none");
+    }
+    // content is operational; reference holds client_pii (the data-class ceiling parks it in v1).
+    expect(content!.dataClass).toBe("operational");
+    expect(reference!.dataClass).toBe("client_pii");
+    expect(content!.executor).toBe("content_write");
+    expect(reference!.executor).toBe("reference_write");
+  });
+
+  it("never registers a brand_asset write kind (D5 read-only invariant)", () => {
+    // brand_asset is human-owned, agent read-only — no write action exists, ever.
+    for (const kind of ["brand_write", "brand_asset_write", "brand.write"]) {
+      expect(getActionDef(kind)).toBeUndefined();
+    }
+  });
+});
+
 describe("Threads outbound — publish_threads + reply_threads (ADR-0125 D3 / #1337)", () => {
   it("registers both as T3 customer-facing, non-consent, threads_publish executor", () => {
     const publish = getActionDef("publish_threads");

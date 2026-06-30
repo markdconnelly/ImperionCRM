@@ -155,6 +155,9 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [social_post](tables/social_post.md) | Marketing | B | op | ✅ | campaign ops (compose-once organic composition → fan-out; #1339/0210, ADR-0124 #3) |
 | [social_post_channel](tables/social_post_channel.md) | Marketing | B | op | ✅ | campaign ops (per-network fan-out result; UNIQUE (social_post_id, channel); #1339/0210, ADR-0124 #3) |
 | [social_engagement](tables/social_engagement.md) | Marketing | B | op | ✅ | inbound triage (public comments + brand mentions; NOT on the Interaction timeline; contact-linked on match in slice G; lawful-basis ADR-0025; #1339/0210, ADR-0124 #2; Meta poll-in: comments ← `facebook_comments`/`instagram_comments` (slice H #357), mentions ← `meta_mentions` bronze (0213, #1365)) |
+| [content_asset](tables/content_asset.md) | Marketing | B | op | ✅ | content-studio (01-N) — typed authored content/enablement/PR; draft→review→publish-handoff to Loveable (`publish_ref`); attribution asset→campaign (#1316); brand-compliance note ref to brand_asset (#1697, epic #1696 D2/D3) |
+| [reference](tables/reference.md) | Marketing | B | pii | ✅ | advocacy-capture (01-O) — consent-gated customer proof (testimonial/review/reference_case/logo_use); HARD consent precondition (D4); Celeste owns the client touch, Belle captures post-consent (#1698, epic #1696) |
+| [brand_asset](tables/brand_asset.md) | Marketing | B | op | ✅ | governance registry (no workspace) — human-owned, agent READ-ONLY (D5); read by content-studio review-gate + Vera marketing-conformance; SELECT-only grants (#1699, epic #1696) |
 
 ## Time
 
