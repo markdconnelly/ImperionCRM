@@ -1219,6 +1219,7 @@
         "cloud_asset",
         "device",
         "posture_snapshot",
+        "stakeholder",
         "reference"
       ],
       "workflows": [
@@ -1333,6 +1334,14 @@
             "01-read-posture",
             "02-assess-report",
             "03-finalize-report"
+          ]
+        },
+        {
+          "slug": "stakeholder-mapping",
+          "stages": [
+            "01-relationship-read",
+            "02-map-assess",
+            "03-propose-map"
           ]
         },
         {

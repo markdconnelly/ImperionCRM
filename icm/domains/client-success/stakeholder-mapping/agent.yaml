@@ -1,0 +1,13 @@
+name: stakeholder-mapping
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, interaction, strategic_business_review, stakeholder]   # subset of domains/client-success/room.yaml
+tools: [pg.read]                                                                     # read + assess + PROPOSE only; the silver write is backend-owed (no write tool in v1)
+skills:
+  - ./skills/stakeholder-rubric        # Tier 3 — workflow-local (classify role/influence/sentiment from measured signals; champion-departure detection)
+autonomy_rung: L2
+auto_may_self_approve: "at L2 read the relationship + assess the stakeholder map from MEASURED signals and PROPOSE the map update (internal, reversible, signal-labeled — source=derived vs curated; never assert a role without evidence); the silver write is backend-owed (propose-only until the stakeholder-mapping executor lands). No client-facing touch in this workspace. Champion-departure routes as a churn signal to 08-D. NO-COMMITS-EVER and the signal-vs-inference discipline are dial-proof (celeste.md guardrails 1,3). 💤 propose-only until the BE executor + #1369/#1370 (ADR-0123)."

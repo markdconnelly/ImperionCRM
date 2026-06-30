@@ -105,6 +105,9 @@ okf_rooms:
   - contract           # Client-Success workspace (#1687) — agreement/expiry/terms
                        #   (kernel/op silver); Celeste reads it for renewal-readiness
                        #   (08-E) to ground on real renewal dates + terms (read)
+  - stakeholder       # Client-Success workspace (#1695) — per-account relationship/
+                      #   influence map on contacts (champion/economic_buyer/…); champion→
+                      #   departed is the leading churn signal; signal-labeled by source (read)
   - time_record       # Finance workspace (#1423) — monthly-close time fact (read)
   - timesheet         # Finance workspace — attested timesheet (read)
   - expense_item      # Finance workspace — monthly-close expense fact (read)

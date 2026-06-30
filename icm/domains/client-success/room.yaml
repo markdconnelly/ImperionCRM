@@ -68,5 +68,10 @@ okf_rooms:
                          #   (Vera precedent). Celeste reads Vera's measured snapshot
                          #   read-only and FRAMES it for the client — she never re-scores
                          #   (the MSSP/vCISO-advisory boundary, celeste.md guardrail 2).
+  - stakeholder          # the per-account relationship/influence map (#1695): who is
+                         #   champion / economic-buyer / technical / influencer / user /
+                         #   detractor + influence + sentiment + active-vs-departed.
+                         #   champion→departed is the leading churn signal (08-D); read-only,
+                         #   signal-labeled by source (never assert a detractor w/o evidence).
   - reference            # the advocacy seam (#1703/#1692): the reference candidate
                          #   Celeste cultivates → consents → hands to Belle (Stream 01-O)
