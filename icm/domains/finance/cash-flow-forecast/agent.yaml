@@ -1,0 +1,13 @@
+name: cash-flow-forecast
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [invoice, budget, time_record, expense_item]             # subset of domains/finance/room.yaml — inflow (invoice) + outflow (time/expense vs budget)
+tools: [pg.read]                      # subset of domains/finance/room.yaml — read-only, no write/send/money action
+skills:
+  - ./skills/forecast-rubric          # Tier 3 — workflow-local (inflow/outflow inputs + runway method + D3 transparent-projection discipline)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the INTERNAL runway projection + material-runway-risk flags to the cockpit / Sterling from GROUNDED inflow/outflow inputs — internal, reversible (a flag can be dismissed) at L2, always showing the projection method + assumptions, labeling measured INPUT vs derived PROJECTION (the projection is a transparent forward-looking inference, never a measured fact — D3), and stamping its as-of date. Audrey never posts an entry, alters an invoice, edits the budget, or pushes to QBO (ADR-0123); there is no send and no money action to self-approve. A missing forecast INPUT parks as an escalated gap, NEVER a guessed input."

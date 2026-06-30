@@ -18376,6 +18376,165 @@
       "kind": "domain",
       "procedures": [
         {
+          "slug": "anomaly-sweep",
+          "title": "anomaly-sweep (finance v1)",
+          "job": "proactively scan the finance silver for **financial anomalies + controls drift** — margin compression, cost spikes, duplicate / aberrant entries, reconciliation drift — and produce a **flagged-anomaly set with tie-outs**, each escalated to the cockpit / Sterling. Read-only; Audrey scans, ties out, and flags; a human reads and acts. This is Audrey's dedicated anomaly room — the auditor's watchdog.",
+          "trigger": "a scheduled sweep cadence (the controls watchdog), a period close, or an on-demand \"scan finance for anything off\" ask. One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the INTERNAL flagged-anomaly set (margin compression / cost spike / duplicate-or-aberrant entry / reconciliation drift) to the cockpit / Sterling from MEASURED finance-silver facts — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived, carrying each anomaly's tie-out, and stamping its as-of date. Audrey never posts, alters or deletes an entry, fixes a duplicate, or pushes to QBO (ADR-0123); a flagged duplicate / aberrant entry is raised for a human (and QBO) to resolve — there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "time_record",
+            "timesheet",
+            "expense_item",
+            "expense_report",
+            "invoice",
+            "generated_invoice"
+          ],
+          "skills": [
+            "./skills/anomaly-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-scan",
+              "name": "scan",
+              "job": "sweep the finance silver for candidate anomalies across the rubric's anomaly classes, into one as-of-dated candidate record. Scan only; no confirmed flag, no escalation, no action.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the **scan window** and the **as-of date** for the run; stamp every subsequent figure with that as-of date."
+                },
+                {
+                  "tag": "script",
+                  "text": "Sweep each anomaly class per the rubric: read the margin inputs (invoice revenue vs attested cost), the cost run-rates (`time_record` / `expense_item`), the duplicate / aberrant-entry candidates (matched amount / vendor / period, out-of-range values), and the reconciliation-drift candidates (`generated_invoice` vs `invoice` mirror; attestation tie-outs). Write no silver row (read-only)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "For each candidate, capture the **measured** detection signal and its baseline / expected in plain prose. Candidates only — no confirmed flag yet."
+                },
+                {
+                  "tag": "script",
+                  "text": "Mark each captured figure **measured** or **derived**, and flag any source that is missing or stale as a **gap** — never fill a gap with an estimate (a class that could not be swept is a noted gap, not a \"clean\")."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "As-of scope",
+                    "the triggering run",
+                    "the scan window + as-of date",
+                    "the subject"
+                  ],
+                  [
+                    "Attested time",
+                    "silver `time_record` / `timesheet` · `okf:time_record` `okf:timesheet`",
+                    "window rows",
+                    "cost-spike + reconciliation-drift signals"
+                  ],
+                  [
+                    "Approved expense",
+                    "silver `expense_item` / `expense_report` · `okf:expense_item` `okf:expense_report`",
+                    "window rows",
+                    "cost-spike + duplicate / aberrant-entry signals"
+                  ],
+                  [
+                    "Invoice record",
+                    "silver `invoice` (QBO read-only mirror) · `okf:invoice`",
+                    "window rows",
+                    "margin + duplicate + reconciliation-drift signals"
+                  ],
+                  [
+                    "Invoice drafts",
+                    "silver `generated_invoice` · `okf:generated_invoice`",
+                    "window rows",
+                    "duplicate + reconciliation-drift (draft vs mirror) signals"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/anomaly-rubric.md`",
+                    "all",
+                    "the anomaly classes + detection signals"
+                  ]
+                ]
+              },
+              "outputs": "`candidates.md` — for the scan window and its as-of date: the candidate anomalies by class, each with its measured detection signal and baseline / expected, every figure labelled measured/derived, and any source gaps called out. No confirmed flag or escalation yet — that is stage 02.",
+              "audit": [
+                "Scan window and a single as-of date are stated",
+                "Each anomaly class swept (or its source recorded as a gap, not guessed)",
+                "Each captured figure labelled measured or derived; no figure estimated into a gap",
+                "No silver row written; no entry posted, deleted, or corrected (read-only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-flag-with-tie-out",
+              "name": "flag-with-tie-out",
+              "job": "tie out each candidate, confirm the anomalies that cross the threshold, and escalate the flagged-anomaly set to the cockpit / Sterling. A flagged-anomaly set with tie-outs — never a post, an entry edit / deletion, a duplicate fix, or a QBO push.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each candidate, assemble the tie-out: baseline / expected, actual, deviation, carrying the as-of date through."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Decide **confirmed anomaly** vs noise against the rubric's confidence / materiality threshold. For each confirmed anomaly write the tie-out and its class. Distinguish a **signal** (a measured fact) from an **inference**; never estimate into a data gap."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any stage-01 source gap becomes a **Gap** item — escalate it, do not guess. A run with any gap is not a clean sweep."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Set the sweep verdict per the rubric — **Clean** (no confirmed anomaly), **Anomalies flagged** (≥1 confirmed), or **Gap** — and write the one-line reason."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Assemble the internal flag: the flagged-anomaly set (each with class + tie-out), the verdict, and the as-of date — for the cockpit / Sterling. Report only aggregate figures; never disclose an individual rate (salary non-disclosure, audrey.md). A flagged duplicate / aberrant entry is raised for a human (and QBO) to resolve — never corrected here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Candidates",
+                    "stage 01 `candidates.md`",
+                    "all (candidates by class, signals, gaps, as-of date)",
+                    "the candidates being tied out"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/anomaly-rubric.md`",
+                    "all",
+                    "the tie-out discipline + the confidence / materiality threshold"
+                  ]
+                ]
+              },
+              "outputs": "`anomalies.md` — the flagged-anomaly set (each with class, tie-out, signal source), the Gap items, the sweep verdict + reason, and the as-of date. An internal, reversible `operational`-class flag; never a post, an entry edit, a duplicate fix, or an invoice change.",
+              "audit": [
+                "Every confirmed anomaly carries its class and tie-out (baseline / expected, actual, deviation)",
+                "Each figure labelled measured or derived; no gap filled by an estimate",
+                "Sweep verdict (Clean / Anomalies flagged / Gap) + one-line reason stated, with as-of date",
+                "No individual rate disclosed; no entry posted / deleted / corrected, no duplicate fixed, no QBO push (read-only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "ar-aging",
           "title": "ar-aging (finance v1)",
           "job": "produce a read-only **AR aging + cash-position summary** for the CFO / board — bucket open receivables by age (current / 1–30 / 31–60 / 61–90 / 90+) off the `invoice` QBO read-only mirror, and surface the resulting cash-position picture. Read-only; Audrey **summarizes**, a human reads.",
@@ -18598,6 +18757,472 @@
                 "No approval, posting, or QBO push emitted"
               ],
               "checkpoint": "The CFO/approver loop: a human reviews the flags and approves/rejects the attestation; any money movement is QBO (ADR-0123). **`auto` (L2) may self-approve raising the internal deviation flag + memory-jogger ONLY** — there is no approval, posting, or money move in Audrey's catalog at any rung (read-only ceiling, audrey.md)."
+            }
+          ]
+        },
+        {
+          "slug": "budget-variance",
+          "title": "budget-variance (finance v1)",
+          "job": "read the human-authored operating **plan** (silver `budget`) against the **actuals** (attested time, approved expense, the invoice mirror) and produce a **plan-vs-actual variance read** — the delta per account / period, as-of dated, with **material variances flagged** and raised to the cockpit / Sterling. Read-only; Audrey computes and flags the variance, a human reads and acts.",
+          "trigger": "a budgeting / board-reporting cycle, a period close, or an on-demand \"how are we tracking to plan?\" ask. One run per period + as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the INTERNAL plan-vs-actual variance read + material-variance flags (delta per account / period) to the cockpit / Sterling from MEASURED budget-plan + actuals facts — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived and stamping its as-of date. Audrey never edits the budget, posts an entry, alters an invoice, or pushes to QBO (ADR-0123); the budget plan is agent READ-ONLY (#1718) and there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "budget",
+            "time_record",
+            "expense_item",
+            "invoice"
+          ],
+          "skills": [
+            "./skills/variance-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "read the period's `budget` plan and the matching actuals (attested time, approved expense, invoice mirror) into one as-of-dated plan-and-actuals record. Gather only; no variance, no flag, no action.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the period bounds and the read as-of date; stamp every subsequent figure with that as-of date."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the `budget` plan lines for the period (per account / period). The budget is **read-only** — write no row to it (#1718). A plan line absent for an account that has an actual is a **noted gap**, not a guessed zero."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the actuals per the rubric: period labor cost from attested `time_record`, period approved expense by category from `expense_item`, period billed revenue from the `invoice` QBO mirror. Record figures; write no silver row (read-only)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Align each actual to its plan account / period key. Mark each captured figure **measured** (a direct read) or **derived**, and flag any plan line or actual that is missing or stale as a **gap** — never fill a gap with an estimate."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Period scope",
+                    "the triggering run (the budgeted period being read)",
+                    "the period bounds + as-of date",
+                    "the subject"
+                  ],
+                  [
+                    "Operating plan",
+                    "silver `budget` · `okf:budget`",
+                    "plan lines for the period (per account)",
+                    "the plan side of plan-vs-actual (READ-ONLY, #1718)"
+                  ],
+                  [
+                    "Actual labor",
+                    "silver `time_record` · `okf:time_record`",
+                    "period attested time",
+                    "actual labor cost (row 1)"
+                  ],
+                  [
+                    "Actual expense",
+                    "silver `expense_item` · `okf:expense_item`",
+                    "period approved expense, by category",
+                    "actual expense (row 2)"
+                  ],
+                  [
+                    "Actual revenue",
+                    "silver `invoice` (QBO read-only mirror) · `okf:invoice`",
+                    "period billed revenue",
+                    "actual revenue (row 3)"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/variance-rubric.md`",
+                    "all",
+                    "what each plan line / actual feeds"
+                  ]
+                ]
+              },
+              "outputs": "`plan-actuals.md` — for the period and its as-of date: the `budget` plan lines, the three actuals (labor / expense / revenue) aligned to their plan keys, every figure labelled measured/derived, and any gaps called out. No variance or flag yet — that is stage 02.",
+              "audit": [
+                "Period bounds and a single read as-of date are stated",
+                "Plan lines + the three actuals present, each aligned to its account / period key",
+                "Each figure labelled measured or derived; no figure estimated into a gap",
+                "Any missing/stale plan line or actual recorded as a gap (never estimated)",
+                "No silver row written (budget and all sources read-only); no money action taken"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-compute-variance-and-flag",
+              "name": "compute-variance-and-flag",
+              "job": "turn the gathered plan-and-actuals into the plan-vs-actual variance read, flag each material variance with its tie-out, and raise it to the cockpit / Sterling. A variance read + material-variance flags — never a budget edit, a post, an invoice change, or a QBO push.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each plan line, compute the **delta** (actual − plan) and the **% of plan**, carrying the as-of date through."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Decide **material** vs immaterial for each line against the rubric threshold. For each material variance write the tie-out: plan, actual, delta, % of plan, signal source. Distinguish a **signal** (a measured fact) from an **inference**; never estimate into a data gap."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any stage-01 gap becomes a **Gap** item — escalate it, do not guess. A run with any gap is not a clean \"on plan\"."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Set the variance verdict per the rubric — **On plan** (no material variance), **Variance flagged** (≥1 material), or **Gap** — and write the one-line reason."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Assemble the internal flag: the variance distribution, each material variance's tie-out, the verdict, and the as-of date — for the cockpit / Sterling. Report only aggregate labor figures; never disclose an individual rate (salary non-disclosure, audrey.md)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Plan + actuals",
+                    "stage 01 `plan-actuals.md`",
+                    "all (plan lines, actuals, gaps, as-of date)",
+                    "the figures being compared"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/variance-rubric.md`",
+                    "all",
+                    "the alignment, the material-variance threshold, the tie-out discipline"
+                  ]
+                ]
+              },
+              "outputs": "`variance.md` — the plan-vs-actual variance distribution (per account / period), the material- variance flags each with a tie-out, the Gap items, the variance verdict + reason, and the as-of date. An internal, reversible `operational`-class flag; never a budget edit, a post, or an invoice change.",
+              "audit": [
+                "Each plan line carries plan, actual, delta, % of plan, with the as-of date",
+                "Every material variance flagged carries its tie-out (plan, actual, delta, signal source)",
+                "Each figure labelled measured or derived; no gap filled by an estimate",
+                "Variance verdict (On plan / Variance flagged / Gap) + one-line reason stated, with as-of date",
+                "No individual rate disclosed; no budget edit / post / invoice change / QBO push taken (read-only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "cash-flow-forecast",
+          "title": "cash-flow-forecast (finance v1)",
+          "job": "read the expected **cash inflow** (AR from the `invoice` mirror) and the expected **cash outflow** (payroll / recurring from `time_record` + `expense_item`, against the `budget` plan), and produce a **runway projection** — how cash trends forward from grounded inputs, with material runway risk **flagged** and raised to the cockpit / Sterling. Read-only; Audrey projects from the numbers and flags the risk, a human reads and acts.",
+          "trigger": "a treasury / board-reporting cycle, a period close, or an on-demand \"what's our runway?\" ask. One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the INTERNAL runway projection + material-runway-risk flags to the cockpit / Sterling from GROUNDED inflow/outflow inputs — internal, reversible (a flag can be dismissed) at L2, always showing the projection method + assumptions, labeling measured INPUT vs derived PROJECTION (the projection is a transparent forward-looking inference, never a measured fact — D3), and stamping its as-of date. Audrey never posts an entry, alters an invoice, edits the budget, or pushes to QBO (ADR-0123); there is no send and no money action to self-approve. A missing forecast INPUT parks as an escalated gap, NEVER a guessed input.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "invoice",
+            "budget",
+            "time_record",
+            "expense_item"
+          ],
+          "skills": [
+            "./skills/forecast-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "read the grounded inflow + outflow inputs — expected AR inflow, and payroll / recurring outflow against the budget plan — into one as-of-dated inputs record. Gather only; no projection, no flag, no action.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the **as-of date** and the **projection horizon** for the run; stamp every subsequent figure with that as-of date."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the AR inflow input from the `invoice` QBO read-only mirror — open balances as the **measured** inflow basis. If the AR mirror is unhydrated (#1580) or stale, record a **gap** — the missing input is escalated, never guessed."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the outflow inputs: recent payroll / recurring labor from `time_record` and recurring expense from `expense_item` as the **measured** outflow basis, and the planned outflow from the `budget` baseline (read-only, #1718). Write no silver row (read-only)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Mark each captured figure **measured** (a direct read, the grounded basis) and flag any missing or stale input as a **gap** — never fill a forecast input with an estimate. No projection here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "As-of scope",
+                    "the triggering run",
+                    "the as-of date + projection horizon",
+                    "the subject"
+                  ],
+                  [
+                    "AR inflow (QBO mirror)",
+                    "silver `invoice` (QBO read-only mirror) · `okf:invoice`",
+                    "open invoices as of the date",
+                    "expected inflow input (#1580)"
+                  ],
+                  [
+                    "Payroll / recurring labor",
+                    "silver `time_record` · `okf:time_record`",
+                    "recent attested labor cost",
+                    "outflow input — labor run-rate"
+                  ],
+                  [
+                    "Recurring expense",
+                    "silver `expense_item` · `okf:expense_item`",
+                    "recent approved expense",
+                    "outflow input — expense run-rate"
+                  ],
+                  [
+                    "Outflow plan baseline",
+                    "silver `budget` · `okf:budget`",
+                    "planned outflow for the horizon",
+                    "the plan baseline (READ-ONLY, #1718)"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/forecast-rubric.md`",
+                    "all",
+                    "which inputs feed the projection, measured vs projected"
+                  ]
+                ]
+              },
+              "outputs": "`inputs.md` — for the as-of date and horizon: the measured inflow basis (open AR), the measured outflow basis (labor + expense run-rate), the budget outflow baseline, every figure labelled measured, and any missing input recorded as an escalated gap. No projection yet — that is stage 02.",
+              "audit": [
+                "As-of date and projection horizon stated (not blank)",
+                "Inflow basis (open AR) and outflow basis (labor + expense) read, each as a measured figure",
+                "Budget outflow baseline read (read-only); no silver row written",
+                "Any missing/stale forecast input recorded as an escalated gap (never guessed)",
+                "No projection produced here; no money action taken (read-only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-project-runway-and-flag",
+              "name": "project-runway-and-flag",
+              "job": "project the runway from the grounded inputs — showing method + assumptions — flag material runway risk with its tie-out, and raise it to the cockpit / Sterling. A runway projection + risk flags — never a post, an invoice change, a budget edit, or a QBO push.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "If stage 01 recorded a missing forecast **input**, the projection is **gapped** — escalate the gap; do **not** guess the input to complete the projection (D3). Propose-only / dormant until the input grounds (e.g. the AR mirror, #1580)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Project the runway from the grounded inputs per `forecast-rubric.md`: state the **method**, make every **assumption** explicit (collection timing, run-rate, opening basis, scenario toggles), and compute the runway across the horizon. Label every projected figure **inference / scenario**, distinct from the measured inputs."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Decide **material runway risk** vs not against the rubric threshold. For a material risk write the tie-out: opening basis, projected net flow, the period the floor is crossed, the assumptions. Distinguish a **measured input** from a **projected figure**."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Set the runway verdict per the rubric — **Runway clear**, **Risk flagged**, or **Gap** — and write the one-line reason."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Assemble the internal flag: the runway projection (with method + assumptions), the risk tie-out, the verdict, the measured-vs-projected labels, and the as-of date — for the cockpit / Sterling. Report only aggregate outflow; never disclose an individual rate (salary non-disclosure, audrey.md)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Grounded inputs",
+                    "stage 01 `inputs.md`",
+                    "all (inflow basis, outflow basis, baseline, gaps, as-of date, horizon)",
+                    "the grounded basis to project from"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/forecast-rubric.md`",
+                    "all",
+                    "the projection method, the assumptions to show, the risk threshold, the D3 discipline"
+                  ]
+                ]
+              },
+              "outputs": "`runway.md` — the runway projection (method, assumptions, period-by-period across the horizon), the material-risk flags each with a tie-out, the Gap items, the runway verdict + reason, the measured-vs-projected labels, and the as-of date. An internal, reversible `operational`-class flag; never a post, an invoice change, or a budget edit.",
+              "audit": [
+                "Method + every assumption shown; projection horizon stated",
+                "Every projected figure labelled inference / scenario, distinct from the measured inputs",
+                "Material runway risk (if any) carries its tie-out (opening basis, projected net flow, floor-cross period)",
+                "A missing forecast input is escalated as a gap, NEVER guessed (D3); verdict + reason stated with as-of date",
+                "No individual rate disclosed; no post / invoice change / budget edit / QBO push taken (read-only)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "cost-to-serve",
+          "title": "cost-to-serve (finance v1)",
+          "job": "a generalized **client / service-line profitability read-model** — read the governed `cost_to_serve` / `margin_to_serve` metric contracts (**consumed**, not re-derived) and produce a **profitability read**: cost-to-serve and margin per client / service line, with thin-margin or margin-compression **flagged** to the cockpit / Sterling and supplied as note-only context to the line agents. Read-only; Audrey reads the governed metrics and lights up the margin, a human acts.",
+          "trigger": "a profitability / board-reporting cycle, a period close, or an on-demand \"where is margin thin?\" ask. One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the INTERNAL client / service-line profitability read + thin-margin / compression flags to the cockpit / Sterling, supplied note-only to the line agents, from the governed cost_to_serve / margin_to_serve metric_definition contracts CONSUMED (never re-derived; the allocation views 0197/0198/0200 are upstream, exposed through the governed metrics — D1) — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived and stamping its as-of date. ADVISE-NEVER-BLOCK to Pierce / Celeste / Vance — the block / approve is theirs and a human's. Audrey never posts, alters an invoice, edits a metric definition, or pushes to QBO (ADR-0123); there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "metric_definition",
+            "invoice",
+            "time_record"
+          ],
+          "skills": [
+            "./skills/cost-to-serve-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-read-cost-and-margin",
+              "name": "read-cost-and-margin",
+              "job": "read the governed `cost_to_serve` / `margin_to_serve` contracts per client / service line (consumed, not re-derived) into one as-of-dated cost-and-margin record. Read only; no flag, no escalation, no action.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the period and the read as-of date; stamp every subsequent figure with that as-of date."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the governed `cost_to_serve` / `margin_to_serve` contracts from `metric_definition` per client / service line — the **governed result**, not a recomputation (D1). Do **not** read the allocation views (0197/0198/0200) directly — read the governed metric they feed. Where a contract resolves through billed revenue or cost, ground against the `invoice` mirror and the `time_record` cost basis. Write no silver row (read-only)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Mark each captured figure **measured / governed** (read from the contract) or **derived**, and flag any unbound contract or stale source as a **gap** — never fill a gap with an estimate. No flag here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "As-of scope",
+                    "the triggering run",
+                    "the period + as-of date",
+                    "the subject"
+                  ],
+                  [
+                    "Governed cost / margin contracts",
+                    "silver `metric_definition` · `okf:metric_definition`",
+                    "the `cost_to_serve` / `margin_to_serve` contracts per client / service line",
+                    "the governed cost + margin (consumed, not re-derived — D1; allocation views 0197/0198/0200 upstream)"
+                  ],
+                  [
+                    "Revenue grounding",
+                    "silver `invoice` (QBO read-only mirror) · `okf:invoice`",
+                    "where a contract resolves through billed revenue",
+                    "grounding for a contract that resolves through the mirror"
+                  ],
+                  [
+                    "Cost basis grounding",
+                    "silver `time_record` · `okf:time_record`",
+                    "where a contract resolves through attested cost",
+                    "grounding for the cost basis a contract resolves through"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/cost-to-serve-rubric.md`",
+                    "all",
+                    "which contracts to consume, measured / governed vs derived"
+                  ]
+                ]
+              },
+              "outputs": "`cost-margin.md` — for the period and its as-of date: the governed cost-to-serve + margin-to-serve per client / service line (each labelled measured / governed), the grounding sources, and any gaps called out. No flag or escalation yet — that is stage 02.",
+              "audit": [
+                "Period and a single read as-of date are stated",
+                "cost_to_serve / margin_to_serve read from the governed `metric_definition` contracts (not re-derived; allocation views not read directly)",
+                "Each figure labelled measured / governed or derived; no figure estimated into a gap",
+                "Any unbound contract or stale source recorded as a gap (never estimated)",
+                "No silver row written; no metric definition edited; no money action taken (read-only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-profitability-read-and-flag",
+              "name": "profitability-read-and-flag",
+              "job": "assemble the per-client / per-service-line margin picture, flag thin / compressing margin with its tie-out, raise the profitability read to the cockpit / Sterling, and supply note-only context to the line agents. A read + margin flags — never a post, an invoice change, a metric-definition edit, or a QBO push.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each client / service line, assemble cost-to-serve, revenue, margin, and the derived margin %, carrying the as-of date through; compute margin direction vs the prior snapshot only where one exists."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Decide **thin / compressing margin** vs healthy against the rubric threshold. For each flagged line write the tie-out: cost-to-serve, revenue, margin, margin %, as-of date. Distinguish a **signal** (a measured / governed fact) from an **inference**; never estimate into a data gap."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any stage-01 gap becomes a **Gap** item — escalate it, do not guess. A run with any gap is not a clean \"healthy\"."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Set the read verdict per the rubric — **Healthy**, **Margin flagged**, or **Gap** — write the one-line reason, and assemble the **note-only** profitability context for the line agents (Pierce / Celeste / Vance)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Assemble the internal flag: the per-client / per-service-line margin picture, each flagged line's tie-out, the verdict, the as-of date, and the note-only line-agent context — for the cockpit / Sterling. Report only aggregate figures; never disclose an individual rate that enters a cost figure (salary non-disclosure, audrey.md)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Cost + margin",
+                    "stage 01 `cost-margin.md`",
+                    "all (governed cost / margin per line, gaps, as-of date)",
+                    "the figures being read"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/cost-to-serve-rubric.md`",
+                    "all",
+                    "the read structure, the thin-margin / compression threshold, the advise-never-block discipline"
+                  ]
+                ]
+              },
+              "outputs": "`profitability.md` — the per-client / per-service-line margin picture (cost-to-serve, revenue, margin, margin %), the thin / compression flags each with a tie-out, the note-only line-agent context, the Gap items, the read verdict + reason, and the as-of date. An internal, reversible `operational`-class flag; never a post, an invoice change, or a metric edit.",
+              "audit": [
+                "Each client / service line carries cost-to-serve, revenue, margin, margin %, with the as-of date",
+                "Every flagged line carries its tie-out; trend only asserted where a prior snapshot exists",
+                "Each figure labelled measured / governed or derived; no gap filled by an estimate",
+                "Read verdict (Healthy / Margin flagged / Gap) + reason stated, with as-of date; line-agent context is note-only (advise-never-block)",
+                "No individual rate disclosed; no post / invoice change / metric-definition edit / QBO push / line-agent block-or-approve taken (read-only)"
+              ],
+              "checkpoint": null
             }
           ]
         },
@@ -19096,6 +19721,147 @@
                 "Flag is internal + reversible; no posting, QBO push, or money move emitted"
               ],
               "checkpoint": "The CFO loop: the CFO reviews the recon-mismatch flag and decides any correction; the pay/reimbursement and any money movement are a human + QBO (ADR-0123). **`auto` (L2) may self-approve raising the internal recon-mismatch flag to the CFO ONLY** — there is no posting, QBO push, or money move in Audrey's catalog at any rung (read-only ceiling, audrey.md)."
+            }
+          ]
+        },
+        {
+          "slug": "recurring-revenue-analytics",
+          "title": "recurring-revenue-analytics (finance v1)",
+          "job": "read the governed recurring-revenue metric contracts (MRR / ARR / NRR) and the revenue-churn trend, **consuming** the `metric_definition` layer — and produce a **recurring-revenue analytics read**: the metric levels, the period-over-period trend, and any material movement **flagged** to the cockpit / Sterling, and **fed to the renewal motion**. Read-only; Audrey reads the governed metrics and lights up the trend, a human (and Chase) acts.",
+          "trigger": "a revenue / board-reporting cycle, a period close, or an on-demand \"where is MRR / ARR / NRR trending?\" ask. One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the INTERNAL recurring-revenue read + trend flags (MRR / ARR / NRR / revenue-churn) to the cockpit / Sterling, parked as intel into the renewal motion, from the governed metric_definition contracts CONSUMED (never re-derived, D1) — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived and stamping its as-of date; any forward-looking element follows the D3 transparent-projection rule (method + assumptions shown, never a gap-fill). ADVISE-ONLY to the renewal motion — the renewal block / approve / send-for-signature is a human (and Chase) call. Audrey never posts, alters an invoice, edits a metric definition, or pushes to QBO (ADR-0123); there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "metric_definition",
+            "invoice"
+          ],
+          "skills": [
+            "./skills/rr-analytics-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-read-metrics",
+              "name": "read-metrics",
+              "job": "read the governed MRR / ARR / NRR + revenue-churn metric contracts (consumed, not re-derived) into one as-of-dated metric-levels record. Read only; no trend, no flag, no action.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the period and the read as-of date; stamp every subsequent figure with that as-of date."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the governed MRR / ARR / NRR + revenue-churn contracts from `metric_definition` — the **governed result**, not a recomputation (D1). Where a contract resolves through the invoice record, ground against the `invoice` mirror. Write no silver row (read-only)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Mark each captured level **measured / governed** (read from the contract) or **derived**, and flag any unbound contract or stale source as a **gap** — never fill a gap with an estimate. No trend here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "As-of scope",
+                    "the triggering run",
+                    "the period + as-of date",
+                    "the subject"
+                  ],
+                  [
+                    "Governed metric contracts",
+                    "silver `metric_definition` · `okf:metric_definition`",
+                    "the MRR / ARR / NRR / revenue-churn contracts",
+                    "the governed metric levels (consumed, not re-derived — D1, #1050)"
+                  ],
+                  [
+                    "Revenue grounding",
+                    "silver `invoice` (QBO read-only mirror) · `okf:invoice`",
+                    "where a contract resolves through the invoice record",
+                    "grounding for a contract that resolves through the mirror"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/rr-analytics-rubric.md`",
+                    "all",
+                    "which contracts to consume, measured / governed vs derived"
+                  ]
+                ]
+              },
+              "outputs": "`metrics.md` — for the period and its as-of date: the governed MRR / ARR / NRR + revenue-churn levels (each labelled measured / governed), the grounding source, and any gaps called out. No trend or flag yet — that is stage 02.",
+              "audit": [
+                "Period and a single read as-of date are stated",
+                "MRR / ARR / NRR + revenue-churn read from the governed `metric_definition` contracts (not re-derived)",
+                "Each level labelled measured / governed or derived; no figure estimated into a gap",
+                "Any unbound contract or stale source recorded as a gap (never estimated)",
+                "No silver row written; no metric definition edited; no money action taken (read-only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-trend-and-flag",
+              "name": "trend-and-flag",
+              "job": "compute the period-over-period trend, flag material movement with its tie-out, raise the recurring-revenue read to the cockpit / Sterling, and park it as intel into the renewal motion. A read + trend flags — never a post, an invoice change, a metric-definition edit, or a QBO push.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each metric, compute the period-over-period delta and direction vs the prior snapshot (trend only when a prior snapshot exists — a single snapshot has no trend), carrying the as-of date through."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Decide **material movement** vs not against the rubric threshold. For each material movement write the tie-out: prior, current, delta, as-of date. Distinguish a **signal** (a measured / governed fact) from an **inference**; never estimate into a data gap. Any forward-looking element (e.g. an ARR run-rate projection) follows **D3** — show method + assumptions, label inference / scenario, never gap-fill."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any stage-01 gap becomes a **Gap** item — escalate it, do not guess. A run with any gap is not a clean \"stable\"."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Set the read verdict per the rubric — **Stable**, **Movement flagged**, or **Gap** — write the one-line reason, and package the read as **advise-only intel** for the renewal motion (it feeds the renewal decision; it never makes it)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Assemble the internal flag: the metric levels, the trend, each material movement's tie-out, the verdict, the as-of date, and the renewal-motion intel — for the cockpit / Sterling. Report only aggregate figures; never disclose an individual rate (salary non-disclosure, audrey.md)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Metric levels",
+                    "stage 01 `metrics.md`",
+                    "all (governed levels, gaps, as-of date)",
+                    "the levels being trended"
+                  ],
+                  [
+                    "Rubric",
+                    "`./skills/rr-analytics-rubric.md`",
+                    "all",
+                    "the trend read, the material-movement threshold, the advise-only + D3 discipline"
+                  ]
+                ]
+              },
+              "outputs": "`rr-read.md` — the recurring-revenue read (MRR / ARR / NRR levels, the period-over-period trend, material-movement flags each with a tie-out, any D3-labeled forward-looking element), the renewal-motion intel, the Gap items, the read verdict + reason, and the as-of date. An internal, reversible `operational`-class flag; never a post, an invoice change, or a metric edit.",
+              "audit": [
+                "Trend computed only where a prior snapshot exists; each metric carries prior, current, delta, as-of date",
+                "Every material movement carries its tie-out; any forward-looking element follows D3 (method + assumptions, labeled inference)",
+                "Each figure labelled measured / governed or derived; no gap filled by an estimate",
+                "Read verdict (Stable / Movement flagged / Gap) + reason stated, with as-of date; intel is advise-only to the renewal motion",
+                "No individual rate disclosed; no post / invoice change / metric-definition edit / QBO push / renewal block-or-approve taken (read-only)"
+              ],
+              "checkpoint": null
             }
           ]
         },
