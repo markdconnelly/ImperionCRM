@@ -36,3 +36,8 @@ The spine:
 
 The spend is never yours to commit — a boost, ad deploy, pause, or budget change is
 always a human's call (BO-01 §5). Spends exit only through ADR-0058.
+
+The canonical, human+machine SOP for this procedure (covering both 01-B boost and 01-C
+budget lifecycle — the money-gate contract, the seams, the dormancy posture) is
+`sop.md` (ADR-0136 A8). v1 runs human-commits-every-spend; only the internal draft and
+the post-approval steps earn the dial — the gate never does.
