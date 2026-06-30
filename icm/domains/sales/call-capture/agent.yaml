@@ -1,0 +1,14 @@
+name: call-capture
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [interaction, opportunity, contact]   # subset of domains/sales/room.yaml
+tools: [pg.read, opportunity.write]              # subset of domains/sales/room.yaml — read the conv-intel interaction output, park the next-step on the opportunity. No send path.
+skills:
+  - domains/sales/skills/voice-and-tone     # Tier 2 — domain-shared
+  - ./skills/capture-rules                   # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "Only the INTERNAL, reversible next-step park on the opportunity (opportunity.write) may self-execute at L2 once admin-flipped to auto (A10 row 1, ADR-0128). The interaction itself is written by the conversational-intelligence substrate, not here — there is no interaction.write tool. No customer-facing touch sends here: every actual follow-up routes to pursue-opportunity (02-A3) and re-inherits its always_gate (BO-02 §5). Anything not named here parks."

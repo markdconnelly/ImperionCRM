@@ -8782,6 +8782,206 @@
       "kind": "domain",
       "procedures": [
         {
+          "slug": "call-capture",
+          "title": "call-capture (sales conversational-intelligence loop, 02 Stream-02)",
+          "job": "turn a captured sales call — transcribed and analyzed by the conversational-intelligence substrate — into a logged outcome and a **parked next-step proposal on the open `opportunity`** (an internal, reversible `opportunity.write`), so no captured call leaves the deal un-updated and no customer-facing action is taken without routing through the gated path.",
+          "trigger": "a conversational-intelligence analysis lands for a sales call tied to an open `opportunity` — the substrate has written the `interaction` (summary + outcome). One run per captured call.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "Only the INTERNAL, reversible next-step park on the opportunity (opportunity.write) may self-execute at L2 once admin-flipped to auto (A10 row 1, ADR-0128). The interaction itself is written by the conversational-intelligence substrate, not here — there is no interaction.write tool. No customer-facing touch sends here: every actual follow-up routes to pursue-opportunity (02-A3) and re-inherits its always_gate (BO-02 §5). Anything not named here parks.",
+          "tools": [
+            "pg.read",
+            "opportunity.write"
+          ],
+          "okfRooms": [
+            "interaction",
+            "opportunity",
+            "contact"
+          ],
+          "skills": [
+            "domains/sales/skills/voice-and-tone",
+            "./skills/capture-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "read the conversational-intelligence output for this call (the landed `interaction` summary + outcome) and the tied open `opportunity` + contact, cited and as-of'd, so the capture is grounded before anything is extracted.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the `interaction` and the tied `opportunity` from the trigger by known key; read the interaction summary + outcome and the opportunity stage/owner/as-of. The substrate wrote the interaction — read it, never write it."
+                },
+                {
+                  "tag": "script",
+                  "text": "Confirm the interaction is **live**: if the conv-intel feed is dormant/empty (no analysis landed, substrate not live), flag **stale-not-live** and park — never run on a missing input (A5c)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Summarize what grounds this call in one or two sentences, **citing the interaction + the opportunity + their as-of** (A5). No fabrication; absence of an interaction is a park, not a gap to fill."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Trigger",
+                    "the conv-intel analysis-landed event",
+                    "full payload",
+                    "which call, which interaction, which opportunity"
+                  ],
+                  [
+                    "Interaction",
+                    "the conv-intel-landed `interaction` · `okf:interaction`",
+                    "this call only",
+                    "the call summary + outcome (substrate-written, read-only)"
+                  ],
+                  [
+                    "Opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "the tied deal only",
+                    "stage, owner, current next action, as-of"
+                  ],
+                  [
+                    "Contact",
+                    "silver `contact` · `okf:contact`",
+                    "the deal's primary contact",
+                    "who the call was with"
+                  ]
+                ]
+              },
+              "outputs": "`ground.md` — interaction id + as-of, opportunity id + stage + as-of, primary contact, a one-or-two-sentence grounded summary, and a `live | stale-not-live` flag. Unknowns stated as unknowns.",
+              "audit": [
+                "Interaction id + opportunity id + as-of timestamps present (none blank)",
+                "Feed liveness flagged; a dormant/empty conv-intel feed parked stale-not-live (A5c)",
+                "Every claim traceable to an input row (no invention); interaction read, never written"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-extract",
+              "name": "extract",
+              "job": "extract the call OUTCOME and the proposed NEXT-STEP from the conversational-intelligence analysis — traced to the interaction, no fabricated outcome or next-step.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Confirm `ground.md` is `live`; a `stale-not-live` grounding is a **HARD stop** — park, never extract from an absent interaction (A5c)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read the conv-intel summary + outcome off the `interaction` and lift the **call OUTCOME** (what happened on the call), citing the interaction + as-of (A5). Ground only on this call's interaction and this opportunity — **pool-never-bleed** (A7); no other deal, tenant, or prior run leaks in."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Derive the **proposed NEXT-STEP**: one concrete, internal, reversible advance action per `./skills/capture-rules.md` — singular, plainly phrased, voice-compliant. **It must trace to the conv-intel record** — no invented outcome, no invented next-step (A5). No fabricated capability/timeline/price (chase.md §5); no false urgency (BO-02 §5)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "all",
+                    "interaction id + opportunity id + as-of being worked"
+                  ],
+                  [
+                    "Interaction",
+                    "the conv-intel-landed `interaction` · `okf:interaction`",
+                    "this call only",
+                    "the summary + outcome to extract from"
+                  ],
+                  [
+                    "Capture rules",
+                    "`./skills/capture-rules.md`",
+                    "all",
+                    "what counts as a next-step · phrasing · trace requirement"
+                  ],
+                  [
+                    "Voice",
+                    "`../../../skills/voice-and-tone.md`",
+                    "all",
+                    "how the parked proposal reads (domain-tier skill)"
+                  ]
+                ]
+              },
+              "outputs": "`extract.md` — the call outcome (with cited interaction + as-of), the single proposed next-step (internal/reversible, plainly phrased), and a short rationale naming the basis in the interaction. Nothing asserted without a source.",
+              "audit": [
+                "Outcome and next-step each trace to the conv-intel interaction + as-of (A5); none fabricated",
+                "Exactly one next-step, internal/reversible, phrased per capture-rules",
+                "Pool isolation held — only this call's interaction + this opportunity grounded (A7)",
+                "No fabricated capability/timeline/price; no false urgency"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-park-log",
+              "name": "park-log",
+              "job": "get the next-step proposal approved, park it on the `opportunity` (an internal, reversible write), and log the call's outcome — idempotently — closing the run. No customer-facing action.",
+              "process": [
+                {
+                  "tag": null,
+                  "text": "Park until human-approved — or auto-approve **only** the internal next-step park if all L2-internal gates hold (above)."
+                },
+                {
+                  "tag": null,
+                  "text": "`[opportunity.write]` Park the approved next-step on the `opportunity` — internal, reversible, no customer-facing effect — **idempotency-keyed** (opportunity + interaction) so a replay is a no-op + audit note (A9b). Never write the `interaction` here; never trigger an outbound touch."
+                },
+                {
+                  "tag": "script",
+                  "text": "Log the call outcome + the parked next-step + approver (human id or `auto`) + run id to the run record, idempotently (A9b)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Extract",
+                    "stage 02 `extract.md`",
+                    "all",
+                    "the outcome + next-step being approved/parked"
+                  ],
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "interaction id, opportunity id, as-of",
+                    "what the approver is deciding on"
+                  ],
+                  [
+                    "Opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "this deal",
+                    "current stage for the next-step park"
+                  ]
+                ]
+              },
+              "outputs": "`park-log.md` — the parked next-step (with the opportunity write id/result), the logged outcome, approver, timestamp. Rejection ends the run with the rejection reason captured. One terminal state.",
+              "audit": [
+                "Approver identity recorded (never blank; `auto` only if all L2-internal gates held)",
+                "Only the internal next-step parked — no `interaction` write, no customer-facing send (boundary enforced)",
+                "Opportunity write + log idempotency-keyed — a replay is a no-op, not a duplicate (A9b)",
+                "Run closed with exactly one terminal state (parked / rejected)"
+              ],
+              "checkpoint": "The approval item shows: the call outcome, the proposed next-step, the opportunity id + stage, and the cited interaction basis. Approver may edit the next-step before approving; edits are kept as the parked version and recorded. **`auto` mode may self-execute ONLY** the **internal, reversible next-step park** on the opportunity (`opportunity.write`) at **L2** (A10 row 1, ADR-0128) — `extract.md` audit fully green and traced to the interaction. The interaction itself is the conv-intel substrate's to write, not this stage's (no `interaction.write` here). **No customer-facing action happens in this stage at any rung** — any actual follow-up touch routes to `pursue-opportunity` (02-A3), where it re-inherits that workflow's always_gate (BO-02 §5; Chase has no commitment send path)."
+            }
+          ]
+        },
+        {
           "slug": "close-won-handoff",
           "title": "close-won-handoff (sales v1)",
           "job": "when an `opportunity` reaches **`won`**, stamp it closed-won (close date + attribution — an internal, reversible write) and emit the **two governed seams** that carry the deal out of sales: the **sale→delivery hand-off to Pierce** (ADR-0096, catalog-anchored line-items select the delivery template #1306 → Stream 03) and the relationship **Hand-off to Celeste** (→ Stream 08). This is the Chase→delivery seam emitter — Chase closes; Pierce and Celeste actuate. (Stream 02-A6; the A11 seam.)",
@@ -8955,6 +9155,271 @@
                 "Next-touch context grounded — no fabricated commitment / timeline / price",
                 "No customer-facing effect; Celeste's relationship work not duplicated here",
                 "Run closed terminal (delivery + relationship seams both emitted)"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "expansion-qualify",
+          "title": "expansion-qualify (Celeste→Chase upsell/expansion seam, Stream-02)",
+          "job": "accept an expansion `opportunity` that Client Success sourced on an existing customer and qualify it on expansion-specific signals — then route a qualified expansion into the pursuit motion or park it back to the relationship owner — so no whitespace stalls unseen and no expansion is pursued unqualified.",
+          "trigger": "a Client-Success-sourced expansion `opportunity` is assigned to Chase on an existing account (Stream 02, the upsell/expansion seam). One run per assigned expansion opp.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "Only the INTERNAL reversible qualification stamp (opportunity.write) may self-execute, at L2 once admin-flipped to auto. Routing and the handoff record are non-actuating. Every customer-facing touch routes to pursue-opportunity (02-A3) and re-inherits its always_gate — no pricing/discount/term assertion and no send ever happens here (ADR-0128, BO-02 §5).",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "opportunity.write"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "account",
+            "contact",
+            "interaction"
+          ],
+          "skills": [
+            "domains/sales/skills/voice-and-tone",
+            "./skills/expansion-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground",
+              "name": "ground",
+              "job": "read the Client-Success-sourced expansion opportunity, its owning account, and the relationship/health/usage context carried on it — cited and as-of'd — so the qualification call is grounded before anything is assessed.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the expansion opportunity from the trigger; read its type, sourcing owner, carried health/usage signals, and as-of by known key. Missing/unparseable opportunity → audit fail (park)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the owning `account` and primary `contact`, tenant-isolated; pull the last 5 interactions on this account. Absence is information, not a gap to fill."
+                },
+                {
+                  "tag": "script",
+                  "text": "Check the source freshness: a dormant or empty source (the expansion seam not yet supplying live signals) is flagged **stale, not live** (A5c) — the carried signals are read as-of and not treated as current truth."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Summarize the grounding in one paragraph — the expansion opp + as-of, the account, the carried health/usage/relationship context **as signal vs inference** — **citing each input + as-of** (A5). No fabrication; if the source can't ground a call, say so and park."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Trigger",
+                    "the expansion-opp-assigned event",
+                    "full payload",
+                    "which expansion opp, which account"
+                  ],
+                  [
+                    "Opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "the assigned expansion opp only",
+                    "type, owner (sourced by Client Success), carried health/usage signals, as-of"
+                  ],
+                  [
+                    "Account",
+                    "silver `account` · `okf:account`",
+                    "the owning account",
+                    "the existing customer being expanded into"
+                  ],
+                  [
+                    "Contact",
+                    "silver `contact` · `okf:contact`",
+                    "the account's primary contact",
+                    "who the relationship is with"
+                  ],
+                  [
+                    "History",
+                    "`interaction` timeline · `okf:interaction`",
+                    "this account, last 5 touches",
+                    "relationship context, prior interest"
+                  ]
+                ]
+              },
+              "outputs": "`ground.md` — expansion opp id + type + as-of, owning account + primary contact, carried health/usage signals (each marked signal/inference and as-of), relationship summary, and any stale-source flag. Unknowns stated as unknowns.",
+              "audit": [
+                "Expansion opp id, type, and as-of timestamp present (none blank)",
+                "Owning account + carried signals cited to input rows, each as-of'd",
+                "Stale/dormant source flagged as stale, not presented as live (A5c)",
+                "Every claim traceable to an input row (no invention)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-qualify",
+              "name": "qualify",
+              "job": "assess the expansion-specific signals on the grounded opportunity — entitlement/whitespace gaps, usage growth, account health, relationship context — and decide qualify or disqualify. Explicitly **not** cold ICP fit.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Assess the four expansion signals (`expansion-rules.md`): entitlement/whitespace gap, usage growth, account health, relationship context. **Do NOT apply an ICP fit score** — an existing customer is already a fit."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Label each signal **signal vs inference**: a number carried on the opportunity/account is signal; anything reasoned toward is inference. **Never fabricate a health or usage number** — a missing number is information (chase.md §5)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pool-never-bleed: any cross-account benchmark stays aggregate; reads are tenant-isolated — never carry one account's row-level data into another's call (A7)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Decide **qualify** or **disqualify** against the bar in `expansion-rules.md`, naming the signals that carried it. Ambiguous (signals can't ground a qualify call) → disqualify."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "all",
+                    "the expansion opp + carried signals being assessed"
+                  ],
+                  [
+                    "Account/history",
+                    "silver `account` / `interaction` timeline · `okf:account` `okf:interaction`",
+                    "this account only",
+                    "confirm health + relationship context behind the call"
+                  ],
+                  [
+                    "Expansion rules",
+                    "`./skills/expansion-rules.md`",
+                    "all",
+                    "the signal set · qualify/disqualify bar · pool-never-bleed"
+                  ]
+                ]
+              },
+              "outputs": "`qualification.md` — the four signals (each marked signal/inference, with its value or \"unknown\"), the decision (qualify | disqualify), and a 2–3 sentence rationale naming the carrying signals — for stage 03's stamp/route.",
+              "audit": [
+                "No ICP fit score applied (this is expansion, not net-new)",
+                "Each signal marked signal-vs-inference; no fabricated health/usage number",
+                "No cross-account row-level bleed (pool-never-bleed, A7)",
+                "Exactly one decision (qualify | disqualify) with a grounded rationale"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-stamp-route",
+              "name": "stamp-route",
+              "job": "apply the internal reversible qualification stamp, then route the expansion — qualified into the pursuit motion, disqualified back to the relationship owner. No customer-facing touch happens here.",
+              "process": [
+                {
+                  "tag": null,
+                  "text": "Park until human-approved — or, in `auto`, apply the stamp **only** if the L2 internal-stamp gates hold (above)."
+                },
+                {
+                  "tag": null,
+                  "text": "`[opportunity.write]` Apply the INTERNAL reversible qualification stamp on the expansion opportunity (internal CRM write, no customer-facing effect). This is the only actuating write in the workflow."
+                },
+                {
+                  "tag": "script",
+                  "text": "Route by decision: - **qualified** → hand the opportunity to `pursue-opportunity` (02-A3) as a **parked proposal** — the customer-facing motion is gated there, not here. - **disqualified** → park back to Client Success (the relationship owner) with the rationale."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Qualification",
+                    "stage 02 `qualification.md`",
+                    "all",
+                    "the decision + carrying signals being approved"
+                  ],
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "expansion opp id, as-of",
+                    "what the approver is deciding on"
+                  ],
+                  [
+                    "Expansion rules",
+                    "`./skills/expansion-rules.md`",
+                    "route-vs-park rule",
+                    "where qualified vs disqualified goes"
+                  ]
+                ]
+              },
+              "outputs": "`stamp-route.md` — the stamp result (internal write id), approver (human id or `auto`), and the route taken (pursue-opportunity proposal | parked-to-Client-Success) with the rationale. One routing outcome.",
+              "audit": [
+                "Approver identity recorded (never blank; `auto` only for the internal L2 stamp)",
+                "Only the internal reversible stamp written; no customer-facing touch sent here",
+                "Exactly one route recorded (02-A3 proposal | parked-to-Client-Success)"
+              ],
+              "checkpoint": "The approval item shows: the decision (qualify/disqualify), the four signals (signal-vs-inference), the rationale, and the expansion opp id + as-of. Approver may edit the decision before approving; the approved decision is recorded. **`auto` mode may self-execute ONLY** the INTERNAL reversible qualification stamp (`opportunity.write`) at **L2** — no customer-facing effect, fully reversible, stage-02 audit fully green. Routing and the handoff record are non-actuating. **Every customer-facing touch routes to `pursue-opportunity` (02-A3) and re-inherits its always_gate** — no pricing/discount/term assertion and no send-for-signature ever happens here, dial-proof in every mode (ADR-0128, BO-02 §5; Chase has no commitment send path, chase.md §6)."
+            },
+            {
+              "slug": "04-log",
+              "name": "log",
+              "job": "log the qualification decision and write the handoff record — idempotently — closing the run.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Log the qualification decision to the `interaction` timeline (decision, carrying signals, approver, run id), **idempotency-keyed** (expansion opp + decision) so a replay is a no-op + audit note (A9b). Executor owns the write; never duplicate an entry."
+                },
+                {
+                  "tag": "script",
+                  "text": "Write the handoff record: for a qualified expansion, the `pursue-opportunity` (02-A3) proposal hand-off; for a disqualified one, the park-back-to-Client-Success record with the rationale. Idempotent — a replay re-points the existing record, never a second one."
+                },
+                {
+                  "tag": "script",
+                  "text": "Close the run with exactly one terminal state (routed-to-pursuit | parked-to-Client-Success)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Route record",
+                    "stage 03 `stamp-route.md`",
+                    "all",
+                    "the stamp result, approver, and route taken"
+                  ],
+                  [
+                    "Grounding",
+                    "stage 01 `ground.md`",
+                    "expansion opp id, account",
+                    "the deal + account the handoff is about"
+                  ],
+                  [
+                    "Timeline",
+                    "`interaction` timeline · `okf:interaction`",
+                    "this account",
+                    "where the decision is logged"
+                  ]
+                ]
+              },
+              "outputs": "`expansion-log.md` — interaction entry id, handoff record id, and the one terminal state (routed-to-pursuit | parked-to-Client-Success).",
+              "audit": [
+                "Timeline entry id present; replay produced no duplicate (idempotent, A9b)",
+                "Handoff record written exactly once (re-pointed on replay, never duplicated)",
+                "Run closed with exactly one terminal state"
               ],
               "checkpoint": null
             }
@@ -9462,6 +9927,279 @@
                 "Summary names the opportunity id + stage",
                 "Next step is framed as a parked proposal, not an executed action",
                 "No send / customer-facing effect emitted in this workflow"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
+          "slug": "pipeline-hygiene",
+          "title": "pipeline-hygiene (sales pipeline management, 02-B4/B9)",
+          "job": "keep the WHOLE open pipeline clean — sweep every open `opportunity` for staleness, missing next-action/close-date, and data-quality gaps; flag what's wrong in a hygiene digest; apply only the internal reversible data-quality stamp; and route every customer-facing follow-up to `pursue-opportunity` (02-A3).",
+          "trigger": "a scheduled portfolio sweep over all open opportunities (Stream 02, archetype B4 audit-attest / B9 deadline-sentinel). One run per scheduled sweep — this is the standing AE hygiene function, not a per-deal reaction.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "Only the INTERNAL reversible data-quality stamp (via opportunity.write — e.g. setting a missing internal field) may self-execute at L2 once admin-flipped to auto; it has no customer-facing effect. Every customer-facing follow-up routes to pursue-opportunity (02-A3) and re-inherits that workflow's always_gate — none sends here. Any pricing/discount/term assertion and any send-for-signature are never this workflow's to make (ADR-0128, BO-02 §5).",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "opportunity.write"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "account",
+            "contact",
+            "interaction"
+          ],
+          "skills": [
+            "domains/sales/skills/voice-and-tone",
+            "./skills/hygiene-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-scan",
+              "name": "scan",
+              "job": "pull every open opportunity and compute its hygiene findings — staleness, missing next-action/close-date, and data-quality gaps — each cited and as-of'd, so triage works from a grounded inventory.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the sweep window/portfolio from the trigger; enumerate all open `opportunity` ids in scope, tenant-isolated, with their owning `account` and primary `contact` by known key."
+                },
+                {
+                  "tag": "script",
+                  "text": "For each opportunity pull stage, owner, amount, close_date, next_action, source/attribution, and last stage change; pull the last interaction for last-movement. Absence is information, not a gap to fill."
+                },
+                {
+                  "tag": "script",
+                  "text": "Compute staleness against the thresholds in `./skills/hygiene-rules.md` (deterministic date math), missing next-action/close-date, and each missing required field on the data-quality checklist. Key every finding to its opportunity id."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Stamp each opportunity reading with its **as-of** (A5); a dormant/empty feed (no open deals returned, stale read) → **flag stale, never present as live** (A5c). No fabricated field or finding."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Trigger",
+                    "the scheduled-sweep event",
+                    "full payload",
+                    "which window / portfolio to sweep"
+                  ],
+                  [
+                    "Open opportunities",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "all open deals in scope",
+                    "stage, owner, amount, close_date, next_action, last stage change"
+                  ],
+                  [
+                    "Owning accounts",
+                    "silver `account` · `okf:account`",
+                    "accounts on the open deals",
+                    "owner/segment context for data-quality + stamp candidates"
+                  ],
+                  [
+                    "Primary contacts",
+                    "silver `contact` · `okf:contact`",
+                    "primary contact per open deal",
+                    "who a routed follow-up would address"
+                  ],
+                  [
+                    "History",
+                    "`interaction` timeline · `okf:interaction`",
+                    "last touch per open opportunity",
+                    "last-movement timestamp for staleness"
+                  ]
+                ]
+              },
+              "outputs": "`scan.md` — each open opportunity id + as-of, its computed findings (stale / missing next-action / missing close-date / data-quality gaps with the named fields), last-movement summary, and any stale-feed flag. Unknowns stated as unknowns.",
+              "audit": [
+                "Each opportunity + finding cites its `opportunity` id + as-of (A5); none fabricated",
+                "Staleness, missing next-action/close-date, and data-quality gaps computed per `hygiene-rules.md`",
+                "Dormant/empty feed flagged stale, not presented as live (A5c)",
+                "In-scope open opportunity set fully enumerated for triage"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-triage",
+              "name": "triage",
+              "job": "classify the scan findings by type and prioritize them, so stage 03 knows what to stamp internally and what to route — without leaking one deal's detail into another.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Classify each finding into exactly one type: **stale**, **no-next-step** (missing next-action or close-date), or **data-quality** (a named missing field), per `./skills/hygiene-rules.md`."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Split each finding by the route-vs-stamp rule: an unambiguous internal field becomes a **stamp candidate**; anything needing a customer-facing touch, or anything ambiguous, becomes a **route candidate** (`hygiene-rules.md`)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Prioritize within and across types (e.g. past-close-date and high-amount stale deals first); summarize any cross-deal pattern in **aggregate only — pool, never bleed** (A7), no per-deal detail bled into a portfolio note."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Scan",
+                    "stage 01 `scan.md`",
+                    "all",
+                    "the findings being classified"
+                  ],
+                  [
+                    "Hygiene rules",
+                    "`./skills/hygiene-rules.md`",
+                    "all",
+                    "finding taxonomy · route-vs-stamp rule"
+                  ]
+                ]
+              },
+              "outputs": "`triage.md` — each finding keyed to its opportunity id, with its type (stale / no-next-step / data-quality), its disposition (stamp candidate vs route candidate), a priority, and any aggregate cross-deal pattern note.",
+              "audit": [
+                "Every scan finding classified into exactly one type; none dropped",
+                "Each finding dispositioned as stamp-candidate or route-candidate (`hygiene-rules.md`)",
+                "Cross-deal patterns aggregated only — no per-deal detail bled across deals (A7)",
+                "Priority assigned; ambiguous fixes dispositioned as route, never stamp"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-flag-or-stamp",
+              "name": "flag-or-stamp",
+              "job": "draft the hygiene digest from the triaged findings (L1), and — only at L2, once admin-flipped — apply the internal reversible data-quality stamp; never do anything customer-facing here.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the hygiene digest: findings grouped by type, prioritized, voice-compliant. State unknowns as unknowns; no fabricated finding."
+                },
+                {
+                  "tag": null,
+                  "text": "Park until human-approved — or auto-approve the stamp set **only** if all stamp gates hold (above)."
+                },
+                {
+                  "tag": null,
+                  "text": "`[opportunity.write]` For each approved stamp candidate, set the unambiguous internal field on the opportunity — **internal, reversible, no customer-facing effect**. Never write a customer-facing field, a price/discount/term, or a send. Each write is idempotency-keyed (opportunity + field) so a replay is a no-op."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Capture the stamp set applied (opportunity id, field, value, approver: human id or `auto`) and the route candidates passed forward."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Triage",
+                    "stage 02 `triage.md`",
+                    "all",
+                    "the classified, dispositioned findings"
+                  ],
+                  [
+                    "Scan",
+                    "stage 01 `scan.md`",
+                    "opportunity ids, current field values",
+                    "the values a stamp corrects"
+                  ],
+                  [
+                    "Voice",
+                    "`../../../skills/voice-and-tone.md`",
+                    "all",
+                    "the digest's register (domain-tier skill)"
+                  ],
+                  [
+                    "Hygiene rules",
+                    "`./skills/hygiene-rules.md`",
+                    "all",
+                    "route-vs-stamp rule · stampable internal fields"
+                  ],
+                  [
+                    "Opportunities",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "the stamp candidates only",
+                    "the record a stamp writes to (reversible internal field)"
+                  ]
+                ]
+              },
+              "outputs": "`flag-or-stamp.md` — the approved hygiene digest, the applied internal stamps (opportunity id, field, prior→new value, approver), and the route candidates for stage 04. Rejection ends the run with the rejection reason captured.",
+              "audit": [
+                "Approver identity recorded (never blank; `auto` only for an internal stamp with all gates held)",
+                "No customer-facing touch sent or composed here (routing only; always-gate enforced)",
+                "No pricing/term field or customer-facing field written by `opportunity.write`",
+                "Each stamp internal + reversible + idempotency-keyed; digest grounded, no fabrication"
+              ],
+              "checkpoint": "The approval item shows: the hygiene digest (findings by type with priorities), the list of stamp candidates with the exact internal field + value each would set, and the route candidates being handed to stage 04. Approver may edit the digest and the stamp list before approving. **`auto` mode may self-approve ONLY** the internal reversible data-quality stamp via `opportunity.write` (`./skills/hygiene-rules.md`) at **L2** — disposition = stamp candidate, an unambiguous internal field, no customer-facing effect, stage-02 audit fully green. **No customer-facing follow-up is composed or sent here** — it is routed to `pursue-opportunity` (02-A3) by stage 04 and re-inherits that workflow's always_gate. **Any pricing/discount/term assertion or send-for-signature always parks** — Chase has no commitment send path (chase.md §6, BO-02 §5)."
+            },
+            {
+              "slug": "04-route-log",
+              "name": "route-log",
+              "job": "route each customer-facing follow-up to `pursue-opportunity` (02-A3) as a parked proposal, deliver the hygiene digest, and log the sweep — idempotently — closing the run.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each route candidate, queue a **parked** `pursue-opportunity` (02-A3) proposal keyed to its opportunity id — the follow-up re-inherits that workflow's always_gate; nothing customer-facing is sent from here. Never compose or dispatch the touch."
+                },
+                {
+                  "tag": "script",
+                  "text": "Log the sweep to the `interaction` timeline (digest reference, applied stamps, routed item ids, run id), **idempotency-keyed** (sweep run + opportunity) so a replay is a no-op + audit note (A9b). Executor owns the write; never duplicate an entry."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Deliver the hygiene digest to the owning AE queue / Sterling roll-up per the digest's recipients; capture the delivery result."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Flag-or-stamp",
+                    "stage 03 `flag-or-stamp.md`",
+                    "all",
+                    "the digest, applied stamps, route candidates"
+                  ],
+                  [
+                    "Triage",
+                    "stage 02 `triage.md`",
+                    "route candidates",
+                    "the follow-ups to route, with priority + type"
+                  ],
+                  [
+                    "Timeline",
+                    "`interaction` timeline · `okf:interaction`",
+                    "the swept opportunities",
+                    "where the sweep + routed items are logged"
+                  ]
+                ]
+              },
+              "outputs": "`route-log.md` — the parked `pursue-opportunity` proposals (opportunity id + queue entry), the timeline log entry id, the digest delivery result, and the terminal state. One terminal state.",
+              "audit": [
+                "Every route candidate queued as a PARKED pursue-opportunity (02-A3) proposal; none sent here",
+                "Sweep logged to the timeline; replay produced no duplicate (idempotent, A9b)",
+                "Hygiene digest delivered to its recipients; delivery result captured",
+                "Run closed with exactly one terminal state"
               ],
               "checkpoint": null
             }
@@ -10523,6 +11261,209 @@
                 "Send result recorded (sent / parked / blocked + reason)"
               ],
               "checkpoint": "A human approves the reply before it leaves. **`auto` may self-approve NOTHING here** — every social reply (DM or public comment) is human-approved in v1 (ADR-0124 D4 posture). The send exits only through ADR-0058."
+            }
+          ]
+        },
+        {
+          "slug": "speed-to-lead-sentinel",
+          "title": "speed-to-lead-sentinel (sales v1)",
+          "job": "a scheduled watch over the speed-to-lead SLA clock — pull every routed-but- unqualified lead, compute elapsed time-since-routed against its SLA target, classify breached / imminent-breach / within-SLA, then **escalate** the breaches to the single human queue, **tag** the owner, and **route** each to lead-response (02-A1) for the actual first-touch. This is Chase's inbound watcher: a B9 deadline-sentinel that **watches, escalates, and routes — never actuates**. It is the inbound mirror of the procurement deadline-sentinel (02-B1): that one watches renewal/cancellation deadlines; this one watches the SLA clock on a routed lead nobody has qualified yet.",
+          "trigger": "a scheduled SLA sweep (not a single lead handover). **One run per scheduled sweep**; it walks the in-scope routed-but-unqualified leads.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "nothing self-actuates — this workflow only watches the speed-to-lead SLA clock and produces + documents the internal SLA watch-list/escalation; every owner-nudge or customer-facing first-touch parks and routes to lead-response (02-A1). No send, no write, no commitment. Cross-account SLA-breach patterns are anonymized/aggregated only — pool, never bleed (A7).",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "lead_score",
+            "contact",
+            "account",
+            "interaction"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-watch",
+              "name": "watch",
+              "job": "turn the routed-but-unqualified leads into one grounded SLA watch-list — each lead's elapsed time-since-routed computed against its speed-to-lead SLA target and classified breached / imminent-breach / within-SLA, cited with its source and as-of, with a dormant feed flagged stale rather than presented as live.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Enumerate the in-scope routed-but-unqualified leads; resolve each to its `lead_score`, its `contact`, and its owning `account`. A lead with no resolvable routed-at signal is carried forward as **unverifiable**, never assumed."
+                },
+                {
+                  "tag": "script",
+                  "text": "From the last `interaction` and the routed-at signal, compute **time-since-routed** by date math, and read each lead's speed-to-lead **SLA target** (per its account segment/source). Date math is deterministic — never estimate the elapsed clock."
+                },
+                {
+                  "tag": "script",
+                  "text": "Classify each lead against its target: **breached** (elapsed past the SLA target), **imminent-breach** (within the warning band before the target), or **within-SLA** (comfortably inside). A lead with no computable target stays **unverifiable**, never defaulted to a state."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Stamp each lead with its **as-of** (A5); a dormant/empty feed (no routed leads, stale interaction stream) → **flag stale, never present as live** (A5c). Never fabricate an SLA state or a routed-at time."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The schedule / sweep trigger",
+                    "trigger payload",
+                    "the sweep window",
+                    "what sweep window to evaluate the SLA clock against"
+                  ],
+                  [
+                    "Routed leads",
+                    "`` `okf:lead_score` ``",
+                    "routed-but-unqualified leads in scope",
+                    "the leads under SLA + the routed-at / SLA-target signal"
+                  ],
+                  [
+                    "Lead contacts",
+                    "`` `okf:contact` ``",
+                    "contacts on the in-scope leads",
+                    "resolve each lead to its person for the watch-list"
+                  ],
+                  [
+                    "Owning accounts",
+                    "`` `okf:account` ``",
+                    "accounts on the in-scope leads",
+                    "segment grouping + the SLA-target tier per lead"
+                  ],
+                  [
+                    "Last interaction",
+                    "`` `okf:interaction` ``",
+                    "last interaction per lead",
+                    "the last-touch timestamp to compute time-since-routed"
+                  ]
+                ]
+              },
+              "outputs": "`watchlist.md` — one entry per routed-but-unqualified lead keyed to its `lead_score` + `contact` + `account` and as-of, with the computed time-since-routed, the SLA target, the breached / imminent-breach / within-SLA / unverifiable classification, and any stale-feed flags. Empty if the sweep finds no routed leads.",
+              "audit": [
+                "Each lead resolves to its `lead_score` + `contact` + `account`, cited with as-of (A5)",
+                "Time-since-routed computed by date math against the SLA target — never estimated",
+                "Every lead classified breached / imminent-breach / within-SLA / unverifiable (blank is not valid)",
+                "Dormant/empty feed flagged stale, not presented as live (A5c); no SLA state fabricated"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-assess",
+              "name": "assess",
+              "job": "turn the breached and imminent-breach watch-list entries into one assessed set — each with its severity, its owner, and the \"why still unqualified\" signal — with any cross-account breach pattern pooled across the lead base internally only, anonymized and aggregated.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Take only the **breached** and **imminent-breach** entries forward; carry each one's resolved `lead_score` + `account` and as-of. Within-SLA and unverifiable entries do not enter the assessment."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "For each entry, assess **severity** (how far past / how close to the SLA target, weighted by lead value/segment), name the **owner** of record, and read the **\"why still unqualified\"** signal from the last `interaction` (never routed-on, no first-touch, stalled). Cite the contributing lead; a state with no clean signal stays uncomputed and is noted, not invented (A5). No fabricated SLA state."
+                },
+                {
+                  "tag": "script",
+                  "text": "Build any **cross-account breach pattern** (e.g. one owner or one segment running chronically late) **pooled across the lead base internally only — anonymized + aggregated** (A7): no client identifier, no row-level personal data, no single client's specifics bleeding into another's view. **Pool, never bleed.**"
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Watch-list",
+                    "`watchlist.md` (stage 01 output)",
+                    "breached + imminent-breach entries",
+                    "the SLA-flagged leads to assess"
+                  ],
+                  [
+                    "Routed leads",
+                    "`` `okf:lead_score` ``",
+                    "the flagged leads",
+                    "the score/routing detail behind severity + owner"
+                  ],
+                  [
+                    "Owning accounts",
+                    "`` `okf:account` ``",
+                    "accounts on the flagged leads",
+                    "segment cut for severity + the owner assignment"
+                  ],
+                  [
+                    "Last interaction",
+                    "`` `okf:interaction` ``",
+                    "last interaction per flagged lead",
+                    "the \"why still unqualified\" signal (no first-touch yet)"
+                  ]
+                ]
+              },
+              "outputs": "`assessment.md` — per breached / imminent-breach lead: severity, owner of record, and the cited \"why still unqualified\" signal, plus any anonymized/aggregated cross-account breach pattern. Keyed to each `lead_score` + `account` by id.",
+              "audit": [
+                "Only breached + imminent-breach entries assessed; within-SLA / unverifiable excluded",
+                "Each entry carries severity + owner + a cited \"why unqualified\" signal (A5); none fabricated",
+                "Cross-account pattern anonymized + aggregated only — no client identifier / no bleed (A7)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-escalate-deliver",
+              "name": "escalate-deliver",
+              "job": "escalate the assessed SLA breaches to the single human queue, tag the owner, route each lead to lead-response (02-A1) for the first-touch, then deliver the sentinel digest and log idempotently. Terminal stage. The run sends nothing customer-facing, writes no silver, and commits nothing.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "**Escalate** each breach to the **single human queue** (CONSTITUTION §5.4) and **tag the owner of record** — *internal routing only*, not a customer send. Carry the stage-01 stale-feed flags through so a stale feed reads as stale, not as a real breach."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Route** each escalated lead to **lead-response (02-A1)** for the actual qualification + first-touch — staged for that workflow under its own gates. This stage opens no first-touch and makes no customer contact; the first-touch is 02-A1's job, never here."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Deliver** the sentinel digest (A6 routing) → the owner + the single human queue (CONSTITUTION §5.4); **log idempotently** (one escalation per lead per sweep — a re-run of the same sweep does not double-escalate). **No actuation here:** no customer-facing send, no silver write, no commitment."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Assessment",
+                    "`assessment.md` (stage 02 output)",
+                    "breached + imminent-breach leads",
+                    "the assessed items to escalate + route"
+                  ],
+                  [
+                    "Watch-list",
+                    "`watchlist.md` (stage 01 output)",
+                    "lead + as-of refs + stale flags",
+                    "attach each escalation to the right lead; carry stale flags through"
+                  ]
+                ]
+              },
+              "outputs": "`digest.md` — the SLA sentinel digest: each escalated breach with its severity + owner, the internal escalation to the human queue (§5.4), the route-to-02-A1 hand-off per lead, the carried stale-feed flags, and the idempotent log entry — and nothing actuated.",
+              "audit": [
+                "Each breach escalated to the single human queue (CONSTITUTION §5.4) + owner tagged — internal only",
+                "Each escalated lead routed to lead-response (02-A1); no first-touch made here",
+                "Stale-feed flags carried through and labeled stale, not breach",
+                "Delivered + logged idempotently (one escalation per lead per sweep); no customer send, no silver write, no commitment (watch-and-escalate only)"
+              ],
+              "checkpoint": null
             }
           ]
         },

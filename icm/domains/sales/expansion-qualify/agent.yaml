@@ -1,0 +1,14 @@
+name: expansion-qualify
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [opportunity, account, contact, interaction]   # subset of domains/sales/room.yaml
+tools: [pg.read, knowledge.search, memory.recall, opportunity.write]   # subset of domains/sales/room.yaml; opportunity.write = the L2 internal qualification stamp
+skills:
+  - domains/sales/skills/voice-and-tone     # Tier 2 — domain-shared
+  - ./skills/expansion-rules                 # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "Only the INTERNAL reversible qualification stamp (opportunity.write) may self-execute, at L2 once admin-flipped to auto. Routing and the handoff record are non-actuating. Every customer-facing touch routes to pursue-opportunity (02-A3) and re-inherits its always_gate — no pricing/discount/term assertion and no send ever happens here (ADR-0128, BO-02 §5)."
