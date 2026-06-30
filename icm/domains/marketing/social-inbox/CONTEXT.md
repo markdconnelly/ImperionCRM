@@ -45,3 +45,12 @@ Domain-shared (Tier 2, `../skills/`): `brand-voice.md` (every marketing draft
 sounds the same). Mark-editable business content; stages cite, never restate.
 Rules of the format: `../../../CONVENTIONS.md`. The structured manifest is
 `agent.yaml`; the composed workflow prose is `prose.md`.
+
+## SOP (the dual-audience document)
+
+The full human+machine SOP for this procedure — frontmatter procedure-object +
+the end-to-end runnable steps, the stage-04 a/b/c outcome contract, the learning
+on-ramp, and the dormancy posture — is [`sop.md`](sop.md) (ADR-0136 A8; the
+template-defining exemplar, #1759). This `CONTEXT.md` stays the thin routing
+surface; `sop.md` is the canonical prose. The control layer (§A invariants, the
+B1/B7 archetype rules) is cited there from ADR-0136, never redefined.
