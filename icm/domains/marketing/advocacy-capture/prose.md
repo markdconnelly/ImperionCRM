@@ -36,3 +36,7 @@ The spine:
 
 Reference data by id, never by value — no client PII in any artifact. There is no
 send path here; nothing in this workspace talks to an external party.
+
+The canonical, human+machine SOP for this procedure (the steps, the rights-gate, the
+seams, the dormancy posture) is `sop.md` (ADR-0136 A8). v1 runs human-approves-all; the
+rights-gate is human at every rung.
