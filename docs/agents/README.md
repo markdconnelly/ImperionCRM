@@ -9,6 +9,12 @@ the safety rails are.*
 [← Documentation library](../README.md) ·
 [Product capability overview → §5 The full AI suite](../product/imperion-os-overview.md)
 
+> 🧭 **New here? Start with the narrative: [Understanding the AI agent
+> system](understanding-the-agent-system.md).** It walks you through the whole system
+> end-to-end in one read — the orchestrator, the org, the life of a request, and the
+> safety rails — then points back into the reference guides below for depth. The table
+> in §2 is the indexed library; the narrative is the story that ties it together.
+
 > **Governing decision: [ADR-0091](../decision-records/ADR-0091-agent-icm-platform-consolidated.md)**
 > — the *Agent & ICM platform consolidated dossier*. It folds eleven member
 > decisions (ADR-0004 · 0015 · 0029 · 0048 · 0049 · 0054 · 0055 · 0061 · 0087 ·
