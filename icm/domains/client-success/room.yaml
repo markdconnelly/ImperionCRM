@@ -45,5 +45,9 @@ okf_rooms:
   - strategic_business_review
   - lead_score
   - consent_event
+  - contract             # renewal-readiness (08-E, #1687): the agreement/expiry/terms
+                         #   read so renewal assessment grounds on real dates + terms.
+                         #   Read-only kernel/op silver; no binding line — the renewal
+                         #   posture + price + close stay gated (NO-COMMITS, Chase owns).
   - reference            # the advocacy seam (#1703/#1692): the reference candidate
                          #   Celeste cultivates → consents → hands to Belle (Stream 01-O)

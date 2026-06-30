@@ -5,7 +5,7 @@ system_compose:                       # ordered; Constitution -> domain room -> 
   - ../room.md
   - ../celeste.md
   - ./prose.md
-okf_rooms: [account, contact, opportunity, interaction, ticket, strategic_business_review]   # subset of domains/client-success/room.yaml
+okf_rooms: [account, contact, opportunity, contract, interaction, ticket, strategic_business_review]   # subset of domains/client-success/room.yaml; contract = renewal expiry/terms (#1687)
 tools: [pg.read]                                                                              # read + assess only; recommendation parks
 skills:
   - ./skills/renewal-readiness-rubric   # Tier 3 — workflow-local (readiness dimensions + posture rule)
