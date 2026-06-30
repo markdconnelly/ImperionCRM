@@ -64,6 +64,12 @@ The pieces this doctrine ties together already exist as decisions; what was miss
 - **Finance is READ-ONLY in Imperion.** QuickBooks Online is the system of record for finance
   **actions**. There is no money-moving agent — Audrey reads and proposes, money moves stay in
   QBO under a human. This is a standing containment fact, not a per-workflow choice.
+  > **Amended by ADR-0139 (finance autonomy, #1740).** This clause is *sharpened*: the invariant
+  > is **no MONEY action**, not **no action**. QBO/money stays the permanent dial-proof
+  > `always_gate` wall (no agent writes QBO or moves money), but the app-native processes *around*
+  > QBO are automatable with **explicit per-workflow** human-in-the-loop — finance does NOT inherit
+  > the canonical ladder (ADR-0128 D5). See the finance-autonomy ADR for D1–D4. (ADR number claimed
+  > at merge, §10.3.)
 - **The agent loop is essentially unexercised in prod today** (`agent_run` ≈ 2). That is the
   whole reason for human-first operation: trust in the agent path has to be **earned against
   real traffic**, starting from zero.

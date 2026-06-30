@@ -149,6 +149,13 @@ discretion in the auto-vs-park decision.
 thing everywhere. This is the template the remaining six agents follow. **Chase (Sales)
 is the first worked instance** (below).
 
+> **Amended by ADR-0139 (finance autonomy, #1740): explicit FINANCE exception.** The
+> **Finance** domain (Audrey) does NOT inherit this universal mapping. Raising the global
+> dial never promotes a finance write; finance autonomy is **explicitly defined per
+> workflow** (its `agent.yaml`/`CONTEXT.md`), gated on a human *decision*, with QBO/money a
+> permanent `always_gate` wall. The other six agents still map onto this ladder; finance is
+> the carve-out. (ADR number claimed at merge, §10.3.)
+
 #### Chase (Sales) — worked instance
 
 | Level | What Chase auto-executes |

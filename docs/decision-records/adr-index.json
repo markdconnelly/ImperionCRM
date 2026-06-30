@@ -1891,5 +1891,20 @@
     "file": "ADR-0138-advisory-desk-archetype.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0139",
+    "title": "Finance autonomy — explicit per-workflow, QBO-gated, no ladder inheritance",
+    "status": "proposed",
+    "date": "2026-06-29",
+    "tags": [
+      "finance",
+      "agents",
+      "governance"
+    ],
+    "summary": "Finance is the one agent domain that does NOT inherit the canonical autonomy ladder (ADR-0128 D5). The permanent wall is QBO/money — no agent ever writes QuickBooks Online or moves money (financial-class = always_gate, ADR-0118 D5, dial-proof). Around that wall, each finance workflow defines its autonomy + human-in-the-loop gates EXPLICITLY in its own agent.yaml/CONTEXT: the human owns every finance decision (e.g. the admin-approve click), the agent automates everything else (prep, post-decision execution, reconciliation, internal reminders); nothing finance executes is gated on the global dial. Every finance workflow — including the read-only ones — carries an explicit declaration. Sharpens ADR-0123's blanket 'finance read-only' (the invariant is no MONEY action, not no action) and carves finance out of ADR-0128 D5's universal mapping.",
+    "file": "ADR-0139-finance-autonomy-explicit-per-workflow.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
