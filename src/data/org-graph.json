@@ -1214,6 +1214,7 @@
         "strategic_business_review",
         "lead_score",
         "consent_event",
+        "contract",
         "reference"
       ],
       "workflows": [

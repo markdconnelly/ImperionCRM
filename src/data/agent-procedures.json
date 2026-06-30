@@ -17193,6 +17193,7 @@
             "account",
             "contact",
             "opportunity",
+            "contract",
             "interaction",
             "ticket",
             "strategic_business_review"
@@ -17209,6 +17210,10 @@
                 {
                   "tag": "script",
                   "text": "Resolve the renewal `opportunity` (`kind=renewal`) in range and its account. No resolvable renewal → audit fail."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the account's active `contract`(s) — expiry date + terms — to ground the renewal facts (the agreement; the `opportunity` is the deal, the `contract` is the dates/terms)."
                 },
                 {
                   "tag": "script",
@@ -17232,6 +17237,12 @@
                     "silver `opportunity` · `okf:opportunity`",
                     "the `kind=renewal` opp in range",
                     "the renewal subject"
+                  ],
+                  [
+                    "Agreement",
+                    "silver `contract` · `okf:contract`",
+                    "the account's active agreement(s)",
+                    "expiry date + terms — the renewal facts (#1687)"
                   ],
                   [
                     "Account",
@@ -17259,9 +17270,10 @@
                   ]
                 ]
               },
-              "outputs": "`renewal-context.md` — the renewal opp id, the resolved account id, the service/engagement signals, and the one-line renewal statement.",
+              "outputs": "`renewal-context.md` — the renewal opp id, the resolved account id, the contract expiry + terms, the service/engagement signals, and the one-line renewal statement.",
               "audit": [
                 "Renewal opp id + account id stated (not blank)",
+                "Contract expiry date + terms read (or noted absent — never inferred)",
                 "Service + engagement signals read (or noted absent)",
                 "One-line renewal statement present"
               ],
