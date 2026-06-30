@@ -1415,6 +1415,13 @@
       ],
       "workflows": [
         {
+          "slug": "anomaly-sweep",
+          "stages": [
+            "01-scan",
+            "02-flag-with-tie-out"
+          ]
+        },
+        {
           "slug": "ar-aging",
           "stages": [
             "01-read-ar",
@@ -1426,6 +1433,27 @@
           "stages": [
             "01-read-attested",
             "02-flag-deviations"
+          ]
+        },
+        {
+          "slug": "budget-variance",
+          "stages": [
+            "01-gather",
+            "02-compute-variance-and-flag"
+          ]
+        },
+        {
+          "slug": "cash-flow-forecast",
+          "stages": [
+            "01-gather",
+            "02-project-runway-and-flag"
+          ]
+        },
+        {
+          "slug": "cost-to-serve",
+          "stages": [
+            "01-read-cost-and-margin",
+            "02-profitability-read-and-flag"
           ]
         },
         {
@@ -1448,6 +1476,13 @@
             "01-expected-pay",
             "02-match-qbo",
             "03-escalate-mismatch"
+          ]
+        },
+        {
+          "slug": "recurring-revenue-analytics",
+          "stages": [
+            "01-read-metrics",
+            "02-trend-and-flag"
           ]
         },
         {

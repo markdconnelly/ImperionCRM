@@ -1,0 +1,13 @@
+name: anomaly-sweep
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [time_record, timesheet, expense_item, expense_report, invoice, generated_invoice]   # subset of domains/finance/room.yaml — the finance silver swept
+tools: [pg.read]                      # subset of domains/finance/room.yaml — read-only, no write/send/money action
+skills:
+  - ./skills/anomaly-rubric           # Tier 3 — workflow-local (anomaly classes + detection signals + tie-out + confidence threshold)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the INTERNAL flagged-anomaly set (margin compression / cost spike / duplicate-or-aberrant entry / reconciliation drift) to the cockpit / Sterling from MEASURED finance-silver facts — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived, carrying each anomaly's tie-out, and stamping its as-of date. Audrey never posts, alters or deletes an entry, fixes a duplicate, or pushes to QBO (ADR-0123); a flagged duplicate / aberrant entry is raised for a human (and QBO) to resolve — there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate."

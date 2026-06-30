@@ -1,0 +1,13 @@
+name: recurring-revenue-analytics
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [metric_definition, invoice]                             # subset of domains/finance/room.yaml — the governed metric contracts (consumed) + the invoice mirror
+tools: [pg.read]                      # subset of domains/finance/room.yaml — read-only, no write/send/money action
+skills:
+  - ./skills/rr-analytics-rubric      # Tier 3 — workflow-local (which governed contracts to consume + trend + consumes-never-re-derives + advise-only-to-renewal)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the INTERNAL recurring-revenue read + trend flags (MRR / ARR / NRR / revenue-churn) to the cockpit / Sterling, parked as intel into the renewal motion, from the governed metric_definition contracts CONSUMED (never re-derived, D1) — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived and stamping its as-of date; any forward-looking element follows the D3 transparent-projection rule (method + assumptions shown, never a gap-fill). ADVISE-ONLY to the renewal motion — the renewal block / approve / send-for-signature is a human (and Chase) call. Audrey never posts, alters an invoice, edits a metric definition, or pushes to QBO (ADR-0123); there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate."

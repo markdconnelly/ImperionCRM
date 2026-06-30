@@ -1,0 +1,13 @@
+name: cost-to-serve
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [metric_definition, invoice, time_record]               # subset of domains/finance/room.yaml — governed cost/margin contracts (consumed) + invoice + cost grounding
+tools: [pg.read]                      # subset of domains/finance/room.yaml — read-only, no write/send/money action
+skills:
+  - ./skills/cost-to-serve-rubric     # Tier 3 — workflow-local (which governed contracts to consume + per-client/service read + thin-margin threshold + advise-never-block)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the INTERNAL client / service-line profitability read + thin-margin / compression flags to the cockpit / Sterling, supplied note-only to the line agents, from the governed cost_to_serve / margin_to_serve metric_definition contracts CONSUMED (never re-derived; the allocation views 0197/0198/0200 are upstream, exposed through the governed metrics — D1) — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived and stamping its as-of date. ADVISE-NEVER-BLOCK to Pierce / Celeste / Vance — the block / approve is theirs and a human's. Audrey never posts, alters an invoice, edits a metric definition, or pushes to QBO (ADR-0123); there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate."

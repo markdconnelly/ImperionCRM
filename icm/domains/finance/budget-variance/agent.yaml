@@ -1,0 +1,13 @@
+name: budget-variance
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Audrey persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../audrey.md
+  - ./prose.md
+okf_rooms: [budget, time_record, expense_item, invoice]             # subset of domains/finance/room.yaml — the plan + the actuals
+tools: [pg.read]                      # subset of domains/finance/room.yaml — read-only, no write/send/money action
+skills:
+  - ./skills/variance-rubric          # Tier 3 — workflow-local (plan-vs-actual alignment + material-variance threshold + tie-out)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the INTERNAL plan-vs-actual variance read + material-variance flags (delta per account / period) to the cockpit / Sterling from MEASURED budget-plan + actuals facts — internal, reversible (a flag can be dismissed) at L2, always labeling measured figure vs derived and stamping its as-of date. Audrey never edits the budget, posts an entry, alters an invoice, or pushes to QBO (ADR-0123); the budget plan is agent READ-ONLY (#1718) and there is no send and no money action to self-approve. Any data gap parks as an escalated gap, never an estimate."
