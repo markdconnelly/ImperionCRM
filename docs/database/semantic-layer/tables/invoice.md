@@ -4,10 +4,10 @@ title: invoice
 entity: invoice
 archetype: B
 description: Curated, pipeline-populated read-only AR/invoice MIRROR of QuickBooks — no app-side AR object, no agent/QBO write path; AR-aging is a derived read-model over it, not a separate entity.
-resource: ../../../decision-records/ADR-NNNN-ar-invoice-own-vs-mirror.md
+resource: ../../../decision-records/ADR-0140-ar-invoice-own-vs-mirror.md
 tags: [silver, finance, invoice, accounts-receivable, mirror, archetype-b]
 data_class: financial
-timestamp: 2026-06-29T00:00:00Z
+timestamp: 2026-06-30T00:00:00Z
 ---
 
 # invoice
@@ -20,10 +20,10 @@ Collections (AR-dunning) and Controller (reconciliation-assurance) agents reason
 FP&A cash-flow / AR-aging read-models tie out against
 ([#1580](https://github.com/markdconnelly/ImperionCRM/issues/1580), epic
 [#1394](https://github.com/markdconnelly/ImperionCRM/issues/1394)). It is **not** an app-owned AR
-object: it is a curated, **pipeline-populated** silver `invoice` TABLE (migration `0241`,
-placeholder) mirroring bronze `qbo_invoices` (migration 0120, LP #197 QBO pull), exactly as
+object: it is a curated, **pipeline-populated** silver `invoice` TABLE (migration `0241`)
+mirroring bronze `qbo_invoices` (migration 0120, LP #197 QBO pull), exactly as
 [`ticket`](ticket.md) mirrors Autotask. Governed by
-[ADR-NNNN](../../../decision-records/ADR-NNNN-ar-invoice-own-vs-mirror.md) (own-vs-mirror RESOLVED
+[ADR-0140](../../../decision-records/ADR-0140-ar-invoice-own-vs-mirror.md) (own-vs-mirror RESOLVED
 as MIRROR) and [ADR-0123](../../../decision-records/ADR-0123-agent-first-build-doctrine.md) (QBO =
 system of record for money; finance read-only), with
 [ADR-0044](../../../decision-records/ADR-0044-silver-contracts-tickets.md) (external-SoR
@@ -38,7 +38,7 @@ read-only-mirror discipline).
 - **The "own vs mirror" decision is RESOLVED as MIRROR**
   ([#668](https://github.com/markdconnelly/ImperionCRM/issues/668) /
   [#1580](https://github.com/markdconnelly/ImperionCRM/issues/1580),
-  [ADR-NNNN](../../../decision-records/ADR-NNNN-ar-invoice-own-vs-mirror.md)): Imperion does NOT
+  [ADR-0140](../../../decision-records/ADR-0140-ar-invoice-own-vs-mirror.md)): Imperion does NOT
   own an app-native AR/invoice ledger. The curated silver `invoice` is a real **table populated by
   the pipeline's bronze→silver merge — a *process*, not an agent** — carrying the meaningful QBO
   invoice fields type-cast from the all-text bronze envelope. The Collections + Controller agents
