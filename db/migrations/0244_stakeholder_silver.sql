@@ -1,11 +1,11 @@
--- 0241: `stakeholder` silver — the per-account relationship/influence map on contacts.
+-- 0244: `stakeholder` silver — the per-account relationship/influence map on contacts.
 -- (#1695, epic #1396 — Celeste operator-readiness). The stakeholder-role model Celeste's
 -- client-success procedures were missing: WHO at a client is the champion, the economic
 -- buyer, the technical decision-maker, an influencer, a plain user, or a detractor — plus
 -- their influence, sentiment, and relationship status. A health verdict without a
 -- stakeholder map misses the single biggest churn signal there is: *the champion left*.
 --
--- Migration number 0241 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
+-- Migration number 0244 is a PLACEHOLDER claimed at MERGE per system CLAUDE.md §10.3 —
 -- authored against a placeholder; the rebased branch takes the next free number just before
 -- squash. If another migration merges during the CI window, renumber this file + every
 -- reference (the OKF concept, the coverage-matrix row, the PR body).
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS stakeholder (
   CONSTRAINT stakeholder_account_contact_uniq UNIQUE (account_id, contact_id)
 );
 COMMENT ON TABLE stakeholder IS
-  'App-native per-account stakeholder/relationship map on contacts (#1695, epic #1396): WHO at a client is champion/economic_buyer/technical_decision_maker/influencer/user/detractor, plus influence, sentiment, and active-vs-departed status. Derived from interaction patterns (source=derived) or human-curated (source=curated) — source always recorded for signal-vs-inference (a detractor is never asserted without evidence, celeste.md guardrail 3). Champion→departed is the strongest leading churn signal (08-D). Archetype B (app-native single-SoR), CLIENT_PII data_class (always-gate) — holds pii at runtime, seeds none. Backend executor writes (approval-gated, never a direct silver write); read-only to web + agents. Migration 0241 (PLACEHOLDER — real number at merge).';
+  'App-native per-account stakeholder/relationship map on contacts (#1695, epic #1396): WHO at a client is champion/economic_buyer/technical_decision_maker/influencer/user/detractor, plus influence, sentiment, and active-vs-departed status. Derived from interaction patterns (source=derived) or human-curated (source=curated) — source always recorded for signal-vs-inference (a detractor is never asserted without evidence, celeste.md guardrail 3). Champion→departed is the strongest leading churn signal (08-D). Archetype B (app-native single-SoR), CLIENT_PII data_class (always-gate) — holds pii at runtime, seeds none. Backend executor writes (approval-gated, never a direct silver write); read-only to web + agents. Migration 0244 (PLACEHOLDER — real number at merge).';
 
 CREATE INDEX IF NOT EXISTS idx_stakeholder_account   ON stakeholder (account_id);
 CREATE INDEX IF NOT EXISTS idx_stakeholder_contact   ON stakeholder (contact_id);
