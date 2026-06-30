@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0139
 title: "Finance autonomy — explicit per-workflow, QBO-gated, no ladder inheritance"
 status: proposed
 date: 2026-06-29
@@ -8,7 +8,7 @@ summary: "Finance is the one agent domain that does NOT inherit the canonical au
 tags: [finance, agents, governance]
 ---
 
-# ADR-NNNN: Finance autonomy — explicit per-workflow, QBO-gated, no ladder inheritance
+# ADR-0139: Finance autonomy — explicit per-workflow, QBO-gated, no ladder inheritance
 
 | Field | Value |
 |---|---|
@@ -19,9 +19,8 @@ tags: [finance, agents, governance]
 | **Amends** | [ADR-0123](./ADR-0123-agent-first-build-doctrine.md) (finance-read-only clause → sharpened), [ADR-0128](./ADR-0128-canonical-agent-autonomy-ladder.md) D5 (universal ladder mapping → explicit finance exception) |
 | **Cross-references** | [ADR-0118](./ADR-0118-data-class-third-rls-axis-action-ceiling.md) D5 (`financial` = always_gate), [ADR-0109](./ADR-0109-actuation-autonomy-dial.md) (per-workflow actuation dial), [ADR-0061](./ADR-0061-icm-business-process-automation.md) (ICM draft→auto), [ADR-0136](./ADR-0136-workflow-doctrine.md) (workflow archetypes / autonomy rows) |
 
-> Number claimed at MERGE per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md).
-> `NNNN` is a placeholder — the branch that merges second renumbers to the next free slot and
-> fixes every reference. Docs-only ADR; claims no migration number.
+> Number **0139** claimed at merge per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md)
+> (authored against an `NNNN` placeholder, renumbered at merge). Docs-only ADR; claims no migration number.
 
 ## Problem
 

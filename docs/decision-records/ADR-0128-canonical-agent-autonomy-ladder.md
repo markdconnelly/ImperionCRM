@@ -149,7 +149,7 @@ discretion in the auto-vs-park decision.
 thing everywhere. This is the template the remaining six agents follow. **Chase (Sales)
 is the first worked instance** (below).
 
-> **Amended by ADR-NNNN (finance autonomy, #1740): explicit FINANCE exception.** The
+> **Amended by ADR-0139 (finance autonomy, #1740): explicit FINANCE exception.** The
 > **Finance** domain (Audrey) does NOT inherit this universal mapping. Raising the global
 > dial never promotes a finance write; finance autonomy is **explicitly defined per
 > workflow** (its `agent.yaml`/`CONTEXT.md`), gated on a human *decision*, with QBO/money a
