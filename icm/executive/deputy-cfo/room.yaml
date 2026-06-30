@@ -27,3 +27,8 @@ okf_rooms:
   - partner_deal        # partner-economics oversight — co-sell/referral deals + attribution (read)
   - partner_mdf         # partner-economics oversight — MDF spend/ROI (read; money gates at Bridget)
   - referral_payout     # partner-economics oversight — referral payout economics (read; money gates at Bridget)
+  - agent_autopilot_policy # division-performance oversight — the autonomy rung of each direct report
+                          #   (read; "every tier reads its rung", ADR-0087). Sterling is AWARE of his
+                          #   reports' dials; the dial-CHANGE recommendation stays the CRO's lane
+                          #   (Jessica) — he surfaces the operational effect and hands off, never
+                          #   recommends a rung (ADR-0131 management-surface amendment).
