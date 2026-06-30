@@ -111,6 +111,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [known_error](tables/known_error.md) | Service Desk | B (app-native known-error + workaround register, FK problem) | op | ✅ | problem-investigation (Sage, #1577, ADR-0079 amended; emitted by a problem; future incidents matched against it) |
 | [sbr_dimension_score](tables/sbr_dimension_score.md) | Customer Success | B | pii | ✅ | SBR-prep (per-dimension trend vs benchmark) |
 | [sbr_ticket](tables/sbr_ticket.md) | Customer Success | B | pii | ✅ | SBR-prep (period ticket history bridge) |
+| [stakeholder](tables/stakeholder.md) | Customer Success | B | pii | ✅ | stakeholder-mapping (08-S) — per-account relationship map (champion/economic_buyer/technical/influencer/user/detractor + influence/sentiment/active-vs-departed); champion→departed is the leading churn signal into 08-D; signal-labeled by source (never assert a detractor without evidence); feeds 08-A/08-C + advocacy targeting (#1692). #1695, epic #1396 |
 | question_template, question, engagement_answer | Sales | B | pii | ⏳ | discovery / assessment capture |
 | [contract](tables/contract.md) | kernel | B | op | ✅ | sale→delivery (DocuSign-gated) |
 

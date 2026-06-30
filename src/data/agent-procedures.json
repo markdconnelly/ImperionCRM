@@ -18234,6 +18234,210 @@
           ]
         },
         {
+          "slug": "stakeholder-mapping",
+          "title": "stakeholder-mapping (client-success)",
+          "job": "Celeste maintains the per-account **stakeholder map** — for each client, who is the **champion**, **economic_buyer**, **technical_decision_maker**, **influencer**, plain **user**, or **detractor**, plus their **influence**, **sentiment**, and **active-vs-departed** status (the `stakeholder` silver entity). CS effectiveness depends on knowing the human map: who to route a QBR to (08-C), whose departure is a churn risk (08-D), who to cultivate for a reference (the advocacy seam, #1692). A health verdict without a stakeholder map misses the most important churn signal there is: **the champion just left**. This is **propose-only** — the workflow assesses from MEASURED signals and parks a PROPOSED map update; the silver write is the backend executor's (celeste.md guardrail 1, propose-not-commit posture). Issue #1695.",
+          "trigger": "a periodic relationship-map refresh over an active account (the cockpit cadence) **or** a fresh signal that may change the map — a new `contact`, a sentiment shift, or a contact departure detected in `interaction`/comms. One run per account.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "\"at L2 read the relationship + assess the stakeholder map from MEASURED signals and PROPOSE the map update (internal, reversible, signal-labeled — source=derived vs curated; never assert a role without evidence); the silver write is backend-owed (propose-only until the stakeholder-mapping executor lands). No client-facing touch in this workspace. Champion-departure routes as a churn signal to 08-D. NO-COMMITS-EVER and the signal-vs-inference discipline are dial-proof (celeste.md guardrails 1,3). 💤 propose-only until the BE executor +",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "interaction",
+            "strategic_business_review",
+            "stakeholder"
+          ],
+          "skills": [
+            "./skills/stakeholder-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-relationship-read",
+              "name": "relationship-read",
+              "job": "resolve the client `account` and read its contacts, recent interaction patterns, the strategic frame, and the EXISTING stakeholder map. (💤 propose-only / dormant until the BE executor + #1369/#1370 hydrate the signals, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the client `account`. A missing or unresolvable account → audit fail; the run parks with the reason (no subject to map; never fabricate a stakeholder)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull this account's `contact`s, its recent `interaction` patterns, the latest `strategic_business_review`, and the **existing** `stakeholder` rows. Stay within THIS client (strict confidential boundary — never read across clients; celeste.md guardrail 5)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "One-line restatement of the trigger (periodic refresh, or which signal — new contact / sentiment shift / departure cue — prompted this run) as the seed for the assessment. Restate, do not classify here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Account",
+                    "silver `account` · `okf:account`",
+                    "the triggering client",
+                    "resolve + confirm the subject"
+                  ],
+                  [
+                    "Contacts",
+                    "silver `contact` · `okf:contact`",
+                    "contacts for this account",
+                    "the people the map is over"
+                  ],
+                  [
+                    "Engagement patterns",
+                    "silver `interaction` · `okf:interaction`",
+                    "recent for this account",
+                    "who communicates, who approves, who has gone silent / departed"
+                  ],
+                  [
+                    "Strategic frame",
+                    "silver `strategic_business_review` · `okf:strategic_business_review`",
+                    "latest for this account",
+                    "frame the map in the standing relationship"
+                  ],
+                  [
+                    "Existing map",
+                    "silver `stakeholder` · `okf:stakeholder`",
+                    "current rows for this account",
+                    "the prior map to refresh (champion-departure is a delta against it)"
+                  ]
+                ]
+              },
+              "outputs": "`relationship.md` — the resolved client id, the contact list, the recent interaction patterns (communication / approval / silence-or-departure cues), the strategic frame, the EXISTING stakeholder map, and the one-line trigger restatement. Unresolvable account → run ends parked.",
+              "audit": [
+                "Resolved client `account` id stated (not blank); unresolvable parks the run",
+                "Only this client's data was read (no cross-client leakage)",
+                "The EXISTING `stakeholder` map was loaded (the assessment refreshes it, not a blank slate)",
+                "One-line trigger restatement present (not the raw payload)",
+                "No role classified and nothing written here (read only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-map-assess",
+              "name": "map-assess",
+              "job": "for each contact, assess role / influence / sentiment / relationship_status from MEASURED signals — labeling measured signal vs inference, recording `source=derived`, and never asserting a role without evidence. (💤 propose-only / dormant until the BE executor + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each contact, assess **role / influence / sentiment / relationship_status** per `stakeholder-rubric.md` from MEASURED signals (interaction frequency, approval patterns, sentiment, departure cues). For every assessment, **label measured signal vs your inference** and record `source=derived` (a human's prior `curated` value is not overwritten by a weaker derived read)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Apply the HARD RULE: **never assert a `detractor` — or any role — without evidence.** No measured basis → `unknown`, not a guess (celeste.md guardrail 3). Record the basis in an `evidence_note` (a basis note, e.g. \"N inbound approvals over 90d\" — **never** a quoted private message or PII value)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Detect **champion-departure**: a contact mapped `champion`/`economic_buyer` gone silent with a corroborating departure cue → propose `relationship_status=departed` (+ `departed_at`) and mark it a **churn-risk signal** for routing in stage 03. Silence without corroboration → lower `influence` / flag for watch, never assert `departed`. A new champion-like contact is noted as a successor."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the per-contact assessment delta against the existing map (new / changed / unchanged / departed), each with its measured signal, `source`, and `evidence_note`. No write — assessment only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Relationship read",
+                    "`relationship.md` (stage 01 output)",
+                    "full",
+                    "contacts + interaction patterns + existing map + strategic frame"
+                  ],
+                  [
+                    "Engagement patterns",
+                    "silver `interaction` · `okf:interaction`",
+                    "recent for this account",
+                    "the measured signals to classify from (read-only)"
+                  ],
+                  [
+                    "Stakeholder rubric",
+                    "`./skills/stakeholder-rubric.md`",
+                    "all",
+                    "how to classify role/influence/sentiment + the no-role-without-evidence rule + champion-departure"
+                  ]
+                ]
+              },
+              "outputs": "`assessment.md` — per contact: proposed role · influence · sentiment · relationship_status · `source` · `evidence_note`, with measured signal vs inference labeled and the delta against the existing map. Champion-departures flagged as churn-risk signals. The ordered input to the proposed map.",
+              "audit": [
+                "Every assessment labels measured signal vs inference and records `source=derived`/`curated`",
+                "No role asserted without evidence — unsupported reads are `unknown`, not guesses",
+                "No `detractor` (or any role) asserted without a measured basis in its `evidence_note`",
+                "`evidence_note` carries a basis note only — no quoted private content, no PII value",
+                "Champion-departure detected only with a corroborating cue (silence alone never flips `departed`)",
+                "Only this client's data was read (no cross-client leakage); nothing written here"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-propose-map",
+              "name": "propose-map",
+              "job": "produce the PROPOSED stakeholder-map update as a parked draft for the backend executor to persist, and route champion-departure to 08-D — propose-only, nothing is written here. (💤 propose-only / dormant until the BE stakeholder-mapping executor + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Build the **PROPOSED** stakeholder-map update — one entry per contact: `account_id` · `contact_id` · role · influence · sentiment · relationship_status · `source=derived` · `evidence_note` · `as_of` (+ `departed_at` where departed). Carry the measured-signal-vs-inference label through to every entry (celeste.md guardrail 3); a `curated` human value is preserved, not overwritten by a weaker derived read."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "For each **champion-departure**, emit a **churn-risk signal routed to 08-D** health-intervention (the champion left = the leading churn signal). Note the map's feeds for the downstream workflows: 08-A client-360 (the map is part of the whole picture), 08-C QBR targeting (route the QBR to the right stakeholder), and advocacy/reference targeting (#1692 — a `champion` is a reference candidate). This stage **routes** those signals; it does not act on them."
+                },
+                {
+                  "tag": "script",
+                  "text": "Mark the disposition: the proposed map is a **parked** artifact for the backend **stakeholder-mapping executor** to persist (approval-gated, server-side, never a direct silver write — propose-only). **Nothing is written here.** Terminal stage; the run ends parked."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Assessment",
+                    "`assessment.md` (stage 02 output)",
+                    "full",
+                    "the per-contact assessed map delta + churn-risk flags"
+                  ],
+                  [
+                    "Stakeholder rubric",
+                    "`./skills/stakeholder-rubric.md`",
+                    "all",
+                    "the propose-only posture + champion-departure routing + confidentiality"
+                  ]
+                ]
+              },
+              "outputs": "`proposed-map.md` — the proposed `stakeholder` update (each entry: account · contact · role · influence · sentiment · relationship_status · `source` · `evidence_note` · `as_of`/`departed_at`), the champion-departure churn-risk signals routed to 08-D, and the map's feeds to 08-A / 08-C / #1692. Marked **parked** for human approval, then the backend executor. Terminal stage.",
+              "audit": [
+                "Every proposed entry labels measured signal vs inference and records `source`",
+                "No role asserted without evidence; a `curated` human value is preserved, not overwritten",
+                "The map is **parked** for the backend executor — NO silver write emitted from this workflow",
+                "Champion-departure routed to 08-D as a churn-risk signal (routed, not acted on)",
+                "Map feeds noted to 08-A / 08-C / advocacy #1692; no client-facing send emitted",
+                "Only this client's stakeholders appear (no cross-client leakage); no PII value surfaced"
+              ],
+              "checkpoint": "The Teams loop: a human co-shapes and approves the proposed stakeholder map before the backend executor persists it. **`auto` (L2) may self-approve the PROPOSED map draft ONLY** (internal, reversible, signal-labeled — `source=derived` vs `curated`). **No silver write happens here in any mode** — the write is the backend stakeholder-mapping executor's (propose-only, backend-owed). **No role is ever asserted without evidence**, and champion-departure is routed (to 08-D), not acted on. NO-COMMITS-EVER and the signal-vs-inference discipline are dial-proof (celeste.md guardrails 1, 3)."
+            }
+          ]
+        },
+        {
           "slug": "tech-lifecycle",
           "title": "tech-lifecycle (client-success v1)",
           "job": "Celeste's **technology lifecycle / refresh planning (vCIO)** advisory — review a client's technology estate, identify end-of-life (EOL) / aging / at-risk assets, and draft a **prioritized refresh plan**. This is a vCIO advisory artifact: recommendations only. The refresh plan and any spend/budget within it park for a human — Celeste advises, a human decides and commits.",

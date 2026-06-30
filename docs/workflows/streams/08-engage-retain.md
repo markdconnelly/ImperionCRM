@@ -76,6 +76,7 @@ presents); remediation-OUT → human/Datto (08-K/L/M).
 | 08-P issue an SLA-breach service credit 💰 | **B6 money-gate** (obligation/action separation A11) |
 | 08-Q relationship recovery / save-the-account (acute) 💤 | **B3 synthesis-brief** (save plan) + **B7 client-send** (executive recovery touch) |
 | 08-R onboarding success / time-to-value (adoption) 💤 | **B3 synthesis-brief** (adoption plan) + **B7 client-send** (first-value check-in) |
+| 08-S stakeholder / champion relationship mapping 💤 | **B3 synthesis-brief** (the map — propose-only; the silver write is backend-owed) |
 
 **Driving policy (every procedure):** inherits the doctrine universal baseline (ADR-0136 A2/A4/A5)
 + `TBD (mark-blocker: company-policy-collection)` for the 1–3 specific drivers (D4, #1586). Policies
@@ -646,6 +647,42 @@ automatable step graduates it (D5).
   owns adoption + value-realization) · Celeste→08-B/08-C/08-D. **(OWNERSHIP: clean — Pierce owns
   provisioning/delivery, Celeste owns adoption, A11.)** **Maps to:** #1694.
 
+## 08-S · Stakeholder / champion relationship mapping ⚡ — net-new
+- **Owner / Stream:** Celeste / 08. **Archetype:** B3 synthesis-brief (the stakeholder map) —
+  **propose-only**; the silver write is backend-owed (the cyber-risk-register precedent). Resolves
+  the #1396 unplanned-model gap (#1695).
+- **Trigger:** a periodic relationship-map refresh over an active account (cockpit cadence) **or** a
+  fresh signal that may change the map (a new contact, a sentiment shift, a contact-departure cue in
+  `interaction`/comms). One run per account.
+- **Terminal outcome:** a maintained `stakeholder` map for the account — WHO is champion / economic_buyer
+  / technical_decision_maker / influencer / user / detractor, with influence, sentiment, and
+  active-vs-departed status; **champion→departed surfaced as the leading churn signal**.
+- **Procedure Steps:**
+  1. `[automation]` **Relationship read** — resolve the `account`; read its `contact`s, recent
+     `interaction` patterns, the SBR, and the EXISTING `stakeholder` map, **cited + as-of** (A5);
+     unresolvable → park. **L0.**
+  2. `[automation]` **Map assess** — classify each contact's role/influence/sentiment/status from
+     MEASURED signals, **labeling measured signal vs inference** and recording `source=derived`/`curated`;
+     **never assert a `detractor` (or any role) without evidence** (`unknown`, not a guess; guardrail 3).
+     Detect champion-departure. **L2.**
+  3. `[automation]` **Propose map** — produce the proposed `stakeholder` map update as a parked draft for
+     the **backend stakeholder-mapping executor** to persist (propose-only); route champion-departure to
+     08-D, feed the map to 08-A/08-C + advocacy targeting (#1692). No client-facing touch.
+- **Driving policy:** TBD (#1586) — relationship / account-planning.
+- **Realization:** ICM Workspace (read + assess + propose automatable) — realized; the silver WRITE is
+  **backend-owed** (propose-only until the stakeholder-mapping executor lands); 💤dormant also on
+  #1369/#1370 (the interaction/comms signals it derives from).
+- **Autonomy ceiling:** **L2** (read + assess + propose = reversible internal, A10 row 1). No
+  client-facing action in this workspace; NO-COMMITS-EVER + the signal-vs-inference discipline dial-proof.
+- **Human-in-loop:** Jessica (CRO) / CS-lead curates/overrides a role (`source=curated`); the backend
+  executor persists. **always_gate floor:** never assert an unevidenced role (A5 evidence floor).
+- **Substrate deps:** **the BE stakeholder-mapping write executor** (backend twin) · #1369/#1370
+  (interaction/comms derivation signals) · #389 · #119. **subject:** both. **Seam:** Celeste→08-A
+  (the map is part of the client-360) · Celeste→08-C (route the QBR to the right stakeholder) ·
+  Celeste→08-D (champion-departure churn signal) · Celeste→advocacy (#1692, a champion is a reference
+  candidate). **(OWNERSHIP: clean — Celeste proposes the map; the backend executor owns the write.)**
+  **Maps to:** #1695. New silver entity `stakeholder` (mig 0241; OKF concept + coverage row in-PR).
+
 ---
 
 ## Provable-coverage note
@@ -669,7 +706,7 @@ procedure parked for one-click human launch, **Celeste never actuates**) and of 
 obligation/action separation** (the relationship-clock is hers; the close/purchase/remediation/
 deprovision/credit-money is explicitly NOT — O hands the deprovision to Osiris + teardown to Pierce, P
 hands the credit money to Audrey). **NO-COMMITS-EVER** and **MSSP-advisory-only** are dial-proof
-`always_gate` floors (inherited A2) on all 18. Seams are explicit hand-off steps: IN from all 7 other
+`always_gate` floors (inherited A2) on all 19. Seams are explicit hand-off steps: IN from all 7 other
 agents (A); OUT → Chase (E renewal, F expansion); OUT → Vance (I refresh, J vendor); OUT → human/Datto
 (K/L/M vCISO remediation); OUT → Osiris + Pierce (O offboarding); OUT → Audrey (P credit money). The
 close stays Chase's (Stream 02) — no qualify/close procedure appears here (correctly). **Schema gap
@@ -682,6 +719,10 @@ counterpart to 08-D's slow-churn save; NO-COMMITS holds — credit→Audrey/08-P
 **08-R onboarding success / time-to-value** (the CS-side adoption motion from Pierce's
 `delivery-complete` handoff, distinct from Pierce's `onboarding_step` provisioning; tracks
 first-30/60/90-day value-realization, seeds the ASP, routes early-warning to 08-D; un-defers #1694 from
-v2; B3+B7; 💤dormant on **#991**).
+v2; B3+B7; 💤dormant on **#991**) · **08-S stakeholder / champion relationship mapping** (the
+per-account relationship map — champion/economic_buyer/technical/influencer/user/detractor + influence/
+sentiment/active-vs-departed; champion→departed is the leading churn signal into 08-D; feeds 08-A/08-C +
+advocacy targeting #1692; signal-labeled, never assert a role without evidence; **new silver
+`stakeholder`** mig 0241; B3 propose-only, the write is backend-owed; #1695).
 
-**Count: 18 Operating Procedures** (08-A … 08-R; #1442 folded as persona-activation per D9).
+**Count: 19 Operating Procedures** (08-A … 08-S; #1442 folded as persona-activation per D9).
