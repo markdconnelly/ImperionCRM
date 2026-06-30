@@ -554,6 +554,7 @@ erDiagram
 erDiagram
     AGENT ||--o{ AGENT_TOOL_GRANT : "may use"
     AGENT ||--o{ AGENT_RUN : executes
+    AGENT_RUN ||--o{ AGENT_RUN : "delegates (tier child)"
     AGENT_RUN ||--o{ AGENT_MESSAGE : "transcript"
     AGENT ||--o{ AGENT_MEMORY : remembers
     APP_USER ||--o{ AGENT_RUN : "acts as"
@@ -593,6 +594,7 @@ erDiagram
       uuid id PK
       uuid agent_id FK
       uuid acting_user_id FK
+      uuid parent_run_id FK "tier delegate; NULL=root (ADR-0106)"
       text status
       int tokens
       numeric cost_usd
