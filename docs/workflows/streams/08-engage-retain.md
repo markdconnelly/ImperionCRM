@@ -74,6 +74,7 @@ presents); remediation-OUT → human/Datto (08-K/L/M).
 | 08-N proactive updates + knowledge | **B7 client-facing-send** (L3→L4) |
 | 08-O offboard a client (termination → data-return + deprovision) 💤 | **B8 provision-with-undo (reverse)** + **B5 JML** + **B9** (retention clock) + **B6/B7** peels |
 | 08-P issue an SLA-breach service credit 💰 | **B6 money-gate** (obligation/action separation A11) |
+| 08-Q relationship recovery / save-the-account (acute) 💤 | **B3 synthesis-brief** (save plan) + **B7 client-send** (executive recovery touch) |
 
 **Driving policy (every procedure):** inherits the doctrine universal baseline (ADR-0136 A2/A4/A5)
 + `TBD (mark-blocker: company-policy-collection)` for the 1–3 specific drivers (D4, #1586). Policies
@@ -576,6 +577,40 @@ automatable step graduates it (D5).
   both. **Seam:** Celeste→Audrey (money) + Celeste→Belle/08-D (client notice). **(OWNERSHIP: clean —
   Celeste owns the SLA obligation/clock, Audrey owns the money act, A11.)**
 
+## 08-Q · Relationship recovery / save-the-account (acute) ⚡ — net-new
+- **Owner / Stream:** Celeste / 08. **Archetype:** B3 synthesis-brief (the save plan) + B7 client-send
+  (the executive recovery touch) — the **acute** counterpart to 08-D (08-D handles slow-degradation
+  churn; this handles the acute relationship rupture). Resolves the #1396 v2-deferral (un-deferred #1693).
+- **Trigger:** a Felix major-incident / SLA-breach handoff **or** a sharp sentiment/health drop — an
+  acute event that puts the *relationship* (not just the ticket) at risk. One run per at-risk event.
+- **Terminal outcome:** an executive recovery touch + a save plan, tracked to resolution — the
+  relationship is recovered or the risk is escalated; distinct from 08-D's routine save-outreach.
+- **Procedure Steps:**
+  1. `[automation]` **Assemble incident context** — the Felix seam: the major-incident / SLA-breach
+     facts (`ticket`) + relationship context (`account`/`contact`/`interaction`/SBR), **cited + as-of**
+     (A5); empty/unresolvable → park. **L0.**
+  2. `[hybrid]` **Draft executive recovery touch + save plan** — signal vs inference; **NO-COMMITS**:
+     a credit routes to Audrey/08-P (the only credit path), an SLA change to a human, a remediation to
+     Felix/Datto, a price to a human (B3 launchpad pre-stages each as a parked owner-action). **L2.**
+  3. `[gui-step]` **SEND GATE + track** — the acute executive send is **`always_gate` (A2 class-2)**:
+     relationship-sensitive, so it parks for a human in EVERY mode (unlike 08-D, no send auto-fires at
+     any rung); exits only via ADR-0058. Then track to resolution (hand SLA-credit to Audrey/08-P,
+     remediation to Felix).
+- **Driving policy:** TBD (#1586) — churn-intervention / save-offer (acute).
+- **Realization:** ICM Workspace (assemble + draft automatable) — realized; 💤dormant on **#991** (the
+  Felix incident-handoff feed).
+- **Autonomy ceiling:** **L2** (assemble + draft = reversible internal, A10 row 1). The executive
+  recovery **send is human-gated at every rung** (acute relationship-sensitive) — NO-COMMITS-EVER and
+  MSSP-advisory-only dial-proof.
+- **Human-in-loop:** Jessica (CRO) / CS-lead approves the recovery send + owns the relationship call;
+  credit → Audrey, remediation → Felix/Datto. **always_gate floor:** the acute executive send always
+  parks (A3 floor).
+- **Substrate deps:** **#991** (Felix incident-handoff feed — the load-bearing dep) · #1369/#1370
+  (sentiment-drop trigger) · 08-P (SLA credit, Audrey) · #389 · #119. **subject:** both. **Seam:**
+  Felix→Celeste (incident IN) · Celeste→Audrey/08-P (credit) · Celeste→human (executive send).
+  **(OWNERSHIP: clean — Celeste owns the relationship recovery; Felix owns the technical incident;
+  Audrey owns the credit money, A11.)** **Maps to:** #1693.
+
 ---
 
 ## Provable-coverage note
@@ -599,10 +634,15 @@ procedure parked for one-click human launch, **Celeste never actuates**) and of 
 obligation/action separation** (the relationship-clock is hers; the close/purchase/remediation/
 deprovision/credit-money is explicitly NOT — O hands the deprovision to Osiris + teardown to Pierce, P
 hands the credit money to Audrey). **NO-COMMITS-EVER** and **MSSP-advisory-only** are dial-proof
-`always_gate` floors (inherited A2) on all 16. Seams are explicit hand-off steps: IN from all 7 other
+`always_gate` floors (inherited A2) on all 17. Seams are explicit hand-off steps: IN from all 7 other
 agents (A); OUT → Chase (E renewal, F expansion); OUT → Vance (I refresh, J vendor); OUT → human/Datto
 (K/L/M vCISO remediation); OUT → Osiris + Pierce (O offboarding); OUT → Audrey (P credit money). The
 close stays Chase's (Stream 02) — no qualify/close procedure appears here (correctly). **Schema gap
 flagged to FE: #1622** (`client_offboarding` silver model; 08-O ships propose-only/dormant until built).
 
-**Count: 16 Operating Procedures** (08-A … 08-P; #1442 folded as persona-activation per D9).
+**Operator-readiness additions (2026-06-29, #1396 audit):** **08-Q relationship recovery /
+save-the-account** (the *acute* save — a Felix major-incident/SLA-breach or sharp sentiment drop ⇒
+executive recovery touch + save plan; B3+B7; un-defers #1693 from v2; 💤dormant on **#991**). The
+acute counterpart to 08-D's slow-churn save; NO-COMMITS holds (credit→Audrey/08-P, remediation→Felix).
+
+**Count: 17 Operating Procedures** (08-A … 08-Q; #1442 folded as persona-activation per D9).

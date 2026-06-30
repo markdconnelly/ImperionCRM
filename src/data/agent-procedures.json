@@ -17187,6 +17187,239 @@
           ]
         },
         {
+          "slug": "relationship-recovery",
+          "title": "relationship-recovery (client-success)",
+          "job": "Celeste's **acute relationship-recovery / save-the-account** playbook — when a triggering incident (a major incident / SEV1, an SLA breach, or a string of failures) puts the *relationship* (not just the ticket) at risk, assemble the incident picture (L2 internal), **draft** an executive recovery touch + a save plan (L2 internal), then send via a **human-gated** checkpoint and track to resolution. **Felix owns the technical incident; Celeste owns the relationship** (celeste.md seams). This is the **acute** counterpart to 08-D (`health-intervention`, the slow-degradation churn save).",
+          "trigger": "a **Felix major-incident / SLA-breach handoff** arriving on Celeste's wake inbox (the #991 bus) **or** a sharp sentiment / health drop signalling an acute relationship rupture. One run per at-risk **relationship event** — distinct from 08-D's routine periodic save-outreach over the whole book.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "\"at L2 assemble the incident context + DRAFT the executive recovery touch + save plan from MEASURED signals (internal, reversible, signal-labeled). EVERY acute executive recovery send parks for a human in every mode — this is relationship-sensitive, so unlike 08-D no send auto-fires at any rung. Every binding commitment parks at every rung — a credit routes to Audrey/08-P (the only credit path), an SLA change to a human, a remediation to Felix/Datto, a price to a human. The NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1-2). 💤 dormant until",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.email",
+            "send.dm"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "interaction",
+            "ticket",
+            "strategic_business_review",
+            "consent_event"
+          ],
+          "skills": [
+            "./skills/recovery-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-incident-context",
+              "name": "incident-context",
+              "job": "assemble the incident + relationship picture from the Felix seam and label measured signal vs inference. (💤 dormant until the substrate hydrates — #991 + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the triggering incident `ticket`(s), the account + contacts, recent `interaction` sentiment, and the latest `strategic_business_review` for the client. Stay within THIS client (strict confidential boundary — never read across clients). A missing / unresolvable incident or client **parks** the run with the reason — never a best-effort assemble on a phantom rupture."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Assemble the incident + relationship picture per the rubric (which reads the acute indicators from `health-signals.md`). For every read, **label measured signal vs your inference** — the rupture severity carries the signals that produced it (celeste.md guardrail 3). Never invent dissatisfaction or sentiment."
+                },
+                {
+                  "tag": "script",
+                  "text": "Set the disposition seed: the rupture facts (the incident, the relationship signal) + the exec/decision contact. This seeds stage 02's posture choice."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Incident",
+                    "silver `ticket` · `okf:ticket`",
+                    "the major-incident / SLA-breach ticket(s) for this account",
+                    "the triggering rupture facts (Felix seam, source)"
+                  ],
+                  [
+                    "Account + contacts",
+                    "silver `account` / `contact` · `okf:account` `okf:contact`",
+                    "the at-risk client",
+                    "who the relationship is with + the exec/decision contact"
+                  ],
+                  [
+                    "Sentiment + history",
+                    "silver `interaction` · `okf:interaction`",
+                    "recent history for this account",
+                    "sentiment drop + the relationship signal behind the rupture"
+                  ],
+                  [
+                    "Strategic record",
+                    "silver `strategic_business_review` · `okf:strategic_business_review`",
+                    "latest SBR for this account",
+                    "the strategic context the recovery re-frames against"
+                  ],
+                  [
+                    "Recovery rubric",
+                    "`./skills/recovery-rubric.md` (cites `../../client-360/skills/health-signals.md`)",
+                    "all",
+                    "signal-vs-inference + the acute-rupture indicators"
+                  ]
+                ]
+              },
+              "outputs": "`incident-context.md` — the incident facts, the relationship context (account, contact, sentiment, SBR), the at-risk relationship signal (measured signal vs inference labeled), and the resolved exec/decision contact. Missing incident/client → run parks here.",
+              "audit": [
+                "Only this client's data was read (no cross-client leakage)",
+                "The triggering incident resolved to a real `ticket` (else the run parks)",
+                "Every rupture read labels measured signal vs inference",
+                "The at-risk relationship signal carries the signals that produced it (no unsourced read)",
+                "No outreach drafted or sent here (assemble + read only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-recovery-plan",
+              "name": "recovery-plan",
+              "job": "decide the recovery posture, draft the executive recovery touch + save plan, and assert consent. (💤 dormant until the substrate hydrates — #991 + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Decide the **recovery posture** (reassure / recover / escalate-re-seam) per the rubric. When in doubt between reassure and recover, treat as **recover**."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the **executive recovery touch** in Celeste's relationship voice — warm, **accountable**, business-framed, in the client's interest. It **acknowledges and asks**, it never **promises**: no credit / SLA / price / remediation / roadmap line in the body (NO-COMMITS-EVER, dial-proof, guardrail 1)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the **save plan** — the relationship repair steps (recovery call, open questions, watch-items, the strategic re-frame from the SBR). Relationship steps only; it carries no binding line. Flag any **non-interest upsell** explicitly; a save is never a disguised sell (guardrail 4)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Route every binding ask out of this workflow per the rubric: **credit → Audrey / 08-P** (the only credit path), **SLA → human**, **remediation → Felix / Datto**, **price → human**. Out-of-seam needs (expansion → Chase, security → vCISO) are routed here, not actioned."
+                },
+                {
+                  "tag": "script",
+                  "text": "Assert a current consent basis (`consent.check`) for the exec contact. Basis `none` → the run parks with the reason; no send (ADR-0058)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Incident context",
+                    "`incident-context.md` (stage 01 output)",
+                    "full",
+                    "the rupture facts + relationship signal + exec contact"
+                  ],
+                  [
+                    "Account + contacts",
+                    "silver `account` / `contact` · `okf:account` `okf:contact`",
+                    "the at-risk client",
+                    "the recovery recipient + relationship context"
+                  ],
+                  [
+                    "Strategic record",
+                    "silver `strategic_business_review` · `okf:strategic_business_review`",
+                    "latest SBR for this account",
+                    "the strategic re-frame the save plan builds on"
+                  ],
+                  [
+                    "Consent basis",
+                    "silver `consent_event` · `okf:consent_event`",
+                    "latest for the exec contact",
+                    "gate the send (no consent, no touch)"
+                  ],
+                  [
+                    "Recovery rubric",
+                    "`./skills/recovery-rubric.md`",
+                    "all",
+                    "recovery-posture + executive-touch/save-plan + NO-COMMITS routing"
+                  ]
+                ]
+              },
+              "outputs": "`recovery-plan.md` — the recovery posture, the drafted executive recovery touch (commitment-free), the save plan (relationship steps only), the asserted consent basis, and the binding/out-of-seam routings (Audrey/08-P · Felix · human · Chase · vCISO).",
+              "audit": [
+                "Recovery posture stated with its rubric rationale",
+                "Executive touch carries NO binding commitment (credit / SLA / price / remediation / roadmap)",
+                "Save plan is relationship steps only (no binding line)",
+                "Every binding ask routed to its seam (credit → Audrey/08-P · SLA/price → human · remediation → Felix), not promised",
+                "Consent basis asserted; basis `none` parks the run (never proceeds to send)",
+                "Any non-interest upsell flagged; expansion/security routed to seam, not actioned"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-execute-track",
+              "name": "execute-track",
+              "job": "the human-gated executive recovery send, then track the save to resolution. (💤 dormant until the substrate hydrates — #991 + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": null,
+                  "text": "Park until a human approves — there is no auto path for this send."
+                },
+                {
+                  "tag": null,
+                  "text": "Send via the ADR-0058 approval-gated path — consent re-asserted at execution, sender = the client-success mailbox (email) or page/channel identity (DM). **No other send route exists for this workflow.** The body carries no commitment; a commitment ask never ships — it is routed to its seam, not softened into a promise."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Log the touch to the `interaction` timeline: sent body, channel, approver (human id), the incident it answered, run id."
+                },
+                {
+                  "tag": "script",
+                  "text": "Track to resolution: note the **open save thread** (the watch-items + recovery call), and confirm the binding routings are live — **SLA-credit handed to Audrey / 08-P**, **remediation tracking handed to Felix**. The relationship thread stays Celeste's; the binding work is the seam's."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Recovery plan",
+                    "`recovery-plan.md` (stage 02 output)",
+                    "full",
+                    "the touch + save plan + consent basis + routings"
+                  ],
+                  [
+                    "Recipient",
+                    "silver `contact` · `okf:contact`",
+                    "the at-risk exec/decision contact",
+                    "resolve the send target"
+                  ],
+                  [
+                    "Consent basis",
+                    "silver `consent_event` · `okf:consent_event`",
+                    "latest for the contact",
+                    "re-assert consent at execution"
+                  ]
+                ]
+              },
+              "outputs": "`recovery-record.md` — the sent version, timestamp, approver, send-path result, the logged timeline entry id, the open save thread, and the confirmed seam hand-offs (Audrey/08-P · Felix). Rejection ends the run with the rejection reason captured. Terminal stage.",
+              "audit": [
+                "Approver identity recorded (never blank; never `auto` — this send is always human-gated)",
+                "Consent re-assertion result logged (basis ≠ `none`)",
+                "Sent body carries NO binding commitment (commitment asks routed to seam, not shipped)",
+                "SLA-credit handed to Audrey / 08-P and remediation handed to Felix where applicable",
+                "Timeline entry id present; the open save thread noted"
+              ],
+              "checkpoint": "The approval item shows: the executive recovery touch, the incident + at-risk relationship picture and its signals, the recovery posture, the save plan, the consent basis, and the binding/out-of-seam routings. Approver may edit the body before approving; edits are kept as the sent version and recorded. **`auto` may NOT self-approve the send at ANY rung.** This is acute + executive + relationship-sensitive, so **every** executive recovery send **parks for a human in every mode** (unlike 08-D, where a routine save may auto at L3). And every binding commitment (credit → Audrey/08-P · SLA → human · price → human · remediation → Felix/Datto) parks at every rung. The NO-COMMITS-EVER and MSSP-advisory ceilings are dial-proof (celeste.md guardrails 1–2)."
+            }
+          ]
+        },
+        {
           "slug": "renewal-readiness",
           "title": "renewal-readiness (client-success v1)",
           "job": "assess a client's **renewal readiness** ahead of a renewal in range — assemble the readiness picture (health, service track record, posture, the margin signal arriving from Audrey) and park the recommended renewal posture (renew-as-is / uplift / at-risk → save-play) for a human and for Chase. Celeste owns the *relationship* readiness; **Chase owns the renewal transaction** (the renewal-reprice workflow). This is the Celeste side of that seam.",
