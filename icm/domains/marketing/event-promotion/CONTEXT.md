@@ -44,6 +44,16 @@ but each send still passes its gate** — the sentinel pre-stages the easy-butto
 never auto-fires a client send (A11). **Money never enters this workflow** — a boost/ad
 is a separate procedure (01-B/01-C), `always_gate`.
 
+## SOP (the dual-audience document)
+
+The full human+machine SOP for this procedure — frontmatter procedure-object + the
+end-to-end runnable steps (drive-fill → capture-registrations → watch-clock → post-event),
+the seams to the sub-procedures it delegates to, the learning on-ramp, and the dormancy
+posture — is [`sop.md`](sop.md) (ADR-0136 A8; mirrors the template-defining exemplar
+social-inbox, #1759). This `CONTEXT.md` stays the thin routing surface; `sop.md` is the
+canonical prose. The control layer (§A invariants, the B9/B7 archetype rules) is cited
+there from ADR-0136, never redefined.
+
 ## Runtime skills
 
 Domain-shared (Tier 2, `../skills/`): `brand-voice.md` (every marketing draft sounds the
