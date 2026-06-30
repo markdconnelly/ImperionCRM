@@ -6,7 +6,7 @@
 
 | Source | Location | Scope | Why |
 |---|---|---|---|
-| Posture handoff | `handoff.md` (stage 01 output) | full | Vera's findings + resolved client + relationship context |
+| Posture read | `posture-read.md` (stage 01 output) | full | the measured `posture_snapshot` finding + resolved client + relationship context |
 | Reporting rubric | `./skills/posture-reporting-rubric.md` | all | report structure, signal-vs-inference, the MSSP advisory boundary |
 | QBR substrate | silver `strategic_business_review` · `okf:strategic_business_review` | latest for this account | frame recommendations against the standing strategic picture |
 

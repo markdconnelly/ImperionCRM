@@ -1215,6 +1215,9 @@
         "lead_score",
         "consent_event",
         "contract",
+        "cloud_asset",
+        "device",
+        "posture_snapshot",
         "reference"
       ],
       "workflows": [
@@ -1310,7 +1313,7 @@
         {
           "slug": "security-posture-review",
           "stages": [
-            "01-ingest-posture",
+            "01-read-posture",
             "02-assess-report",
             "03-finalize-report"
           ]

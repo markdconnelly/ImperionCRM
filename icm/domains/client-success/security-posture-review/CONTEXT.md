@@ -1,17 +1,17 @@
 # Workflow: security-posture-review (client-success v1)
 
-**Job:** Celeste's **vCISO posture review & client reporting** — ingest a posture-findings
-handoff from **Vera** (Platform/Governance, who measures and scores the posture), fold it
-into the relationship context, and produce a client-facing posture report in the
-relationship's voice. **STRICT MSSP boundary: advisory / visibility only** — posture, risk,
-recommendations; remediation is **human / Datto**, never Celeste (celeste.md guardrail 2,
-dial-proof).
+**Job:** Celeste's **vCISO posture review & client reporting** — read the client's MEASURED
+`posture_snapshot` (scored by **Vera**'s Platform/Governance segment), fold it into the
+relationship context, and produce a client-facing posture report in the relationship's voice.
+**STRICT MSSP boundary: advisory / visibility only** — posture, risk, recommendations;
+remediation is **human / Datto**, never Celeste (celeste.md guardrail 2, dial-proof).
 
-**Trigger:** a `relationship.posture.*` handoff event from **Vera** (the measure→present
-seam) carrying the scored posture findings for a client. The cross-agent event bus is
-backend-owned (BE-W7 #437, the `relationship.*` family on the ADR-0111 wake inbox). One run
-per handoff. Celeste does NOT measure posture and does NOT read the Security-domain posture
-substrate directly — the facts arrive as Vera's handoff (the measure→present→remediate seam).
+**Trigger:** a `relationship.posture.*` cue (posture-review cadence, a QBR window, or a Vera
+drift alert) for a client. Celeste reads the latest `posture_snapshot` **directly** (#1689 —
+direct read resolved over handoff-fed, so the review runs before the #991/BE-W7 bus). She does
+NOT *measure or re-score* posture — the scoring is Vera's segment of the
+measure→present→remediate seam; Celeste reads the measured snapshot read-only (`sec`
+data_class → audit-by-reference) and presents it.
 
 **What this is NOT:** no remediation, no remediation commitment, no client-facing send. The
 review presents the posture + parked recommendations; a human approves any send and human /
@@ -22,7 +22,7 @@ guardrails 1–2).
 
 | # | Stage | Job | Checkpoint |
 |---|---|---|---|
-| 01 | ingest-posture | Ingest Vera's posture-findings handoff + frame the client relationship | — |
+| 01 | read-posture | Read the client's measured `posture_snapshot` + frame the client relationship | — |
 | 02 | assess-report | Assess + structure the client posture report (signal vs inference; recommendations only) | — |
 | 03 | finalize-report | Finalize the client-facing report as a PARKED artifact | **Teams-loop** |
 
@@ -36,11 +36,11 @@ client-confidential boundary: one client's posture never enters another's contex
 
 ## The measure→present→remediate seam
 
-This workflow owns only the **present** segment. **Vera measures and scores** the posture
-(the Security-domain substrate is hers, not Celeste's). **Celeste presents** the findings in
-the relationship's voice. **Human / Datto remediate.** Do not cross seams: Celeste neither
-re-scores Vera's findings nor proposes a remediation action — she frames, contextualizes, and
-recommends, then parks.
+This workflow owns only the **present** segment. **Vera measures and scores** the posture (the
+scoring is hers; Celeste reads the resulting `posture_snapshot` read-only and never re-scores
+it). **Celeste presents** the findings in the relationship's voice. **Human / Datto remediate.**
+Do not cross seams: Celeste neither re-scores the snapshot nor proposes a remediation action —
+she frames, contextualizes, and recommends, then parks.
 
 ## Runtime skills
 

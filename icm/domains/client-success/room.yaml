@@ -49,5 +49,18 @@ okf_rooms:
                          #   read so renewal assessment grounds on real dates + terms.
                          #   Read-only kernel/op silver; no binding line — the renewal
                          #   posture + price + close stay gated (NO-COMMITS, Chase owns).
+  - cloud_asset          # vCIO tech-lifecycle (08-I, #1689): direct read of cloud
+                         #   resource CI status (EOL / refresh-due). Felix/Service owns
+                         #   the CMDB SoR; Celeste reads it read-only. Resolves the
+                         #   direct-read-vs-handoff contradiction in favor of a direct
+                         #   grant so 08-I runs before the #991 bus.
+  - device               # vCIO tech-lifecycle (08-I, #1689): direct read of endpoint/
+                         #   network CI status (age / warranty / OS). Read-only; Felix SoR.
+  - posture_snapshot     # vCISO posture-review (08-K, #1689): direct read of the
+                         #   MEASURED posture finding (Secure Score + pillars + drift).
+                         #   `sec` data_class → audit-by-reference, NO PII reproduction
+                         #   (Vera precedent). Celeste reads Vera's measured snapshot
+                         #   read-only and FRAMES it for the client — she never re-scores
+                         #   (the MSSP/vCISO-advisory boundary, celeste.md guardrail 2).
   - reference            # the advocacy seam (#1703/#1692): the reference candidate
                          #   Celeste cultivates → consents → hands to Belle (Stream 01-O)

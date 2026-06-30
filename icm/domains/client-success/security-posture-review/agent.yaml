@@ -5,9 +5,9 @@ system_compose:                       # ordered; Constitution -> domain room -> 
   - ../room.md
   - ../celeste.md
   - ./prose.md
-okf_rooms: [account, contact, interaction, strategic_business_review]   # subset of domains/client-success/room.yaml; posture arrives as a Vera handoff, not a room read
+okf_rooms: [account, contact, interaction, strategic_business_review, posture_snapshot]   # subset of domains/client-success/room.yaml; posture_snapshot = direct read of Vera's MEASURED finding (#1689 resolved direct-read over handoff-fed) — `sec` data_class, audit-by-reference, Celeste FRAMES it but never re-scores
 tools: [pg.read]                                                        # read relationship context + assemble report; client-facing send parks (ADR-0058)
 skills:
   - ./skills/posture-reporting-rubric   # Tier 3 — workflow-local (posture-reporting rubric + MSSP boundary)
 autonomy_rung: L2
-auto_may_self_approve: "assemble the internal client posture report from Vera's posture-findings handoff and the relationship context (internal, reversible) at L2 — always labeling Vera's measured posture finding vs Celeste's relationship-framed inference. Every client-facing send parks for a human in every mode (ADR-0058), and remediation routes to human/Datto — the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1–2)."
+auto_may_self_approve: "assemble the internal client posture report from a direct read of the MEASURED `posture_snapshot` (Vera's segment of the seam owns the scoring) and the relationship context (internal, reversible) at L2 — always labeling the measured posture finding vs Celeste's relationship-framed inference, reading posture audit-by-reference (no PII reproduction; #1689). Celeste FRAMES the measured finding, never re-scores it. Every client-facing send parks for a human in every mode (ADR-0058), and remediation routes to human/Datto — the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1–2)."

@@ -7,17 +7,17 @@ refresh plan and any spend/budget within it park for a human — Celeste advises
 decides and commits.
 
 **Trigger:** a `relationship.lifecycle.*` cue for an active client — a periodic vCIO/QBR
-prep cadence, an approaching renewal where estate age matters, or a Felix/service handoff
+prep cadence, an approaching renewal where estate age matters, or a Felix/service signal
 flagging an asset pattern (recurring incidents on aging hardware, an EOL warning). One run
 per client lifecycle review.
 
-**Asset/CMDB facts arrive as a handoff, not a direct read.** The CMDB substrate
-(`device` / `cloud_asset`) exists, but those rooms are **not** in the client-success
-`okf_rooms`. So this workflow treats asset/lifecycle facts as **service-domain / Felix
-handoff context** folded into the account picture — never a direct CMDB device/cloud-asset
-read. The estate is read through the relationship rooms Celeste owns plus
-the handoff payload; the workflow states what it has and parks if the asset picture is
-absent rather than fabricating one.
+**Asset/CMDB facts are a direct read (#1689).** The CMDB substrate (`cloud_asset` / `device`)
+is read-only in client-success's `okf_rooms`; **Felix/Service owns the CMDB as system of
+record** and Celeste reads it read-only — never writing or correcting a CI. So this workflow
+grounds the estate by reading `cloud_asset`/`device` directly (resolved over the handoff-fed
+option so 08-I runs before the #991 bus). A Felix/service handoff may still supply an estate
+picture when one is pushed, but the read no longer depends on it; if the CMDB holds no CIs for
+the client, the workflow states "estate unknown" and parks rather than fabricating one.
 
 **What this is NOT:** no commitment, no client-facing send, no procurement, no remediation.
 The plan is a parked recommendation; a human acts. NO-COMMITS-EVER and MSSP/vCISO
@@ -28,7 +28,7 @@ advisory (the MSSP boundary) — remediation is human / Datto.
 
 | # | Stage | Job | Checkpoint |
 |---|---|---|---|
-| 01 | estate-context | Read the account + service history + strategic record; fold the asset/CMDB facts that arrive as service/Felix handoff context | — |
+| 01 | estate-context | Read the account + service history + strategic record + the `cloud_asset`/`device` CMDB directly | — |
 | 02 | assess-lifecycle | Identify EOL / aging / at-risk assets; label measured signal vs inference | — |
 | 03 | draft-refresh-plan | Draft the prioritized refresh plan; spend/budget parks as a recommendation | **Teams-loop** |
 

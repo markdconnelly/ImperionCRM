@@ -17567,11 +17567,11 @@
         {
           "slug": "security-posture-review",
           "title": "security-posture-review (client-success v1)",
-          "job": "Celeste's **vCISO posture review & client reporting** — ingest a posture-findings handoff from **Vera** (Platform/Governance, who measures and scores the posture), fold it into the relationship context, and produce a client-facing posture report in the relationship's voice. **STRICT MSSP boundary: advisory / visibility only** — posture, risk, recommendations; remediation is **human / Datto**, never Celeste (celeste.md guardrail 2, dial-proof).",
-          "trigger": "a `relationship.posture.*` handoff event from **Vera** (the measure→present seam) carrying the scored posture findings for a client. The cross-agent event bus is backend-owned (BE-W7 #437, the `relationship.*` family on the ADR-0111 wake inbox). One run per handoff. Celeste does NOT measure posture and does NOT read the Security-domain posture substrate directly — the facts arrive as Vera's handoff (the measure→present→remediate seam).",
+          "job": "Celeste's **vCISO posture review & client reporting** — read the client's MEASURED `posture_snapshot` (scored by **Vera**'s Platform/Governance segment), fold it into the relationship context, and produce a client-facing posture report in the relationship's voice. **STRICT MSSP boundary: advisory / visibility only** — posture, risk, recommendations; remediation is **human / Datto**, never Celeste (celeste.md guardrail 2, dial-proof).",
+          "trigger": "a `relationship.posture.*` cue (posture-review cadence, a QBR window, or a Vera drift alert) for a client. Celeste reads the latest `posture_snapshot` **directly** (#1689 — direct read resolved over handoff-fed, so the review runs before the #991/BE-W7 bus). She does NOT *measure or re-score* posture — the scoring is Vera's segment of the measure→present→remediate seam; Celeste reads the measured snapshot read-only (`sec` data_class → audit-by-reference) and presents it.",
           "model": "claude-sonnet-4-5",
           "autonomyRung": "L2",
-          "autoMaySelfApprove": "assemble the internal client posture report from Vera's posture-findings handoff and the relationship context (internal, reversible) at L2 — always labeling Vera's measured posture finding vs Celeste's relationship-framed inference. Every client-facing send parks for a human in every mode (ADR-0058), and remediation routes to human/Datto — the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1–2).",
+          "autoMaySelfApprove": "\"assemble the internal client posture report from a direct read of the MEASURED `posture_snapshot` (Vera's segment of the seam owns the scoring) and the relationship context (internal, reversible) at L2 — always labeling the measured posture finding vs Celeste's relationship-framed inference, reading posture audit-by-reference (no PII reproduction;",
           "tools": [
             "pg.read"
           ],
@@ -17579,20 +17579,21 @@
             "account",
             "contact",
             "interaction",
-            "strategic_business_review"
+            "strategic_business_review",
+            "posture_snapshot"
           ],
           "skills": [
             "./skills/posture-reporting-rubric"
           ],
           "stages": [
             {
-              "slug": "01-ingest-posture",
-              "name": "ingest-posture",
-              "job": "ingest Vera's posture-findings handoff and frame the client relationship around it.",
+              "slug": "01-read-posture",
+              "name": "read-posture",
+              "job": "read the client's MEASURED posture snapshot and frame the client relationship around it.",
               "process": [
                 {
                   "tag": "script",
-                  "text": "Read the handoff: Vera's scored posture findings, the client id, and any entity refs. Missing a resolvable client id or empty findings → audit fail (nothing to present)."
+                  "text": "Read the client's latest `posture_snapshot` — the scored finding, the client id, and entity refs (by reference). Missing a resolvable client id or no snapshot → audit fail (nothing to present)."
                 },
                 {
                   "tag": "script",
@@ -17600,7 +17601,7 @@
                 },
                 {
                   "tag": "haiku",
-                  "text": "One-line restatement of the posture findings in plain relationship terms (what Vera observed about this client's posture) — the seed for the report. Restate, do not re-score."
+                  "text": "One-line restatement of the posture finding in plain relationship terms (what the snapshot says about this client's posture) — the seed for the report. Restate, do not re-score."
                 }
               ],
               "inputs": {
@@ -17612,10 +17613,16 @@
                 ],
                 "rows": [
                   [
-                    "Posture handoff",
-                    "the triggering `relationship.posture.*` event from Vera (BE-W7 #437 bus)",
-                    "full payload (Vera's scored findings, client id, entity refs)",
-                    "the posture findings (measured by Vera, never read by Celeste directly)"
+                    "Posture cue",
+                    "the triggering `relationship.posture.*` event",
+                    "client id + the review window",
+                    "the subject"
+                  ],
+                  [
+                    "Posture finding",
+                    "silver `posture_snapshot` · `okf:posture_snapshot`",
+                    "this client's latest snapshot",
+                    "the MEASURED finding (Secure Score + pillars + drift) — read audit-by-reference, no PII reproduction (#1689)"
                   ],
                   [
                     "Client",
@@ -17643,12 +17650,13 @@
                   ]
                 ]
               },
-              "outputs": "`handoff.md` — Vera's scored posture findings (cited as hers), the resolved client id, the contacts + relationship context, and the one-line plain-terms restatement.",
+              "outputs": "`posture-read.md` — the measured `posture_snapshot` (cited by id/score, audit-by-reference), the resolved client id, the contacts + relationship context, and the one-line plain-terms restatement.",
               "audit": [
                 "Resolved client `account` id stated (not blank)",
-                "Vera's posture findings captured as the measured source (not re-scored or invented)",
+                "Posture finding captured from `posture_snapshot` as the measured source (not re-scored or invented)",
+                "Posture read audit-by-reference — no per-asset PII reproduced (cited by id/score)",
                 "Relationship context (contacts + QBR + recent engagement) pulled for THIS client only",
-                "One-line plain-terms restatement present (not the raw payload)"
+                "One-line plain-terms restatement present (not the raw snapshot)"
               ],
               "checkpoint": null
             },
@@ -17679,10 +17687,10 @@
                 ],
                 "rows": [
                   [
-                    "Posture handoff",
-                    "`handoff.md` (stage 01 output)",
+                    "Posture read",
+                    "`posture-read.md` (stage 01 output)",
                     "full",
-                    "Vera's findings + resolved client + relationship context"
+                    "the measured `posture_snapshot` finding + resolved client + relationship context"
                   ],
                   [
                     "Reporting rubric",
@@ -17759,10 +17767,10 @@
           "slug": "tech-lifecycle",
           "title": "tech-lifecycle (client-success v1)",
           "job": "Celeste's **technology lifecycle / refresh planning (vCIO)** advisory — review a client's technology estate, identify end-of-life (EOL) / aging / at-risk assets, and draft a **prioritized refresh plan**. This is a vCIO advisory artifact: recommendations only. The refresh plan and any spend/budget within it park for a human — Celeste advises, a human decides and commits.",
-          "trigger": "a `relationship.lifecycle.*` cue for an active client — a periodic vCIO/QBR prep cadence, an approaching renewal where estate age matters, or a Felix/service handoff flagging an asset pattern (recurring incidents on aging hardware, an EOL warning). One run per client lifecycle review.",
+          "trigger": "a `relationship.lifecycle.*` cue for an active client — a periodic vCIO/QBR prep cadence, an approaching renewal where estate age matters, or a Felix/service signal flagging an asset pattern (recurring incidents on aging hardware, an EOL warning). One run per client lifecycle review.",
           "model": "claude-sonnet-4-5",
           "autonomyRung": "L2",
-          "autoMaySelfApprove": "assemble the lifecycle assessment and DRAFT the prioritized refresh plan from MEASURED signals (internal, reversible) at L2 — always labeling measured signal vs Celeste's inference, and noting where the asset picture arrives as a Felix/service handoff rather than a direct read. The refresh plan itself parks: every refresh recommendation, any spend/refresh-budget, any roadmap/SLA implication, and every client-facing touch parks for a human in every mode — the NO-COMMITS-EVER and MSSP/vCISO advisory-only ceilings are dial-proof (celeste.md guardrails 1–2).",
+          "autoMaySelfApprove": "\"assemble the lifecycle assessment and DRAFT the prioritized refresh plan from MEASURED signals (internal, reversible) at L2 — always labeling measured signal vs Celeste's inference, reading the CMDB asset picture directly from `cloud_asset`/`device` (read-only; Felix/Service owns the CMDB SoR;",
           "tools": [
             "pg.read"
           ],
@@ -17772,7 +17780,9 @@
             "opportunity",
             "interaction",
             "ticket",
-            "strategic_business_review"
+            "strategic_business_review",
+            "cloud_asset",
+            "device"
           ],
           "skills": [
             "./skills/lifecycle-rubric"
@@ -17781,7 +17791,7 @@
             {
               "slug": "01-estate-context",
               "name": "estate-context",
-              "job": "assemble the lifecycle-review picture for the client, folding in the asset/CMDB facts that arrive as a service/Felix handoff.",
+              "job": "assemble the lifecycle-review picture for the client, reading the asset/CMDB facts directly from the CMDB silver rooms.",
               "process": [
                 {
                   "tag": "script",
@@ -17789,11 +17799,11 @@
                 },
                 {
                   "tag": "script",
-                  "text": "Extract the asset/CMDB facts from the handoff payload (EOL dates, ages, OS versions, warranty, named-asset incident links) and tag each with its source = handoff. If the payload carries no asset picture, record \"estate unknown\" — do not reconstruct one."
+                  "text": "Read the client's `cloud_asset`/`device` CIs directly (EOL dates, ages, OS versions, warranty, named-asset incident links). If the CMDB carries no CIs for this client, record \"estate unknown\" — do not reconstruct one."
                 },
                 {
                   "tag": "sonnet",
-                  "text": "Assemble the estate-context picture: the relationship + service standing plus the supplied asset evidence, each point citing its source row or marked `handoff`. No new outreach."
+                  "text": "Assemble the estate-context picture: the relationship + service standing plus the read asset evidence, each point citing its source row (CI id / silver row). No new outreach."
                 }
               ],
               "inputs": {
@@ -17806,9 +17816,15 @@
                 "rows": [
                   [
                     "Lifecycle cue",
-                    "the triggering `relationship.lifecycle.*` cue / handoff",
-                    "full payload (client id, asset/CMDB facts, source)",
-                    "the subject + the asset evidence"
+                    "the triggering `relationship.lifecycle.*` cue",
+                    "client id + the review window",
+                    "the subject"
+                  ],
+                  [
+                    "Asset estate",
+                    "silver `cloud_asset` / `device` · `okf:cloud_asset` `okf:device`",
+                    "this client's CIs",
+                    "EOL dates, ages, OS versions, warranty — the lifecycle evidence (#1689)"
                   ],
                   [
                     "Account + contacts",
@@ -17836,11 +17852,11 @@
                   ]
                 ]
               },
-              "outputs": "`estate-context.md` — the resolved client, the relationship + service + strategic standing, and the supplied asset/CMDB evidence (each item sourced; handoff-sourced items marked). States \"estate unknown\" if no asset picture was supplied.",
+              "outputs": "`estate-context.md` — the resolved client, the relationship + service + strategic standing, and the asset/CMDB evidence (each item sourced to its CI / silver row). States \"estate unknown\" if the CMDB held no CIs for this client.",
               "audit": [
                 "Only this client's data was read (no cross-client leakage)",
-                "No CMDB device/cloud-asset concept grounded — asset facts come from the handoff, marked as such",
-                "Each point cites a source row or is marked `handoff` (no unsourced assertion)",
+                "Asset facts cite their `cloud_asset`/`device` CI row — read-only, never written or corrected",
+                "Each point cites a source row (no unsourced assertion)",
                 "An absent asset picture is recorded as \"estate unknown\" (not fabricated)"
               ],
               "checkpoint": null
@@ -17852,7 +17868,7 @@
               "process": [
                 {
                   "tag": "sonnet",
-                  "text": "Identify the EOL, aging, and at-risk assets per `lifecycle-rubric.md`. For every verdict, **label measured signal vs your inference** — an EOL flag carries the fact that produced it (celeste.md guardrail 3). Where the asset detail is a handoff rather than a measured row, mark it `handoff` so its provenance stays visible."
+                  "text": "Identify the EOL, aging, and at-risk assets per `lifecycle-rubric.md`. For every verdict, **label measured signal vs your inference** — an EOL flag carries the fact that produced it (celeste.md guardrail 3). Cite each asset fact to its `cloud_asset`/ `device` CI row so its provenance stays visible."
                 },
                 {
                   "tag": "sonnet",
@@ -17860,7 +17876,7 @@
                 },
                 {
                   "tag": "script",
-                  "text": "Produce the at-risk asset list: each item with its lifecycle status, its signals (sourced / `handoff`-marked), and its client-risk reading. If the estate is unknown (stage 01), record that and park — nothing to assess."
+                  "text": "Produce the at-risk asset list: each item with its lifecycle status, its signals (each cited to its CI / source row), and its client-risk reading. If the estate is unknown (stage 01), record that and park — nothing to assess."
                 }
               ],
               "inputs": {
@@ -17875,13 +17891,19 @@
                     "Estate context",
                     "`estate-context.md` (stage 01 output)",
                     "full",
-                    "the relationship + service standing + supplied asset evidence"
+                    "the relationship + service standing + the read asset evidence"
                   ],
                   [
                     "Lifecycle rubric",
                     "`./skills/lifecycle-rubric.md`",
                     "all",
                     "how to read EOL/aging + the signal-vs-inference discipline"
+                  ],
+                  [
+                    "Asset estate",
+                    "silver `cloud_asset` / `device` · `okf:cloud_asset` `okf:device`",
+                    "this client's CIs",
+                    "corroborate/refine EOL/age/warranty against the CI rows"
                   ],
                   [
                     "Service signal",
@@ -17891,11 +17913,11 @@
                   ]
                 ]
               },
-              "outputs": "`lifecycle-assessment.md` — the EOL / aging / at-risk asset list, each item carrying its lifecycle status, the signals that produced it (measured vs inference labeled, handoff-marked where supplied), and its client-risk reading. Security items flagged advisory-only.",
+              "outputs": "`lifecycle-assessment.md` — the EOL / aging / at-risk asset list, each item carrying its lifecycle status, the signals that produced it (measured vs inference labeled, each cited to its `cloud_asset`/`device` CI row), and its client-risk reading. Security items flagged advisory-only.",
               "audit": [
                 "Every lifecycle verdict labels measured signal vs inference",
-                "Handoff-sourced asset facts are marked `handoff` (provenance visible)",
-                "No asset / age / EOL date invented (only supplied or sourced facts)",
+                "Each asset fact cites its `cloud_asset`/`device` CI row — read-only, never written",
+                "No asset / age / EOL date invented (only sourced facts)",
                 "Security findings are advisory-only (no remediation proposed as a CS action)"
               ],
               "checkpoint": null
