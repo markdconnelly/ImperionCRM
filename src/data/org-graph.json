@@ -992,6 +992,14 @@
           ]
         },
         {
+          "slug": "sales-desk",
+          "stages": [
+            "01-interpret",
+            "02-ground",
+            "03-answer"
+          ]
+        },
+        {
           "slug": "social-inbound-reply",
           "stages": [
             "01-intent-confirm",

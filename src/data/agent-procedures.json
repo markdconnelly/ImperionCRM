@@ -11021,6 +11021,230 @@
           ]
         },
         {
+          "slug": "sales-desk",
+          "title": "sales-desk (sales v1)",
+          "job": "field a sales-domain question delegated to Chase by the orchestrator (Nova) and return a persona-shaped, **fully-cited** answer — interpret the question, ground it on the sales read surface + semantic recall, then synthesize Chase's domain-expert *judgment* (qualification instinct, deal-risk read) into an answer Nova structurally can't reproduce herself. This is the **advisory desk** archetype (B10, ADR-0136 / CONSTITUTION §10): **L0, read-only, NO actuation, NO side effect, NO send.** The answer is returned to Nova, never to the customer.",
+          "trigger": "a sales-domain question is delegated to Chase by the orchestrator (Nova) — one run per question. The delegate path rides the executive intake mechanism (Nova's `intake-route` / the C-suite division-intake), and the answer returns to the delegating agent, not to any external party.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L0",
+          "autoMaySelfApprove": "nothing self-actuates — this desk only reads, recalls, and returns a cited answer to the delegating agent (Nova); no send, no write, no booking, no commitment, no side effect. An uncitable claim is abstained and routed to whoever would know, never fabricated; cross-deal context is anonymized/aggregated only — pool, never bleed (A7); the answer is scoped to the asking user's read permission — never-exceed-caller (§5.2).",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall"
+          ],
+          "okfRooms": [
+            "contact",
+            "account",
+            "opportunity",
+            "interaction",
+            "consent_event",
+            "lead_score",
+            "campaign"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-interpret",
+              "name": "interpret",
+              "job": "parse the sales question Nova delegated, determine which sales rooms and facts it needs to be answered with judgment, and scope it to the asking user's read permission — never wider than the caller could see.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Parse the delegated question: what judgment is actually being asked for (qualification call, deal-risk read, next-best-touch) versus a plain fact Nova would answer herself — if it is a plain fact or a cross-domain question, note it routes back to Nova, not here."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve the asking user's read permission from the trigger payload; bound the grounding plan to deals/accounts/contacts that user could see — **never-exceed-caller** (§5.2). A deal outside the caller's read is out of scope, not redacted-in."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Build the grounding plan: which OKF rooms (from the declared seven) the answer needs and what semantic recall to attempt. It is fine to range across several rooms — a consult is broad — but only the rooms the question genuinely needs."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "The delegated question",
+                    "trigger payload",
+                    "the question + the asking user's identity/permission",
+                    "what Chase is being consulted on, and on whose behalf"
+                  ],
+                  [
+                    "Opportunities",
+                    "`` `okf:opportunity` ``",
+                    "the deal(s) the question touches",
+                    "the sales object whose judgment is being asked about"
+                  ],
+                  [
+                    "Owning accounts",
+                    "`` `okf:account` ``",
+                    "accounts on the in-scope deals",
+                    "the segment/relationship frame for the judgment"
+                  ],
+                  [
+                    "Contacts",
+                    "`` `okf:contact` ``",
+                    "contacts on the in-scope deals",
+                    "who the deal is with, for the qualification read"
+                  ]
+                ]
+              },
+              "outputs": "`interpretation.md` — the question restated (what judgment is being asked, on whose behalf), the caller-permission scope it is bounded to, and the grounding plan: the OKF rooms to read + the recall to attempt.",
+              "audit": [
+                "Question restated as a judgment ask (or flagged as a plain-fact/cross-domain question that returns to Nova)",
+                "Scoped to the asking user's read permission — never-exceed-caller (§5.2); no out-of-scope deal pulled in",
+                "Grounding plan names only OKF rooms from the declared seven (least privilege)",
+                "No fact asserted yet, no side effect — this stage only interprets and plans"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-ground",
+              "name": "ground",
+              "job": "pull the cited facts the grounding plan calls for from the structured rooms and attempt semantic recall, keying every reading to its source id + as-of, flagging dormant recall as stale and any gap as unknown — never inventing a fact to fill it.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the structured facts the plan calls for from the in-scope rooms via `pg.read`; key each reading to its source id (`opportunity` / `account` / `interaction` / `contact` / …) and stamp its **as-of** (A5). Stay inside the caller's scope from stage 01."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Attempt semantic recall (`knowledge.search` / `memory.recall`) per the plan. Recall is **dormant** until the retrieval tier + Voyage seed hydrate — an empty recall is **absence of memory, not absence of fact** (A5c): flag it stale and rely on the structured rooms; never present an empty recall as \"nothing exists\"."
+                },
+                {
+                  "tag": "script",
+                  "text": "Assemble the cited evidence set, each fact keyed to its source id + as-of. Any fact the plan needs but the rooms don't ground is flagged **\"unknown — would need X\"** (A5b) — never invented. Any cross-deal context is **pooled internally only — anonymized + aggregated** (A7): no client identifier, no row-level bleed."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Interpretation + grounding plan",
+                    "stage 01 output",
+                    "the question + caller scope",
+                    "which rooms to read + recall to attempt, bounded to the caller"
+                  ],
+                  [
+                    "Opportunities",
+                    "`` `okf:opportunity` ``",
+                    "the in-scope deal(s)",
+                    "stage/status/close-reason facts behind the judgment"
+                  ],
+                  [
+                    "Owning accounts",
+                    "`` `okf:account` ``",
+                    "accounts on the in-scope deals",
+                    "segment/relationship facts"
+                  ],
+                  [
+                    "Contacts",
+                    "`` `okf:contact` ``",
+                    "contacts on the in-scope deals",
+                    "who the deal is with"
+                  ],
+                  [
+                    "Interaction history",
+                    "`` `okf:interaction` ``",
+                    "interactions on the in-scope deals",
+                    "the engagement/touch history the deal-risk read leans on"
+                  ],
+                  [
+                    "Consent events",
+                    "`` `okf:consent_event` ``",
+                    "consent on the in-scope contacts",
+                    "suppression/cadence state relevant to a next-touch judgment"
+                  ],
+                  [
+                    "Lead score",
+                    "`` `okf:lead_score` ``",
+                    "scores on the in-scope leads",
+                    "the qualification-threshold signal"
+                  ],
+                  [
+                    "Source campaigns",
+                    "`` `okf:campaign` ``",
+                    "campaigns attributed to the deals",
+                    "the source/demand attribution behind the deal"
+                  ]
+                ]
+              },
+              "outputs": "`evidence.md` — the cited evidence set (each fact keyed to its source id + as-of), the recall result with any dormant/stale flag, the gaps flagged \"unknown — would need X\", and any cross-deal context anonymized/aggregated only.",
+              "audit": [
+                "Every pulled fact keyed to its source id + as-of (A5); none fabricated",
+                "Empty/dormant recall flagged stale — absence of memory, not absence of fact (A5c)",
+                "Gaps flagged \"unknown — would need X\", routed not invented (A5b)",
+                "Cross-deal context anonymized + aggregated only — no client identifier / no bleed (A7)",
+                "Reads stayed within the caller's permission scope — never-exceed-caller (§5.2); no side effect"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-answer",
+              "name": "answer",
+              "job": "synthesize a persona-shaped, fully-cited answer to Nova's question from the evidence set — abstaining and routing on any uncitable fact, fabricating nothing — and return it as the workflow's terminal output to the delegating agent. Terminal stage; no checkpoint (nothing to approve).",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Synthesize the answer in **Chase's voice with his qualification judgment** (the fit call, the deal-risk read, the next best touch) — reasoning over the evidence set, not restating it. The answer addresses **Nova**, the delegating agent, never the customer."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "**Cite every claim** — each factual claim carries its `opportunity` / `account` / `interaction` / `contact` id + as-of (or a gold knowledge-object / memory ref) (A5). Any fact the evidence set couldn't ground is **abstained** — \"I don't know / I'd need X\" — and **routed** to the agent or human who would know (A5b); never fabricated to sound complete. Carry the stage-02 stale-recall flag through so dormant recall reads as dormant."
+                },
+                {
+                  "tag": "script",
+                  "text": "Return the answer as the workflow's **terminal output to the delegating agent (Nova)**. This is internal orchestration, not a send (no ADR-0058). **No side effect:** no send, no write, no booking, no parked proposal, no okf write."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Cited evidence set",
+                    "stage 02 output",
+                    "the question",
+                    "the cited facts + recall result + gaps to reason from"
+                  ],
+                  [
+                    "Interpretation",
+                    "stage 01 output",
+                    "the question",
+                    "the judgment ask + caller scope to answer within"
+                  ]
+                ]
+              },
+              "outputs": "`answer.md` — the persona-shaped, fully-cited answer addressed to Nova (every claim carrying its source id + as-of), with uncitable facts abstained + routed (not fabricated), the carried stale-recall flag, and anonymized/aggregated-only cross-deal context — returned to the delegating agent, nothing actuated.",
+              "audit": [
+                "Every factual claim in the answer cites its source id + as-of (A5)",
+                "Uncitable facts abstained + routed to who would know — not fabricated (A5b)",
+                "Stale/dormant recall carried through and labeled dormant, not presented as live (A5c)",
+                "No client's specifics bleed into another's answer — pool, never bleed (A7)",
+                "Answer addressed to the delegating agent (Nova), not a customer; within the caller's read scope (§5.2)",
+                "No send, no write, no booking, no parked proposal, no okf write — terminal output only, no side effect"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "social-inbound-reply",
           "title": "social-inbound-reply (sales v1)",
           "job": "an inbound social engagement (DM or public comment) that an intent classifier routed as **sales-intent** gets a fast, on-brand, consent-clean draft reply from Chase — parked for human approval (L1 propose-only, no send path).",

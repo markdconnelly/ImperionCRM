@@ -1,0 +1,13 @@
+name: sales-desk
+model: claude-sonnet-4-5
+archetype: advisory
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [contact, account, opportunity, interaction, consent_event, lead_score, campaign]   # the FULL sales read surface — a consult may need any of it; all ⊆ sales room.yaml
+tools: [pg.read, knowledge.search, memory.recall]   # read-only retrieval ONLY (the advisory contract)
+skills: []
+autonomy_rung: L0
+auto_may_self_approve: "nothing self-actuates — this desk only reads, recalls, and returns a cited answer to the delegating agent (Nova); no send, no write, no booking, no commitment, no side effect. An uncitable claim is abstained and routed to whoever would know, never fabricated; cross-deal context is anonymized/aggregated only — pool, never bleed (A7); the answer is scoped to the asking user's read permission — never-exceed-caller (§5.2)."

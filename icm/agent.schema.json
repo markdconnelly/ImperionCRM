@@ -61,6 +61,11 @@
       "description": "L0-L3: what `auto` mode may self-approve. Every workflow still starts `draft`; the flip to auto is admin-only, read from autopilot_policies (ADR-0061/0087).",
       "enum": ["L0", "L1", "L2", "L3"]
     },
+    "archetype": {
+      "type": "string",
+      "description": "Optional workflow-archetype tag (ADR-0136 §B). 'advisory' = a read-only consultation desk (archetype B10): the workflow FIELDS a delegated domain question and returns a persona-shaped, fully-cited answer to the delegating agent — no actuation, no side effect, no send. The gate (scripts/agent-yaml-gate.mjs) enforces the structural contract: an advisory workflow MUST be autonomy_rung L0 and its tools MUST be a subset of {pg.read, knowledge.search, memory.recall}. Absent = an ordinary (procedure) workflow.",
+      "enum": ["advisory"]
+    },
     "auto_may_self_approve": {
       "type": "string",
       "description": "Prose statement of what `auto` may self-approve at this rung. Anything unstated parks for a human.",

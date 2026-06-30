@@ -12,6 +12,8 @@ import {
   checkReportsTo,
   checkExecutiveDelegateOnly,
   ALLOWED_EXECUTIVE_TOOLS,
+  checkAdvisoryArchetype,
+  ADVISORY_ALLOWED_TOOLS,
   VALID_MODELS,
 } from "./agent-yaml-gate.mjs";
 
@@ -34,6 +36,48 @@ describe("checkPersonaComposed (ADR-0088 §2 — domain persona must be composed
   });
   it("matches on basename regardless of the relative path used", () => {
     expect(checkPersonaComposed(["x/CONSTITUTION.md", "../felix.md", "./prose.md"], ["felix.md"])).toEqual([]);
+  });
+});
+
+describe("checkAdvisoryArchetype (CONSTITUTION §10 — read-only consultation desk, B10)", () => {
+  const advisory = (over = {}) => ({
+    name: "sales-desk",
+    archetype: "advisory",
+    autonomy_rung: "L0",
+    tools: ["pg.read", "knowledge.search", "memory.recall"],
+    ...over,
+  });
+
+  it("is a no-op for a non-advisory (ordinary) workflow even if it actuates", () => {
+    expect(checkAdvisoryArchetype({ autonomy_rung: "L3", tools: ["send.email"] }, "x")).toEqual([]);
+  });
+  it("passes a conformant advisory desk (L0 + read-only retrieval tools)", () => {
+    expect(checkAdvisoryArchetype(advisory(), "sales-desk/agent.yaml")).toEqual([]);
+  });
+  it("passes an advisory desk granting only a subset of the read-only set", () => {
+    expect(checkAdvisoryArchetype(advisory({ tools: ["pg.read"] }), "x")).toEqual([]);
+  });
+  it("fails when an advisory desk is not L0", () => {
+    const errs = checkAdvisoryArchetype(advisory({ autonomy_rung: "L1" }), "x");
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toMatch(/autonomy_rung must be 'L0'/);
+  });
+  it("fails when an advisory desk carries an actuation tool (send/write/booking)", () => {
+    const errs = checkAdvisoryArchetype(
+      advisory({ tools: ["pg.read", "opportunity.write", "send.email"] }),
+      "x",
+    );
+    expect(errs).toHaveLength(2);
+    expect(errs.join(" ")).toMatch(/opportunity\.write/);
+    expect(errs.join(" ")).toMatch(/send\.email/);
+  });
+  it("bars delegate/handoff (orchestration tools) from an advisory desk", () => {
+    const errs = checkAdvisoryArchetype(advisory({ tools: ["pg.read", "delegate"] }), "x");
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toMatch(/delegate/);
+  });
+  it("exposes the read-only allow-list", () => {
+    expect(ADVISORY_ALLOWED_TOOLS).toEqual(["pg.read", "knowledge.search", "memory.recall"]);
   });
 });
 
