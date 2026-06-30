@@ -1271,6 +1271,14 @@
           ]
         },
         {
+          "slug": "onboarding-success",
+          "stages": [
+            "01-onboarding-intake",
+            "02-adoption-track",
+            "03-first-value-checkin"
+          ]
+        },
+        {
           "slug": "proactive-updates",
           "stages": [
             "01-identify-update",

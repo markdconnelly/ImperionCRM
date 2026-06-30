@@ -16487,6 +16487,234 @@
           ]
         },
         {
+          "slug": "onboarding-success",
+          "title": "onboarding-success (client-success) — Stream-08 procedure 08-R",
+          "job": "Celeste's **onboarding-success / time-to-value adoption** motion — the **CS-side adoption + first-value** motion for a newly-onboarded client: did they **realize value**, **adopt** the tooling, and hit their **first-30/60/90-day** milestones? It computes adoption + first-value from MEASURED signals (L2 internal), then **drafts** a first-value check-in and the downstream seeds. Onboarding is the **highest-churn window** of the lifecycle: a new client with no structured success motion is the most likely to churn, so the motion is sustained, not a one-touch event.",
+          "trigger": "a Pierce **`delivery-complete` / go-live handoff** for a newly-onboarded client (or the onboarding-window opening). This is the **same 08-A handoff family** as [`client-360`](../client-360/CONTEXT.md) — but where 08-A intake is the **EVENT** (fold one signal, park recommendations), **this is the sustained first-value MOTION** that runs from go-live onward. **One run per onboarding lifecycle.**",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "\"at L2 receive the Pierce delivery-complete handoff, establish the 30/60/90 milestone plan, track adoption + first-value from MEASURED signals, and DRAFT the first-value check-in (internal, reversible, signal-labeled — always labeling measured signal vs Celeste's inference); the client-facing check-in send parks for a human (ADR-0058). A ROUTINE templated welcome/first-value check-in MAY ride the L3 routine-share carve-out when an operator raises the dial (celeste.md ladder L3) — described in prose, manifest rung stays L2. Every binding commitment (SLA/credit/price/roadmap) parks for a human at every rung — the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1-2). Early-warning churn-risk routes to 08-D health-intervention. 💤 dormant until",
+          "tools": [
+            "pg.read",
+            "consent.check",
+            "send.email",
+            "send.dm"
+          ],
+          "okfRooms": [
+            "account",
+            "contact",
+            "interaction",
+            "ticket",
+            "strategic_business_review",
+            "consent_event"
+          ],
+          "skills": [
+            "./skills/adoption-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-onboarding-intake",
+              "name": "onboarding-intake",
+              "job": "receive the Pierce `delivery-complete` handoff, resolve the client, read what was delivered, and establish the 30/60/90 adoption milestone plan + success criteria. (💤 dormant until the substrate hydrates — #991 + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the Pierce `delivery-complete` handoff: the client it names and the **delivered scope** (what go-live covered). Resolve the client to `account` + `contact`. Stay within THIS client (strict confidential boundary — never read across clients)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Read the go-live baseline from the relationship rooms — the first engagement / first tickets that exist at hand-off — as the starting point for the adoption read."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Establish the **first-30/60/90-day milestone plan** per the rubric, **seeded from the delivered scope** (track adoption of *that* scope, not a generic checklist). State each milestone's **success criteria as measured signals** so stage 02 is a comparison, not a guess."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Pierce handoff",
+                    "the `delivery-complete` wake event (#991 handoff bus)",
+                    "this onboarding",
+                    "what was delivered + the go-live scope to track adoption against"
+                  ],
+                  [
+                    "Account + contacts",
+                    "silver `account` / `contact` · `okf:account` `okf:contact`",
+                    "the newly-onboarded client",
+                    "resolve the client; who the relationship + check-in is with"
+                  ],
+                  [
+                    "Relationship + service substrate",
+                    "silver `interaction` / `ticket` · `okf:interaction` `okf:ticket`",
+                    "recent history for this account",
+                    "the go-live baseline (first engagement / first tickets)"
+                  ],
+                  [
+                    "Adoption rubric",
+                    "`./skills/adoption-rubric.md` (cites `../../client-360/skills/health-signals.md`)",
+                    "all",
+                    "the 30/60/90 milestone model + first-value definition + signal-vs-inference"
+                  ]
+                ]
+              },
+              "outputs": "`onboarding-plan.md` — the resolved client, the delivered scope (from the handoff), and the 30/60/90 adoption milestone plan with per-milestone success criteria (each stated as a measured signal). The standing baseline for the adoption-track stage.",
+              "audit": [
+                "Only this client's data was read (no cross-client leakage)",
+                "A `delivery-complete` handoff was present and the client resolved (else the run parks)",
+                "The milestone plan is seeded from the delivered scope (not a generic checklist)",
+                "Each milestone's success criteria are stated as measured signals",
+                "No outreach drafted or sent here (intake + plan only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-adoption-track",
+              "name": "adoption-track",
+              "job": "track adoption + first-value against the milestone plan from measured signals, and surface early-warning churn-risk for routing to 08-D. (💤 dormant until the substrate hydrates — #991 + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull this client's recent `interaction` + `ticket` and the `strategic_business_review` record. Stay within THIS client (strict confidential boundary — never read across clients)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Compare the measured signals to the milestone plan's success criteria: are the 30/60/90 adoption + first-value milestones being met? For every verdict, **label measured signal vs your inference** — an adoption verdict carries the signals that produced it (celeste.md guardrail 3). Never invent adoption or value; a gap is a gap."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Apply the early-warning disposition per the rubric. Low/no adoption, silence, or early friction → flag a **churn-risk signal for routing to [08-D health-intervention](../../health-intervention/CONTEXT.md)** (08-D owns the intervene-vs-watch decision and the save — this stage routes, it does not run the save)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Set the disposition seed: on-track / early-warning (→ 08-D) / acute, each carrying its evidencing signals."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Milestone plan",
+                    "`onboarding-plan.md` (stage 01 output)",
+                    "full",
+                    "the 30/60/90 plan + per-milestone success criteria to measure against"
+                  ],
+                  [
+                    "Engagement + service",
+                    "silver `interaction` / `ticket` · `okf:interaction` `okf:ticket`",
+                    "recent history for this account",
+                    "adoption (usage/engagement) + early-friction (ticket cluster) signals"
+                  ],
+                  [
+                    "Strategic record",
+                    "silver `strategic_business_review` · `okf:strategic_business_review`",
+                    "this account",
+                    "the strategic context of the relationship's value read"
+                  ],
+                  [
+                    "Adoption rubric",
+                    "`./skills/adoption-rubric.md`",
+                    "all",
+                    "milestone read + first-value definition + early-warning dispositions"
+                  ]
+                ]
+              },
+              "outputs": "`adoption-status.md` — the per-milestone adoption + first-value read (measured signal vs inference labeled), the disposition (on-track / early-warning / acute) with its signals, and any churn-risk routing note for 08-D. Read-only; no outreach.",
+              "audit": [
+                "Only this client's data was read (no cross-client leakage)",
+                "Each milestone read labels measured signal vs inference",
+                "Any early-warning / churn-risk flag carries the signals that produced it (no unsourced flag)",
+                "Early-warning is routed to 08-D, not actioned here (no save outreach in this stage)",
+                "No outreach drafted or sent here (read + compute only)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-first-value-checkin",
+              "name": "first-value-checkin",
+              "job": "draft the consent-gated first-value check-in, recommend the first QBR (08-C), and seed the Account Success Plan (08-B) — the check-in send parks for a human (routine templated may auto at L3). (💤 dormant until the substrate hydrates — #991 + #1369/#1370, ADR-0123.)",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the warm first-value check-in in Celeste's voice — acknowledge the onboarding, offer help / a check-in, open a conversation. It **asks**, it never **promises**: no SLA / credit / price / roadmap commitment in the body (NO-COMMITS-EVER, dial-proof, guardrail 1). Flag any **non-interest upsell** explicitly; expansion value mints an opportunity → **Chase**, never folded into the check-in (guardrail 4)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Assert a current consent basis (`consent.check`) for the recipient. Basis `none` → the send parks with the reason; no outreach (ADR-0058)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Recommend **scheduling the first QBR** (`qbr-prep`, 08-C) and **seed the Account Success Plan** (`account-success-plan`, 08-B) from the onboarding read — the durable downstream of this motion."
+                },
+                {
+                  "tag": null,
+                  "text": "Park the client-facing send until approved (or auto-approve per the checkpoint gate above), then send via the ADR-0058 approval-gated path — consent re-asserted at execution, sender = the client-success mailbox (email) or page/channel identity (DM). **No other send route exists for this workflow.** A commitment ask never ships — it parks for a human."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Log the touch to the `interaction` timeline: sent body, channel, approver (human id or `auto`), the milestone read it answered, run id."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Adoption status",
+                    "`adoption-status.md` (stage 02 output)",
+                    "full",
+                    "the milestone read + disposition + churn-risk routing"
+                  ],
+                  [
+                    "Recipient",
+                    "silver `contact` · `okf:contact`",
+                    "the client contact",
+                    "resolve the check-in target + relationship context"
+                  ],
+                  [
+                    "Consent basis",
+                    "silver `consent_event` · `okf:consent_event`",
+                    "latest for the contact",
+                    "gate the send (no consent, no outreach)"
+                  ],
+                  [
+                    "Adoption rubric",
+                    "`./skills/adoption-rubric.md`",
+                    "all",
+                    "check-in framing + NO-COMMITS + non-interest + in-seam discipline"
+                  ]
+                ]
+              },
+              "outputs": "`first-value-record.md` — the sent version, timestamp, approver, send-path result, the logged timeline entry id, the QBR recommendation, and the Account Success Plan seed. Rejection ends the run with the rejection reason captured. Terminal stage.",
+              "audit": [
+                "Approver identity recorded (never blank; `auto` only if ALL checkpoint gates held)",
+                "Consent re-assertion result logged (basis ≠ `none`); basis `none` parked the send",
+                "Sent body carries NO binding commitment (commitment asks parked, not shipped)",
+                "Relationship-sensitive / non-routine check-in was human-approved (never auto)",
+                "Any non-interest upsell flagged; expansion routed to Chase, not folded in",
+                "QBR recommendation made and Account Success Plan seeded",
+                "Timeline entry id present"
+              ],
+              "checkpoint": "The approval item shows: the first-value check-in draft, the adoption / first-value picture + its signals, the QBR recommendation, the Account Success Plan seed, and the consent basis. Approver may edit the body before approving; edits are kept as the sent version and recorded. **`auto` (L3) may self-approve ONLY when ALL hold:** the check-in is a **routine, templated** welcome / first-value touch · channel = email or DM · stage-02 audit fully green · consent basis ≠ `none` · the draft carries no commitment. **Everything else parks for a human in every mode** — the client-facing send at the manifest default (L2), every **relationship-sensitive** touch, and every binding commitment (SLA / credit / pricing / spend / security-remediation), at every rung. The NO-COMMITS-EVER and MSSP-advisory ceilings are dial-proof (celeste.md guardrails 1–2)."
+            }
+          ]
+        },
+        {
           "slug": "proactive-updates",
           "title": "proactive-updates (client-success v1)",
           "job": "Celeste's **client-enablement send** playbook — proactively share an important update a client should know and provide a knowledge asset (a how-to: 1Password, M365, etc.), in the relationship voice, **consent-gated and approval-gated**. This is the **one** Celeste playbook that sends to a client (`send.email` / `send.dm`).",

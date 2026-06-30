@@ -1,0 +1,13 @@
+name: onboarding-success
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, interaction, ticket, strategic_business_review, consent_event]   # subset of domains/client-success/room.yaml
+tools: [pg.read, consent.check, send.email, send.dm]                                            # read + assert consent + the two ADR-0058 check-in channels
+skills:
+  - ./skills/adoption-rubric            # Tier 3 — workflow-local (first-value / adoption-milestone framing + signal-vs-inference)
+autonomy_rung: L2
+auto_may_self_approve: "at L2 receive the Pierce delivery-complete handoff, establish the 30/60/90 milestone plan, track adoption + first-value from MEASURED signals, and DRAFT the first-value check-in (internal, reversible, signal-labeled — always labeling measured signal vs Celeste's inference); the client-facing check-in send parks for a human (ADR-0058). A ROUTINE templated welcome/first-value check-in MAY ride the L3 routine-share carve-out when an operator raises the dial (celeste.md ladder L3) — described in prose, manifest rung stays L2. Every binding commitment (SLA/credit/price/roadmap) parks for a human at every rung — the NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1-2). Early-warning churn-risk routes to 08-D health-intervention. 💤 dormant until #991 + #1369/#1370 (ADR-0123)."

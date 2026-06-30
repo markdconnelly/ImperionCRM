@@ -75,6 +75,7 @@ presents); remediation-OUT → human/Datto (08-K/L/M).
 | 08-O offboard a client (termination → data-return + deprovision) 💤 | **B8 provision-with-undo (reverse)** + **B5 JML** + **B9** (retention clock) + **B6/B7** peels |
 | 08-P issue an SLA-breach service credit 💰 | **B6 money-gate** (obligation/action separation A11) |
 | 08-Q relationship recovery / save-the-account (acute) 💤 | **B3 synthesis-brief** (save plan) + **B7 client-send** (executive recovery touch) |
+| 08-R onboarding success / time-to-value (adoption) 💤 | **B3 synthesis-brief** (adoption plan) + **B7 client-send** (first-value check-in) |
 
 **Driving policy (every procedure):** inherits the doctrine universal baseline (ADR-0136 A2/A4/A5)
 + `TBD (mark-blocker: company-policy-collection)` for the 1–3 specific drivers (D4, #1586). Policies
@@ -611,6 +612,40 @@ automatable step graduates it (D5).
   **(OWNERSHIP: clean — Celeste owns the relationship recovery; Felix owns the technical incident;
   Audrey owns the credit money, A11.)** **Maps to:** #1693.
 
+## 08-R · Client onboarding success / time-to-value (adoption) ⚡ — net-new
+- **Owner / Stream:** Celeste / 08. **Archetype:** B3 synthesis-brief (the adoption/first-value plan) +
+  B7 client-send (the welcome/first-value check-in). The **CS-side adoption motion** — **distinct from
+  Pierce/Delivery's `onboarding_step`** (project provisioning: deploy/verify). Resolves the #1396
+  v2-deferral (un-deferred #1694; the v2 "onboarding-welcome check-in folded into 08-A" under-scoped it).
+- **Trigger:** a Pierce `delivery-complete` / go-live handoff for a newly-onboarded client (or the
+  onboarding window opening). One run per onboarding lifecycle. Distinct from 08-A (08-A is the
+  intake *event*; this is the sustained *motion*).
+- **Terminal outcome:** a structured first-30/60/90-day adoption motion from go-live — adoption +
+  first-value tracked, early-warning surfaced, the first QBR scheduled, the **ASP seeded**; the
+  highest-churn window of the lifecycle is actively managed.
+- **Procedure Steps:**
+  1. `[automation]` **Onboarding intake** — receive the Pierce handoff; resolve the client; establish
+     the 30/60/90 milestone plan + success criteria, **cited + as-of** (A5); unresolvable → park. **L0.**
+  2. `[automation]` **Adoption track** — track adoption + first-value from MEASURED signals
+     (`interaction`/`ticket`/SBR), signal vs inference; **early-warning (low adoption/silence/early
+     friction) routes to 08-D health-intervention**. **L2.**
+  3. `[hybrid]` **First-value check-in (SEND GATE)** — draft the welcome/first-value check-in
+     (consent-gated) + recommend the first QBR (08-C) + **seed the ASP (08-B)**; the client-facing
+     check-in send **parks for a human** (ADR-0058), a *routine templated* welcome may ride the L3
+     carve-out; commitment-class = **`always_gate`**.
+- **Driving policy:** TBD (#1586) — onboarding / adoption.
+- **Realization:** ICM Workspace (intake + track + draft automatable) — realized; 💤dormant on **#991**
+  (Pierce delivery-complete feed) + #1369/#1370 (adoption signals).
+- **Autonomy ceiling:** **L2** (intake + track + draft = reversible internal, A10 row 1); the welcome
+  check-in send is human-gated (routine templated may earn L3). NO-COMMITS-EVER + MSSP dial-proof.
+- **Human-in-loop:** Jessica (CRO) / CS-lead approves the check-in. **always_gate floor:** commitment-
+  bearing content always parks (A3 floor).
+- **Substrate deps:** **#991** (Pierce delivery-complete feed) · #1369/#1370 (adoption/engagement
+  signals) · 08-B ASP seed · 08-C first QBR · 08-D early-warning · #389 · #119. **subject:** both.
+  **Seam:** Pierce→Celeste (delivery-complete IN — Pierce owns provisioning/`onboarding_step`, Celeste
+  owns adoption + value-realization) · Celeste→08-B/08-C/08-D. **(OWNERSHIP: clean — Pierce owns
+  provisioning/delivery, Celeste owns adoption, A11.)** **Maps to:** #1694.
+
 ---
 
 ## Provable-coverage note
@@ -634,7 +669,7 @@ procedure parked for one-click human launch, **Celeste never actuates**) and of 
 obligation/action separation** (the relationship-clock is hers; the close/purchase/remediation/
 deprovision/credit-money is explicitly NOT — O hands the deprovision to Osiris + teardown to Pierce, P
 hands the credit money to Audrey). **NO-COMMITS-EVER** and **MSSP-advisory-only** are dial-proof
-`always_gate` floors (inherited A2) on all 17. Seams are explicit hand-off steps: IN from all 7 other
+`always_gate` floors (inherited A2) on all 18. Seams are explicit hand-off steps: IN from all 7 other
 agents (A); OUT → Chase (E renewal, F expansion); OUT → Vance (I refresh, J vendor); OUT → human/Datto
 (K/L/M vCISO remediation); OUT → Osiris + Pierce (O offboarding); OUT → Audrey (P credit money). The
 close stays Chase's (Stream 02) — no qualify/close procedure appears here (correctly). **Schema gap
@@ -642,7 +677,11 @@ flagged to FE: #1622** (`client_offboarding` silver model; 08-O ships propose-on
 
 **Operator-readiness additions (2026-06-29, #1396 audit):** **08-Q relationship recovery /
 save-the-account** (the *acute* save — a Felix major-incident/SLA-breach or sharp sentiment drop ⇒
-executive recovery touch + save plan; B3+B7; un-defers #1693 from v2; 💤dormant on **#991**). The
-acute counterpart to 08-D's slow-churn save; NO-COMMITS holds (credit→Audrey/08-P, remediation→Felix).
+executive recovery touch + save plan; B3+B7; un-defers #1693 from v2; 💤dormant on **#991**; the acute
+counterpart to 08-D's slow-churn save; NO-COMMITS holds — credit→Audrey/08-P, remediation→Felix) ·
+**08-R onboarding success / time-to-value** (the CS-side adoption motion from Pierce's
+`delivery-complete` handoff, distinct from Pierce's `onboarding_step` provisioning; tracks
+first-30/60/90-day value-realization, seeds the ASP, routes early-warning to 08-D; un-defers #1694 from
+v2; B3+B7; 💤dormant on **#991**).
 
-**Count: 17 Operating Procedures** (08-A … 08-Q; #1442 folded as persona-activation per D9).
+**Count: 18 Operating Procedures** (08-A … 08-R; #1442 folded as persona-activation per D9).
