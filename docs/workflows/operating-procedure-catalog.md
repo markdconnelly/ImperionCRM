@@ -11,7 +11,7 @@ workspaces are a later build phase.
 - **Per-stream detail:** [`streams/`](streams/) — one file per value stream, full D6/D7 entry schema.
 - **The org it projects onto:** the 26-agent roster (epic #1534, `imperion-os-org-recast`).
 
-> **220 Operating Procedures** across 11 value streams / 26 agents. Veto-pass complete
+> **222 Operating Procedures** across 11 value streams / 26 agents. Veto-pass complete
 > (D9): **all procedures are included.** Ad procedures 01-B / 01-C are reinstated per the
 > easy-button principle (D9-P3); 01-J (segment) is folded as a step.
 >
@@ -115,7 +115,7 @@ routes *across* divisions.
 
 | # | Stream | Owners | Count | Detail |
 |---|---|---|---|---|
-| 01 | Demand → Lead | Belle | 13 | [streams/01-demand-lead.md](streams/01-demand-lead.md) |
+| 01 | Demand → Lead | Belle | 15 | [streams/01-demand-lead.md](streams/01-demand-lead.md) |
 | 02 | Lead → Cash | Chase · Vance · Sterling · Bridget | 27 | [streams/02-lead-cash.md](streams/02-lead-cash.md) |
 | 03 | Sold → Live | Pierce | 12 | [streams/03-sold-live.md](streams/03-sold-live.md) |
 | 04 | Request → Fulfil | Felix · Scout · Osiris · Vance | 15 | [streams/04-request-fulfil.md](streams/04-request-fulfil.md) |
@@ -138,14 +138,17 @@ cross-agent event/handoff bus · **#119** backend trigger-sync (deploy-dormant c
 
 ## Per-stream summaries
 
-### Stream 01 — Demand → Lead · Belle (13)
+### Stream 01 — Demand → Lead · Belle (15)
 Compose/publish Social Post (A) · **Boost → Ad** 💰 (B) · **manage Ad budget** 💰 (C) ·
 triage social inbox & reply (D) · monitor mentions/sentiment (E) · capture inbound lead
 (F) · score lead & MQL crossing — the Belle→Chase seam (G) · run nurture journey (H) ·
 Campaign Send (I) · run Event lifecycle (K) · plan/launch campaign (L) · marketing
-analytics & attribution (M). 01-J (segment) is folded as a step of H/I. **B/C reinstated
-per D9-P3** (agent does the full setup; human clicks to actuate on Meta). Whole plane 💤 on
-Meta/Threads/LinkedIn creds + #119/#991/#389.
+analytics & attribution (M) · **author content asset — content/enablement/PR, publish =
+handoff to Loveable (N)** · **capture customer reference — consent-gated, post-Celeste,
+name/logo-use ⛔ (O)**. 01-J (segment) is folded as a step of H/I. **B/C reinstated per
+D9-P3** (agent does the full setup; human clicks to actuate on Meta). **N/O = the brand/
+content half (epic #1696); brand governance rides N's review-gate + Vera, no own procedure
+(D5).** Whole plane 💤 on Meta/Threads/LinkedIn creds + #119/#991/#389.
 
 ### Stream 02 — Lead → Cash · Chase (8) / Vance (10) / Sterling + Bridget (9, gap-fill)
 **Chase:** qualify MQL→SQL · open/document opportunity · pursue pipeline · social-inbound

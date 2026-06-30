@@ -48,6 +48,8 @@ client_pii}` only.
 | 01-K run an Event lifecycle | **B9 deadline-sentinel** (Event-start clocks) + **B7** sends |
 | 01-L plan & launch a campaign | **B9 deadline-sentinel** (launch) + container of A/H/I/B/K |
 | 01-M marketing analytics & attribution | **B3 synthesis-brief** (read-model, no actuation) |
+| 01-N author content asset (content/enablement/PR) | **B7 client-facing-send** variant (publish = HANDOFF to Loveable, not a send) |
+| 01-O capture customer reference | **B1 intake/capture** (post-consent; name/logo-use → always_gate) |
 
 **Driving policy (every procedure):** inherits the doctrine universal baseline (ADR-0136 A2/A4/A5)
 + `TBD (mark-blocker: company-policy-collection)` (D4, #1586) for the specific drivers.
@@ -361,14 +363,89 @@ trigger substrate (poll-first v1) · **#119** trigger-sync · **creds** = `conn-
 - **Autonomy ceiling:** L0/L1 (read + flag). No actuation.
 - **Substrate deps:** #119 (metric collectors), #135 (resolved). **subject:** both. **Maps to:** #1338 slice D, #1316.
 
+## 01-N · Author a content asset (long-form content / enablement / PR — publish-handoff)
+- **Owner / Stream:** Belle / 01. **Archetype:** B7 client-facing-send **variant** — the terminal is
+  a publish-**HANDOFF** to Loveable (a human-mediated export, epic #1696 D3), **NOT an ADR-0058
+  send** (no contact touched, no consent/gauntlet send path). Content + **sales-enablement**
+  (`audience=seller`) + **PR-authoring** (`type=press_release`) are one entity differing by
+  type/audience (D2) — no separate procedure for enablement or PR.
+- **Trigger:** a content brief, campaign milestone (→ 01-L), or operator "write this"
+  (blog / case-study / whitepaper / battlecard / one-pager / press release / announcement).
+- **Terminal outcome:** a `content_asset` reaches **Approved → Published** with a `publish_ref`
+  (the Loveable-rendered URL) and its attribution wired to the campaign — or parked at the review-gate.
+- **Procedure Steps** (ground → compose → REVIEW GATE → publish-handoff → reconcile):
+  1. `[automation]` **Ground** brand voice + the `` `okf:brand_asset` `` compliance rules, the brief,
+     the linked campaign, recent content performance — **cite each + as-of**; empty brand registry →
+     park, never fabricate brand claims (A5). **L0.**
+  2. `[sonnet]` **Compose** per `type`/`audience` (prospect/seller/press); substantiate every claim
+     (`substantiation-rules`); no fabricated stat/quote/capability (A5/B7). `content.write` stages the
+     draft internally — **L2** (internal-reversible).
+  3. `[hybrid]` **REVIEW GATE (checkpoint):** brand-compliance check vs `` `okf:brand_asset` ``
+     (read-only, D5) + substantiation; a human approves `draft → approved` and a compliance note is
+     stamped on the asset. A failed brand/substantiation check **parks** (this is an INTERNAL
+     approval, not a customer send).
+  4. `[gui-step]` **Publish-handoff:** mark `approved → ready`; **hand to Loveable** (human-mediated
+     copy/export, **NO Loveable API in v1**, D3) and store the live `publish_ref`. A HANDOFF, not a
+     send — no contact, no consent gate. The whitepaper **form** stays Imperion's and feeds
+     `lead-capture` (01-F → attribution); the **landing page is Loveable's**.
+  5. `[automation]` **Reconcile:** wire the attribution link asset → campaign (#1316) → 01-M.
+- **Autonomy ceiling rationale:** compose/stage = **L2 internal-reversible**; the review-gate is
+  human-approved (v1); publish-handoff is a human export. **Not `always_gate`** (no money, no send),
+  but never an autonomous customer touch either — there is no auto-publish path in v1.
+- **Driving policy:** BO-01 (Marketing/Comms, #1586) — brand-voice, claims-substantiation.
+- **Realization:** `icm/domains/marketing/content-studio/` (ICM Workspace).
+- **Autonomy ceiling:** L2 (compose/stage internal). Review-gate + publish-handoff are human (v1).
+- **Human-in-loop:** Belle drafts; a marketing operator (Mark proxy v1) approves at the review-gate and
+  performs the Loveable handoff. **Substrate deps:** `content_asset` + `brand_asset` (#1697/#1699),
+  #389. **subject:** both. **Maps to:** #1701, #1316.
+
+## 01-O · Capture a customer reference (consent-gated advocacy capture)
+- **Owner / Stream:** Belle / 01. **Archetype:** B1 intake/capture **variant** — **post-consent**
+  capture; the client touch is **NOT here** (it is Celeste's, Stream 08). Name/logo-use = `always_gate`
+  (A2 money/commitment-class, here a rights commitment), human, **marketing-owned** (not Legal in v1).
+- **Trigger:** **Celeste hands over a consented advocacy candidate** (the seam, #1703/#1692); or
+  Belle's 01-E listening surfaces an advocacy candidate (a *suggestion only* — it still routes through
+  Celeste to solicit; Belle never solicits).
+- **Terminal outcome:** a `reference` reaches **Captured / Published** (consent-clean), optionally
+  spawning a `content_asset(type=case_study)` → 01-N; or **parked** if no recorded consent.
+- **Procedure Steps** (intake-consent → capture → RIGHTS GATE → spawn-asset → reconcile):
+  1. `[automation]` **Intake-consent:** ingest the consented candidate from the Celeste seam; verify
+     the recorded `` `okf:consent_event` `` + scope of use — **no recorded consent → PARK** (the hard
+     precondition, D4). **Belle NEVER contacts the client** (refusal floor, BO-04, stronger than any
+     gate). **L0/L2.**
+  2. `[sonnet]` **Capture:** format the `reference` (testimonial / review / reference-case),
+     consent-clean (only the approved attribution + verbatim). `reference.write` — **L2** internal.
+  3. `[hybrid]` **RIGHTS GATE (checkpoint):** name/logo-use = **`always_gate`**, human,
+     marketing-owned — **never auto-approves** at any rung.
+  4. `[automation]` **Spawn-asset (optional):** create `content_asset(type=case_study)` backed by the
+     reference (`backed_by_reference_id`) → hands to 01-N (content-studio).
+  5. `[automation]` **Reconcile:** link the reference to its account/opportunity for analytics.
+- **Autonomy ceiling rationale:** capture/intake = **L2 internal-reversible**; the rights-gate
+  (logo/name-use) is `always_gate` forever; Belle's client-contact path is a **refusal floor** (BO-04).
+- **Driving policy:** BO-01 + BO-04 (Client-Success seam, #1586) — advocacy consent, name/logo-use.
+- **Realization:** `icm/domains/marketing/advocacy-capture/` (ICM Workspace). **Upstream seam:** the
+  solicitation is drafted by **Celeste** (Stream 08, #1703/#1692), human-gated send, consent recorded.
+- **Autonomy ceiling:** L2 (capture internal). Rights-gate `always_gate`; client-contact **refused**.
+- **Human-in-loop:** Belle captures post-consent; a human owns the rights-gate. **Substrate deps:**
+  `reference` (#1698), consent data, #389. **subject:** both. **Maps to:** #1702, #1703.
+
+> **Note on 01-E (listening):** reputational-risk escalation **and** advocacy-candidate surfacing
+> already exist there (B3 launchpad) — 01-E routes an advocacy candidate **to Celeste to solicit**
+> (the 01-O upstream seam); it does **not** duplicate capture. **Brand governance has no procedure of
+> its own** (D5): it bites at 01-N's review-gate (compliance vs `brand_asset`) + Vera's
+> `marketing-conformance` (platform); `brand_asset` is read-only reference, never written by any agent.
+
 ---
 
 ## Coverage note
 
 Demand→Lead surface fully covered: content (A), paid (B/C), inbound social (D/E), lead
 capture/score/nurture (F/G/H), outbound comms (I), events (K), campaign orchestration (L),
-analytics/attribution (M). The audience-segment unit (former 01-J) folds as a step of H/I
-(D3 sizing). The stream terminates at the `lead_score` MQL crossing (01-G) → Stream 02; no
+analytics/attribution (M). **The brand/content half (epic #1696):** long-form content / enablement
+/ PR authoring (N, publish-handoff to Loveable) and consent-gated advocacy capture (O, post-Celeste);
+brand governance rides 01-N's review-gate + Vera (no own procedure, D5). The audience-segment unit
+(former 01-J) folds as a step of H/I (D3 sizing). The stream terminates at the `lead_score` MQL
+crossing (01-G) → Stream 02; no
 qualify/close procedure appears here (correctly — that's Chase/Stream 02). **Doctrine inheritance
 (ADR-0136):** every procedure names its archetype (B1–B9) and inherits A1–A11 — money out (01-B/C)
 is always_gate class-1 forever (A10 no-clean-undo); client-facing sends (01-A/D/H/I) are always_gate
@@ -376,4 +453,5 @@ class-2 with the templated-ack carve-out the only path to L3 (B7); Belle's **1:1
 refusal** stands as a floor stronger than any gate. The whole plane stays **propose-only / dormant**
 on Meta/Threads/LinkedIn creds + #119/#991/#389 until its substrate hydrates (A5c).
 
-**Count: 13 Operating Procedures** (01-A … 01-M; 01-J folded as a step per D9).
+**Count: 15 Operating Procedures** (01-A … 01-O; 01-J folded as a step per D9; 01-N/01-O are the
+brand/content half added by epic #1696).
