@@ -1,5 +1,5 @@
 ---
-adr: NNNN
+adr: 0140
 title: "AR/invoice: mirror QuickBooks read-only (own-vs-mirror resolved); AR-aging is a derived read-model"
 status: proposed
 date: 2026-06-29
@@ -8,12 +8,13 @@ summary: "Resolve the long-open own-vs-mirror question for AR/invoices: Imperion
 tags: [finance, data, agents]
 ---
 
-# ADR-NNNN: AR/invoice — mirror QuickBooks read-only; AR-aging derived, not owned
+# ADR-0140: AR/invoice — mirror QuickBooks read-only; AR-aging derived, not owned
 
-> Number claimed at MERGE per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md).
-> `NNNN` is a placeholder — the branch that merges second renumbers to the next free slot and
-> fixes every reference. This ADR claims a migration number too (`0241` placeholder); both are
-> renamed at merge.
+> Number assigned at merge per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md):
+> this ADR shipped (#1732 / #1580) with its `ADR-NNNN` placeholder still in the filename; the
+> docs-reconciliation pass (#1750) renumbered it to **ADR-0140** (0139 was claimed first by the
+> finance-autonomy ADR) and fixed every reference. The companion migration landed as
+> **`0241_invoice_silver_mirror.sql`** (no longer a placeholder).
 
 | Field | Value |
 |---|---|
@@ -80,7 +81,7 @@ until the VIEW is retired (a follow-up cutover).
 **Mirror QuickBooks read-only.** Imperion does NOT own an app-native AR/invoice ledger.
 
 1. **Own-vs-mirror = MIRROR.** The curated silver `invoice` is a read-only MIRROR of bronze
-   `qbo_invoices` — a real silver TABLE (migration `0241`, placeholder) populated by the pipeline's
+   `qbo_invoices` — a real silver TABLE (migration `0241`) populated by the pipeline's
    bronze→silver merge (a **process**, not an agent), carrying the meaningful invoice fields
    (qbo_invoice_id, customer ref/name, issue_date, due_date, total/balance amounts `numeric(14,2)`,
    status, currency). Archetype B (external-SoR read-only mirror), the `ticket` (Autotask mirror)

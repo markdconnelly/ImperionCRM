@@ -1906,5 +1906,20 @@
     "file": "ADR-0139-finance-autonomy-explicit-per-workflow.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0140",
+    "title": "AR/invoice: mirror QuickBooks read-only (own-vs-mirror resolved); AR-aging is a derived read-model",
+    "status": "proposed",
+    "date": "2026-06-29",
+    "tags": [
+      "finance",
+      "data",
+      "agents"
+    ],
+    "summary": "Resolve the long-open own-vs-mirror question for AR/invoices: Imperion does NOT own an app-native AR/invoice ledger — QuickBooks Online is the system of record for money (ADR-0123) and is read-only on our side. The curated silver `invoice` is a pipeline-populated read-only MIRROR of bronze `qbo_invoices`; AR-aging is a DERIVED read-model over it (due_date + balance + status → aging buckets), not a separate `ar_item` silver entity. App-native state exists only for the dunning workflow and already lives in `collections_activity` (mig 0122). Agents (Audrey FP&A, Collections, Controller) are read-only over the mirror; any dunning SEND is a human easy-button.",
+    "file": "ADR-0140-ar-invoice-own-vs-mirror.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
