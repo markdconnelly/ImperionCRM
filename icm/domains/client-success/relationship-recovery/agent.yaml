@@ -1,0 +1,13 @@
+name: relationship-recovery
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Celeste persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../celeste.md
+  - ./prose.md
+okf_rooms: [account, contact, interaction, ticket, strategic_business_review, consent_event]   # subset of domains/client-success/room.yaml
+tools: [pg.read, consent.check, send.email, send.dm]                                            # read + assert consent + the two ADR-0058 recovery-send channels
+skills:
+  - ./skills/recovery-rubric            # Tier 3 — workflow-local (recovery posture + executive-touch/save-plan playbook + NO-COMMITS routing)
+autonomy_rung: L2
+auto_may_self_approve: "at L2 assemble the incident context + DRAFT the executive recovery touch + save plan from MEASURED signals (internal, reversible, signal-labeled). EVERY acute executive recovery send parks for a human in every mode — this is relationship-sensitive, so unlike 08-D no send auto-fires at any rung. Every binding commitment parks at every rung — a credit routes to Audrey/08-P (the only credit path), an SLA change to a human, a remediation to Felix/Datto, a price to a human. The NO-COMMITS-EVER and MSSP-advisory-only ceilings are dial-proof (celeste.md guardrails 1-2). 💤 dormant until #991 + #1369/#1370 (ADR-0123)."

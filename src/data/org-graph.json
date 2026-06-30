@@ -1296,6 +1296,14 @@
           ]
         },
         {
+          "slug": "relationship-recovery",
+          "stages": [
+            "01-incident-context",
+            "02-recovery-plan",
+            "03-execute-track"
+          ]
+        },
+        {
           "slug": "renewal-readiness",
           "stages": [
             "01-renewal-context",
