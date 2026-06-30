@@ -195,7 +195,8 @@
         "partner",
         "partner_deal",
         "partner_mdf",
-        "referral_payout"
+        "referral_payout",
+        "agent_autopilot_policy"
       ],
       "workflows": [
         {
@@ -205,6 +206,15 @@
             "02-synthesize",
             "03-brief",
             "04-delegate-followups"
+          ]
+        },
+        {
+          "slug": "division-performance-review",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-route-followups"
           ]
         },
         {

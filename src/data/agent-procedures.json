@@ -813,6 +813,238 @@
           ]
         },
         {
+          "slug": "division-performance-review",
+          "title": "division-performance-review (Deputy CFO / Revenue & Finance, executive oversight)",
+          "job": "on a schedule, review how each of Sterling's direct reports (Chase, Belle, Celeste, Vance, Audrey, Bridget) is performing **against its business mandate** — is the agent advancing the revenue/client/finance outcome it owns — and brief Nick with a per-report scorecard, delegating a corrective where the gap is a business one and handing a governance concern up where it is not.",
+          "trigger": "scheduled (weekly / start of cycle). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled division scorecard when every report's signals are grounded and cited, and delegate a grounded business corrective to the owning report; a governance/eval-quality/risk/dial concern hands off to Jessica (never adjudicated here); any gap or recall miss parks for Nick — Sterling never changes a dial or actuates",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "agent_autopilot_policy",
+            "account",
+            "opportunity",
+            "invoice"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble, for each of Sterling's six reports, its activity, eval results, autonomy rung, and the business outcome it owns into one un-judged gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Resolve the six reports from the org tree (`reports_to: deputy-cfo`)."
+                },
+                {
+                  "tag": "script",
+                  "text": "For each report, pull its `agent_run` activity and latest `agent_eval_result` (read-only; the run ledger and eval plane are read via broad `pg.read`, not okf rooms) and its current rung from `agent_autopilot_policy`."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach the business outcome it owns from silver (account + opportunity/invoice movement); id + figure only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior cycles' context per report via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Report activity",
+                    "run ledger · `agent_run` (pg.read; horizontal, not an okf room)",
+                    "this cycle, per report agent_key",
+                    "what each report did / what stalled"
+                  ],
+                  [
+                    "Eval results",
+                    "eval plane · `agent_eval_result` (pg.read; horizontal, not an okf room)",
+                    "latest per report",
+                    "quality signal (read only — adjudication is not here)"
+                  ],
+                  [
+                    "Autonomy rung",
+                    "silver `agent_autopilot_policy` · `okf:agent_autopilot_policy`",
+                    "current, per report",
+                    "the dial each report runs at (\"every tier reads its rung\", ADR-0087)"
+                  ],
+                  [
+                    "Business outcome",
+                    "silver `account` · `okf:account`, `opportunity` · `okf:opportunity`, `invoice` · `okf:invoice`",
+                    "the movement attributable to each report",
+                    "the outcome the report is measured against"
+                  ],
+                  [
+                    "Roster of reports",
+                    "`../../../org.yaml` (reports_to: deputy-cfo)",
+                    "Chase, Belle, Celeste, Vance, Audrey, Bridget",
+                    "who is in scope"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "prior cycles' scorecards",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — per-report rows (report agent_key · activity summary · eval signal · autonomy rung · the business outcome figure · cited recall), un-judged.",
+              "audit": [
+                "Exactly the six `reports_to: deputy-cfo` agents are in scope; no other agent",
+                "Every report row states its current autonomy rung and its business-outcome figure",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no financial record written, no money moved, no dial changed"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a per-report business-outcome scorecard, and separate a business gap from a governance/quality/risk concern.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Score each report against the **business outcome it owns** (pipeline moved, demand generated, renewals held, vendor spend controlled, AR cleared, partner ROI earned) — is the outcome moving, at what first-time-success and rejection rate, at what autonomy rung. Activity is context, the outcome is the measure."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Separate the flags into two lists: **business gaps** (a report not advancing its outcome) and **governance concerns** (sliding eval scores, a mis-set dial, conformance/quality drift). The second list is **not Sterling's to adjudicate** — it is tagged for handoff."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank each list by exposure (the business cost of the gap; the severity of the concern). Pool-never-bleed: correlate internally across reports, never client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all six reports",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`scorecard.md` — a per-report scorecard (outcome · trend · rung) plus two separate flag lists: **business gaps** (each naming the report, the outcome, the exposure) and **governance concerns** (each naming the report and the concern, marked handoff).",
+              "audit": [
+                "Each report is scored against the business OUTCOME it owns, not raw activity",
+                "Flags are split into business gaps vs governance concerns; the two are not mixed",
+                "Every governance concern is marked for handoff, not for Sterling to adjudicate",
+                "No item restates the gather row verbatim (it must be synthesized)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Nick's division scorecard plus the two flag lists, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read on how the division is performing, leading with the business gaps (the reports not moving their outcome), then the rest of the scorecard."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the two flag lists as the brief's action surface — each business gap with its exposure and the corrective it implies; each governance concern with the lens it belongs to (Jessica / Vera / Tess)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Nick. No send, no write, no dial change."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Scorecard",
+                    "stage 02 `scorecard.md`",
+                    "all",
+                    "the per-report scorecard + flag lists"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Nick's division scorecard + the business-gap list + the governance-concern list. The run continues to stage 04 for routing; nothing is actuated.",
+              "audit": [
+                "Brief leads with business gaps, not raw activity volume",
+                "Both flag lists present; governance concerns name their lens (Jessica/Vera/Tess)",
+                "Read-only — no financial record written, no money moved, no dial changed",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The scorecard parks for **Nick**. `auto` may self-approve ONLY publishing the scheduled scorecard when every report's signals are grounded and cited; any gap or recall miss parks for Nick (CONSTITUTION §8). No actuation exists at this tier — Sterling synthesizes and routes; he never changes a dial (§5.5)."
+            },
+            {
+              "slug": "04-route-followups",
+              "name": "route-followups",
+              "job": "route each flag — a business gap is delegated to the owning report; a governance concern is handed up to Jessica/Vera/Tess — then park. Sterling never adjudicates a governance concern, never changes a dial, never actuates.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each grounded **business gap**, draft a **proposed** `delegate()` to the **owning report** (Chase / Belle / Celeste / Vance / Audrey / Bridget): the report agent_key, the outcome that is lagging, and the corrective ask. The report acts under its own gauntlet — nothing is composed or actuated here."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "For each **governance concern** (sliding eval, mis-set dial, conformance/quality drift), draft a `handoff()` to **Jessica** (CRO) — or Vera (conformance) / Tess (service-quality) as the lens fits — naming the report and the concern. Sterling does **not** adjudicate it and does **not** recommend a rung; the dial decision is the CRO's lane."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No send, no write, no dial change — the corrective happens inside the report, the governance call inside the CRO's lane."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the two flag lists",
+                    "what to route"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to the owning reports and the `handoff()` calls to Jessica/Vera/Tess, each citing the report and the grounded flag. The run ends here at the checkpoint; nothing is actuated.",
+              "audit": [
+                "Every business gap is delegated to the report that OWNS the lagging outcome",
+                "Every governance/eval-quality/risk/dial concern is handed off, never adjudicated here",
+                "No dial change is recommended — dial governance is the CRO's (Jessica) lane",
+                "Read-only — no financial record written, no money moved, no dial changed",
+                "No send/write/actuation occurred — Sterling delegated or parked"
+              ],
+              "checkpoint": "The follow-ups park for **Nick**, and any delegate is a **proposal** to a report. `auto` may self-approve ONLY emitting the `delegate()` of a grounded business corrective to the owning report, and the `handoff()` of a governance concern to Jessica/Vera/Tess; the corrective re-gates inside the report's gauntlet, the governance call sits in the CRO's lane (CONSTITUTION §9). Sterling never changes a dial and never actuates (§5.5); any ungrounded or unclear flag parks for Nick."
+            }
+          ]
+        },
+        {
           "slug": "financial-pulse",
           "title": "financial-pulse (Deputy CFO / Revenue & Finance, executive tracer)",
           "job": "on a schedule, roll up AR/AP, margin, revenue, and pipeline into a financial pulse for Nick, leading with the flags (unprofitable work, at-risk revenue) — drafted here, never actuated.",

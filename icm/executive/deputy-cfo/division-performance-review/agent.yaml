@@ -1,0 +1,12 @@
+name: division-performance-review
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Sterling persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../sterling.md
+  - ./prose.md
+okf_rooms: [agent_autopilot_policy, account, opportunity, invoice]   # subset of executive/deputy-cfo/room.yaml; the dial + the business outcomes scored against
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may delegate a business corrective to a report / handoff a governance concern to Jessica; never actuates, never changes a dial (CONSTITUTION §9, §5.5)
+auto_may_self_approve: "publish the scheduled division scorecard when every report's signals are grounded and cited, and delegate a grounded business corrective to the owning report; a governance/eval-quality/risk/dial concern hands off to Jessica (never adjudicated here); any gap or recall miss parks for Nick — Sterling never changes a dial or actuates"
