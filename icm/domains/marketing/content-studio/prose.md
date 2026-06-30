@@ -37,3 +37,7 @@ The spine:
 **No money and no customer send enters this workflow.** A boost or ad is a different
 procedure (01-B/01-C); a customer send is ADR-0058. Neither lives here — this is authoring
 and an internal handoff, end to end.
+
+The canonical, human+machine SOP for this procedure (the review-gate brand-compliance
+contract, the publish-handoff variant, the seams, the dormancy posture) is `sop.md`
+(ADR-0136 A8). v1 runs human-approves-all; the review-gate approval is what earns the dial.
