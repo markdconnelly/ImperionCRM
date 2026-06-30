@@ -30,3 +30,6 @@ okf_rooms:
   - posture_policy
   - agent_autopilot_policy
   - entity_xref
+  # Brand governance read (#1699, #1696 D5) — Vera's marketing-conformance audits PUBLISHED
+  # content against the human-owned brand registry; read-only reference, never written.
+  - brand_asset

@@ -537,6 +537,64 @@ const REGISTRY: Record<string, ActionDef> = {
       idempotencyKey: { type: "string", required: true },
     },
   },
+  // ── Marketing content/advocacy writes (#1701/#1702, epic #1696) ───────────────────────────
+  // Belle's two INTERNAL silver writes (the content-studio + advocacy-capture workspaces). Both
+  // are approval-gated executor writes — NEVER a direct silver write (the opportunity.write /
+  // ticket.note precedent, ADR-0128 L2 auto-internal). The Constitution/room.yaml tool names are
+  // `content.write` / `reference.write`; the executor kinds are snake_case here (the namespaces
+  // are decoupled, like opportunity.write ↔ the autotask_* kinds).
+  //   • content_write is OPERATIONAL (a marketing artifact draft/status/publish_ref/brand note,
+  //     internal-reversible) → L2 auto-internal, no external commitment.
+  //   • reference_write touches CLIENT_PII (names / verbatim client words) so the data-class
+  //     ceiling (ADR-0118) parks it in v1 even though the action is an internal L2 write —
+  //     alwaysGate stays false (no external commitment). The logo/name-use RIGHTS gate is a
+  //     separate workflow-layer always_gate at advocacy-capture's rights-gate, not on this tool;
+  //     a reference cannot reach captured/published without a recorded consent (the DB CHECK, D4).
+  // PUBLISH is a HANDOFF to Loveable (a human-mediated export, D3), NOT a send — there is
+  // deliberately NO content publish/send ActionDef here. brand_asset has NO write kind, ever (D5).
+  content_write: {
+    kind: "content_write",
+    label: "Write marketing content asset",
+    tier: "T2",
+    dataClass: "operational",
+    consentClass: "none",
+    autoAtLevel: 2, // L2 auto-internal: an internal operational write, no external commitment.
+    alwaysGate: false,
+    executor: "content_write",
+    schema: {
+      contentAssetId: { type: "string", required: false }, // absent ⇒ create
+      type: {
+        type: "string",
+        required: false,
+        enum: ["blog", "case_study", "whitepaper", "battlecard", "one_pager", "press_release", "announcement"],
+      },
+      audience: { type: "string", required: false, enum: ["prospect", "seller", "press"] },
+      status: { type: "string", required: false, enum: ["draft", "in_review", "approved", "published", "archived"] },
+      title: { type: "string", required: false },
+      publishRef: { type: "string", required: false }, // the Loveable-rendered URL stored at publish-handoff
+    },
+  },
+  reference_write: {
+    kind: "reference_write",
+    label: "Write customer reference (consent-gated)",
+    tier: "T2",
+    dataClass: "client_pii", // holds names / verbatim client words → the data-class ceiling parks it
+    consentClass: "none",
+    autoAtLevel: 2, // L2 auto-internal write; the data-class ceiling (ADR-0118) is the v1 park, not alwaysGate.
+    alwaysGate: false,
+    executor: "reference_write",
+    schema: {
+      referenceId: { type: "string", required: false }, // absent ⇒ create
+      kind: { type: "string", required: false, enum: ["testimonial", "review", "reference_case", "logo_use"] },
+      accountId: { type: "string", required: false },
+      status: {
+        type: "string",
+        required: false,
+        enum: ["candidate", "consent_pending", "consented", "captured", "published", "withdrawn"],
+      },
+      consentEventId: { type: "string", required: false }, // the recorded consent basis (D4 precondition)
+    },
+  },
 };
 
 /**

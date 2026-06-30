@@ -34,6 +34,18 @@ tools:
                          #   effect; approval-gated executor, never a direct silver
                          #   write). Sales workspace, #1416 — the L2 auto-internal
                          #   capability on the canonical ladder (ADR-0128).
+  - content.write        # create/update the INTERNAL content_asset record (Belle's
+                         #   typed authored artifact — draft/status/publish_ref/brand
+                         #   note; operational, internal-reversible; approval-gated
+                         #   executor, never a direct silver write). Marketing
+                         #   content-studio, #1701 — L2 auto-internal (ADR-0128).
+                         #   Publish is a HANDOFF to Loveable (D3), not a send.
+  - reference.write      # create/update the INTERNAL reference record (consent-gated
+                         #   captured customer proof; approval-gated executor, never a
+                         #   direct silver write). Marketing advocacy-capture, #1702 —
+                         #   an L2 internal write, but the data is client_pii so the
+                         #   data-class ceiling parks it; logo/name-use rights are a
+                         #   separate workflow-layer always_gate (#1696 D4).
   - knowledge.search     # OKF-grounded semantic recall over gold (#1537 retrieval
                          #   tier; read-only; returns cited gold knowledge objects).
   - memory.recall        # deliberate long-term memory recall (Memory MCP, ADR-0116;
@@ -67,6 +79,12 @@ okf_rooms:
   - lead_hook                # raw inbound lead-capture hook (pre-dedupe)
   - workflow                 # journey / nurture cadence definition (ADR-0073)
   - contact_social_identity  # social handle → contact match (inbound author-link)
+  # Marketing content/advocacy/brand expansion (#1696, D2) — Belle's brand/content half:
+  # typed authored content, consent-gated customer proof, and the human-owned brand registry.
+  - content_asset            # typed authored marketing artifact (content/enablement/PR); #1697
+  - reference                # consent-gated captured customer proof (advocacy); #1698
+  - brand_asset              # human-owned brand registry — agent READ-ONLY (D5); read by
+                             #   content-studio's review-gate + Vera's marketing-conformance; #1699
   - ticket           # Service workspace (#1067) — Autotask-SoR ticket (read)
   - device           # Service workspace — endpoint/network CI status (read)
   - cloud_asset      # Service workspace — cloud resource CI status (read)

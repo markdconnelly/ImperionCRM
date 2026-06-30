@@ -22,6 +22,10 @@ tools:
   - send.dm              # approval-gated in-channel social DM reply (ADR-0058 only)
   - knowledge.search     # OKF-grounded recall (brand voice, claims, prior content)
   - memory.recall        # deliberate long-term memory recall (ADR-0116)
+  # Content/advocacy writes (#1696 D2) — INTERNAL silver writes via the approval-gated
+  # executor, never a direct silver write (the opportunity.write precedent, ADR-0128 L2).
+  - content.write        # content-studio: write the typed content_asset (#1701)
+  - reference.write      # advocacy-capture: write the consent-gated reference (#1702)
 
 okf_rooms:
   # Core demand entities
@@ -43,3 +47,7 @@ okf_rooms:
   - campaign_send            # 01-I per-send fact (consent-gated)
   - campaign_metric          # 01-M campaign performance / attribution
   - workflow                 # 01-H nurture journey definition (ADR-0073)
+  # Content/advocacy/brand expansion (#1696 D2) — content-studio + advocacy-capture
+  - content_asset            # 01-N typed authored content (content/enablement/PR); #1697
+  - reference                # 01-O consent-gated customer proof; #1698
+  - brand_asset              # read-only brand registry — review-gate compliance check (D5); #1699

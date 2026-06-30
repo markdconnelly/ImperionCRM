@@ -1045,7 +1045,9 @@
         "send.email",
         "send.dm",
         "knowledge.search",
-        "memory.recall"
+        "memory.recall",
+        "content.write",
+        "reference.write"
       ],
       "okfRooms": [
         "contact",
@@ -1063,7 +1065,10 @@
         "ad",
         "campaign_send",
         "campaign_metric",
-        "workflow"
+        "workflow",
+        "content_asset",
+        "reference",
+        "brand_asset"
       ],
       "workflows": [
         {
@@ -1459,7 +1464,8 @@
         "tenant_posture",
         "posture_policy",
         "agent_autopilot_policy",
-        "entity_xref"
+        "entity_xref",
+        "brand_asset"
       ],
       "workflows": [
         {

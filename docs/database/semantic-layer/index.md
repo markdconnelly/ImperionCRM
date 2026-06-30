@@ -99,6 +99,9 @@ core subset). Remaining objects from the
 | [`lead_hook`](tables/lead_hook.md) | single-SoR | website system of record (lead-capture endpoint definition) | ADR-0024 |
 | [`lead_capture_event`](tables/lead_capture_event.md) | single-SoR | website system of record (raw inbound hit → contact resolution) | ADR-0024 |
 | [`social_metric`](tables/social_metric.md) | single-SoR (platform mirror) | platform authoritative for values; from `meta_insights` | ADR-0062 |
+| [`content_asset`](tables/content_asset.md) | single-SoR (app-native) | Imperion app SoT; publish = handoff to Loveable (`publish_ref`) | #1696 |
+| [`reference`](tables/reference.md) | single-SoR (app-native) | Imperion app; the recorded consent is authoritative (consent-gated) | #1696 |
+| [`brand_asset`](tables/brand_asset.md) | single-SoR (human-curated) | human-owned, agent read-only (D5) | #1696 |
 | [`social_post`](tables/social_post.md) | single-SoR | website system of record (compose-once organic composition) | ADR-0124 |
 | [`social_post_channel`](tables/social_post_channel.md) | single-SoR | website system of record (per-network fan-out result) | ADR-0124 |
 | [`social_engagement`](tables/social_engagement.md) | single-SoR | website system of record for triage; platform source of content | ADR-0124 |
