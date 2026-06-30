@@ -309,6 +309,32 @@ export function ConnectionCard({
             </form>
           )}
 
+          {/* OAuth connect for a credential provider whose token is normally obtained via an
+              authorization-code flow (Threads, #1500). The connect button is the NORMAL path;
+              the break-glass paste form still renders below it. Mirrors the QBO consent button
+              (backend /start → provider consent → /callback exchange), but keeps the fallback. */}
+          {provider.oauthConnect && (
+            <div className="flex flex-col gap-2">
+              <form action={connectAction} className="flex items-center gap-3">
+                <input type="hidden" name="provider" value={provider.key} />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-accent bg-accent/10 px-3 py-1.5 text-sm text-text hover:bg-accent/20"
+                  title="Sign in via the Instagram-anchored Threads login — the backend exchanges the code and custodies the token in Key Vault (the browser never holds it)"
+                >
+                  <Icon name="Plug" size={14} />
+                  {configured
+                    ? `Reconnect${provider.connectLabel ? provider.connectLabel.replace(/^Connect/, "") : ` ${provider.label}`}`
+                    : (provider.connectLabel ?? `Connect ${provider.label}`)}
+                </button>
+              </form>
+              <p className="text-[10px] leading-relaxed text-dim">
+                Normal path. Separate from the Meta (Facebook / Instagram) connection — this is the
+                Instagram-anchored Threads login. The manual fields below are a break-glass fallback.
+              </p>
+            </div>
+          )}
+
           {/* Consent / OAuth-connect (QuickBooks) — no secret fields */}
           {provider.kind === "consent" ? (
             <form action={connectAction} className="flex items-center gap-3">

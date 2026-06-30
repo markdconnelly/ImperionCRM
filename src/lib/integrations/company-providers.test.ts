@@ -186,7 +186,7 @@ describe("COMPANY_PROVIDERS — Dark Web ID provider (#1312)", () => {
   });
 });
 
-describe("COMPANY_PROVIDERS — Threads provider (#1335)", () => {
+describe("COMPANY_PROVIDERS — Threads provider (#1335, OAuth connect #1500)", () => {
   const threads = COMPANY_PROVIDERS.find((p) => p.key === "threads");
 
   it("is a send-capable credential, NOT pollable (the token is outbound, nothing polls it)", () => {
@@ -194,6 +194,16 @@ describe("COMPANY_PROVIDERS — Threads provider (#1335)", () => {
     expect(threads?.kind).toBe("credential");
     expect(threads?.sendCapable).toBe(true);
     expect(providerIsPollable(threads!)).toBe(false);
+  });
+
+  it("uses the OAuth connect path (#1500) — Connect with Threads, not a hand-pasted token", () => {
+    // #1500: the long-lived token is acquired through the Instagram-anchored Threads OAuth
+    // (backend /start → consent → /callback exchange, the QBO precedent), not token paste.
+    // It stays a `kind: "credential"` provider (NOT "consent") so the break-glass paste form
+    // still renders below the connect button.
+    expect(threads?.kind).toBe("credential");
+    expect(threads?.oauthConnect).toBe(true);
+    expect(threads?.connectLabel).toBe("Connect with Threads");
   });
 
   it("records exactly the six Threads use-case App Review scopes", () => {
@@ -209,7 +219,9 @@ describe("COMPANY_PROVIDERS — Threads provider (#1335)", () => {
     ]);
   });
 
-  it("collects a write-only Threads user token + a public Threads user id", () => {
+  it("keeps the write-only token + public user id as a break-glass paste fallback (#1500)", () => {
+    // The paste fields remain so an operator who already holds a long-lived token can fall
+    // back to it, but they are NOT the normal path — Connect with Threads is.
     const fieldNames = threads?.fields?.map((f) => f.name) ?? [];
     expect(fieldNames).toEqual(["userToken", "threadsUserId"]);
     const token = threads?.fields?.find((f) => f.name === "userToken");
@@ -218,6 +230,8 @@ describe("COMPANY_PROVIDERS — Threads provider (#1335)", () => {
     expect(token?.required).toBe(true);
     expect(userId?.secret).toBe(false);
     expect(userId?.required).toBe(true);
+    // Labelled as break-glass so the GUI makes the fallback nature clear.
+    expect(token?.label.toLowerCase()).toContain("break-glass");
   });
 
   it("is a Marketing card distinct from the Meta (Facebook/Instagram) credential", () => {
@@ -225,6 +239,9 @@ describe("COMPANY_PROVIDERS — Threads provider (#1335)", () => {
     const meta = COMPANY_PROVIDERS.find((p) => p.key === "meta");
     expect(threads?.category).toBe("Marketing");
     expect(threads?.key).not.toBe(meta?.key);
+    // The connect flow + secret are its OWN — not the Meta token.
+    expect(threads?.oauthConnect).toBe(true);
+    expect(meta?.oauthConnect).not.toBe(true);
   });
 });
 

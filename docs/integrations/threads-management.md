@@ -53,6 +53,18 @@ ceiling), kept in lockstep with the action catalog. The **authoritative** deny-b
 row — plus the `source_skill(provider='threads')` + autonomy policy — is seeded by the S4
 backend migration (schema is migration-owned, CLAUDE.md §1).
 
+## Connecting Threads (OAuth — #1500)
+
+The `conn-company-threads` token is acquired from the **Threads connector card** on
+`/settings/connections` via **Connect with Threads** — the Instagram-anchored Threads OAuth
+(graph.threads.net's OWN auth), **separate from the Meta (Facebook / Instagram Graph) card**, which
+yields no Threads token. The flow mirrors the QBO company-consent round-trip: the backend `start`
+parks a one-time CSRF state and returns the consent URL; the admin signs in; the Threads login
+redirects to `/api/connections/threads/callback`, which forwards `code`+`state` to the backend
+exchange. The `client_secret` exchange runs server-side and the long-lived token is custodied in Key
+Vault — the browser/DB never hold it (CLAUDE.md §1/§5, ADR-0125 D1). A **manual token paste remains as
+a break-glass fallback only**. Full flow + outcome vocabulary: [Integrations README §6.3](README.md).
+
 ## Dormant / fail-closed
 
 Until the `conn-company-threads` Key Vault secret lands **and** Meta App Review clears the
@@ -76,3 +88,11 @@ touch the GUI/DB — the token lives in Key Vault, referenced by name only (ADR-
 - `src/lib/agent/action-catalog.ts` — `publish_threads` / `reply_threads` defs.
 - `src/lib/threads/threads-data.ts` — `social_metric` (platform=threads) insights read.
 - `src/lib/nav.ts` / `src/lib/auth/roles.ts` — nav leaf + role guard.
+
+### Connect flow (#1500)
+
+- `src/lib/integrations/company-providers.ts` — `threads` provider (`oauthConnect`, break-glass `fields`).
+- `src/app/(app)/settings/actions.ts` — `connectThreadsAction` (backend `/connections/threads/start`).
+- `src/app/api/connections/threads/callback/route.ts` — server-side `code`+`state` exchange.
+- `src/lib/integrations/threads-connect.ts` — connect-outcome vocabulary + notices.
+- `src/lib/services/index.ts` — `startThreadsConnect` / `completeThreadsConnect` service methods.

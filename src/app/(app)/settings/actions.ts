@@ -20,6 +20,7 @@ import {
 import { ServiceCallError, ServiceNotConfiguredError } from "@/lib/services/external-client";
 import { docusignTestResult, type DocusignTestResult } from "@/lib/integrations/docusign-test";
 import type { QboConnectResult } from "@/lib/integrations/qbo-connect";
+import type { ThreadsConnectResult } from "@/lib/integrations/threads-connect";
 import { connectorFor } from "@/lib/integrations/connector-registry";
 import { companySecretName } from "@/lib/integrations/kv-secret-name";
 import { PLATFORM_PROVIDERS, platformSecretName } from "@/lib/integrations/platform-providers";
@@ -546,5 +547,70 @@ export async function connectQuickBooksAction(formData: FormData) {
   if (authorizationUrl) redirect(authorizationUrl);
   const params = new URLSearchParams({ qbo: result });
   if (httpStatus) params.set("qboStatus", String(httpStatus));
+  redirect(`/settings/connections?${params.toString()}`);
+}
+
+/**
+ * Begin the company-wide Threads connect flow (#1500, backend BE #445 / ADR-0125 D1). This is
+ * the OAuth path for the Threads connector card — the normal way to obtain the long-lived Threads
+ * user token, replacing the break-glass token paste. It mirrors `connectQuickBooksAction`: no
+ * cookie (the backend parks a one-time CSRF `state` in Key Vault and embeds it in the
+ * Instagram-anchored Threads consent URL, validating it on the callback). We record a pending
+ * `threads` company row, then redirect the admin to the Threads login. When the backend isn't
+ * configured yet the row is recorded and we stay put with a notice (graceful degradation).
+ *
+ * Threads OAuth is graph.threads.net's OWN auth, SEPARATE from the Meta (graph.facebook.com)
+ * connection. The client_secret-bearing exchange runs server-side; the browser never holds the
+ * token (CLAUDE.md §1, ADR-0043).
+ */
+export async function connectThreadsAction(formData: FormData) {
+  await requireCapability("settings:write");
+  const providerKey = String(formData.get("provider") ?? "");
+  const provider = COMPANY_PROVIDERS.find((p) => p.key === providerKey);
+  if (!provider || provider.key !== "threads") return;
+
+  let authorizationUrl: string | null = null;
+  let status = "pending";
+  let result: ThreadsConnectResult = "ok";
+  let httpStatus: number | undefined;
+  try {
+    const res = await connectionsService.startThreadsConnect();
+    authorizationUrl = res.authorizationUrl ?? null;
+    if (!authorizationUrl) {
+      // 200 but no consent URL — the backend started nothing usable.
+      status = "error";
+      result = "start_no_url";
+    }
+  } catch (err) {
+    const kind = classifyServiceError(err);
+    if (kind === "not_configured") {
+      status = "pending";
+      result = "start_not_configured";
+    } else {
+      status = "error";
+      result = kind === "rejected" ? "start_rejected" : "start_unreachable";
+      if (err instanceof ServiceCallError) httpStatus = err.status;
+      // The connection row's bare "error" isn't enough to triage — log the real cause
+      // server-side (App Service console logs). Never contains token material.
+      console.error("connectThreadsAction: Threads connect start failed:", err);
+    }
+  }
+
+  const { connections } = getRepositories();
+  await connections.saveCompanyCredential({
+    provider: provider.key,
+    displayName: `Imperion ${provider.label}`,
+    scopes: provider.scopes,
+    // Canonical pending ref; the real OAuth token secret is minted by the backend callback
+    // under the same `conn-company-threads` name (ADR-0122 / ADR-0125 D1).
+    keyvaultSecretRef: companySecretName(provider.key),
+    status,
+  });
+  revalidatePath("/settings/connections");
+
+  // redirect() throws — keep redirects last, outside the try/catch.
+  if (authorizationUrl) redirect(authorizationUrl);
+  const params = new URLSearchParams({ threads: result });
+  if (httpStatus) params.set("threadsStatus", String(httpStatus));
   redirect(`/settings/connections?${params.toString()}`);
 }
