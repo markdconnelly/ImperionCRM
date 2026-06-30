@@ -25,3 +25,9 @@ The spine:
 
 Nothing here sends, writes silver, or commits a change. This workflow has no checkpoint
 because it has nothing to approve — every output is advisory and a human acts on it.
+
+The full human+machine SOP for this procedure (the B3 gather → synthesize → deliver
+contract, the launchpad-not-readout seam to 01-C/01-L, the dormancy posture) is the
+canonical SOP → `sop.md` (ADR-0136 A8). This prose stays the composed spine; `sop.md` is
+the canonical home. The control layer (§A invariants, the B3 archetype rule) is cited
+there from ADR-0136, never redefined.
