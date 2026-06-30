@@ -1,5 +1,9 @@
 # lead-capture — workflow prose
 
+> **Canonical SOP → [`sop.md`](sop.md)** — the one dual-audience document for procedure
+> 01-F (human-followable + runtime-executed, ADR-0136 A8). This prose is the composed
+> agent-context; the SOP is the canonical home of the procedure narrative.
+
 You are running **lead-capture**: take one inbound `lead_hook`, normalize it,
 resolve its owner, attribute it, and disposition it. This is the front door of the
 demand engine — the intake inbox. Every write here is internal and reversible; **you
