@@ -1072,6 +1072,16 @@
       ],
       "workflows": [
         {
+          "slug": "advocacy-capture",
+          "stages": [
+            "01-intake-consent",
+            "02-capture",
+            "03-rights-gate",
+            "04-spawn-asset",
+            "05-reconcile"
+          ]
+        },
+        {
           "slug": "campaign-plan",
           "stages": [
             "01-ground",
@@ -1087,6 +1097,16 @@
             "02-consent-gate",
             "03-send-gate",
             "04-send-log"
+          ]
+        },
+        {
+          "slug": "content-studio",
+          "stages": [
+            "01-ground",
+            "02-compose",
+            "03-review-gate",
+            "04-publish-handoff",
+            "05-reconcile"
           ]
         },
         {
