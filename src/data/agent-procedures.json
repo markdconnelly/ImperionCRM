@@ -1860,6 +1860,256 @@
           ]
         },
         {
+          "slug": "division-intake",
+          "title": "division-intake (Deputy CFO / Sterling, the division's pull-side router)",
+          "job": "receive a unit of work Nova delegated to the Revenue/Client/Finance division and route it to the **one** report who owns it — Chase (pipeline/new sales), Belle (demand/marketing), Celeste (existing-account success), Vance (procurement/vendor), Audrey (close/AR/AP/billing/time/expense), or Bridget (partnerships). Sterling routes and synthesizes; he **never actuates** and finance stays read-only — every real effect happens inside the report under its own gauntlet. This is the division-tier mirror of Nova's `intake-route` (the #1666 pull side of hierarchical routing: Nova → exec → worker).",
+          "trigger": "a unit `delegate`d to Sterling by Nova's `intake-route` (or a cross-division conflict routed here). Runs per delegated unit, not on a schedule.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "route + delegate to exactly one report when the intent maps unambiguously to a single division owner (Chase/Belle/Celeste/Vance/Audrey/Bridget), within the asking human's authority and one client/owner RLS scope. Ambiguous ownership, a unit spanning reports, a money/pricing/commitment effect, or anything exceeding authority parks for Nick. Sterling never actuates, finance stays read-only, and he never bypasses the report's gauntlet.",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "account",
+            "opportunity",
+            "invoice"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-receive",
+              "name": "receive",
+              "job": "take Nova's delegated unit and confirm it belongs to this division, then ground the minimal finance/revenue context needed to pick a report.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read Nova's delegated unit: the intent, the carried constraints (consent/budget/deadline/authority), and the already-resolved entities. Nova did the entity resolution — do not re-resolve."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Confirm the unit belongs to the Revenue/Client/Finance division. If it does not, mark it return-to-Nova (do not route it onward by guess)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the minimal finance/revenue context for the account(s) in scope — open opportunity / aging invoice signals that disambiguate which report owns it. Read-only; never write."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the thread via the retrieval tier; attach each item with its source reference. A miss is recorded as \"no recall,\" never guessed."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Delegated unit",
+                    "the `delegate` from Nova's `intake-route`",
+                    "the intent + carried constraints + resolved entities + asking-human authority",
+                    "what to route"
+                  ],
+                  [
+                    "Accounts",
+                    "silver `account` · `okf:account`",
+                    "the account(s) the unit concerns",
+                    "who the unit is about"
+                  ],
+                  [
+                    "Opportunities",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "open pipeline/renewal tied to the account",
+                    "is this a pipeline/renewal matter"
+                  ],
+                  [
+                    "Invoices",
+                    "silver `invoice` · `okf:invoice`",
+                    "open/aging tied to the account",
+                    "is this an AR/finance matter"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this thread's history",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`receipt.md` — the confirmed in-division unit (or a return-to-Nova flag), the carried intent + constraints + authority, the account(s) in scope, the disambiguating finance/revenue signals, and cited recall items (or \"no recall\").",
+              "audit": [
+                "The unit is confirmed in-division, or explicitly flagged return-to-Nova — never routed onward by guess",
+                "Carried constraints (consent/budget/deadline/authority) preserved from Nova's delegation",
+                "Entity references carry ids; none re-invented (Nova resolved them)",
+                "Every recall item carries a source reference; a miss is \"no recall,\" not a guess",
+                "Read-only — no financial record written, no money moved, nothing actuated"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-classify-route",
+              "name": "classify-route",
+              "job": "map the in-division unit to exactly one report, or flag a conflict when two reports could own it.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Map the intent to one report using the division seams: pipeline / new sales → **Chase**; demand / marketing → **Belle**; existing-account success / QBR / renewal relationship → **Celeste**; vendor / licensing / procurement → **Vance**; close / AR / AP / billing / time / expense → **Audrey**; channel / alliance / co-sell / MDF / referral → **Bridget**."
+                },
+                {
+                  "tag": "script",
+                  "text": "Apply the **most-restrictive authority bar**: if the unit turns on money, pricing, a discount, a term commitment, or otherwise exceeds the asking human's authority, mark it park-for-Nick (those levers are always-gated at the report tier, never auto-routed past the human queue)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Enforce **pool-never-bleed**: the route stays inside one client/owner RLS scope; no other client's or owner's data may surface (two-axis RLS)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "If two reports could genuinely own the unit, mark it a **conflict** (do not guess) — it surfaces for arbitration rather than a single delegate."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Receipt",
+                    "stage 01 `receipt.md`",
+                    "all",
+                    "the confirmed unit, intent, constraints, authority, signals"
+                  ]
+                ]
+              },
+              "outputs": "`route.md` — the chosen report (single owner) **or** a conflict/park flag, the one-line rationale tying intent → seam, the authority decision (route vs park-for- Nick), and the RLS scope the delegation must stay within.",
+              "audit": [
+                "Exactly one report named, OR an explicit conflict/park — never a guessed owner",
+                "Rationale ties the intent to a documented division seam",
+                "Most-restrictive authority bar applied; money/pricing/commitment marked park-for-Nick",
+                "Pool-never-bleed held; the RLS scope is stated"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-delegate",
+              "name": "delegate",
+              "job": "hand the unit to the one report chosen in stage 02, carrying every constraint — or transfer the in-flight thread via `handoff`. Sterling delegates; he does not actuate, and finance stays read-only.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "If stage 02 flagged a conflict or a park (money/commitment / over- authority), do **not** delegate — carry it to stage 04 for Nick's queue or for return to Nova."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Otherwise compose the delegation: the intent plus every constraint (consent, budget, deadline, the asking human's authority) and the RLS scope, so the report inherits the full picture."
+                },
+                {
+                  "tag": "script",
+                  "text": "`delegate` the unit to **exactly one** report (never fan it). Use `handoff` instead when an in-flight thread transfers wholesale."
+                },
+                {
+                  "tag": "script",
+                  "text": "Record the delegation/handoff and await the report's result. Sterling actuates nothing; finance stays read-only; the report acts under its own gauntlet."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Route decision",
+                    "stage 02 `route.md`",
+                    "the single report + RLS scope + authority decision",
+                    "who to hand to and within what bounds"
+                  ],
+                  [
+                    "Receipt",
+                    "stage 01 `receipt.md`",
+                    "intent + constraints",
+                    "what to carry so the report re-derives nothing"
+                  ]
+                ]
+              },
+              "outputs": "`delegation.md` — the report delegated to (or the parked conflict/park carried forward), the constraints handed across, and the report's returned result reference.",
+              "audit": [
+                "Exactly one report delegated to (or an explicit park/conflict carried forward) — never multiple for one unit",
+                "Every constraint from receipt carried (consent/budget/deadline/authority)",
+                "Sterling actuated nothing — only `delegate`/`handoff`; no send, write, or money move; finance read-only",
+                "The report's own gauntlet was not bypassed or lowered (ADR-0128)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "04-synthesize-return",
+              "name": "synthesize-return",
+              "job": "compose the report's result back up to Nova, carry the citations, and route any always-gated item to Nick's queue. The return to Nova is the checkpoint.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Compose the report's result into one concise return for Nova in Sterling's voice — lead with the answer; finance figures cited to source with an as-of, never smoothed."
+                },
+                {
+                  "tag": "script",
+                  "text": "Carry the report's citations through so Nova (and the human) can drill to the source. Any section the report could not ground is stated as \"no data,\" never filled in."
+                },
+                {
+                  "tag": "script",
+                  "text": "Route every always-gated item — money movement, a pricing/discount/term commitment — to **Nick's** single queue (the money queue, CONSTITUTION §5.4); these are never returned as \"done.\""
+                },
+                {
+                  "tag": "script",
+                  "text": "Return the result to Nova and park. No actuation — every real effect already happened (or parked) inside the report under its gauntlet; finance read-only."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Delegation result",
+                    "stage 03 `delegation.md`",
+                    "the report's returned result, or the parked conflict/park",
+                    "what to synthesize"
+                  ],
+                  [
+                    "Receipt",
+                    "stage 01 `receipt.md`",
+                    "the original intent + asking human",
+                    "answer the unit that was actually delegated"
+                  ]
+                ]
+              },
+              "outputs": "`return.md` — the synthesized result (cited) for Nova, plus any always-gated items routed to Nick's queue. The run ends here at the checkpoint; Sterling actuates nothing.",
+              "audit": [
+                "The return addresses the delegated unit; leads with the answer; figures cited with as-of",
+                "Citations carried through; any ungrounded section stated as \"no data,\" not invented",
+                "Always-gated items (money / pricing / commitment) routed to Nick's queue, never returned as done",
+                "Pool-never-bleed held — no other client's or owner's data surfaced (two-axis RLS)",
+                "No actuation occurred; finance stayed read-only — the run parked at the return to Nova"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "division-performance-review",
           "title": "division-performance-review (Deputy CFO / Revenue & Finance, executive oversight)",
           "job": "on a schedule, review how each of Sterling's direct reports (Chase, Belle, Celeste, Vance, Audrey, Bridget) is performing **against its business mandate** — is the agent advancing the revenue/client/finance outcome it owns — and brief Nick with a per-report scorecard, delegating a corrective where the gap is a business one and handing a governance concern up where it is not.",
