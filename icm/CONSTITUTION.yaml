@@ -102,6 +102,10 @@ okf_rooms:
                      #   pre-authorized standard-change template library (read)
   - strategic_business_review  # Client-Success workspace (#1442) — QBR/SBR
                                #   substrate Celeste reads for QBR-prep + health
+  - it_budget         # Client-Success workspace (#1688) — Celeste's per-client vCIO IT
+                      #   budget/forecast (the persisted store behind 08-H; was ephemeral).
+                      #   Propose-only, NO-COMMITS (spend never committed); write backend-owed.
+                      #   NOT the Finance company `budget` (#1718) (read)
   - contract           # Client-Success workspace (#1687) — agreement/expiry/terms
                        #   (kernel/op silver); Celeste reads it for renewal-readiness
                        #   (08-E) to ground on real renewal dates + terms (read)

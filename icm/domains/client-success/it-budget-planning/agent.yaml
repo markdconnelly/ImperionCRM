@@ -5,9 +5,9 @@ system_compose:                       # ordered; Constitution -> domain room -> 
   - ../room.md
   - ../celeste.md
   - ./prose.md
-okf_rooms: [account, contact, opportunity, strategic_business_review]   # subset of domains/client-success/room.yaml; NO financial rooms — cost is an Audrey handoff
-tools: [pg.read]                                                        # read-only; the drafted budget parks (no commit, no send)
+okf_rooms: [account, contact, opportunity, strategic_business_review, it_budget]   # subset of domains/client-success/room.yaml; NO financial rooms (cost is an Audrey handoff); it_budget = the persisted prior budget Celeste reads + proposes into (#1688, write backend-owed)
+tools: [pg.read]                                                        # read-only; the drafted budget parks (no commit, no send); the it_budget WRITE is the backend it-budget executor, never a direct silver write here
 skills:
   - ./skills/budget-rubric             # Tier 3 — workflow-local (budget structure + forecast method + Audrey-handoff discipline)
 autonomy_rung: L1
-auto_may_self_approve: "nothing leaves and nothing commits — this is L1 propose-only. The drafted IT budget plan + forecast parks for a human in every mode; spend is a recommendation, never an executed commitment (the NO-COMMITS-EVER ceiling is dial-proof, celeste.md guardrail 1). Celeste reads no financials directly: cost figures arrive as an Audrey read-only handoff."
+auto_may_self_approve: "nothing leaves and nothing commits — this is L1 propose-only. The drafted IT budget plan + forecast PERSISTS to the `it_budget` silver store (#1688) — but the WRITE is the backend it-budget executor (approval-gated, never a direct silver write here), and the proposed budget parks for a human in every mode; spend is a recommendation, never an executed commitment (NO-COMMITS-EVER is dial-proof — persistence ≠ commitment, celeste.md guardrail 1). Celeste reads no financials directly: cost figures arrive as an Audrey read-only handoff."

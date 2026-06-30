@@ -1215,6 +1215,7 @@
         "strategic_business_review",
         "lead_score",
         "consent_event",
+        "it_budget",
         "contract",
         "cloud_asset",
         "device",

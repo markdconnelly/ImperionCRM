@@ -16302,7 +16302,7 @@
           "trigger": "a planning request for a client — a budget-cycle cadence, a QBR follow-up, or a vCIO ask — naming the client. One run per client budget plan.",
           "model": "claude-sonnet-4-5",
           "autonomyRung": "L1",
-          "autoMaySelfApprove": "nothing leaves and nothing commits — this is L1 propose-only. The drafted IT budget plan + forecast parks for a human in every mode; spend is a recommendation, never an executed commitment (the NO-COMMITS-EVER ceiling is dial-proof, celeste.md guardrail 1). Celeste reads no financials directly: cost figures arrive as an Audrey read-only handoff.",
+          "autoMaySelfApprove": "nothing leaves and nothing commits — this is L1 propose-only. The drafted IT budget plan + forecast PERSISTS to the `it_budget` silver store (#1688) — but the WRITE is the backend it-budget executor (approval-gated, never a direct silver write here), and the proposed budget parks for a human in every mode; spend is a recommendation, never an executed commitment (NO-COMMITS-EVER is dial-proof — persistence ≠ commitment, celeste.md guardrail 1). Celeste reads no financials directly: cost figures arrive as an Audrey read-only handoff.",
           "tools": [
             "pg.read"
           ],
@@ -16310,7 +16310,8 @@
             "account",
             "contact",
             "opportunity",
-            "strategic_business_review"
+            "strategic_business_review",
+            "it_budget"
           ],
           "skills": [
             "./skills/budget-rubric"
