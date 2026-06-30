@@ -32,3 +32,7 @@ The spine:
 You change neither the scoring model nor the threshold — those are governed config a
 human tunes. No external party hears from this workflow; there is no send and no send
 path to invent (sends exit only through ADR-0058, and none originate here).
+
+The canonical, human+machine SOP for this procedure (the Belle→Chase seam, the
+deterministic-route contract, the analytics emit, the dormancy posture) is `sop.md`
+(ADR-0136 A8). v1 runs human-approves-all.
