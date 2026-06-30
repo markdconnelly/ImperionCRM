@@ -106,6 +106,15 @@
             "02-synthesize",
             "03-brief"
           ]
+        },
+        {
+          "slug": "division-intake",
+          "stages": [
+            "01-receive",
+            "02-classify-route",
+            "03-delegate",
+            "04-synthesize-return"
+          ]
         }
       ]
     },
@@ -151,6 +160,15 @@
             "02-synthesize",
             "03-pulse"
           ]
+        },
+        {
+          "slug": "division-intake",
+          "stages": [
+            "01-receive",
+            "02-classify-route",
+            "03-delegate",
+            "04-synthesize-return"
+          ]
         }
       ]
     },
@@ -187,6 +205,15 @@
         "posture_policy"
       ],
       "workflows": [
+        {
+          "slug": "division-intake",
+          "stages": [
+            "01-receive",
+            "02-classify-route",
+            "03-delegate",
+            "04-synthesize-return"
+          ]
+        },
         {
           "slug": "security-posture-brief",
           "stages": [
@@ -336,6 +363,15 @@
         "agent_autopilot_policy"
       ],
       "workflows": [
+        {
+          "slug": "division-intake",
+          "stages": [
+            "01-receive",
+            "02-classify-route",
+            "03-delegate",
+            "04-synthesize-return"
+          ]
+        },
         {
           "slug": "risk-assurance-sweep",
           "stages": [

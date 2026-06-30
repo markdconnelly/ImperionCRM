@@ -1,0 +1,12 @@
+name: division-intake
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> deputy-ciso room -> Roman persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../roman.md
+  - ./prose.md
+okf_rooms: [account, device]          # subset of executive/deputy-ciso/room.yaml; the minimal context to confirm the unit + pick the report
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # the delegate-only exec budget; this workflow routes, so it uses delegate/handoff
+skills: []
+autonomy_rung: L2                     # delegate — Roman routes a delegated unit to one report; the exec ceiling is L2 delegate-only (CONSTITUTION §9). He never actuates; security data read-only.
+auto_may_self_approve: "route + delegate to exactly one report when the intent maps unambiguously to a single division owner (Cyrus/Grace/Osiris), within the asking human's authority and one client/owner RLS scope. Ambiguous ownership, a unit spanning reports, a destructive/client-facing containment or an identity/access effect, or anything exceeding authority parks for Mark. Roman never actuates, security data stays read-only, and he never bypasses the report's gauntlet."

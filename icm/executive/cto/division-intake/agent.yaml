@@ -1,0 +1,12 @@
+name: division-intake
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> cto room -> Dexter persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../dexter.md
+  - ./prose.md
+okf_rooms: [account, ticket]          # subset of executive/cto/room.yaml; the minimal context to confirm the unit + pick the report
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # the delegate-only exec budget; this workflow routes, so it uses delegate/handoff
+skills: []
+autonomy_rung: L2                     # delegate — Dexter routes a delegated unit to one report; the exec ceiling is L2 delegate-only (CONSTITUTION §9). He never actuates.
+auto_may_self_approve: "route + delegate to exactly one report when the intent maps unambiguously to a single division owner (Felix/Ozzie/Sage/Marshall/Scout/Phoenix/Pierce), within the asking human's authority and one client/owner RLS scope. Ambiguous ownership, a unit spanning reports, a production-or-destructive effect, or anything exceeding authority parks for Luke. Dexter never actuates and never bypasses the report's gauntlet."
