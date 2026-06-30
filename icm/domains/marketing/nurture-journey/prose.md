@@ -30,3 +30,7 @@ The spine:
 
 Money never enters this workflow — a boost or ad is a different procedure (01-B/01-C)
 and always a human's call. Sends exit only through ADR-0058.
+
+The canonical, human+machine SOP for this procedure (the per-send 01-I delegation, the
+folded audience-segment step, the seams, the dormancy posture) is `sop.md` (ADR-0136 A8).
+v1 runs human-approves-all; the send-gate feedback is what earns the dial.
