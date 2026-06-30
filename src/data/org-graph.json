@@ -815,11 +815,28 @@
       ],
       "workflows": [
         {
+          "slug": "call-capture",
+          "stages": [
+            "01-ground",
+            "02-extract",
+            "03-park-log"
+          ]
+        },
+        {
           "slug": "close-won-handoff",
           "stages": [
             "01-detect-stamp",
             "02-emit-delivery",
             "03-emit-relationship"
+          ]
+        },
+        {
+          "slug": "expansion-qualify",
+          "stages": [
+            "01-ground",
+            "02-qualify",
+            "03-stamp-route",
+            "04-log"
           ]
         },
         {
@@ -838,6 +855,15 @@
             "01-qualify-confirm",
             "02-create-document",
             "03-summary-handoff"
+          ]
+        },
+        {
+          "slug": "pipeline-hygiene",
+          "stages": [
+            "01-scan",
+            "02-triage",
+            "03-flag-or-stamp",
+            "04-route-log"
           ]
         },
         {
@@ -875,6 +901,14 @@
             "02-research",
             "03-draft-reply",
             "04-review-send"
+          ]
+        },
+        {
+          "slug": "speed-to-lead-sentinel",
+          "stages": [
+            "01-watch",
+            "02-assess",
+            "03-escalate-deliver"
           ]
         },
         {

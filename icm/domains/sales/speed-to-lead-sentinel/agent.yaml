@@ -1,0 +1,12 @@
+name: speed-to-lead-sentinel
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [lead_score, contact, account, interaction]   # subset of domains/sales/room.yaml
+tools: [pg.read, knowledge.search, memory.recall]        # subset of domains/sales/room.yaml — read-only; no send, no write, pure sentinel
+skills: []
+autonomy_rung: L1
+auto_may_self_approve: "nothing self-actuates — this workflow only watches the speed-to-lead SLA clock and produces + documents the internal SLA watch-list/escalation; every owner-nudge or customer-facing first-touch parks and routes to lead-response (02-A1). No send, no write, no commitment. Cross-account SLA-breach patterns are anonymized/aggregated only — pool, never bleed (A7)."

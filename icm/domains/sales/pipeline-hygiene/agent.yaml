@@ -1,0 +1,14 @@
+name: pipeline-hygiene
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Chase persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../chase.md
+  - ./prose.md
+okf_rooms: [opportunity, account, contact, interaction]   # subset of domains/sales/room.yaml
+tools: [pg.read, knowledge.search, memory.recall, opportunity.write]   # subset of domains/sales/room.yaml
+skills:
+  - domains/sales/skills/voice-and-tone     # Tier 2 — domain-shared
+  - ./skills/hygiene-rules                   # Tier 3 — workflow-local
+autonomy_rung: L1
+auto_may_self_approve: "Only the INTERNAL reversible data-quality stamp (via opportunity.write — e.g. setting a missing internal field) may self-execute at L2 once admin-flipped to auto; it has no customer-facing effect. Every customer-facing follow-up routes to pursue-opportunity (02-A3) and re-inherits that workflow's always_gate — none sends here. Any pricing/discount/term assertion and any send-for-signature are never this workflow's to make (ADR-0128, BO-02 §5)."
