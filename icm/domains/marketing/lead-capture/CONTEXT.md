@@ -1,5 +1,9 @@
 # Workflow: lead-capture (marketing v1)
 
+> **Canonical SOP → [`sop.md`](sop.md)** — the one dual-audience document for procedure
+> 01-F (human-followable + runtime-executed, ADR-0136 A8). This `CONTEXT.md` is the routing
+> manifest; the SOP is the canonical home of the procedure narrative.
+
 **Job:** take one inbound `lead_hook`, normalize its source/UTM/consent, resolve
 its owner against the contact kernel, stamp the multi-touch attribution touch, and
 disposition it — enqueue for scoring or, if the source already implies MQL-grade
