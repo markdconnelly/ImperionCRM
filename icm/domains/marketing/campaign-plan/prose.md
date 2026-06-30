@@ -34,3 +34,8 @@ The spine:
 
 Money never gets committed in this workflow — the spend is a different procedure
 (01-B/01-C) and always a human's call. Sends exit only through ADR-0058.
+
+The full human+machine SOP for this procedure (the orchestrating-container contract, the
+plan-gate, the seams to 01-A/01-H/01-I/01-B/01-K, and the dormancy posture) is the
+canonical `sop.md` (ADR-0136 A8). This prose is single-sourced there; `sop.md` is the
+canonical home.
