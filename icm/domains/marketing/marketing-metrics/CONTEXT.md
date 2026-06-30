@@ -35,3 +35,12 @@ Cross-client benchmarks are anonymized/aggregated only — **pool, never bleed**
 None. This workflow grounds entirely on the metric read-model + its OKF rooms; it composes no
 domain- or workflow-tier runtime skill. Rules of the format: `../../../CONVENTIONS.md`. The
 structured manifest is `agent.yaml`; the composed workflow prose is `prose.md`.
+
+## SOP (the dual-audience document)
+
+The full human+machine SOP for this procedure — frontmatter procedure-object + the end-to-end
+runnable B3 steps (gather → synthesize → deliver), the launchpad-not-readout seam to 01-C/01-L,
+the learning on-ramp, and the dormancy posture — is the canonical SOP → [`sop.md`](sop.md)
+(ADR-0136 A8; following the template-defining exemplar, social-inbox #1759). This `CONTEXT.md`
+stays the thin routing surface; `sop.md` is the canonical prose. The control layer (§A
+invariants, the B3 archetype rule) is cited there from ADR-0136, never redefined.
