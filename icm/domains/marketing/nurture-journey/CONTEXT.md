@@ -34,6 +34,15 @@ escalate to the human queue in every mode). **Opt-out and frequency caps are har
 stops at send time** — a per-recipient filter, never advisory (BO-01 §5). Money never
 enters this workflow.
 
+## SOP (the dual-audience document)
+
+The full human+machine SOP for this procedure — frontmatter procedure-object + the
+end-to-end runnable steps, the per-send delegation to 01-I, the folded audience-segment
+step, the learning on-ramp, and the dormancy posture — is [`sop.md`](sop.md) (ADR-0136 A8;
+mirroring the template-defining exemplar 01-D, #1759). This `CONTEXT.md` stays the thin
+routing surface; `sop.md` is the canonical prose. The control layer (§A invariants, the
+B7 archetype rule) is cited there from ADR-0136, never redefined.
+
 ## Runtime skills
 
 Domain-shared (Tier 2, `../skills/`): `brand-voice.md` (every marketing draft sounds
