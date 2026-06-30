@@ -68,6 +68,23 @@ export interface CompanyProvider {
    * "Grant admin consent" button alongside the credential form.
    */
   adminConsent?: boolean;
+  /**
+   * A `kind: "credential"` provider whose token is normally acquired through an OAuth
+   * authorization-code connect (Threads, #1500) — NOT a hand-pasted token. Unlike a
+   * `kind: "consent"` provider (QBO has no secret to paste), this provider keeps its
+   * `fields` as a clearly-labelled **break-glass** paste fallback while the OAuth
+   * "Connect" button is the normal path. When set, the card renders a connect button
+   * (driving the backend `/start` → provider-consent redirect → `/callback` exchange,
+   * the QBO precedent) ABOVE the break-glass paste form. The button label is
+   * {@link connectLabel}. Token custody stays in Key Vault (the browser never holds it).
+   */
+  oauthConnect?: boolean;
+  /**
+   * Label for the OAuth connect button (when {@link oauthConnect}), e.g.
+   * "Connect with Threads". The QBO consent button has its own hard-coded label;
+   * this drives the credential-provider connect button.
+   */
+  connectLabel?: string;
 }
 
 /**
@@ -434,13 +451,22 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
     // stays dormant/fail-closed until this secret exists AND Meta App Review clears (mirrors the
     // Meta DM send precedent, pipeline #89 / PR #113). Entering it is a Mark-approved security event.
     sendCapable: true,
+    // OAuth connect is the normal path (#1500): the long-lived Threads user token is acquired through
+    // the Instagram-anchored Threads OAuth (the QBO consent precedent — backend /start → consent
+    // redirect → /callback exchange, ADR-0048/0102), NOT a hand-pasted token. The `fields` below stay
+    // ONLY as a labelled break-glass fallback. graph.threads.net OAuth is its OWN auth, separate from
+    // the Meta (graph.facebook.com) integration (ADR-0125 D1).
+    oauthConnect: true,
+    connectLabel: "Connect with Threads",
     description:
-      "Threads organic management — long-lived Threads user token (graph.threads.net, its OWN OAuth, " +
-      "separate from the Meta Facebook/Instagram integration) used to post, reply, monitor mentions, " +
-      "and read insights for our own Threads presence. SEND-CAPABLE: entering it is a Mark-approved " +
-      "security event (Meta App Review of the Threads use case must be granted first). Stored as the " +
-      "Key Vault secret conn-company-threads; the outbound path stays dormant until it exists and " +
-      "review clears.",
+      "Threads organic management — post, reply, monitor mentions, and read insights for our own " +
+      "Threads presence. Connect with Threads via the Instagram-anchored Threads login (graph.threads.net, " +
+      "its OWN OAuth — SEPARATE from the Meta Facebook/Instagram connection, which yields no Threads token). " +
+      "The backend exchanges the consent code for a long-lived Threads user token and custodies it in Key " +
+      "Vault as conn-company-threads — the token never touches the browser or the database. SEND-CAPABLE: " +
+      "connecting is a Mark-approved security event (Meta App Review of the Threads use case must be granted " +
+      "first); the outbound path stays dormant until the token lands and review clears. A manual token paste " +
+      "is kept as a break-glass fallback only.",
     // The six App Review scopes for the Threads use case (display/audit only): read paths drive
     // ingest (S2/S3); write paths (content_publish / manage_replies) drive the dormant outbound.
     scopes: [
@@ -451,23 +477,26 @@ export const COMPANY_PROVIDERS: CompanyProvider[] = [
       "threads_manage_mentions",
       "threads_manage_insights",
     ],
+    // Break-glass ONLY (#1500): the normal path is "Connect with Threads" (oauthConnect) above.
+    // These fields stay so an operator who already holds a long-lived token can paste it if the
+    // OAuth connect is unavailable. Token custody is still Key Vault; the DB only holds a reference.
     fields: [
       {
         name: "userToken",
-        label: "Threads user token",
+        label: "Threads user token (break-glass)",
         secret: true,
         type: "password",
         required: true,
-        help: "Long-lived Threads user access token (graph.threads.net) granting the six threads_* scopes. Written to Key Vault, never the DB.",
+        help: "Break-glass fallback only — prefer Connect with Threads above. Long-lived Threads user access token (graph.threads.net) granting the six threads_* scopes. Written to Key Vault, never the DB.",
       },
       {
         name: "threadsUserId",
-        label: "Threads user ID",
+        label: "Threads user ID (break-glass)",
         secret: false,
         type: "text",
         required: true,
         placeholder: "1234567890",
-        help: "The Threads account id the token acts for (the `me` user id on graph.threads.net).",
+        help: "Break-glass fallback only. The Threads account id the token acts for (the `me` user id on graph.threads.net).",
       },
     ],
   },

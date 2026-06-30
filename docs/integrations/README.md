@@ -212,6 +212,7 @@ the authoritative list (verified against source):
 | `qbo` | OAuth connect | none — "Connect QuickBooks" (Intuit OAuth; read-only; see §6.2) |
 | `darkwebid` | Credential | API key\* — Kaseya / ID Agent Dark Web ID compromised-credential monitoring |
 | `meta` | Credential (**send-capable**) | Access token\*, Facebook Page ID — ONE secret spanning FB Page + Instagram + Messenger + Ads, rendered as Meta Social / Meta Ads views (see §6.1) |
+| `threads` | OAuth connect (**send-capable**) | **Connect with Threads** (Instagram-anchored Threads OAuth; see §6.3) — token\* custodied as `conn-company-threads`. Manual token paste kept as break-glass only. |
 
 \* write-only secret — stored in Key Vault, never returned to the client.
 
@@ -301,6 +302,58 @@ instead of the row's bare `error`. The full result vocabulary lives in
 Hard failures (`start_rejected` / `exchange_failed` / `start_unreachable`) are also
 `console.error`'d server-side (App Service console logs) for triage — **never** with
 token material.
+
+### 6.3 Threads connect (`threads`, OAuth — ADR-0125 D1 / backend BE #445)
+
+The Threads connector is the company's own Threads presence (post · reply · mentions · insights,
+epic #1334). Its long-lived **Threads user token** is acquired through the **Instagram-anchored
+Threads OAuth** — a **Connect with Threads** button, *not* a hand-pasted token (#1500). This is
+**graph.threads.net's OWN OAuth, SEPARATE from the Meta (graph.facebook.com) connection** — the
+Meta card surfaces Instagram but yields **no** Threads token, so Threads needs its own connect
+flow. It mirrors the QBO company-consent round-trip exactly (the only company-scope OAuth
+precedent):
+
+1. **Connect with Threads** → `connectThreadsAction` → `connectionsService.startThreadsConnect()`
+   → backend `POST /connections/threads/start` parks a one-time CSRF `state` in Key Vault and
+   returns the Instagram-anchored Threads consent URL (six `threads_*` scopes) → the admin is
+   redirected to the Threads login.
+2. The Threads login redirects back to **`/api/connections/threads/callback`** with `code` + `state`
+   (or `error=` when the admin cancels → `denied`). The route (session + `settings:write`,
+   `GET`|`POST`) forwards them to backend `POST /connections/threads/callback`, which validates the
+   state, exchanges the code for a short-lived token, **upgrades it to the long-lived 60-day token**,
+   and writes it to `conn-company-threads`. The `threads` company row flips to `active`.
+3. The `client_secret`-bearing exchange runs **server-side only** — the browser never holds the
+   token or the secret (CLAUDE.md §1, ADR-0043). No cookie is used (the backend owns the CSRF state,
+   like QBO). This route is **distinct** from the per-user `/api/connections/[provider]/callback`
+   because Threads is **company-scoped** (the QBO precedent), not per-user.
+
+This is a distinct route from QBO/per-user OAuth: `connections/threads/start|callback`. The
+**manual token paste fields stay on the card as a break-glass fallback only** (clearly labelled
+"break-glass") for an operator who already holds a long-lived token. Because nothing *polls* a send
+token, the card shows **no poll cadence and no Refresh button** (`sendCapable: true`).
+
+**Connect outcomes.** Both the start action and the callback land on
+`/settings/connections?threads=<result>` (with `&threadsStatus=<httpStatus>` when the backend
+answered with an HTTP code), and the page renders a specific notice. The vocabulary mirrors QBO and
+lives in `src/lib/integrations/threads-connect.ts`:
+
+| `threads` code | When | Tone |
+| --- | --- | --- |
+| `ok` | token exchanged, row active | success |
+| `start_not_configured` / `stubbed` | backend returned 501 (Threads app / App Review pending) | warning |
+| `denied` | admin cancelled consent at the Threads login | warning |
+| `start_rejected` (+`threadsStatus`) | `start` got a non-2xx from the backend | error |
+| `invalid` | callback missing `code`/`state`, or backend 400 (bad/expired state) | error |
+| `exchange_failed` (+`threadsStatus`) | callback: backend 502, Threads refused the code exchange | error |
+| `start_unreachable` | `start` got no usable answer (network / timeout) | error |
+| `start_no_url` | `start` returned 200 but no consent URL | error |
+| `forbidden` | caller lacked `settings:write` | error |
+| `error` | anything else | error |
+
+**Dormant / fail-closed.** The outbound publish/reply path stays dormant until the token lands **and**
+Meta App Review clears the `threads_content_publish` / `threads_manage_replies` scopes (ADR-0125 D5).
+Connecting is a **Mark-approved security event**. The token lives in Key Vault as
+`conn-company-threads`, referenced by name only — **never** in code or the DB (CLAUDE.md §5).
 
 ---
 

@@ -817,6 +817,31 @@ export const connectionsService = {
       { method: "POST", body: JSON.stringify(input) },
     ),
   /**
+   * Begin the company-wide Threads connect flow (#1500, backend BE #445 / ADR-0125 D1).
+   * Company-scoped — no userId; the backend parks a one-time CSRF state in Key Vault and
+   * returns the Instagram-anchored Threads consent URL (with that state embedded). Mirrors
+   * the QBO company-consent flow (ADR-0048/0102). 501 when the Threads app isn't configured.
+   */
+  startThreadsConnect: () =>
+    callService<{ authorizationUrl: string; state: string }>(
+      services.integration,
+      "/connections/threads/start",
+      { method: "POST", body: JSON.stringify({}) },
+    ),
+  /**
+   * Forward the Threads redirect (code + state) for the one-time exchange. The backend
+   * validates the Key Vault state, exchanges the code for a short-lived token, upgrades it
+   * to the long-lived (60-day) Threads user token, and writes `conn-company-threads`. The
+   * client_secret-bearing exchange runs server-side only — the browser never holds the
+   * token (CLAUDE.md §1, ADR-0043). 400 bad/expired state, 501 not configured, 502 exchange failed.
+   */
+  completeThreadsConnect: (input: { code: string; state: string }) =>
+    callService<{ configured: boolean; status: string; threadsUserId?: string }>(
+      services.integration,
+      "/connections/threads/callback",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+  /**
    * Begin the one-time DocuSign admin-consent flow (#862, backend #192). Company-scoped;
    * the backend builds the consent URL for the configured environment's OAuth host
    * (`account-d` demo / `account` prod). JWT-grant impersonation refuses every mint until

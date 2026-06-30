@@ -27,8 +27,13 @@ import { getClientMappingAdapter } from "@/lib/integrations/client-mapping";
 import { isRefreshable } from "@/lib/integrations/connector-registry";
 import { QBO_CONNECT_NOTICES, isQboConnectResult } from "@/lib/integrations/qbo-connect";
 import {
+  THREADS_CONNECT_NOTICES,
+  isThreadsConnectResult,
+} from "@/lib/integrations/threads-connect";
+import {
   connectDocusignAction,
   connectQuickBooksAction,
+  connectThreadsAction,
   purgeCredentialAction,
   refreshNowAction,
   saveCredentialAction,
@@ -81,12 +86,35 @@ function QboConnectNotice({ qbo, status }: { qbo?: string; status?: string }) {
   );
 }
 
+/**
+ * One-shot notice for a Threads company-connect outcome (#1500). Both `connectThreadsAction`
+ * and `/api/connections/threads/callback` land on `/settings/connections?threads=<result>`
+ * (with optional `&threadsStatus=<httpStatus>`). Mirrors the QBO connect notice.
+ */
+function ThreadsConnectNotice({ threads, status }: { threads?: string; status?: string }) {
+  if (!threads || !isThreadsConnectResult(threads)) return null;
+  const notice = THREADS_CONNECT_NOTICES[threads];
+  return (
+    <p
+      role="status"
+      className={`rounded-md border bg-panel-2 px-3 py-2 text-sm ${NOTICE_TONE[notice.tone]}`}
+    >
+      {notice.message(status)}
+    </p>
+  );
+}
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ qbo?: string; qboStatus?: string }>;
+  searchParams: Promise<{
+    qbo?: string;
+    qboStatus?: string;
+    threads?: string;
+    threadsStatus?: string;
+  }>;
 }) {
-  const { qbo, qboStatus } = await searchParams;
+  const { qbo, qboStatus, threads, threadsStatus } = await searchParams;
   const roles = await getSessionRoles();
   // Admin-only (ADR-0030) — this surface collects credentials, so it carries the Settings gate.
   if (!canSeeSettings(roles)) redirect("/");
@@ -149,6 +177,7 @@ export default async function ConnectionsPage({
       </PageHeader>
 
       <QboConnectNotice qbo={qbo} status={qboStatus} />
+      <ThreadsConnectNotice threads={threads} status={threadsStatus} />
 
       <div className="flex items-start gap-2 rounded-md border border-border bg-panel-2 px-3 py-2 text-xs text-dim">
         <Icon name="ShieldCheck" size={13} className="mt-0.5 shrink-0 text-accent" />
@@ -188,7 +217,9 @@ export default async function ConnectionsPage({
                 refreshable={isRefreshable(model.key)}
                 mappingAdapterExists={getClientMappingAdapter(model.key) != null}
                 saveAction={saveCredentialAction}
-                connectAction={connectQuickBooksAction}
+                connectAction={
+                  model.key === "threads" ? connectThreadsAction : connectQuickBooksAction
+                }
                 consentAction={model.key === "docusign" ? connectDocusignAction : undefined}
                 testAction={model.key === "docusign" ? testDocusignConnectionAction : undefined}
                 disconnectAction={purgeCredentialAction}
