@@ -98,3 +98,70 @@ export function inferConnectionHealth(input: {
   }
   return { tone: "green", label: "Healthy", detail: `Last sync ${ago(ageMs)}.` };
 }
+
+/** Default pre-lapse warning window for an expiring token (FE #1502 — ≤7 days = amber). */
+export const TOKEN_EXPIRY_WARN_DAYS = 7;
+
+/** A coarse human "in N days/hours" for a future expiry. */
+function until(deltaMs: number): string {
+  const min = Math.max(0, Math.round(deltaMs / 60000));
+  if (min < 60) return `in ${min}m`;
+  const hr = Math.round(min / 60);
+  if (hr < 48) return `in ${hr}h`;
+  return `in ${Math.round(hr / 24)}d`;
+}
+
+/**
+ * Inferred lifecycle health for a self-expiring OAuth token (FE #1502, epic #1334, ADR-0102 /
+ * ADR-0125). The long-lived Threads user token expires 60 days after issue and must be refreshed
+ * by the secret-bearing backend/LocalPipeline job (token ≥24h old) — the browser never holds the
+ * token, it only READS the issued/expires timestamps and surfaces a verdict (CLAUDE.md §1/§5).
+ *
+ * The verdict degrades HONESTLY: until the backend exposes `expiresAt` (its absence is the state
+ * today — `connections/threads/status` returns only `{ configured }`) the card shows
+ * "Expiry unknown" rather than a false-green. It lights up the moment the backend provides them.
+ *
+ * PURE / edge-safe: time injected (`nowMs`) for deterministic tests, computed server-side.
+ */
+export function inferTokenExpiryHealth(input: {
+  /** ISO issued-at, or null/absent when the backend does not (yet) expose it. */
+  issuedAt: string | null;
+  /** ISO expires-at, or null/absent when the backend does not (yet) expose it. */
+  expiresAt: string | null;
+  /** Pre-lapse warning window in days (default {@link TOKEN_EXPIRY_WARN_DAYS}). */
+  warnWithinDays?: number;
+  nowMs?: number;
+}): HealthVerdict {
+  const nowMs = input.nowMs ?? Date.now();
+  const warnDays = input.warnWithinDays ?? TOKEN_EXPIRY_WARN_DAYS;
+  const expMs = parseMs(input.expiresAt);
+
+  if (expMs == null) {
+    return {
+      tone: "dim",
+      label: "Expiry unknown",
+      detail:
+        "Token lifetime isn't reported yet — the backend doesn't expose this token's expiry. Reconnect to refresh.",
+    };
+  }
+
+  const remainingMs = expMs - nowMs;
+  if (remainingMs <= 0) {
+    return {
+      tone: "red",
+      label: "Expired",
+      detail: `Token expired ${ago(-remainingMs)} — reconnect to mint a fresh one.`,
+    };
+  }
+
+  const warnMs = warnDays * 24 * 60 * 60000;
+  if (remainingMs <= warnMs) {
+    return {
+      tone: "amber",
+      label: "Expiring soon",
+      detail: `Token expires ${until(remainingMs)} — reconnect or let the refresh job renew it.`,
+    };
+  }
+
+  return { tone: "green", label: "Token valid", detail: `Token expires ${until(remainingMs)}.` };
+}

@@ -350,6 +350,29 @@ lives in `src/lib/integrations/threads-connect.ts`:
 | `forbidden` | caller lacked `settings:write` | error |
 | `error` | anything else | error |
 
+**Token expiry + 60-day refresh health (FE #1502).** The long-lived Threads user token **expires 60
+days after issue**; if it lapses the whole Threads workflow (publish · reply · mentions · insights)
+silently goes dark. The connector card therefore surfaces the token's lifecycle:
+
+- **Token issued / Token expires** rows (`connection.tokenIssuedAt` / `tokenExpiresAt` — ISO
+  timestamps only, **never the token**, §5) and a **health badge** computed by
+  `inferTokenExpiryHealth` (`src/lib/integrations/connection-health.ts`):
+  - **Token valid** (green) — expires beyond the warning window.
+  - **Expiring soon** (amber) — expires within **≤7 days** (`TOKEN_EXPIRY_WARN_DAYS`); a pre-lapse
+    warning banner fires so an operator can **reconnect** (re-mint via the OAuth flow above) or let
+    the refresh job renew it.
+  - **Expired** (red) — past expiry; reconnect to mint a fresh token.
+  - **Expiry unknown** (dim) — the **honest default today**: the backend
+    `GET /connections/threads/status` returns only `{ configured }` and the `connection` table has
+    no expiry column, so the card degrades to "Expiry unknown" rather than a false-green. It lights
+    up automatically once the backend reports `issuedAt`/`expiresAt`.
+- **The refresh itself is NOT in the browser.** Renewal calls
+  `GET https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=…`
+  (token must be **≥24h old and unexpired**), which is secret-bearing token custody → a scheduled
+  **backend / LocalPipeline** job (the dependency issue, paired with the BE exchange endpoint from
+  #1500). The front end only **reads and surfaces** the health (ADR-0042 — GUI reads to render; all
+  processes call the backend).
+
 **Dormant / fail-closed.** The outbound publish/reply path stays dormant until the token lands **and**
 Meta App Review clears the `threads_content_publish` / `threads_manage_replies` scopes (ADR-0125 D5).
 Connecting is a **Mark-approved security event**. The token lives in Key Vault as

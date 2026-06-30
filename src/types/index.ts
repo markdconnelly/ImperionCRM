@@ -2673,6 +2673,12 @@ export interface ConnectionRow {
   authMethod: string | null; // certificate|secret (enterprise app); null for OAuth
   certThumbprint: string | null; // cert id when authMethod=certificate (public, not a secret)
   clientId: string | null; // Entra app (client) id of the client tenant's own app registration (per-client-app, #943); public identifier, never a secret
+  // Self-expiring OAuth token lifecycle (FE #1502, epic #1334). Timestamps ONLY — never the token
+  // (that stays in Key Vault, §5). Known at exchange time; null until the backend exposes them
+  // (the state today — `connections/threads/status` returns only `{ configured }`), so the Threads
+  // card degrades to "Expiry unknown" rather than a false-green and lights up when they arrive.
+  tokenIssuedAt: string | null; // ISO issued-at of the long-lived token, or null when unreported
+  tokenExpiresAt: string | null; // ISO expires-at (Threads = issued + 60d), or null when unreported
 }
 
 /** A row in an account's external identity map. */

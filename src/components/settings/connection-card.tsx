@@ -149,6 +149,7 @@ function ChainIcons({ steps }: { steps: ConnectorChainStep[] }) {
 export function ConnectionCard({
   model,
   health,
+  tokenHealth,
   capabilities,
   chain,
   refreshable = false,
@@ -164,6 +165,13 @@ export function ConnectionCard({
   model: ConnectionCardModel;
   /** Inferred health verdict (server-computed, ADR-0122 S2). */
   health: HealthVerdict;
+  /**
+   * Token-expiry lifecycle verdict for a self-expiring OAuth token (Threads, FE #1502). When
+   * present, the card surfaces issued/expires + a health badge and a pre-lapse warning. Absent for
+   * connectors with no self-expiring token. FE only READS/surfaces — the secret-bearing 60-day
+   * refresh job is a backend/LocalPipeline concern (CLAUDE.md §1/§5).
+   */
+  tokenHealth?: HealthVerdict;
   /** What the connector ingests/writes/enriches, from its manifest (null when no manifest). */
   capabilities: CapabilitySummary | null;
   /** The client-mapping pipeline steps (client-scoped connectors with a catalog entry). */
@@ -284,7 +292,45 @@ export function ConnectionCard({
                 <dt>Configured</dt>
                 <dd>{connection.connectedAt ?? "—"}</dd>
               </div>
+              {/* Self-expiring token lifecycle (FE #1502) — issued/expires + health badge. Shown
+                  only for connectors whose token expires (tokenHealth passed). Timestamps only,
+                  never the token (§5); degrades to "Expiry unknown" until the backend reports them. */}
+              {tokenHealth && (
+                <>
+                  <div className="flex justify-between gap-2">
+                    <dt>Token issued</dt>
+                    <dd>{connection.tokenIssuedAt ?? "—"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt>Token expires</dt>
+                    <dd>{connection.tokenExpiresAt ?? "—"}</dd>
+                  </div>
+                  <div className="mt-0.5 flex items-center justify-between gap-2">
+                    <dt>Token health</dt>
+                    <dd>
+                      <HealthDot health={tokenHealth} showLabel />
+                    </dd>
+                  </div>
+                </>
+              )}
             </dl>
+          )}
+
+          {/* Pre-lapse warning (FE #1502) — fires when the token is expiring soon or expired so an
+              operator can reconnect / let the backend refresh job renew it before it lapses. */}
+          {tokenHealth && (tokenHealth.tone === "amber" || tokenHealth.tone === "red") && (
+            <p
+              role="status"
+              className={`flex items-start gap-1.5 rounded-md border bg-panel-2 px-2.5 py-1.5 text-[11px] leading-relaxed ${
+                tokenHealth.tone === "red" ? "border-red/40 text-red" : "border-amber/40 text-amber"
+              }`}
+            >
+              <Icon name="AlertTriangle" size={13} className="mt-0.5 shrink-0" />
+              <span>
+                <span className="font-medium">{tokenHealth.label}.</span>{" "}
+                <span className="text-dim">{tokenHealth.detail}</span>
+              </span>
+            </p>
           )}
 
           {configured && pollable && (
