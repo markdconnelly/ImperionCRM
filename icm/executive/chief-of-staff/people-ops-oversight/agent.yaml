@@ -1,0 +1,12 @@
+name: people-ops-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Rachel persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../rachel.md
+  - ./prose.md
+okf_rooms: []                         # the people domain curates no OKF room yet (internal HR); gather is the run ledger + handoff bus via pg.read
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Holly / handoff to Nova; never actuates (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled people-ops brief when every item is grounded and cited and no comp/personal value appears in it, and delegate a flagged stalled lifecycle item to Holly; any employment/comp decision, gap, or recall miss parks for Derek — Rachel never actuates and never restates comp or personal data"

@@ -1468,6 +1468,223 @@
               "checkpoint": "The composed return to Nova (and any item routed to Derek's queue) is what a human approves. In `auto`, this stage may self-approve ONLY a return that delegated unambiguously to one report within authority and one RLS scope, with no always-gated item; anything binding (a signed contract, an employment/comp decision) or ambiguous parks for Derek. Auto never binds the company, never actuates, and never lets salary/ comp/personal data travel."
             }
           ]
+        },
+        {
+          "slug": "people-ops-oversight",
+          "title": "people-ops-oversight (Chief of Staff / Internal Ops, executive)",
+          "job": "on a schedule, synthesize the People/HR operational picture — Holly's employee-lifecycle work in flight (onboarding, offboarding, records hygiene), what's stuck, and what needs a human call — into a people-ops brief for Derek; where a follow-up is grounded, delegate it to Holly. Rachel never touches an employment/comp lever and never restates comp or personal data.",
+          "trigger": "scheduled (start of the working week). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled people-ops brief when every item is grounded and cited and no comp/personal value appears in it, and delegate a flagged stalled lifecycle item to Holly; any employment/comp decision, gap, or recall miss parks for Derek — Rachel never actuates and never restates comp or personal data",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's People/HR signals — Holly's runs, handoff signals, and parked checkpoints — into one un-ranked gather record, values-free.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull Holly's run ledger and handoff signals into a flat list keyed by lifecycle theme (onboarding / offboarding / records / requests). Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the parked checkpoints into the same flat list, tagged with how long each has been waiting. Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Strip values: an item is referenced by id, kind, and age — never by a comp, salary, or personal-data value."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's themes via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sub-agent run ledger",
+                    "`agent_run` (via pg.read)",
+                    "Holly's runs this cycle",
+                    "what People/HR actually did"
+                  ],
+                  [
+                    "Handoff bus",
+                    "handoff signals (via pg.read)",
+                    "people-domain activity this cycle",
+                    "items moving between agents / to humans"
+                  ],
+                  [
+                    "Parked checkpoints",
+                    "`agent_run` parked/awaiting rows (via pg.read)",
+                    "people domain",
+                    "what is waiting on a human"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's themes",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of People/HR signals tagged by lifecycle theme, with parked items and their ages, and cited recall items — referenced by id/kind, never by personal value.",
+              "audit": [
+                "Every signal carries a lifecycle theme tag (onboarding / offboarding / records / requests)",
+                "Every parked item states how long it has been waiting",
+                "Every recall item carries a source reference; no uncited claim",
+                "No comp, salary, or personal-data VALUE appears anywhere in the record",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a staleness-ranked people-ops picture with the flags isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Cluster the signals by lifecycle theme (onboarding / offboarding / records / requests); collapse duplicates."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by staleness and exposure — the longest-parked items and the ones blocking an employee's start, exit, or request lead."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the flags — stalled lifecycle items and anything waiting on a human call — each stating the item reference, the age, and what it blocks."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a staleness-ranked people-ops picture (longest-parked leading) and a separate flag list, each item naming the reference, the age, and what it blocks — never a comp or personal value.",
+              "audit": [
+                "Picture is staleness-ranked, longest-parked / highest-exposure leading",
+                "Every flag names an item reference, its age, and what it blocks",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "No comp, salary, or personal-data VALUE appears anywhere",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Derek's people-ops brief plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with what's stalled and what needs a human call (the ninety-second read — answer first, the two things that matter, the one decision needed), then the rest of the lifecycle picture."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the reference, the age, what it blocks, and the follow-up it implies for Derek."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Derek. No send, no write."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the staleness-ranked people-ops picture"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Derek's people-ops brief + the flag list. The run parks here at the checkpoint; nothing is actuated. Flags feed the optional stage 04.",
+              "audit": [
+                "Brief leads with stalled items / decisions needed, never a status dump",
+                "Flag list present; each item states the reference, age, blocked effect, and implied follow-up",
+                "No comp, salary, or personal-data VALUE appears anywhere",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": "The brief parks for **Derek**. `auto` may self-approve ONLY publishing the scheduled brief when every item is grounded and cited and no comp/personal value appears in it; any gap or recall miss parks for Derek (CONSTITUTION §8). No actuation exists at this tier — Rachel advises and routes, sub-agents act."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — propose a `delegate()` to Holly on a grounded flag and/or a `handoff()` to Nova when it spans divisions, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag, decide the route: a stalled people-domain lifecycle item → Holly; a flag spanning divisions → Nova; an employment/comp decision → neither (it parks for Derek — decisions that bind the company route to a human, CONSTITUTION §5.4). A flag that is not grounded and cited also parks."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the proposed `delegate()` to Holly: the item reference, the age, the cited basis, and the ask — never the HR action itself. Draft any `handoff()` to Nova the same way."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the proposed delegate/handoff. No send, no write, no HR record touched. The effect re-gates inside Holly's own gauntlet."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief + flags",
+                    "stage 03 `brief.md`",
+                    "the flag list only",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` / `handoff()` items by reference, each naming the target, the item, the age, and the cited basis. The run parks here; nothing is actuated.",
+              "audit": [
+                "Every proposed delegate/handoff names a target and cites the grounding basis",
+                "An ungrounded or uncited flag parks for Derek — never delegated",
+                "Every employment/comp decision parks for Derek — never delegated",
+                "No comp, salary, or personal-data VALUE appears anywhere",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": "The proposed follow-ups park for **Derek**. `auto` may self-approve ONLY delegating a flagged stalled lifecycle item to Holly when that flag is grounded and cited; any employment/comp decision, ungrounded flag, gap, or recall miss parks for Derek (CONSTITUTION §8). Rachel never actuates — the delegate routes the work and the effect re-gates inside Holly's gauntlet (CONSTITUTION §9)."
+            }
+          ]
         }
       ]
     },
