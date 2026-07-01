@@ -204,6 +204,8 @@ classed here by the same content rule (the file inherits it when authored). A co
 | Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
 |---|---|---|---|---|---|
 | [posture_snapshot](tables/posture_snapshot.md) (+pillar) | Security | C (INSERT-only) | sec | ✅ | posture-report |
+| [security_standard_version](tables/security_standard_version.md) | Security | H | sec | ✅ | standard versioning + Mark-gated ratify (#1715, BE #439) |
+| [posture_score](tables/posture_score.md) | Security | C (INSERT-only) | sec | ✅ | posture-vs-standard scoring (BE #439 API + LP #399 scheduled cycle; drift signals) |
 | [tenant_posture](tables/tenant_posture.md) | Security | E | sec | ✅ | drift-monitor |
 | [dns_domain](tables/dns_domain.md) | Security | E | sec | ✅ | DNS drift-monitor |
 | [dns_golden](tables/dns_golden.md) | Security | E | sec | ✅ | golden approval (human-gated) |
