@@ -54,6 +54,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [device](tables/device.md) | Service Desk | A | op | ✅ | asset/security context (Datto RMM precedence + BCDR backup posture, #683; UniFi `mac` key + `source`/precedence + firmware cols + LP write grant, #1241/0195) |
 | [cloud_asset](tables/cloud_asset.md) | Service Desk | A | op | ✅ | CMDB cloud-asset CI (#874, ADR-0097) |
 | [software_ci](tables/software_ci.md) | Service Desk | A | op | ✅ | CMDB software CI + device→software edges (#652, ADR-0097) |
+| [circuit](tables/circuit.md) | Service Desk | B | op | ✅ | carrier/circuit/telco lifecycle (OP-04-14) — circuit/service inventory (ckt id, site, bandwidth, status); Ozzie's turn-up/cutover/port substrate (Stream 05, always_gate on a service-affecting cutover); commercial half = `carrier_contract` (Vance, Stream 07) at the A11 seam; propose-only/dormant until built (ADR-0136 A5c). #1651, epic #1534 |
 | [external_identity](tables/external_identity.md) | horizontal | H | op | ✅ | identity resolution |
 | [contact_social_identity](tables/contact_social_identity.md) | kernel | B | pii | ✅ | enrichment |
 | [contact_enrichment](tables/contact_enrichment.md) | kernel | B | pii | ✅ | enrichment (lawful-basis gated; incl. Entra `directory_groups`, source `m365_directory`, basis `legitimate_interest` — Pipeline #93) |
@@ -192,6 +193,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [recurring_invoice_schedule](tables/recurring_invoice_schedule.md) | Finance | H (app-native recurring-billing template) | fin | ✅ | recurring invoicing (#1095, epic #1045) |
 | [budget](tables/budget.md) | Finance | B (human-authored, agent READ-ONLY) | fin | ✅ | budget-variance (#1721) + cash-flow-forecast (#1722) — the plan side of plan-vs-actual; SELECT-only grants incl. backend (D5/ADR-0123); no agent write path ever (#1718, epic #1394) |
 | [generated_invoice](tables/generated_invoice.md) | Finance | D (app-native draft; QBO push Mark-gated, NOT yet synced) | fin | ✅ | recurring invoicing (#1095, epic #1045) |
+| [carrier_contract](tables/carrier_contract.md) | Finance | B | fin | ✅ | carrier/circuit/telco lifecycle (OP-04-14) — the commercial telco agreement (provider, term, renewal/cancel-by, MRC/NRC); Vance's B9 deadline-sentinel watches renewal_date/cancel_by_date T-30/T-7/T-1, escalate-to-terminal, never auto-actuate (renew/cancel/order = always_gate); technical half = `circuit` (Ozzie, Stream 05) at the A11 seam; NULL account = Imperion's own (dogfood); propose-only/dormant until built (ADR-0136 A5c). #1651, epic #1534 |
 
 ## Procurement / licensing
 
