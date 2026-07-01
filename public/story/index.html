@@ -251,6 +251,7 @@
       <a href="#frontier">frontier</a>
       <a href="#os">the&nbsp;reframe</a>
       <a href="#memory">memory</a>
+      <a href="#workforce">workforce</a>
       <a href="#status">status</a>
       <a href="#timeline">timeline</a>
       <a class="gh" href="https://github.com/markdconnelly" rel="noopener">
@@ -271,8 +272,8 @@
   <div class="hero-stats reveal in d3">
     <div class="hs"><div class="n" data-count="4"></div><div class="l">repositories</div></div>
     <div class="hs"><div class="n">1</div><div class="l">shared database</div></div>
-    <div class="hs"><div class="n" id="hero-commits">1350+</div><div class="l">commits</div></div>
-    <div class="hs"><div class="n"><span data-count="203"></span></div><div class="l">schema migrations</div></div>
+    <div class="hs"><div class="n" id="hero-commits">1600+</div><div class="l">commits</div></div>
+    <div class="hs"><div class="n"><span data-count="245"></span></div><div class="l">schema migrations</div></div>
   </div>
 </section>
 
@@ -320,28 +321,28 @@
     <p class="say reveal d1">A deliberate division of labor: <b>front end = GUI · backend = processes · cloud pipeline = live data · on-prem = heavy lifting.</b></p>
     <div class="repos reveal d2">
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.25.0</span></div>
+        <div class="top"><span class="name">ImperionCRM</span><span class="chip-status st-live">Live · v0.26.0</span></div>
         <div class="role">Front end · the GUI</div>
-        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration (now past <b>0203</b>), plus the self-serve reporting BI hub and the governed metrics + data-integrity planes that read the whole gold layer.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 713 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
+        <p>Next.js · React · TypeScript · Tailwind on Azure App Service. Owns the database schema and every migration (now past <b>0244</b>), the self-serve reporting BI hub, the governed metrics + data-integrity planes that read the whole gold layer, and the <b>org.yaml</b> that defines the entire 27-agent workforce plus its <code>/org</code> visualization.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM">· 881 commits</span><span class="updated" data-repo-upd="ImperionCRM"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Backend" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.11.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_Backend</span><span class="chip-status st-live">Live · v0.12.0</span></div>
         <div class="role">Backend · every process</div>
-        <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the named agent roster summoned by Jarvis, the self-hosted Managed-Agents runtime + ICM glass-box approval, the graduated-autonomy gauntlet, grounding-conflict resolution write-back, OAuth token custody, consent-gated sends, and per-process cost metering.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 238 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
+        <p>Azure Functions, identity-gated. The orchestrator + its sub-agents, the 27-agent roster summoned by Nova, the self-hosted Managed-Agents runtime + ICM glass-box approval, the graduated-autonomy gauntlet, grounding-conflict resolution write-back, OAuth token custody, consent-gated sends, and per-process cost metering.</p>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Backend">· 279 commits</span><span class="updated" data-repo-upd="ImperionCRM_Backend"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_Pipeline" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.8.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_Pipeline</span><span class="chip-status st-live">Live · v0.10.0</span></div>
         <div class="role">Cloud · live data</div>
         <p>Azure Functions for inbound webhooks (Autotask tickets are live), per-tenant Graph subscriptions, manifest-driven poll registration from the connector catalog, a source-schema registry that fails loudly on drift, and the live/webhook-driven bronze→silver merge.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 113 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#3178c6"></span>TypeScript</span><span class="commits" data-repo="ImperionCRM_Pipeline">· 123 commits</span><span class="updated" data-repo-upd="ImperionCRM_Pipeline"></span></div>
       </a>
       <a class="repo" href="https://github.com/markdconnelly/ImperionCRM_LocalPipelineEnrichment" rel="noopener">
-        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-live">Live · v0.14.0</span></div>
+        <div class="top"><span class="name">ImperionCRM_LocalPipelineEnrichment</span><span class="chip-status st-live">Live · v0.15.1</span></div>
         <div class="role">On-prem · heavy lifting</div>
         <p>PowerShell 7 scheduled tasks, now <b>running on the on-prem host</b>. Collectors for ten+ sources (incl. per-client Azure ARM cloud-resource inventory) are hydrating bronze and silver; the medallion transforms run beside them. All vectorization (the gold embeddings) is the last step still to fire.</p>
-        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 288 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
+        <div class="foot"><span class="lang"><span class="sw" style="background:#5391fe"></span>PowerShell</span><span class="commits" data-repo="ImperionCRM_LocalPipelineEnrichment">· 333 commits</span><span class="updated" data-repo-upd="ImperionCRM_LocalPipelineEnrichment"></span></div>
       </a>
     </div>
     <p class="repos-note reveal d2">Each repo reads and writes the same Postgres — but only the front end owns migrations.</p>
@@ -576,19 +577,19 @@
     <p class="say reveal d1">Built where it counts, explicit about what's next — straight from the repos.</p>
     <div class="ledger reveal d2">
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.25.0</span></div>
-        <p>Running on Azure with Entra SSO. The schema runs past <b>0203</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the verticals that were merely <em>designed &amp; queued</em> a day ago have since <b>shipped as schema + surface</b>: <b>premium service management</b> (an asset/identity <b>CMDB</b> with derived relationships, criticality, lifecycle states and n-hop impact analysis, plus <b>ITIL change enablement</b> — change requests, CMDB-derived risk, type-based approval and a change calendar), an <b>AR collections agent</b> (aging worklist, dunning panel, gated reminder sends), a <b>self-serve report builder</b> over a governed semantic model with shareable dashboards and per-domain report pages, a <b>connector marketplace</b> (catalog GUI + manifest registry), and <b>marketing journeys, segments and a message-template composer</b>. The <b>ICM glass-box</b> — run viewer, approval queue and autonomy dial — is live. <b>Employee time and expense tracking are both live on real data</b>, with Autotask/QuickBooks reconciliation — expense now covering out-of-pocket entry with a policy memory-jogger and a hard attestation gate alongside mileage. All real screens over a typed data layer, behind a new role-driven grouped navigation. Since then the foundation under the agents has landed: a <b>data-integrity plane</b> (entity resolution, bitemporal cross-system keys, a data-quality SLA that gates autonomy), a <b>governed metrics layer</b> with per-client profitability &amp; ROI, a <b>three-axis row-level-security spine</b> (owner · company · data-class) with an audited admin god-view, the <b>graduated-autonomy</b> dial with a cross-agent approval cockpit and an oversight/undo view, and the reworked <b>connections &amp; credential registry</b> — one card per connector, canonical Key-Vault naming, and remove-credential that purges the secret.</p>
+        <div class="lhead"><span class="lname">ImperionCRM · front end</span><span class="chip-status st-live">Live · v0.26.0</span></div>
+        <p>Running on Azure with Entra SSO. The schema runs past <b>0244</b> in the repo and is applied deep into production — the CRM core plus campaigns, workflows, posture dashboards, the AI Agents page, the Board of Directors, and the <b>reporting BI hub</b> (marketing &amp; social, service-desk, and security-fleet intelligence over the gold layer). A full <b>project-management suite</b> — sprints, baselines, gantt/calendar/timeline views, dependencies, custom fields, OKRs, workload planning, recurring tasks and intake forms — is in, and the verticals that were merely <em>designed &amp; queued</em> a day ago have since <b>shipped as schema + surface</b>: <b>premium service management</b> (an asset/identity <b>CMDB</b> with derived relationships, criticality, lifecycle states and n-hop impact analysis, plus <b>ITIL change enablement</b> — change requests, CMDB-derived risk, type-based approval and a change calendar), an <b>AR collections agent</b> (aging worklist, dunning panel, gated reminder sends), a <b>self-serve report builder</b> over a governed semantic model with shareable dashboards and per-domain report pages, a <b>connector marketplace</b> (catalog GUI + manifest registry), and <b>marketing journeys, segments and a message-template composer</b>. The <b>ICM glass-box</b> — run viewer, approval queue and autonomy dial — is live. <b>Employee time and expense tracking are both live on real data</b>, with Autotask/QuickBooks reconciliation — expense now covering out-of-pocket entry with a policy memory-jogger and a hard attestation gate alongside mileage. All real screens over a typed data layer, behind a new role-driven grouped navigation. Since then the foundation under the agents has landed: a <b>data-integrity plane</b> (entity resolution, bitemporal cross-system keys, a data-quality SLA that gates autonomy), a <b>governed metrics layer</b> with per-client profitability &amp; ROI, a <b>three-axis row-level-security spine</b> (owner · company · data-class) with an audited admin god-view, the <b>graduated-autonomy</b> dial with a cross-agent approval cockpit and an oversight/undo view, and the reworked <b>connections &amp; credential registry</b> — one card per connector, canonical Key-Vault naming, and remove-credential that purges the secret. And most recently the <b>27-agent workforce</b> itself — Nova, a five-agent Executive Suite, and twenty-one department agents — landed as version-controlled personas + charters in <span style="font-family:var(--mono);color:var(--cyan-bright)">org.yaml</span>, rendered on a live <span style="font-family:var(--mono);color:var(--cyan-bright)">/org</span> chart, backed by a ~220-procedure Operating Procedure catalog and a dual-audience policy canon.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.11.0</span></div>
+        <div class="lhead"><span class="lname">ImperionCRM_Backend · processes</span><span class="chip-status st-live">Live · v0.12.0</span></div>
         <p>The orchestrator and its specialist sub-agents (Autotask, IT Glue, CRM, M365, documentation, advisors), the board runtime with resumable deputy sessions, the <b>self-hosted Managed-Agents worker</b> (agent.yaml manifests, event-mirrored to the run ledger) with <b>ICM glass-box approval + autonomy endpoints</b>, the journey runner, the AR-dunning detect→draft agent, M365 mail/calendar ingestion, Autotask ticket creation, lead capture, contact enrichment, and per-process cost metering.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.8.0</span></div>
+        <div class="lhead"><span class="lname">ImperionCRM_Pipeline · cloud</span><span class="chip-status st-live">Live · v0.10.0</span></div>
         <p>Autotask ticket webhooks are live in production. Per-tenant Graph subscription upkeep (per-client app model, ADR-0018), a source-schema registry that fails loudly on drift, the 5-minute bronze→silver merge, and on-demand posture snapshots.</p>
       </div>
       <div class="lrow">
-        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-live">Live · v0.14.0</span></div>
+        <div class="lhead"><span class="lname">…_LocalPipelineEnrichment · on-prem</span><span class="chip-status st-live">Live · v0.15.1</span></div>
         <p>Now <b>running on the on-prem host</b> (~75 scheduled tasks) and hydrating bronze/silver in production. Collectors for Autotask, IT Glue, M365 mail/Teams, SharePoint, Entra groups &amp; membership, per-client <b>Azure ARM cloud-resource inventory</b>, Intune, Sentinel, DocuSign, UniFi, Kaseya Quote Manager, Plaud, MileIQ drives, QuickBooks chart-of-accounts, EasyDMARC, and sensitivity labels / custom security attributes; the knowledge-composer spine, the propose-only OKF semantic-layer drift agent, and all vectorization. 700+ tests green — the collectors are live; <b>vectorization (the gold embeddings) is the one step still to fire</b>, which is why semantic recall stays a finished contract rather than a live index.</p>
       </div>
     </div>
@@ -757,9 +758,38 @@
     </div>
   </article>
 
-  <!-- 18 build timeline + release tracker -->
-  <article class="chapter" id="timeline">
+  <!-- 18 the workforce: Nova + the Executive Suite -->
+  <article class="chapter" id="workforce">
     <div class="node reveal">18</div>
+    <div class="ch-eyebrow reveal">From a roster to an org chart</div>
+    <h2 class="reveal d1">It didn't just build the software. It staffed the company that runs it.</h2>
+    <p class="say reveal d1">By late June the platform had a data kernel, a memory, and a governance spine — everything an operating system needs except the <em>processes that run on it</em>. So over five days the build drew its own <b>workforce</b>. Not a metaphor and not a marketing diagram: a real, version-controlled <b>org chart of 27 AI agents</b>, each with a name, a written personality, a hard autonomy ceiling, and a library of the exact procedures it is allowed to run — all defined in one <span style="font-family:var(--mono);color:var(--cyan-bright)">org.yaml</span> source of truth, and rendered as a live, clickable <span style="font-family:var(--mono);color:var(--cyan-bright)">/org</span> map inside the app.</p>
+    <p class="say reveal d2">At the top sits <b>Nova</b> — the single orchestrator the user actually talks to (ADR-0131). Warm, plain-spoken, the one seat a human always shares. Beneath her, a full <b>Executive Suite</b> of five C-suite agents, each paired to a real human executive; beneath <em>them</em>, twenty-one department agents covering the entire surface of a managed-services company — a NOC watch, an L3 problem-solver, change &amp; release, dispatch, backup &amp; recovery, a SOC, GRC, identity, HR, legal, service-quality, knowledge, sales, marketing, finance, procurement, projects, client success, and a net-new partnerships desk. A whole company, staffed by agents, on one page.</p>
+
+    <div class="secgrid reveal d2">
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M19.1 4.9l-2.8 2.8M7.7 16.3l-2.8 2.8"/></svg></div><div><b>Nova · orchestrator</b><span>The one you talk to — routes to the whole org, never actuates directly.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div><div><b>Rachel · Chief of Staff</b><span>HR, legal, internal ops &amp; the per-employee-brain program → Derek.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5M17 3l3 4-3 4M7 21l-3-4 3-4"/></svg></div><div><b>Dexter · CTO</b><span>Service delivery &amp; engineering — NOC, L3, change, dispatch, BCDR, projects → Luke.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div><b>Roman · Deputy CISO</b><span>Security &amp; compliance — SOC, GRC, identity &amp; JML → Mark.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div><b>Sterling · Deputy CFO</b><span>Revenue, client &amp; finance — sales, marketing, success, procurement, AR → Nick.</span></div></div>
+      <div class="sec"><div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div><b>Jessica · Chief Risk Officer</b><span>Platform &amp; assurance — governance, service-quality, knowledge → Mark.</span></div></div>
+    </div>
+
+    <p class="say reveal d2" style="margin-top:26px">Here is the discipline that makes it more than a costume: the C-suite <b>cannot act</b> — by construction. An executive agent's tool budget grants only <em>read</em> and <em>delegate</em>, never a send, a write, or a purchase. And because the same invariant runs top to bottom — a workflow can never exceed its domain, a domain never exceeds the shared Constitution — "the CTO can't reach past a technician's safety gauntlet" is a fact the build <b>enforces at merge</b>, not a policy it hopes for. Every world-changing act re-gates inside the worker that owns it. The org chart isn't just who reports to whom; it's who is <em>allowed to do what</em>, proven by a conformance gate that fails the build the instant an agent's tools drift past its charter.</p>
+    <p class="say reveal d3">Each of the twenty-seven got a <b>persona</b> written to one schema (ADR-0135): seven fixed sections — identity, an invented backstory, how it works, its voice, how it handles uncertainty, its policy-bound guardrails, and its seams to the agents beside it — with personality, capability, and autonomy split apart so a character can be tuned without touching what it's cleared to do. Seven of the human employees were modeled the same way, so an agent and the person it shadows look alike in the system. And the <em>work itself</em> was written down: an <b>Operating Procedure catalog</b> of roughly <b>220 end-to-end procedures across eleven value streams</b> (ADR-0133) — each with exactly one owning agent, a trigger, a terminal outcome, and steps tagged automated, human, or hybrid — all governed by a <b>Workflow Doctrine</b> (ADR-0136: eleven universal rules, ten reusable step-archetypes) and bound to a <b>dual-audience policy canon</b> (ADR-0134) that reads the same to a person and to an agent.</p>
+    <div class="deferred reveal d2">
+      <b>Factory-complete, not yet self-running — and honest about the difference</b>
+      <span>The Nova → C-suite → worker chain is built top to bottom: over a hundred workflow manifests, three hundred-plus stages, every one merged to main and passing the charter-conformance gate. It is <b>not yet running on its own</b> — the same three switches gate it as the rest of the platform: the backend delegate/handoff executor, the autonomy dial, and the Voyage embeddings that give workers real recall. Drawn, staffed, and governed; awaiting the shared ignition. And the ambition was scoped on purpose — the catalog was sized for a <b>$100M</b> services firm grown <em>organically through AI leverage</em>, with mergers-and-acquisitions machinery deliberately left out. The bet is that one architect and a workforce of agents <em>is</em> the growth engine.</span>
+    </div>
+    <div class="flow-note reveal d2">
+      <div class="icon-badge" style="background:var(--indigo);color:var(--ink)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg></div>
+      <p><b>For the skeptic in the room:</b> every one of these twenty-seven agents — its name, its personality, its chain of command, its autonomy ceiling, and the procedures it may run — is a file in a public repository, generated into a diagram anyone can open. The AI didn't just write the application. It drafted, staffed, and governed the <i>company that operates it</i> — and left the receipts in the git log.</p>
+    </div>
+  </article>
+
+  <!-- 19 build timeline + release tracker -->
+  <article class="chapter" id="timeline">
+    <div class="node reveal">19</div>
     <div class="ch-eyebrow reveal">The timeline</div>
     <h2 class="reveal d1">From a spark to a rolling release train</h2>
     <p class="say reveal d1">The whole arc, compressed: a foundation in days, the first feature in an evening, ten parallel sessions overnight, and now a steady <b>wave train</b> shipping capability across all four repos. The dates are the git history, not a press release.</p>
@@ -779,7 +809,8 @@
       <li class="tlrow"><span class="tldate">Jun 23</span><div class="tlbody"><b>The foundation under the agents</b><span>The data-trust and governance planes landed and applied to production: entity resolution and bitemporal cross-system keys, a data-quality SLA that gates autonomy, a governed metrics layer with per-client profitability &amp; ROI, and a three-axis row-level-security spine (owner · company · data-class) with an audited admin god-view.</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 23–24</span><div class="tlbody"><b>Connections rework &amp; on-prem go-live</b><span>Connections and credentials were reworked into one card per connector with canonical Key-Vault naming and a remove-credential path that purges the secret — and the on-prem pipeline started <b>running for real on the home server</b>, ~75 scheduled collectors hydrating bronze and silver in production.</span></div></li>
       <li class="tlrow"><span class="tldate">Jun 24–25</span><div class="tlbody"><b>The v1 doctrine &amp; the OS Brain</b><span>The path to v1 was settled as a written doctrine — agent-first plumbing, human-first operation, autonomy earned in graduated steps — and the <b>Imperion OS Brain</b> was named as the single memory/knowledge contract the whole platform converges on. Grounding-conflict resolution with audited write-back shipped alongside it.</span></div></li>
-      <li class="tlrow tlnow"><span class="tldate">Now</span><div class="tlbody"><b>The wave train</b><span>Four concurrent lanes — front end · backend · cloud pipeline · on-prem — shipping a checked-off wave at a time, now also deepening the foundation under itself. The collectors are live and hydrating; the self-hosted Managed-Agents runtime is up; the remaining gates are activation settings and vectorization, not missing code.</span></div></li>
+      <li class="tlrow"><span class="tldate">Jun 26–28</span><div class="tlbody"><b>The org recast → a 27-agent company</b><span>The roster grew from eight named agents into a full org chart: orchestrator <b>Nova</b> over a five-agent <b>Executive Suite</b> over twenty-one department agents, all defined in one <span style="font-family:var(--mono);color:var(--cyan-bright)">org.yaml</span> with a <span style="font-family:var(--mono);color:var(--cyan-bright)">/org</span> visualization, delegate-only C-suite ceilings enforced structurally, and every agent given a seven-section persona (ADR-0135). Alongside it, a ~220-procedure <b>Operating Procedure catalog</b> (ADR-0133), a <b>Workflow Doctrine</b> (ADR-0136) and a dual-audience <b>policy canon</b> (ADR-0134) — the whole MSP written down as governed, runnable procedure.</span></div></li>
+      <li class="tlrow tlnow"><span class="tldate">Jun 29–30 · now</span><div class="tlbody"><b>Building it to standard, agent by agent</b><span>Many parallel sessions bringing each agent from scaffold to built-to-standard — Nova's routing workflow, all five C-suite intake/oversight playbooks, and the founding agents (Belle, Chase, Celeste, Audrey, Sterling…) taken to full procedure coverage with per-agent eval goldens and a new dual-audience <b>SOP standard</b>. The chain is factory-complete top to bottom; the collectors are live and hydrating; the remaining gates are the delegate/handoff executor, the autonomy dial, and vectorization — activation, not missing code.</span></div></li>
     </ol>
 
     <!-- capability tracker (checked as it ships) -->
@@ -808,7 +839,9 @@
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>Self-hosted Managed Agents</b><small>SHIPPED</small></div></div>
       <div class="tk"><span class="tkc tk-live">✓</span><div><b>Client mapping · entity resolution</b><small>LIVE</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>AI-Technician wedge · Felix</b><small>SHIPPED · GATED</small></div></div>
-      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Named agent roster (8)</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>27-agent org chart · Nova + C-suite</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Operating Procedure catalog (~220)</b><small>SHIPPED</small></div></div>
+      <div class="tk"><span class="tkc tk-built">✓</span><div><b>Workflow doctrine &amp; policy canon</b><small>SHIPPED</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>Data integrity · entity resolution</b><small>SHIPPED</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>Governed metrics · profitability &amp; ROI</b><small>SHIPPED</small></div></div>
       <div class="tk"><span class="tkc tk-built">✓</span><div><b>Three-axis RLS · data-class governance</b><small>SHIPPED</small></div></div>
