@@ -1,0 +1,125 @@
+# ADR index self-heal (#1493, guards the ADR-0090 generated index).
+#
+# Root cause this repairs: PR checks run against the merge ref computed when the
+# run starts, and the main ruleset does NOT require branches to be up to date
+# (strict=false). Concurrent ADR PRs (e.g. ADR-0128–0130, three merges in seven
+# minutes) each regenerate docs/decision-records/README.md + adr-index.json on
+# their OWN branch, each passes `adr-index.mjs --check` at push time, and the
+# combined post-merge main is stale — with no event that re-runs anyone's checks.
+#
+# Fix: on every push to main that touches decision records, re-run the check; on
+# drift, regenerate the index, force-push a fixed heal branch, open (or update) a
+# heal PR, dispatch CI on it (GITHUB_TOKEN-created PRs never fire `pull_request`
+# runs; workflow_dispatch is the documented exception), poll the required checks,
+# and squash-merge. The ruleset is fully respected — PR + green build/test/docs —
+# no bypass. Recursion-safe: the bot's own merge push does not fire workflows,
+# and a human-caused push re-enters here, finds no drift, and exits.
+#
+# Manual fallback + full write-up: docs/operations/adr-index-guard.md.
+name: adr-index-heal
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/decision-records/**"
+      - "scripts/adr-index.mjs"
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write # gh workflow run (dispatch CI onto the heal branch)
+
+concurrency:
+  group: adr-index-heal
+  cancel-in-progress: true
+
+jobs:
+  heal:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: bot/adr-index-heal
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Detect drift
+        id: drift
+        run: |
+          if node scripts/adr-index.mjs --check; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "ADR index is fresh on main — nothing to heal."
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Regenerate index and open heal PR
+        if: steps.drift.outputs.drift == 'true'
+        run: |
+          set -euo pipefail
+          node scripts/adr-index.mjs
+          # Regen must fully clear the check; dupes / missing frontmatter are not
+          # regen-fixable and need a human/agent-authored PR instead.
+          if ! node scripts/adr-index.mjs --check; then
+            echo "::error::ADR index check still fails after regeneration (duplicate numbers or bad frontmatter?). Fix docs/decision-records/ by hand — see docs/operations/adr-index-guard.md."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add docs/decision-records/README.md docs/decision-records/adr-index.json
+          git commit -m "chore(docs): heal ADR index drift on main (#1493)"
+          git push -f origin "$BRANCH"
+
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            cat > /tmp/heal-pr-body.md <<'BODY'
+          ## What changed
+          Automated heal: regenerated `docs/decision-records/README.md` + `adr-index.json` (`node scripts/adr-index.mjs`) after the ADR index drifted on `main`.
+
+          ## Why
+          Concurrent ADR PRs each pass `adr-index.mjs --check` on their own merge ref, but checks are not re-run when main moves (strict up-to-date is off), so the combined post-merge index goes stale (#1493). This PR is opened, checked, and squash-merged by the `adr-index-heal` workflow.
+
+          ## Docs updated
+          None needed — the changed files ARE the generated docs. Mechanism doc: `docs/operations/adr-index-guard.md`.
+
+          ## Security impact
+          None. Generated markdown/JSON index only; workflow uses the repo `GITHUB_TOKEN`, ruleset fully enforced (PR + green required checks, no bypass).
+
+          ## Testing
+          `node scripts/adr-index.mjs --check` passes on this branch; required CI (build/test/docs) runs via `workflow_dispatch` before merge.
+
+          ## Rollback
+          Revert the squash commit; the next decision-records push re-heals.
+          BODY
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore(docs): heal ADR index drift on main (#1493)" \
+              --body-file /tmp/heal-pr-body.md
+          else
+            echo "Heal PR already open for $BRANCH — branch force-updated."
+          fi
+
+          # Bot-created PRs get no pull_request-triggered runs; dispatch CI so the
+          # required checks (build/test/docs) attach to the heal branch head SHA.
+          gh workflow run ci.yml --ref "$BRANCH"
+
+      - name: Wait for required checks and squash-merge
+        if: steps.drift.outputs.drift == 'true'
+        run: |
+          set -uo pipefail
+          # gh pr checks: exit 0 = all checks pass; 8 = pending; other = failing
+          # or not yet reported. Poll up to 20 minutes, then leave the PR open for
+          # a human/agent (docs/operations/adr-index-guard.md has the manual path).
+          for i in $(seq 1 40); do
+            sleep 30
+            if gh pr checks "$BRANCH"; then
+              gh pr merge "$BRANCH" --squash --delete-branch
+              echo "Heal PR merged — ADR index on main is fresh again."
+              exit 0
+            fi
+            echo "…checks not green yet (attempt $i/40)"
+          done
+          echo "::error::Heal PR checks did not go green within 20 minutes. Inspect the open '$BRANCH' PR and merge or fix manually — see docs/operations/adr-index-guard.md."
+          exit 1
