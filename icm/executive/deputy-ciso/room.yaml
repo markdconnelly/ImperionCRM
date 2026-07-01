@@ -20,3 +20,5 @@ okf_rooms:
   - posture_snapshot
   - tenant_posture
   - posture_policy
+  - ticket             # security-class incident working records (Autotask SoR, read) —
+                       #   grounds incident-escalation-triage (#1815); present in CONSTITUTION.yaml
