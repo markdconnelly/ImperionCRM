@@ -557,6 +557,9 @@ erDiagram
     AGENT_RUN ||--o{ AGENT_RUN : "delegates (tier child)"
     AGENT_RUN ||--o{ AGENT_MESSAGE : "transcript"
     AGENT_RUN ||--o{ AGENT_ACTION_EXECUTION : "commits (idempotency ledger)"
+    AGENT_RUN ||--o{ PROCESS_TRACE : "emits (conformance audit input)"
+    CONFORMANCE_RULE ||--o{ CONFORMANCE_DEVIATION : "violated by"
+    PROCESS_TRACE ||--o{ CONFORMANCE_DEVIATION : "audited into"
     AGENT ||--o{ AGENT_MEMORY : remembers
     APP_USER ||--o{ AGENT_RUN : "acts as"
     BOARD_SESSION ||--o{ BOARD_SESSION_MEMBER : convenes
@@ -623,6 +626,34 @@ erDiagram
       text kind "fact|summary"
       text content
       vector embedding
+    }
+    CONFORMANCE_RULE {
+      uuid id PK
+      text domain
+      text workflow_key "NULL = domain-wide"
+      text name
+      jsonb assertion "declarative predicate, never code"
+      text severity "info|warn|critical"
+      boolean active
+    }
+    PROCESS_TRACE {
+      uuid id PK
+      uuid run_id FK
+      text agent_key
+      text domain
+      text workflow_key
+      text trace_key "UNIQUE with run_id (idempotent ingest)"
+      jsonb steps
+      jsonb facts
+    }
+    CONFORMANCE_DEVIATION {
+      uuid id PK
+      uuid trace_id FK
+      uuid rule_id FK
+      text agent_key
+      text domain
+      text severity
+      text status "open|quarantined|routed|verifying|closed"
     }
     BOARD_SESSION {
       uuid id PK
