@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRepositories } from "@/lib/data";
 import { requireCapability } from "@/lib/auth/guard";
+import { normalizeCustomMinutes } from "@/lib/poll-options";
 import { COMPANY_PROVIDERS } from "@/lib/integrations/company-providers";
 import {
   clientMappingService,
@@ -112,16 +113,20 @@ export async function purgeCredentialAction(formData: FormData) {
 
 /**
  * Set how often the ingestion pipeline polls a connection (ADR-0038). Stored as
- * minutes on the connection row; 0 = manual/paused. The pipeline repo consumes the
- * value — this only persists the operator's choice.
+ * minutes on the connection row; 0 = manual/paused, any positive value is a live
+ * cadence down to `MIN_POLL_MINUTES` (the #1789 custom-interval entry). The pipeline
+ * repo consumes the value — this only persists the operator's choice.
  */
 export async function setPollIntervalAction(formData: FormData) {
   await requireCapability("settings:write");
   const id = String(formData.get("id") ?? "");
   const minutes = Number(formData.get("pollIntervalMinutes"));
   if (!id || !Number.isFinite(minutes) || minutes < 0) return;
+  // 0 = paused; anything positive normalises to a whole minute >= MIN_POLL_MINUTES so a
+  // fat-fingered sub-minute custom entry can never silently become "paused" (floor→0).
+  const stored = minutes === 0 ? 0 : normalizeCustomMinutes(minutes);
   const { connections } = getRepositories();
-  await connections.setPollInterval(id, Math.floor(minutes));
+  await connections.setPollInterval(id, stored);
   revalidatePath("/settings/connections");
   revalidatePath("/profile");
 }
