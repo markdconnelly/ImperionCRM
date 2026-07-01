@@ -75,7 +75,7 @@ persona hard-cap on the canonical L0–L5 ladder (ADR-0128); C-suite are L2-dele
 | **Chase** | Sales | Sterling | L3 | Derek | [chase.md](../../icm/domains/sales/chase.md) |
 | **Belle** | Marketing | Sterling | L3 | Derek | [belle.md](../../icm/domains/marketing/belle.md) |
 | **Celeste** | Client Success | Sterling | L4 | Caity | [celeste.md](../../icm/domains/client-success/celeste.md) |
-| **Vance** | Procurement | Sterling | L2 | Nick | [vance.md](../../icm/domains/procurement/vance.md) |
+| **Vance** | Procurement | Sterling | L3 | Nick | [vance.md](../../icm/domains/procurement/vance.md) |
 | **Audrey** | Finance | Sterling | L2 | Nick | [audrey.md](../../icm/domains/finance/audrey.md) |
 | **Bridget** | Partnerships | Sterling | L3 | Nick | [bridget.md](../../icm/domains/partnerships/bridget.md) |
 | **Vera** | Platform Governance | Jessica | L2 | Mark | [vera.md](../../icm/domains/platform/vera.md) |

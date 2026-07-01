@@ -52,7 +52,7 @@
 | Chase | sales | Sterling | — | L3 |
 | Belle | marketing | Sterling | — | L3 |
 | Celeste | client-success | Sterling | — | L4 |
-| Vance | procurement | Sterling | — | L2 |
+| Vance | procurement | Sterling | — | L3 |
 | Audrey | finance | Sterling | — | L2 (read-only) |
 | Vera | platform | Jessica | — | L2 (watcher) |
 | Tess | service-quality | Jessica | — | L2 (watcher) |
