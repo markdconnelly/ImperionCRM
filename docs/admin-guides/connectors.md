@@ -85,6 +85,8 @@ E3 #1147). `darkwebid` is deliberately **not** a client-mapping adapter — it i
 - **Grant admin consent** (Company systems) — for DocuSign / QuickBooks.
 - **Enable** a connector (catalog) — records the lifecycle *intent* to run it.
 - **Tune** its poll cadence — how often the pipeline scrapes it (ADR-0038, `pollDue()`).
+  Pick a preset (5 min → Daily) or choose **Custom…** to enter any whole-minute interval
+  (down to 1 min); `0` = Manual/paused. Cadence is minute-based end to end.
 - **Disable** a connector (catalog) — stops it.
 
 ## Company systems — credentials & consent (ADR-0036)
