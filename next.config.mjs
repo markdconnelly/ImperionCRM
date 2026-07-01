@@ -14,6 +14,11 @@ const nextConfig = {
   async rewrites() {
     return [{ source: "/story", destination: "/story/index.html" }];
   },
+  // The orchestrator front door was renamed /jarvis → /nova (Jarvis→Nova, #1672).
+  // Permanently redirect the old slug so bookmarks and deep links keep working.
+  async redirects() {
+    return [{ source: "/jarvis", destination: "/nova", permanent: true }];
+  },
 };
 
 export default nextConfig;

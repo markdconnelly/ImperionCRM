@@ -1,18 +1,18 @@
-import { JarvisConsole } from "@/components/agent/jarvis-console";
-import { listConversations } from "@/lib/agent/jarvis";
+import { NovaConsole } from "@/components/agent/nova-console";
+import { listConversations } from "@/lib/agent/nova";
 import { resolveActingUser } from "@/lib/services/acting-user";
 
-export const metadata = { title: "Jarvis · Imperion OS" };
+export const metadata = { title: "Nova · Imperion OS" };
 
 /**
- * Jarvis — the landing page and front door of the OS (#1118, epic #1038).
+ * Nova — the landing page and front door of the OS (#1118, epic #1038).
  *
  * The orchestrator is the WHOLE screen here (no right-hand sidecar — AppShell
  * suppresses it on this route): a codex-style chat (the driver of work), a session
  * history rail, and a drill-in pop-out for the verbose run trace. Reads degrade in
  * the app's tiers (ADR-0007/0042): DB/backend unset → mock sample, never an error.
  */
-export default async function JarvisPage() {
+export default async function NovaPage() {
   const acting = await resolveActingUser();
   // Only mock mode (no DB) gets the sample set. When a DB IS configured but the acting
   // user can't be resolved — break-glass (no Entra oid) or an unprovisioned app_user —
@@ -23,5 +23,5 @@ export default async function JarvisPage() {
     : acting.reason === "no_database"
       ? await listConversations("mock-user") // mock mode returns its sample set
       : [];
-  return <JarvisConsole initialConversations={conversations} />;
+  return <NovaConsole initialConversations={conversations} />;
 }

@@ -6,7 +6,7 @@ import type { AgentMessage } from "@/types";
 /**
  * Holds the right-hand sidecar conversation ABOVE the per-route shell render (#1119) so the
  * thread + its `conversation_id` survive page-to-page navigation, collapse/expand, and a
- * trip through /jarvis (where the sidecar is suppressed, #1118). The provider mounts ONCE in
+ * trip through /nova (where the sidecar is suppressed, #1118). The provider mounts ONCE in
  * AppShell — which the (app) layout segment keeps alive across navigation — while AgentPanel
  * mounts/unmounts beneath it as a pure consumer. Also rehydrates from sessionStorage so a
  * reload keeps the thread within the browser session. No persistence to disk/DB (ADR-0042 —

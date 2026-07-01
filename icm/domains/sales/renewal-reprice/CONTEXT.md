@@ -6,7 +6,7 @@ Audrey grounds it. **L1 propose-only**: the customer-facing send is dial-proof
 always-gated and never auto-executes.
 
 **Trigger:** a renewal approaching on an `opportunity` (`kind=renewal`) — surfaced
-by the renewals motion (ADR-0130) / Jarvis. One run per renewing opportunity.
+by the renewals motion (ADR-0130) / Nova. One run per renewing opportunity.
 
 **Cross-agent seam:** the margin floor is **not** Chase's to compute — he reads
 `{operational, client_pii}`, not financials. Audrey's renewal-margin grounding

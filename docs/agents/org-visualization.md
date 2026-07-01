@@ -90,7 +90,7 @@ page guard — the same predicate as the `/agents` surfaces it visualizes.
 
 - **Read-only in v1.** The canvas illustrates; changing a dial/grant stays on the existing
   agent surfaces (`/agents`, `/operator/*`) under their gates. Deep run traces stay in
-  `/operator/events` + `/jarvis`.
+  `/operator/events` + `/nova`.
 - **On-canvas workflow/stage expansion** is rendered in the side panel in v1; promoting the
   playbook/stage levels onto the canvas itself is a follow-up.
 - No secrets, no client PII — the graph is reference config (personas are personas, not
