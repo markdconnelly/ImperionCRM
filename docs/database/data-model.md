@@ -947,6 +947,48 @@ is pure in `src/lib/recurring-invoice.ts` (`generateDueDrafts`, deterministic ca
 `maxPeriods` safety cap). Gated by `invoicing:read` / `invoicing:write` (admin∨finance, ADR-0030).
 PII-free: the billed party is a business; no personal data, no secrets.
 
+### Revenue recognition (ASC 606) — `performance_obligation` + `revenue_schedule` tables (migration 0249 placeholder, #1619)
+
+The rev-rec / contract-schedule silver model for procedure **09-18 "Run revenue recognition
+(ASC 606)"** (epic #1534, $100M gap-fill Cluster 2). **Own-vs-mirror resolved: OWN** — the
+opposite pole of the AR/invoice decision (ADR-0140): QBO holds **no ASC 606 sub-ledger object**,
+so there is nothing to mirror; these are Imperion-computed **working papers**. QBO remains the
+system of record for the **posted books** (ADR-0123) — the app/agents never post to QBO; the
+human posts the journal entry there and the schedule row records the reference.
+
+```mermaid
+erDiagram
+    contract ||--o{ performance_obligation : "ASC 606 steps 2+4"
+    performance_obligation ||--o{ revenue_schedule : "step 5 (per period)"
+    performance_obligation |o--o| performance_obligation : "superseded_by (modification)"
+    app_user |o--o{ revenue_schedule : "recognized_by (human CFO)"
+```
+
+`performance_obligation` (**archetype B**, app-native) is ASC 606 **steps 2+4**: one row per
+distinct promise under a `contract` (steps 1+3 — the identified contract and its transaction
+price — live upstream in the contract mirror, 0050), carrying the **allocated transaction
+price** (relative-SSP; `standalone_selling_price` kept as the audit input), the recognition
+`method` (`rev_rec_method`: ratable | point_in_time | usage | milestone | percent_complete),
+the satisfaction window, and Audrey's evidence citation (`source_ref`, A5 — parked, never
+fabricated, when evidence is empty). **Contract modifications are supersessions, never edits**:
+a modification allocates prospectively via new obligation rows; the replaced row points at its
+successor (`superseded_by_id`) and flips to `superseded`, so the allocation is auditable as of
+any moment. `contract_id` is ON DELETE **RESTRICT** (books can't lose their trail).
+
+`revenue_schedule` (**archetype B**) is **step 5**: one row per obligation × `period_start`
+(monthly-close grain; `UNIQUE (performance_obligation_id, period_start)`) with the
+`scheduled_amount`. Lifecycle `revenue_schedule_status`: **scheduled → proposed → recognized
+(| held)** — Audrey computes `scheduled` rows and raises the period-close `proposed` packet
+(09-18, **L2 propose-only**); **`recognized` is only reached through the human CFO's
+`always_gate`** (B6 money-gate; CHECK-enforced recognition facts: `recognized_amount` +
+`recognized_at`, `recognized_by` → `app_user` — always a human). `qbo_journal_ref` +
+`reconciled_at` anchor the tie-out to the QBO entry the human posted. **Deferred revenue is a
+DERIVED read-model** (allocated − recognized-to-date; rollforward computed at query time),
+never a persisted table — the ADR-0140 AR-aging precedent. Grants (ADR-0127 least-priv): web
+SELECT only; backend SELECT/INSERT/UPDATE; **no DELETE for any role**; no pipeline grants.
+PII-free: contract-level commercial amounts only; no secrets. Recognition ≠ billing — invoiced
+AR stays in `invoice` (0241) / `generated_invoice` (0199).
+
 ### CMDB relationship layer — `ci_relationship` table (ADR-0078, migration 0131, #647)
 
 The CMDB's first **persisted** table: a typed, directional **edge** between two Configuration
