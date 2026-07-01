@@ -142,7 +142,7 @@ deploy-dormant until #119. Per A5c, deepened steps that depend on these ship **p
   enter/exit).
 - **Terminal outcome:** a complete 3-level correlated trace persisted —
   `conversation_id`(session/root) → `run_id`(turn) → `step_id`(+parent) — joinable in Postgres
-  + App Insights, glass-box-inspectable in the `/jarvis` drill-in.
+  + App Insights, glass-box-inspectable in the `/nova` drill-in.
 - **Procedure Steps:**
   1. `[automation]` Write `agent_run` per turn + per-step `agent_message`
      (routing.decided / subagent.enter|exit / tool.call / action.proposed), sub-agent name in

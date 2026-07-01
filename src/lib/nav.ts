@@ -17,8 +17,8 @@ import type { NavItem } from "@/types";
 
 // ── TOP band (flat): the cross-cutting overviews. Visible to all roles.
 export const navTop: NavItem[] = [
-  // Jarvis — the orchestrator front door + default post-login landing (#1118). First entry.
-  { key: "jarvis", label: "Jarvis", icon: "Sparkles", href: "/jarvis" },
+  // Nova — the orchestrator front door + default post-login landing (#1118). First entry.
+  { key: "nova", label: "Nova", icon: "Sparkles", href: "/nova" },
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/" },
   // Renamed from "Reporting" → "Global Reporting" (#794): the BI hub landing page;
   // the per-domain report leaves live in the Reports group at the bottom.

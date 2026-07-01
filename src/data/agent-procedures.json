@@ -10477,7 +10477,7 @@
           "slug": "renewal-reprice",
           "title": "renewal-reprice (sales v1)",
           "job": "for an approaching renewal, Chase drafts the reprice and the renewal proposal — **Audrey (Finance) supplies the margin input**; Chase drafts the number, Audrey grounds it. **L1 propose-only**: the customer-facing send is dial-proof always-gated and never auto-executes.",
-          "trigger": "a renewal approaching on an `opportunity` (`kind=renewal`) — surfaced by the renewals motion (ADR-0130) / Jarvis. One run per renewing opportunity.",
+          "trigger": "a renewal approaching on an `opportunity` (`kind=renewal`) — surfaced by the renewals motion (ADR-0130) / Nova. One run per renewing opportunity.",
           "model": "claude-sonnet-4-5",
           "autonomyRung": "L1",
           "autoMaySelfApprove": "nothing customer-facing. Chase drafts the renewal reprice + proposal (stages 01-03); the customer-facing send-for-signature (stage 04) is an always-gated, DIAL-PROOF hard ceiling (pricing/discount/term commitment + bound signature — ADR-0128 D2, A10 row 4) and NEVER auto-executes at any rung. The post-signature back-sync (stage 05 — update the agreement + stamp the renewal outcome) is an internal, reversible mirror write (L2, idempotency-keyed + read-back, A9) that runs only AFTER the human-authorized signature returns. Internal context-gathering, drafting, and the post-signature mirror proceed; the send always parks for a human, in every mode.",

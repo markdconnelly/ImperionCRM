@@ -26,9 +26,9 @@ export function AppShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [agentCollapsed, setAgentCollapsed] = useState(false);
 
-  // The /jarvis landing page IS the agent surface (#1118) — suppress the right-hand
+  // The /nova landing page IS the agent surface (#1118) — suppress the right-hand
   // sidecar (and its top-bar reopen affordance) there; show it on every other route.
-  const hideAgent = usePathname() === "/jarvis";
+  const hideAgent = usePathname() === "/nova";
 
   useEffect(() => {
     try {
@@ -59,7 +59,7 @@ export function AppShell({
 
   return (
     // The session provider lives ABOVE the conditional AgentPanel render so the sidecar
-    // conversation survives navigation, collapse, and /jarvis (#1119). It mounts once —
+    // conversation survives navigation, collapse, and /nova (#1119). It mounts once —
     // the (app) layout segment keeps AppShell alive across route changes.
     <AgentSessionProvider initialMessages={agentMessages}>
       <div className="flex h-screen w-screen overflow-hidden bg-bg text-text">
@@ -73,7 +73,7 @@ export function AppShell({
           <TopBar
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
-            // On /jarvis the panel is intentionally absent, so hide the reopen button.
+            // On /nova the panel is intentionally absent, so hide the reopen button.
             agentCollapsed={hideAgent ? false : agentCollapsed}
             onOpenAgent={() => setAgentCollapsed(false)}
           />

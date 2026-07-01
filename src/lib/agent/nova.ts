@@ -1,7 +1,7 @@
 /**
- * Read-side for the Jarvis landing page (#1118, epic #1038) — the front door of the OS.
+ * Read-side for the Nova landing page (#1118, epic #1038) — the front door of the OS.
  *
- * Jarvis is the orchestrator's operator surface (backend ADR-0036/0080). This module
+ * Nova is the orchestrator's operator surface (backend ADR-0036/0080). This module
  * reads the conversation ledger the backend writes:
  *   - `agent_conversation` (FE #1064) — one row per session; `id` is the conversation_id
  *     correlation root.
@@ -20,7 +20,7 @@ import "server-only";
 import { getPool } from "@/lib/db/client";
 
 /** One session as the history rail lists it. */
-export interface JarvisConversation {
+export interface NovaConversation {
   id: string;
   title: string;
   startedAt: string; // ISO
@@ -30,7 +30,7 @@ export interface JarvisConversation {
 }
 
 /** One stage artifact within a run (an `agent_message`). */
-export interface JarvisStage {
+export interface NovaStage {
   id: string;
   role: string; // system | user | assistant | tool
   content: string;
@@ -39,22 +39,22 @@ export interface JarvisStage {
 }
 
 /** One orchestrator run within a conversation, with its ordered stages. */
-export interface JarvisRun {
+export interface NovaRun {
   id: string;
   agentName: string; // agent.display_name ?? agent.name
   status: string;
   startedAt: string; // ISO
   finishedAt: string | null; // ISO
   costUsd: number;
-  stages: JarvisStage[];
+  stages: NovaStage[];
 }
 
 /** A conversation with its runs (the drill-in detail). */
-export interface JarvisConversationDetail extends JarvisConversation {
-  runs: JarvisRun[];
+export interface NovaConversationDetail extends NovaConversation {
+  runs: NovaRun[];
 }
 
-const MOCK_CONVERSATIONS: JarvisConversation[] = [
+const MOCK_CONVERSATIONS: NovaConversation[] = [
   {
     id: "mock-conv-1",
     title: "Triage the print-queue ticket on PRINT-01",
@@ -73,13 +73,13 @@ const MOCK_CONVERSATIONS: JarvisConversation[] = [
   },
 ];
 
-const MOCK_DETAIL: Record<string, JarvisConversationDetail> = {
+const MOCK_DETAIL: Record<string, NovaConversationDetail> = {
   "mock-conv-1": {
     ...MOCK_CONVERSATIONS[0],
     runs: [
       {
         id: "mock-run-1",
-        agentName: "Jarvis",
+        agentName: "Nova",
         status: "succeeded",
         startedAt: "2026-06-21T14:02:00Z",
         finishedAt: "2026-06-21T14:02:08Z",
@@ -124,7 +124,7 @@ const MOCK_DETAIL: Record<string, JarvisConversationDetail> = {
 };
 
 /** The signed-in employee's conversations, newest activity first. */
-export async function listConversations(userId: string, limit = 50): Promise<JarvisConversation[]> {
+export async function listConversations(userId: string, limit = 50): Promise<NovaConversation[]> {
   const pool = getPool();
   if (!pool) return MOCK_CONVERSATIONS;
   try {
@@ -155,7 +155,7 @@ export async function listConversations(userId: string, limit = 50): Promise<Jar
       runCount: Number(r.run_count) || 0,
     }));
   } catch (err) {
-    console.error("Jarvis conversation list read failed:", err);
+    console.error("Nova conversation list read failed:", err);
     return [];
   }
 }
@@ -164,7 +164,7 @@ export async function listConversations(userId: string, limit = 50): Promise<Jar
 export async function getConversationDetail(
   conversationId: string,
   userId: string,
-): Promise<JarvisConversationDetail | null> {
+): Promise<NovaConversationDetail | null> {
   const pool = getPool();
   if (!pool) return MOCK_DETAIL[conversationId] ?? null;
   try {
@@ -200,7 +200,7 @@ export async function getConversationDetail(
     );
 
     const runIds = runRes.rows.map((r) => r.id);
-    const stagesByRun = new Map<string, JarvisStage[]>();
+    const stagesByRun = new Map<string, NovaStage[]>();
     if (runIds.length > 0) {
       const stageRes = await pool.query<{
         id: string;
@@ -246,7 +246,7 @@ export async function getConversationDetail(
       })),
     };
   } catch (err) {
-    console.error("Jarvis conversation detail read failed:", err);
+    console.error("Nova conversation detail read failed:", err);
     return null;
   }
 }

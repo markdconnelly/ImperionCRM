@@ -4,23 +4,23 @@ import { useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/icon";
 import { askAgentAction } from "@/lib/agent/ask-action";
-import { loadConversationDetailAction } from "@/app/(app)/jarvis/actions";
+import { loadConversationDetailAction } from "@/app/(app)/nova/actions";
 import { ProposedActionCard } from "@/components/agent/proposed-action-card";
-import type { JarvisConversation, JarvisConversationDetail } from "@/lib/agent/jarvis";
+import type { NovaConversation, NovaConversationDetail } from "@/lib/agent/nova";
 import type { ProposedAction } from "@/lib/services";
 import type { AgentMessage } from "@/types";
 
 /**
- * Jarvis console (#1118) — the codex-style front door: a session-history rail (left),
+ * Nova console (#1118) — the codex-style front door: a session-history rail (left),
  * the live orchestrator chat as the main focus (center), and a drill-in pop-out (right)
  * that opens a past session's verbose run/stage trace. Live turns go through the same
  * `askAgentAction` seam as the sidecar; the backend persists the conversation, so the
  * rail repopulates on reload (deploy-dormant until #1064 is prod-applied).
  */
-export function JarvisConsole({
+export function NovaConsole({
   initialConversations,
 }: {
-  initialConversations: JarvisConversation[];
+  initialConversations: NovaConversation[];
 }) {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   // Proposed-action envelopes (#1130) keyed by the agent message they accompany — kept off
@@ -32,7 +32,7 @@ export function JarvisConsole({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<JarvisConversationDetail | null>(null);
+  const [detail, setDetail] = useState<NovaConversationDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   function send() {
@@ -133,7 +133,7 @@ export function JarvisConsole({
       <section className="flex min-w-0 flex-1 flex-col rounded-lg border border-border bg-panel">
         <div className="flex h-12 items-center gap-2 border-b border-border px-4">
           <Icon name="Sparkles" size={16} className="text-accent" />
-          <span className="font-display text-sm font-semibold tracking-tight">Jarvis</span>
+          <span className="font-display text-sm font-semibold tracking-tight">Nova</span>
           <span className="text-xs text-dim">· your orchestrator — the driver of work</span>
         </div>
 
@@ -145,7 +145,7 @@ export function JarvisConsole({
                 What are we working on?
               </h2>
               <p className="mt-1 text-sm text-dim">
-                Ask Jarvis to triage a ticket, draft a reply, pull a report, or kick off a workflow.
+                Ask Nova to triage a ticket, draft a reply, pull a report, or kick off a workflow.
                 Drafts are queued for your approval — never sent automatically.
               </p>
             </div>
@@ -193,7 +193,7 @@ export function JarvisConsole({
               }}
               disabled={isPending}
               rows={1}
-              placeholder="Ask Jarvis to get to work…  (Enter to send, Shift+Enter for a new line)"
+              placeholder="Ask Nova to get to work…  (Enter to send, Shift+Enter for a new line)"
               className="max-h-40 flex-1 resize-none bg-transparent text-sm text-text placeholder:text-dim focus:outline-none"
             />
             <button type="submit" disabled={isPending || !draft.trim()} title="Send" className="pb-0.5">

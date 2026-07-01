@@ -95,7 +95,7 @@ describe("askAgentAction — proposedActions[] surfacing", () => {
   });
 
   it("omits proposedActions when the reply carries none", async () => {
-    h.ask.mockResolvedValue({ text: "Just info.", routedTo: "jarvis", routingReason: "chat" });
+    h.ask.mockResolvedValue({ text: "Just info.", routedTo: "nova", routingReason: "chat" });
     const result = await askAgentAction("what's up");
     expect(result.proposedActions).toBeUndefined();
   });

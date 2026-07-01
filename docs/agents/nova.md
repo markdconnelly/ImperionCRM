@@ -5,19 +5,21 @@ backend ADR-0036/0080). Schema: FE #1064 (`agent_conversation`, `agent_run.conve
 The orchestrator persona is **Nova** (ADR-0131; runtime persona `icm/executive/orchestrator/nova.md`).
 
 > **Name note (ADR-0016 / ADR-0131).** The orchestrator persona is **Nova**; the prior
-> working name was "Jarvis." Identity-bearing **code** identifiers are retained verbatim —
-> the route `/jarvis`, the component `jarvis-console.tsx`, and `src/lib/agent/jarvis.ts` are
-> still named `jarvis` (the same code-name-retention pattern as the `ImperionCRM` slug). The
-> FE surface rename (route/label `/jarvis` → Nova) is tracked separately ([#1672](https://github.com/markdconnelly/ImperionCRM/issues/1672)).
+> working name was "Jarvis." The FE surface was renamed to match ([#1672](https://github.com/markdconnelly/ImperionCRM/issues/1672)):
+> the route `/nova`, the component `nova-console.tsx`, and `src/lib/agent/nova.ts`. The old
+> `/nova` route **permanently redirects** to `/nova` (`next.config.mjs`) so existing
+> bookmarks and deep links keep working. (Identity-bearing names — the `ImperionCRM` slug,
+> Entra apps, DB names — are still retained verbatim per ADR-0016; the agent persona is not
+> one of those.)
 
 **Nova is the front door of Imperion OS** (#1118, epic #1038): the default page a user
 lands on after authenticating, and the intended driver of work. On this route the
 orchestrator is the *whole* screen — there is **no right-hand sidecar** (every other page
-keeps it; AppShell suppresses it on `/jarvis`).
+keeps it; AppShell suppresses it on `/nova`).
 
-## The surface (`/jarvis`)
+## The surface (`/nova`)
 
-A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
+A codex-style three-pane console (`src/components/agent/nova-console.tsx`):
 
 1. **Session history rail** (left) — the signed-in employee's past conversations
    (`agent_conversation`), newest activity first, with a **New conversation** button.
@@ -47,8 +49,8 @@ A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
 
 | Surface | Reads | Module |
 |---|---|---|
-| History rail | `agent_conversation` (scoped to `created_by`) | `src/lib/agent/jarvis.ts` |
-| Drill-in trace | `agent_run` → `agent_message` by `conversation_id` | `src/lib/agent/jarvis.ts` |
+| History rail | `agent_conversation` (scoped to `created_by`) | `src/lib/agent/nova.ts` |
+| Drill-in trace | `agent_run` → `agent_message` by `conversation_id` | `src/lib/agent/nova.ts` |
 | Live turn | backend orchestrator via `askAgentAction` | `src/lib/agent/ask-action.ts` |
 | Proposed-action approval | the reply's `proposedActions[]` envelope; resolve+validate via the action-contract catalog, then approve → `POST /agent/actions/execute` (input verbatim) via `approveProposedAction` | `src/lib/agent/ask-action.ts` · `src/lib/agent/action-catalog.ts` · `src/components/agent/proposed-action-card.tsx` |
 
@@ -67,11 +69,11 @@ A codex-style three-pane console (`src/components/agent/jarvis-console.tsx`):
 
 ## The app-wide sidecar (every other page)
 
-Off `/jarvis`, the orchestrator rides along as the right-hand **sidecar** (`AgentPanel`).
+Off `/nova`, the orchestrator rides along as the right-hand **sidecar** (`AgentPanel`).
 Its conversation + `conversation_id` live in a shell-level `AgentSessionProvider`
 (`src/components/agent/agent-session-context.tsx`, #1119) mounted once in `AppShell`, so the
 thread **persists as you move page to page**, collapse/expand the panel, or pass through
-`/jarvis` (where the sidecar is suppressed). It rehydrates from `sessionStorage`, so a reload
+`/nova` (where the sidecar is suppressed). It rehydrates from `sessionStorage`, so a reload
 keeps the thread within the browser session; the durable ledger remains the backend's
 (`agent_conversation`, ADR-0042).
 

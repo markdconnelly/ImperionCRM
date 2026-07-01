@@ -73,7 +73,7 @@ export default async function ThreadsPage() {
             items={mentions}
             proposeReplyAction={proposeThreadsReplyAction}
             canReply={canPost}
-            emptyHint="No mentions yet — Jarvis routes new ones by intent (lead → Chase, support → Felix, brand → Belle)."
+            emptyHint="No mentions yet — Nova routes new ones by intent (lead → Chase, support → Felix, brand → Belle)."
             inbound
           />
         </section>

@@ -12,7 +12,7 @@ import type { ProposedAction } from "@/lib/services";
  * The right-hand orchestrator panel — LIVE against the backend's Claude tool-use loop
  * (backend ADR-0036) via `askAgentAction`. The conversation + its id live in the
  * shell-level AgentSessionProvider (#1119), so the thread persists as you move page to
- * page, collapse/expand, or pass through /jarvis — this panel is a pure consumer. When
+ * page, collapse/expand, or pass through /nova — this panel is a pure consumer. When
  * the backend isn't configured the action returns a clear notice instead of erroring, so
  * the panel never breaks the shell.
  */
