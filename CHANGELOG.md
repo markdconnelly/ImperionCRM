@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.28.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.27.0...imperion-crm-v0.28.0) (2026-07-01)
+
+
+### Features
+
+* **cockpit:** render human_follow_up deny-route actions distinctly ([#1784](https://github.com/markdconnelly/ImperionCRM/issues/1784)) ([#1787](https://github.com/markdconnelly/ImperionCRM/issues/1787)) ([9c07fa9](https://github.com/markdconnelly/ImperionCRM/commit/9c07fa9e5b80ccc84c9777f5cd1c5970e0a821d5))
+* **connections:** surface Threads token expiry + 60-day refresh health ([#1502](https://github.com/markdconnelly/ImperionCRM/issues/1502)) ([#1758](https://github.com/markdconnelly/ImperionCRM/issues/1758)) ([c5b8242](https://github.com/markdconnelly/ImperionCRM/commit/c5b8242bec1bdb4323897a408d42bedf51e671c9))
+* **connections:** Threads connect via Instagram-identity OAuth ([#1500](https://github.com/markdconnelly/ImperionCRM/issues/1500)) ([#1756](https://github.com/markdconnelly/ImperionCRM/issues/1756)) ([c3019c9](https://github.com/markdconnelly/ImperionCRM/commit/c3019c9af68b8b36fae297c054dae8d68a18bb24))
+* **db:** agent_action_execution idempotency ledger ([#1793](https://github.com/markdconnelly/ImperionCRM/issues/1793)) ([#1794](https://github.com/markdconnelly/ImperionCRM/issues/1794)) ([94c9d73](https://github.com/markdconnelly/ImperionCRM/commit/94c9d73f1adc8b9d7958df41b5939bab2e27a2bb))
+* **fe:** custom minute interval for connection poll cadence ([#1789](https://github.com/markdconnelly/ImperionCRM/issues/1789)) ([#1790](https://github.com/markdconnelly/ImperionCRM/issues/1790)) ([e50630a](https://github.com/markdconnelly/ImperionCRM/commit/e50630adbde165868fb131689c076a065bc2fd9e))
+* **marketing:** elevate advocacy-capture to dual-audience SOP ([#1761](https://github.com/markdconnelly/ImperionCRM/issues/1761)) ([#1774](https://github.com/markdconnelly/ImperionCRM/issues/1774)) ([4317804](https://github.com/markdconnelly/ImperionCRM/commit/43178043ccd5665bcb97d71a086cae9bdb89fab2))
+* **marketing:** elevate campaign-send to full dual-audience SOP ([#1763](https://github.com/markdconnelly/ImperionCRM/issues/1763)) ([#1773](https://github.com/markdconnelly/ImperionCRM/issues/1773)) ([232d9d8](https://github.com/markdconnelly/ImperionCRM/commit/232d9d8a1cf6740514eaa5d5b3becaf092b1b861))
+* **marketing:** elevate lead-capture to dual-audience SOP ([#1766](https://github.com/markdconnelly/ImperionCRM/issues/1766)) ([#1775](https://github.com/markdconnelly/ImperionCRM/issues/1775)) ([8595926](https://github.com/markdconnelly/ImperionCRM/commit/8595926ccdf31c054fd179b5a5973c6c509ed30f))
+* **marketing:** elevate social-inbox to full dual-audience SOP with a/b/c loop ([#1759](https://github.com/markdconnelly/ImperionCRM/issues/1759)) ([#1760](https://github.com/markdconnelly/ImperionCRM/issues/1760)) ([e130c0f](https://github.com/markdconnelly/ImperionCRM/commit/e130c0f12921411a091717f35e3a08a1375e57c5))
+
+
+### Bug Fixes
+
+* **ci:** guard ADR index freshness ([#1493](https://github.com/markdconnelly/ImperionCRM/issues/1493)) ([#1796](https://github.com/markdconnelly/ImperionCRM/issues/1796)) ([4de125d](https://github.com/markdconnelly/ImperionCRM/commit/4de125dac86212b64e6a2ece27402d4d8f585b3c))
+* **db:** renumber duplicate 0246 purview migration to 0247 ([#1797](https://github.com/markdconnelly/ImperionCRM/issues/1797)) ([#1799](https://github.com/markdconnelly/ImperionCRM/issues/1799)) ([f7f4147](https://github.com/markdconnelly/ImperionCRM/commit/f7f4147f874d6938efba62b56cef2d136aeb2373))
+* **schema:** recreate purview_compliance_golden on the golden contract envelope ([#1662](https://github.com/markdconnelly/ImperionCRM/issues/1662)) ([#1795](https://github.com/markdconnelly/ImperionCRM/issues/1795)) ([94a63ae](https://github.com/markdconnelly/ImperionCRM/commit/94a63ae9e111afa067eb46c592b8622e0f3d728c))
+
 ## [0.27.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.26.0...imperion-crm-v0.27.0) (2026-06-30)
 
 
