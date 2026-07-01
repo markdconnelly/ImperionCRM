@@ -4,7 +4,7 @@ title: Silver semantic layer
 description: Curated business meaning, join paths, and source-of-record rules for the silver tier — human- and agent-readable, version-controlled, PII-free.
 resource: ../../decision-records/ADR-0086-okf-semantic-layer-over-silver.md
 tags: [silver, semantic-layer, okf, data-model]
-timestamp: 2026-06-26T00:00:00Z
+timestamp: 2026-07-01T00:00:00Z
 ---
 
 # Silver semantic layer (OKF bundle)
@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**93 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**113 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -49,6 +49,7 @@ core subset). Remaining objects from the
 | [`cloud_asset`](tables/cloud_asset.md) | merge | cloud provider (read-only; Azure ARM first, on-prem LP merge) | ADR-0097 |
 | [`software_ci`](tables/software_ci.md) | merge | Intune managed-apps (read-only; device-resolved; on-prem LP merge) | ADR-0097 |
 | [`opportunity`](tables/opportunity.md) | merge | website > autotask > KQM | ADR-0080 |
+| [`contract_renewal`](tables/contract_renewal.md) | single-SoR (app-native satellite) | Imperion app (opportunity merge never writes it) | ADR-0130 |
 | [`quota`](tables/quota.md) | single-SoR | website system of record | ADR-0072 |
 | [`forecast_snapshot`](tables/forecast_snapshot.md) | derived ledger | website (nightly snapshot job) | ADR-0072 |
 | [`credential_exposure`](tables/credential_exposure.md) | merge | Dark Web ID (email+domain match) | ADR-0040 |

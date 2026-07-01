@@ -4,7 +4,7 @@ title: Master coverage matrix
 description: Every data object → owning domain → implementation archetype → IKF (OKF) concept status → acting ICM workflow. The single map from the data-and-automation doctrine.
 resource: ../../architecture/data-and-automation-doctrine.md
 tags: [semantic-layer, okf, coverage, matrix, medallion, icm, domain]
-timestamp: 2026-06-26T12:00:00Z
+timestamp: 2026-07-01T00:00:00Z
 ---
 
 # Master coverage matrix
@@ -64,6 +64,7 @@ classed here by the same content rule (the file inherits it when authored). A co
 | Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
 |---|---|---|---|---|---|
 | [opportunity](tables/opportunity.md) | Sales | A | fin | ✅ | opportunity-create (Chase MQL→SQL, L2 auto-internal); sale→delivery; forecasting; renewals (`kind=renewal`, dual-run rank-guarded merge) |
+| [contract_renewal](tables/contract_renewal.md) | Sales | B (app-native satellite — opportunity merge never writes it, ADR-0130 D1) | op | ✅ | renewals radar (#1323) → repricing (#1326, Chase) → worklist (#1327) → quote→e-sign (#1328); revenue columns financial-gated (D7) |
 | [quota](tables/quota.md) | Sales | B | fin | ✅ | forecasting (attainment) |
 | [forecast_snapshot](tables/forecast_snapshot.md) | Sales | C | fin | ✅ | forecasting (nightly trend/accuracy) |
 | [proposal](tables/proposal.md) | Sales | B | fin | ✅ | proposal-draft |
