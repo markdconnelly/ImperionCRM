@@ -1045,6 +1045,8 @@ erDiagram
       jsonb provider_config "non-secret per-connection config; UniFi {connectionType,controllerHost} (#962)"
       jsonb sync_cursor
       timestamptz last_sync_at
+      timestamptz token_issued_at "OAuth token lifecycle — timestamp only, NEVER the token (0258, #1798; BE writes #497/#506, FE badge #1502)"
+      timestamptz token_expires_at "self-expiry driving the token-health badge; null = unknown/not applicable (0258)"
       int poll_interval_minutes "pipeline poll cadence; 0 = manual/paused (ADR-0038)"
     }
     INTERACTION {

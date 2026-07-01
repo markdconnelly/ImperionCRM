@@ -16019,8 +16019,10 @@ interface ConnectionDbRow {
   auth_method?: string | null;
   cert_thumbprint?: string | null;
   client_id?: string | null;
-  // Self-expiring token lifecycle (FE #1502). No DB column yet — the backend exposes these once
-  // it stores them (the dependency issue), so they are absent → undefined → null today.
+  // Self-expiring token lifecycle (FE #1502). Columns exist as of migration 0258 (#1798);
+  // the backend writes them on connect/refresh (BE #506). Deliberately NOT selected yet —
+  // adding them to the SELECTs before 0258 is prod-applied would 42703 the whole list
+  // (Mark-gated apply) — so they stay absent → undefined → null until #1800 wires them post-apply.
   token_issued_at?: Date | null;
   token_expires_at?: Date | null;
 }

@@ -7,7 +7,7 @@ description: OAuth/integration connection record + Key Vault credential registry
 resource: ../../../decision-records/ADR-0103-connection-credential-registry.md
 tags: [silver, identity, connection, reference, config]
 data_class: security_credentials
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-07-01T00:00:00Z
 ---
 
 # connection
@@ -54,6 +54,7 @@ honors it); `sync_cursor` tracks incremental progress.
 | `poll_interval_minutes` | integer | cadence gate (default `60`; `0` = manual/paused; CHECK ≥ 0; ADR-0038, migration 0035) |
 | `sync_cursor` | jsonb | incremental cursor |
 | `last_sync_at` / `connected_at` | timestamptz | |
+| `token_issued_at` / `token_expires_at` | timestamptz | self-expiring OAuth token lifecycle (0258, #1798) — backend writes on connect/refresh (BE #497/#506), FE token-health badge reads (#1502). Generic to any custodied OAuth connection. **Timestamps ONLY — never token material** (ADR-0102/0103); NULL = unknown/not applicable |
 
 ## Joins
 

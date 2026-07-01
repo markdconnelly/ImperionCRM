@@ -134,6 +134,7 @@ done/▶-in-flight ledger.
   - *Finance/marketing/client-success*: `0236–0238` `content_asset`/`reference`/`brand_asset` · `0240` `budget` · `0241` `invoice` QBO mirror (ADR-0140) · `0243` `it_budget` · `0244` `stakeholder`
   - *Eval goldens*: `0225` org-agents seed · `0228–0235` (partner/marketing/deputy-cfo/sales/client-success/orchestrator/sales-desk) · `0239` marketing content/advocacy · `0242` finance
 - `0245` `agent_run.parent_run_id` (tier-delegation run-tree link, [#1746](https://github.com/markdconnelly/ImperionCRM/issues/1746)) — **authored on `main`, prod-apply pending** (each prod `migrate.mjs` apply is Mark-gated, §10.3)
+- `0258` `connection.token_issued_at`/`token_expires_at` (self-expiring OAuth token lifecycle, [#1798](https://github.com/markdconnelly/ImperionCRM/issues/1798); FE #1502 token-health badge reads, backend #497/#506 writes — timestamps only, never token material, ADR-0102/0103) — **authored on `main`, prod-apply pending** (Mark-gated)
 
 **Recent ADRs** ([`docs/decision-records/`](decision-records/README.md)) — note the
 consolidated dossiers that supersede earlier scattered ADRs:
