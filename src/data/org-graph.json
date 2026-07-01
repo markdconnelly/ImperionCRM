@@ -96,7 +96,9 @@
       ],
       "okfRooms": [
         "account",
-        "contact"
+        "contact",
+        "contract",
+        "opportunity"
       ],
       "workflows": [
         {
@@ -114,6 +116,15 @@
             "02-classify-route",
             "03-delegate",
             "04-synthesize-return"
+          ]
+        },
+        {
+          "slug": "legal-contract-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
           ]
         },
         {
