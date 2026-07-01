@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  # workflow_dispatch exists so the adr-index-heal workflow can run the required
+  # checks (build/test/docs) on its GITHUB_TOKEN-created heal PR — bot-created
+  # PRs never fire `pull_request` runs (the same constraint release-please
+  # documents; workflow_dispatch is GitHub's documented exception). (#1493)
+  workflow_dispatch:
 
 jobs:
   build:
@@ -73,6 +78,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # ADR-index drift scoping diffs against the PR base (#1493)
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -91,7 +98,28 @@ jobs:
           done
           exit $missing
       - name: ADR index is generated, deduped, and frontmatter-complete (ADR-0090)
-        run: node scripts/adr-index.mjs --check
+        # Drift scoping (#1493): the check runs against the PR merge ref, which is
+        # computed when the run STARTS — concurrent ADR merges can land drift on
+        # main afterwards without re-running anyone's checks (strict up-to-date is
+        # off). So a stale index only fails the PR that AUTHORED it (i.e. touched
+        # docs/decision-records/); a PR that merely inherited main's drift passes
+        # with a warning, and the adr-index-heal workflow repairs main itself.
+        # See docs/operations/adr-index-guard.md.
+        run: |
+          if node scripts/adr-index.mjs --check; then
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "$GITHUB_BASE_REF"
+            if git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD | grep -q '^docs/decision-records/'; then
+              echo "::error::This PR changes docs/decision-records/ but the generated index is stale. Run 'node scripts/adr-index.mjs' and commit README.md + adr-index.json (docs/operations/adr-index-guard.md)."
+              exit 1
+            fi
+            echo "::warning::ADR index drift inherited from main — this PR does not touch docs/decision-records/, so it is not blocked. The adr-index-heal workflow opens+merges a heal PR against main (#1493)."
+            exit 0
+          fi
+          echo "::error::ADR index is stale on this ref. On main the adr-index-heal workflow self-heals; otherwise run 'node scripts/adr-index.mjs' and commit (docs/operations/adr-index-guard.md)."
+          exit 1
 
   icm-conformance:
     # ICM conformance gate (ADR-0088, issues #699 + #702 / epic #695). Validates
