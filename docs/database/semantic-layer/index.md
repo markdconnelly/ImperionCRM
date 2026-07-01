@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**120 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**122 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -73,6 +73,8 @@ core subset). Remaining objects from the
 | [`strategic_business_review`](tables/strategic_business_review.md) | single-SoR | website system of record | ADR-0022 |
 | [`sbr_dimension_score`](tables/sbr_dimension_score.md) | single-SoR (SBR child) | website (per-dimension re-score; trend vs benchmark) | ADR-0022 |
 | [`sbr_ticket`](tables/sbr_ticket.md) | single-SoR (SBR↔ticket bridge) | website (references ticket history, never copies) | ADR-0022 |
+| [`client_offboarding`](tables/client_offboarding.md) | single-SoR | app-native (backend offboarding executor; retention/legal-hold clock dial-proof) | ADR-0086 (#1622) |
+| [`client_offboarding_step`](tables/client_offboarding_step.md) | single-SoR (offboarding child) | app-native (idempotent per offboarding+code; close-on-verification) | ADR-0086 (#1622) |
 | [`ticket`](tables/ticket.md) | single-SoR | Autotask (external SoR) | ADR-0044 |
 | [`chat_session`](tables/chat_session.md) | single-SoR | website (backend chat process; native pre-ticket) | ADR-0074 |
 | [`ci_relationship`](tables/ci_relationship.md) | write-back sidecar (app-native CMDB) | app-native derivation (IT Glue write-back gated) | ADR-0078/0097 |
