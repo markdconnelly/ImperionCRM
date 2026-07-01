@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
-import { HUMAN_FOLLOW_UP_KIND, type PendingActionItem } from "@/lib/agent/pending-action-cockpit";
+import { HUMAN_FOLLOW_UP_KIND } from "@/lib/agent/pending-action-kind";
+import type { PendingActionItem } from "@/lib/agent/pending-action-cockpit";
 import type { IcmActionResult } from "@/app/(app)/workflows/actions";
 
 /**

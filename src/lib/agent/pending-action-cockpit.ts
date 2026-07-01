@@ -19,6 +19,7 @@
  */
 import "server-only";
 import { getPool } from "@/lib/db/client";
+import { HUMAN_FOLLOW_UP_KIND } from "./pending-action-kind";
 
 /** A target the action acts on, when the payload carries a resolvable reference. */
 export interface PendingActionTarget {
@@ -28,13 +29,10 @@ export interface PendingActionTarget {
   href: string | null;
 }
 
-/**
- * The `action_kind` a deny-route escalation row carries (backend #499 / ADR-0109). It is
- * NOT a proposed send — it is an operator TO-DO: a denied inbound social thread that still
- * owes the customer a reply (`plan_seq=NULL` ⇒ never dispatches; queue item only). The
- * cockpit renders it as a distinct "reply owed" card, not an approve-a-draft card (#1784).
- */
-export const HUMAN_FOLLOW_UP_KIND = "human_follow_up";
+// Re-export the client-safe kind constant so existing server-side importers keep working;
+// the client cockpit imports it directly from `./pending-action-kind` (never from this
+// `server-only` module, which would break the client bundle — #1784 build fix).
+export { HUMAN_FOLLOW_UP_KIND };
 
 /** One parked agent action awaiting an approve / reject decision (any agent). */
 export interface PendingActionItem {
