@@ -171,7 +171,13 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [timesheet](tables/timesheet.md) | Finance | B | fin | ✅ | time-approval |
 | [time_ticket](tables/time_ticket.md) | Finance | D | fin | ✅ | Time Ticket writer (→ Autotask) |
 | cost_allocation | Finance | F | fin | ⏳ | cost-allocation model (#1091, profitability epic #1044) — derived view: billable hours + billable tooling/expense per client (account) × service line (ticket category) × month; labor HOURS only (the labor dollar lives only in the governed `labor_cost_to_serve`/`cost_to_serve` metrics, the sole pay_rate readers); license seat cost dormant until #1041 |
-| employee_profile, pay_rate | People | H | hr | ⏳ | n/a (comp-gated) |
+## People / payroll
+
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [employee_profile](tables/employee_profile.md) (+ pay_rate) | People | H | hr | ✅ | n/a (HR core + effective-dated comp, comp-gated; HR-core cols + QBO Payroll employee mapping added by #1621/0251) |
+| [payroll_run](tables/payroll_run.md) | People | B (payroll provider external SoR, read-only mirror) | fin | ✅ | W-2 payroll 10-H11 (Audrey + Holly + human; B6 money-gate `always_gate`, propose-only — draft on the action plane, mirror from provider read-back; #1621/0251, 💤 dormant until apply + executor) |
+| [pay_statement](tables/pay_statement.md) | People | B (payroll provider external SoR, read-only mirror) | fin | ✅ | W-2 payroll 10-H11 — per-employee gross/net/withholding; A9b idempotency (run, employee) = no double-pay; reconciliation vs hours × pay_rate is a backend read-model (#1621/0251) |
 
 ## Expense
 
