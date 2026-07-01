@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**122 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**125 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -112,6 +112,9 @@ core subset). Remaining objects from the
 | [`social_post`](tables/social_post.md) | single-SoR | website system of record (compose-once organic composition) | ADR-0124 |
 | [`social_post_channel`](tables/social_post_channel.md) | single-SoR | website system of record (per-network fan-out result) | ADR-0124 |
 | [`social_engagement`](tables/social_engagement.md) | single-SoR | website system of record for triage; platform source of content | ADR-0124 |
+| [`commission_plan`](tables/commission_plan.md) | single-SoR (app-native, human-curated) | website comp-admin surface; agents read-only | #1650 |
+| [`commission_attainment`](tables/commission_attainment.md) | single-SoR (backend-computed) | backend compute from `opportunity`/`quota`; as-of persisted | #1650 |
+| [`commission_statement`](tables/commission_statement.md) | single-SoR (backend-computed, human-gated) | compute auto, payout always_gate; paid = external payroll/QBO record | #1650 |
 | [`timesheet`](tables/timesheet.md) | single-SoR | website system of record | ADR-0082 |
 | [`expense_report`](tables/expense_report.md) | single-SoR | website system of record | ADR-0083 |
 | [`time_record`](tables/time_record.md) | merge | website attendance (Autotask corroborates) | ADR-0082 |
