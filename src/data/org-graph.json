@@ -202,7 +202,8 @@
         "cloud_asset",
         "posture_snapshot",
         "tenant_posture",
-        "posture_policy"
+        "posture_policy",
+        "ticket"
       ],
       "workflows": [
         {
@@ -212,6 +213,15 @@
             "02-classify-route",
             "03-delegate",
             "04-synthesize-return"
+          ]
+        },
+        {
+          "slug": "incident-escalation-triage",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
           ]
         },
         {

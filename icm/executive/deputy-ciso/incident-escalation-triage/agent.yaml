@@ -1,0 +1,12 @@
+name: incident-escalation-triage
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Roman persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../roman.md
+  - ./prose.md
+okf_rooms: [ticket, device, cloud_asset, account, tenant_posture]   # subset of executive/deputy-ciso/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Cyrus / handoff to Nova; never contains, never actuates (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled incident-triage brief when every item is grounded and cited by reference, and delegate a grounded containment follow-up to Cyrus; any active incident, ambiguous severity, gap, or recall miss parks for Mark — Roman never contains, never actuates, and never bypasses Cyrus's gauntlet"
