@@ -7,7 +7,7 @@ description: Merged silver opportunity from three bronze sources (KQM quote head
 resource: ../../../decision-records/ADR-0080-sale-to-delivery-orchestration.md
 tags: [silver, sales, opportunity, kqm, autotask, forecast]
 data_class: financial
-timestamp: 2026-06-27T00:00:00Z
+timestamp: 2026-07-01T00:00:00Z
 ---
 
 # opportunity
@@ -89,13 +89,16 @@ targets in [`quota`](quota.md). Revenue + quota are RBAC-gated (ADR-0030 —
 
 ## Kind discriminator
 
-`opportunity.kind` (`new` | `renewal` | `upsell` | …) types the opportunity. A **renewal**
-is an opportunity *kind*, spawned by a contract's expiration (a sales event): the
-opportunity documents the pursuit while the app-native
-[`contract_renewal`](../../../decision-records/ADR-0130-renewals-and-opportunity-consistency.md)
-satellite holds the renewal-specific lifecycle and pricing (the opportunity merge never
-writes that satellite). A `kind=renewal` opportunity is minted at *pursuit*, not when the
-renewal is first identified.
+`opportunity.kind` (`new` | `renewal` | `upsell` | …) types the opportunity — a loose
+vocabulary **text** column (new kinds need no migration), `NOT NULL DEFAULT 'new'`,
+landed by migration `0248` (ADR-0130 D2). It is **app/website-owned**: the bronze
+sources do not carry it and the rank-guarded merge does not project it, so the merge
+never clobbers it. A **renewal** is an opportunity *kind*, spawned by a contract's
+expiration (a sales event): the opportunity documents the pursuit while the app-native
+[`contract_renewal`](contract_renewal.md) satellite holds the renewal-specific lifecycle
+and pricing (the opportunity merge never writes that satellite — ADR-0130 D1). A
+`kind=renewal` opportunity is minted at *pursuit*, not when the renewal is first
+identified.
 
 ## Joins
 
@@ -103,6 +106,9 @@ renewal is first identified.
 - `account_external_ref` → the silver account.
 - `owner_user_id` → `app_user`: the deal owner — the axis quota and forecast
   roll-ups group by (ADR-0072).
+- Reverse: [`contract_renewal`](contract_renewal.md)`.opportunity_id` → this row
+  (`kind='renewal'` — the pursuit artifact; renewal lifecycle/pricing live on the
+  satellite, ADR-0130).
 - Downstream: the merged opportunity feeds the sale→delivery executor (ADR-0044)
   — client setup, provisioning, and ticket-fire, DocuSign-gated and idempotent.
 

@@ -7,7 +7,7 @@ description: Managed-services contract — Autotask is the external system of re
 resource: ../../../decision-records/ADR-0044-silver-contracts-tickets.md
 tags: [silver, service, contract, autotask]
 data_class: operational
-timestamp: 2026-06-26T00:00:00Z
+timestamp: 2026-07-01T00:00:00Z
 ---
 
 # contract
@@ -60,8 +60,13 @@ operational contract record, not the signing ceremony.
 - **Expiry radar (#1323, renewals epic #1304).** A forward read-projection: active contracts
   (`status <> '2'`) whose `end_date` falls in a look-ahead window, ordered by lead time
   (`end_date − CURRENT_DATE`), surfaced with `category` and `estimated_revenue` as the renewal
-  worklist. Read-only over this silver — Autotask stays authoritative; no new entity, no
+  worklist. Read-only over this silver — Autotask stays authoritative; no
   write-back. `estimated_revenue` is RBAC-gated at render (`canSeeRevenue`, ADR-0030).
+- Reverse: [`contract_renewal`](contract_renewal.md)`.contract_id` → this contract (ADR-0130,
+  migration `0248`): the app-native in-flight renewal of an expiring term. The radar snapshots
+  `estimated_revenue` into `contract_renewal.current_revenue` at open and pins `end_date` as
+  `term_end` (one renewal per contract per term). Imperion owns the satellite; this contract
+  row stays Autotask-SoR.
 
 ## Notes
 

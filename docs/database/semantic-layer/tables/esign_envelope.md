@@ -7,7 +7,7 @@ description: One DocuSign e-signature envelope against a proposal — the signat
 resource: ../../../decision-records/ADR-0071-esign-docusign-integration.md
 tags: [silver, sales, esign, docusign, signature]
 data_class: client_pii
-timestamp: 2026-06-22T00:00:00Z
+timestamp: 2026-07-01T00:00:00Z
 ---
 
 # esign_envelope
@@ -58,6 +58,9 @@ decision 4), not stored here.
 - `contract_id` → `contract` (the contract created from the signed proposal, ADR-0044).
 - Mirror (not FK): `proposal.esign_status` / `contract.esign_status` denormalize this
   row's `status` for fast read.
+- Reverse: [`contract_renewal`](contract_renewal.md)`.esign_envelope_id` → this envelope
+  (ADR-0130, migration `0248`): set when a renewal quote goes out for signature
+  (`contract_renewal.status = 'sent'`).
 - Upstream: the DocuSign envelope is mapped by `(provider='docusign', external_ref=
   envelope_id)` (ADR-0012), the same identity convention as other feeds, so the Connect
   webhook upserts status by its own id.

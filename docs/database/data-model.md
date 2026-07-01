@@ -425,6 +425,56 @@ erDiagram
 > the union (precedence website > autotask > kqm) is a pipeline-repo transform (ADR-0039
 > pattern), shipped separately; 0083 does not modify the live `opportunity` table.
 
+### Contract renewals — `contract_renewal` satellite + `opportunity.kind` (ADR-0130, migration 0248, #1324)
+
+The renewal motion's data spine (epic #1304). A renewal is **NOT a flavored opportunity** —
+the silver `opportunity` is externally merged every cycle (precedence website > autotask >
+kqm), so app-native renewal fields on it would be clobbered on every run. `contract_renewal`
+is a **first-class app-native satellite** (ADR-0130 D1, archetype B): **Imperion is its SoR;
+the opportunity merge never writes it**. It holds the renewal **lifecycle**
+(`contract_renewal_status` enum: `identified → priced → quoted → sent → renewed | repriced |
+churned`) and the **layered repricing** (D6): `current_revenue` (a **snapshot** of
+`contract.estimated_revenue` at open — the base), `proposed_revenue` (human-overridable), and
+`proposed_pricing` JSONB (the full derivation: base · escalation % + source · term incentive ·
+cost pass-through · final · override) for margin display + audit.
+
+```mermaid
+erDiagram
+    CONTRACT ||--o{ CONTRACT_RENEWAL : "expiring term (UNIQUE contract+term_end)"
+    ACCOUNT ||--o{ CONTRACT_RENEWAL : client
+    OPPORTUNITY |o--o{ CONTRACT_RENEWAL : "kind=renewal pursuit (minted at pursuit, D3)"
+    ESIGN_ENVELOPE |o--o{ CONTRACT_RENEWAL : "renewal quote sent"
+    CONTRACT_RENEWAL {
+      uuid id PK
+      uuid tenant_id
+      uuid account_id FK
+      uuid contract_id FK "the expiring agreement (CASCADE)"
+      text status "enum identified|priced|quoted|sent|renewed|repriced|churned"
+      numeric current_revenue "snapshot of contract.estimated_revenue at open"
+      numeric proposed_revenue "human-overridable"
+      jsonb proposed_pricing "full repricing derivation (D6)"
+      uuid opportunity_id FK "kind=renewal, NULL until pursuit (SET NULL)"
+      uuid esign_envelope_id FK "set when sent (SET NULL)"
+      date term_end "the contract.end_date it renews"
+    }
+```
+
+**Two-stage trigger (D3):** the renewals radar (#1323, over `contract.end_date`) creates the
+row at `status=identified` when a contract crosses the lead-time threshold (default 90 days)
+— app-only, **no opportunity yet** (no Autotask pollution 90 days early). Pursuit (worklist
+#1327 / backend repricing executor #1326) mints the `kind=renewal` opportunity and links it.
+`UNIQUE (contract_id, term_end)` is the **radar idempotency key** — one renewal per contract
+per expiring term. Grants (ADR-0127 least-priv): web + backend read/insert/update (no
+DELETE — a renewal terminates via lifecycle), both pipelines read-only. Revenue columns are
+**financial-gated at render** (`canSeeRevenue`, ADR-0030 / D7). No Autotask write-back in
+this slice (separate gated backend slice). OKF concept:
+[`semantic-layer/tables/contract_renewal.md`](semantic-layer/tables/contract_renewal.md).
+
+The same migration adds **`opportunity.kind`** (D2): a loose-vocabulary `text NOT NULL
+DEFAULT 'new'` discriminator (`new` | `renewal` | `upsell` | … — the `ci_relationship`
+precedent, new kinds need no migration), app/website-owned; the bronze sources don't carry
+it and the rank-guarded merge doesn't project it, so the merge never clobbers it.
+
 ## Diagram 2 — Integrations, demand generation, communications & consent
 
 > **As-built note:** Diagram 2 is the original *design* sketch. The tables actually
