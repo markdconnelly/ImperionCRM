@@ -1,6 +1,6 @@
 # room.yaml — the procurement domain's least-privilege budget (ADR-0088 §3).
 #
-# Machine-readable companion to vance.md. Narrows icm/CONSTITUTION.yaml; a
+# Machine-readable companion to room.md. Narrows icm/CONSTITUTION.yaml; a
 # workflow's agent.yaml narrows further (workflow ⊆ domain ⊆ Constitution; gate:
 # scripts/agent-yaml-gate.mjs). Every entry MUST appear in icm/CONSTITUTION.yaml.
 # No secrets, no client PII (ADR-0060).
@@ -8,13 +8,21 @@
 reports_to: deputy-cfo   # Vance reports to Sterling (Revenue/Client/Finance division)
 
 # Procurement reads spend/agreement facts and drafts vendor recommendations;
-# every customer/vendor-facing commitment parks for a human.
+# every money commitment (purchase / renewal / cancellation / term change) is
+# architecturally always_gate (ADR-0109, migration 0184) — the domain has NO
+# send tool and NO direct silver write; the one act path is the backend-executed
+# governed Pax8 sequence, not an ICM tool.
 tools:
   - pg.read
   - knowledge.search
   - memory.recall
 
+# The procurement data scope — the rooms a procurement worker may read (each a
+# coverage-matrix row, ADR-0086). Vendor pricing/terms never cross a client or
+# tenant boundary (CS-08 §5).
 okf_rooms:
-  - account
-  - license_assignment
-  - invoice
+  - account            # client spine — which client a subscription/agreement belongs to
+  - license_assignment # agreement/true-up license entitlement facts (#1041)
+  - contract           # agreement/expiry/terms — the renewal + cancellation clocks (#1687)
+  - invoice            # QBO read-only mirror — the billing consequence of a buy
+  - opportunity        # the won deal whose line-items trigger sourcing (Chase→Vance seam, ADR-0096)

@@ -1377,7 +1377,7 @@
       "persona": "Vance",
       "reportsTo": "deputy-cfo",
       "humanManager": "nick",
-      "ceiling": "L2",
+      "ceiling": "L3",
       "serves": null,
       "division": null,
       "title": "Procurement",
@@ -1392,7 +1392,9 @@
       "okfRooms": [
         "account",
         "license_assignment",
-        "invoice"
+        "contract",
+        "invoice",
+        "opportunity"
       ],
       "workflows": []
     },
