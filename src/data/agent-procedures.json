@@ -4538,6 +4538,239 @@
       "kind": "executive",
       "procedures": [
         {
+          "slug": "conformance-drift-oversight",
+          "title": "conformance-drift-oversight (Chief Risk Officer / Platform & Assurance, executive)",
+          "job": "on a schedule, roll platform-conformance and control-drift signals — autonomy-dial changes, budget/ceiling drift, gate failures — into a conformance brief for Mark, leading with the highest-risk drift and the quarantine candidates, and where a drift finding is grounded, delegate the *verification* to Vera. Jessica never applies the fix she flags.",
+          "trigger": "scheduled (start of the working day / week). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled conformance-drift brief when every finding is grounded and cited by reference, and delegate flagged drift to Vera for verification/observation only; Jessica never applies a correction, never flips a dial, never ratifies a control — every fix, governance change, and ratification parks for Mark",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "agent_autopilot_policy"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's dial state, conformance / gate outcomes, and Platform run-ledger and handoff signals into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the autonomy-dial state and its recent changes into a flat list keyed by agent/workflow. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read Vera's run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach prior Platform observation activity by agent, id only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull recent conformance / gate outcomes recorded on the platform; attach each failure by agent/workflow, id only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's agents via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Autonomy dial",
+                    "`autopilot_policies` · `okf:agent_autopilot_policy`",
+                    "current state + recent changes",
+                    "the control surface being watched for drift"
+                  ],
+                  [
+                    "Platform run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Vera runs",
+                    "what Platform has already observed"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open Platform / conformance signals",
+                    "prior drift findings in motion"
+                  ],
+                  [
+                    "Conformance outcomes",
+                    "eval / gate result records (via `pg.read`)",
+                    "recent gate + conformance failures",
+                    "where the workforce is out of conformance"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's agents in scope",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of conformance / drift signals keyed by agent/workflow, with the dial state per agent, the prior Platform activity, and cited recall items.",
+              "audit": [
+                "Every signal names its agent/workflow and its source record id",
+                "Prior Platform activity is attached by id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "No client PII reproduced — everything by reference (id/location)",
+                "Read-only — no config changed, no dial touched, no fix applied"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a drift-risk-ranked roll-up with verified and suspected findings split and the quarantine candidates isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Classify each signal by drift class — dial change, budget/ceiling drift, gate/conformance failure — per agent/workflow; collapse duplicates."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Split every finding into **verified** (directly read or Vera-confirmed) vs **suspected** — a suspected drift is labeled \"suspected, pending Vera's check\" and never asserted (jessica.md §5)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by drift risk, highest first — severity stated plainly, not implied; isolate the quarantine candidates, each with the evidence and the blast radius stated."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Cross-correlate the findings against prior Platform activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a drift-risk-ranked roll-up (highest risk leading) with each finding labeled verified or suspected, and a separate quarantine-candidate list, each item naming the agent/workflow, the evidence by reference, and any prior Platform activity already in motion.",
+              "audit": [
+                "Every finding is classified (dial / budget-ceiling / gate) and labeled verified or suspected",
+                "No suspected finding is asserted as fact — \"suspected, pending Vera's check\"",
+                "Roll-up is drift-risk-ranked, severity stated plainly per finding",
+                "Every quarantine candidate names the agent/workflow and states its evidence by reference",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no config changed, no dial touched, no fix applied"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Mark's conformance-drift brief plus the drift / quarantine flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with the highest-risk drift and the quarantine candidates, then the rest of the conformance roll-up by agent/workflow — findings stated plainly, no softening (jessica.md §4)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the agent/workflow, the finding (verified/suspected) by reference, and the decision it implies for Mark (correction, dial change, ratification, or quarantine — all his levers, none Jessica's)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Mark. No fix, no config change, no dial touched."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the drift-risk-ranked roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Mark's conformance-drift brief + the flag list. The run holds here at the checkpoint; nothing is actuated and no verification is delegated yet.",
+              "audit": [
+                "Brief leads with the highest-risk drift and the quarantine candidates",
+                "Flag list present; each item states the agent/workflow, the finding by reference, and the implied Mark decision",
+                "Verified vs suspected labeling carried through from synthesis",
+                "No finding softened, dropped, or downgraded to spare a team — independence holds (jessica.md §2/§6)",
+                "Verification candidates are marked but not yet delegated (that is stage 04)",
+                "Read-only — no config changed, no dial touched, no fix applied"
+              ],
+              "checkpoint": "The brief parks for **Mark**. `auto` may self-approve ONLY publishing the scheduled conformance-drift brief when every finding is grounded and cited by reference; any uncited finding, any gap, or any recall miss parks for Mark (CONSTITUTION §8). No actuation exists at this tier — the assurance line observes and recommends; every correction, governance change, and control ratification is always-gated to Mark. The delegate to Vera is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "optionally emit a proposed `delegate()` to Vera for grounded suspected-drift verification (observation only) and/or a `handoff()` to Nova when cross-division, then park — Jessica never applies a fix and never touches a dial.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each **suspected** finding that warrants confirmation, draft a **proposed** `delegate()` to **Vera** (Platform): the agent/workflow, the drift class, and the evidence references — a *verification/observation* ask only; never a correction, config change, or dial ask (Vera is a watcher too — she recommends, never fixes)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the drift is cross-division (e.g. a conformance failure whose owner sits outside Platform & Assurance), draft a `handoff()` to **Nova** instead, naming the division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No fix applied, no dial moved, no control ratified — every correction, governance change, and ratification stays always-gated to Mark."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flagged drift / quarantine items",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Vera and/or `handoff()` calls to Nova, each citing the agent/workflow and the evidence references. The run ends here at the checkpoint; any corrective action happens on Mark's decision, never here.",
+              "audit": [
+                "Every delegate names the agent/workflow, the drift class, and its evidence references",
+                "Every delegate is a verification/observation ask — no correction, config, or dial ask routed to anyone",
+                "Cross-division items are handed off to Nova, not delegated inside the division",
+                "No client PII reproduced — everything by reference",
+                "Read-only — no config changed, no dial touched, no fix applied"
+              ],
+              "checkpoint": "The follow-ups park for **Mark**, and any delegate is a **proposal** to Vera. `auto` may self-approve ONLY emitting the `delegate()` to Vera for flagged drift verification that is grounded and cited, and the `handoff()` to Nova when cross-division; every correction, autonomy-dial change, governance-config change, and control ratification is always-gated to Mark (CONSTITUTION §9, jessica.md §6). The assurance line never holds the levers it audits; any ungrounded or out-of-scope item parks for Mark."
+            }
+          ]
+        },
+        {
           "slug": "division-intake",
           "title": "division-intake (Chief Risk Officer / Jessica, the division's pull-side router)",
           "job": "receive a unit of work Nova delegated to the Platform & Assurance division and route it to the **one** report who owns it — Vera (platform conformance / governance / data integrity / agent telemetry / contradiction), Tess (service quality / QA / ticket-quality audit / finished-experience judging), or Alivia (documentation / knowledge currency / IT Glue sync / doc-gap). Jessica routes and synthesizes; she **never actuates**, and her reports are audit/recommend- only — every corrective or config effect stays gated at the report tier and parks to the owning human. This is the division-tier mirror of Nova's `intake-route` (the #1666 pull side of hierarchical routing: Nova → exec → worker).",
@@ -4781,6 +5014,506 @@
           ]
         },
         {
+          "slug": "knowledge-currency-oversight",
+          "title": "knowledge-currency-oversight (Chief Risk Officer / Platform & Assurance, executive)",
+          "job": "on a schedule, roll the knowledge plane's health — stale knowledge objects, OKF concept files past their entity's last shape change, coverage gaps, identity-spine join breaks — into a knowledge-currency brief for Mark, leading with the staleness the agents are actively reasoning on, and where a finding is grounded, delegate the *verification* to Alivia. Jessica never rewrites a doc or re-vectorizes anything.",
+          "trigger": "scheduled (start of the working week). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled knowledge-currency brief when every staleness and coverage finding is grounded and cited by reference, and delegate flagged items to Alivia for verification only; Jessica never rewrites a doc, never edits a concept file, never re-vectorizes — every content correction parks for Mark or the owning agent's human",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "entity_xref"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's knowledge-freshness reads, OKF coverage picture, identity-spine health, and Knowledge run-ledger and handoff signals into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull knowledge-object freshness (created/updated stamps, source references) into a flat list; attach recall-usage counts where recorded. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Compare OKF concept timestamps against their entities' last shape change; list every lagging concept, id/path only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Check identity-spine health on `entity_xref`: dangling references and conflicting active mappings; list each break by id."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read Alivia's run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach prior Knowledge activity by item, id only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's knowledge areas via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Knowledge objects",
+                    "gold knowledge records (via `pg.read`)",
+                    "freshness stamps + source references",
+                    "what the agents reason on, and how old it is"
+                  ],
+                  [
+                    "Recall usage",
+                    "retrieval-usage signals (via `pg.read`)",
+                    "recent recalls per knowledge object",
+                    "which stale items are *actively used*"
+                  ],
+                  [
+                    "OKF coverage",
+                    "semantic-layer concept files vs entity change stamps (via `pg.read` / retrieval)",
+                    "concept timestamps vs last shape change",
+                    "where the meaning layer lags the schema"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "dangling / conflicting xrefs",
+                    "join breaks that make recall untrustworthy"
+                  ],
+                  [
+                    "Knowledge run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Alivia runs",
+                    "what Knowledge has already verified"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open knowledge signals",
+                    "prior findings in motion"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's knowledge areas",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of staleness / coverage / spine signals keyed by knowledge item or entity, with freshness stamps, usage counts, prior Knowledge activity, and cited recall items.",
+              "audit": [
+                "Every staleness signal names its knowledge object / concept and its freshness stamp",
+                "Usage counts attached only where recorded — never estimated",
+                "Every spine break names the xref ids involved",
+                "Prior Knowledge activity is attached by id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "No client PII reproduced — everything by reference (id/location)",
+                "Read-only — nothing rewritten, nothing re-vectorized"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a reasoning-risk-ranked roll-up with verified and suspected staleness split and the coverage gaps and spine breaks isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by reasoning risk: stale AND actively-recalled first (an agent is reasoning on it now), then stale-but-idle, then lagging OKF concepts, then spine breaks; collapse duplicates."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Split every finding into **verified** (stamp/usage directly read) vs **suspected** — a suspected staleness is labeled \"suspected, pending Alivia's check\" and never asserted (jessica.md §5)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the coverage gaps (areas agents ground on with no knowledge object / no concept file) and the spine breaks, each with the affected joins or recalls stated by reference."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Cross-correlate against prior Knowledge activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a reasoning-risk-ranked roll-up (stale-and-used leading) with each finding labeled verified or suspected, and separate coverage-gap and spine-break lists, each item naming the knowledge item / entity, the evidence by reference, and any prior Knowledge activity already in motion.",
+              "audit": [
+                "Roll-up is reasoning-risk-ranked — stale-and-actively-used leads",
+                "Every finding labeled verified or suspected; no suspected staleness asserted as fact",
+                "Every coverage gap and spine break names its item/entity and cites its evidence",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — nothing rewritten, nothing re-vectorized"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Mark's knowledge-currency brief plus the staleness / gap / break flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with the stale knowledge agents are actively reasoning on, then the lagging OKF concepts, coverage gaps, and spine breaks — findings stated plainly, no softening (jessica.md §4)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the knowledge item / entity, the finding (verified/suspected) by reference, and the decision it implies for Mark (owner rewrite, concept-file update, re-vectorize, or xref repair — all levers held elsewhere, none Jessica's)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Mark. Nothing rewritten, nothing re-vectorized."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the reasoning-risk-ranked roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Mark's knowledge-currency brief + the flag list. The run holds here at the checkpoint; nothing is actuated and no verification is delegated yet.",
+              "audit": [
+                "Brief leads with stale-and-actively-used knowledge, not a raw staleness count",
+                "Flag list present; each item states the item/entity, the finding by reference, and the implied Mark decision",
+                "Verified vs suspected labeling carried through from synthesis",
+                "No finding softened, dropped, or downgraded to spare a team — independence holds (jessica.md §2/§6)",
+                "Verification candidates are marked but not yet delegated (that is stage 04)",
+                "Read-only — nothing rewritten, nothing re-vectorized"
+              ],
+              "checkpoint": "The brief parks for **Mark**. `auto` may self-approve ONLY publishing the scheduled knowledge-currency brief when every finding is grounded and cited by reference; any uncited finding, any gap, or any recall miss parks for Mark (CONSTITUTION §8). No actuation exists at this tier — doc rewrites, concept-file edits, and re-vectorization are content corrections gated to Mark or the owning agent's human. The delegate to Alivia is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "optionally emit a proposed `delegate()` to Alivia for grounded staleness verification (never a rewrite ask) and/or a `handoff()` to Nova when the owner sits outside the division, then park — Jessica never rewrites and never re-vectorizes.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each **suspected** finding that warrants confirmation, draft a **proposed** `delegate()` to **Alivia** (Knowledge): the knowledge item / concept / xref ids and the evidence references — a *verify-and-surface* ask only; never a rewrite, edit, or re-vectorize ask (Alivia surfaces what needs the owner's rewrite; the correction is the owner's, gated to their human)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the stale knowledge is owned outside Platform & Assurance (e.g. a domain agent's operating docs), draft a `handoff()` to **Nova** instead, naming the owning division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. Nothing rewritten, nothing re-vectorized — every content correction stays gated to Mark or the owning agent's human."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flagged staleness / gap / break items",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Alivia and/or `handoff()` calls to Nova, each citing the item/entity ids and the evidence references. The run ends here at the checkpoint; any content correction happens on the owner's side, never here.",
+              "audit": [
+                "Every delegate names the item/entity ids and cites its evidence references",
+                "Every delegate is a verify-and-surface ask — no rewrite, edit, or re-vectorize ask routed to anyone",
+                "Out-of-division items are handed off to Nova, not delegated inside the division",
+                "No client PII reproduced — everything by reference",
+                "Read-only — nothing rewritten, nothing re-vectorized"
+              ],
+              "checkpoint": "The follow-ups park for **Mark**, and any delegate is a **proposal** to Alivia. `auto` may self-approve ONLY emitting the `delegate()` to Alivia for flagged staleness verification that is grounded and cited, and the `handoff()` to Nova when the owner is outside the division; doc rewrites, concept-file edits, and re-vectorization are always-gated to Mark or the owning agent's human (CONSTITUTION §9, jessica.md §6). The assurance line never holds the levers it audits; any ungrounded or out-of-scope item parks for Mark."
+            }
+          ]
+        },
+        {
+          "slug": "quality-eval-oversight",
+          "title": "quality-eval-oversight (Chief Risk Officer / Platform & Assurance, executive)",
+          "job": "on a schedule, roll the eval plane and service-quality signals — golden pass rates vs baselines, agents with no or thin golden coverage, score regressions — into a quality brief for Mark, leading with the regressions and the coverage gaps, and where a quality signal is grounded, delegate the *observation* to Tess. Jessica never edits a golden, moves a baseline, or re-scores a run.",
+          "trigger": "scheduled (start of the working day / week). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled quality/eval brief when every score and gap is grounded and cited by reference, and delegate flagged quality signals to Tess for observation only; Jessica never edits a golden, never moves a baseline, never re-scores a run — every correction and threshold change parks for Mark",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's eval-plane reads, Service-Quality run-ledger and handoff signals, and the accounts behind client-touching quality signals into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the golden cases and recent eval-run results per module into a flat list; attach each module's baseline. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "List agents/modules with no golden cases, or none tagged per always-gate class — the raw coverage-gap candidates."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read Tess's run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach prior Service-Quality activity by module, id only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve client-touching quality signals to their accounts from silver; attach id + name only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's modules via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Golden cases",
+                    "`agent_eval_case` (via `pg.read`)",
+                    "per module, with tags/tier",
+                    "what the workforce is measured against"
+                  ],
+                  [
+                    "Eval runs",
+                    "eval-run result records (via `pg.read`)",
+                    "recent runs per module",
+                    "measured pass rates"
+                  ],
+                  [
+                    "Baselines",
+                    "`eval/baselines.json` (platform copy, via `pg.read` / retrieval)",
+                    "per module",
+                    "the bar each module must clear"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "accounts behind client-touching quality signals",
+                    "who a quality slip affects"
+                  ],
+                  [
+                    "Service-Quality run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Tess runs",
+                    "what Service Quality has already judged"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open quality signals",
+                    "prior findings in motion"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's modules",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of eval scores and quality signals keyed by module, with baselines attached, the raw coverage-gap candidates, prior Service-Quality activity, and cited recall items.",
+              "audit": [
+                "Every score names its module and its case/run record id",
+                "Every module's baseline is attached where one exists; a missing baseline is listed as a gap, not invented",
+                "Prior Service-Quality activity is attached by id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "No client PII reproduced — accounts by id + name only",
+                "Read-only — no golden edited, no baseline moved, no run re-scored"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a baseline-compared, regression-ranked roll-up with the coverage gaps isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Compute pass rate vs baseline per module; collapse duplicates across runs and mark each module above / at / below its bar."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank the regressions, worst slippage first — run-over-run trend stated where the data supports it, and only where it does."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the coverage gaps: modules with no goldens, thin sets, or no case per always-gate class — each stated as a gap with what is missing."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Label every judgment **signal vs inference**: a measured pass rate is signal; a suspected cause is \"suspected, pending Tess's check\" — never asserted (jessica.md §5). Cross-correlate against prior Service-Quality activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a baseline-compared, regression-ranked roll-up (worst slippage leading) and a separate coverage-gap list, each item naming the module, the measured figures by reference, and any prior Service-Quality activity already in motion.",
+              "audit": [
+                "Every module's pass rate is compared to its baseline; above/at/below stated",
+                "Roll-up is regression-ranked, worst slippage leading",
+                "Every coverage gap names the module and states exactly what is missing",
+                "Signal vs inference labeled; no suspected cause asserted as fact",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no golden edited, no baseline moved, no run re-scored"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Mark's quality/eval brief plus the regression / coverage-gap flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with the regressions and the coverage gaps, then the rest of the quality roll-up by module — findings stated plainly, no softening (jessica.md §4)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the module, the measured figure or gap by reference, and the decision it implies for Mark (golden authoring, baseline move, threshold change, or quarantine — all his levers, none Jessica's)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Mark. No golden edited, no baseline moved, no run re-scored."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the baseline-compared, regression-ranked roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Mark's quality/eval brief + the flag list. The run holds here at the checkpoint; nothing is actuated and no observation is delegated yet.",
+              "audit": [
+                "Brief leads with the regressions and the coverage gaps, not a gross pass-rate average",
+                "Flag list present; each item states the module, the figure/gap by reference, and the implied Mark decision",
+                "Signal-vs-inference labeling carried through from synthesis",
+                "No finding softened, dropped, or downgraded to spare a team — independence holds (jessica.md §2/§6)",
+                "Observation candidates are marked but not yet delegated (that is stage 04)",
+                "Read-only — no golden edited, no baseline moved, no run re-scored"
+              ],
+              "checkpoint": "The brief parks for **Mark**. `auto` may self-approve ONLY publishing the scheduled quality/eval brief when every score and gap is grounded and cited by reference; any uncited figure, any gap in the data, or any recall miss parks for Mark (CONSTITUTION §8). No actuation exists at this tier — golden edits, baseline moves, and threshold changes are governance changes, always-gated to Mark. The delegate to Tess is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "optionally emit a proposed `delegate()` to Tess for grounded quality observation (never a fix or re-score) and/or a `handoff()` to Nova when cross-division, then park — Jessica never edits a golden and never moves a baseline.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flagged quality signal that warrants a closer look, draft a **proposed** `delegate()` to **Tess** (Service Quality): the module, the measured figure or suspected cause, and the evidence references — an *observation/judgment* ask only; never a fix, a re-score, or a threshold ask (Tess is a watcher too — she judges, she does not correct)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the signal is cross-division (e.g. a regression whose owning agent sits outside Platform & Assurance), draft a `handoff()` to **Nova** instead, naming the division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No golden edited, no baseline moved, no run re-scored — every correction and threshold change stays always-gated to Mark."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flagged regression / gap items",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Tess and/or `handoff()` calls to Nova, each citing the module and the evidence references. The run ends here at the checkpoint; any corrective action happens on Mark's decision, never here.",
+              "audit": [
+                "Every delegate names the module, the signal, and its evidence references",
+                "Every delegate is an observation/judgment ask — no fix, re-score, or threshold ask routed to anyone",
+                "Cross-division items are handed off to Nova, not delegated inside the division",
+                "No client PII reproduced — everything by reference",
+                "Read-only — no golden edited, no baseline moved, no run re-scored"
+              ],
+              "checkpoint": "The follow-ups park for **Mark**, and any delegate is a **proposal** to Tess. `auto` may self-approve ONLY emitting the `delegate()` to Tess for flagged quality signals that are grounded and cited, and the `handoff()` to Nova when cross-division; golden edits, baseline moves, threshold changes, and every correction are always-gated to Mark (CONSTITUTION §9, jessica.md §6). The assurance line never holds the levers it audits; any ungrounded or out-of-scope item parks for Mark."
+            }
+          ]
+        },
+        {
           "slug": "risk-assurance-sweep",
           "title": "risk-assurance-sweep (Chief Risk Officer / Platform & Assurance, executive tracer)",
           "job": "on a schedule, roll up conformance, quality, telemetry health, and control drift into a risk brief for Mark, with the quarantine flags surfaced — drafted here, never actuated.",
@@ -4959,6 +5692,243 @@
                 "No send, delegate, write, or correction occurred — the run parked"
               ],
               "checkpoint": "The brief parks for **Mark** (risk reports to Mark). `auto` may self-approve ONLY publishing the scheduled sweep when every section is grounded and cited by reference; any quarantine flag, gap, or recall miss parks for Mark (CONSTITUTION §8). No actuation exists at this tier — the assurance line observes, flags, and recommends; it never actuates the fix (the Vera doctrine)."
+            }
+          ]
+        },
+        {
+          "slug": "risk-escalation-triage",
+          "title": "risk-escalation-triage (Chief Risk Officer / Platform & Assurance, executive)",
+          "job": "when risk escalations arrive — watcher quarantine flags, posture regressions, cross-division risk signals on the handoff bus — triage them: verify grounding, rank by severity, and route each one; brief Mark with the ranked queue, delegating observation to the owning watcher (Vera/Tess/Alivia) where warranted. Jessica ranks and routes; she never contains, corrects, or quarantines.",
+          "trigger": "on inbound escalation signal, batched; plus a scheduled sweep so nothing sits unranked. One run per batch/cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "triage and severity-rank inbound risk escalations, and delegate a grounded escalation to the owning watcher (Vera/Tess/Alivia) for observation only; any quarantine recommendation, correction, or governance change parks for Mark — Jessica routes and ranks, she never enacts, and a critical-severity finding always parks regardless of grounding",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "account",
+            "entity_xref",
+            "posture_snapshot"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the open escalations, their subject and posture context, and the prior activity on each into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the open escalations from the handoff bus into a flat list, one row per escalation, id and emitter attached. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the watchers' run-ledgers (`agent_run`) via `pg.read`; attach prior observation activity per subject, id only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve each escalation's subject via silver (`account` / `entity_xref`); attach id + name only. Attach the posture snapshot reference where the escalation has a posture dimension."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the batch's subjects via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Open escalations",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open risk signals / quarantine flags",
+                    "the triage queue's raw material"
+                  ],
+                  [
+                    "Watcher run-ledgers",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Vera/Tess/Alivia runs",
+                    "who already observed what"
+                  ],
+                  [
+                    "Subjects",
+                    "silver `account` · `okf:account` + silver `entity_xref` · `okf:entity_xref`",
+                    "subjects behind each escalation",
+                    "who/what each escalation is about"
+                  ],
+                  [
+                    "Posture context",
+                    "silver `posture_snapshot` · `okf:posture_snapshot`",
+                    "subjects with a posture dimension",
+                    "the security-posture backdrop where relevant"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this batch's subjects",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked escalation list, each item with its signal id and emitter, its subject (id + name), its posture reference where relevant, prior watcher activity, and cited recall items.",
+              "audit": [
+                "Every escalation carries its signal id and emitter",
+                "Every escalation's subject is resolved by id + name only — no client PII beyond that",
+                "Prior watcher activity is attached by id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — nothing contained, corrected, or quarantined"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a grounded, severity-ranked triage with owners identified and quarantine candidates marked.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Verify grounding per escalation: evidence present and cited by reference, or the item is labeled \"suspected, pending the watcher's check\" — never asserted (jessica.md §5). Reconstruct what actually failed before ranking (jessica.md §2); never overstate a finding to win attention."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Severity-rank the batch, critical first — severity stated plainly per item, with the blast radius (subjects/agents affected) by reference; collapse duplicates onto one item."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Mark the quarantine candidates, each with its evidence stated — a candidate is a *recommendation input* for Mark, never an action."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Identify each item's owner: a division watcher (Vera / Tess / Alivia), Mark directly (critical, or a lever-holder decision), or another division (route up via Nova). Cross-correlate internally only — pool, never bleed client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a severity-ranked triage (critical leading), each item grounded or labeled suspected, with blast radius by reference, quarantine candidates marked, and an owner identified per item.",
+              "audit": [
+                "Every item is grounded-and-cited or explicitly labeled suspected — no middle state",
+                "Ranking is severity-first; severity stated plainly per item, blast radius by reference",
+                "Every quarantine candidate states its evidence; none is phrased as an action taken",
+                "Every item has exactly one identified owner (watcher / Mark / other division)",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — nothing contained, corrected, or quarantined"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Mark's ranked escalation queue plus the critical flags, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the queue brief: critical items first, each stated plainly with its severity, evidence by reference, blast radius, and identified owner — no softening, no editorializing (jessica.md §4)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the critical flags and quarantine candidates as the brief's action surface — each item the decision it implies for Mark (quarantine, containment, correction, governance change — all his levers, none Jessica's)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the queue for Mark. Nothing contained, corrected, or quarantined."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the severity-ranked triage"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Mark's severity-ranked escalation queue + the critical flag list. The run holds here at the checkpoint; nothing is actuated and no observation is delegated yet.",
+              "audit": [
+                "Queue is severity-ranked, critical items leading",
+                "Every item states severity, evidence by reference, blast radius, and its owner",
+                "Critical flags and quarantine candidates present as decisions for Mark, never as actions taken",
+                "Verified vs suspected labeling carried through from synthesis",
+                "No finding softened, dropped, or downgraded to spare a team — independence holds (jessica.md §2/§6)",
+                "Observation candidates are marked but not yet delegated (that is stage 04)",
+                "Read-only — nothing contained, corrected, or quarantined"
+              ],
+              "checkpoint": "The queue parks for **Mark**. `auto` may self-approve ONLY publishing the triaged, severity-ranked queue when every item is grounded and cited by reference — and a **critical-severity finding always parks for Mark regardless of grounding**; any uncited item, any gap, or any recall miss also parks (CONSTITUTION §8). No actuation exists at this tier — quarantine, containment, correction, and governance changes are always-gated to Mark. The delegate to a watcher is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "optionally emit a proposed `delegate()` to the owning watcher for grounded observation and/or a `handoff()` to Nova for out-of-division escalations, then park — Jessica never contains, corrects, or quarantines.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each grounded item owned by a division watcher, draft a **proposed** `delegate()` to **Vera** (platform/conformance), **Tess** (service quality), or **Alivia** (knowledge): the escalation id, the subject id, and the evidence references — an *observation/verification* ask only; never containment, correction, or quarantine (the watchers observe too; they hold no levers either)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "For each item owned outside Platform & Assurance (an active security incident, a delivery failure, a money matter), draft a `handoff()` to **Nova**, naming the owning division and the reason — never delegated sideways."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the queue as a proposal and park. Critical items and every quarantine/containment/correction decision remain with Mark; nothing is enacted here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Queue brief",
+                    "stage 03 `brief.md`",
+                    "the ranked, owner-identified items",
+                    "what may warrant routing"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to the owning watchers and/or `handoff()` calls to Nova, each citing the escalation and subject ids and the evidence references. The run ends here at the checkpoint; any world-changing action happens on Mark's decision or inside another division's own gauntlet, never here.",
+              "audit": [
+                "Every delegate names the escalation id, the subject id, and its evidence references",
+                "Every delegate is an observation/verification ask — no containment, correction, or quarantine ask routed to anyone",
+                "Out-of-division items are handed off to Nova with the owning division named — never delegated sideways",
+                "Critical items are left with Mark — not delegated at all",
+                "No client PII reproduced — everything by reference",
+                "Read-only — nothing contained, corrected, or quarantined"
+              ],
+              "checkpoint": "The follow-ups park for **Mark**, and any delegate is a **proposal** to a watcher. `auto` may self-approve ONLY emitting the `delegate()` to the owning watcher for grounded observation, and the `handoff()` to Nova for out-of-division items; critical items always stay with Mark, and quarantine, containment, correction, and governance changes are always-gated to him (CONSTITUTION §9, jessica.md §6). The assurance line never holds the levers it audits; any ungrounded or out-of-scope item parks for Mark."
             }
           ]
         }

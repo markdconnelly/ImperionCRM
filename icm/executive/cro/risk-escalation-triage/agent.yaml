@@ -1,0 +1,12 @@
+name: risk-escalation-triage
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Jessica persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../jessica.md
+  - ./prose.md
+okf_rooms: [account, entity_xref, posture_snapshot]   # subset of executive/cro/room.yaml; resolve who an escalation is about + the posture context behind it
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route observation, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to a watcher / handoff to Nova; never contains, corrects, or quarantines (CONSTITUTION §9)
+auto_may_self_approve: "triage and severity-rank inbound risk escalations, and delegate a grounded escalation to the owning watcher (Vera/Tess/Alivia) for observation only; any quarantine recommendation, correction, or governance change parks for Mark — Jessica routes and ranks, she never enacts, and a critical-severity finding always parks regardless of grounding"

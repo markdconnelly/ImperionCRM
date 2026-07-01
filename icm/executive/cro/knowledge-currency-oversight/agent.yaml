@@ -1,0 +1,12 @@
+name: knowledge-currency-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Jessica persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../jessica.md
+  - ./prose.md
+okf_rooms: [entity_xref]              # subset of executive/cro/room.yaml; the identity spine is the one silver meaning this grounds on — knowledge-object reads are gold/agent-platform data via pg.read, not silver
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route verification, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Alivia / handoff to Nova; never rewrites or re-vectorizes anything (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled knowledge-currency brief when every staleness and coverage finding is grounded and cited by reference, and delegate flagged items to Alivia for verification only; Jessica never rewrites a doc, never edits a concept file, never re-vectorizes — every content correction parks for Mark or the owning agent's human"
