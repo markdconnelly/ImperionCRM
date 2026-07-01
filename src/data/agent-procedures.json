@@ -22238,6 +22238,200 @@
           ]
         },
         {
+          "slug": "deviation-lifecycle",
+          "title": "deviation-lifecycle (platform v1 — Bucket A9)",
+          "job": "the **deviation routing + closure engine** — the lifecycle that every divergence the A1–A8 conformance audits file flows into. One `conformance_deviation` row (the 0257 store, #1532) moves **open → quarantined → routed → verifying → closed**: Vera triages the queue, requests a reversible protective **quarantine** where the severity warrants it, **routes** each deviation to the agent/human that owns the lever, and **verifies resolution** before recommending closure. The transitions themselves are executed by the backend lifecycle engine (BE #440); Vera drives the queue, she never executes a correction. References the Vera agent epic **#1397**.",
+          "trigger": "a new deviation landing in the queue (an A1–A8 audit filing a `conformance_deviation` row), or the scheduled queue sweep over in-flight deviations (routed / verifying) to track closure. One run per sweep.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "\"auto-RUN the deviation queue sweep (read open + in-flight conformance_deviation rows, 0257 store), AUTO-REQUEST the reversible framework-owned QUARANTINE hold on a critical-severity deviation, AUTO-SURFACE the routing packet (deviation id + rule id + evidence BY REFERENCE + resolved owner) to the owning agent and the governance dashboard, and RECOMMEND closure only on VERIFIED resolution — all internal, all reversible (a hold lifts, a routing packet can be dismissed, a closure recommendation is not a closure). AUDIT-BY-REFERENCE: cite rule id + trace location, NEVER reproduce the sensitive value (vera.md). NO correction, NO re-run, NO rewrite of the deviating agent's work, NO config change, NO silent fix at any rung — the fix is always_gate to the owning agent / a human (BE",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "entity_xref"
+          ],
+          "skills": [
+            "./skills/deviation-routing"
+          ],
+          "stages": [
+            {
+              "slug": "01-load-deviation-queue",
+              "name": "load-deviation-queue",
+              "job": "load the open + in-flight deviations from the queue and resolve each one's owner and subject.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the queue: `open` deviations (new triage work), plus `routed` and `verifying` deviations still inside the tracking window (closure tracking). Empty queue → a clean sweep, recorded as such."
+                },
+                {
+                  "tag": "script",
+                  "text": "For each deviation, read its violated rule (id, severity, assertion kind) and its trace evidence **by reference** (trace id + step/fact key) — never the values."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve each deviation's owner from the routing map (domain → owning agent + human escalation); resolve the client/agent subject via `entity_xref`. An unresolvable owner is flagged for escalation — never silently dropped."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Deviation queue",
+                    "governance substrate `conformance_deviation` + violated `conformance_rule` + evidencing `process_trace` (0257, IKF n/a, read via pg.read)",
+                    "`open` rows + `routed`/`verifying` rows in the tracking window",
+                    "the lifecycle's work queue"
+                  ],
+                  [
+                    "Routing map",
+                    "`./skills/deviation-routing.md`",
+                    "severity → action, domain → owner, closure bar",
+                    "who owns each deviation and what happens next"
+                  ],
+                  [
+                    "Org SoT",
+                    "`icm/org.yaml`",
+                    "the domain-agent + human_manager entries",
+                    "authority for the owner resolution (the routing map caches it)"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "the client/agent a deviation references",
+                    "resolve who each finding concerns"
+                  ]
+                ]
+              },
+              "outputs": "`queue.md` — the sweep manifest: each deviation (id, rule id, severity, status, evidence by reference, resolved owner, subject by reference), plus any owner-resolution gaps. No sensitive values reproduced.",
+              "audit": [
+                "Queue read (open + in-window routed/verifying; an empty queue recorded as clean)",
+                "Every deviation carries rule id + severity + evidence by reference",
+                "Every deviation has a resolved owner or an explicit escalation flag"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-triage-and-route",
+              "name": "triage-and-route",
+              "job": "apply the severity → action map to each open deviation: request quarantine where warranted, and draft the routing packet to the resolved owner.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each **critical** deviation: request the reversible **quarantine** hold on the suspect output (framework-owned, room.md — Vera requests, the framework executes) and mark it for immediate Mark/Jessica surfacing alongside the owner routing."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "For every open deviation, draft the **routing packet**: deviation id, rule id + severity, the evidence **by reference** (trace id + location), the resolved owner, and what \"resolved\" must show (the closure bar). Label measured divergence vs inference."
+                },
+                {
+                  "tag": "script",
+                  "text": "Never estimate a severity into a gap: a deviation whose rule/evidence cannot be read is flagged \"not triageable — escalate,\" never guessed. Self-domain (platform) deviations route straight to Mark, never to Vera herself."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sweep manifest",
+                    "`queue.md` (stage 01)",
+                    "the open deviations + resolved owners",
+                    "the triage material"
+                  ],
+                  [
+                    "Routing map",
+                    "`./skills/deviation-routing.md`",
+                    "severity → action map + routing table",
+                    "what each severity gets"
+                  ],
+                  [
+                    "Conformance rubric",
+                    "the shared `conformance-engine/skills/conformance-rubric.md`",
+                    "signal-vs-inference + audit-by-reference",
+                    "how to state the packet"
+                  ]
+                ]
+              },
+              "outputs": "`routing.md` — per-deviation: the action taken (quarantine requested / advisory / actionable), the routing packet, and the escalations. No sensitive values reproduced; no correction proposed as Vera's own act.",
+              "audit": [
+                "Every critical deviation has a quarantine request + immediate Mark/Jessica surfacing",
+                "Every open deviation has a routing packet (owner + evidence by reference + closure bar)",
+                "No severity guessed into a gap; no self-routed platform deviation; no sensitive value reproduced"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-track-closure",
+              "name": "track-closure",
+              "job": "verify resolution on routed/verifying deviations and recommend closure or escalate. No correction, no silent close.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each `routed`/`verifying` deviation, re-check the record: a fresh trace no longer violating the rule, or the owner's fix reconciled against the original evidence (the closure bar, all three parts)."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Verified → **recommend** closure (the backend lifecycle, BE #440, executes the transition), citing the fresh trace id / reconciled location by reference. Unverified → state plainly \"unverified — pending owner action\"; it stays open."
+                },
+                {
+                  "tag": "script",
+                  "text": "Deviations past the tracking window or without an acting owner escalate to Mark/Jessica. Nothing is closed for age, inconvenience, or an unowned queue; nothing is corrected, re-run, rewritten, or config-changed here."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sweep manifest",
+                    "`queue.md` (stage 01)",
+                    "the routed/verifying deviations",
+                    "the closure-tracking subjects"
+                  ],
+                  [
+                    "Routing packets",
+                    "`routing.md` (stage 02)",
+                    "this sweep's routed packets",
+                    "what was asked of each owner"
+                  ],
+                  [
+                    "Fresh evidence",
+                    "governance substrate `process_trace` / `conformance_deviation` (0257, read via pg.read)",
+                    "post-routing traces for the same agent + workflow",
+                    "the record resolution is verified against"
+                  ],
+                  [
+                    "Closure bar",
+                    "`./skills/deviation-routing.md`",
+                    "the three-part verification bar",
+                    "what \"resolved\" must show"
+                  ]
+                ]
+              },
+              "outputs": "`closure.md` — per-deviation: verified/unverified with the verifying reference, the closure recommendations, and the escalations. Surfaced to the governance dashboard (internal, reversible).",
+              "audit": [
+                "Every routed/verifying deviation re-checked against the record (all three closure-bar parts)",
+                "Closure only recommended on verified resolution, cited by reference",
+                "Stuck/unowned deviations escalated — none silently closed; nothing corrected or config-changed"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "finance-conformance",
           "title": "finance-conformance (platform v1 — Bucket A5, Audrey)",
           "job": "the **finance-process conformance rulebook** — encode Audrey's **Defined Way** as a machine-checkable ruleset and audit a completed Audrey run's process trace against it. The rules that distinguish this workflow from the shared `conformance-engine` are Audrey's: read-only (QBO is system-of-record), the salary-gag, the attestation chain, and no money movement. Divergences this finds are routed + closed by A9 (`deviation-lifecycle`, #1467). References the Audrey agent epic **#1394**.",

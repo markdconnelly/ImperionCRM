@@ -1624,6 +1624,14 @@
           ]
         },
         {
+          "slug": "deviation-lifecycle",
+          "stages": [
+            "01-load-deviation-queue",
+            "02-triage-and-route",
+            "03-track-closure"
+          ]
+        },
+        {
           "slug": "finance-conformance",
           "stages": [
             "01-load-finance-trace",
