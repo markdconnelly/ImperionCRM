@@ -115,6 +115,8 @@ core subset). Remaining objects from the
 | [`collections_activity`](tables/collections_activity.md) | overlay (write-back sidecar, app-native) | website system of record (dunning state; NOT synced to QBO) | ADR-0085/0087 |
 | [`consent_event`](tables/consent_event.md) | ledger | append-only; current_consent is the gate | ADR-0014 |
 | [`posture_snapshot`](tables/posture_snapshot.md) | ledger | append-only; grade at capture | ADR-0051 |
+| [`security_standard_version`](tables/security_standard_version.md) | reference (versioned standard) | Imperion-native; Mark-gated ratification; current = highest ratified | #1715 / BE #439 |
+| [`posture_score`](tables/posture_score.md) | ledger | append-only verdict per (account, standard version, snapshot); idempotent re-score | #1715 / BE #439 / LP #399 |
 | [`tenant_posture`](tables/tenant_posture.md) | golden/drift | observed vs human-approved golden | ADR-0051 |
 | [`posture_policy`](tables/posture_policy.md) | golden/drift | per-policy verdict; 5-family observed vs *_golden | ADR-0051 |
 | [`account_domain`](tables/account_domain.md) | reference (registry) | operator-curated + entra-derived; DNS worklist + client-comms filter substrate | ADR-0063/0126 |

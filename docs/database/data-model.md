@@ -1954,6 +1954,54 @@ secure-score-control reads are INNER JOINs (no mapping → no rows), and credent
 exposures read silver `credential_exposure` by its own `account_id` (the ADR-0040
 domain match, independent of Tenant Mapping).
 
+### Security-standard store (migration 0256, #1715)
+
+Migration 0256 adds the Vera security-standard pair — the cross-repo handoff backing
+the backend scoring engine (BE #439, built deploy-dormant) and the LP scheduled scoring
+cycle (LP #399):
+
+- **`security_standard_version`** — the evolving client security standard, versioned.
+  Lifecycle `draft → ratified → superseded`; **ratification is Mark-gated** (backend
+  conditional UPDATE from `draft`, audited). The current standard = the highest
+  `version_number` with `status='ratified'`. `criteria` jsonb is the declarative rule
+  document the score evaluates (unknown fields ignored — forward-compatible).
+- **`posture_score`** — one append-only verdict per **(account, standard version,
+  posture snapshot)**: `overall_score` + `conforming | drifting | critical`. The UNIQUE
+  triple is the arbiter for the writers' `INSERT … ON CONFLICT DO NOTHING` — re-scores
+  are idempotent; a new snapshot or standard version means a new row, never an UPDATE.
+
+Grants (least-priv, ADR-0127): backend SELECT/UPDATE on the standard (current-version
+read + ratify) and SELECT/INSERT on verdicts; local pipeline SELECT the standard +
+SELECT/INSERT verdicts (scheduled scoring + drift signals); web SELECT-only; nobody
+DELETEs. Deploy-dormant per ADR-0123 until applied.
+
+```mermaid
+erDiagram
+    SECURITY_STANDARD_VERSION ||--o{ POSTURE_SCORE : "criteria scored against"
+    POSTURE_SNAPSHOT ||--o{ POSTURE_SCORE : "input scored"
+    ACCOUNT ||--o{ POSTURE_SCORE : "verdict history"
+
+    SECURITY_STANDARD_VERSION {
+      uuid id PK
+      integer version_number "UNIQUE; current = MAX ratified"
+      text status "draft|ratified|superseded"
+      jsonb criteria "declarative StandardCriteria"
+      uuid ratified_by_user_id FK "app_user, nullable"
+      timestamptz ratified_at
+      timestamptz created_at
+      timestamptz superseded_at
+    }
+    POSTURE_SCORE {
+      uuid id PK
+      uuid account_id FK "CASCADE"
+      uuid posture_snapshot_id FK "CASCADE"
+      uuid standard_version_id FK "no action - supersede, never delete"
+      numeric overall_score
+      text conformance_status "conforming|drifting|critical"
+      timestamptz scored_at "UNIQUE (account, version, snapshot)"
+    }
+```
+
 ## Enumerations
 
 - `account.relationship`: `prospect | customer | partner` (null = unknown)
