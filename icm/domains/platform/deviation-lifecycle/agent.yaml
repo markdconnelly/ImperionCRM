@@ -1,0 +1,13 @@
+name: deviation-lifecycle
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vera persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vera.md
+  - ./prose.md
+okf_rooms: [entity_xref]                                            # identity spine only — resolve which client/agent a deviation is about; the deviation queue itself (conformance_deviation/process_trace/conformance_rule, 0257) is governance substrate (archetype H, IKF n/a), read by pg.read, not an okf_room
+tools: [pg.read]                                                    # read + triage + draft only; quarantine is a framework-owned reversible hold Vera REQUESTS (room.md), never a tool here; lifecycle transitions execute in the backend (BE #440)
+skills:
+  - ./skills/deviation-routing          # Tier 3 — workflow-local (severity -> action map, domain -> owner routing table from icm/org.yaml, the closure-verification bar)
+autonomy_rung: L2
+auto_may_self_approve: "auto-RUN the deviation queue sweep (read open + in-flight conformance_deviation rows, 0257 store), AUTO-REQUEST the reversible framework-owned QUARANTINE hold on a critical-severity deviation, AUTO-SURFACE the routing packet (deviation id + rule id + evidence BY REFERENCE + resolved owner) to the owning agent and the governance dashboard, and RECOMMEND closure only on VERIFIED resolution — all internal, all reversible (a hold lifts, a routing packet can be dismissed, a closure recommendation is not a closure). AUDIT-BY-REFERENCE: cite rule id + trace location, NEVER reproduce the sensitive value (vera.md). NO correction, NO re-run, NO rewrite of the deviating agent's work, NO config change, NO silent fix at any rung — the fix is always_gate to the owning agent / a human (BE #440 executes transitions); a stuck deviation escalates to Mark/Jessica, it is never quietly closed. Vera drives the queue; she never holds the levers."
