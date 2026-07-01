@@ -542,8 +542,9 @@ invoked by many procedures below.
   `always_gate` on Ozzie (A2 class-4). Dial-proof — a deadline never licenses an autonomous commit (B9).
 - **Human-in-loop:** Vance's human on the carrier commit + Mark/Dexter on a service-affecting cutover.
   Watch/detect recedes to auto; the commit + cutover stay human (dial-proof floor).
-- **Substrate deps:** carrier-contract / circuit-inventory model (schema gap — **propose to FE**, see
-  coverage note) · Vance B9 sentinel (Stream 07) · Ozzie cutover (Stream 05) · #991 handoff · #119.
+- **Substrate deps:** carrier-contract / circuit-inventory model (**silver `carrier_contract` +
+  `circuit`, #1651 / migration 0254 — authored, dormant until prod-applied**, A5c) · Vance B9
+  sentinel (Stream 07) · Ozzie cutover (Stream 05) · #991 handoff · #119.
   **subject:** both. **(OWNERSHIP: clean — Vance owns the deadline/money clock, Ozzie owns the cutover
   act, A11; flag for Mark: carrier-contract silver model + the Stream 04↔05↔07 boundary.)**
 
@@ -608,8 +609,8 @@ telco lifecycle (14, Vance↔Ozzie seam), and field-service capacity planning at
 un-thinned to a B3 capacity brief) — each a cross-stream seam landing its *fulfilment unit* here while
 the money/deadline/cutover halves stay with their owning agents (Vance Stream 07, Ozzie Stream 05),
 A11. Open lines flagged for Mark: OP-04-08 assign-vs-dispatch ownership; OP-04-13 procurement-vs-
-fulfilment line + OP-04-14 carrier-contract silver model (schema gap, propose to FE) + the Stream
-04↔05↔07 boundary; an ITIL Incident-vs-Request-Fulfilment split (path=`other` is doing a lot of work);
+fulfilment line + OP-04-14 carrier-contract silver model (silver `carrier_contract` + `circuit`
+shipped dormant, #1651/0254) + the Stream 04↔05↔07 boundary; an ITIL Incident-vs-Request-Fulfilment split (path=`other` is doing a lot of work);
 the Stream 04↔05 boundary on shared remediation/verify sub-procedures (request-driven here vs event/
 alert-driven Stream 05); OP-04-07 vs Pierce dedup; and the auto-leaver precondition. The wedge's hard
 floors are dial-proof: identity/backup/DC escalate-only (03), financial log-time (06), client-facing
