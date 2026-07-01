@@ -1,7 +1,7 @@
--- 0246: recreate `purview_compliance_golden` with the GOLDEN contract envelope (#1662).
--- Migration number 0246 claimed at MERGE per system CLAUDE.md §10.3 — authored against a
--- placeholder; the rebased branch takes the next free number just before squash. If another
--- migration merges during the review window, renumber this file.
+-- 0247: recreate `purview_compliance_golden` with the GOLDEN contract envelope (#1662).
+-- Renumbered from 0246 (#1797): PRs #1794 and #1795 merged near-simultaneously and both
+-- claimed 0246 (the §10.3 race); #1794 (`0246_agent_action_execution.sql`) merged first
+-- and keeps 0246, this file takes 0247. Neither was prod-applied, so the rename is safe.
 --
 -- WHY THIS EXISTS. Migration 0119 created `purview_compliance_golden` with the BRONZE
 -- landing envelope (`tenant_id/source/external_id/collected_at/raw_payload/content_hash`,
