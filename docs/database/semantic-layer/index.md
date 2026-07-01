@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**113 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**120 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -111,6 +111,9 @@ core subset). Remaining objects from the
 | [`timesheet`](tables/timesheet.md) | single-SoR | website system of record | ADR-0082 |
 | [`expense_report`](tables/expense_report.md) | single-SoR | website system of record | ADR-0083 |
 | [`time_record`](tables/time_record.md) | merge | website attendance (Autotask corroborates) | ADR-0082 |
+| [`employee_profile`](tables/employee_profile.md) | reference (HR core + pay_rate comp) | website app-native; external ids are email-resolved mappings | ADR-0082 |
+| [`payroll_run`](tables/payroll_run.md) | single-SoR (mirror) | payroll provider (QBO Payroll / ADP-class, read-only external SoR) | ADR-0082/0123 |
+| [`pay_statement`](tables/pay_statement.md) | single-SoR (mirror) | payroll provider (read-only; A9b key = run + employee) | ADR-0082/0123 |
 | [`expense_item`](tables/expense_item.md) | merge | website out-of-pocket / MileIQ miles | ADR-0083 |
 | [`invoice`](tables/invoice.md) | single-SoR (mirror) | QuickBooks Online (read-only external SoR) | ADR-0085 |
 | [`collections_activity`](tables/collections_activity.md) | overlay (write-back sidecar, app-native) | website system of record (dunning state; NOT synced to QBO) | ADR-0085/0087 |
