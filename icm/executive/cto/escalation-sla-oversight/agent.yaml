@@ -1,0 +1,12 @@
+name: escalation-sla-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Dexter persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../dexter.md
+  - ./prose.md
+okf_rooms: [ticket, device, account]   # subset of executive/cto/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Felix/Sage/Scout / handoff to Nova; never actuates (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled escalation/SLA oversight when every breach figure is grounded and cited, and delegate a grounded stuck-ticket triage to Felix, an L3 escalation to Sage, or an onsite scheduling ask to Scout; Dexter never touches a ticket, never dispatches, and never remediates — any gap parks for Luke"

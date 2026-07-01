@@ -1927,6 +1927,267 @@
       "kind": "executive",
       "procedures": [
         {
+          "slug": "change-risk-oversight",
+          "title": "change-risk-oversight (CTO / Service Delivery, executive)",
+          "job": "on a schedule, synthesize the change calendar's risk picture — emergency and normal changes in flight, freeze-window overlaps, missing or unapproved rollback plans, \"standard\" changes that are not on the catalog — into a change-risk brief for Luke, leading with the dangerous change this week — and where a defect is grounded, delegate the remediation to Marshall. Dexter never approves, schedules, or pushes a change.",
+          "trigger": "scheduled (start of the working week / before the change window). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled change-risk oversight when every calendar item is grounded and cited, and delegate a grounded remediation ask (missing rollback plan, freeze overlap, off-catalog standard change) to Marshall; Dexter never approves, schedules, or pushes a change — any gap parks for Luke",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "change_request",
+            "change_freeze",
+            "rollback_plan",
+            "standard_change_catalog"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's change calendar, freeze windows, rollback plans, the standard-change catalog, and the Change run-ledger / handoff signals into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the open/scheduled change requests — type, risk, window, status — into a flat list keyed by change id. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the active and upcoming freeze windows, the rollback plans (with sign-off state) for the in-flight changes, and the standard-change catalog entries; attach by change id where referenced."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the Change run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach any prior Marshall activity by change id, id only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's changes via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Change requests",
+                    "silver `change_request` · `okf:change_request`",
+                    "open / scheduled this cycle (typed standard\\",
+                    "normal\\",
+                    "emergency)",
+                    "the change calendar"
+                  ],
+                  [
+                    "Freeze windows",
+                    "silver `change_freeze` · `okf:change_freeze`",
+                    "active + upcoming windows",
+                    "overlap detection"
+                  ],
+                  [
+                    "Rollback plans",
+                    "silver `rollback_plan` · `okf:rollback_plan`",
+                    "plans for the in-flight changes + sign-off state",
+                    "rollback-gap detection"
+                  ],
+                  [
+                    "Standard-change catalog",
+                    "silver `standard_change_catalog` · `okf:standard_change_catalog`",
+                    "the pre-authorized template library",
+                    "off-catalog detection"
+                  ],
+                  [
+                    "Change run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Marshall runs",
+                    "what Change/Release has already acted on"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open Change signals",
+                    "prior change work in motion"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's changes",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of in-flight changes keyed by change id, with the freeze windows, each change's rollback-plan state, the catalog references, the prior Change activity, and cited recall items.",
+              "audit": [
+                "Every change names its change id, type, and window",
+                "Freeze windows, rollback-plan states, and catalog references attached where they exist, no state invented",
+                "Prior Change activity is attached by change id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no change approved, scheduled, or modified",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a risk-ranked change roll-up with the defects — freeze overlaps, rollback gaps, off-catalog standard changes — isolated as flags.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Rank the in-flight changes by risk — emergency first, then blast radius (the CIs and clients behind the change) and window proximity — the dangerous change this week leading."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Detect the defects: a change scheduled into an active or upcoming freeze window (a hard always_gate block at Marshall's tier); a normal/emergency change whose rollback plan is missing or not signed off; a change typed \"standard\" with no matching catalog entry."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the flags — one per defect — each naming the change, the defect class, and the exposure (what breaks if it proceeds as scheduled)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Cross-correlate the flags against prior Change activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a risk-ranked change roll-up (dangerous change leading) and a separate flag list, each item naming the change id, the defect class (freeze overlap / rollback gap / off-catalog), and the exposure, and noting any prior Change activity already in motion.",
+              "audit": [
+                "Changes are risk-ranked, emergency and high-blast-radius leading",
+                "Every freeze overlap, rollback gap, and off-catalog standard change in the gather is flagged",
+                "Every flag names the change id, the defect class, and the exposure",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no change approved, scheduled, or modified",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Luke's change-risk brief plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with the dangerous change this week and the defects (freeze overlaps, rollback gaps, off-catalog standards), then the rest of the calendar — controller-calm, risk first, no drama."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the change, the defect class, the exposure, and the decision it implies for Luke (including which defects are candidates to delegate to Marshall for remediation)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Luke. No send, no write, no change touched."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the risk-ranked change roll-up + defects"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Luke's change-risk brief + the flag list. The run holds here at the checkpoint; nothing is actuated and no remediation is delegated yet.",
+              "audit": [
+                "Brief leads with the dangerous change and the defects, not a raw calendar dump",
+                "Flag list present; each item states the change, the defect class, the exposure, and the implied decision",
+                "Remediation candidates are marked but not yet delegated (that is stage 04)",
+                "Read-only — no change approved, scheduled, or modified",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The brief parks for **Luke**. `auto` may self-approve ONLY publishing the scheduled change-risk brief when every calendar item is grounded and cited; any flag with no grounding, any gap, or any recall miss parks for Luke (CONSTITUTION §8). No actuation exists at this tier — Dexter advises, Marshall acts under his own gauntlet where the freeze overlap is a hard block. The delegate to Marshall is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — for a grounded, cited defect, emit a proposed `delegate()` to Marshall (re-sequence, complete the rollback plan, reclassify), and/or a `handoff()` to Nova when cross-division, then park — Dexter never approves, schedules, or pushes a change.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each defect confirmed grounded and cited, draft a **proposed** `delegate()` to **Marshall** (Change/Release): the change id, the defect class, and the ask — re-sequence out of the freeze window, complete and sign off the rollback plan, or reclassify the off-catalog \"standard\" change. The ask routes; the fix runs inside Marshall."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the exposure is cross-division (a client commitment, renewal, or billing milestone riding on the change), draft a `handoff()` to **Nova** instead, naming the division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No approval, no schedule, no push — the change decision re-gates inside Marshall's own gauntlet, where a freeze overlap is a hard always_gate block and an approved rollback plan is required (ADR-0079, ADR-0128)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any flag that is not fully grounded, or whose owner is unclear, parks for Luke instead of being delegated."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flag list",
+                    "the grounded defects"
+                  ],
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "per-flag exposure + basis",
+                    "the exposure each delegate carries"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Marshall and/or `handoff()` calls to Nova, each citing the change id, the defect class, and the exposure; plus any flag parked for Luke. The run ends here at the checkpoint; the change action happens inside the sub-agent, not here.",
+              "audit": [
+                "Every delegate names the change id, the defect class, and the exposure, all grounded and cited",
+                "The ask is remediation routing only — no approval, schedule, or push composed here",
+                "Cross-division items are handed off to Nova, not delegated to Change/Release",
+                "Ungrounded or owner-unclear flags parked for Luke, never delegated",
+                "Read-only — no change approved, scheduled, or modified",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The follow-ups park for **Luke**, and any delegate is a **proposal** to Marshall. `auto` may self-approve ONLY emitting the `delegate()` to Marshall for a flagged defect that is grounded and cited; the approval, the schedule, and the push re-gate inside Marshall's gauntlet (always-gated, CONSTITUTION §9, ADR-0128). Dexter never approves, schedules, or pushes a change; any ungrounded item parks for Luke."
+            }
+          ]
+        },
+        {
           "slug": "delivery-pulse",
           "title": "delivery-pulse (CTO / Service Delivery, executive tracer)",
           "job": "on a schedule, roll up backlog, SLA, incidents, problems, the change calendar, and capacity into a delivery pulse for Derek, with the risks surfaced — drafted here, never actuated.",
@@ -2347,6 +2608,769 @@
                 "No actuation occurred — the run parked at the return to Nova; Dexter actuated nothing"
               ],
               "checkpoint": "The return to Nova is the checkpoint — the route/result, never an action. In `draft`, a human approves the return; production changes, destructive actions, and identity actions are already parked to Luke's queue at the report tier and are never part of what is approved here. In `auto`, this workflow may self-approve ONLY a clean return where the route was unambiguous, within the asking human's authority, inside one RLS scope, and carried no always-gated item; anything else parks for Luke (`agent.yaml` `auto_may_self_approve`). Auto never lowers a report's gauntlet and never actuates (ADR-0128)."
+            }
+          ]
+        },
+        {
+          "slug": "escalation-sla-oversight",
+          "title": "escalation-sla-oversight (CTO / Service Delivery, executive)",
+          "job": "on a schedule, synthesize the escalation picture — backlog aging, SLA breach risk, and stuck escalation-worthy tickets — into an escalation/SLA brief for Luke, leading with what is about to breach — and where a stuck or at-risk item is grounded, delegate the triage to Felix, the L3 escalation to Sage, or the onsite scheduling to Scout. Dexter never touches a ticket and never dispatches.",
+          "trigger": "scheduled (start of the working day / shift). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled escalation/SLA oversight when every breach figure is grounded and cited, and delegate a grounded stuck-ticket triage to Felix, an L3 escalation to Sage, or an onsite scheduling ask to Scout; Dexter never touches a ticket, never dispatches, and never remediates — any gap parks for Luke",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "ticket",
+            "device",
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's ticket backlog / SLA reads, the Service run-ledger and handoff signals, and the devices/accounts in scope into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the ticket reads — open tickets with age, priority, status, and breach clock — into a flat list keyed by account. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the Service run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach any prior Felix/Sage/Scout activity by ticket and account, id only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve referenced devices and accounts from silver; attach id + name only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's accounts via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Tickets",
+                    "silver `ticket` · `okf:ticket`",
+                    "open + recently escalated (Autotask SoR, read)",
+                    "backlog / SLA picture"
+                  ],
+                  [
+                    "Devices",
+                    "silver `device` · `okf:device`",
+                    "CIs behind the flagged tickets",
+                    "blast radius per ticket"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the backlog",
+                    "who the exposure is for"
+                  ],
+                  [
+                    "Service run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Felix / Sage / Scout runs",
+                    "what Delivery has already acted on"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open Delivery signals",
+                    "prior triage / escalation in motion"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's accounts",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of ticket/SLA signals keyed by account, with the device and account ids in scope, the prior Delivery activity per ticket, and cited recall items.",
+              "audit": [
+                "Every ticket signal names its ticket id and its account id",
+                "Prior Delivery activity is attached by ticket/account id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no ticket touched, no note written, no client contacted",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into an SLA-risk-bucketed, breach-ranked roll-up with the escalation flags isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Bucket the backlog by SLA risk — breached / at-risk (approaching the clock) / on-track — per account; age each bucket (fresh / 3d / 7d / 14d+)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by breach proximity and blast radius (priority, the CIs and users behind the ticket), what is about to hurt leading."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the flags — stuck escalation-worthy tickets (aged past their tier with no progress), repeat offenders (same CI or symptom recurring), and concentration risk (one account absorbing a disproportionate share of the backlog) — each with the exposure stated."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Cross-correlate the flags against prior Delivery activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — an SLA-risk-bucketed, breach-ranked roll-up (about-to-breach leading) and a separate flag list, each item naming the ticket, the account, and the breach/age exposure, and noting any prior Delivery activity already in motion.",
+              "audit": [
+                "Backlog is bucketed by SLA risk (breached / at-risk / on-track) and aged per account",
+                "Roll-up is breach-ranked, about-to-breach leading, with blast radius stated",
+                "Every flag names a ticket and account and states the breach/age exposure",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no ticket touched, no note written, no client contacted",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Luke's escalation/SLA brief plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with what is about to breach and what is stuck, then the rest of the backlog roll-up by account — controller-calm, risk first."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the ticket, the account, the breach/age exposure, and the decision it implies for Luke (including which items are candidates to delegate to Felix, Sage, or Scout)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Luke. No send, no write, no ticket touched."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the SLA-risk-bucketed, breach-ranked roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Luke's escalation/SLA brief + the flag list. The run holds here at the checkpoint; nothing is actuated and nothing is delegated yet.",
+              "audit": [
+                "Brief leads with about-to-breach and stuck items, not a gross open-ticket count",
+                "Flag list present; each item states the ticket, the account, the exposure, and the implied decision",
+                "Delegate candidates are marked with their owning sub-agent but not yet delegated (that is stage 04)",
+                "Read-only — no ticket touched, no note written, no client contacted",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The brief parks for **Luke**. `auto` may self-approve ONLY publishing the scheduled escalation/SLA brief when every breach figure is grounded and cited; any flag with no grounding, any gap, or any recall miss parks for Luke (CONSTITUTION §8). No actuation exists at this tier — Dexter advises, sub-agents act. The delegate to Felix / Sage / Scout is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — for a grounded, cited flag, emit a proposed `delegate()` to Felix (triage), Sage (L3 root cause), or Scout (onsite scheduling), and/or a `handoff()` to Nova when cross-division, then park — Dexter never touches a ticket and never dispatches.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag confirmed grounded and cited, draft the follow-up: a stuck or misrouted ticket → **Felix** (triage/work the ticket); a recurring symptom or escalation-worthy deep issue → **Sage** (L3 root cause); a flag that needs hands onsite → **Scout** (scheduling). Carry the ticket id, the account id, and the breach/age exposure — nothing client-facing composed here."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the exposure is cross-division (a billing dispute driving the aging, a renewal at risk behind the backlog), draft a `handoff()` to **Nova** instead, naming the division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No ticket touched, no client contacted, no technician committed — the ticket work, the client-facing word, and the dispatch commitment re-gate inside the sub-agent's own gauntlet (ADR-0128)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any flag that is not fully grounded, or whose owner is unclear, parks for Luke instead of being delegated."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flag list",
+                    "the grounded flags + owning sub-agent"
+                  ],
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "per-flag exposure + basis",
+                    "the exposure each delegate carries"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Felix / Sage / Scout and/or `handoff()` calls to Nova, each citing the ticket/account ids and the exposure; plus any flag parked for Luke. The run ends here at the checkpoint; the ticket action happens inside the sub-agent, not here.",
+              "audit": [
+                "Every delegate names the ticket id, the account id, and the breach/age exposure, all grounded and cited",
+                "Targets are correct — Felix (triage) / Sage (L3) / Scout (scheduling) / Nova (cross-division)",
+                "No client-facing text is composed here — only the ask is routed",
+                "Ungrounded or owner-unclear flags parked for Luke, never delegated",
+                "Read-only — no ticket touched, no note written, no client contacted",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The follow-ups park for **Luke**, and any delegate is a **proposal** to Felix / Sage / Scout; cross-division ones hand off to **Nova**. `auto` may self-approve ONLY emitting the `delegate()` for a flagged item that is grounded and cited; the ticket touch, the client-facing word, and the technician commitment re-gate inside the sub-agent's gauntlet (always-gated where production-affecting, CONSTITUTION §9, ADR-0128). Dexter never actuates; any ungrounded item parks for Luke."
+            }
+          ]
+        },
+        {
+          "slug": "problem-recurrence-oversight",
+          "title": "problem-recurrence-oversight (CTO / Service Delivery, executive)",
+          "job": "on a schedule, synthesize the recurrence picture — incident clusters that point at an un-opened problem, stale problem investigations, known errors still generating tickets — into a recurrence brief for Luke, leading with what keeps coming back — and where a cluster is grounded, delegate the root-cause investigation to Sage or the alert-pattern review to Ozzie. Dexter never opens, closes, or works a problem himself.",
+          "trigger": "scheduled (weekly problem-review cadence). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled problem-recurrence oversight when every cluster is grounded and cited, and delegate a grounded root-cause ask to Sage or an alert-pattern ask to Ozzie; Dexter never opens, closes, or works a problem himself — any gap parks for Luke",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "problem",
+            "known_error",
+            "ticket",
+            "device"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's problems, known errors, recurring-ticket reads, and the Problem/NOC run-ledger / handoff signals into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the open problems with their investigation state and age, and the known-error register with workaround states, into flat lists keyed by problem / known-error id. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the recent tickets that repeat — same CI, same symptom class, or same account — and resolve the devices behind them; attach id + name only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the Problem/NOC run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach any prior Sage/Ozzie activity by problem / cluster, id only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's clusters via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Problems",
+                    "silver `problem` · `okf:problem`",
+                    "open + recently closed investigations",
+                    "investigation state / staleness"
+                  ],
+                  [
+                    "Known errors",
+                    "silver `known_error` · `okf:known_error`",
+                    "the register + workaround states",
+                    "known errors still generating tickets"
+                  ],
+                  [
+                    "Tickets",
+                    "silver `ticket` · `okf:ticket`",
+                    "recent tickets on repeat CIs / symptoms / accounts",
+                    "the recurrence signal"
+                  ],
+                  [
+                    "Devices",
+                    "silver `device` · `okf:device`",
+                    "CIs behind the repeat tickets",
+                    "what the recurrence clusters on"
+                  ],
+                  [
+                    "Problem/NOC run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Sage / Ozzie runs",
+                    "what Problem/NOC has already acted on"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open Problem/NOC signals",
+                    "prior investigation / tuning in motion"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's clusters",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked record of open problems (with age and state), known errors, and repeat-ticket signals keyed by CI/symptom/account, with the prior Problem/NOC activity and cited recall items.",
+              "audit": [
+                "Every problem and known error names its id and investigation/workaround state",
+                "Every repeat-ticket signal names its ticket ids and the CI/account it clusters on",
+                "Prior Problem/NOC activity is attached by id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no problem opened, advanced, or closed; no monitor touched",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a burn-ranked recurrence roll-up with the flags — un-opened problems, stale investigations, known errors overdue for a fix — isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Cluster the repeat-ticket signals by CI, symptom class, and account; collapse duplicates so each cluster is one line with its ticket ids."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Match each cluster against the open problems and the known-error register: clustered recurrence with NO problem record = an un-opened problem; an open problem with no recent investigation progress = stale; a known error whose workaround keeps generating tickets = overdue for a permanent fix."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by burn — the ticket volume, hours, and client pain each cluster keeps consuming — highest burn leading; isolate the flags, each with its class (un-opened / stale / overdue-fix) and the burn stated."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Cross-correlate the flags against prior Problem/NOC activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a burn-ranked recurrence roll-up (highest burn leading) and a separate flag list, each item naming the cluster (CI/symptom/account), its class (un-opened problem / stale investigation / known error overdue for fix), and the burn, and noting any prior Problem/NOC activity already in motion.",
+              "audit": [
+                "Recurrence is clustered by CI / symptom / account with ticket ids attached",
+                "Every cluster is matched against problems and known errors; the class is stated",
+                "Roll-up is burn-ranked, highest recurring cost leading",
+                "Every flag names the cluster, the class, and the burn",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no problem opened, advanced, or closed; no monitor touched",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Luke's recurrence brief plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with what keeps coming back and what it costs (the highest-burn clusters), then the investigation and known-error state — controller-calm, risk first."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the cluster, its class (un-opened / stale / overdue-fix), the burn, and the decision it implies for Luke (including which clusters are candidates to delegate to Sage or Ozzie)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Luke. No send, no write, no problem touched."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the burn-ranked recurrence roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Luke's recurrence brief + the flag list. The run holds here at the checkpoint; nothing is actuated and nothing is delegated yet.",
+              "audit": [
+                "Brief leads with the highest-burn recurring clusters, not a raw problem list",
+                "Flag list present; each item states the cluster, the class, the burn, and the implied decision",
+                "Delegate candidates are marked with their owning sub-agent but not yet delegated (that is stage 04)",
+                "Read-only — no problem opened, advanced, or closed; no monitor touched",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The brief parks for **Luke**. `auto` may self-approve ONLY publishing the scheduled recurrence brief when every cluster is grounded and cited; any flag with no grounding, any gap, or any recall miss parks for Luke (CONSTITUTION §8). No actuation exists at this tier — Dexter advises, Sage and Ozzie act. The delegate is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — for a grounded, cited cluster, emit a proposed `delegate()` to Sage (open/advance the investigation, drive the permanent fix) or Ozzie (tune the alert pattern), and/or a `handoff()` to Nova when cross-division, then park — Dexter never opens, closes, or works a problem himself.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag confirmed grounded and cited, draft the follow-up: an un-opened problem or a stale investigation or an overdue permanent fix → **Sage** (Problem Mgmt / L3); alert noise or a monitoring pattern behind the recurrence → **Ozzie** (NOC). Carry the cluster (CI/symptom/account), the problem/known-error and ticket ids, and the burn — nothing client-facing composed here."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the exposure is cross-division (a recurrence eroding a client relationship, a renewal, or a billing dispute), draft a `handoff()` to **Nova** instead, naming the division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No problem opened or worked, no fix run, no monitor changed — the investigation, the remediation, and any production-affecting fix re-gate inside the sub-agent's own gauntlet (always-gated where production-affecting, ADR-0128)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any flag that is not fully grounded, or whose owner is unclear, parks for Luke instead of being delegated."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flag list",
+                    "the grounded flags + owning sub-agent"
+                  ],
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "per-flag burn + basis",
+                    "the burn each delegate carries"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Sage / Ozzie and/or `handoff()` calls to Nova, each citing the cluster, the ids, and the burn; plus any flag parked for Luke. The run ends here at the checkpoint; the investigation and the fix happen inside the sub-agent, not here.",
+              "audit": [
+                "Every delegate names the cluster, the problem/known-error/ticket ids, and the burn, all grounded and cited",
+                "Targets are correct — Sage (investigation / permanent fix) / Ozzie (alert pattern) / Nova (cross-division)",
+                "No client-facing text is composed here — only the ask is routed",
+                "Ungrounded or owner-unclear flags parked for Luke, never delegated",
+                "Read-only — no problem opened, advanced, or closed; no monitor touched",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The follow-ups park for **Luke**, and any delegate is a **proposal** to Sage / Ozzie; cross-division ones hand off to **Nova**. `auto` may self-approve ONLY emitting the `delegate()` for a flagged cluster that is grounded and cited; the investigation, the fix, and any monitor change re-gate inside the sub-agent's gauntlet (always-gated where production-affecting, CONSTITUTION §9, ADR-0128). Dexter never actuates; any ungrounded item parks for Luke."
+            }
+          ]
+        },
+        {
+          "slug": "project-delivery-oversight",
+          "title": "project-delivery-oversight (CTO / Service Delivery, executive)",
+          "job": "on a schedule, synthesize project-delivery health — at-risk and slipping projects, stalled provisioning, and the collision between project work and the reactive backlog on the same people and accounts — into a delivery brief for Luke, leading with what will miss — and where a slip or collision is grounded, delegate the recovery to Pierce or the scheduling to Scout. Dexter never re-plans a project, commits a date, or commits a technician.",
+          "trigger": "scheduled (weekly delivery-review cadence). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled project-delivery oversight when every slip figure is grounded and cited, and delegate a grounded recovery ask to Pierce or a scheduling-collision ask to Scout; Dexter never re-plans a project, commits a date, or commits a technician — any gap parks for Luke",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "project",
+            "ticket",
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's project portfolio, the reactive-load reads, and the Projects/Dispatch run-ledger / handoff signals into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the open project portfolio — status, planned vs actual dates, health, provisioning state — into a flat list keyed by project id. Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the open reactive load (ticket counts and ages) for the portfolio's accounts; attach by account id."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the Projects/Dispatch run-ledger (`agent_run`) and the `relationship.*` handoff bus via `pg.read`; attach any prior Pierce/Scout activity by project and account, id only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's projects via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Projects",
+                    "silver `project` · `okf:project`",
+                    "open portfolio — status, dates, health, provisioning state",
+                    "the delivery picture"
+                  ],
+                  [
+                    "Tickets",
+                    "silver `ticket` · `okf:ticket`",
+                    "open reactive load on the portfolio's accounts",
+                    "the collision signal"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the projects",
+                    "who the delivery is for"
+                  ],
+                  [
+                    "Projects/Dispatch run-ledger",
+                    "`agent_run` (run-ledger, via `pg.read`)",
+                    "recent Pierce / Scout runs",
+                    "what Delivery has already acted on"
+                  ],
+                  [
+                    "Handoff signals",
+                    "`relationship.*` (handoff bus, via `pg.read`)",
+                    "open Projects/Dispatch signals",
+                    "prior recovery / scheduling in motion"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's projects",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of projects keyed by project id with dates, health, and provisioning state, the reactive load per account, the prior Delivery activity, and cited recall items.",
+              "audit": [
+                "Every project names its project id and its account id, with dates and state as recorded",
+                "Reactive load is attached per account (ticket ids/counts), no value invented",
+                "Prior Projects/Dispatch activity is attached by id (run-ledger / handoff bus), no value invented",
+                "Every recall item carries a source reference; no uncited claim",
+                "Read-only — no plan edited, no date committed, no technician committed",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a slip-ranked delivery roll-up with the project-vs-reactive collisions and the stalled work isolated as flags.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Rank the portfolio by slip risk — planned vs actual dates, stalled provisioning, aged in-flight work — what will miss leading, with the date at risk stated per project."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Detect the collisions: accounts and periods where a heavy reactive backlog and active project delivery are drawing on the same capacity — the places a slip is being manufactured."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the flags — slipping projects, stalled provisioning, collision zones — each naming the project/account and the exposure (the date at risk, the client impact)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Cross-correlate the flags against prior Projects/Dispatch activity internally only — pool, never bleed; nothing here is client-facing."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a slip-ranked delivery roll-up (what will miss leading) and a separate flag list, each item naming the project and account, the flag class (slip / stalled provisioning / collision), and the exposure, and noting any prior Delivery activity already in motion.",
+              "audit": [
+                "Portfolio is slip-ranked with the date at risk stated per flagged project",
+                "Collisions name the account and the period where reactive and project work compete",
+                "Every flag names the project/account, the class, and the exposure",
+                "Cross-correlation is internal only — no client-facing content produced",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Read-only — no plan edited, no date committed, no technician committed",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Luke's project-delivery brief plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with what will miss and where the collisions are, then the rest of the portfolio — controller-calm, risk first, no green-wall status dump."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the project, the account, the class, the exposure, and the decision it implies for Luke (including which flags are candidates to delegate to Pierce or Scout)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Luke. No send, no write, no plan touched."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the slip-ranked delivery roll-up"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Luke's project-delivery brief + the flag list. The run holds here at the checkpoint; nothing is actuated and nothing is delegated yet.",
+              "audit": [
+                "Brief leads with what will miss and the collision zones, not a green-wall status dump",
+                "Flag list present; each item states the project, the account, the exposure, and the implied decision",
+                "Delegate candidates are marked with their owning sub-agent but not yet delegated (that is stage 04)",
+                "Read-only — no plan edited, no date committed, no technician committed",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The brief parks for **Luke**. `auto` may self-approve ONLY publishing the scheduled project-delivery brief when every slip figure is grounded and cited; any flag with no grounding, any gap, or any recall miss parks for Luke (CONSTITUTION §8). No actuation exists at this tier — Dexter advises, Pierce and Scout act. The delegate is the next stage, never folded into the brief."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — for a grounded, cited flag, emit a proposed `delegate()` to Pierce (recovery plan / re-sequence) or Scout (resolve the scheduling collision), and/or a `handoff()` to Nova when cross-division, then park — Dexter never re-plans a project, commits a date, or commits a technician.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag confirmed grounded and cited, draft the follow-up: a slipping project or stalled provisioning → **Pierce** (Projects — recovery plan, re-sequence); a capacity/scheduling collision → **Scout** (Dispatch — resolve the collision). Carry the project id, the account id, and the exposure (the date at risk) — nothing client-facing composed here."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Where the exposure is cross-division (a go-live tied to a sale, an invoice milestone, or a renewal), draft a `handoff()` to **Nova** instead, naming the division and the reason."
+                },
+                {
+                  "tag": "script",
+                  "text": "Attach each delegate/handoff to the brief as a proposal and park. No plan edited, no date committed, no technician committed — the re-plan, the client-facing date, and the dispatch commitment re-gate inside the sub-agent's own gauntlet (ADR-0128); Pierce and Scout also answer to their own humans (Anna, Brandon)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Any flag that is not fully grounded, or whose owner is unclear, parks for Luke instead of being delegated."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief",
+                    "stage 03 `brief.md`",
+                    "the flag list",
+                    "the grounded flags + owning sub-agent"
+                  ],
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "per-flag exposure + basis",
+                    "the exposure each delegate carries"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` calls to Pierce / Scout and/or `handoff()` calls to Nova, each citing the project/account ids and the exposure; plus any flag parked for Luke. The run ends here at the checkpoint; the recovery and the scheduling happen inside the sub-agent, not here.",
+              "audit": [
+                "Every delegate names the project id, the account id, and the exposure, all grounded and cited",
+                "Targets are correct — Pierce (recovery / re-sequence) / Scout (scheduling collision) / Nova (cross-division)",
+                "No client-facing text is composed here — only the ask is routed",
+                "Ungrounded or owner-unclear flags parked for Luke, never delegated",
+                "Read-only — no plan edited, no date committed, no technician committed",
+                "No send/write/actuation occurred — Dexter delegated or parked"
+              ],
+              "checkpoint": "The follow-ups park for **Luke**, and any delegate is a **proposal** to Pierce / Scout; cross-division ones hand off to **Nova**. `auto` may self-approve ONLY emitting the `delegate()` for a flagged item that is grounded and cited; the re-plan, the client-facing date, and the technician commitment re-gate inside the sub-agent's gauntlet (CONSTITUTION §9, ADR-0128). Dexter never actuates; any ungrounded item parks for Luke."
             }
           ]
         }

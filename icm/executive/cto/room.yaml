@@ -18,3 +18,10 @@ okf_rooms:
   - ticket
   - device
   - cloud_asset
+  - problem                 # problem-recurrence oversight — Sage's ITIL problem / root-cause record (read)
+  - known_error             # problem-recurrence oversight — known-error + workaround register (read)
+  - change_request          # change-risk oversight — Marshall's typed change working object (read)
+  - change_freeze           # change-risk oversight — freeze calendar; overlap = hard always_gate at Marshall (read)
+  - rollback_plan           # change-risk oversight — rollback artifact + sign-off state (read)
+  - standard_change_catalog # change-risk oversight — pre-authorized standard-change templates (read)
+  - project                 # project-delivery oversight — Pierce's delivery portfolio (read)

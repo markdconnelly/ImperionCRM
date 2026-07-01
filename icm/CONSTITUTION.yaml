@@ -100,6 +100,9 @@ okf_rooms:
                      #   artifact with its own draft→approved sign-off (read)
   - standard_change_catalog # Service/Change-Release (#1579, ADR-0079) —
                      #   pre-authorized standard-change template library (read)
+  - project          # Delivery workspace (ADR-0094 PM parity) — project portfolio /
+                     #   delivery health; the CTO's project-delivery oversight reads
+                     #   it (#1816); Pierce's provisioning workflows ground on it (read)
   - strategic_business_review  # Client-Success workspace (#1442) — QBR/SBR
                                #   substrate Celeste reads for QBR-prep + health
   - it_budget         # Client-Success workspace (#1688) — Celeste's per-client vCIO IT
