@@ -1,0 +1,12 @@
+name: legal-contract-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Rachel persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../rachel.md
+  - ./prose.md
+okf_rooms: [contract, account, opportunity]   # subset of executive/chief-of-staff/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Laurel / handoff to Nova; never actuates (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled legal/contract brief when every item is grounded and cited, and delegate a flagged expiring or at-risk agreement to Laurel for review; anything that executes, signs, or binds the company parks for a human — Rachel never actuates, and any gap or recall miss parks for Derek"

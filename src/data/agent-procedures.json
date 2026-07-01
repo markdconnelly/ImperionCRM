@@ -1470,6 +1470,239 @@
           ]
         },
         {
+          "slug": "legal-contract-oversight",
+          "title": "legal-contract-oversight (Chief of Staff / Internal Ops, executive)",
+          "job": "on a schedule, synthesize the legal/contract posture — expiries and renewals coming due, Laurel's review queue, obligation and risk flags — into a legal brief for Derek, leading with what lapses or binds soonest; where a follow-up is grounded, delegate the review to Laurel. Rachel never executes, signs, or binds — binding the company is always a human's call.",
+          "trigger": "scheduled (start of the working week). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled legal/contract brief when every item is grounded and cited, and delegate a flagged expiring or at-risk agreement to Laurel for review; anything that executes, signs, or binds the company parks for a human — Rachel never actuates, and any gap or recall miss parks for Derek",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "contract",
+            "account",
+            "opportunity"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's legal/contract signals — the contract room, Laurel's runs and handoff signals, and the counterparties in scope — into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull active and expiring agreements from the contract room into a flat list keyed by theme (expiry/renewal · review queue · obligation/risk). Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull Laurel's run ledger and handoff signals into the same flat list, tagged by theme. Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve counterparty accounts and any attached deal from silver; attach id + name only."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior context for the cycle's themes via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Contracts",
+                    "silver `contract` · `okf:contract`",
+                    "active + expiring in the horizon",
+                    "agreements, expiry/renewal dates, terms"
+                  ],
+                  [
+                    "Sub-agent run ledger",
+                    "`agent_run` (via pg.read)",
+                    "Laurel's runs this cycle",
+                    "what Legal actually did (review queue)"
+                  ],
+                  [
+                    "Handoff bus",
+                    "handoff signals (via pg.read)",
+                    "legal-domain activity this cycle",
+                    "items moving between agents / to humans"
+                  ],
+                  [
+                    "Counterparties",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the agreements",
+                    "who each agreement binds us to"
+                  ],
+                  [
+                    "Attached deals",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "deals an agreement attaches to",
+                    "the commercial context of a term"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's themes",
+                    "recall, always cited"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of legal/contract signals tagged by theme (expiry/renewal · review queue · obligation/risk), with the counterparty ids in scope and cited recall items.",
+              "audit": [
+                "Every signal carries a theme tag (expiry/renewal · review queue · obligation/risk)",
+                "Every agreement reference states its id and its expiry/renewal date where known",
+                "Every counterparty reference states its id",
+                "Every recall item carries a source reference; no uncited claim",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "turn the gather record into a lapse-ranked legal/contract picture with the obligation/risk flags isolated.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Roll up the signals into the legal/contract picture (expiries and renewals coming due, the review queue, obligations in play); collapse duplicates per counterparty."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by time-to-lapse and exposure — the soonest lapse and the largest obligation lead."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the flags — expiring/lapsing agreements, un-reviewed items sitting in the queue, and obligation/risk concerns — each naming the agreement, the counterparty, and the exposure or deadline."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a lapse-ranked legal/contract picture (soonest lapse / largest obligation leading) and a separate flag list, each item naming the agreement, the counterparty, and the exposure or deadline.",
+              "audit": [
+                "Picture is lapse-ranked, soonest lapse / largest obligation leading",
+                "Every flag names an agreement, its counterparty, and the exposure or deadline",
+                "No item restates the gather list verbatim (it must be synthesized)",
+                "Pool-never-bleed — cross-correlated internally only; nothing client-facing",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Derek's legal/contract brief plus the flag list, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a short read leading with what lapses or binds soonest (the ninety-second read — answer first, the two things that matter, the one decision needed), then the rest of the contract picture — never an inventory dump."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the flag list as the brief's action surface — each item the agreement, the counterparty, the deadline or exposure, and the follow-up it implies for Derek."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Derek. No send, no write, nothing executed or bound."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the lapse-ranked legal/contract picture"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Derek's legal/contract brief + the flag list. The run parks here at the checkpoint; nothing is actuated. Flags feed the optional stage 04.",
+              "audit": [
+                "Brief leads with the soonest lapse / largest obligation, never an inventory dump",
+                "Flag list present; each item states the agreement, counterparty, deadline/exposure, and implied follow-up",
+                "Nothing was executed, signed, renewed, or terminated",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": "The brief parks for **Derek**. `auto` may self-approve ONLY publishing the scheduled brief when every item is grounded and cited; any gap or recall miss parks for Derek (CONSTITUTION §8). No actuation exists at this tier — Rachel advises and routes, sub-agents act; binding the company is always a human's call (CONSTITUTION §5.4)."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — propose a `delegate()` to Laurel on a grounded flag and/or a `handoff()` to Nova when it spans divisions, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each flag, decide the route: an expiring/at-risk or un-reviewed agreement → Laurel (a review or redline ask); a flag spanning divisions (a renewal with commercial terms, a vendor dispute touching Finance) → Nova. Anything that would execute, sign, or bind the company routes to neither — it parks for Derek (CONSTITUTION §5.4). An ungrounded or uncited flag also parks."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the proposed `delegate()` to Laurel: the agreement, the counterparty, the deadline or exposure, the cited basis, and the review ask — never the execution. Draft any `handoff()` to Nova the same way."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the proposed delegate/handoff. No send, no write, nothing executed or bound. The review re-gates inside Laurel's own gauntlet."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief + flags",
+                    "stage 03 `brief.md`",
+                    "the flag list only",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` / `handoff()` items by reference, each naming the target, the agreement, the counterparty, the deadline/exposure, and the cited basis. The run parks here; nothing is actuated.",
+              "audit": [
+                "Every proposed delegate/handoff names a target and cites the grounding basis",
+                "An ungrounded or uncited flag parks for Derek — never delegated",
+                "Anything that executes, signs, or binds the company parks for a human — never delegated",
+                "No outreach, commitment, or content was drafted toward any counterparty",
+                "No send/write/actuation occurred — Rachel delegated or parked"
+              ],
+              "checkpoint": "The proposed follow-ups park for **Derek**. `auto` may self-approve ONLY delegating a flagged expiring/at-risk agreement to Laurel for review when that flag is grounded and cited; anything binding, any ungrounded flag, gap, or recall miss parks for Derek (CONSTITUTION §8). Rachel never actuates — the delegate routes the review and it re-gates inside Laurel's gauntlet (CONSTITUTION §9); binding the company is always a human's call (CONSTITUTION §5.4)."
+            }
+          ]
+        },
+        {
           "slug": "people-ops-oversight",
           "title": "people-ops-oversight (Chief of Staff / Internal Ops, executive)",
           "job": "on a schedule, synthesize the People/HR operational picture — Holly's employee-lifecycle work in flight (onboarding, offboarding, records hygiene), what's stuck, and what needs a human call — into a people-ops brief for Derek; where a follow-up is grounded, delegate it to Holly. Rachel never touches an employment/comp lever and never restates comp or personal data.",

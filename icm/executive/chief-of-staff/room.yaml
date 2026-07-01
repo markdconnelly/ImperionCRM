@@ -16,3 +16,7 @@ tools:
 okf_rooms:
   - account
   - contact
+  - contract           # legal-contract-oversight — Laurel's agreement/expiry/terms surface (read;
+                       #   execution/binding always a human's call, CONSTITUTION §5.4)
+  - opportunity        # legal-contract-oversight — the deal a contract attaches to (read;
+                       #   mirrors Laurel's legal room grant)
