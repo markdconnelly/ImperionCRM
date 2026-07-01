@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
-import type { PendingActionItem } from "@/lib/agent/pending-action-cockpit";
+import { HUMAN_FOLLOW_UP_KIND, type PendingActionItem } from "@/lib/agent/pending-action-cockpit";
 import type { IcmActionResult } from "@/app/(app)/workflows/actions";
 
 /**
@@ -81,6 +81,78 @@ function CockpitCard({
     fd.set("decision", decision);
     if (decision === "approve" && draft !== item.draft) fd.set("editedBody", draft);
     startTransition(async () => setNotice(await reviewAction(fd)));
+  }
+
+  // Deny-route escalation (#1784, backend #499): not a draft to send — a reply the
+  // customer is still owed. Render a distinct card so an operator never mistakes it for a
+  // normal proposed action, and offer "Mark handled" (a reject that clears the queue row)
+  // instead of Approve/edit — there is nothing to execute (plan_seq=NULL).
+  if (item.actionKind === HUMAN_FOLLOW_UP_KIND) {
+    return (
+      <div className="rounded-xl border border-amber/60 bg-amber/5 p-4">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 rounded border border-amber/60 bg-amber/10 px-1.5 py-0.5 text-xs font-medium text-amber">
+            <Icon name="AlertTriangle" size={12} />
+            Reply owed · draft denied
+          </span>
+          <span className="rounded border border-border bg-panel-2 px-1.5 py-0.5 text-xs font-medium text-text">
+            {item.agentLabel}
+          </span>
+          {item.target ? (
+            item.target.href ? (
+              <Link href={item.target.href} className="text-xs text-accent hover:underline">
+                {item.target.label}
+              </Link>
+            ) : (
+              <span className="text-xs text-text">{item.target.label}</span>
+            )
+          ) : null}
+        </div>
+
+        <p className="text-sm text-text">
+          A drafted reply was denied on review and this inbound thread still owes the
+          customer a response. Answer it directly, then mark it handled to clear it.
+        </p>
+
+        <dl className="mt-2 flex flex-col gap-1 text-xs">
+          {item.rationale && (
+            <div className="flex gap-2">
+              <dt className="shrink-0 text-dim">Reason</dt>
+              <dd className="text-text">{item.rationale}</dd>
+            </div>
+          )}
+          {item.runId && (
+            <div className="flex gap-2">
+              <dt className="shrink-0 text-dim">Run trace</dt>
+              <dd>
+                <Link href={`/workflows/runs/${item.runId}`} className="text-accent hover:underline">
+                  glass-box trace →
+                </Link>
+              </dd>
+            </div>
+          )}
+        </dl>
+
+        <div className="mt-3 flex items-center gap-2">
+          {canReview ? (
+            <button
+              type="button"
+              onClick={() => submit("reject")}
+              disabled={pending}
+              className="flex items-center gap-1 rounded-md border border-amber/60 px-3 py-1.5 text-sm text-amber transition-colors hover:bg-amber/10 disabled:opacity-60"
+            >
+              <Icon name="Check" size={14} />
+              Mark handled
+            </button>
+          ) : (
+            <span className="text-xs text-dim">Read-only — clearing needs an admin (agents:operate).</span>
+          )}
+          {notice && (
+            <span className={`text-xs ${notice.ok ? "text-green" : "text-amber"}`}>{notice.message}</span>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (

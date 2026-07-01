@@ -36,6 +36,15 @@ queue across **all** agents in one place. The page has two parts:
    decision that routed it here (`dial L{level} · ceiling {tier}`), the target it acts on
    (a silver `ticket` when the payload carries one), the editable proposed body, the
    rationale, and — when present — a link to the glass-box run trace.
+   - **Deny-route escalations** (`action_kind = 'human_follow_up'`,
+     [#1784](https://github.com/markdconnelly/ImperionCRM/issues/1784); backend #499,
+     ADR-0109) render as a **distinct card**, not a proposed send: when a drafted reply is
+     denied on review but the inbound social thread still owes the customer a response, the
+     deny routes a `human_follow_up` row to this queue (`plan_seq=NULL` ⇒ nothing to
+     execute). The card is styled "**Reply owed · draft denied**", shows the deny reason +
+     run trace, and offers a single **Mark handled** control (a `reject` that clears the
+     row) instead of Approve / edit — so an operator never mistakes "answer this yourself"
+     for "approve this draft".
 2. **Approve / edit-and-approve / reject** — the cockpit controls. Approving routes
    through the backend approval-gated executor with consent re-asserted (ADR-0058) and
    the approving human recorded as the audited actor; an edit sends the operator's revised
