@@ -170,7 +170,7 @@ orientation map so you know which of its five diagrams to open.
 | **Sale → delivery orchestration** | `project_provisioning`, `task_ticket_fire`, `delivery_template*`, `opportunity_*_bronze` | Diagram 1 | ADR-0080/0081 (consolidated **ADR-0096**) |
 | **Integrations, demand-gen & consent** | `connection`, `external_identity`, `campaign`, `ad`, `campaign_metric`, `event`, `consent_event`, `workflow` | Diagrams 2 & 5 | ADR-0012/0024/0053 |
 | **Engagement capture** | `question_template`, `question`, `engagement_answer`, `discovery_call`, `assessment`, `assessment_artifact`, `strategic_business_review`, `ticket` | Diagram 4 | ADR-0022/0023 |
-| **Agent platform & AI Board** | `agent`, `agent_run`, `agent_message`, `agent_memory`, `board_session*`, `agent_autopilot_policy` | Diagram 3 | ADR-0048/0049/0087 (consolidated **ADR-0091**) |
+| **Agent platform & AI Board** | `agent`, `agent_run`, `agent_message`, `agent_memory`, `agent_action_execution`, `board_session*`, `agent_autopilot_policy` | Diagram 3 | ADR-0048/0049/0087 (consolidated **ADR-0091**) |
 | **Enrichment dossier** | `contact_enrichment`, `contact_social_identity`, `meeting_action_item` | Diagram 5 | ADR-0025 |
 | **Employee finance** | `timesheet`, `time_record`, `expense_item`, `expense_report`, comp data (`pay_rate`) | (in migrations) | ADR-0082/0083 (consolidated **ADR-0093**) |
 | **AR & service ops** | `invoice_mirror` (view), `collections_activity`, `ticket_sla_breach` (view), `chat_session` | Diagram 4 | ADR-0044/0074/0085 |
