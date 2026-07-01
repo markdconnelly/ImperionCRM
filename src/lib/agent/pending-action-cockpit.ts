@@ -19,6 +19,7 @@
  */
 import "server-only";
 import { getPool } from "@/lib/db/client";
+import { HUMAN_FOLLOW_UP_KIND } from "./pending-action-kind";
 
 /** A target the action acts on, when the payload carries a resolvable reference. */
 export interface PendingActionTarget {
@@ -27,6 +28,11 @@ export interface PendingActionTarget {
   /** In-app href when we can resolve one; null otherwise. */
   href: string | null;
 }
+
+// Re-export the client-safe kind constant so existing server-side importers keep working;
+// the client cockpit imports it directly from `./pending-action-kind` (never from this
+// `server-only` module, which would break the client bundle — #1784 build fix).
+export { HUMAN_FOLLOW_UP_KIND };
 
 /** One parked agent action awaiting an approve / reject decision (any agent). */
 export interface PendingActionItem {
@@ -115,6 +121,21 @@ const MOCK_QUEUE: PendingActionItem[] = [
     draft:
       "Hi Dana — thanks for reaching out about managed IT. I'd love to set up a quick 20-minute call to learn about your environment. Are you free Thursday afternoon?",
     createdAt: "2026-06-21T15:20:00Z",
+    target: null,
+    runId: null,
+  },
+  {
+    id: "mock-pending-3",
+    agentKey: "marketing",
+    agentLabel: "Belle · Marketing",
+    actionKind: HUMAN_FOLLOW_UP_KIND,
+    tier: "T2",
+    rationale:
+      "Drafted reply denied on review — the inbound Instagram DM still owes the customer a response. Routed here for a human to answer directly (ADR-0109 deny-route).",
+    resolvedLevel: 3,
+    resolvedCeiling: "T2",
+    draft: "(no action body captured)",
+    createdAt: "2026-06-21T15:40:00Z",
     target: null,
     runId: null,
   },

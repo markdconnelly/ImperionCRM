@@ -18,7 +18,7 @@ const { poolQuery, getPool } = vi.hoisted(() => {
 vi.mock("@/lib/db/client", () => ({ getPool, isDbConfigured: () => getPool() !== null }));
 vi.mock("server-only", () => ({}));
 
-import { listExecutedActions } from "./pending-action-cockpit";
+import { HUMAN_FOLLOW_UP_KIND, listExecutedActions, listPendingActions } from "./pending-action-cockpit";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -84,5 +84,41 @@ describe("listExecutedActions", () => {
   it("returns [] on a query failure (never a page error)", async () => {
     poolQuery.mockRejectedValueOnce(new Error("db down"));
     await expect(listExecutedActions()).resolves.toEqual([]);
+  });
+});
+
+describe("listPendingActions — deny-route escalations (#1784)", () => {
+  it("passes a human_follow_up row's kind through so the cockpit can render it distinctly", async () => {
+    poolQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "row-esc",
+          agent_key: "marketing",
+          action_kind: HUMAN_FOLLOW_UP_KIND,
+          tier: "T2",
+          rationale: "Draft denied — thread still owes a reply",
+          resolved_level: 3,
+          resolved_ceiling: "T2",
+          payload: { runId: "run-esc" },
+          created_at: "2026-06-21T15:40:00Z",
+          ticket_id: null,
+          ticket_number: null,
+          ticket_title: null,
+        },
+      ],
+    });
+    const [item] = await listPendingActions();
+    expect(item).toMatchObject({
+      id: "row-esc",
+      actionKind: HUMAN_FOLLOW_UP_KIND,
+      agentLabel: "Belle · Marketing",
+      runId: "run-esc",
+    });
+  });
+
+  it("includes a human_follow_up sample in mock mode so the distinct card is demoable", async () => {
+    getPool.mockReturnValue(null);
+    const items = await listPendingActions();
+    expect(items.some((i) => i.actionKind === HUMAN_FOLLOW_UP_KIND)).toBe(true);
   });
 });
