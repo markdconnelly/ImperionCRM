@@ -114,6 +114,8 @@ core subset). Remaining objects from the
 | [`expense_item`](tables/expense_item.md) | merge | website out-of-pocket / MileIQ miles | ADR-0083 |
 | [`invoice`](tables/invoice.md) | single-SoR (mirror) | QuickBooks Online (read-only external SoR) | ADR-0085 |
 | [`collections_activity`](tables/collections_activity.md) | overlay (write-back sidecar, app-native) | website system of record (dunning state; NOT synced to QBO) | ADR-0085/0087 |
+| [`performance_obligation`](tables/performance_obligation.md) | single-SoR (app-native) | website system of record (ASC 606 working papers — OWN; QBO has no rev-rec object; QBO stays posted-books SoR) | #1619 |
+| [`revenue_schedule`](tables/revenue_schedule.md) | single-SoR (app-native) | website system of record (recognition = human always_gate; `qbo_journal_ref` ties out to QBO) | #1619 |
 | [`consent_event`](tables/consent_event.md) | ledger | append-only; current_consent is the gate | ADR-0014 |
 | [`posture_snapshot`](tables/posture_snapshot.md) | ledger | append-only; grade at capture | ADR-0051 |
 | [`security_standard_version`](tables/security_standard_version.md) | reference (versioned standard) | Imperion-native; Mark-gated ratification; current = highest ratified | #1715 / BE #439 |
