@@ -556,6 +556,7 @@ erDiagram
     AGENT ||--o{ AGENT_RUN : executes
     AGENT_RUN ||--o{ AGENT_RUN : "delegates (tier child)"
     AGENT_RUN ||--o{ AGENT_MESSAGE : "transcript"
+    AGENT_RUN ||--o{ AGENT_ACTION_EXECUTION : "commits (idempotency ledger)"
     AGENT ||--o{ AGENT_MEMORY : remembers
     APP_USER ||--o{ AGENT_RUN : "acts as"
     BOARD_SESSION ||--o{ BOARD_SESSION_MEMBER : convenes
@@ -606,6 +607,15 @@ erDiagram
       text role
       text content
       jsonb tool_calls
+    }
+    AGENT_ACTION_EXECUTION {
+      uuid id PK
+      text idempotency_key UK "backend-derived hash; the atomic claim"
+      uuid run_id FK
+      uuid pending_action_id FK
+      text kind
+      timestamptz executed_at
+      jsonb result "replayed to a deduped retry"
     }
     AGENT_MEMORY {
       uuid id PK
