@@ -3037,7 +3037,13 @@ silver entity changes** (so no OKF concept file, no app surface). Writer:
   STATE only). Flat: policy_id, policy_name, policy_type, state, scope, last_modified_at.
   Follows the existing `*_policies`/`*_golden` posture pattern (cf. `dns_*`, 0080).
 - `purview_compliance_golden` — human-approved golden snapshot of the Purview posture for
-  drift reconciliation (same drift pattern as `dns_golden`, 0080).
+  drift reconciliation (same drift pattern as `dns_golden`, 0080). **Not a bronze landing
+  table:** it carries the GOLDEN contract (`golden_hash text NOT NULL`,
+  `golden_payload jsonb NOT NULL`, `approved_by/approved_at/notes`, PK
+  `(tenant_id, policy_id)` — the 0038 posture-golden template). 0119 mistakenly created it
+  with the bronze envelope, which crashed the LP drift join (`g.golden_hash`, 42703) —
+  recreated on the golden contract by the #1662 fix migration; pinned by
+  `src/lib/db/golden-envelope-guard.test.ts`.
 
 **Exclusions (recorded on `purview_compliance_policies`, owned LP-side per #196):** raw
 security logs and Purview **alerts** are NOT ingested — KQL hunting stays native. The
