@@ -1738,6 +1738,14 @@
           ]
         },
         {
+          "slug": "posture-evaluation",
+          "stages": [
+            "01-load-standard-and-posture",
+            "02-score-posture-vs-standard",
+            "03-record-posture-verdict"
+          ]
+        },
+        {
           "slug": "procurement-conformance",
           "stages": [
             "01-load-procurement-trace",
