@@ -1119,6 +1119,43 @@ default; pure resolvers in `src/lib/autonomy-dial.ts`); the `agents:operate`-gat
 their autonomy data-driven (e.g. BE #156 collections agent, today hardcoding `L1`). Run
 telemetry stays in `agent_run`. PII-free: config keys only, no secrets, no client data.
 
+### Agent profile (DB-SoT) + the per-procedure dial — migration 0261 (ADR-0141/0143, #1832)
+
+The Agent GUI rework makes the full agent profile **database-authoritative** and consolidates
+autonomy onto **one dial**. Five app-native objects (**archetype H**, horizontal
+Audit/governance domain — twins of `agent_autopilot_policy`/`agent_action_catalog`; no RLS,
+role-based grants only, ADR-0127; no OKF concept files — `semantic-layer-not-affected`):
+
+- **`agent_procedure_policy`** — the **only** autonomy dial (ADR-0141): one row per
+  `(agent_key, procedure_key)` carrying `level` (`smallint` 1–5, default 1) + `enabled`
+  (`boolean` default `false`, light-up-as-built — a disabled procedure never executes and is
+  excluded from the score). No agent-level master dial. Unique `(agent_key, procedure_key)`;
+  the backend gauntlet resolves the running plan's procedure and reads it for the fire rule
+  (BE #514). Created **alongside** the retiring `agent_autopilot_policy` (0123) /
+  `agent_action_autonomy` (0158) — those are dropped in a **follow-up** migration after the BE
+  dispatcher swap (additive-only here).
+- **`agent_profile`** — the DB-authoritative identity/org/avatar record (ADR-0143 D1):
+  `agent_key` PK + `display_name`, `role_title`, `division`, `reports_to`, `status`,
+  `priority_rank`, `human_counterpart` (UPN), `avatar` (`bytea`, served via the public avatar
+  route) + `avatar_mime`, `version`, `valid_from`, `content_hash` (drift key). The `icm/`
+  persona files + `org.yaml` human map become a **generated reflection** (DB wins on drift).
+- **`agent_persona_section`** — the six persona-narrative sections (`identity_mandate`,
+  `origin_character`, `how_you_work`, `voice_tone`, `behavioral_guardrails`, `boundaries`),
+  one row per `(agent_key, section_key)` ordered by `ordinal`; vectorized into the brain by
+  LocalPipeline (Voyage `voyage-3-large` @1024d, ADR-0041/0143 D4).
+- **`procedure_human_owner`** — the procedure-scoped responsible human (`owner`, UPN) +
+  `approvers` (a `jsonb` array of UPNs — small-config house style, not a child table); feeds the
+  Teams @mentions + verdict-side authorization + reject→task assignee (ADR-0142). Unique
+  `(agent_key, procedure_key)`.
+- **`agent_autonomy_score`** (view) — the derived rollup (ADR-0141 D5):
+  `round(100 × Σ(level over enabled procedures) / (5 × N_enabled))` per agent; a read-only
+  at-a-glance number, not a control (agents with 0 enabled procedures have no row → 0%).
+
+Grants (ADR-0143 D6, least-privilege): the web role gets SELECT + write on the four base tables
+(admin-GUI editors) + SELECT on the view; the backend gets SELECT on all (dispatch/verdict
+reads), no profile writes. PII-free: agent identity + persona prose + UPNs — no client data, no
+secrets. These four base tables must also be added to the standing 0216 write-allowlist body.
+
 ## Diagram 5 — As-built: communications, connections, enrichment, demand-gen audiences & automation (ADR-0024–0027)
 
 The multi-channel timeline (every comm is one `interaction`), per-user + company
