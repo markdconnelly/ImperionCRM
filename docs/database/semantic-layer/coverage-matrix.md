@@ -75,6 +75,8 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [partner_deal](tables/partner_deal.md) | Sales | B | op | ✅ | partner-deal-routing (Bridget) — co-sell/referral registration + attribution (the Bridget→Chase seam); channel-conflict adjudication (02-D) |
 | [partner_mdf](tables/partner_mdf.md) | Sales | B | fin | ✅ | Bridget MDF procedure (02-D) — request→approve→spend→ROI; money always-gate (#1657) |
 | [referral_payout](tables/referral_payout.md) | Sales | B | fin | ✅ | Bridget referral-partner program (02-D2) — payout pending→approved→paid; money always-gate (#1657) |
+| [price_book_entry](tables/price_book_entry.md) | Sales | B | fin | ✅ | Sterling 02-C1 govern price book & rate-card — versioned sku × version line (list/cost/margin floor); publish always-gate (human ratifies); the standard 02-A7/02-C2 read; NOT the gutted CPQ quote engine (ADR-0067/0080). #1652, epic #1534 |
+| [discount_tier](tables/discount_tier.md) | Sales | B | fin | ✅ | Sterling 02-C1 discount tiers / approval thresholds (max discount + max term → approval route none/deal_desk/executive); feeds the 02-C2 deal desk breach routing; publish always-gate. #1652, epic #1534 |
 
 ## Delivery / PM
 

@@ -52,6 +52,8 @@ core subset). Remaining objects from the
 | [`contract_renewal`](tables/contract_renewal.md) | single-SoR (app-native satellite) | Imperion app (opportunity merge never writes it) | ADR-0130 |
 | [`quota`](tables/quota.md) | single-SoR | website system of record | ADR-0072 |
 | [`forecast_snapshot`](tables/forecast_snapshot.md) | derived ledger | website (nightly snapshot job) | ADR-0072 |
+| [`price_book_entry`](tables/price_book_entry.md) | single-SoR | website system of record (versioned rate-card line; publish always-gate) | ADR-0136 |
+| [`discount_tier`](tables/discount_tier.md) | single-SoR | website system of record (versioned approval threshold; publish always-gate) | ADR-0136 |
 | [`credential_exposure`](tables/credential_exposure.md) | merge | Dark Web ID (email+domain match) | ADR-0040 |
 | [`proposal`](tables/proposal.md) | single-SoR | website system of record | ADR-0019 |
 | [`esign_envelope`](tables/esign_envelope.md) | single-SoR | DocuSign (external SoR for status) | ADR-0071 |
