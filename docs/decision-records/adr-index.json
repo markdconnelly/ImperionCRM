@@ -1921,5 +1921,50 @@
     "file": "ADR-0140-ar-invoice-own-vs-mirror.md",
     "superseded_by": [],
     "consolidated_into": null
+  },
+  {
+    "adr": "0141",
+    "title": "Per-procedure autonomy dial is the only dial",
+    "status": "proposed",
+    "date": "2026-07-01",
+    "tags": [
+      "agents",
+      "governance"
+    ],
+    "summary": "Consolidate three overlapping autonomy-dial configs into ONE model: a single dial per (agent_key, procedure_key) carrying a 1–5 level + an enabled boolean (light-up-as-built; a disabled procedure never executes and is excluded from the agent's autonomy score). There is NO agent-level master dial. Retire agent_action_autonomy (mig 0158), its ActuationDial UI, and setActionAutonomyAction; reshape agent_autopilot_policy (mig 0123, 0 prod rows) into agent_procedure_policy; strip static autonomy_rung: in agent.yaml to a seed-default annotation the runtime never reads. agent_action_catalog (mig 0217, per-action-kind auto_at_level = risk floor + always_gate = dial-proof hard cap) and the kill-switch (mig 0163) are unchanged and orthogonal. Fire rule: enabled && procedure.level >= auto_at_level && !always_gate (&& the gauntlet passes). Agent autonomy score = round(100 × Σ(enabled levels) / (5 × N_enabled)); 0 enabled → 0%. Amends ADR-0128's ladder application; supersedes the mig-0158 dial model.",
+    "file": "ADR-0141-per-procedure-autonomy-dial-only-dial.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0142",
+    "title": "Teams human-gate rail — full round-trip via Power Automate + APIM",
+    "status": "proposed",
+    "date": "2026-07-01",
+    "tags": [
+      "agents",
+      "governance",
+      "integrations"
+    ],
+    "summary": "Give the human-in-the-loop gate a real round-trip through Microsoft Teams. Chain: a parked action (agent_pending_action) → the backend composes a fixed, schema-validated adaptive card → POST to a Power Automate HTTP-trigger webhook (URL in Key Vault via the credential registry, platform scope, e.g. conn-platform-teams-gate) → adaptive card in a dedicated Team @mentioning the responsible human(s) → verdict + responder AAD identity captured by the flow → POST to APIM → the backend verdict endpoint. Verdicts: Approve → execute through the gauntlet (gate-9 claim-before-send, ADR-0113/mig 0246, is the double-fire defense); Request changes → feedback → RedraftRunner re-synthesis (ADR-0111 seam) → a new card, cycle; Reject → close rejected + create an internal task for the responsible human + update the card thread (Autotask write-back explicitly NOT v1). The card is a fixed envelope: system-owned actions/payloads, agent-composed CONTENT only (agent-voiced body via metered Haiku with template fallback, avatar, agent + procedure name) — freeform agent-built cards are a spoofing/injection surface on the approval path. Backend owns inbound (process custody, ADR-0042); Pipeline receives data webhooks only. Responder authz = flow-provided AAD identity must be in the procedure's approver set; Flow→APIM via subscription key, APIM→backend via the existing Easy Auth caller allowlist. Ingress requires the Mark-gated APIM apply (backend infra/apim Bicep, backend ADR-0074) extended with the verdict route; outbound ships first behind a flag with buttons parked until ingress lights.",
+    "file": "ADR-0142-teams-human-gate-rail.md",
+    "superseded_by": [],
+    "consolidated_into": null
+  },
+  {
+    "adr": "0143",
+    "title": "Agent profile: database is source of truth; ICM reflects",
+    "status": "proposed",
+    "date": "2026-07-01",
+    "tags": [
+      "agents",
+      "persona",
+      "data",
+      "governance"
+    ],
+    "summary": "Make the full agent profile — including the persona NARRATIVE — database-authoritative, inverting the factory's git-SoT authoring model for persona content. New tables: agent_profile (agent_key PK, display_name, role_title, division, reports_to, status, priority_rank, human_counterpart, avatar bytea + avatar_mime, version, valid_from, content_hash), agent_persona_section (agent_key, section_key, ordinal, body_md — section keys identity_mandate / origin_character / how_you_work / voice_tone / behavioral_guardrails / boundaries, mirroring today's icm persona sections), and procedure_human_owner (procedure-scoped responsible human + approver set; feeds the Teams @mentions + approver validation + reject-task assignment; relates #1607). One-time seed import icm→DB; thereafter DB edits (admin GUI) regenerate icm persona files + SOP frontmatter (human_owner) + org.yaml human map as bot PRs — generated blocks never hand-edited. A drift detector (CI gate + scheduled) compares DB ↔ ICM reflection ↔ OKF concept files and flags 'ICM dated'/'OKF dated'; DB wins. Persona sections are vectorized by LP into the brain (MemPalace/Open Brain). Avatars are served via a public unauthenticated route /api/public/agent-avatar/[agent_key] (required for Teams card images; initials fallback). New tables join the web-role write allowlist (ADR-0127). Trade-off recorded honestly: inverts git-SoT for persona content; chosen for GUI editability + brain retrievability + single authority; mitigation = generated reflection PRs keep git history + review visibility.",
+    "file": "ADR-0143-agent-profile-db-source-of-truth.md",
+    "superseded_by": [],
+    "consolidated_into": null
   }
 ]
