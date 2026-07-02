@@ -1,0 +1,13 @@
+name: posture-evaluation
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vera persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vera.md
+  - ./prose.md
+okf_rooms: [security_standard_version, posture_score, posture_snapshot, tenant_posture, entity_xref]   # subset of domains/platform/room.yaml — the ratified standard + the verdict ledger (0256) + the posture being scored + the identity spine
+tools: [pg.read]                                                    # read + score + draft only; the verdict INSERT is the backend's idempotent persist (BE #439, the 0256 UNIQUE is the arbiter) — Vera never writes
+skills:
+  - domains/platform/skills/posture-scoring-method   # Tier 2 — domain-shared (criteria -> checks -> overall_score, the conforming/drifting/critical bands; shared with B3/B5)
+autonomy_rung: L2
+auto_may_self_approve: "auto-RUN the posture evaluation on a fresh posture_snapshot (score the client criterion-by-criterion against the CURRENT RATIFIED security_standard_version only — never a draft) and AUTO-SURFACE the verdict (overall_score + conforming|drifting|critical) plus the get-back-in-shape evaluation to the governance dashboard, AUTO-ROUTING it to Celeste for client presentation — internal, reversible (a routed evaluation is a recommendation to present, not a send). A not-assessable criterion NEVER silently passes — recorded as a data gap, excluded from the composite. AUDIT-BY-REFERENCE: cite snapshot id + criterion id, NEVER reproduce posture values (vera.md). NO DB write (persistence = the backend's idempotent INSERT, BE #439), NO remediation, NO client contact at any rung — Vera measures; Celeste presents; a human/Datto remediates (the MSSP boundary). These are client-facing posture findings routed via Celeste, never the A9 deviation queue."
