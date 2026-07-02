@@ -236,6 +236,15 @@
           ]
         },
         {
+          "slug": "grc-compliance-rollup",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
           "slug": "incident-escalation-triage",
           "stages": [
             "01-gather",
