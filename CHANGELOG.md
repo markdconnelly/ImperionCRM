@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.30.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.29.0...imperion-crm-v0.30.0) (2026-07-02)
+
+
+### Features
+
+* **platform:** B1 — client security-standard definition & versioning ([#1468](https://github.com/markdconnelly/ImperionCRM/issues/1468)) ([#1828](https://github.com/markdconnelly/ImperionCRM/issues/1828)) ([ae00e8b](https://github.com/markdconnelly/ImperionCRM/commit/ae00e8ba3215389429861d07cc834e633c7bd513))
+* **platform:** B2 — client posture evaluation vs current standard ([#1469](https://github.com/markdconnelly/ImperionCRM/issues/1469)) ([#1842](https://github.com/markdconnelly/ImperionCRM/issues/1842)) ([1a30e66](https://github.com/markdconnelly/ImperionCRM/commit/1a30e66a16b6dac565ef6f06fd70029a2053c81e))
+* **platform:** B3 — security drift detection ([#1470](https://github.com/markdconnelly/ImperionCRM/issues/1470)) ([#1843](https://github.com/markdconnelly/ImperionCRM/issues/1843)) ([943e53a](https://github.com/markdconnelly/ImperionCRM/commit/943e53a36dedb324a46ab9672d4eaa03080cdc5a))
+* **platform:** B4 — remediation recommendation / get-back-in-shape plan ([#1471](https://github.com/markdconnelly/ImperionCRM/issues/1471)) ([#1845](https://github.com/markdconnelly/ImperionCRM/issues/1845)) ([b889be1](https://github.com/markdconnelly/ImperionCRM/commit/b889be14e19bc6f3c188297bbcbf32f6c3c18a8d))
+* **platform:** B5 — standard-evolution re-evaluation ([#1472](https://github.com/markdconnelly/ImperionCRM/issues/1472)) ([#1847](https://github.com/markdconnelly/ImperionCRM/issues/1847)) ([903119f](https://github.com/markdconnelly/ImperionCRM/commit/903119f759e7c17983f548fbe9d13b1f4edd6b77))
+
 ## [0.29.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.28.0...imperion-crm-v0.29.0) (2026-07-02)
 
 
