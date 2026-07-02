@@ -1,0 +1,13 @@
+name: remediation-recommendation
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vera persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vera.md
+  - ./prose.md
+okf_rooms: [posture_score, security_standard_version, posture_snapshot, tenant_posture, posture_policy, entity_xref]   # subset of domains/platform/room.yaml — the verdict whose gap is closed (0256) + the version whose criteria define the target + the snapshot/tenant evidence behind each failing criterion + the golden baseline the plan aims at + the identity spine
+tools: [pg.read]                                                    # read + draft only; the plan is an ADVISORY artifact routed via Celeste — no write, no ticket, no remediation actuation at any rung
+skills:
+  - ./skills/remediation-planning       # Tier 3 — workflow-local (the get-back-in-shape plan shape, severity-first ordering, the advisory-only + MSSP boundary, NOT-a-work-order)
+autonomy_rung: L2
+auto_may_self_approve: "auto-BUILD the advisory remediation plan from a client's LATEST posture_score verdict (per failing criterion: the gap to the criterion's bar, the target from posture_policy, and a recommended remediation step — severity-first ordering, critical-designated failures first) and AUTO-SURFACE + AUTO-ROUTE it to Celeste for client presentation — internal, reversible (a routed plan is a recommendation to present, not a send, not a work order). Every step is a RECOMMENDATION for a human/Datto to actuate — Vera never opens a ticket, never touches a client tenant, never remediates. A gap the snapshot cannot evidence is stated as a data gap, never a fabricated step. AUDIT-BY-REFERENCE: cite verdict id + criterion id + policy id, NEVER reproduce posture values (vera.md). NO DB write, NO remediation, NO client contact at any rung — Vera measures + plans; Celeste presents; a human/Datto remediates (the MSSP boundary, ADR-0124). The plan routes via Celeste, never the A9 deviation queue."

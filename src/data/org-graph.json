@@ -1754,6 +1754,14 @@
           ]
         },
         {
+          "slug": "remediation-recommendation",
+          "stages": [
+            "01-load-gap",
+            "02-draft-remediation-plan",
+            "03-record-remediation-recommendation"
+          ]
+        },
+        {
           "slug": "sales-conformance",
           "stages": [
             "01-load-sales-trace",

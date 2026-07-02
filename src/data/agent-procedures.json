@@ -25375,6 +25375,211 @@
           ]
         },
         {
+          "slug": "remediation-recommendation",
+          "title": "remediation-recommendation (platform v1 — Bucket B4)",
+          "job": "produce the **advisory remediation plan** that closes a client's gap to the client security standard (#1471) — read the client's latest `posture_score` verdict (the failing criteria + band), and for each failing criterion assemble a get-back-in-shape step: the gap to the criterion's bar, the target from the `posture_policy` golden baseline, and a recommended remediation, ordered severity-first. **Advisory only** — the plan is delivered via **Celeste** and remediated by a **human / Datto**; Vera never actuates remediation, never opens a ticket, never touches a client tenant (the MSSP boundary, ADR-0124). The plan shape is `./skills/remediation-planning.md`. References the Vera agent epic **#1397**.",
+          "trigger": "a `posture_score` verdict of `drifting` or `critical` landing for a client (from B2 #1469 / B3 #1470 / the LP #399 sweep), or a Mark/Celeste request for a client's get-back-in-shape plan. One run per (client, verdict).",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-BUILD the advisory remediation plan from a client's LATEST posture_score verdict (per failing criterion: the gap to the criterion's bar, the target from posture_policy, and a recommended remediation step — severity-first ordering, critical-designated failures first) and AUTO-SURFACE + AUTO-ROUTE it to Celeste for client presentation — internal, reversible (a routed plan is a recommendation to present, not a send, not a work order). Every step is a RECOMMENDATION for a human/Datto to actuate — Vera never opens a ticket, never touches a client tenant, never remediates. A gap the snapshot cannot evidence is stated as a data gap, never a fabricated step. AUDIT-BY-REFERENCE: cite verdict id + criterion id + policy id, NEVER reproduce posture values (vera.md). NO DB write, NO remediation, NO client contact at any rung — Vera measures + plans; Celeste presents; a human/Datto remediates (the MSSP boundary, ADR-0124). The plan routes via Celeste, never the A9 deviation queue.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "posture_score",
+            "security_standard_version",
+            "posture_snapshot",
+            "tenant_posture",
+            "posture_policy",
+            "entity_xref"
+          ],
+          "skills": [
+            "./skills/remediation-planning"
+          ],
+          "stages": [
+            {
+              "slug": "01-load-gap",
+              "name": "load-gap",
+              "job": "load the client's latest posture verdict, isolate the failing criteria, and read the golden-baseline targets + the evidence behind each failure.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the client's **latest** `posture_score` verdict under the current ratified version (`scored_at` newest). A `conforming` verdict (no failing criteria) → record \"no remediation needed — client conforms\" and end clean. No verdict at all → **park** (\"no verdict — B2 scores first\"); never invent a gap."
+                },
+                {
+                  "tag": "script",
+                  "text": "Isolate the **failing** criteria from the verdict; for each, read the criterion's bar (from the ratified version's criteria) and the `posture_policy` golden target it tracks. Cite by reference (verdict id, criterion id, policy id) — never posture values."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the `posture_snapshot` + `tenant_posture` evidence behind each failure and resolve the account via `entity_xref`. A criterion that is `not-assessable` (not a failure) is set aside as a **data gap**, not a remediation step."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Latest verdict",
+                    "silver `posture_score` · `okf:posture_score`",
+                    "the client's latest verdict under the current ratified version (band + per-criterion results)",
+                    "the gap to close"
+                  ],
+                  [
+                    "Standard",
+                    "silver `security_standard_version` · `okf:security_standard_version`",
+                    "the ratified version's criteria (the bar each failing criterion is measured against)",
+                    "the target bar"
+                  ],
+                  [
+                    "Golden baseline",
+                    "silver `posture_policy` · `okf:posture_policy`",
+                    "the defined-good the criteria track",
+                    "the target the plan aims at"
+                  ],
+                  [
+                    "Snapshot evidence",
+                    "silver `posture_snapshot` · `okf:posture_snapshot`",
+                    "the snapshot behind the verdict",
+                    "the measured side of each gap"
+                  ],
+                  [
+                    "Tenant posture",
+                    "silver `tenant_posture` · `okf:tenant_posture`",
+                    "the client's tenant posture state",
+                    "tenant-level evidence behind a failure"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "the account the verdict belongs to",
+                    "resolve which client the plan is for"
+                  ],
+                  [
+                    "Plan rules",
+                    "`./skills/remediation-planning.md`",
+                    "the step shape + severity ordering",
+                    "what the plan will need"
+                  ]
+                ]
+              },
+              "outputs": "`gap.md` — the client by reference, the band, the list of failing criteria (each with its bar + golden target + the evidence behind it, all by reference), and the not-assessable data-gap list. No posture values reproduced.",
+              "audit": [
+                "Latest verdict read; `conforming` ended clean, or no-verdict parked (never invented)",
+                "Failing criteria isolated with bar + golden target, all cited by reference",
+                "Not-assessable criteria set aside as data gaps; no posture values reproduced"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-draft-remediation-plan",
+              "name": "draft-remediation-plan",
+              "job": "for each failing criterion, draft the get-back-in-shape step — gap → target → recommended action — ordered severity-first.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Per failing criterion, draft the step: the **measured gap** (the criterion bar vs the snapshot evidence, by reference), the **target** from `posture_policy`, and a **recommended action** that would close it — **labeled inference** where the action is a judgment (there is usually more than one path; recommend, do not dictate). Never estimate an action into a data gap."
+                },
+                {
+                  "tag": "script",
+                  "text": "Order the steps **severity-first** per `remediation-planning.md`: critical- designated / band-to-critical failures first, then remaining drifting failures worst-gap first, then the not-assessable data gaps listed last as gaps-to-close (distinct from remediation steps)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "State the band being closed and, **labeled inference**, what a fully-actioned plan would move the client to — noting the authoritative confirmation is a future `posture_snapshot` + B2 re-score, never this plan's assertion."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gap",
+                    "`gap.md` (stage 01)",
+                    "the failing criteria + bars + golden targets + evidence, and the data-gap list",
+                    "the material to plan against"
+                  ],
+                  [
+                    "Plan rules",
+                    "`./skills/remediation-planning.md`",
+                    "the step shape + severity ordering + advisory-only boundary",
+                    "how to build each step"
+                  ],
+                  [
+                    "Conformance rubric",
+                    "the shared `conformance-engine/skills/conformance-rubric.md`",
+                    "signal-vs-inference + audit-by-reference",
+                    "how to state each step"
+                  ]
+                ]
+              },
+              "outputs": "`plan.md` — the severity-ordered remediation steps (each: gap + target + recommended action, by reference, measured-vs-inferred labeled), the data-gaps-to-close list, and the band being closed with its labeled-inference target outcome. No posture values reproduced; nothing actuated.",
+              "audit": [
+                "One step per failing criterion; not-assessable handled as data gaps, not fabricated steps",
+                "Steps ordered severity-first; actions labeled inference where they are judgments",
+                "Gap/target/action cited by reference; no posture values; nothing estimated into a gap"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-record-remediation-recommendation",
+              "name": "record-remediation-recommendation",
+              "job": "assemble the advisory remediation plan, surface it to the governance dashboard, and route it to Celeste for client presentation. No actuation, no ticket, no write, no client contact.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the advisory remediation plan: the client + verdict **by reference**, the severity-ordered steps (each: gap + target + recommended action, by reference, measured-vs-inferred labeled), the data-gaps-to-close list, and the band being closed with its labeled-inference target outcome. The plan carries **no \"done\" state** — it is a recommendation, not a tracked work order (`remediation-planning.md`)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Auto-surface the plan to the governance dashboard (internal, reversible). At L2 this raises without being asked."
+                },
+                {
+                  "tag": "script",
+                  "text": "Route the plan to **Celeste** for client presentation — a recommendation to present, never a send, never a work order. Nothing here actuates a remediation, opens a ticket, touches a client tenant, contacts a client, or files into the A9 deviation queue (#1467 — internal agent-process deviations, not client posture)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Plan",
+                    "`plan.md` (stage 02)",
+                    "the severity-ordered steps + data-gaps + band/target",
+                    "the recommendation content"
+                  ],
+                  [
+                    "Gap",
+                    "`gap.md` (stage 01)",
+                    "the client + verdict by reference",
+                    "the plan's identity"
+                  ]
+                ]
+              },
+              "outputs": "`remediation-recommendation.md` — the advisory plan (client + verdict by reference, severity-ordered steps, data-gaps, band/target), surfaced to the dashboard and routed to Celeste.",
+              "audit": [
+                "Plan complete (client + verdict by reference, severity-ordered steps, data-gaps, band/target)",
+                "Surfaced to the dashboard and routed to Celeste; no \"done\" state asserted",
+                "Nothing actuated, ticketed, written, or client-contacted; nothing filed to the A9 queue"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "sales-conformance",
           "title": "sales-conformance (platform v1 — Bucket A2, Chase)",
           "job": "the **sales-process conformance rulebook** — encode Chase's **Defined Way** as a machine-checkable ruleset and audit a completed Chase run's process trace against it. The rules that distinguish this workflow from the shared `conformance-engine` are Chase's: the opportunity-first SOP, the lead-response SLA, the no-commit guardrail, and the MQL handoff. Divergences this finds are routed + closed by A9 (`deviation-lifecycle`, #1467). References the Chase agent epic **#1392**.",
