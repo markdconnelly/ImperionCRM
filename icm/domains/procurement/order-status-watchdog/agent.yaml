@@ -1,0 +1,13 @@
+name: order-status-watchdog
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> procurement room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [account, invoice]                                       # subset of domains/procurement/room.yaml — the client spine + the billed consequence (QBO RO mirror)
+tools: [pg.read]                                                    # watch + alert only; no write, no send, no order touched
+skills:
+  - ./skills/order-sla-rubric           # Tier 3 — workflow-local (placed→provisioned→billed ladder + stall/failure vs SLA + alert shape)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the order stall/failure alert (order, state, SLA breached, urgency COMPUTED per A6 — an SLA-breaching stall is urgent) to the human order owner, every state cited with its source + as-of (A5) — internal and reversible, an alert can be dismissed. NEVER the actuation: this workflow never re-places, retries, cancels, or otherwise touches the order (B9 — it watches a clock, it does not turn a wheel); any fix or re-run executes only through the governed procurement sequence (02-B2, migration 0184 — idempotent re-run from the top, A9) behind its always_gate money gate (ADR-0109). Vance is the sentinel, not the buyer (BO-03 Procurement §5)."

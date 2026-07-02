@@ -21967,7 +21967,1550 @@
       "id": "procurement",
       "persona": "Vance",
       "kind": "domain",
-      "procedures": []
+      "procedures": [
+        {
+          "slug": "deadline-sentinel",
+          "title": "deadline-sentinel (procurement v1)",
+          "job": "watch every vendor renewal and cancellation-window clock — client vendor agreements AND Imperion's own subscriptions — and guarantee that **no deadline passes unseen**: a timely alert (deadline + dollars + inaction consequence) with a drafted renew/cancel recommendation, routed to the human who owns the decision. Realizes **02-B1** (`docs/workflows/streams/02-lead-cash.md`, leaf #1481, archetype **B9 deadline-sentinel**) — Vance's highest-value procedure.",
+          "trigger": "schedule — a subscription/agreement approaching auto-renew or its cancellation-window close, watched over Pax8 bronze + `license_assignment` + `contract` at the policy lead times (T-30 / T-7 / T-1, `deadline-rubric.md`). One run per sweep.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "\"auto-raise the timely deadline alert (deadline + dollars + inaction consequence, urgency COMPUTED per A6) with its drafted renew/cancel recommendation attached, route client-contract renewals to Chase (02-A7 seam) and climb reports_to when a rung goes unanswered — all internal and reversible, every date cited with its source + as-of (A5). NEVER the actuation: the renew/cancel/buy commit is always_gate at every rung (ADR-0109, migration 0184) and lives only in the governed procurement sequence (02-B2, leaf",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "contract",
+            "license_assignment",
+            "account"
+          ],
+          "skills": [
+            "./skills/deadline-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-watch-deadlines",
+              "name": "watch-deadlines",
+              "job": "read every renewal/cancellation clock — client agreements and Imperion's own — as of a stated date, and mark which clocks sit inside a lead-time rung.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Fix the **as-of date** for the sweep (the snapshot date). Every days-to-deadline figure is derived against this date; an undated sweep is an audit fail."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Read every renewal/cancellation clock across both subjects — client vendor agreements AND Imperion's own subscriptions — **citing each renewal/cancel date with its source + as-of** (A5). An empty, missing, or unparseable date is **parked as a noted gap**, never guessed: a guessed clock is a silent auto-renew waiting to fire."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Evaluate each cited clock against the lead-time ladder (`deadline-rubric.md`: T-30 / T-7 / T-1) and mark the **due set** — the clocks inside a rung as of the sweep date — with each clock's rung and days-to-deadline (derived)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Agreement clocks",
+                    "silver `contract` · `okf:contract`",
+                    "active agreements: renewal date, auto-renew flag, cancellation-window close",
+                    "the renewal + cancellation clocks to watch"
+                  ],
+                  [
+                    "License entitlements",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "entitlements tied to each expiring agreement",
+                    "what the deadline commits or releases"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "owning account per agreement",
+                    "whose clock — client agreement vs Imperion-self (subject: both)"
+                  ],
+                  [
+                    "Subscription state",
+                    "`bronze pax8_*` (read-only)",
+                    "subscription auto-renew / commitment-term dates on in-use SKUs",
+                    "the Pax8-SoR mirror of the subscription clock (room.md)"
+                  ],
+                  [
+                    "Deadline rubric",
+                    "`./skills/deadline-rubric.md`",
+                    "lead-time ladder + as-of discipline",
+                    "which clocks are due at T-30/T-7/T-1, what parks"
+                  ]
+                ]
+              },
+              "outputs": "`deadlines.md` — the as-of date; every watched clock (agreement, owning account name, renewal/cancel date + source, auto-renew flag, days-to-deadline, ladder rung); the due set for stage 02; and every parked gap (empty/unparseable date), noted — not guessed.",
+              "audit": [
+                "As-of date stated (not blank); every clock cites its date + source + as-of (A5)",
+                "Both subjects swept (client agreements AND Imperion's own subscriptions)",
+                "Empty/unparseable dates parked as gaps, never guessed into",
+                "No actuation / no money commitment emitted (watch only — no renew, cancel, buy, or order)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-quantify-draft",
+              "name": "quantify-draft",
+              "job": "raise the timely alert for each due clock — deadline + dollars + inaction consequence, urgency computed — and draft its renew/cancel recommendation.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "For each due clock, raise the **timely alert**: the deadline, the dollars at stake, and the **inaction consequence** (auto-renew = money committed by silence; window close = the cancel option lost) — **urgency computed per A6** from the ladder rung, the dollars, and the consequence class (`deadline-rubric.md`); a closing cancellation window is urgent. Urgency is computed, never asserted. Every figure cites its source + as-of (A5)."
+                },
+                {
+                  "tag": "hybrid",
+                  "text": "Draft the **renew/cancel recommendation** for each alert (the easy-button, pre-staged for the human decision): the cost, the utilization, and the **rejected alternative**, each with its source + as-of (vance.md §3). Missing cost or utilization data is an **escalated gap**, never an estimate — a wrong number here spends real money (vance.md §5). The draft is a recommendation only; the commit path it points at is the governed procurement sequence (02-B2), behind its money gate."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Due clocks",
+                    "`deadlines.md` (stage 01 output)",
+                    "the due set only",
+                    "the deadlines to quantify and draft against"
+                  ],
+                  [
+                    "Utilization facts",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "assigned-vs-entitled counts on the due agreements",
+                    "the utilization side of the recommendation"
+                  ],
+                  [
+                    "Cost / terms",
+                    "`bronze pax8_*` (read-only)",
+                    "current price, quantity, and term on due subscriptions",
+                    "the dollars at stake (Pax8 = SoR, room.md)"
+                  ],
+                  [
+                    "Deadline rubric",
+                    "`./skills/deadline-rubric.md`",
+                    "urgency computation + recommendation shape",
+                    "how urgency is computed (A6) and what a complete rec carries"
+                  ]
+                ]
+              },
+              "outputs": "`alert-rec.md` — per due clock: the alert (deadline, dollars, inaction consequence, computed urgency + its inputs) and the drafted renew/cancel recommendation (cost · utilization · rejected alternative, each cited + as-of); any escalated data gap, noted — not estimated.",
+              "audit": [
+                "Every alert carries deadline + dollars + inaction consequence; every figure cites source + as-of (A5)",
+                "Urgency computed per A6 (inputs shown), never asserted",
+                "Every rec carries cost + utilization + rejected alternative, or the gap escalated — never estimated into",
+                "No actuation / no money commitment emitted (the rec is a draft; renew/cancel/buy stays `always_gate`, 0184)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-route-notify",
+              "name": "route-notify",
+              "job": "route each alert + drafted recommendation to its decision owner, and climb the escalation ladder until answered.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Route each alert + rec to its decision owner: a **client-contract renewal** seams to **Chase (02-A7)** — the client-renewal conversation is his, Vance supplies the numbers [→ **SEAM** Chase]; an **Imperion-own subscription** routes to the budget owner up Sterling's line (room.md). Routing is internal notification only — nothing external is sent from this workflow."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Notify at each lead-time rung (T-30 / T-7 / T-1); an **unanswered rung escalates up `reports_to`** (Sterling, room.md) with the urgency recomputed per A6 for the tighter rung."
+                },
+                {
+                  "tag": "automation",
+                  "text": "A **passed deadline is a logged escalation failure**: record it and surface it in the owning C-suite synthesis-brief. It is **NEVER a license to actuate** (B9; room.md structural rule 1) — the renew/cancel/buy stays `always_gate` (0184) in the governed procurement sequence (02-B2) no matter how the clock ended."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Alerts + drafted recs",
+                    "`alert-rec.md` (stage 02 output)",
+                    "full",
+                    "what routes, and with what urgency"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "owning account per due agreement",
+                    "client-contract renewal vs Imperion-self — picks the route"
+                  ],
+                  [
+                    "Deadline rubric",
+                    "`./skills/deadline-rubric.md`",
+                    "routing + escalation ladder",
+                    "who owns each decision, when an unanswered rung climbs"
+                  ]
+                ]
+              },
+              "outputs": "`routing.md` — per alert: the route taken (Chase seam / budget owner) + when, the escalation state per rung (answered / climbed), and any logged escalation failure with the passed deadline cited + as-of. Terminal stage; ends parked with the deadline's decision owner.",
+              "audit": [
+                "Every alert routed with route + timestamp; client renewals seamed to Chase (02-A7), not handled here",
+                "Unanswered rungs escalated up `reports_to`; every date cited + as-of (A5)",
+                "Any passed deadline logged as an escalation failure and surfaced — never acted on",
+                "No actuation / no money commitment emitted; nothing sent externally (sends are ADR-0058, not this workflow)"
+              ],
+              "checkpoint": "The deadline-owner decision loop: a human (Chase's client conversation, or the budget owner) decides renew vs cancel off the drafted recommendation; the decision **executes only through the governed procurement sequence** (02-B2) behind its `always_gate` money gate (0184). **`auto` (L2) may self-approve raising, routing, and escalating the alert + drafted rec ONLY** — there is no renew, cancel, buy, or order in this workflow's catalog at any rung (sentinel, not buyer — room.md; vance.md §6)."
+            }
+          ]
+        },
+        {
+          "slug": "governed-procurement",
+          "title": "governed-procurement (procurement v1)",
+          "job": "the ONE gated act path in procurement (Stream 02-B2, leaf #1487, archetype B6 money-gate). For an approved, catalog-anchored sourcing need: ground + draft the order/PO, bring it to **THE money gate** with the 4-part easy-button (A4), **PARK** for the ONE human approval that authorizes the whole Pax8 sequence (approve-once, migration 0184), then document + verify the backend-executed operational tail. ICM **grounds, drafts, and parks**; the backend executor actuates.",
+          "trigger": "an approved sourcing need — a catalog-anchored SKU to be ordered (a staged order from `won-deal-sourcing`, or a human-approved commit split out of a Vance detect/draft procedure — 02-B3/B5/B9). Off-catalog routes to a human (refuse-precondition, never auto-procure — vance.md). One run per sourcing need. **subject:** both (a client buy or Imperion's own).",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L3",
+          "autoMaySelfApprove": "the post-approval operational tail ONLY (L3 — the one Vance L3): AFTER the ONE human approval at pax8_place_order (approve-once-at-the-money-gate, migration 0184), the backend-executed m365_provision_license, agreement_attach, and bill_attach steps auto-complete and stage 03 documents + verifies them — idempotency-keyed (replay = no-op, A9b), read back from Pax8/M365 before close (A9c), never re-prompting a mechanical step. NEVER the money step: pax8_place_order and every purchase actuation is always_gate FOREVER — A2 class-1, dial-proof at every rung, no dial setting unlocks it (ADR-0109, 0184, A10 row 4 no-clean-undo). Stage 02 parks in every mode; off-catalog is a refuse-precondition routed to a human; no ICM stage orders, provisions, attaches, or bills — the actuation is the backend executor's.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "account",
+            "license_assignment",
+            "contract",
+            "invoice"
+          ],
+          "skills": [
+            "./skills/money-gate-rules"
+          ],
+          "stages": [
+            {
+              "slug": "01-ground-draft",
+              "name": "ground-draft",
+              "job": "ground the approved sourcing need against the catalog and the Pax8 mirror, and draft the order/PO that the money gate will present — cited, as-of-stamped, and catalog-anchored; off-catalog PARKS to a human.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the **as-of date** for the run and read the sourcing need. Anchor each requested item to the catalog (#1306): resolve the catalog SKU and price. **Off-catalog → PARK to a human** (refuse-precondition — a catalog gap, never an improvised SKU, never auto-procured; vance.md)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve the owning `account` (client — or Imperion-self when the subject is Imperion's own need) and the `contract` the purchase will attach to. An unresolved account or agreement is a **noted gap that parks**, not a guess — a wrong owner here spends real money on the wrong client (vance.md §5)."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the order/PO: catalog SKU, quantity, the **exact $**, the Pax8 SoR state it was priced against (bronze `pax8_*`, read-only), and the grounded why — every figure with its **source + as-of date** (A5). Quantify the tradeoff per vance.md (the cost and the rejected alternative — a bare \"buy\" is not a decision)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sourcing need",
+                    "the run trigger payload (a `won-deal-sourcing` staged order, or a human-approved commit split from 02-B3/B5/B9)",
+                    "one sourcing need",
+                    "what is being ordered, for whom, and why"
+                  ],
+                  [
+                    "Product/service catalog",
+                    "the catalog (#1306) via `pg.read`",
+                    "the needed SKU(s)",
+                    "the catalog anchor — SKU + list price; off-catalog = refuse-precondition"
+                  ],
+                  [
+                    "Owning account",
+                    "silver `account` · `okf:account`",
+                    "the subject account",
+                    "who the buy is for (client — or Imperion-self, subject both)"
+                  ],
+                  [
+                    "Agreement",
+                    "silver `contract` · `okf:contract`",
+                    "the subject's agreement",
+                    "the agreement the post-approval `agreement_attach` will bind to"
+                  ],
+                  [
+                    "Pax8 state",
+                    "bronze `pax8_*` (read-only)",
+                    "the subject's current subscriptions + pricing",
+                    "Pax8 is SoR (A9a); current entitlements + the priced SKU as Pax8 sells it"
+                  ],
+                  [
+                    "Gate rules",
+                    "`./skills/money-gate-rules.md`",
+                    "catalog-anchor + easy-button fields",
+                    "what the draft must carry for stage 02 to assemble the gate"
+                  ]
+                ]
+              },
+              "outputs": "`order-draft.md` — the catalog SKU + quantity + exact $, the owning account and agreement, the Pax8-priced state (cited + as-of), the grounded why with the rejected alternative, and any parked gap. Everything stage 02 needs to assemble the easy-button without re-research.",
+              "audit": [
+                "Catalog-anchored: every item resolved to a catalog SKU (#1306); off-catalog PARKED to a human (refuse-precondition), never drafted around",
+                "Every figure carries its source + as-of date (A5); the $ is exact, not estimated",
+                "Owning account + agreement resolved (or the run parked on the gap, not guessed)",
+                "Rejected alternative quantified (vance.md)",
+                "No money actuation emitted from ICM — nothing ordered, provisioned, attached, or billed"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-money-gate",
+              "name": "money-gate",
+              "job": "THE MONEY GATE (Stream 02-B2). Assemble the 4-part easy-button and **PARK** — ONE human approval at `pax8_place_order` authorizes the whole sequence (approve-once, migration 0184). `always_gate`, at every rung, in every mode; there is NO ICM send/actuate path.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Verify preconditions: stage 01's audit is green, the draft is catalog-anchored (an off-catalog item cannot reach this gate — it parked at stage 01), and it carries the exact $, the SKU, and the as-of date. A draft that fails cannot reach a human as \"ready\"."
+                },
+                {
+                  "tag": "script",
+                  "text": "Assemble the **4-part easy-button** (A4) per `money-gate-rules.md`: the **exact $** · the **SoR (Pax8)** · the **grounded why** (cited + as-of, with the rejected alternative) · one-click **Approve / Reject-Edit** — flagged with the **no-clean-undo irreversibility marker** (A10 row 4: money out has no clean undo)."
+                },
+                {
+                  "tag": null,
+                  "text": "**HARD CHECKPOINT — PARK.** The workflow parks here and ends its turn; a human decides. ONE approval at `pax8_place_order` authorizes the WHOLE 4-step sequence (approve-once, 0184) — the mechanical downstream steps are never re-prompted (vance.md §6). On approval, the **backend executor** runs the sequence; ICM emits nothing. Rejection (or edit-then-reject) ends the run with the reason captured."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Order draft",
+                    "`order-draft.md` (stage 01 output)",
+                    "full",
+                    "the thing being approved"
+                  ],
+                  [
+                    "Gate rules",
+                    "`./skills/money-gate-rules.md`",
+                    "easy-button composition + no-clean-undo flag",
+                    "how the gate item is assembled"
+                  ]
+                ]
+              },
+              "outputs": "`gate-record.md` — the presented easy-button (all 4 parts + the no-clean-undo flag), the decision (`approved` / `rejected` / `parked`), the human approver identity, and the timestamp. Only an `approved` record admits stage 03.",
+              "audit": [
+                "The easy-button carried all 4 parts (exact $ · Pax8 SoR · grounded why with source + as-of · Approve/Reject-Edit) plus the no-clean-undo flag (A10 row 4)",
+                "The workflow **PARKED at the gate** — no auto-approval at any rung, in any mode (A2 class-1, dial-proof, ADR-0109)",
+                "Decision + human approver identity recorded (never blank, never `auto`)",
+                "No money actuation emitted from ICM — the actuation, if approved, is the backend executor's (0184)"
+              ],
+              "checkpoint": "THE MONEY GATE — permanent, dial-proof (`always_gate`, A2 class-1, ADR-0109; seeded by 0184, postured `withheld` v1). A human approves the exact purchase; their ONE approval authorizes `pax8_place_order` and the whole downstream sequence (approve-once — the operational steps auto-complete in stage 03 and are never re-prompted). **`auto` may self-approve NOTHING here** — money out has no clean undo (A10 row 4); the spend is a human's (vance.md §7). There is no ICM send/actuate path; the run parks until the human decides."
+            },
+            {
+              "slug": "03-post-approval-tail",
+              "name": "post-approval-tail",
+              "job": "document + verify the backend-executed operational tail (Stream 02-B2 steps 3–5). Runs ONLY after the stage-02 human approval; the backend executor actuates `m365_provision_license` → `agreement_attach` → `bill_attach` at L3 — this stage reads its run state and verifies the mirrors, it never emits the calls.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Gate on stage 02: proceed ONLY on an `approved` gate record. A `rejected` / `parked` record is terminal at stage 02 — never advance an unapproved buy."
+                },
+                {
+                  "tag": "automation",
+                  "text": "The **backend executor** (0184, postured `withheld` v1 — **dormant**, A5c) runs `m365_provision_license` → `agreement_attach` → `bill_attach` at L3 post-approval — each step **idempotency-keyed** so a replay is a no-op + audit note (A9b), each **read back** from Pax8/M365 before close (A9c). Approve-once holds: no mechanical step is re-prompted to the human (vance.md §6). This stage READS that run state; the actuation is the backend's."
+                },
+                {
+                  "tag": "script",
+                  "text": "Verify the mirrors, each cited + as-of (A5): the placed order and live subscription against the bronze `pax8_*` read-back; the provisioned entitlement against `license_assignment`; the attach against `contract`; the bill against `invoice`. The bill is the **billing consequence** of the approved purchase [→ **SEAM** Audrey, Stream 09] (A11 — Vance verifies it exists; the money clock is Audrey's)."
+                },
+                {
+                  "tag": "script",
+                  "text": "On partial failure: **HALT — no auto-rollback** (A10/B6). Surface **completed-vs-pending** per step, plainly; a re-run is idempotent from the top (A9b makes a replay converge — no double-buy, no double-bill). Never improvise a compensating action."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gate record",
+                    "`gate-record.md` (stage 02 output)",
+                    "full",
+                    "only an `approved` record enters this stage"
+                  ],
+                  [
+                    "Executor run state",
+                    "the backend 0184 sequence run ledger via `pg.read`",
+                    "this run's sequence",
+                    "per-step state (placed / provisioned / attached / billed), keys, and errors"
+                  ],
+                  [
+                    "Pax8 state",
+                    "bronze `pax8_*` (read-only)",
+                    "this order + subscription",
+                    "the Pax8 read-back — order placed, subscription live (A9c; Pax8 is SoR, A9a)"
+                  ],
+                  [
+                    "Provisioned license",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "the provisioned entitlement",
+                    "verify the M365 provision landed in the mirrored license record"
+                  ],
+                  [
+                    "Agreement",
+                    "silver `contract` · `okf:contract`",
+                    "the subject's agreement",
+                    "verify `agreement_attach` bound the purchase to the right agreement"
+                  ],
+                  [
+                    "Bill",
+                    "silver `invoice` · `okf:invoice`",
+                    "the attached bill",
+                    "verify `bill_attach` — the billing consequence of the approved purchase"
+                  ],
+                  [
+                    "Gate rules",
+                    "`./skills/money-gate-rules.md`",
+                    "halt-no-rollback + approve-once",
+                    "how partial failure is surfaced; why nothing is re-prompted"
+                  ]
+                ]
+              },
+              "outputs": "`fulfillment.md` — per-step state (placed / provisioned / attached / billed), each read-back confirmation cited + as-of (or `pending` while the substrate is dormant), completed-vs-pending on any partial failure, and the Audrey Stream-09 seam reference. Terminal stage; procurement fulfilled.",
+              "audit": [
+                "Entered ONLY on an `approved` gate record; no mechanical step re-prompted to a human (approve-once, 0184)",
+                "Every completed step verified by read-back from Pax8/M365 mirrors (A9c), cited with source + as-of (A5)",
+                "Replays confirmed idempotent — keyed no-op + audit note, never a double actuation (A9b)",
+                "Partial failure HALTED with completed-vs-pending surfaced; nothing auto-rolled-back (A10/B6)",
+                "No money actuation emitted from ICM — the backend executor acted; this stage documented"
+              ],
+              "checkpoint": "None — this stage originates no actuation. It is the documented, verified tail of a purchase a human already approved at stage 02; the dial-proof money ceiling was honored at the gate and nothing here re-opens it. It runs at **L3** (the one Vance L3, vance.md §1) only downstream of that ONE approval. **Substrate (A5c):** 0184 is postured `withheld` v1 and Pax8-bronze / Autotask write-back / trigger-sync #119 are dormant — this stage ships propose-only until they land."
+            }
+          ]
+        },
+        {
+          "slug": "license-right-sizing",
+          "title": "license-right-sizing (procurement v1)",
+          "job": "match SKU and quantity against **actual utilization**, find over-provisioning and consolidatable SKUs, and draft a **right-sizing recommendation** (consolidate/downgrade) with the dollars attached — then surface it and park. Realizes **02-B5** (leaf [#1488](https://github.com/markdconnelly/ImperionCRM/issues/1488), archetype **B4 audit-attest**, ADR-0136). Every recommendation carries the cost, the utilization, and the rejected alternative (vance.md §3).",
+          "trigger": "schedule — the periodic utilization analysis over the license estate. One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the internal right-sizing recommendation (consolidate/downgrade, dollars attached) at L2 from CITED utilization-vs-entitlement facts, each carrying its source and as-of date (A5; internal, reversible — a recommendation can be dismissed, A10 row 1); where utilization data is missing the gap is parked, never guessed into. NEVER auto-runs: the consolidate/downgrade/cancel commitment itself — every right-sizing actuation is a money commitment, always_gate forever (ADR-0109, migration 0184), and splits out to the governed-procurement money gate (02-B2; BO-03 Procurement §5). Vance quantifies the tradeoff; the spend is a human's.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "license_assignment",
+            "account",
+            "invoice"
+          ],
+          "skills": [
+            "./skills/right-sizing-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-match-utilization",
+              "name": "match-utilization",
+              "job": "match each SKU/quantity against actual utilization as of a stated date, parking every missing-data gap.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the **as-of date** for the run. Utilization matching is a snapshot claim; an undated match is an audit fail (A5)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "For each SKU in scope, match the paid quantity/tier (Pax8 bronze + `license_assignment`) against **actual utilization** on the assignment/true-up facts, **citing the utilization data + its as-of date** on every match (A5, #1488). Apply the rubric's utilization thresholds to mark candidates: over-provisioned quantity, over-tiered SKU, consolidatable pattern."
+                },
+                {
+                  "tag": "automation",
+                  "text": "**Park the gaps:** any SKU whose utilization data is missing, stale, or ambiguous is listed as a **parked gap — never guessed** (A5 empty→park); a guessed downgrade takes a tool from someone using it. The vendor-record model is a stub (#1311) — findings needing whole-vendor data are parked with that tag, not improvised."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Entitlement + utilization facts",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "entitlements, assigned quantities + utilization/true-up facts as of the run",
+                    "what is paid for vs what is actually used"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "accounts owning the analyzed SKUs",
+                    "attribute each finding to its client (or Imperion-self — subject: both, 02-B5)"
+                  ],
+                  [
+                    "Pax8 subscription state",
+                    "bronze `pax8_*` (read-only)",
+                    "active subscriptions, quantities, tiers",
+                    "the SoR mirror of what is being paid for (room.md)"
+                  ],
+                  [
+                    "Right-sizing rubric",
+                    "`./skills/right-sizing-rubric.md`",
+                    "utilization thresholds",
+                    "what over-provisioned means, when to park"
+                  ]
+                ]
+              },
+              "outputs": "`utilization-match.md` — the as-of date, the candidate list (SKU, owning account, paid quantity/tier vs measured utilization, threshold triggered, evidence citation + as-of per row), and the parked gaps (missing/stale utilization, #1311-gated items), not guessed.",
+              "audit": [
+                "As-of date stated; every match cites its utilization data source + as-of (A5)",
+                "Missing/stale/ambiguous utilization parked as a gap — no usage level guessed",
+                "Candidates marked only by rubric thresholds; #1311-gated items tagged, not improvised",
+                "Measurement only — no actuation, no downgrade, no money commitment emitted"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-compose-rec",
+              "name": "compose-rec",
+              "job": "draft the right-sizing recommendation — consolidate/downgrade per finding — with the dollars attached.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Price each candidate: the measured current cost (invoice mirror preferred, Pax8 bronze fallback — cite which + as-of) and the target cost after the recommended consolidate/downgrade; derived savings **labeled derived** (A5). A candidate with no measured cost is carried as a gap, never estimated (vance.md §5)."
+                },
+                {
+                  "tag": "hybrid",
+                  "text": "Draft the right-sizing recommendation per `right-sizing-rubric.md` — the applicable consolidation pattern or downgrade per finding — in Vance's quantify-the-tradeoff shape (vance.md §3): the cost, the utilization, and the **rejected alternative** on every line (e.g. why downgrade beats cancel here, or why status-quo was rejected). Never below the service-catalog baseline — a rec that would under-license is dropped and noted for 02-B4 (risk over cost, vance.md §3)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Utilization matches",
+                    "`utilization-match.md` (stage 01 output)",
+                    "full",
+                    "the cited candidates to recommend on"
+                  ],
+                  [
+                    "Billing consequence",
+                    "silver `invoice` · `okf:invoice`",
+                    "invoice lines for the candidate subscriptions",
+                    "the measured unit cost each candidate actually bills at"
+                  ],
+                  [
+                    "Pax8 pricing/terms",
+                    "bronze `pax8_*` (read-only)",
+                    "candidate + target SKUs' price/term",
+                    "current vs target pricing where the invoice mirror is silent"
+                  ],
+                  [
+                    "Right-sizing rubric",
+                    "`./skills/right-sizing-rubric.md`",
+                    "consolidation patterns + tradeoff shape",
+                    "which pattern applies, how the rec is shaped"
+                  ]
+                ]
+              },
+              "outputs": "`right-sizing-rec.md` — the as-of date, per finding: the recommended action (consolidate/downgrade), current vs target cost (measured vs derived labeled, source + as-of), the utilization evidence, the rejected alternative; total derived savings; the carried-forward gaps (incl. #1311-gated items).",
+              "audit": [
+                "Every figure carries its cost source + as-of date; measured vs derived labeled (A5)",
+                "Every recommendation names the cost, the utilization, and the rejected alternative (vance.md §3)",
+                "No recommendation drops below the service-catalog baseline; no price invented; gaps carried, not estimated",
+                "Draft only — no actuation, no consolidate/downgrade, no money commitment emitted"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-route",
+              "name": "route",
+              "job": "surface the right-sizing recommendation and split every commit out to the governed-procurement money gate.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Surface the **internal right-sizing recommendation** to the budget owner — internal, reversible, auto at L2 (A10 row 1). Urgency is computed (A6): a finding whose commitment term renews soon (re-buy imminent) outranks an evergreen one."
+                },
+                {
+                  "tag": "automation",
+                  "text": "For each recommended consolidate/downgrade, **stage the commit as a governed-procurement (02-B2) money-gate item** — the exact current-vs-target $, the utilization citation + as-of, and the drafted action, ready for the ONE human approval (approve-once, 0184). Nothing is actuated here: B4's assertion-with-spend ≠ measurement (A11). Parked gaps (missing utilization, #1311-gated) are surfaced as gaps, not staged."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Right-sizing recommendation",
+                    "`right-sizing-rec.md` (stage 02 output)",
+                    "full",
+                    "the quantified recommendation to surface + the commits to split out"
+                  ],
+                  [
+                    "Right-sizing rubric",
+                    "`./skills/right-sizing-rubric.md`",
+                    "the tradeoff shape",
+                    "where the recommendation ends and the gated commit begins"
+                  ]
+                ]
+              },
+              "outputs": "`routing.md` — the recommendation surfaced (to whom, when), the commits staged for the 02-B2 money gate (action + $ + citation per item), and every finding NOT staged with its reason (parked gap / #1311-gated / dropped-for-catalog-baseline).",
+              "audit": [
+                "Every staged commit carries its utilization citation + as-of date and exact $ (A5)",
+                "Every consolidate/downgrade routed to the 02-B2 money gate — none actuated, none skipped silently",
+                "Parked gaps surfaced as gaps — nothing staged off missing utilization data",
+                "No actuation, no money commitment emitted — the commit waits for a human at 02-B2"
+              ],
+              "checkpoint": "The right-sizing loop: a human (the budget owner) reads the recommendation; the consolidate/downgrade commitment is decided at the **governed-procurement money gate (02-B2)** — `always_gate` forever (ADR-0109, migration 0184; BO-03 Procurement §5). **`auto` (L2) may self-approve surfacing the internal recommendation and staging the gate items ONLY** — no consolidate, downgrade, or cancel runs in this workflow at any rung (sentinel, not buyer — room.md)."
+            }
+          ]
+        },
+        {
+          "slug": "order-status-watchdog",
+          "title": "order-status-watchdog (procurement v1)",
+          "job": "watch every in-flight Pax8 order across its **placed → provisioned → billed** ladder and alert on a stall or failure vs SLA — **order health assured**, no order dies silently between the money gate and the bill. Realizes **02-B6** (`docs/workflows/streams/02-lead-cash.md`, leaf #1485, archetype **B9 deadline-sentinel** — it watches an order clock; it alerts, it never actuates).",
+          "trigger": "an in-flight Pax8 order — one placed through the governed procurement sequence (02-B2) and not yet billed. The watchdog runs while any order is in flight; one run per sweep.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the order stall/failure alert (order, state, SLA breached, urgency COMPUTED per A6 — an SLA-breaching stall is urgent) to the human order owner, every state cited with its source + as-of (A5) — internal and reversible, an alert can be dismissed. NEVER the actuation: this workflow never re-places, retries, cancels, or otherwise touches the order (B9 — it watches a clock, it does not turn a wheel); any fix or re-run executes only through the governed procurement sequence (02-B2, migration 0184 — idempotent re-run from the top, A9) behind its always_gate money gate (ADR-0109). Vance is the sentinel, not the buyer (BO-03 Procurement §5).",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "account",
+            "invoice"
+          ],
+          "skills": [
+            "./skills/order-sla-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-watch-orders",
+              "name": "watch-orders",
+              "job": "read each in-flight Pax8 order's state and transition history as of a stated date.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Fix the **as-of date** for the sweep (the snapshot date). Time-in-state is derived against this date; an undated sweep is an audit fail."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Read every in-flight order off the Pax8 bronze mirror — current state, the timestamp it entered that state, SKU/quantity, and the owning account — **citing each state + its source + as-of** (A5). An order in a state the ladder does not recognize, or with a missing state/timestamp, is **parked as a noted gap**, never mapped onto the ladder by guess."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Derive each order's **time-in-state** (whole hours/days against the as-of date) and stage it against the ladder (`order-sla-rubric.md`) for classification in stage 02. Read-only throughout — nothing here touches an order."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Order state",
+                    "`bronze pax8_*` (read-only)",
+                    "in-flight orders: current state, transition timestamps, SKU, quantity",
+                    "the order clock — Pax8 is the SoR for orders (room.md)"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "owning account per order",
+                    "whose order — names the human order owner for stage 02"
+                  ],
+                  [
+                    "Order-SLA rubric",
+                    "`./skills/order-sla-rubric.md`",
+                    "the state ladder + as-of discipline",
+                    "what a healthy placed→provisioned→billed transition looks like"
+                  ]
+                ]
+              },
+              "outputs": "`orders.md` — the as-of date; every in-flight order (order id, owning account name, SKU/quantity, current state + entered-at + source, derived time-in-state); and every parked gap (unrecognized/missing state), noted — not guessed.",
+              "audit": [
+                "As-of date stated (not blank); every order state cites its source + as-of (A5)",
+                "Unrecognized or missing states parked as gaps, never guessed onto the ladder",
+                "Time-in-state labeled derived; states + timestamps labeled measured",
+                "No actuation / no money commitment emitted (read-only — no retry, re-place, cancel, or nudge)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-detect-alert",
+              "name": "detect-alert",
+              "job": "classify each in-flight order vs SLA and alert on every stall or failure with computed urgency.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Classify each order against the SLA ladder (`order-sla-rubric.md`): **on-track** (inside its window), **stalled** (window exceeded, no error state), or **failed** (error/rejected state). The billed leg is confirmed against the `invoice` mirror; a bill the mirror hasn't caught up to is a **noted lag**, not a stall verdict — don't classify into a stale pull."
+                },
+                {
+                  "tag": "automation",
+                  "text": "For each stall/failure, compose the alert per the rubric — order, owning account name, state + entered-at, the SLA window breached, dollars in flight — with **urgency computed per A6** (an SLA-breaching stall is urgent; a failed order with a client waiting outranks it). Every state and figure cites its source + as-of (A5)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Route each alert to the **human order owner**, pointing at the governed procurement sequence (02-B2) as the only fix path (idempotent re-run from the top, A9; money step `always_gate`, 0184). **Never auto-actuate the order** (B9): no retry, re-place, cancel, or provisioning nudge from this workflow."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Order ledger",
+                    "`orders.md` (stage 01 output)",
+                    "full",
+                    "the cited states + time-in-state to classify"
+                  ],
+                  [
+                    "Billed consequence",
+                    "silver `invoice` · `okf:invoice`",
+                    "invoice presence on orders in the billed leg",
+                    "confirms the billed terminal state off the QBO read-only mirror"
+                  ],
+                  [
+                    "Order-SLA rubric",
+                    "`./skills/order-sla-rubric.md`",
+                    "stall/failure classification + alert composition",
+                    "the SLA windows, what counts as stall vs failure, the alert shape"
+                  ]
+                ]
+              },
+              "outputs": "`alert.md` — per stalled/failed order: the classification + its evidence (state, entered-at, window breached, each cited + as-of), dollars in flight, computed urgency + its inputs, the route taken to the order owner, and the 02-B2 pointer. On-track orders: a one-line healthy roll-up. Terminal stage; ends parked with the order owner.",
+              "audit": [
+                "Every classification cites the state + as-of it was derived from (A5); mirror lag noted, not classified into",
+                "Urgency computed per A6 (inputs shown), never asserted",
+                "Every stall/failure alerted and routed to the order owner with the 02-B2 pointer",
+                "No actuation / no money commitment emitted (no retry, re-place, cancel, or nudge — B9)"
+              ],
+              "checkpoint": "The order-owner alert loop: a human reads the stall/failure alert and decides the fix; any re-run executes only through the governed procurement sequence (02-B2, 0184 — idempotent, gated). **`auto` (L2) may self-approve raising the alert ONLY** — there is no order action in this workflow's catalog at any rung (sentinel, not operator — room.md; vance.md §6)."
+            }
+          ]
+        },
+        {
+          "slug": "shelfware-reclaim",
+          "title": "shelfware-reclaim (procurement v1)",
+          "job": "sweep the license estate for **paid-for-but-unassigned/unused licenses**, quantify the reclaimable dollars, and draft a **reclaim recommendation** (cancel/downgrade) with the cost, the utilization, and the rejected alternative attached — then park it. Realizes **02-B3** (leaf [#1482](https://github.com/markdconnelly/ImperionCRM/issues/1482), archetype **B4 audit-attest**, ADR-0136). Vance **detects and drafts**; a human spends.",
+          "trigger": "schedule — the periodic shelfware sweep over entitlements vs assignments (`license_assignment` + the Pax8 bronze mirror). One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the internal shelfware finding + reclaim recommendation at L2 from CITED entitlement-vs-assignment facts, each carrying its source and as-of date (A5; internal, reversible — a finding can be dismissed, A10 row 1). NEVER auto-runs: the cancel/downgrade commitment itself — every reclaim actuation is a money commitment, always_gate forever (ADR-0109, migration 0184), and splits out to the governed-procurement money gate (02-B2; BO-03 Procurement §5). B4: an assertion-with-spend is not a measurement — Vance detects, quantifies, and drafts; the spend is a human's.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "license_assignment",
+            "account",
+            "invoice"
+          ],
+          "skills": [
+            "./skills/shelfware-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-detect-shelfware",
+              "name": "detect-shelfware",
+              "job": "sweep entitlements vs assignments and identify every paid-for-but-unassigned/unused license as of a stated date.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the **as-of date** for the sweep (the snapshot date). An undated sweep is an audit fail — shelfware is a snapshot claim (A5)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Sweep entitlements vs assignments: for each paid-for entitlement on `license_assignment` + the Pax8 bronze mirror, compare the paid quantity against the assigned/active quantity, **citing each unassigned or unused entitlement + its as-of date** (A5). Missing or stale assignment data is **a noted gap, not a candidate** — a guessed candidate risks reclaiming something someone needs (park per A5 empty→park)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Classify each candidate **unassigned vs unused** per `shelfware-rubric.md`, keeping the evidence line (source + as-of) on every row. Cross-client patterns stay internal (A7 pool-never-bleed)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Entitlement + assignment facts",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "entitlements + assignment state as of the sweep",
+                    "what is paid for vs what is actually assigned"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "accounts owning the swept entitlements",
+                    "attribute each entitlement to its client (or Imperion-self — subject: both, 02-B3)"
+                  ],
+                  [
+                    "Pax8 subscription state",
+                    "bronze `pax8_*` (read-only)",
+                    "active subscriptions + quantities",
+                    "the SoR mirror of what is actually being paid for (room.md)"
+                  ],
+                  [
+                    "Shelfware rubric",
+                    "`./skills/shelfware-rubric.md`",
+                    "shelfware definition + unused-vs-unassigned",
+                    "what counts as shelfware, what does not"
+                  ]
+                ]
+              },
+              "outputs": "`shelfware.md` — the as-of date, the candidate list (entitlement, owning account, paid vs assigned/active quantity, unassigned-vs-unused class, evidence citation + as-of per row), and any data gaps noted (not guessed).",
+              "audit": [
+                "As-of date stated (not blank)",
+                "Every candidate cites its entitlement source + as-of date (A5); gaps noted, never guessed into",
+                "Unassigned vs unused classified per the rubric on every candidate",
+                "Measurement only — no actuation, no cancel/downgrade, no money commitment emitted"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-quantify-compose",
+              "name": "quantify-compose",
+              "job": "quantify the reclaimable dollars and draft the reclaim recommendation (cancel/downgrade) per candidate.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Quantify the reclaimable dollars per candidate using the rubric's $ method — measured unit cost off the invoice mirror / Pax8 pricing, derived monthly/annual reclaim totals **labeled measured vs derived**, each figure **citing its cost source + as-of date** (A5). Never invent a price — a candidate with no measured cost is a noted gap, not an estimate (vance.md §5)."
+                },
+                {
+                  "tag": "hybrid",
+                  "text": "Draft the reclaim recommendation — **cancel or downgrade** per candidate — the way Vance recommends (vance.md §3): the cost, the utilization (or unassignment) evidence, and the **rejected alternative** (e.g. why keep-and-reassign was rejected for this candidate, or why downgrade beats cancel). Sequence the list by reclaimable $."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Shelfware candidates",
+                    "`shelfware.md` (stage 01 output)",
+                    "full",
+                    "the cited candidates to quantify and recommend on"
+                  ],
+                  [
+                    "Billing consequence",
+                    "silver `invoice` · `okf:invoice`",
+                    "invoice lines for the candidate subscriptions",
+                    "the measured unit cost each candidate actually bills at"
+                  ],
+                  [
+                    "Pax8 pricing/terms",
+                    "bronze `pax8_*` (read-only)",
+                    "candidate subscriptions' price + term",
+                    "price and commitment term where the invoice mirror is silent"
+                  ],
+                  [
+                    "Shelfware rubric",
+                    "`./skills/shelfware-rubric.md`",
+                    "the $ quantification method",
+                    "how reclaimable $ is computed, measured vs derived"
+                  ]
+                ]
+              },
+              "outputs": "`reclaim-rec.md` — the as-of date, per candidate: the recommended action (cancel/downgrade), the reclaimable $ (measured vs derived labeled, source + as-of), the utilization/unassignment evidence, and the rejected alternative; plus total reclaimable $ and the carried-forward data gaps.",
+              "audit": [
+                "Every figure carries its cost source + as-of date; measured vs derived labeled (A5)",
+                "Every recommendation names the cost, the utilization evidence, and the rejected alternative (vance.md §3)",
+                "No price invented; data gaps carried forward as gaps, not estimated",
+                "Draft only — no actuation, no cancel/downgrade, no money commitment emitted"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-route",
+              "name": "route",
+              "job": "raise the internal shelfware finding and split every cancel/downgrade commit out to the governed-procurement money gate.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Raise the **internal shelfware finding** (the reclaim recommendation) to the budget owner — internal, reversible, auto at L2 (A10 row 1). Urgency is computed, not shouted (A6): a candidate whose commitment term renews soon outranks an evergreen one."
+                },
+                {
+                  "tag": "automation",
+                  "text": "For each recommended cancel/downgrade, **stage the commit as a governed-procurement (02-B2) money-gate item** — the exact $, the entitlement citation + as-of, and the drafted action, ready for the ONE human approval (approve-once, 0184). Nothing is actuated here: B4's assertion-with-spend ≠ measurement (A11); the split-out is the whole point of this stage."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Reclaim recommendation",
+                    "`reclaim-rec.md` (stage 02 output)",
+                    "full",
+                    "the quantified finding to raise + the commits to split out"
+                  ],
+                  [
+                    "Shelfware rubric",
+                    "`./skills/shelfware-rubric.md`",
+                    "the commit-splits-out rule",
+                    "where measurement ends and the gated commit begins"
+                  ]
+                ]
+              },
+              "outputs": "`routing.md` — the finding raised (to whom, when), the list of commits staged for the 02-B2 money gate (action + $ + citation per item), and any candidate NOT staged (with the reason, e.g. a data gap carried from stage 01/02).",
+              "audit": [
+                "Every staged commit carries its entitlement citation + as-of date and exact $ (A5)",
+                "Every cancel/downgrade routed to the 02-B2 money gate — none actuated, none skipped silently",
+                "Finding raised internally only; no external message, no send (room.md)",
+                "No actuation, no money commitment emitted — the commit waits for a human at 02-B2"
+              ],
+              "checkpoint": "The reclaim-rec loop: a human (the budget owner) reads the finding; the cancel/downgrade commitment is decided at the **governed-procurement money gate (02-B2)** — `always_gate` forever (ADR-0109, migration 0184; BO-03 Procurement §5). **`auto` (L2) may self-approve raising the internal finding and staging the gate items ONLY** — no cancel, downgrade, buy, or any money commitment runs in this workflow at any rung (sentinel, not buyer — room.md)."
+            }
+          ]
+        },
+        {
+          "slug": "under-licensing-flag",
+          "title": "under-licensing-flag (procurement v1)",
+          "job": "cross-reference license entitlements against **what the service catalog says SHOULD be licensed** (#1306), classify any under-licensing / license-compliance exposure by severity, and raise a **compliance-exposure flag** — risk surfaced, dollars later. Realizes **02-B4** (leaf [#1483](https://github.com/markdconnelly/ImperionCRM/issues/1483), archetype **B4 audit-attest**, internal — measure + flag, no external attestation; ADR-0136). Vance errs to **risk over cost-cutting** (vance.md §3).",
+          "trigger": "schedule — the periodic under-licensing / compliance-exposure sweep vs the service catalog (#1306). One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the internal compliance-exposure flag at L2 from CITED entitlement-vs-catalog facts, each carrying the catalog version and its as-of date (A5; internal, reversible — a flag can be dismissed, A10 row 1). Vance errs to RISK OVER COST-CUTTING: an exposure beats a saving, and the cheaper under-licensed path is never quietly chosen (vance.md §3). NEVER auto-runs: any remediation buy or license true-up commitment — money out is always_gate forever (ADR-0109, migration 0184) and splits out to the governed-procurement money gate (02-B2; BO-03 Procurement §5). The flag informs; a human spends.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "license_assignment",
+            "account"
+          ],
+          "skills": [
+            "./skills/compliance-exposure-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-crossref-entitlements",
+              "name": "crossref-entitlements",
+              "job": "cross-reference license entitlements against what the service catalog says SHOULD be licensed, as of a stated date.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the **as-of date** and record the **catalog version** in force — every comparison in this run cites both (A5); an exposure judged against an unstated catalog version is an audit fail."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Cross-reference: for each delivered service in scope, compare the catalog's should-be-licensed baseline against the actual entitlements on `license_assignment` (#1483). Record each shortfall with its evidence line — service, catalog requirement (+ version), actual entitlement (+ as-of), delta."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Separate **shortfalls** from **gaps** per the rubric: a service the catalog does not cover, or a stale/missing entitlement read, is a **noted gap** — never an assumed pass, never an assumed exposure (A5 empty→park). Cross-client comparison stays internal (A7 pool-never-bleed)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Entitlement facts",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "entitlements + assigned quantities as of the sweep",
+                    "what is actually licensed today"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "accounts whose delivered services are swept",
+                    "attribute each shortfall to its client (or Imperion-self — subject: both, 02-B4)"
+                  ],
+                  [
+                    "Service catalog",
+                    "product/service catalog (#1306), versioned, via `pg.read`",
+                    "the should-be-licensed baseline per delivered service",
+                    "the standard the entitlements are judged against"
+                  ],
+                  [
+                    "Exposure rubric",
+                    "`./skills/compliance-exposure-rubric.md`",
+                    "exposure classes",
+                    "what a shortfall is, what a gap is"
+                  ]
+                ]
+              },
+              "outputs": "`crossref.md` — the as-of date + catalog version, the shortfall list (service, account, catalog requirement, actual entitlement, delta, evidence citation per row), and the gaps noted (uncovered services / stale reads), not guessed.",
+              "audit": [
+                "As-of date AND catalog version stated on the run and cited on every shortfall (A5)",
+                "Every shortfall carries its entitlement evidence + delta; gaps noted separately, never guessed into",
+                "No assumed pass and no assumed exposure where data is missing — parked as gaps",
+                "Measurement only — no actuation, no buy, no money commitment emitted"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-classify-flag",
+              "name": "classify-flag",
+              "job": "classify each shortfall's exposure severity and raise the compliance-exposure flag.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Classify each shortfall into an **exposure class and severity** per `compliance-exposure-rubric.md`, carrying every evidence citation (catalog version + as-of) forward unchanged (A5). Severity drives **computed urgency** (A6) — a compliance-audit-facing exposure outranks a cosmetic one; escalate by clarity, not alarm (vance.md §4)."
+                },
+                {
+                  "tag": "hybrid",
+                  "text": "Compose the flag: per exposure, the class, the severity, the evidence line, and the **remediation direction** (what would close it — e.g. true-up N seats of SKU-X) stated WITHOUT commitment. Apply the **risk-over-cost rule**: where a cheaper under-licensed configuration exists, name it and reject it explicitly — never quietly pick it (vance.md §3)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Raise the **compliance-exposure flag** internally (auto at L2, reversible, A10 row 1). Any remediation buy **splits out → the governed-procurement money gate (02-B2)** — staged as a gate item, never actuated here (B4: assertion-with-spend ≠ measurement, A11)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Cross-referenced shortfalls",
+                    "`crossref.md` (stage 01 output)",
+                    "full",
+                    "the cited shortfalls to classify and flag"
+                  ],
+                  [
+                    "Exposure rubric",
+                    "`./skills/compliance-exposure-rubric.md`",
+                    "severity ladder + risk-over-cost rule",
+                    "how exposure is classed, why risk beats saving"
+                  ]
+                ]
+              },
+              "outputs": "`exposure-flag.md` — the as-of date + catalog version, exposures by severity (class, evidence citation, remediation direction, rejected cheaper alternative where one exists), the gate items staged for 02-B2, and the carried-forward gaps. Terminal stage; ends parked for the budget owner.",
+              "audit": [
+                "Every exposure carries its catalog version + as-of citation (A5) and a rubric severity",
+                "Risk-over-cost honored: no cheaper under-licensed path chosen; any such alternative named and rejected",
+                "Remediation stated as direction only; every buy staged to 02-B2, none actuated",
+                "No actuation, no money commitment, no external message emitted"
+              ],
+              "checkpoint": "The exposure-flag loop: a human (the budget owner / service owner) reads the exposure flag; any remediation buy is decided at the **governed-procurement money gate (02-B2)** — `always_gate` forever (ADR-0109, migration 0184; BO-03 Procurement §5). **`auto` (L2) may self-approve raising the internal compliance-exposure flag ONLY** — no buy, true-up, or license change runs in this workflow at any rung, and no exposure is ever traded away for a saving (vance.md §3)."
+            }
+          ]
+        },
+        {
+          "slug": "vendor-cost-variance",
+          "title": "vendor-cost-variance (procurement v1)",
+          "job": "monitor vendor cost off the **invoice mirror + `license_assignment` true-up facts + contract terms**, compute the variance against expected cost, and raise a **cost-variance flag handed to Audrey** for reconciliation/true-up. Realizes **02-B7** (leaf [#1484](https://github.com/markdconnelly/ImperionCRM/issues/1484), archetype **B4 audit-attest → Audrey seam**, ADR-0136). **Vance MEASURES; Audrey owns the money clock** (A11 obligation/action separation).",
+          "trigger": "schedule — the vendor cost refresh; a run computes variance vs expected. One run per as-of date.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the internal vendor cost-variance flag and hand it to Audrey for reconciliation/true-up at L2, every variance computed from CITED cost sources with their as-of dates (A5; internal, reversible — a flag can be withdrawn, A10 row 1). This is read-only money: Vance MEASURES the variance, Audrey owns the money clock (A11 obligation/action separation) — the money commitment is gated on Audrey's side (Stream 09). NEVER auto-runs: any true-up buy, credit pursuit, term change, or other money commitment — always_gate forever (ADR-0109, migration 0184; BO-03 Procurement §5), split to the governed-procurement money gate (02-B2) or gated in Audrey's stream.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "invoice",
+            "license_assignment",
+            "contract",
+            "account"
+          ],
+          "skills": [
+            "./skills/variance-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-monitor-cost",
+              "name": "monitor-cost",
+              "job": "compute actual vs expected vendor cost and the variance, as of a stated date, citing the cost source on every figure.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Fix the **as-of date** and the refresh window for the run. Variance is a snapshot claim; an undated figure is an audit fail (A5)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Read the **actual** billed cost per vendor/subscription off the `invoice` mirror, citing each invoice line + as-of (A5). Derive the **expected** cost per `variance-rubric.md` — contract terms (agreed price, escalator) × the true-up quantity on `license_assignment` — with the derivation **labeled derived** and each input cited + as-of."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Compute the variance (actual − expected, absolute and %) per vendor/subscription (#1484). A vendor whose contract terms or true-up facts are missing or stale gets **a noted gap, never a guessed expectation** (A5 empty→park; vance.md §5). Cross-client cost patterns stay internal (A7 pool-never-bleed)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Actual billed cost",
+                    "silver `invoice` · `okf:invoice`",
+                    "vendor invoice lines in the refresh window",
+                    "what the vendor actually billed (QBO read-only mirror)"
+                  ],
+                  [
+                    "Entitlement/true-up facts",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "quantities + true-up facts as of the run",
+                    "the quantity leg of expected cost"
+                  ],
+                  [
+                    "Contract terms",
+                    "silver `contract` · `okf:contract`",
+                    "agreed price/term/escalator per vendor agreement",
+                    "the price leg of expected cost"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "accounts behind the monitored spend",
+                    "attribute variance to its client (or Imperion-self — subject: both, 02-B7)"
+                  ],
+                  [
+                    "Variance rubric",
+                    "`./skills/variance-rubric.md`",
+                    "expected-cost derivation + thresholds",
+                    "how expected is derived, what variance is material"
+                  ]
+                ]
+              },
+              "outputs": "`variance.md` — the as-of date + window, per vendor/subscription: actual (cited invoice source + as-of), expected (derivation shown, inputs cited, labeled derived), variance ($ and %), threshold status per the rubric; and the noted gaps (missing terms / stale true-up), not guessed.",
+              "audit": [
+                "As-of date + window stated; every figure cites its cost source + as-of (A5)",
+                "Expected cost shown as a derivation (labeled derived) from cited contract terms + true-up facts",
+                "Missing terms/true-up facts noted as gaps — no expectation guessed",
+                "Measurement only — no reconciliation, no true-up, no money commitment emitted"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-flag-handoff",
+              "name": "flag-handoff",
+              "job": "raise the cost-variance flag and hand it to Audrey for reconciliation/true-up.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Flag every variance that crosses a rubric threshold, urgency computed from size and direction (A6 — a large adverse variance on a client-billed vendor outranks a small favorable one); sub-threshold variances are logged, not flagged. Every flag carries its cost citations + as-of unchanged (A5)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "**SEAM → hand to Audrey** in the rubric's handoff shape (per flag: the variance, the actual citation, the expected derivation, the candidate explanation class, the term boundary if one is near). This is the A11 obligation/action separation made concrete: **Vance MEASURES, Audrey owns the money clock** — reconciliation, true-up, credit pursuit, and every money act live in Audrey's stream (→ Stream 09), gated there. Any procurement-side remediation (a true-up buy, a term change) is noted for the **governed-procurement money gate (02-B2)**, never actuated here (`always_gate`, 0184)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Computed variances",
+                    "`variance.md` (stage 01 output)",
+                    "full",
+                    "the cited variances to flag and hand off"
+                  ],
+                  [
+                    "Variance rubric",
+                    "`./skills/variance-rubric.md`",
+                    "thresholds + the Audrey handoff shape",
+                    "which variances flag, how the handoff is packaged"
+                  ]
+                ]
+              },
+              "outputs": "`handoff.md` — the flags raised (variance + citations + urgency per flag), the Audrey handoff package emitted (per the rubric shape), items noted for 02-B2 (procurement-side remediation candidates, not staged as commitments), and the carried-forward gaps. Terminal stage; ends at the Audrey seam.",
+              "audit": [
+                "Every flag carries its cost source citations + as-of dates (A5); thresholds per the rubric",
+                "Handoff to Audrey in the rubric shape — measurement handed over, no money act taken (A11)",
+                "Procurement-side remediation only NOTED for 02-B2 — nothing staged as a commitment, nothing actuated",
+                "Read-only money throughout — no reconciliation, credit, dispute, true-up, term change, or external message emitted"
+              ],
+              "checkpoint": "The Audrey-seam loop: the variance flag lands with **Audrey**, whose stream owns reconciliation/true-up and every money commitment (gated on her side, Stream 09; A11 — Vance measures, Audrey owns the money clock). **`auto` (L2) may self-approve raising the flag and emitting the Audrey handoff ONLY** (internal, reversible); no money act runs in this workflow at any rung, and procurement-side remediation waits for a human at the 02-B2 money gate (`always_gate`, ADR-0109 / migration 0184; BO-03 Procurement §5)."
+            }
+          ]
+        },
+        {
+          "slug": "vendor-risk-eol",
+          "title": "vendor-risk-eol (procurement v1)",
+          "job": "detect a vendor risk or end-of-life signal — a price hike, an EOL/EOS announcement, vendor instability — characterize it with the exposure quantified, correlate it across the client base **internally only**, and hand the advisory to **Celeste** as a vCIO / client-relationship signal. Realizes **02-B8** (`docs/workflows/streams/02-lead-cash.md`, leaf #1486, archetype **B9 deadline-sentinel → Celeste seam** — it watches an EOL/risk clock; it advises, it never actuates).",
+          "trigger": "a vendor risk/EOL signal (price hike, EOL, vendor instability) — surfacing in the Pax8 bronze catalog/pricing state on an in-use SKU, or arriving as a routed observation. One run per signal.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-raise the characterized vendor-risk/EOL advisory and hand it to Celeste as a vCIO/client-relationship signal (→ Stream 08) — internal and reversible, the signal + every exposure figure cited with its source + as-of (A5), the cross-client EOL correlation computed INTERNALLY ONLY (A7 pool-never-bleed: no client ever learns another's exposure; vendor pricing/terms never cross a boundary, CS-08 via room.md). NEVER the actuation: this workflow never switches, cancels, migrates, or renegotiates a vendor (B9 — it advises, it does not act); any replacement buy or cancellation executes only through the governed procurement sequence (02-B2, migration 0184) behind its always_gate money gate (ADR-0109). Vance is the sentinel, not the buyer (BO-03 Procurement §5).",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "account",
+            "license_assignment",
+            "contract"
+          ],
+          "skills": [
+            "./skills/risk-eol-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-detect-signal",
+              "name": "detect-signal",
+              "job": "detect the vendor risk/EOL signal, classify it, and cite it with its source and as-of date.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Fix the **as-of date** for the run and capture the triggering signal — a Pax8 bronze catalog/pricing/lifecycle change on an in-use SKU, or a routed observation — **citing the signal, its source, and its as-of** (A5)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Classify the signal per `risk-eol-rubric.md`: **price hike** · **EOL/EOS** · **vendor instability**. An ambiguous or unverifiable signal — no citable source, or a rumor-grade observation — is **parked as a gap**, never classified on a guess (vance.md §5): a false vendor-risk alarm spends real credibility."
+                },
+                {
+                  "tag": "automation",
+                  "text": "Confirm the signal is **live exposure**: it touches an entitlement in `license_assignment` or an agreement in `contract`. A signal on a SKU nobody holds is noted and closed, not advanced — no exposure, no advisory."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Vendor/product state",
+                    "`bronze pax8_*` (read-only)",
+                    "catalog, pricing, and product-lifecycle changes on in-use SKUs",
+                    "where a price hike or EOL first shows in the SoR mirror (room.md)"
+                  ],
+                  [
+                    "Exposed entitlements",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "entitlements on the affected vendor/SKU",
+                    "confirms the signal touches something we actually hold"
+                  ],
+                  [
+                    "Contractual exposure",
+                    "silver `contract` · `okf:contract`",
+                    "agreements referencing the affected vendor/SKU",
+                    "term/expiry context — how locked-in the exposure is"
+                  ],
+                  [
+                    "Risk/EOL rubric",
+                    "`./skills/risk-eol-rubric.md`",
+                    "signal classes + evidence bar",
+                    "what counts as a signal, what parks"
+                  ]
+                ]
+              },
+              "outputs": "`signal.md` — the as-of date; the signal (class, vendor/SKU, evidence + source + as-of, the effective/announced date if stated); the live-exposure confirmation (entitlements and agreements touched, by count); or the parked/no-exposure disposition, noted — not guessed.",
+              "audit": [
+                "As-of date stated (not blank); the signal cites its source + as-of (A5)",
+                "Signal classified per the rubric, or parked as ambiguous/unverifiable — never guessed",
+                "Live exposure confirmed against `license_assignment`/`contract` (or no-exposure noted and closed)",
+                "No actuation / no money commitment emitted (detect only — no switch, cancel, or buy)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-advise-handoff",
+              "name": "advise-handoff",
+              "job": "characterize the confirmed signal with its exposure quantified, pool-correlate it internally, and hand the advisory to Celeste.",
+              "process": [
+                {
+                  "tag": "automation",
+                  "text": "Characterize the signal on the rubric's fields: class, vendor/SKU, evidence (cited + as-of, A5), exposure (entitlement count + dollars at stake), timeline (announced/effective dates), and the **catalog-anchored replacement posture** — options only from the product/service catalog; off-catalog is a catalog gap routed to a human, never an improvised SKU (room.md structural rule 2)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "**Pool-correlate the exposure across the client base — INTERNALLY ONLY** (A7 pool-never-bleed): which accounts hold the affected vendor/SKU and at what scale. The aggregate view sharpens the advisory (one client's EOL is a data point; twelve is a fleet posture problem) — but **no client ever learns another's exposure**, and vendor pricing/terms never cross a client or tenant boundary (CS-08 via room.md; vance.md §6)."
+                },
+                {
+                  "tag": "automation",
+                  "text": "**SEAM → hand the advisory to Celeste** as a vCIO / client-relationship signal [→ Stream 08]: she owns the client-facing framing and the per-client conversation. **Never auto-actuate a vendor switch** (B9): no cancel, migration, or replacement buy from here — any commit the advisory motivates is the governed procurement sequence's (02-B2), behind its `always_gate` money gate (0184)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Confirmed signal",
+                    "`signal.md` (stage 01 output)",
+                    "full",
+                    "the cited, classified signal to characterize"
+                  ],
+                  [
+                    "Exposure per client",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "entitlement counts on the affected vendor/SKU, per account",
+                    "sizes each client's exposure for the internal correlation"
+                  ],
+                  [
+                    "Client spine",
+                    "silver `account` · `okf:account`",
+                    "accounts holding the affected vendor/SKU",
+                    "who the advisory is ultimately about — Celeste's relationship map"
+                  ],
+                  [
+                    "Risk/EOL rubric",
+                    "`./skills/risk-eol-rubric.md`",
+                    "characterization fields + A7 rule + handoff shape",
+                    "what a complete advisory carries, what stays internal"
+                  ]
+                ]
+              },
+              "outputs": "`advisory.md` — the characterized advisory (class, vendor/SKU, evidence cited + as-of, exposure quantified, timeline, catalog-anchored replacement posture); the **internal-only** cross-client correlation (accounts affected + scale, marked internal — never client-facing); and the Celeste handoff record (what was handed, when). Terminal stage; ends handed to Celeste, actuation parked.",
+              "audit": [
+                "Every characterization field populated and cited + as-of (A5), or its gap escalated — never estimated",
+                "Cross-client correlation computed and marked INTERNAL ONLY (A7); no client-facing artifact carries another client's exposure or any cross-boundary vendor terms",
+                "Replacement posture catalog-anchored; off-catalog routed to a human, not improvised",
+                "Advisory handed to Celeste (seam recorded); no actuation / no money commitment emitted (no switch, cancel, migration, or buy — B9)"
+              ],
+              "checkpoint": "The Celeste-seam handoff loop: Celeste takes the advisory as a vCIO/client-relationship signal (→ Stream 08) and owns the client conversation; any replacement buy or cancellation executes only through the governed procurement sequence (02-B2, 0184). **`auto` (L2) may self-approve characterizing the advisory and handing it to Celeste ONLY** — there is no vendor action in this workflow's catalog at any rung (sentinel, not buyer — room.md; vance.md §6)."
+            }
+          ]
+        },
+        {
+          "slug": "won-deal-sourcing",
+          "title": "won-deal-sourcing (procurement v1)",
+          "job": "turn a won deal into a sourcing draft ready for the money gate (Stream 02-B10, leaf #1820, archetype A11 seam → B6 staging). Receive the won deal's sold line-items off the Chase→Vance seam, map them to catalog SKUs with the cost and the rejected alternative quantified, and **stage the order for the `governed-procurement` money gate** — procurement prepared, nothing bought.",
+          "trigger": "a won opportunity whose sold line-items require licenses/SKUs — the Chase→Vance seam off the ADR-0096 spine [← Chase 02-A6]. One run per won opportunity. **subject:** client — or Imperion-self when Imperion \"wins\" an internal need.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "the internal draft + stage at L2 ONLY: receive the won deal's catalog-anchored line-items off the Chase seam (ADR-0096), draft the sourcing plan with the cost and the rejected alternative quantified (every figure cited + as-of, A5), and stage the order for the governed-procurement money gate — all internal, reversible artifacts (a staged order can be withdrawn). NEVER the buy: the purchase itself is always_gate forever at the 02-B2 money gate (A2 class-1, ADR-0109, migration 0184) and nothing here touches Pax8, M365, or money. An off-catalog line-item routes to a human in every mode (refuse-precondition — never an improvised SKU); an empty or ambiguous line-item set parks in every mode (A5).",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "opportunity",
+            "account",
+            "license_assignment"
+          ],
+          "skills": [
+            "./skills/sourcing-rubric"
+          ],
+          "stages": [
+            {
+              "slug": "01-receive-seam",
+              "name": "receive-seam",
+              "job": "receive the Chase→Vance seam — the won opportunity's sold line-items — verify it is actionable, and resolve the owning account; empty or ambiguous parks.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Receive the seam payload [← Chase 02-A6] and verify it against the `opportunity` record: the deal is `won`, and the payload's line-items match the opportunity's sold line-items. **Cite the won opportunity + stamp the as-of date** (A5) — the sourcing inherits its grounding from the deal, not from memory."
+                },
+                {
+                  "tag": "script",
+                  "text": "Extract the sold line-items that require licenses/SKUs and resolve the owning `account` (client — or Imperion-self when Imperion \"wins\" an internal need, per `sourcing-rubric.md`). An unresolved owner is a noted gap that parks, not a guess."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Empty or ambiguous line-item set → PARK** (A5 empty→park): no line-items, items without quantity, or items that cannot be tied to the won deal end the stage parked for a human. Never reconstruct what was sold by inference — a guessed line-item becomes a real purchase downstream."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Seam payload",
+                    "the run trigger — the Chase 02-A6 won hand-off (A11 seam, ADR-0096 spine)",
+                    "this won deal's sold line-items",
+                    "what was sold and must now be sourced"
+                  ],
+                  [
+                    "Won opportunity",
+                    "silver `opportunity` · `okf:opportunity`",
+                    "the won opportunity",
+                    "the record the seam cites — verify it is `won` and what its line-items say"
+                  ],
+                  [
+                    "Owning account",
+                    "silver `account` · `okf:account`",
+                    "the deal's account",
+                    "who the sourcing is for (client — or Imperion-self on an internal win)"
+                  ],
+                  [
+                    "Sourcing rubric",
+                    "`./skills/sourcing-rubric.md`",
+                    "seam-intake + subject rule",
+                    "what an actionable line-item set looks like; when to park"
+                  ]
+                ]
+              },
+              "outputs": "`line-items.md` — the won opportunity reference (cited + as-of), the owning account and subject (client / Imperion-self), and the extracted sold line-items requiring licenses/SKUs (item, quantity, deal context) — or the parked reason.",
+              "audit": [
+                "Won opportunity cited + as-of stamped (A5); payload verified against the `opportunity` record",
+                "Line-item set present and unambiguous, or the run PARKED (never guessed into)",
+                "Owning account + subject resolved (or parked as a gap)",
+                "No money actuation emitted from ICM — nothing ordered, provisioned, or billed"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-draft-sourcing",
+              "name": "draft-sourcing",
+              "job": "draft the sourcing plan — map each sold line-item to a catalog SKU with the cost and the rejected alternative quantified; off-catalog routes to a human.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Map each line-item to a catalog SKU per `sourcing-rubric.md` (#1306) — exact catalog match, quantity from the sold line-item. Check the account's existing entitlements (`license_assignment`) and the Pax8 mirror so the plan sources the **delta**, not a duplicate of something already licensed."
+                },
+                {
+                  "tag": "script",
+                  "text": "**Off-catalog line-item → route to a human** (refuse-precondition — a catalog gap, never an improvised SKU, never a \"closest match\"; vance.md). A plan with an unresolved item **parks** rather than staging incomplete — a partial buy against a won deal under-delivers what was sold."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the sourcing plan: per SKU — quantity, unit + total cost (the Pax8 price, cited + as-of, A5), and the **rejected alternative** (vance.md quantify-the-tradeoff: name the dollars and the under-licensing risk on each side — risk beats saving a dollar)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Line-items",
+                    "`line-items.md` (stage 01 output)",
+                    "full",
+                    "the sold items to source"
+                  ],
+                  [
+                    "Product/service catalog",
+                    "the catalog (#1306) via `pg.read`",
+                    "the needed SKU(s)",
+                    "the catalog anchor — SKU + list price; off-catalog = refuse-precondition"
+                  ],
+                  [
+                    "Existing entitlements",
+                    "silver `license_assignment` · `okf:license_assignment`",
+                    "the owning account's current licenses",
+                    "buy the delta, not a duplicate — what the account already holds"
+                  ],
+                  [
+                    "Pax8 state",
+                    "bronze `pax8_*` (read-only)",
+                    "the account's subscriptions + pricing",
+                    "Pax8 is SoR (A9a); the priced SKU as Pax8 sells it, as-of"
+                  ],
+                  [
+                    "Sourcing rubric",
+                    "`./skills/sourcing-rubric.md`",
+                    "mapping discipline + catalog anchor",
+                    "how a line-item becomes a SKU; when an item routes to a human"
+                  ]
+                ]
+              },
+              "outputs": "`sourcing-plan.md` — per-SKU: catalog SKU, quantity, cost (cited + as-of), the rejected alternative, the entitlement-delta note; plus the owning account/subject and any item routed to a human as a catalog gap.",
+              "audit": [
+                "Every line-item mapped to a catalog SKU (#1306) or routed to a human as a catalog gap — no improvised SKU, no closest-match",
+                "Every figure carries its source + as-of date (A5); costs read from the Pax8 mirror, not invented (vance.md §5)",
+                "Existing entitlements checked — the plan sources the delta, not a duplicate",
+                "Rejected alternative quantified per vance.md (dollars + under-licensing risk both named)",
+                "No money actuation emitted from ICM — nothing ordered, provisioned, or billed"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-stage-order",
+              "name": "stage-order",
+              "job": "stage the sourcing plan as an order for the `governed-procurement` money gate and emit the Pierce delivery seam — procurement prepared, nothing bought.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the staged order in the **stage-for-gate handoff shape** (`sourcing-rubric.md`): catalog SKU + quantity + the exact $ + the owning account/subject + the won-deal grounding (the opportunity reference and the why), each cited + as-of (A5) — everything `governed-procurement` stage 01 needs to ground without re-research. A plan whose stage-02 audit is not green cannot be staged."
+                },
+                {
+                  "tag": "script",
+                  "text": "Stage the order for the **`governed-procurement` money gate** [→ **SEAM** governed-procurement, 02-B2]. The buy itself is `always_gate` there (A2 class-1, ADR-0109, 0184) — staging creates a pending gate item, it authorizes nothing and touches no vendor."
+                },
+                {
+                  "tag": "script",
+                  "text": "Emit the delivery-procurement seam to **Pierce** [→ Stream 03] so project provisioning sees the sourcing in flight (A11 — a governed event, not a send; no client-facing action originates here)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Sourcing plan",
+                    "`sourcing-plan.md` (stage 02 output)",
+                    "full",
+                    "the plan being staged for the gate"
+                  ],
+                  [
+                    "Sourcing rubric",
+                    "`./skills/sourcing-rubric.md`",
+                    "stage-for-gate handoff shape",
+                    "the fields the staged order must carry"
+                  ]
+                ]
+              },
+              "outputs": "`staged-order.md` — the staged order in the handoff shape (SKU, quantity, exact $, account/subject, won-deal grounding, each cited + as-of), the governed-procurement seam reference, and the Pierce seam reference. Terminal stage; the run ends **staged for the money gate**.",
+              "audit": [
+                "The staged order carries the full handoff shape (SKU · quantity · exact $ · account/subject · won-deal why — each with source + as-of, A5)",
+                "Both seams emitted: → governed-procurement (02-B2 money gate) and → Pierce (Stream 03)",
+                "Staged only on a green stage-02 audit — no incomplete or off-catalog item staged",
+                "No money actuation emitted from ICM — nothing ordered, provisioned, attached, or billed; the buy waits at the gate"
+              ],
+              "checkpoint": null
+            }
+          ]
+        }
+      ]
     },
     "finance": {
       "id": "finance",

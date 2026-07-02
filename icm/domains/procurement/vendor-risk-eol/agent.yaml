@@ -1,0 +1,13 @@
+name: vendor-risk-eol
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> procurement room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [account, license_assignment, contract]                  # subset of domains/procurement/room.yaml — the client spine, the exposed entitlements, the contractual exposure
+tools: [pg.read]                                                    # detect + characterize + hand off only; no write, no send, no vendor action
+skills:
+  - ./skills/risk-eol-rubric            # Tier 3 — workflow-local (signal classes + characterization fields + A7 internal-only pool-correlation + the Celeste handoff shape)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the characterized vendor-risk/EOL advisory and hand it to Celeste as a vCIO/client-relationship signal (→ Stream 08) — internal and reversible, the signal + every exposure figure cited with its source + as-of (A5), the cross-client EOL correlation computed INTERNALLY ONLY (A7 pool-never-bleed: no client ever learns another's exposure; vendor pricing/terms never cross a boundary, CS-08 via room.md). NEVER the actuation: this workflow never switches, cancels, migrates, or renegotiates a vendor (B9 — it advises, it does not act); any replacement buy or cancellation executes only through the governed procurement sequence (02-B2, migration 0184) behind its always_gate money gate (ADR-0109). Vance is the sentinel, not the buyer (BO-03 Procurement §5)."

@@ -1,0 +1,13 @@
+name: deadline-sentinel
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> procurement room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [contract, license_assignment, account]                  # subset of domains/procurement/room.yaml — the renewal/cancellation clocks, the entitlements they commit, the client spine
+tools: [pg.read]                                                    # watch + alert + draft only; no write, no send, no order placed
+skills:
+  - ./skills/deadline-rubric            # Tier 3 — workflow-local (lead-time ladder + A6 urgency computation + the sentinel-never-actuates rule)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the timely deadline alert (deadline + dollars + inaction consequence, urgency COMPUTED per A6) with its drafted renew/cancel recommendation attached, route client-contract renewals to Chase (02-A7 seam) and climb reports_to when a rung goes unanswered — all internal and reversible, every date cited with its source + as-of (A5). NEVER the actuation: the renew/cancel/buy commit is always_gate at every rung (ADR-0109, migration 0184) and lives only in the governed procurement sequence (02-B2, leaf #1487) — Vance is the sentinel, not the buyer (BO-03 Procurement §5). A passed deadline is a logged escalation failure surfaced in the owning C-suite synthesis-brief, never a license to act (B9)."

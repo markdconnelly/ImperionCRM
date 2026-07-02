@@ -1,0 +1,13 @@
+name: shelfware-reclaim
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [license_assignment, account, invoice]                   # subset of domains/procurement/room.yaml — entitlement facts + client spine + billing consequence
+tools: [pg.read]                                                    # detect + quantify + draft only; no write, no send, no money move
+skills:
+  - ./skills/shelfware-rubric             # Tier 3 — workflow-local (what counts as shelfware + the $ method + the commit-splits-out rule)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the internal shelfware finding + reclaim recommendation at L2 from CITED entitlement-vs-assignment facts, each carrying its source and as-of date (A5; internal, reversible — a finding can be dismissed, A10 row 1). NEVER auto-runs: the cancel/downgrade commitment itself — every reclaim actuation is a money commitment, always_gate forever (ADR-0109, migration 0184), and splits out to the governed-procurement money gate (02-B2; BO-03 Procurement §5). B4: an assertion-with-spend is not a measurement — Vance detects, quantifies, and drafts; the spend is a human's."
