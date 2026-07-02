@@ -1762,6 +1762,14 @@
           ]
         },
         {
+          "slug": "security-drift-detection",
+          "stages": [
+            "01-load-score-history",
+            "02-detect-drift",
+            "03-record-drift-finding"
+          ]
+        },
+        {
           "slug": "service-conformance",
           "stages": [
             "01-load-service-trace",

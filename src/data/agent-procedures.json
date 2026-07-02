@@ -25545,6 +25545,204 @@
           ]
         },
         {
+          "slug": "security-drift-detection",
+          "title": "security-drift-detection (platform v1 — Bucket B3)",
+          "job": "detect a client **falling out of alignment** with the client security standard since its last evaluation (#1470) — compare the client's newest `posture_score` verdict against its prior verdicts under the same ratified `security_standard_version` (mig 0256) and flag drift: a status downgrade, a score dropping past a band, or a new criterion failure. What counts as drift vs noise is the shared method (`domains/platform/skills/posture-scoring-method.md`). The finding is advisory and routes via **Celeste** (client-facing posture); a **critical** drift also surfaces to **Mark**. References the Vera agent epic **#1397**.",
+          "trigger": "a new `posture_score` verdict landing for a client (B2 / LP #399's scheduled cycle, persisted by BE #439), or the scheduled fleet drift sweep. One run per client (or per sweep batch).",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "auto-RUN the drift detection on a fresh posture_score verdict (compare the client's newest verdict vs its prior verdicts under the SAME ratified standard version — a version change is B5's re-evaluation, never drift) and AUTO-SURFACE the advisory drift finding (status downgrade / band drop / new criterion failure, each labeled MEASURED vs INFERRED) to the governance dashboard, AUTO-ROUTING it to Celeste for client presentation — internal, reversible; a CRITICAL drift additionally auto-surfaces to Mark. Noise is never drift: within-band movement, a data-gap flip to not-assessable, or a cross-version comparison is stated as such, never escalated. AUDIT-BY-REFERENCE: cite verdict ids + criterion ids, NEVER reproduce posture values (vera.md). NO re-score (the ledger is append-only, 0256), NO DB write, NO remediation, NO client contact at any rung — Vera measures; Celeste presents; a human/Datto remediates (the MSSP boundary). Drift findings route via Celeste, never the A9 deviation queue.",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "posture_score",
+            "posture_snapshot",
+            "tenant_posture",
+            "security_standard_version",
+            "entity_xref"
+          ],
+          "skills": [
+            "domains/platform/skills/posture-scoring-method"
+          ],
+          "stages": [
+            {
+              "slug": "01-load-score-history",
+              "name": "load-score-history",
+              "job": "load the client's verdict history under the current ratified standard and the freshest snapshot context behind the newest verdict.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the client's verdicts under the current ratified version, newest first (`scored_at` — the 0256 account-history index shape). Only one verdict (no prior under this version) → record \"no drift baseline — no comparison possible,\" never an assumed trend; the run ends clean at stage 03 with that statement."
+                },
+                {
+                  "tag": "script",
+                  "text": "Confirm both comparison verdicts bind to the **same** `standard_version_id`; a cross-version pair is excluded (B5's territory, #1472), stated as such."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the snapshot + tenant posture behind the newest verdict and resolve the account via `entity_xref` — all by reference (verdict id, snapshot id), never posture values."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Verdict history",
+                    "silver `posture_score` · `okf:posture_score`",
+                    "the client's verdicts under the current ratified version, newest + priors (0256 append-only ledger)",
+                    "the comparison material"
+                  ],
+                  [
+                    "Standard binding",
+                    "silver `security_standard_version` · `okf:security_standard_version`",
+                    "the ratified version the verdicts bind to",
+                    "same-version comparison only — a version change is B5, not drift"
+                  ],
+                  [
+                    "Snapshot evidence",
+                    "silver `posture_snapshot` · `okf:posture_snapshot`",
+                    "the snapshot behind the newest verdict",
+                    "the evidence behind any new criterion failure"
+                  ],
+                  [
+                    "Tenant posture",
+                    "silver `tenant_posture` · `okf:tenant_posture`",
+                    "the client's tenant posture state",
+                    "tenant-level context for a failure"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "the account the verdicts belong to",
+                    "resolve which client is drifting"
+                  ],
+                  [
+                    "Scoring method",
+                    "`domains/platform/skills/posture-scoring-method.md`",
+                    "the drift-vs-noise definition",
+                    "what the comparison will need"
+                  ]
+                ]
+              },
+              "outputs": "`history.md` — the client by reference, the newest + prior verdicts (ids, scores, bands, scored_at) under the same version, the snapshot context by reference, and any no-baseline / cross-version exclusion notes.",
+              "audit": [
+                "Verdict history read; newest + prior identified, or no-baseline stated plainly",
+                "Comparison pair confirmed same standard version (cross-version excluded, noted)",
+                "Account + evidence resolved by reference; no posture values reproduced"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-detect-drift",
+              "name": "detect-drift",
+              "job": "compare the newest verdict against the prior one and identify drift — status downgrade, band drop, new criterion failures — separating drift from noise, measured from inferred.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Compare the pair mechanically: status downgraded? `overall_score` crossed a band boundary downward? criterion failures in the newest verdict absent from the prior? Each is a **measured** drift signal, cited by reference (verdict ids + criterion ids)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Apply the noise exclusions: within-band score movement with no new failure, a not-assessable flip from missing snapshot evidence (a **data gap**, surfaced as a gap), or any cross-version delta — none of these is drift; each is recorded as what it is."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "For each drift signal, characterize it: which criteria drove it, what the snapshot evidence behind the new failure shows (by reference), and any suspected cause — **labeled inference**, never presented as measured. Never estimate a cause into a gap. A no-baseline run passes through as \"no comparison possible.\""
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "History",
+                    "`history.md` (stage 01)",
+                    "the same-version comparison pair + snapshot context",
+                    "the material to compare"
+                  ],
+                  [
+                    "Scoring method",
+                    "`domains/platform/skills/posture-scoring-method.md`",
+                    "the drift definition + the noise exclusions",
+                    "what counts as drift"
+                  ],
+                  [
+                    "Conformance rubric",
+                    "the shared `conformance-engine/skills/conformance-rubric.md`",
+                    "signal-vs-inference + audit-by-reference",
+                    "how to state the finding"
+                  ]
+                ]
+              },
+              "outputs": "`drift.md` — per drift signal: kind (downgrade / band drop / new failure), the driving criteria by reference, measured-vs-inferred labels; plus the noise/gap notes and the drift severity (a drop **to critical**, or a critical-designated criterion newly failing, marks the finding critical).",
+              "audit": [
+                "Every drift signal is measured against the same-version pair and cited by reference",
+                "Noise and data gaps excluded and recorded as such — none escalated as drift",
+                "Causes labeled inference; nothing estimated into a gap; critical severity assigned per the method"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-record-drift-finding",
+              "name": "record-drift-finding",
+              "job": "assemble the advisory drift finding, surface it to the governance dashboard, and route it to Celeste for client presentation; a critical drift also surfaces to Mark. No re-score, no write, no remediation, no client contact.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the advisory drift finding: per drift signal, its kind (downgrade / band drop / new failure), the driving criteria and the compared verdict pair **by reference** (verdict ids + criterion ids), measured-vs-inferred labels, and the finding severity. A no-baseline run records \"no comparison possible\" and stops — nothing to route."
+                },
+                {
+                  "tag": "script",
+                  "text": "Auto-surface the finding to the governance dashboard (internal, reversible). At L2 this raises without being asked."
+                },
+                {
+                  "tag": "script",
+                  "text": "Route the finding to **Celeste** for client presentation — a recommendation to present, never a send. A **critical** drift is additionally surfaced to **Mark** alongside the Celeste routing. Nothing here re-scores (the ledger is append-only, 0256), remediates, contacts a client, or files into the A9 deviation queue (#1467 — that lane is internal agent-process deviations, not client posture)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Drift",
+                    "`drift.md` (stage 02)",
+                    "the drift signals + noise/gap notes + severity",
+                    "the finding content"
+                  ],
+                  [
+                    "History",
+                    "`history.md` (stage 01)",
+                    "the compared verdict pair (ids) by reference",
+                    "the finding's identity + the same-version pairing"
+                  ]
+                ]
+              },
+              "outputs": "`drift-finding.md` — the advisory drift finding (signals + driving criteria by reference + measured-vs-inferred labels + severity), surfaced to the dashboard and routed to Celeste; critical drift flagged to Mark.",
+              "audit": [
+                "Finding complete (drift signals + driving criteria by reference + measured-vs-inferred + severity)",
+                "Surfaced to the dashboard and routed to Celeste; critical drift flagged to Mark",
+                "Nothing re-scored, written, remediated, or client-contacted; nothing filed to the A9 queue"
+              ],
+              "checkpoint": null
+            }
+          ]
+        },
+        {
           "slug": "service-conformance",
           "title": "service-conformance (platform v1 — Bucket A8, Felix)",
           "job": "the **service-process conformance rulebook** — encode Felix's **Defined Way** as a machine-checkable ruleset and audit a completed Felix run's process trace against it. The rules that distinguish this workflow from the shared `conformance-engine` are Felix's: ticket-anchored work, no-unapproved-time, client-reply-approved, and the escalation path. Divergences this finds are routed + closed by A9 (`deviation-lifecycle`, #1467). References the Felix agent epic **#1038**.",
