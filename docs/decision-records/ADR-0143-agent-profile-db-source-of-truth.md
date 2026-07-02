@@ -1,5 +1,5 @@
 ---
-adr: ZZZZ
+adr: 0143
 title: "Agent profile: database is source of truth; ICM reflects"
 status: proposed
 date: 2026-07-01
@@ -8,12 +8,11 @@ summary: "Make the full agent profile — including the persona NARRATIVE — da
 tags: [agents, persona, data, governance]
 ---
 
-# ADR-ZZZZ: Agent profile — database is source of truth; ICM reflects
+# ADR-0143: Agent profile — database is source of truth; ICM reflects
 
-> Number claimed at MERGE per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md).
-> Authored against the placeholder `ZZZZ`; take the next free number just before merge (companion to
-> ADR-XXXX/ADR-YYYY, claim the three consecutively), rename this file, and fix every `ADR-ZZZZ`
-> reference. Docs-only ADR; the schema it specifies is claimed as a migration number in FE #1832.
+> Number **0143** claimed at merge per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md)
+> (authored against a placeholder, renumbered at merge alongside its companions ADR-0141/ADR-0142).
+> Docs-only ADR; the schema it specifies is claimed as a migration number in FE #1832.
 
 | Field | Value |
 |---|---|
@@ -22,7 +21,7 @@ tags: [agents, persona, data, governance]
 | **Date** | 2026-07-01 |
 | **Issue** | #1832 (schema), #1833 (seed), #1839 (reflection + drift), epic #1829 |
 | **Amends** | [ADR-0135](./ADR-0135-persona-schema-and-three-matrix-org.md) (persona schema + org SoT — the 7-section persona `.md` and `org.yaml` human map become a **reflection** of DB truth for the fields captured here, not the origin) |
-| **Companion** | [ADR-XXXX](./ADR-XXXX-per-procedure-autonomy-dial-only-dial.md) (per-procedure dial), [ADR-YYYY](./ADR-YYYY-teams-human-gate-rail.md) (the rail that consumes `procedure_human_owner` + the avatar) |
+| **Companion** | [ADR-0141](./ADR-0141-per-procedure-autonomy-dial-only-dial.md) (per-procedure dial), [ADR-0142](./ADR-0142-teams-human-gate-rail.md) (the rail that consumes `procedure_human_owner` + the avatar) |
 | **Cross-references** | [ADR-0127](./ADR-0127-web-role-least-privilege-write-allowlist.md) (new tables join the write allowlist), [ADR-0086](./ADR-0086-okf-semantic-layer-over-silver.md) (OKF concept files — the third leg of the drift check), [ADR-0041](./ADR-0041-gold-knowledge-vector-store.md) (Voyage `voyage-3-large` @1024d vector contract for the persona embeddings), [ADR-0133](./ADR-0133-operating-procedure-catalog.md) (the procedure the human-owner is scoped to), [ADR-0042](./ADR-0042-division-of-labor-reads-direct-processes-backend.md) (schema ownership; ALL vectorization is LP's) |
 
 ## Problem
@@ -34,19 +33,19 @@ The Agent GUI rework wants agent profiles — identity, org placement, avatar, *
 - **ADR-0135 already defines the persona schema** — a 7-section persona `.md` per agent + `org.yaml` as the org SoT. This ADR does not discard that shape; it **moves the authority** for the fields the GUI edits into the DB and makes the `icm/` files a **generated reflection** of it.
 - **The GUI needs to write persona content** (the profile page, #1835) — a git file is not a write target for an admin surface.
 - **Agents need to retrieve persona narrative from the brain** — the recall path reads embeddings, and **all vectorization is LocalPipeline's** (four-repo contract §1, ADR-0042). A DB row is the natural embedding source.
-- **The Teams rail (ADR-YYYY) needs an approver set and an avatar image** — `procedure_human_owner` (the approver set) and a **public avatar route** (Teams card image fetch is unauthenticated) are both required, and both are naturally DB-backed.
+- **The Teams rail (ADR-0142) needs an approver set and an avatar image** — `procedure_human_owner` (the approver set) and a **public avatar route** (Teams card image fetch is unauthenticated) are both required, and both are naturally DB-backed.
 - **`org.yaml` human nodes / agent→human map already exist as work** (#1607); the `human_counterpart` on `agent_profile` and the generated `org.yaml` human map align with it.
 - **The OKF bundle** (ADR-0086) carries the curated *meaning* of entities; where a persona and an OKF concept overlap, the drift check must include OKF as a third leg.
 
 ## Options considered
 
 1. **Keep git as SoT; GUI is read-only over `icm/`** (rejected). Preserves the factory model but fails the core ask — no GUI editing, no direct brain retrieval, and the admin can't change a persona without a code PR.
-2. **DB and git dual-authoritative** (rejected). Two writable authorities guarantee drift and an unresolvable "which wins" — the exact failure mode the autonomy-dial consolidation (ADR-XXXX) is removing elsewhere.
+2. **DB and git dual-authoritative** (rejected). Two writable authorities guarantee drift and an unresolvable "which wins" — the exact failure mode the autonomy-dial consolidation (ADR-0141) is removing elsewhere.
 3. **DB is SoT; `icm/` + SOP frontmatter + `org.yaml` are a generated reflection; a drift detector keeps them honest with DB winning** (chosen). One authority (DB), GUI-editable, brain-retrievable; git keeps history + review via **generated reflection PRs**.
 
 ### Tradeoffs
 
-This **inverts the factory's git-SoT authoring model for persona content** — a real and deliberate reversal of ADR-0135's "persona prose is authored in `icm/`." We accept it because the three requirements (GUI editability, brain retrievability, single authority) all point at the DB, and dual-authority (Option 2) is worse. The honest costs: (a) persona edits no longer *originate* in a reviewed PR — mitigated by the **reflection job emitting a bot PR** so every DB edit still lands in git history with review visibility; (b) generated blocks must **never be hand-edited** — enforced by the drift detector's CI gate; (c) two more representations to keep in sync (ICM + OKF) — addressed by the `content_hash`-based drift detector with a clear "DB wins" rule. Note this inverts authority **for persona content specifically**; the autonomy dial (ADR-XXXX) and capabilities (`agent.yaml`) are governed by their own ADRs.
+This **inverts the factory's git-SoT authoring model for persona content** — a real and deliberate reversal of ADR-0135's "persona prose is authored in `icm/`." We accept it because the three requirements (GUI editability, brain retrievability, single authority) all point at the DB, and dual-authority (Option 2) is worse. The honest costs: (a) persona edits no longer *originate* in a reviewed PR — mitigated by the **reflection job emitting a bot PR** so every DB edit still lands in git history with review visibility; (b) generated blocks must **never be hand-edited** — enforced by the drift detector's CI gate; (c) two more representations to keep in sync (ICM + OKF) — addressed by the `content_hash`-based drift detector with a clear "DB wins" rule. Note this inverts authority **for persona content specifically**; the autonomy dial (ADR-0141) and capabilities (`agent.yaml`) are governed by their own ADRs.
 
 ## Decision
 
@@ -56,13 +55,13 @@ Three new app-native tables (FE #1832; migration number claimed at merge):
 
 - **`agent_profile`** — `agent_key` PK, `display_name`, `role_title`, `division`, `reports_to`, `status`, `priority_rank`, `human_counterpart`, `avatar` `bytea`, `avatar_mime`, `version`, `valid_from`, `content_hash`.
 - **`agent_persona_section`** — (`agent_key`, `section_key`, `ordinal`, `body_md`); the section keys are **`identity_mandate` · `origin_character` · `how_you_work` · `voice_tone` · `behavioral_guardrails` · `boundaries`**, mirroring the ADR-0135 persona sections so a persona `.md` reconstructs losslessly from rows.
-- **`procedure_human_owner`** — the procedure-scoped **responsible human + approver set**. Feeds the Teams @mentions, the ADR-YYYY verdict-side authorization, and the reject-task assignee. Relates #1607 (org.yaml human nodes + agent→human map; humans exist as `icm/employees/*.md` bios).
+- **`procedure_human_owner`** — the procedure-scoped **responsible human + approver set**. Feeds the Teams @mentions, the ADR-0142 verdict-side authorization, and the reject-task assignee. Relates #1607 (org.yaml human nodes + agent→human map; humans exist as `icm/employees/*.md` bios).
 
 These are the **source of truth**.
 
 ### D2 — One-time seed, then DB edits regenerate ICM as bot PRs
 
-- A **one-time importer** (FE #1833) reads `icm/` and hydrates D1 (26 personas, org structure, procedure rows default-disabled per ADR-XXXX).
+- A **one-time importer** (FE #1833) reads `icm/` and hydrates D1 (26 personas, org structure, procedure rows default-disabled per ADR-0141).
 - Thereafter **DB edits (admin GUI) are authoritative**; a **sync job regenerates** the ICM reflection — the `icm/` **persona files**, the **SOP `human_owner` frontmatter**, and the **`org.yaml` human map** — as **bot PRs** (FE #1839). **Generated blocks are marked and never hand-edited.**
 
 ### D3 — Drift detector, DB wins
@@ -75,7 +74,7 @@ A **drift detector** (a **CI gate** + a **scheduled** run, FE #1839) compares **
 
 ### D5 — Public avatar route
 
-Avatars are served via a **public, unauthenticated** route **`/api/public/agent-avatar/[agent_key]`** (FE #1838) — **required** because a Teams adaptive-card image fetch (ADR-YYYY) carries no session. The route serves **image bytes only** (no other profile field, no PII); an **initials fallback** covers agents without an avatar.
+Avatars are served via a **public, unauthenticated** route **`/api/public/agent-avatar/[agent_key]`** (FE #1838) — **required** because a Teams adaptive-card image fetch (ADR-0142) carries no session. The route serves **image bytes only** (no other profile field, no PII); an **initials fallback** covers agents without an avatar.
 
 ### D6 — Least-privilege grants
 

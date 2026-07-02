@@ -1,5 +1,5 @@
 ---
-adr: XXXX
+adr: 0141
 title: "Per-procedure autonomy dial is the only dial"
 status: proposed
 date: 2026-07-01
@@ -8,12 +8,11 @@ summary: "Consolidate three overlapping autonomy-dial configs into ONE model: a 
 tags: [agents, governance]
 ---
 
-# ADR-XXXX: Per-procedure autonomy dial is the only dial
+# ADR-0141: Per-procedure autonomy dial is the only dial
 
-> Number claimed at MERGE per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md).
-> Authored against the placeholder `XXXX`; current max is 0140 — take the next free number just
-> before merge, rename this file, and fix every `ADR-XXXX` reference (this file, its companions
-> ADR-YYYY/ADR-ZZZZ, CONTEXT.md, and the epic body). Docs-only ADR; claims no migration number.
+> Number **0141** claimed at merge per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md)
+> (authored against a placeholder, renumbered at merge alongside its companions ADR-0142/ADR-0143).
+> Docs-only ADR; claims no migration number (the schema it drives is FE #1832).
 
 | Field | Value |
 |---|---|
@@ -23,7 +22,7 @@ tags: [agents, governance]
 | **Issue** | #1832 (epic #1829 — Agent GUI rework) |
 | **Amends** | [ADR-0128](./ADR-0128-canonical-agent-autonomy-ladder.md) (the L0–L5 ladder still holds; its *application* moves from an agent/action dial to a per-procedure dial) |
 | **Supersedes** | the mig-0158 **actuation dial** model (`agent_action_autonomy`, one 1–5 level per `(agent_key, action_class)`) — retired here |
-| **Companion** | [ADR-YYYY](./ADR-YYYY-teams-human-gate-rail.md) (Teams human-gate rail), [ADR-ZZZZ](./ADR-ZZZZ-agent-profile-db-source-of-truth.md) (agent profile = DB SoT) |
+| **Companion** | [ADR-0142](./ADR-0142-teams-human-gate-rail.md) (Teams human-gate rail), [ADR-0143](./ADR-0143-agent-profile-db-source-of-truth.md) (agent profile = DB SoT) |
 | **Cross-references** | [ADR-0109](./ADR-0109-actuation-autonomy-dial.md) (the original per-workflow actuation dial + hard ceilings), [ADR-0118](./ADR-0118-data-class-third-rls-axis-action-ceiling.md) (always-gate `data_class`es), [ADR-0139](./ADR-0139-finance-autonomy-explicit-per-workflow.md) (finance carve-out — still holds, expressed per-procedure), [ADR-0042](./ADR-0042-division-of-labor-reads-direct-processes-backend.md) (schema ownership / process boundary) |
 
 ## Problem
@@ -75,7 +74,7 @@ A **disabled** procedure (`enabled = false`) **NEVER executes**: an inbound wake
 `agent_action_catalog` (mig 0217) is unchanged and load-bearing:
 
 - **`auto_at_level`** — the per-action-kind **risk floor**: the minimum rung at which that action-kind auto-executes.
-- **`always_gate`** — the **dial-proof hard cap**: the action-kind never auto-executes at any level and **routes to human approval** (the Teams gate, ADR-YYYY).
+- **`always_gate`** — the **dial-proof hard cap**: the action-kind never auto-executes at any level and **routes to human approval** (the Teams gate, ADR-0142).
 
 These are properties of the action, not dials. The always-gate `data_class`es (ADR-0118: `financial` / `security_credentials` / `client_pii`) keep their separate data-class ceiling. The kill-switch (`agent_governance_setting`, mig 0163) stays a global orthogonal stop.
 
@@ -87,7 +86,7 @@ An action inside a running procedure **auto-executes IFF**:
 enabled  AND  procedure.level >= action.auto_at_level  AND  NOT action.always_gate  AND  the gauntlet passes
 ```
 
-otherwise it **parks** (to the Teams human-gate rail, ADR-YYYY). This is the ADR-0128 D4 rule with the **dial input rebound to the procedure**: the level now comes from `agent_procedure_policy` for the running plan's procedure, not from an agent/action-class dial. The rule stays total and deterministic — no agent discretion.
+otherwise it **parks** (to the Teams human-gate rail, ADR-0142). This is the ADR-0128 D4 rule with the **dial input rebound to the procedure**: the level now comes from `agent_procedure_policy` for the running plan's procedure, not from an agent/action-class dial. The rule stays total and deterministic — no agent discretion.
 
 ### D5 — The agent autonomy score
 
@@ -113,12 +112,12 @@ The backend gauntlet/dispatcher **resolves the running plan's procedure** and re
 ### Security impact
 
 - **One enforceable rule.** A single dial + a single fire rule (D4) closes the three-plane drift vector — "how much autonomy does this procedure have" has exactly one answer, auditable per `(agent, procedure)`.
-- **The hard cap stays dial-proof.** `always_gate` action-kinds and the ADR-0118 data-class ceiling never auto-execute at any `level` — the highest-blast-radius actions remain structurally outside the dial and route to the human gate (ADR-YYYY).
+- **The hard cap stays dial-proof.** `always_gate` action-kinds and the ADR-0118 data-class ceiling never auto-execute at any `level` — the highest-blast-radius actions remain structurally outside the dial and route to the human gate (ADR-0142).
 - **Fail-safe default.** Every procedure lands **disabled** (D2) — reach is opt-in, granted where earned, matching least privilege.
 
 ### Cost impact
 
-None structural. A schema reshape (0 prod rows moved) + UI removal + a documented backend swap; no new runtime services, no new provider calls. (The Teams gate the parked actions route to has its own cost note in ADR-YYYY.)
+None structural. A schema reshape (0 prod rows moved) + UI removal + a documented backend swap; no new runtime services, no new provider calls. (The Teams gate the parked actions route to has its own cost note in ADR-0142.)
 
 ### Operational impact
 

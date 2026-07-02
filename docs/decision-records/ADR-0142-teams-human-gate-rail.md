@@ -1,5 +1,5 @@
 ---
-adr: YYYY
+adr: 0142
 title: "Teams human-gate rail — full round-trip via Power Automate + APIM"
 status: proposed
 date: 2026-07-01
@@ -8,12 +8,11 @@ summary: "Give the human-in-the-loop gate a real round-trip through Microsoft Te
 tags: [agents, governance, integrations]
 ---
 
-# ADR-YYYY: Teams human-gate rail — full round-trip via Power Automate + APIM
+# ADR-0142: Teams human-gate rail — full round-trip via Power Automate + APIM
 
-> Number claimed at MERGE per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md).
-> Authored against the placeholder `YYYY`; take the next free number just before merge (companion to
-> ADR-XXXX/ADR-ZZZZ, so claim the three consecutively), rename this file, and fix every `ADR-YYYY`
-> reference. Docs-only ADR; claims no migration number.
+> Number **0142** claimed at merge per system CLAUDE.md §10.3 / [ADR-0084](./ADR-0084-merge-time-number-assignment.md)
+> (authored against a placeholder, renumbered at merge alongside its companions ADR-0141/ADR-0143).
+> Docs-only ADR; claims no migration number.
 
 | Field | Value |
 |---|---|
@@ -21,12 +20,12 @@ tags: [agents, governance, integrations]
 | **Status** | Proposed |
 | **Date** | 2026-07-01 |
 | **Issue** | epic #1829 (Agent GUI rework); backend halves ImperionCRM_Backend#515 (outbound) + ImperionCRM_Backend#516 (ingress) |
-| **Companion** | [ADR-XXXX](./ADR-XXXX-per-procedure-autonomy-dial-only-dial.md) (the dial whose parks feed this rail), [ADR-ZZZZ](./ADR-ZZZZ-agent-profile-db-source-of-truth.md) (avatar + procedure_human_owner the card consumes) |
+| **Companion** | [ADR-0141](./ADR-0141-per-procedure-autonomy-dial-only-dial.md) (the dial whose parks feed this rail), [ADR-0143](./ADR-0143-agent-profile-db-source-of-truth.md) (avatar + procedure_human_owner the card consumes) |
 | **Cross-references** | [ADR-0113](./ADR-0113-verbatim-memory-tier.md) (gate-9 claim-before-send ledger, mig 0246), [ADR-0111](./ADR-0111-agent-event-substrate.md) (the RedraftRunner / re-synthesis seam), [ADR-0129](./ADR-0129-platform-scope-credentials.md) (credential-registry platform scope for the webhook URL), [ADR-0118](./ADR-0118-data-class-third-rls-axis-action-ceiling.md) (the always-gate classes that route here), backend ADR-0074 (APIM callback ingress — the front door extended here), backend ADR-0035 (Easy Auth + caller allowlist), [ADR-0042](./ADR-0042-division-of-labor-reads-direct-processes-backend.md) (process custody / repo boundary) |
 
 ## Problem
 
-The autonomy dial (ADR-XXXX) parks every action above a procedure's level or behind the dial-proof hard cap. Today "parked" means a row in `agent_pending_action` and a cockpit list in the web app — a **pull** surface a human has to remember to visit. For a real human-in-the-loop workforce the gate has to be a **push** round-trip: the accountable human is **told** (where they already work — Microsoft Teams), can **decide** in place, and the verdict flows back and either **executes**, **re-drafts**, or **rejects** — with the responder's identity captured and the whole loop auditable. There is no such rail today.
+The autonomy dial (ADR-0141) parks every action above a procedure's level or behind the dial-proof hard cap. Today "parked" means a row in `agent_pending_action` and a cockpit list in the web app — a **pull** surface a human has to remember to visit. For a real human-in-the-loop workforce the gate has to be a **push** round-trip: the accountable human is **told** (where they already work — Microsoft Teams), can **decide** in place, and the verdict flows back and either **executes**, **re-drafts**, or **rejects** — with the responder's identity captured and the whole loop auditable. There is no such rail today.
 
 ## Context
 
@@ -35,7 +34,7 @@ The autonomy dial (ADR-XXXX) parks every action above a procedure's level or beh
 - **The double-fire defense already exists.** Gate-9 **claim-before-send** (frontend ADR-0113, mig 0246 `agent_action_execution`) is the replay/idempotency ledger; the Approve path reuses it rather than inventing a new guard.
 - **The re-synthesis seam already exists.** The agent-event substrate (frontend ADR-0111) defines a RedraftRunner-style re-synthesis path; Request-changes reuses that seam rather than a bespoke redraft.
 - **Secrets go in the registry, platform scope.** The webhook URL is a platform-scope secret in the credential registry → Key Vault (frontend ADR-0129, the `conn-platform-*` precedent) — never hard-coded, never logged.
-- **The approver set is data.** Who may approve a given procedure's gate is `procedure_human_owner` (ADR-ZZZZ), feeding both the @mention and the verdict-side authorization.
+- **The approver set is data.** Who may approve a given procedure's gate is `procedure_human_owner` (ADR-0143), feeding both the @mention and the verdict-side authorization.
 
 ## Options considered
 
@@ -52,7 +51,7 @@ The fixed envelope means the agent **cannot** add a novel button or a custom fie
 ### D1 — The chain
 
 ```
-agent_pending_action (parked, ADR-XXXX)
+agent_pending_action (parked, ADR-0141)
   → backend composes a fixed, schema-validated adaptive card (D3)
   → POST to a Power Automate HTTP-trigger webhook   [URL from KV via credential registry, platform scope]
   → adaptive card posted to a dedicated Team, @mentioning the responsible human(s)   [from procedure_human_owner]
@@ -78,7 +77,7 @@ Rationale: freeform agent-built cards are a spoofing/injection surface on the ap
 
 ### D4 — Responder authorization
 
-The **flow-provided AAD identity** of the responder **must be in the procedure's approver set** (`procedure_human_owner`, ADR-ZZZZ). A verdict from an identity outside the set is rejected by the backend. This is authorization on the *decision*, distinct from the transport auth in D5.
+The **flow-provided AAD identity** of the responder **must be in the procedure's approver set** (`procedure_human_owner`, ADR-0143). A verdict from an identity outside the set is rejected by the backend. This is authorization on the *decision*, distinct from the transport auth in D5.
 
 ### D5 — Ingress security (two hops, defense in depth)
 
