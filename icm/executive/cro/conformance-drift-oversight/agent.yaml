@@ -1,0 +1,12 @@
+name: conformance-drift-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Jessica persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../jessica.md
+  - ./prose.md
+okf_rooms: [agent_autopilot_policy]   # subset of executive/cro/room.yaml; the dial is the one silver meaning this grounds on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route observation, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Vera / handoff to Nova; never fixes what it flags (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled conformance-drift brief when every finding is grounded and cited by reference, and delegate flagged drift to Vera for verification/observation only; Jessica never applies a correction, never flips a dial, never ratifies a control — every fix, governance change, and ratification parks for Mark"

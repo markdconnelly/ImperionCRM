@@ -394,6 +394,15 @@
       ],
       "workflows": [
         {
+          "slug": "conformance-drift-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
           "slug": "division-intake",
           "stages": [
             "01-receive",
@@ -403,11 +412,38 @@
           ]
         },
         {
+          "slug": "knowledge-currency-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
+          "slug": "quality-eval-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
           "slug": "risk-assurance-sweep",
           "stages": [
             "01-gather",
             "02-synthesize",
             "03-brief"
+          ]
+        },
+        {
+          "slug": "risk-escalation-triage",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
           ]
         }
       ]

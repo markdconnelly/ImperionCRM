@@ -1,0 +1,12 @@
+name: quality-eval-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Jessica persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../jessica.md
+  - ./prose.md
+okf_rooms: [account]                  # subset of executive/cro/room.yaml; account context for client-touching quality signals — eval-plane reads are agent-platform data via pg.read, not silver
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route observation, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Tess / handoff to Nova; never re-runs, re-scores, or fixes (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled quality/eval brief when every score and gap is grounded and cited by reference, and delegate flagged quality signals to Tess for observation only; Jessica never edits a golden, never moves a baseline, never re-scores a run — every correction and threshold change parks for Mark"
