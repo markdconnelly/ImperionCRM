@@ -1,0 +1,12 @@
+name: change-risk-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Dexter persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../dexter.md
+  - ./prose.md
+okf_rooms: [change_request, change_freeze, rollback_plan, standard_change_catalog]   # subset of executive/cto/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Marshall / handoff to Nova; never approves or schedules a change (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled change-risk oversight when every calendar item is grounded and cited, and delegate a grounded remediation ask (missing rollback plan, freeze overlap, off-catalog standard change) to Marshall; Dexter never approves, schedules, or pushes a change — any gap parks for Luke"

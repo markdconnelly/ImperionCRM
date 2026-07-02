@@ -1,0 +1,12 @@
+name: problem-recurrence-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Dexter persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../dexter.md
+  - ./prose.md
+okf_rooms: [problem, known_error, ticket, device]   # subset of executive/cto/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Sage/Ozzie / handoff to Nova; never actuates (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled problem-recurrence oversight when every cluster is grounded and cited, and delegate a grounded root-cause ask to Sage or an alert-pattern ask to Ozzie; Dexter never opens, closes, or works a problem himself — any gap parks for Luke"

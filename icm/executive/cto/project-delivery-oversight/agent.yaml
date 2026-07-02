@@ -1,0 +1,12 @@
+name: project-delivery-oversight
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Dexter persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../dexter.md
+  - ./prose.md
+okf_rooms: [project, ticket, account]   # subset of executive/cto/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Pierce/Scout / handoff to Nova; never commits a date or a technician (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled project-delivery oversight when every slip figure is grounded and cited, and delegate a grounded recovery ask to Pierce or a scheduling-collision ask to Scout; Dexter never re-plans a project, commits a date, or commits a technician — any gap parks for Luke"

@@ -170,9 +170,25 @@
         "account",
         "ticket",
         "device",
-        "cloud_asset"
+        "cloud_asset",
+        "problem",
+        "known_error",
+        "change_request",
+        "change_freeze",
+        "rollback_plan",
+        "standard_change_catalog",
+        "project"
       ],
       "workflows": [
+        {
+          "slug": "change-risk-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
         {
           "slug": "delivery-pulse",
           "stages": [
@@ -188,6 +204,33 @@
             "02-classify-route",
             "03-delegate",
             "04-synthesize-return"
+          ]
+        },
+        {
+          "slug": "escalation-sla-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
+          "slug": "problem-recurrence-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
+          ]
+        },
+        {
+          "slug": "project-delivery-oversight",
+          "stages": [
+            "01-gather",
+            "02-synthesize",
+            "03-brief",
+            "04-delegate-followups"
           ]
         }
       ]
