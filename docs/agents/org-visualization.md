@@ -53,9 +53,16 @@ the live overlay, then renders the react-flow canvas client component
 (`src/components/org-tree/org-tree-viz.tsx`, `@xyflow/react` — the first graph lib in the
 FE alongside recharts).
 
-- **Canvas** — a tidy top-down tree (orchestrator → executives → domains). Each executive
-  card collapses/expands its division; node colour encodes kind, badges encode live state
-  (rung, dial, gated, pending). Read-only (no drag/connect) — it visualizes, it doesn't edit.
+- **Canvas** — a **compact, density-first** top-down layout (orchestrator → executives →
+  domains) tuned to read at initial `fitView` on a 1440px laptop without zooming in (#1837).
+  Each executive's domains **grid-wrap** into a small block beneath it (capped at 2 columns —
+  tall over wide), and the five division units sit in a **3-wide meta-grid** rather than one
+  ~4400px-wide row, so the canvas is roughly square (~1030×890) and fitView lands near 0.67
+  instead of the old ~0.3. Domain cards use a **compact variant** of the same card look
+  (tighter padding/type, ellipsised persona + title). Each executive card still
+  collapses/expands its division (re-packing the rest — a per-division density lever); node
+  colour encodes kind, badges encode live state (rung, dial, gated, pending); MiniMap +
+  Controls aid navigation. Read-only (no drag/connect) — it visualizes, it doesn't edit.
 - **Side panel** — clicking a node opens the structure/settings browser for it: persona,
   ceiling, serves/reports-to, built vs scaffold, the live-state chips, the **tool budget**
   and **OKF rooms**, and the **playbook library** (each workflow → its ordered stages). This
