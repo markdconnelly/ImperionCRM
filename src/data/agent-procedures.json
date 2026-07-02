@@ -25515,6 +25515,210 @@
               "checkpoint": null
             }
           ]
+        },
+        {
+          "slug": "standard-definition",
+          "title": "standard-definition (platform v1 — Bucket B1)",
+          "job": "own and version the **evolving client security standard** (#1468) — the declarative baseline every client fleet is scored against (the `security_standard_version` store, mig 0256). Vera reads the current ratified version plus the fleet's actual posture landscape, drafts the next version (declarative criteria jsonb + rationale + an explicit diff vs current), and **parks it for Mark's ratification** — she owns the standard's *content*; the ratify itself is `always_gate` to Mark, executed as the backend's conditional UPDATE (BE #439). References the Vera agent epic **#1397**. This is the **client** security standard — distinct from the internal `docs/security/unified-security-standard.md` (`./skills/standard-authoring.md`).",
+          "trigger": "a scheduled standard-review cycle, a Mark request (\"tighten the standard\"), or an accumulation of posture-evaluation signals (B2/B3) suggesting the current version no longer describes the bar. One run per draft version.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L1",
+          "autoMaySelfApprove": "\"DRAFT-AND-PARK only at L1: read the current ratified security_standard_version + the fleet posture landscape, assemble the next draft version (declarative criteria jsonb + rationale + an EXPLICIT diff vs current, every weakened criterion flagged — never weakened silently) and PARK it for Mark — internal, reversible (a parked draft is just a draft). RATIFICATION IS always_gate TO MARK AT EVERY RUNG: Vera never ratifies her own draft (she never marks her own homework, vera.md); the draft->ratified conditional UPDATE executes in the backend (BE",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "security_standard_version",
+            "posture_snapshot",
+            "tenant_posture",
+            "posture_policy",
+            "entity_xref"
+          ],
+          "skills": [
+            "./skills/standard-authoring"
+          ],
+          "stages": [
+            {
+              "slug": "01-load-standard-landscape",
+              "name": "load-standard-landscape",
+              "job": "load the current ratified standard version and the fleet posture landscape the next draft must describe.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the current ratified standard (`status='ratified'`, highest `version_number`) + its criteria jsonb. No ratified version yet (first run) → stated plainly as \"no current standard — authoring v1,\" never assumed."
+                },
+                {
+                  "tag": "script",
+                  "text": "Read the fleet landscape: each client's latest `posture_snapshot` + `tenant_posture`, and the `posture_policy` golden baselines; resolve accounts via `entity_xref`. Cite everything **by reference** (snapshot id, policy id) — never posture values."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Summarize where the fleet sits against the current criteria — which pillars the fleet broadly meets, where the golden baselines and the standard disagree, and which criteria are chronically not-assessable (snapshot data gaps, listed as gaps)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Current standard",
+                    "silver `security_standard_version` · `okf:security_standard_version`",
+                    "the highest ratified `version_number` + its criteria (0256 contract)",
+                    "the baseline the draft diffs against"
+                  ],
+                  [
+                    "Fleet posture",
+                    "silver `posture_snapshot` · `okf:posture_snapshot`",
+                    "each client's latest snapshot",
+                    "what the fleet actually looks like"
+                  ],
+                  [
+                    "Tenant posture",
+                    "silver `tenant_posture` · `okf:tenant_posture`",
+                    "per-tenant posture state",
+                    "the tenant-level landscape the criteria must fit"
+                  ],
+                  [
+                    "Golden baselines",
+                    "silver `posture_policy` · `okf:posture_policy`",
+                    "the golden posture baselines",
+                    "the defined-good the standard should track"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "the accounts the snapshots belong to",
+                    "resolve which client each posture reading concerns"
+                  ],
+                  [
+                    "Authoring rules",
+                    "`./skills/standard-authoring.md`",
+                    "criteria shape + versioning discipline",
+                    "what the draft may contain"
+                  ]
+                ]
+              },
+              "outputs": "`landscape.md` — the current version (number, criteria summary) or its absence, the fleet landscape summary with every reading cited by reference, and the data-gap list. No posture values reproduced.",
+              "audit": [
+                "Current ratified version read, or its absence stated plainly (never assumed)",
+                "Fleet landscape loaded (snapshots + tenant posture + golden baselines, by reference)",
+                "Chronic not-assessable criteria listed as data gaps — nothing estimated into a gap"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-draft-standard-version",
+              "name": "draft-standard-version",
+              "job": "draft the next standard version — declarative criteria jsonb, a version rationale, and an explicit per-criterion diff vs the current version.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the criteria jsonb (declarative StandardCriteria — checks over `posture_snapshot` fields only, severity thresholds per the authoring rules). A bar the snapshot cannot evidence is not authored — the snapshot enrichment is proposed instead."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Write the version rationale: per changed criterion, why — labeling what the landscape **measured** vs what is **inferred** to be the right bar. Never estimate a threshold into a data gap."
+                },
+                {
+                  "tag": "script",
+                  "text": "Produce the explicit diff vs the current version: per criterion — tightened / unchanged / added / removed / **weakened**. Every weakened criterion is flagged with its own rationale line; a silent weakening is an audit failure. First run (no current version): the diff is \"v1 — no predecessor,\" stated as such."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Landscape",
+                    "`landscape.md` (stage 01)",
+                    "current version + fleet summary + data gaps",
+                    "what the draft must describe"
+                  ],
+                  [
+                    "Authoring rules",
+                    "`./skills/standard-authoring.md`",
+                    "criteria document shape + never-weaken-silently + versioning discipline",
+                    "the authoring contract"
+                  ],
+                  [
+                    "Conformance rubric",
+                    "the shared `conformance-engine/skills/conformance-rubric.md`",
+                    "signal-vs-inference + audit-by-reference",
+                    "how to state the rationale"
+                  ]
+                ]
+              },
+              "outputs": "`draft.md` — the draft version: proposed `version_number`, the criteria jsonb, the rationale, and the explicit diff table (with every weakening flagged). No posture values reproduced; nothing ratified.",
+              "audit": [
+                "Every criterion is a declarative check over snapshot-evidenceable fields",
+                "Explicit diff present; every weakened criterion flagged with its own rationale",
+                "Rationale labels measured vs inferred; no threshold estimated into a data gap"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-park-for-ratification",
+              "name": "park-for-ratification",
+              "job": "assemble the ratification packet and park it for Mark. No ratification, no scoring, no persistence here.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the ratification packet: the draft (criteria + `version_number`), the explicit diff with flagged weakenings, the rationale, and a landscape impact sketch (which clients the diff would plausibly move between bands — labeled inference, not a verdict; the authoritative re-score is B5, #1472, after ratification)."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the packet for **Mark** (`always_gate` — the draft→ratified conditional UPDATE is the backend's Mark-gated act, BE #439; 0256 grants Vera no write). Vera never ratifies, never scores against the draft."
+                },
+                {
+                  "tag": "script",
+                  "text": "Note the downstream chain for Mark: on ratify, the prior version supersedes and `standard-reevaluation` (B5, #1472) re-scores the fleet and reports the impact."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Draft",
+                    "`draft.md` (stage 02)",
+                    "the draft version + diff + rationale",
+                    "the thing Mark ratifies"
+                  ],
+                  [
+                    "Landscape",
+                    "`landscape.md` (stage 01)",
+                    "the fleet summary",
+                    "the impact context for the ratify call"
+                  ],
+                  [
+                    "Authoring rules",
+                    "`./skills/standard-authoring.md`",
+                    "the ratify gate + versioning discipline",
+                    "what the gate requires"
+                  ]
+                ]
+              },
+              "outputs": "`ratification-packet.md` — the parked packet (draft + diff + rationale + impact sketch), addressed to Mark. Nothing ratified, nothing persisted, nothing scored.",
+              "audit": [
+                "Packet complete (draft + explicit diff + rationale + impact sketch labeled inference)",
+                "Parked for Mark — nothing ratified, persisted, or scored by Vera",
+                "Downstream B5 re-evaluation chain noted for the ratify decision"
+              ],
+              "checkpoint": null
+            }
+          ]
         }
       ]
     },

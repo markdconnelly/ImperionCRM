@@ -1,0 +1,13 @@
+name: standard-definition
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vera persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vera.md
+  - ./prose.md
+okf_rooms: [security_standard_version, posture_snapshot, tenant_posture, posture_policy, entity_xref]   # subset of domains/platform/room.yaml — the standard store (0256) + the posture landscape the draft is informed by + the golden baselines + the identity spine
+tools: [pg.read]                                                    # read + draft only; the ratify UPDATE and any draft persistence are backend-owed (BE #439) — Vera never writes the store, never ratifies
+skills:
+  - ./skills/standard-authoring         # Tier 3 — workflow-local (criteria document shape, versioning discipline, the Mark ratify gate, NOT-the-internal-standard boundary)
+autonomy_rung: L1
+auto_may_self_approve: "DRAFT-AND-PARK only at L1: read the current ratified security_standard_version + the fleet posture landscape, assemble the next draft version (declarative criteria jsonb + rationale + an EXPLICIT diff vs current, every weakened criterion flagged — never weakened silently) and PARK it for Mark — internal, reversible (a parked draft is just a draft). RATIFICATION IS always_gate TO MARK AT EVERY RUNG: Vera never ratifies her own draft (she never marks her own homework, vera.md); the draft->ratified conditional UPDATE executes in the backend (BE #439), never here. AUDIT-BY-REFERENCE: the landscape evidence cites snapshot/policy locations, never posture values. NO scoring against an unratified draft, NO client contact, NO remediation at any rung — Vera measures; Celeste presents; a human/Datto remediates. This is the CLIENT standard, never the internal unified-security-standard."

@@ -28,9 +28,11 @@ domain.
 
 Vera's curated read is the **security-posture + governance-config** surface:
 `posture_snapshot`, `tenant_posture`, `posture_policy` (the client posture she scores for
-the security-standard bucket), `agent_autopilot_policy` (the autonomy dial she observes —
-never executes), and `entity_xref` (the identity spine, to resolve which client/agent a
-finding is about). Each is a coverage-matrix row (ADR-0086). The raw agent telemetry she
+the security-standard bucket), `security_standard_version` + `posture_score` (the client
+security-standard store she owns the meaning of, mig 0256 — she drafts standard versions and
+reads the posture-vs-standard verdicts; both writes are backend-owed, BE #439),
+`agent_autopilot_policy` (the autonomy dial she observes — never executes), and
+`entity_xref` (the identity spine, to resolve which client/agent a finding is about). Each is a coverage-matrix row (ADR-0086). The raw agent telemetry she
 audits (`agent_run`, eval results, grounding conflicts, audit log) is read as governance
 **substrate**, not as an okf_room — a workflow narrows to the subset it needs, never wider
 than this set (`workflow ⊆ domain ⊆ Constitution`, CONSTITUTION §3).

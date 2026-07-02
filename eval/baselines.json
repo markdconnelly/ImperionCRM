@@ -27,6 +27,7 @@
     "partnerships": 0.75,
     "marketing": 0.75,
     "client-success": 0.75,
-    "finance": 0.75
+    "finance": 0.75,
+    "platform": 0.75
   }
 }
