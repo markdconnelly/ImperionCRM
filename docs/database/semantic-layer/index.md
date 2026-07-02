@@ -34,7 +34,7 @@ subset; remaining entities are tracked for expansion
 
 ## Concepts
 
-**125 concept files authored** (the [`tables/`](tables/) directory; this table lists the
+**129 concept files authored** (the [`tables/`](tables/) directory; this table lists the
 core subset). Remaining objects from the
 [coverage matrix](coverage-matrix.md) are tracked for expansion under
 [#536](https://github.com/markdconnelly/ImperionCRM/issues/536).
@@ -123,6 +123,10 @@ core subset). Remaining objects from the
 | [`pay_statement`](tables/pay_statement.md) | single-SoR (mirror) | payroll provider (read-only; A9b key = run + employee) | ADR-0082/0123 |
 | [`expense_item`](tables/expense_item.md) | merge | website out-of-pocket / MileIQ miles | ADR-0083 |
 | [`invoice`](tables/invoice.md) | single-SoR (mirror) | QuickBooks Online (read-only external SoR) | ADR-0085 |
+| [`tax_jurisdiction`](tables/tax_jurisdiction.md) | reference / config | curated / tax engine (authority = the jurisdiction's rule) | #1620 |
+| [`tax_nexus_registration`](tables/tax_nexus_registration.md) | single-SoR (mirror) | tax engine / accountant (human registers; agent proposes) | #1620 |
+| [`tax_filing`](tables/tax_filing.md) | single-SoR (mirror) | tax authority via engine/accountant (human files — B9 sentinel never auto-files) | #1620 |
+| [`tax_taxability_rule`](tables/tax_taxability_rule.md) | reference / config | curated / tax engine (rates stay engine-authoritative) | #1620 |
 | [`collections_activity`](tables/collections_activity.md) | overlay (write-back sidecar, app-native) | website system of record (dunning state; NOT synced to QBO) | ADR-0085/0087 |
 | [`performance_obligation`](tables/performance_obligation.md) | single-SoR (app-native) | website system of record (ASC 606 working papers — OWN; QBO has no rev-rec object; QBO stays posted-books SoR) | #1619 |
 | [`revenue_schedule`](tables/revenue_schedule.md) | single-SoR (app-native) | website system of record (recognition = human always_gate; `qbo_journal_ref` ties out to QBO) | #1619 |

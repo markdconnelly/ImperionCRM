@@ -211,6 +211,15 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [performance_obligation](tables/performance_obligation.md) | Finance | B (app-native, Imperion-computed — OWN; QBO has no ASC 606 object to mirror) | fin | ✅ | revenue recognition 09-18 (#1619, epic #1534) — ASC 606 steps 2+4: distinct obligation + allocated transaction price + method (ratable\|point_in_time\|usage\|milestone\|percent_complete); contract modifications = supersession lineage (`superseded_by_id`), never destructive edits |
 | [revenue_schedule](tables/revenue_schedule.md) | Finance | B (app-native; `recognized` only via human always_gate) | fin | ✅ | revenue recognition 09-18 (#1619, epic #1534) — step 5 per-period rows; scheduled→proposed→recognized(\|held); Audrey computes L2 propose-only, CFO recognizes + posts in QBO (SoR, ADR-0123) and the row records `qbo_journal_ref` tie-out; deferred-revenue rollforward DERIVED over these rows, never persisted (ADR-0140 aging precedent) |
 
+## Tax / compliance
+
+| Object | Domain | Archetype | Class | IKF | Acting ICM workflow |
+|---|---|---|---|---|---|
+| [tax_jurisdiction](tables/tax_jurisdiction.md) | Finance | H | fin | ✅ | sales-tax nexus & filings (09-20, #1626 cluster-2) — jurisdiction reference + economic-nexus thresholds (sales/txn, measurement period) + authority surface; #1620 |
+| [tax_nexus_registration](tables/tax_nexus_registration.md) | Finance | B (tax engine / accountant mirror) | fin | ✅ | 09-20 nexus determination — Imperion's OWN registration state per jurisdiction (one row each); agent proposes citation-backed determinations (A5), HUMAN registers (B4 always_gate); #1620 |
+| [tax_filing](tables/tax_filing.md) | Finance | B (calendar + status mirror) | fin | ✅ | 09-20 filing calendar — `due_date` = the B9 deadline-sentinel clock (T-30/T-7/T-1, never auto-files; passed deadline = logged escalation failure); HUMAN files (B4 external attest, always_gate); #1620 |
+| [tax_taxability_rule](tables/tax_taxability_rule.md) | Finance | H | fin | ✅ | 09-20 quantify — taxability by product category × jurisdiction (treatment + rate hint + statute citation, effective-dated); #1620 |
+
 ## Procurement / licensing
 
 | Object | Domain | Archetype | IKF | Acting ICM workflow |
