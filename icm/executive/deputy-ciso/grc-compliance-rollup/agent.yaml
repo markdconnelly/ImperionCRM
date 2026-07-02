@@ -1,0 +1,12 @@
+name: grc-compliance-rollup
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> exec room -> Roman persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../roman.md
+  - ./prose.md
+okf_rooms: [posture_snapshot, tenant_posture, posture_policy, account]   # subset of executive/deputy-ciso/room.yaml; only what stages ground on
+tools: [pg.read, knowledge.search, memory.recall, delegate, handoff]   # delegate-only exec budget; delegate/handoff route work, they do NOT actuate
+skills: []
+autonomy_rung: L2                     # exec ceiling — delegate-only; may emit a delegate to Grace / handoff to Nova; never changes a control, never actuates (CONSTITUTION §9)
+auto_may_self_approve: "publish the scheduled audit-readiness rollup when every control state is grounded and cited by reference, and delegate a grounded evidence/control-gap follow-up to Grace; any attestation ask, ambiguous control state, gap, or recall miss parks for Mark — Roman never changes a control, never attests, and never bypasses a report's gauntlet"

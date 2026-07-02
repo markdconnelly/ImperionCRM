@@ -2601,6 +2601,247 @@
           ]
         },
         {
+          "slug": "grc-compliance-rollup",
+          "title": "grc-compliance-rollup (Deputy CISO / Security & Compliance, executive)",
+          "job": "on a schedule, synthesize the cross-report compliance picture — Grace's control evidence and gaps, Cyrus's detection coverage, Osiris's access hygiene — into one audit-readiness brief for Mark, leading with the control gaps and the evidence debt; where an evidence/remediation follow-up is grounded, delegate it to Grace — never actuated here. Roman briefs Mark; he never changes a control, sets a policy, or attests compliance on Mark's behalf.",
+          "trigger": "scheduled (weekly / ahead of an audit window). One run per cycle.",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "publish the scheduled audit-readiness rollup when every control state is grounded and cited by reference, and delegate a grounded evidence/control-gap follow-up to Grace; any attestation ask, ambiguous control state, gap, or recall miss parks for Mark — Roman never changes a control, never attests, and never bypasses a report's gauntlet",
+          "tools": [
+            "pg.read",
+            "knowledge.search",
+            "memory.recall",
+            "delegate",
+            "handoff"
+          ],
+          "okfRooms": [
+            "posture_snapshot",
+            "tenant_posture",
+            "posture_policy",
+            "account"
+          ],
+          "skills": [],
+          "stages": [
+            {
+              "slug": "01-gather",
+              "name": "gather",
+              "job": "assemble the cycle's cross-report compliance outputs and the tenants in scope into one un-ranked gather record.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Pull the run ledger and the handoff-bus signals into a flat list keyed by report (GRC evidence / SOC coverage / identity hygiene). Read-only; never write."
+                },
+                {
+                  "tag": "script",
+                  "text": "Pull the posture rooms (snapshots, per-tenant drift, policy goldens) into the same flat list, keyed by framework/tenant. Read-only."
+                },
+                {
+                  "tag": "script",
+                  "text": "Resolve referenced accounts from silver; attach id only. No client PII, no secret values — reference by id."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Recall prior audit/compliance context via the retrieval tier; attach each item with its source reference."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Division run ledger",
+                    "`agent_run` (via pg.read)",
+                    "Grace/Cyrus/Osiris runs this cycle",
+                    "what the reports actually did"
+                  ],
+                  [
+                    "Handoff bus",
+                    "`relationship.*` handoff signals (via pg.read)",
+                    "division activity this cycle",
+                    "evidence/gap/hygiene signals between agents"
+                  ],
+                  [
+                    "Posture snapshots",
+                    "silver `posture_snapshot` · `okf:posture_snapshot`",
+                    "current snapshot per pillar",
+                    "the control-state baseline"
+                  ],
+                  [
+                    "Tenant posture",
+                    "silver `tenant_posture` · `okf:tenant_posture`",
+                    "per-tenant rollup",
+                    "per-client compliance drift"
+                  ],
+                  [
+                    "Posture policy / golden",
+                    "silver `posture_policy` · `okf:posture_policy`",
+                    "active goldens",
+                    "the control targets to measure against"
+                  ],
+                  [
+                    "Accounts in scope",
+                    "silver `account` · `okf:account`",
+                    "tenants behind the findings",
+                    "who the compliance state is for"
+                  ],
+                  [
+                    "Prior context",
+                    "retrieval tier (`knowledge.search` / `memory.recall`)",
+                    "this cycle's audit/compliance themes",
+                    "recall, cited by reference"
+                  ]
+                ]
+              },
+              "outputs": "`gather.md` — a flat, un-ranked list of compliance signals keyed by report and framework/tenant, with the account ids in scope and cited recall items. Reference only; no PII, no secrets.",
+              "audit": [
+                "Every signal carries a report (Grace/Cyrus/Osiris) and/or framework/tenant key",
+                "Every account reference states its id (audit by reference)",
+                "Every recall item carries a source reference; no uncited claim",
+                "No client PII, no secret values present",
+                "Read-only — no control changed, nothing written"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-synthesize",
+              "name": "synthesize",
+              "job": "roll the gather record into a gap-ranked cross-report compliance picture with the unknowns marked unknown.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Roll up control state per framework/tenant across the three reports (Grace evidence, Cyrus detection coverage, Osiris access hygiene); collapse duplicates across tenants."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Rank by gap severity and evidence debt: failed/absent controls first, then unverified/expiring evidence, then passing. A control state the gather does not prove is **unknown** — never assumed compliant."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Isolate the gap list: each gap naming the owning report, the framework/tenant, and the decision or evidence Mark needs — by reference, no PII."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Gather record",
+                    "stage 01 `gather.md`",
+                    "all",
+                    "the raw material"
+                  ]
+                ]
+              },
+              "outputs": "`synthesis.md` — a gap-ranked cross-report compliance rollup (failed/absent controls leading, unknowns marked) and a separate gap list, each item naming the owner and the decision/evidence required, by reference.",
+              "audit": [
+                "Rolled up per framework/tenant across all three reports",
+                "Ranked by gap severity and evidence debt; unknowns marked unknown, never assumed compliant",
+                "Every gap names an owning report and one decision or evidence ask",
+                "No client PII, no secret values present (audit by reference)",
+                "No item restates the gather list verbatim (it must be synthesized)"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-brief",
+              "name": "brief",
+              "job": "produce Mark's audit-readiness brief from the synthesis, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "Write the brief: a two-minute read leading with the control gaps and the evidence debt, then the passing tail — never a vanity score."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Render the gap list as the brief's action surface — each item the gap, the owning report, and the decision or evidence Mark must supply or approve. Roman frames; Mark decides — no attestation is made on his behalf."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the brief for Mark. No send, no write, no control change."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Synthesis",
+                    "stage 02 `synthesis.md`",
+                    "all",
+                    "the gap-ranked compliance rollup"
+                  ]
+                ]
+              },
+              "outputs": "`brief.md` — Mark's audit-readiness brief + the gap list, by reference. The run parks here at the checkpoint; nothing is actuated.",
+              "audit": [
+                "Brief leads with control gaps and evidence debt; unknowns stated as unknown",
+                "Gap list present; each item states the owner and the decision/evidence ask",
+                "No attestation, policy decision, or control change made — every call framed for Mark",
+                "No client PII, no secret values in the brief (audit by reference)",
+                "No send, write, or actuation occurred — the run parked"
+              ],
+              "checkpoint": "The brief parks for **Mark** (the CISO). `auto` may self-approve ONLY publishing the scheduled rollup when every control state is grounded and cited by reference; any attestation ask, ambiguous control state, gap, or recall miss parks for Mark (CONSTITUTION §8). No actuation exists at this tier — control changes and remediations run inside the owning report under its gauntlet, always-gated (ADR-0128)."
+            },
+            {
+              "slug": "04-delegate-followups",
+              "name": "delegate-followups",
+              "job": "OPTIONAL — propose a `delegate()` to Grace on a grounded gap and/or a `handoff()` to Nova when it spans divisions, then park.",
+              "process": [
+                {
+                  "tag": "sonnet",
+                  "text": "For each gap, decide the route: an evidence collection or control-gap investigation → Grace (GRC); a detection-coverage gap → Cyrus; an access-hygiene gap → Osiris; a gap spanning divisions → Nova. A gap that is not grounded and cited routes to nowhere — it parks for Mark."
+                },
+                {
+                  "tag": "sonnet",
+                  "text": "Draft the proposed `delegate()`: name the framework/tenant by id, the gap, the cited basis, and the ask — never the remediation itself. Draft any `handoff()` to Nova the same way."
+                },
+                {
+                  "tag": "script",
+                  "text": "Park the proposed delegate/handoff. No control change, no remediation, no send, no write. The world-changing effect re-gates inside the owning report's gauntlet (always-gated, ADR-0128)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Brief + gaps",
+                    "stage 03 `brief.md`",
+                    "the gap list only",
+                    "what may warrant a follow-up"
+                  ]
+                ]
+              },
+              "outputs": "`followups.md` — the proposed `delegate()` / `handoff()` items by reference, each naming the target report, the framework/tenant, the gap, and the cited basis. The run parks here; nothing is actuated.",
+              "audit": [
+                "Every proposed delegate/handoff names a target report and cites the grounding basis",
+                "An ungrounded or uncited gap parks for Mark — never delegated",
+                "No control change, remediation, or attestation proposed as Roman's own",
+                "No client PII, no secret values present (audit by reference)",
+                "No send/write/actuation occurred — Roman delegated or parked"
+              ],
+              "checkpoint": "The proposed follow-ups park for **Mark**. `auto` may self-approve ONLY delegating a grounded evidence/control-gap follow-up to Grace when it is grounded and cited; any ungrounded gap, ambiguity, or recall miss parks for Mark (CONSTITUTION §8). Roman never changes a control or actuates — the delegate routes the work and the effect re-gates inside the owning report's gauntlet (CONSTITUTION §9); a report's always-gate bar never lowers because Roman's dial is high (ADR-0128)."
+            }
+          ]
+        },
+        {
           "slug": "incident-escalation-triage",
           "title": "incident-escalation-triage (Deputy CISO / Security & Compliance, executive)",
           "job": "on an incident signal (and on a scheduled sweep), triage the SOC incident/alert stream — Cyrus's detections, the security tickets, and the assets in blast radius — into one escalation brief for Mark, each item framed as the decision he needs; where a containment follow-up is grounded, delegate it to Cyrus — never actuated here. Roman briefs Mark; he never decides security policy and never contains anything himself.",
