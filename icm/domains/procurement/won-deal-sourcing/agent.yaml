@@ -1,0 +1,13 @@
+name: won-deal-sourcing
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [opportunity, account, license_assignment]   # subset of domains/procurement/room.yaml — the won deal, its owner, the existing entitlements (buy the delta)
+tools: [pg.read]                                        # receive + draft + stage only; no write, no send, no buy — the buy is 02-B2's always_gate money gate
+skills:
+  - ./skills/sourcing-rubric              # Tier 3 — workflow-local (line-item -> SKU mapping + catalog anchor + stage-for-gate handoff shape)
+autonomy_rung: L2
+auto_may_self_approve: "the internal draft + stage at L2 ONLY: receive the won deal's catalog-anchored line-items off the Chase seam (ADR-0096), draft the sourcing plan with the cost and the rejected alternative quantified (every figure cited + as-of, A5), and stage the order for the governed-procurement money gate — all internal, reversible artifacts (a staged order can be withdrawn). NEVER the buy: the purchase itself is always_gate forever at the 02-B2 money gate (A2 class-1, ADR-0109, migration 0184) and nothing here touches Pax8, M365, or money. An off-catalog line-item routes to a human in every mode (refuse-precondition — never an improvised SKU); an empty or ambiguous line-item set parks in every mode (A5)."

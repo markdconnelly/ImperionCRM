@@ -1,0 +1,13 @@
+name: vendor-cost-variance
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [invoice, license_assignment, contract, account]         # subset of domains/procurement/room.yaml — invoice mirror + true-up facts + contract terms + client spine
+tools: [pg.read]                                                    # monitor + flag + hand off only; no write, no send, no money move
+skills:
+  - ./skills/variance-rubric              # Tier 3 — workflow-local (expected-cost derivation + variance thresholds + the Audrey handoff shape)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the internal vendor cost-variance flag and hand it to Audrey for reconciliation/true-up at L2, every variance computed from CITED cost sources with their as-of dates (A5; internal, reversible — a flag can be withdrawn, A10 row 1). This is read-only money: Vance MEASURES the variance, Audrey owns the money clock (A11 obligation/action separation) — the money commitment is gated on Audrey's side (Stream 09). NEVER auto-runs: any true-up buy, credit pursuit, term change, or other money commitment — always_gate forever (ADR-0109, migration 0184; BO-03 Procurement §5), split to the governed-procurement money gate (02-B2) or gated in Audrey's stream."

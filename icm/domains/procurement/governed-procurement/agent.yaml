@@ -1,0 +1,13 @@
+name: governed-procurement
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [account, license_assignment, contract, invoice]   # subset of domains/procurement/room.yaml — the owning account, the provisioned-license mirror, the agreement, the billing consequence
+tools: [pg.read]                                              # ground + draft + verify only; NO actuation tool exists — the one act path is the backend-executed 0184 sequence, never an ICM call
+skills:
+  - ./skills/money-gate-rules           # Tier 3 — workflow-local (approve-once + easy-button + no-clean-undo + halt-no-rollback + off-catalog refuse)
+autonomy_rung: L3
+auto_may_self_approve: "the post-approval operational tail ONLY (L3 — the one Vance L3): AFTER the ONE human approval at pax8_place_order (approve-once-at-the-money-gate, migration 0184), the backend-executed m365_provision_license, agreement_attach, and bill_attach steps auto-complete and stage 03 documents + verifies them — idempotency-keyed (replay = no-op, A9b), read back from Pax8/M365 before close (A9c), never re-prompting a mechanical step. NEVER the money step: pax8_place_order and every purchase actuation is always_gate FOREVER — A2 class-1, dial-proof at every rung, no dial setting unlocks it (ADR-0109, 0184, A10 row 4 no-clean-undo). Stage 02 parks in every mode; off-catalog is a refuse-precondition routed to a human; no ICM stage orders, provisions, attaches, or bills — the actuation is the backend executor's."

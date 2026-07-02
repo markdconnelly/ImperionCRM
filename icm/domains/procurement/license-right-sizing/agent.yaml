@@ -1,0 +1,13 @@
+name: license-right-sizing
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vance persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vance.md
+  - ./prose.md
+okf_rooms: [license_assignment, account, invoice]                   # subset of domains/procurement/room.yaml — entitlement/utilization facts + client spine + billing consequence
+tools: [pg.read]                                                    # match + draft + surface only; no write, no send, no money move
+skills:
+  - ./skills/right-sizing-rubric          # Tier 3 — workflow-local (utilization thresholds + SKU-consolidation patterns + the tradeoff shape)
+autonomy_rung: L2
+auto_may_self_approve: "auto-raise the internal right-sizing recommendation (consolidate/downgrade, dollars attached) at L2 from CITED utilization-vs-entitlement facts, each carrying its source and as-of date (A5; internal, reversible — a recommendation can be dismissed, A10 row 1); where utilization data is missing the gap is parked, never guessed into. NEVER auto-runs: the consolidate/downgrade/cancel commitment itself — every right-sizing actuation is a money commitment, always_gate forever (ADR-0109, migration 0184), and splits out to the governed-procurement money gate (02-B2; BO-03 Procurement §5). Vance quantifies the tradeoff; the spend is a human's."
