@@ -77,6 +77,9 @@ classed here by the same content rule (the file inherits it when authored). A co
 | [referral_payout](tables/referral_payout.md) | Sales | B | fin | ✅ | Bridget referral-partner program (02-D2) — payout pending→approved→paid; money always-gate (#1657) |
 | [price_book_entry](tables/price_book_entry.md) | Sales | B | fin | ✅ | Sterling 02-C1 govern price book & rate-card — versioned sku × version line (list/cost/margin floor); publish always-gate (human ratifies); the standard 02-A7/02-C2 read; NOT the gutted CPQ quote engine (ADR-0067/0080). #1652, epic #1534 |
 | [discount_tier](tables/discount_tier.md) | Sales | B | fin | ✅ | Sterling 02-C1 discount tiers / approval thresholds (max discount + max term → approval route none/deal_desk/executive); feeds the 02-C2 deal desk breach routing; publish always-gate. #1652, epic #1534 |
+| [commission_plan](tables/commission_plan.md) (+ commission_plan_tier child) | Sales | B | fin | ✅ | sales-commission (02-C3, DORMANT per ADR-0136 A5c) — human-authored comp plan per rep: base rate + tiers/accelerators + draw; web comp-admin authors, agents read-only; no DELETE (#1650, epic #1534) |
+| [commission_attainment](tables/commission_attainment.md) | Sales | C | fin | ✅ | sales-commission (02-C3) — per-period attainment input (closed-won vs quota), backend-computed AUTO (money-gate B6 compute side), stored as-of computation for auditable statement math (#1650) |
+| [commission_statement](tables/commission_statement.md) | Sales | C | fin | ✅ | sales-commission (02-C3) — draft→computed (auto)→approved (ALWAYS_GATE)→paid (record of external payroll/QBO payout, ADR-0123; never a payment instruction); void=correction; no DELETE (#1650) |
 
 ## Delivery / PM
 
