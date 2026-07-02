@@ -557,9 +557,9 @@ _Avoid_: standard (an ADR/standards-doc term), guardrail (the prose source for a
 A stage boundary where the run parks for human approval/edit in the approval queue. In `auto` mode a checkpoint may self-approve only what its contract explicitly allows.
 _Avoid_: review step, gate (unqualified)
 
-**Autonomy Dial**:
-The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. Tiered mode is a future ADR.
-_Avoid_: autopilot, trust level
+**Autonomy Dial** (historical — the ICM draft→auto sense):
+The per-workflow `draft` → `auto` setting — admin-only, audited, reversible; every workflow starts `draft`. **Superseded as the operative dial by the Procedure Dial** (ADR for the per-procedure dial being the only dial): autonomy is now set per-procedure (1–5 level + enabled), there is no agent-level master dial, and this draft→auto framing survives only as the ICM factory's initial-state vocabulary.
+_Avoid_: autopilot, trust level; **"the autonomy dial" unqualified** (ambiguous now — say Procedure Dial)
 
 **Audrey (Finance agent)**:
 The named agent that owns the Finance workspace — AR/AP, billing, time, expense, profitability — **all READ-ONLY**. QuickBooks Online is the system of record for money movement (ADR-0123); Audrey has **no money-moving action and no write path** — every "action" is an internal flag / recommendation / escalation / summary. Her actions map onto the canonical **L0–L5 autonomy ladder** but **structurally top out at L2** (auto-raise internal reversible flags): with no external-send and no money action there are no higher rungs to occupy — Audrey is the proof the ladder is a **per-agent ceiling**. **Hard rule — salary non-disclosure:** she is *aware* of individual comp and uses it in reconciliation math but **never discloses** an individual's salary / Pay Rate (refusal-class; payroll-role RLS as defense-in-depth). Runtime persona: `icm/domains/finance/audrey.md` (the canonical home; the roster cites it). The ladder map + per-action tags live in `audrey.md` and the canonical-ladder ADR (draft PR #1411, extends ADR-0109), not restated here.
@@ -582,8 +582,48 @@ The canonical L0–L5 capability levels every agent maps onto, so the dial means
 _Avoid_: trust level, actuation tier (that's the ADR-0055 T0–T3 scale the dial resolves to)
 
 **auto_at_level**:
-The per-action tag naming the **minimum dial level at which an action auto-executes**; below it the action parks to the cockpit. Paired with `always_gate` (dial-proof — an `always_gate` action never auto-executes regardless of `auto_at_level` or the dial). Selection is deterministic: an action auto-runs IFF `dial ≥ auto_at_level AND NOT always_gate AND the gauntlet passes` (ADR-0128 D4).
+The per-action tag naming the **minimum dial level at which an action auto-executes**; below it the action parks to the cockpit. Paired with `always_gate` (dial-proof — an `always_gate` action never auto-executes regardless of `auto_at_level` or the dial). Selection is deterministic: an action auto-runs IFF `dial ≥ auto_at_level AND NOT always_gate AND the gauntlet passes` (ADR-0128 D4). The `dial` in that rule is the **Procedure Dial** — the level of the running plan's procedure (the per-procedure dial ADR); `auto_at_level` is the action's inherent risk floor, not the operator's setting.
 _Avoid_: tier, ceiling (the ceiling is the dial-proof bound, not this threshold)
+
+**Procedure Dial**:
+The **only** autonomy dial: a per-`(agent, procedure)` **1–5 level** on the ADR-0128 ladder (the per-procedure-dial ADR). There is **no agent-level master dial** — autonomy is granted procedure by procedure. Stored on `agent_procedure_policy` (the reshape of the empty `agent_autopilot_policy`, mig 0123); the backend gauntlet resolves the running plan's procedure and reads it. Supersedes the mig-0158 action-class actuation dial (`agent_action_autonomy`, retired). Paired with the Procedure Toggle.
+_Avoid_: actuation dial (mig-0158, retired), master dial / agent dial (there is none), the ICM draft→auto Autonomy Dial (a different, historical sense)
+
+**Procedure Toggle**:
+The **`enabled`** boolean on a Procedure Dial — **light-up-as-built**: every procedure starts disabled. A **disabled procedure NEVER executes** (an inbound wake parks or declines) and is **excluded from the Autonomy Score**. "Disabled" is off, not "level 0 that still runs reads."
+_Avoid_: on/off dial (it is orthogonal to the 1–5 level), draft/auto (that is the historical ICM Autonomy Dial)
+
+**Autonomy Score**:
+The agent-level autonomy percentage surfaced on the agent cards + profile page — `round(100 × Σ(level over enabled procedures) / (5 × N_enabled))`, with `N_enabled = 0 → 0%`. A **derived rollup, not a control** (you cannot set it); disabled procedures contribute nothing. The single at-a-glance number that replaces the (removed) agent-level dial.
+_Avoid_: autonomy level (that's per-procedure), trust score
+
+**Hard Cap / Always-Gate**:
+The **dial-proof** bound: an `always_gate` action-kind (external commitments that bind the company + the ADR-0109 money ceiling + the ADR-0118 always-gate `data_class`es) **never auto-executes at any level** and **routes to human approval** (the Human Gate). It is a property of the action (on `agent_action_catalog`, mig 0217), **orthogonal to the Procedure Dial** — raising the dial never breaches it. The kill-switch (`agent_governance_setting`, mig 0163) is a separate orthogonal stop.
+_Avoid_: ceiling (unqualified), high dial level (the cap is outside the dial, not a rung on it)
+
+**Human Gate**:
+A gated step requiring a **named human verdict** before it can proceed — where a parked action (above its Procedure Dial level, or an always-gate hard cap) waits for a person. In v1 the round-trip runs over Microsoft Teams (the Teams human-gate-rail ADR): the backend posts a fixed adaptive card, the responsible human decides, the verdict returns via APIM. Distinct from a **Checkpoint** (an ICM stage-boundary park) — a Human Gate is the *human-verdict* semantics a park resolves through.
+_Avoid_: approval step (unqualified), checkpoint (the ICM stage boundary, not the verdict rail)
+
+**Responsible Human**:
+The accountable owner of a procedure's Human Gates — the person(s) @mentioned on the Teams card, whose AAD identity must be in the procedure's **approver set** to submit a Verdict, and who is assigned the internal task on a Reject. Stored on `procedure_human_owner` (the agent-profile-DB-SoT ADR); relates the `org.yaml` human map (#1607).
+_Avoid_: owner (unqualified — the agent *owns* the procedure; the human is accountable for its gates), approver (one function of the role)
+
+**Verdict**:
+A Responsible Human's decision on a Human Gate — exactly one of **Approve** (execute through the gauntlet; gate-9 claim-before-send, ADR-0113, is the double-fire defense), **Request changes** (feedback → RedraftRunner re-synthesis, ADR-0111 → a new card), or **Reject** (close rejected + create an internal task for the human; no Autotask write-back in v1).
+_Avoid_: approval (that's one of three verdicts), decision (unqualified)
+
+**Agent Profile**:
+The **database-authoritative** identity + persona record for an agent (the agent-profile-DB-SoT ADR): `agent_profile` (name, role, division, reports_to, status, priority_rank, human_counterpart, avatar, …) + `agent_persona_section` (the six narrative sections). The DB is the source of truth; the `icm/` persona files become a generated **ICM Reflection**. Edited in the admin GUI, vectorized into the brain by LocalPipeline, avatar served via the public route.
+_Avoid_: persona file (that's the reflection now, not the source), agent card (one render of the profile)
+
+**ICM Reflection**:
+The **generated** projection of Agent-Profile DB truth into `icm/` — the persona `.md` files, SOP `human_owner` frontmatter, and the `org.yaml` human map — emitted as **bot PRs** by the sync job. **Generated blocks are never hand-edited** (a CI gate enforces it); to change persona content, edit the DB. Inverts the factory's git-SoT authoring for persona content (the trade-off is recorded in the ADR).
+_Avoid_: persona source (the DB is the source), manual persona edit (edit the DB, the reflection regenerates)
+
+**Drift Flag**:
+The drift detector's marker when the three persona representations disagree — **"ICM dated"** (the `icm/` reflection lags the DB) or **"OKF dated"** (an overlapping OKF concept file lags). Compared via `content_hash` (CI gate + scheduled); **DB wins** — the flagged side is regenerated/updated, never the DB.
+_Avoid_: conflict (unqualified — resolution is deterministic, DB wins), sync error
 
 **Workflow Doctrine**:
 The normative cross-cutting rules + nine archetype step-templates that **every** Operating Procedure inherits, so they are decided once, not per-procedure (ADR-0136 Workflow Doctrine; extends ADR-0128/0109/0118, builds on ADR-0133/0134). A procedure's catalog entry declares only its procedure-specific deltas. The seven terms below are its load-bearing rules.
