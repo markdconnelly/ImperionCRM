@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.29.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.28.0...imperion-crm-v0.29.0) (2026-07-02)
+
+
+### Features
+
+* **agents:** build Dexter (CTO) oversight library + cto goldens ([#1816](https://github.com/markdconnelly/ImperionCRM/issues/1816)) ([01e39bb](https://github.com/markdconnelly/ImperionCRM/commit/01e39bb7a8004d1a108681e60ed0166fe7c39ad5))
+* **db:** add price_book_entry + discount_tier silver (rate-card governance) ([#1652](https://github.com/markdconnelly/ImperionCRM/issues/1652)) ([1c35f32](https://github.com/markdconnelly/ImperionCRM/commit/1c35f328a8091273691c7d5aae576c6511df2e93))
+* **db:** carrier_contract + circuit silver — telco/carrier lifecycle model ([#1651](https://github.com/markdconnelly/ImperionCRM/issues/1651)) ([#1803](https://github.com/markdconnelly/ImperionCRM/issues/1803)) ([98b3d46](https://github.com/markdconnelly/ImperionCRM/commit/98b3d46691ecc5079a07cc462c1a6ffed40cfb1c))
+* **db:** client security-standard store + scoring tables ([#1715](https://github.com/markdconnelly/ImperionCRM/issues/1715)) ([#1807](https://github.com/markdconnelly/ImperionCRM/issues/1807)) ([41dd530](https://github.com/markdconnelly/ImperionCRM/commit/41dd530e562036fb47b2e8305341441658f0c702))
+* **db:** client-offboarding / retention-state silver model ([#1622](https://github.com/markdconnelly/ImperionCRM/issues/1622)) ([#1805](https://github.com/markdconnelly/ImperionCRM/issues/1805)) ([efcc03d](https://github.com/markdconnelly/ImperionCRM/commit/efcc03df9369e5682634980722d6ae6fe0ba57f1))
+* **db:** conformance engine tables — conformance_rule / process_trace / conformance_deviation ([#1532](https://github.com/markdconnelly/ImperionCRM/issues/1532)) ([#1806](https://github.com/markdconnelly/ImperionCRM/issues/1806)) ([69200e1](https://github.com/markdconnelly/ImperionCRM/commit/69200e17256fc1882599f85410f8acf36b680d81))
+* **db:** contract_renewal silver satellite + opportunity.kind ([#1324](https://github.com/markdconnelly/ImperionCRM/issues/1324)) ([#1809](https://github.com/markdconnelly/ImperionCRM/issues/1809)) ([ed0581f](https://github.com/markdconnelly/ImperionCRM/commit/ed0581ff9afaa7dbf162a92f87bda9a57d8d15cf))
+* **db:** employee HR core + W-2 payroll silver mirrors ([#1621](https://github.com/markdconnelly/ImperionCRM/issues/1621)) ([#1812](https://github.com/markdconnelly/ImperionCRM/issues/1812)) ([12279a4](https://github.com/markdconnelly/ImperionCRM/commit/12279a40385bb9edb53893d9f9f63da48ecb0ca7))
+* **db:** rev-rec / contract-schedule silver model — performance_obligation + revenue_schedule ([#1619](https://github.com/markdconnelly/ImperionCRM/issues/1619)) ([#1808](https://github.com/markdconnelly/ImperionCRM/issues/1808)) ([72adae3](https://github.com/markdconnelly/ImperionCRM/commit/72adae3db47b3f92bdd2a81efe3eddedbc47dc66))
+* **db:** sales-tax nexus model — jurisdiction / registration / filing / taxability ([#1620](https://github.com/markdconnelly/ImperionCRM/issues/1620)) ([bc058e9](https://github.com/markdconnelly/ImperionCRM/commit/bc058e9daf1500539876da58e7dddfa6f8dc31c4))
+* **icm:** Jessica (CRO) oversight playbooks — conformance, quality, knowledge, escalation triage ([#1814](https://github.com/markdconnelly/ImperionCRM/issues/1814)) ([d509cc0](https://github.com/markdconnelly/ImperionCRM/commit/d509cc000e754a3f112ff012f03ca52942f6f50c))
+* **icm:** Rachel legal-contract-oversight executive playbook ([#1817](https://github.com/markdconnelly/ImperionCRM/issues/1817)) ([#1824](https://github.com/markdconnelly/ImperionCRM/issues/1824)) ([1fbba6e](https://github.com/markdconnelly/ImperionCRM/commit/1fbba6e3da51cdf052334041b77385b7e3f2ae36))
+* **icm:** Rachel people-ops-oversight executive playbook ([#1817](https://github.com/markdconnelly/ImperionCRM/issues/1817)) ([#1821](https://github.com/markdconnelly/ImperionCRM/issues/1821)) ([82cdf6f](https://github.com/markdconnelly/ImperionCRM/commit/82cdf6f5f537520efa9956584aaf3f0c22e2b9a3))
+* **icm:** Roman grc-compliance-rollup oversight playbook ([#1815](https://github.com/markdconnelly/ImperionCRM/issues/1815)) ([78d5eee](https://github.com/markdconnelly/ImperionCRM/commit/78d5eeeed098929e5de17fbe25765555115ed459))
+* **icm:** Roman incident-escalation-triage oversight playbook ([#1815](https://github.com/markdconnelly/ImperionCRM/issues/1815)) ([#1818](https://github.com/markdconnelly/ImperionCRM/issues/1818)) ([561a3b5](https://github.com/markdconnelly/ImperionCRM/commit/561a3b5f102ab72e9e81838a83b1de89d3012a0b))
+* **platform:** A9 — deviation routing + closure lifecycle ([#1467](https://github.com/markdconnelly/ImperionCRM/issues/1467)) ([#1825](https://github.com/markdconnelly/ImperionCRM/issues/1825)) ([4ba67e6](https://github.com/markdconnelly/ImperionCRM/commit/4ba67e6b495c2b95cb005b1aa2277ba5551672ba))
+* **procurement:** restore Vance L3 ceiling + stand up the procurement domain room ([#1480](https://github.com/markdconnelly/ImperionCRM/issues/1480)) ([#1819](https://github.com/markdconnelly/ImperionCRM/issues/1819)) ([65b7580](https://github.com/markdconnelly/ImperionCRM/commit/65b758029d046950bea13c6dc0ea949b14f3243d))
+* **schema:** sales-commission / comp-plan silver model ([#1650](https://github.com/markdconnelly/ImperionCRM/issues/1650)) ([16ab0cb](https://github.com/markdconnelly/ImperionCRM/commit/16ab0cb29349faa90854c1fae5565310e85e4537))
+
 ## [0.28.0](https://github.com/markdconnelly/ImperionCRM/compare/imperion-crm-v0.27.0...imperion-crm-v0.28.0) (2026-07-01)
 
 
