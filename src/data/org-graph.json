@@ -1396,7 +1396,76 @@
         "invoice",
         "opportunity"
       ],
-      "workflows": []
+      "workflows": [
+        {
+          "slug": "deadline-sentinel",
+          "stages": [
+            "01-watch-deadlines",
+            "02-quantify-draft",
+            "03-route-notify"
+          ]
+        },
+        {
+          "slug": "governed-procurement",
+          "stages": [
+            "01-ground-draft",
+            "02-money-gate",
+            "03-post-approval-tail"
+          ]
+        },
+        {
+          "slug": "license-right-sizing",
+          "stages": [
+            "01-match-utilization",
+            "02-compose-rec",
+            "03-route"
+          ]
+        },
+        {
+          "slug": "order-status-watchdog",
+          "stages": [
+            "01-watch-orders",
+            "02-detect-alert"
+          ]
+        },
+        {
+          "slug": "shelfware-reclaim",
+          "stages": [
+            "01-detect-shelfware",
+            "02-quantify-compose",
+            "03-route"
+          ]
+        },
+        {
+          "slug": "under-licensing-flag",
+          "stages": [
+            "01-crossref-entitlements",
+            "02-classify-flag"
+          ]
+        },
+        {
+          "slug": "vendor-cost-variance",
+          "stages": [
+            "01-monitor-cost",
+            "02-flag-handoff"
+          ]
+        },
+        {
+          "slug": "vendor-risk-eol",
+          "stages": [
+            "01-detect-signal",
+            "02-advise-handoff"
+          ]
+        },
+        {
+          "slug": "won-deal-sourcing",
+          "stages": [
+            "01-receive-seam",
+            "02-draft-sourcing",
+            "03-stage-order"
+          ]
+        }
+      ]
     },
     {
       "id": "finance",
