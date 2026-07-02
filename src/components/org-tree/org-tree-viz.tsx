@@ -28,14 +28,54 @@ const KIND_COLOR: Record<OrgNode["kind"], string> = {
   domain: "#34D399",
 };
 
-const H_GAP = 210;
-const V_GAP = 150;
+// ── layout geometry ───────────────────────────────────────────────────────────
+// The tree is wide (21 domain agents). A single flat row of children forced a
+// ~4400px canvas that fitView shrank to an unreadable ~0.3 zoom (the "constant
+// zooming" complaint, #1837). We fix it two ways: (1) each executive's domains pack
+// into a compact grid *block* beneath it (grid-wrap, not one flat row), and (2) those
+// five division blocks are arranged in a balanced 2-wide meta-grid rather than five
+// abreast — so the canvas is roughly square (~1000×950) instead of a 4400px ribbon,
+// and fitView lands near 1.0 on a 1440px laptop, where card titles read without
+// zooming in. Cards are compact variants of the same look; collapsing a division
+// re-packs the rest as a per-division density lever.
+const DOMAIN_W = 150; // compact domain card width
+const EXEC_W = 168; // executive / orchestrator card width
+const COL_GAP = 14; // gap between domain columns within a block
+const ROW_GAP = 12; // gap between domain rows within a block
+const DIVISION_GAP_X = 44; // horizontal gap between division units in the meta-grid
+const DIVISION_GAP_Y = 40; // vertical gap between meta-grid rows
+const DOMAIN_CARD_H = 66; // approx compact card height (for block-height math)
+const EXEC_BAND_H = 96; // exec card + gap down to its domain grid
+const RANK_ORCH_Y = 0; // orchestrator sits above the division meta-grid
+const META_TOP_Y = 132; // top of the division meta-grid (below the orchestrator)
+const META_COLS = 3; // division units per meta-grid row (keeps the canvas ~square)
+
+/** Columns for an executive's domain grid — capped at 2 wide so blocks stay narrow
+ *  (tall over wide), which packs the five divisions into a near-square canvas that
+ *  fitView lands at a readable zoom on a 1440px laptop. */
+function gridCols(n: number): number {
+  if (n <= 1) return 1;
+  return Math.min(2, Math.ceil(Math.sqrt(n)));
+}
+
+/** Full pixel size of one division unit (executive card + its domain grid). */
+function divisionSize(childCount: number): { w: number; h: number } {
+  const cols = Math.max(1, gridCols(childCount));
+  const rows = Math.max(1, Math.ceil(childCount / cols));
+  const gridW = cols * DOMAIN_W + (cols - 1) * COL_GAP;
+  const w = Math.max(EXEC_W, gridW);
+  const h =
+    EXEC_BAND_H + (childCount > 0 ? rows * DOMAIN_CARD_H + (rows - 1) * ROW_GAP : 0);
+  return { w, h };
+}
 
 type CardData = {
   node: OrgNode;
   live: OrgNodeLive | null;
+  compact: boolean;
   collapsible: boolean;
   collapsed: boolean;
+  memberCount: number;
   onToggle: (id: string) => void;
 };
 
@@ -49,7 +89,8 @@ function liveFor(live: OrgLiveState, node: OrgNode): OrgNodeLive | null {
 }
 
 function OrgNodeCard({ data, selected }: NodeProps) {
-  const { node, live, collapsible, collapsed, onToggle } = data as unknown as CardData;
+  const { node, live, compact, collapsible, collapsed, memberCount, onToggle } =
+    data as unknown as CardData;
   const color = KIND_COLOR[node.kind];
   return (
     <div
@@ -58,27 +99,42 @@ function OrgNodeCard({ data, selected }: NodeProps) {
         border: `1px solid ${selected ? ACCENT : BORDER}`,
         borderLeft: `3px solid ${color}`,
         borderRadius: 8,
-        padding: "8px 10px",
-        width: 178,
+        padding: compact ? "5px 8px" : "7px 10px",
+        width: compact ? DOMAIN_W : EXEC_W,
         color: TEXT,
-        fontSize: 12,
+        fontSize: compact ? 11 : 12,
         boxShadow: selected ? `0 0 0 1px ${ACCENT}` : "none",
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span style={{ fontWeight: 600 }}>{node.persona ?? node.id}</span>
-        <span style={{ color: MUTED, fontSize: 10 }}>{node.ceiling ?? ""}</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
+        <span
+          style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+        >
+          {node.persona ?? node.id}
+        </span>
+        <span style={{ color: MUTED, fontSize: compact ? 9 : 10, flexShrink: 0 }}>
+          {node.ceiling ?? ""}
+        </span>
       </div>
-      <div style={{ color: MUTED, fontSize: 10, marginTop: 2 }}>
-        {node.kind === "domain" ? node.id : (node.division ?? node.kind)}
+      <div
+        style={{
+          color: MUTED,
+          fontSize: compact ? 9 : 10,
+          marginTop: 1,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {node.title ?? (node.kind === "domain" ? node.id : (node.division ?? node.kind))}
       </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 4, marginTop: compact ? 4 : 6, flexWrap: "wrap" }}>
         {!node.built && <Tag label="scaffold" tone={MUTED} />}
-        {live?.rung && <Tag label={`rung ${live.rung}`} tone={ACCENT} />}
-        {live?.level != null && <Tag label={`dial ${live.level}`} tone={ACCENT} />}
+        {live?.rung && <Tag label={live.rung} tone={ACCENT} />}
+        {live?.level != null && <Tag label={`d${live.level}`} tone={ACCENT} />}
         {live?.gated && <Tag label="gated" tone="#F59E0B" />}
-        {live && live.pending > 0 && <Tag label={`${live.pending} pending`} tone="#F87171" />}
+        {live && live.pending > 0 && <Tag label={`${live.pending}`} tone="#F87171" />}
       </div>
       {collapsible && (
         <button
@@ -99,7 +155,7 @@ function OrgNodeCard({ data, selected }: NodeProps) {
             cursor: "pointer",
           }}
         >
-          {collapsed ? "▸ expand division" : "▾ collapse division"}
+          {collapsed ? `▸ ${memberCount} agents` : "▾ collapse"}
         </button>
       )}
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
@@ -117,6 +173,7 @@ function Tag({ label, tone }: { label: string; tone: string }) {
         background: `${tone}14`,
         borderRadius: 4,
         padding: "1px 4px",
+        lineHeight: 1.3,
       }}
     >
       {label}
@@ -127,7 +184,8 @@ function Tag({ label, tone }: { label: string; tone: string }) {
 const nodeTypes = { orgNode: OrgNodeCard };
 
 export function OrgTreeViz({ graph, live }: { graph: OrgGraph; live: OrgLiveState }) {
-  // Executives start expanded; collapse hides that executive's member domains.
+  // Executives start expanded; collapse hides that executive's member domains and
+  // re-packs the canvas (a per-division lever for maximum readability).
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string>(graph.orchestrator);
 
@@ -142,9 +200,11 @@ export function OrgTreeViz({ graph, live }: { graph: OrgGraph; live: OrgLiveStat
 
   const byId = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
 
-  // Lay out a tidy top-down tree over the VISIBLE nodes (a domain is hidden when its
-  // executive is collapsed). x is breadth (leaf-packed, parents centered over children),
-  // y is depth.
+  // Lay out the VISIBLE nodes. Each executive owns a grid *block* of its domains
+  // (grid-wrap); the five division units are then placed in a balanced 2-wide meta-grid
+  // (column x-positions fixed to the widest unit per column, rows y-positioned by the
+  // tallest unit per row), keeping the canvas roughly square. The orchestrator is
+  // centered above the meta-grid.
   const { rfNodes, rfEdges } = useMemo(() => {
     const execs = graph.nodes.filter((n) => n.kind === "executive");
     const domainsByExec = new Map<string, OrgNode[]>();
@@ -155,26 +215,63 @@ export function OrgTreeViz({ graph, live }: { graph: OrgGraph; live: OrgLiveStat
     }
 
     const pos = new Map<string, { x: number; y: number }>();
-    let leaf = 0;
-    for (const exec of execs) {
+
+    // Per-unit child list (empty when collapsed) and measured size.
+    const units = execs.map((exec) => {
       const kids = collapsed.has(exec.id) ? [] : (domainsByExec.get(exec.id) ?? []);
-      if (kids.length === 0) {
-        pos.set(exec.id, { x: leaf * H_GAP, y: V_GAP });
-        leaf += 1;
-      } else {
-        const start = leaf;
-        for (const d of kids) {
-          pos.set(d.id, { x: leaf * H_GAP, y: 2 * V_GAP });
-          leaf += 1;
-        }
-        const cx = ((start + (leaf - 1)) / 2) * H_GAP;
-        pos.set(exec.id, { x: cx, y: V_GAP });
+      return { exec, kids, size: divisionSize(kids.length) };
+    });
+
+    // Meta-grid column widths (widest unit in each column) and row heights (tallest
+    // unit in each row), so units align into clean columns/rows.
+    const colWidths: number[] = [];
+    const rowHeights: number[] = [];
+    units.forEach((u, i) => {
+      const c = i % META_COLS;
+      const r = Math.floor(i / META_COLS);
+      colWidths[c] = Math.max(colWidths[c] ?? 0, u.size.w);
+      rowHeights[r] = Math.max(rowHeights[r] ?? 0, u.size.h);
+    });
+    const colX: number[] = [];
+    let ax = 0;
+    colWidths.forEach((w, c) => {
+      colX[c] = ax;
+      ax += w + DIVISION_GAP_X;
+    });
+    const rowY: number[] = [];
+    let ay = META_TOP_Y;
+    rowHeights.forEach((h, r) => {
+      rowY[r] = ay;
+      ay += h + DIVISION_GAP_Y;
+    });
+
+    units.forEach((u, i) => {
+      const c = i % META_COLS;
+      const r = Math.floor(i / META_COLS);
+      // Center the unit within its (possibly wider) meta-column.
+      const unitLeft = colX[c] + (colWidths[c] - u.size.w) / 2;
+      const unitTop = rowY[r];
+      // Executive centered over its own block.
+      pos.set(u.exec.id, { x: unitLeft + (u.size.w - EXEC_W) / 2, y: unitTop });
+      if (u.kids.length > 0) {
+        const cols = gridCols(u.kids.length);
+        const gridW = cols * DOMAIN_W + (cols - 1) * COL_GAP;
+        const gridLeft = unitLeft + (u.size.w - gridW) / 2;
+        const gridTop = unitTop + EXEC_BAND_H;
+        u.kids.forEach((d, k) => {
+          const col = k % cols;
+          const row = Math.floor(k / cols);
+          pos.set(d.id, {
+            x: gridLeft + col * (DOMAIN_W + COL_GAP),
+            y: gridTop + row * (DOMAIN_CARD_H + ROW_GAP),
+          });
+        });
       }
-    }
-    // Orchestrator centered over the executives.
-    const execXs = execs.map((e) => pos.get(e.id)!.x);
-    const ocx = execXs.length ? (Math.min(...execXs) + Math.max(...execXs)) / 2 : 0;
-    pos.set(graph.orchestrator, { x: ocx, y: 0 });
+    });
+
+    // Orchestrator centered horizontally over the whole meta-grid.
+    const totalW = ax > 0 ? ax - DIVISION_GAP_X : EXEC_W;
+    pos.set(graph.orchestrator, { x: (totalW - EXEC_W) / 2, y: RANK_ORCH_Y });
 
     const visible = new Set(pos.keys());
     const rfNodes: Node[] = graph.nodes
@@ -184,8 +281,10 @@ export function OrgTreeViz({ graph, live }: { graph: OrgGraph; live: OrgLiveStat
         const data: CardData = {
           node: n,
           live: liveFor(live, n),
+          compact: n.kind === "domain",
           collapsible: memberCount > 0,
           collapsed: collapsed.has(n.id),
+          memberCount,
           onToggle,
         };
         return {
@@ -221,8 +320,10 @@ export function OrgTreeViz({ graph, live }: { graph: OrgGraph; live: OrgLiveStat
           nodeTypes={nodeTypes}
           onNodeClick={(_, n) => setSelectedId(n.id)}
           fitView
+          fitViewOptions={{ padding: 0.12, maxZoom: 1 }}
           proOptions={{ hideAttribution: true }}
-          minZoom={0.3}
+          minZoom={0.35}
+          maxZoom={1.75}
           nodesDraggable={false}
           nodesConnectable={false}
           edgesFocusable={false}
