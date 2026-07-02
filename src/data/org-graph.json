@@ -1792,6 +1792,14 @@
             "02-draft-standard-version",
             "03-park-for-ratification"
           ]
+        },
+        {
+          "slug": "standard-reevaluation",
+          "stages": [
+            "01-load-ratification-event",
+            "02-rescore-fleet-vs-new-standard",
+            "03-record-reevaluation-impact"
+          ]
         }
       ]
     },
