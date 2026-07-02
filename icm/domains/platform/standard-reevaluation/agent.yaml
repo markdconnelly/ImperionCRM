@@ -1,0 +1,13 @@
+name: standard-reevaluation
+model: claude-sonnet-4-5
+system_compose:                       # ordered; Constitution -> domain room -> Vera persona -> workflow prose (ADR-0088 §2)
+  - ../../../CONSTITUTION.md
+  - ../room.md
+  - ../vera.md
+  - ./prose.md
+okf_rooms: [security_standard_version, posture_score, posture_snapshot, tenant_posture, entity_xref]   # subset of domains/platform/room.yaml — the newly-ratified + superseded versions (0256) + the verdict ledger (prior + the re-score's inputs) + each client's latest snapshot to re-score + the identity spine
+tools: [pg.read]                                                    # read + re-score + draft only; each re-score verdict is the backend's idempotent INSERT into posture_score (BE #439, the 0256 UNIQUE arbitrates) — Vera never writes
+skills:
+  - domains/platform/skills/posture-scoring-method   # Tier 2 — domain-shared (criteria -> checks -> score + the NEWLY-NON-COMPLIANT definition; shared with B2 #1469 and B3 #1470)
+autonomy_rung: L2
+auto_may_self_approve: "on a NEW ratified security_standard_version (B1's ratify, Mark-gated), auto-RE-SCORE the whole fleet against the NEWLY RATIFIED baseline (each client's latest posture_snapshot, scored criterion-by-criterion via the shared method — the new version only, never a draft) and AUTO-SURFACE the ratification IMPACT to the governance dashboard, flagging the NEWLY-NON-COMPLIANT (conforming under the superseded version, drifting|critical under the new one) and AUTO-ROUTING per-client evaluations to Celeste for client presentation — internal, reversible. The cause is the STANDARD moving, not the client slipping: newly-non-compliant is presented as the ratification's impact, NEVER as client drift (that is B3) or client fault. A not-assessable criterion never silently passes; a client with no fresh snapshot is a stated gap, not a guessed verdict. AUDIT-BY-REFERENCE: cite version ids + snapshot id + criterion id, NEVER reproduce posture values (vera.md). NO DB write (each verdict is the backend's idempotent INSERT, BE #439), NO remediation, NO client contact at any rung — Vera measures; Celeste presents; a human/Datto remediates (the MSSP boundary, ADR-0124). Impact routes via Celeste/Mark, never the A9 deviation queue."

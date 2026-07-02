@@ -26320,6 +26320,204 @@
               "checkpoint": null
             }
           ]
+        },
+        {
+          "slug": "standard-reevaluation",
+          "title": "standard-reevaluation (platform v1 — Bucket B5)",
+          "job": "when the client security standard **evolves** — a new version is ratified (B1, #1468, Mark-gated) — **re-score the whole fleet** against the new baseline and flag the **newly-non-compliant** (#1472): clients that were `conforming` under the superseded version but are `drifting`/`critical` under the new one. The scoring + the newly-non-compliant definition are the shared `domains/platform/skills/posture-scoring-method.md`. The impact is presented as **the standard moving, not the client slipping** — routed via **Celeste** for client presentation, with the fleet impact surfaced to **Mark**. References the Vera agent epic **#1397**.",
+          "trigger": "a **new ratified** `security_standard_version` (B1's ratify, the prior version now superseded — mig 0256). One run per ratification event (a fleet sweep).",
+          "model": "claude-sonnet-4-5",
+          "autonomyRung": "L2",
+          "autoMaySelfApprove": "\"on a NEW ratified security_standard_version (B1's ratify, Mark-gated), auto-RE-SCORE the whole fleet against the NEWLY RATIFIED baseline (each client's latest posture_snapshot, scored criterion-by-criterion via the shared method — the new version only, never a draft) and AUTO-SURFACE the ratification IMPACT to the governance dashboard, flagging the NEWLY-NON-COMPLIANT (conforming under the superseded version, drifting|critical under the new one) and AUTO-ROUTING per-client evaluations to Celeste for client presentation — internal, reversible. The cause is the STANDARD moving, not the client slipping: newly-non-compliant is presented as the ratification's impact, NEVER as client drift (that is B3) or client fault. A not-assessable criterion never silently passes; a client with no fresh snapshot is a stated gap, not a guessed verdict. AUDIT-BY-REFERENCE: cite version ids + snapshot id + criterion id, NEVER reproduce posture values (vera.md). NO DB write (each verdict is the backend's idempotent INSERT, BE",
+          "tools": [
+            "pg.read"
+          ],
+          "okfRooms": [
+            "security_standard_version",
+            "posture_score",
+            "posture_snapshot",
+            "tenant_posture",
+            "entity_xref"
+          ],
+          "skills": [
+            "domains/platform/skills/posture-scoring-method"
+          ],
+          "stages": [
+            {
+              "slug": "01-load-ratification-event",
+              "name": "load-ratification-event",
+              "job": "load the newly-ratified and superseded standard versions and enumerate the fleet to re-score, with each client's latest snapshot and prior verdict.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Read the **newly ratified** version (`status='ratified'`, highest `version_number`) and the version it **superseded**. If the two are the same, or nothing is ratified, **park** (\"no ratification event to re-evaluate\") — B5 runs only on a genuine version change."
+                },
+                {
+                  "tag": "script",
+                  "text": "Enumerate the fleet: each client's latest `posture_snapshot` + `tenant_posture`, resolved via `entity_xref`. A client with no snapshot is listed as a **gap** (nothing to re-score), never assumed."
+                },
+                {
+                  "tag": "script",
+                  "text": "For each client, read its prior verdict under the **superseded** version — the \"before\" for the newly-non-compliant comparison. A client with no prior verdict is noted (re-scored, but not classifiable as newly-non-compliant — nothing to compare). Cite everything by reference (version ids, snapshot id) — never posture values."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "New + superseded versions",
+                    "silver `security_standard_version` · `okf:security_standard_version`",
+                    "the highest ratified `version_number` (new) + the version it superseded",
+                    "the new baseline + the before/after pairing"
+                  ],
+                  [
+                    "Fleet snapshots",
+                    "silver `posture_snapshot` · `okf:posture_snapshot`",
+                    "each client's latest snapshot",
+                    "what to re-score"
+                  ],
+                  [
+                    "Tenant posture",
+                    "silver `tenant_posture` · `okf:tenant_posture`",
+                    "each client's tenant posture state",
+                    "tenant-level evidence the criteria read"
+                  ],
+                  [
+                    "Prior verdicts",
+                    "silver `posture_score` · `okf:posture_score`",
+                    "each client's verdict under the superseded version",
+                    "the \"before\" side of newly-non-compliant"
+                  ],
+                  [
+                    "Identity spine",
+                    "silver `entity_xref` · `okf:entity_xref`",
+                    "the accounts the snapshots belong to",
+                    "resolve which client each reading concerns"
+                  ],
+                  [
+                    "Scoring method",
+                    "`domains/platform/skills/posture-scoring-method.md`",
+                    "criteria → checks + the newly-non-compliant definition",
+                    "how the re-score + comparison are made"
+                  ]
+                ]
+              },
+              "outputs": "`ratification-event.md` — the new + superseded version ids, the fleet roster (each client by reference with its latest snapshot ref + prior-verdict ref or a no-prior/no-snapshot gap note). No posture values reproduced.",
+              "audit": [
+                "New + superseded versions identified, or the run parked (no genuine version change)",
+                "Fleet enumerated; no-snapshot clients listed as gaps (never assumed)",
+                "Prior superseded-version verdicts read by reference; no-prior clients noted"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "02-rescore-fleet-vs-new-standard",
+              "name": "rescore-fleet-vs-new-standard",
+              "job": "re-score each client's latest snapshot against the newly-ratified baseline and identify the newly-non-compliant by comparison to the superseded-version verdict.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "For each client with a snapshot, re-score its latest `posture_snapshot` criterion-by-criterion against the **newly ratified** version's criteria (never a draft) — `overall_score` + `conformance_status` per the shared method. A not-assessable criterion is a **data gap**, excluded from the composite, never a silent pass. This is the exact verdict shape the backend persists (idempotent INSERT into `posture_score`, the 0256 UNIQUE the arbiter, BE #439) — Vera produces it, never writes it."
+                },
+                {
+                  "tag": "script",
+                  "text": "Classify **newly-non-compliant** per the method: a client whose superseded-version verdict was `conforming` and whose new-version verdict is `drifting`/`critical` (same snapshot vintage where one exists). A client with no prior verdict is re-scored but not classified (nothing to compare) — stated as such."
+                },
+                {
+                  "tag": "haiku",
+                  "text": "Summarize the fleet movement: how many clients moved band, the newly-non-compliant list (by reference), and the gaps (no-snapshot / no-prior clients) — labeling measured verdicts vs inferred cause. The cause of a newly-non-compliant flag is **the standard moving** (inference stated plainly), never client drift."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Ratification event",
+                    "`ratification-event.md` (stage 01)",
+                    "the new + superseded version ids + the fleet roster with refs",
+                    "the material to re-score"
+                  ],
+                  [
+                    "Scoring method",
+                    "`domains/platform/skills/posture-scoring-method.md`",
+                    "criteria → checks → score + the newly-non-compliant definition",
+                    "how to score + classify"
+                  ],
+                  [
+                    "Conformance rubric",
+                    "the shared `conformance-engine/skills/conformance-rubric.md`",
+                    "signal-vs-inference + audit-by-reference",
+                    "how to state each verdict"
+                  ]
+                ]
+              },
+              "outputs": "`rescore.md` — per client: the new-version verdict (score + band, by reference) and its newly-non-compliant classification (or the no-prior/no-snapshot note); plus the fleet-movement summary. No posture values reproduced.",
+              "audit": [
+                "Every client with a snapshot re-scored against the new version only (never a draft)",
+                "Newly-non-compliant classified per the method (was conforming → now drifting/critical); no-prior noted",
+                "Not-assessable excluded as gaps; cause labeled \"the standard moved,\" not client drift"
+              ],
+              "checkpoint": null
+            },
+            {
+              "slug": "03-record-reevaluation-impact",
+              "name": "record-reevaluation-impact",
+              "job": "assemble the ratification impact, surface the fleet impact to Mark, and route each client's evaluation to Celeste. No write, no remediation, no client contact.",
+              "process": [
+                {
+                  "tag": "script",
+                  "text": "Assemble the ratification impact: the new + superseded version ids, the fleet summary (count moved band, the **newly-non-compliant** list by reference), and per client the new-version verdict — each carrying the note that the change is **the standard's, not the client's** (B5's framing; client drift is B3). All by reference (version ids, snapshot id, criterion id) — never posture values."
+                },
+                {
+                  "tag": "script",
+                  "text": "Surface the **fleet impact** to **Mark** (the ratification's blast radius across the fleet) and auto-surface the impact to the governance dashboard (internal, reversible). At L2 this raises without being asked."
+                },
+                {
+                  "tag": "script",
+                  "text": "Route each client's evaluation to **Celeste** for client presentation — a recommendation to present, never a send. Nothing here re-scores in place beyond the run's verdicts, remediates, contacts a client, writes, or files into the A9 deviation queue (#1467 — internal agent-process deviations, not client posture)."
+                }
+              ],
+              "inputs": {
+                "headers": [
+                  "Source",
+                  "Location",
+                  "Scope",
+                  "Why"
+                ],
+                "rows": [
+                  [
+                    "Re-score",
+                    "`rescore.md` (stage 02)",
+                    "per-client new verdicts + newly-non-compliant + fleet summary",
+                    "the impact content"
+                  ],
+                  [
+                    "Ratification event",
+                    "`ratification-event.md` (stage 01)",
+                    "the new + superseded version ids",
+                    "the impact's framing (which ratification)"
+                  ]
+                ]
+              },
+              "outputs": "`reevaluation-impact.md` — the ratification impact (version ids + fleet summary + newly-non-compliant list + per-client new verdicts, all by reference), surfaced to the dashboard + Mark and routed per client to Celeste.",
+              "audit": [
+                "Impact complete (version ids + fleet summary + newly-non-compliant + per-client verdicts, by reference)",
+                "Fleet impact surfaced to Mark; per-client evaluations routed to Celeste",
+                "Newly-non-compliant framed as the standard moving, not client drift; nothing written/remediated/client-contacted; nothing filed to A9"
+              ],
+              "checkpoint": null
+            }
+          ]
         }
       ]
     },
