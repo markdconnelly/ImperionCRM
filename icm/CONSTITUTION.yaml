@@ -127,6 +127,12 @@ okf_rooms:
   - metric_definition # Finance FP&A — governed metric contracts (MRR/ARR/margin/cost_to_serve);
                       #   the metric layer Audrey CONSUMES, never re-derives (#1050) (read)
   - posture_snapshot   # Platform/Governance (#1458) — client security posture (read)
+  - security_standard_version # Platform/Governance (#1468, mig 0256) — the evolving client
+                       #   security standard Vera OWNS: she drafts versions, Mark ratifies
+                       #   (always_gate); agents READ-ONLY (the write is backend BE #439) (read)
+  - posture_score      # Platform/Governance (#1469, mig 0256) — append-only posture-vs-standard
+                       #   verdict per (account, standard version, snapshot); Vera reads it for
+                       #   drift detection + re-evaluation (B3/B5); write is backend-owed (read)
   - tenant_posture     # Platform/Governance — per-tenant posture drift (read)
   - posture_policy     # Platform/Governance — posture policy + golden baselines (read)
   - agent_autopilot_policy # Platform/Governance — the autonomy dial Vera observes (read)

@@ -1684,6 +1684,8 @@
         "posture_policy",
         "agent_autopilot_policy",
         "entity_xref",
+        "security_standard_version",
+        "posture_score",
         "brand_asset"
       ],
       "workflows": [
@@ -1757,6 +1759,14 @@
             "01-load-service-trace",
             "02-evaluate-service-conformance",
             "03-record-service-finding"
+          ]
+        },
+        {
+          "slug": "standard-definition",
+          "stages": [
+            "01-load-standard-landscape",
+            "02-draft-standard-version",
+            "03-park-for-ratification"
           ]
         }
       ]

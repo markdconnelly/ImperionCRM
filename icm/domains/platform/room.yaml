@@ -30,6 +30,11 @@ okf_rooms:
   - posture_policy
   - agent_autopilot_policy
   - entity_xref
+  # The client security-standard store (mig 0256, #1715) — Bucket B (#1468–#1472). Vera OWNS
+  # the standard (drafts versions; ratification is always_gate to Mark) and READS the
+  # posture-vs-standard verdicts; both writes are backend-owed (BE #439), never Vera's.
+  - security_standard_version
+  - posture_score
   # Brand governance read (#1699, #1696 D5) — Vera's marketing-conformance audits PUBLISHED
   # content against the human-owned brand registry; read-only reference, never written.
   - brand_asset
